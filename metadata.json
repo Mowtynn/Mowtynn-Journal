@@ -1,0 +1,8 @@
+{
+  "name": "Trading Journal",
+  "description": "İşlem geçmişi, kâr-zarar takibi ve ekran görüntüsü (SS) destekli profesyonel trading işlem günlüğü.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

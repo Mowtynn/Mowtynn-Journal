@@ -1,0 +1,342 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@theme {
+  --font-sans: "Outfit", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  
+  --color-zinc-850: #1c1c1e;
+
+  /* Softer, more oval-like rounded corners for the entire site */
+  --radius-sm: 0.375rem; /* 6px */
+  --radius-md: 0.75rem; /* 12px */
+  --radius-lg: 1rem; /* 16px */
+  --radius-xl: 1.25rem; /* 20px */
+  --radius-2xl: 1.5rem; /* 24px */
+  --radius-3xl: 2rem; /* 32px */
+  --radius: 1rem;
+}
+
+/* Base typography and rendering stabilization */
+html {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: #09090b; /* default zinc-950 */
+  scroll-behavior: smooth !important;
+  scroll-padding-top: 5rem;
+  text-rendering: optimizeLegibility;
+  overscroll-behavior-y: none;
+}
+
+/* Numeric & Monospace stabilization across tables, cards and metrics */
+.font-mono,
+table,
+.tabular-nums {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums lining-nums;
+  -webkit-font-feature-settings: "tnum" 1, "lnum" 1;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}
+
+button, input, optgroup, select, textarea {
+  font-family: inherit;
+}
+
+/* Premium Micro-Interactions & Hover Smoothness */
+button, 
+a, 
+select, 
+input[type="submit"], 
+input[type="button"],
+[role="button"] {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+button:focus,
+button:focus-visible,
+button:active,
+a:focus,
+a:focus-visible,
+a:active,
+[role="button"]:focus,
+[role="button"]:focus-visible,
+[role="button"]:active,
+tr:focus,
+tr:focus-visible,
+tr:active,
+td:focus,
+td:focus-visible,
+td:active,
+span:focus,
+span:active {
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+button:hover, 
+a:hover, 
+select:hover,
+[role="button"]:hover {
+  transform: translateY(-0.5px);
+}
+
+button:active, 
+a:active, 
+select:active,
+[role="button"]:active {
+  transform: scale(0.97) translateY(0px) !important;
+}
+
+/* Premium Card Hover Effect */
+.card-hover {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.card-hover:hover {
+  transform: translateY(-1.5px);
+  box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+/* High-fidelity layered modern shadows */
+.shadow-premium-sm {
+  box-shadow: 
+    0 1px 2px rgba(0, 0, 0, 0.3),
+    0 1px 3px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03) !important;
+}
+
+.shadow-premium-md {
+  box-shadow: 
+    0 4px 12px -2px rgba(0, 0, 0, 0.45),
+    0 2px 6px -1px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+}
+
+.shadow-premium-lg {
+  box-shadow: 
+    0 12px 24px -6px rgba(0, 0, 0, 0.55),
+    0 4px 12px -2px rgba(0, 0, 0, 0.4),
+    inset 0 1px 1px rgba(255, 255, 255, 0.07) !important;
+}
+
+.shadow-premium-xl {
+  box-shadow: 
+    0 24px 48px -12px rgba(0, 0, 0, 0.65),
+    0 8px 20px -4px rgba(0, 0, 0, 0.5),
+    inset 0 1px 1px rgba(255, 255, 255, 0.08) !important;
+}
+
+/* GPU acceleration helpers to enable buttery smooth 120Hz/120FPS rendering without layer explosion */
+.transform-gpu,
+.animate-gpu,
+.will-change-transform {
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+  will-change: transform, opacity;
+}
+
+.optimize-gpu {
+  will-change: transform, opacity;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Hide default number input spin buttons globally */
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { 
+  -webkit-appearance: none; 
+  margin: 0; 
+}
+input[type=number] {
+  -moz-appearance: textfield; /* Firefox */
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(82, 82, 91, 0.4) transparent;
+}
+
+/* Custom Scrollbar for Webkit (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(82, 82, 91, 0.4);
+  border-radius: 9999px;
+  border: 1px solid transparent; /* adds tiny padding via background-clip if needed, but solid color is fine */
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(82, 82, 91, 0.7);
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* AI Co-Pilot Modern High-Tech Scrollbar */
+.copilot-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(113, 113, 122, 0.45) rgba(24, 24, 27, 0.35);
+}
+
+.copilot-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.copilot-scrollbar::-webkit-scrollbar-track {
+  background: rgba(24, 24, 27, 0.35);
+  border-radius: 9999px;
+  margin: 4px 2px;
+}
+
+.copilot-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(113, 113, 122, 0.45);
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.copilot-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(161, 161, 170, 0.85);
+  box-shadow: 0 0 8px rgba(96, 165, 250, 0.35);
+}
+
+.copilot-scrollbar::-webkit-scrollbar-thumb:active {
+  background: rgba(59, 130, 246, 0.9);
+}
+
+/* Modern High-Fidelity Print & PDF Styles */
+@media print {
+  /* Hide the entire standard app interface and overlays */
+  body, #root, #root-layout, .no-print {
+    display: none !important;
+    visibility: hidden !important;
+    background: transparent !important;
+  }
+
+  /* Only display the designated print report section */
+  #print-report-root {
+    display: block !important;
+    visibility: visible !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 210mm !important; /* Standard A4 Width */
+    min-height: 297mm !important; /* Standard A4 Height */
+    background-color: #030712 !important; /* Premium Dark Background (slate-950) */
+    color: #f1f5f9 !important; /* Premium Light Text (slate-100) */
+    margin: 0 !important;
+    padding: 15mm !important;
+    box-sizing: border-box !important;
+    font-family: "Outfit", "Inter", sans-serif !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Force elements inside printable area to be visible and colored correctly */
+  #print-report-root * {
+    visibility: visible !important;
+  }
+  
+  /* Optimize table and typography for clean print margins */
+  table {
+    page-break-inside: auto;
+  }
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+  thead {
+    display: table-header-group;
+  }
+}
+
+/* HTML2Canvas OKLCH Color Fallbacks & Fixes for Print Report */
+#print-report-root {
+  background-color: #09090b !important; /* zinc-950 */
+  color: #f4f4f5 !important; /* zinc-100 */
+}
+
+#print-report-root .text-blue-600,
+#print-report-root .text-blue-400 { color: #60a5fa !important; }
+#print-report-root .text-zinc-950,
+#print-report-root .text-zinc-50,
+#print-report-root .text-slate-950,
+#print-report-root .text-slate-50 { color: #fafafa !important; }
+#print-report-root .text-zinc-100,
+#print-report-root .text-slate-100 { color: #f4f4f5 !important; }
+#print-report-root .text-zinc-200,
+#print-report-root .text-slate-200 { color: #e4e4e7 !important; }
+#print-report-root .text-zinc-300,
+#print-report-root .text-slate-300 { color: #d4d4d8 !important; }
+#print-report-root .text-zinc-400,
+#print-report-root .text-slate-400 { color: #a1a1aa !important; }
+#print-report-root .text-zinc-500,
+#print-report-root .text-slate-500 { color: #71717a !important; }
+#print-report-root .text-zinc-600,
+#print-report-root .text-slate-600 { color: #52525b !important; }
+
+#print-report-root .text-emerald-500,
+#print-report-root .text-emerald-400 { color: #34d399 !important; }
+#print-report-root .text-rose-500,
+#print-report-root .text-rose-400 { color: #f87171 !important; }
+#print-report-root .text-amber-500,
+#print-report-root .text-amber-400 { color: #fbbf24 !important; }
+#print-report-root .text-emerald-600 { color: #10b981 !important; }
+#print-report-root .text-rose-600 { color: #f43f5e !important; }
+#print-report-root .text-white { color: #ffffff !important; }
+
+#print-report-root .bg-zinc-950,
+#print-report-root .bg-slate-950 { background-color: #09090b !important; }
+#print-report-root .bg-zinc-900,
+#print-report-root .bg-slate-900 { background-color: #18181b !important; }
+#print-report-root .bg-zinc-800,
+#print-report-root .bg-slate-800 { background-color: #27272a !important; }
+#print-report-root .bg-zinc-900\/50,
+#print-report-root .bg-slate-900\/50 { background-color: rgba(24, 24, 27, 0.5) !important; }
+#print-report-root .bg-white { background-color: #09090b !important; }
+
+#print-report-root .bg-emerald-50,
+#print-report-root .bg-emerald-950\/50 { background-color: rgba(6, 78, 59, 0.4) !important; }
+#print-report-root .bg-rose-50,
+#print-report-root .bg-rose-950\/50 { background-color: rgba(136, 19, 55, 0.4) !important; }
+#print-report-root .bg-emerald-100,
+#print-report-root .bg-emerald-950 { background-color: #064e3b !important; }
+#print-report-root .bg-rose-100,
+#print-report-root .bg-rose-950 { background-color: #881317 !important; }
+
+#print-report-root .border-zinc-800,
+#print-report-root .border-slate-800 { border-color: #27272a !important; }
+#print-report-root .border-zinc-700,
+#print-report-root .border-slate-700 { border-color: #3f3f46 !important; }
+#print-report-root .divide-zinc-800\/80 > :not([hidden]) ~ :not([hidden]),
+#print-report-root .divide-slate-800\/80 > :not([hidden]) ~ :not([hidden]) { border-color: #27272a !important; }
+#print-report-root .border-b { border-bottom-width: 1px !important; }
+#print-report-root .border { border-width: 1px !important; }
+
+
+

@@ -1,0 +1,143 @@
+{
+  "entities": {
+    "Trade": {
+      "title": "Trade",
+      "description": "Trading journal trade record",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "symbol": { "type": "string" },
+        "direction": { "type": "string", "enum": ["LONG", "SHORT"] },
+        "entryDate": { "type": "string" },
+        "entryTime": { "type": "string" },
+        "entryPrice": { "type": "number" },
+        "exitPrice": { "type": "number" },
+        "quantity": { "type": "number" },
+        "pnl": { "type": "number" },
+        "status": { "type": "string", "enum": ["WIN", "LOSS", "BREAKEVEN"] },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["userId", "symbol", "direction", "entryDate", "createdAt"]
+    },
+    "Note": {
+      "title": "Note",
+      "description": "Trading note",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["userId", "title", "createdAt", "updatedAt"]
+    },
+    "Journal": {
+      "title": "Journal",
+      "description": "Trading daily journal entry",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "date": { "type": "string" },
+        "mood": { "type": "string" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["userId", "date", "createdAt"]
+    },
+    "Certificate": {
+      "title": "Certificate",
+      "description": "Funded accounts, phases and payout certificates",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "type": { "type": "string", "enum": ["PHASE", "PAYOUT"] },
+        "date": { "type": "string" },
+        "description": { "type": "string" },
+        "amount": { "type": "number" },
+        "image": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["userId", "title", "type", "date", "createdAt"]
+    },
+    "PortfolioTransaction": {
+      "title": "PortfolioTransaction",
+      "description": "Portfolio asset transaction record",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "assetId": { "type": "string" },
+        "symbol": { "type": "string" },
+        "category": { "type": "string" },
+        "type": { "type": "string", "enum": ["BUY", "SELL", "DEPOSIT", "WITHDRAW"] },
+        "date": { "type": "string" },
+        "amount": { "type": "number" },
+        "price": { "type": "number" },
+        "total": { "type": "number" },
+        "fee": { "type": "number" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["userId", "assetId", "symbol", "category", "type", "date", "amount", "total", "createdAt"]
+    },
+    "Setting": {
+      "title": "Setting",
+      "description": "User preferences and tags",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "platforms": { "type": "array" },
+        "timeframes": { "type": "array" },
+        "htfTimeframes": { "type": "array" },
+        "confirmations": { "type": "array" },
+        "concepts": { "type": "array" },
+        "sessions": { "type": "array" },
+        "assets": { "type": "array" }
+      },
+      "required": ["userId"]
+    },
+    "PortfolioSetting": {
+      "title": "PortfolioSetting",
+      "description": "Portfolio configuration and assets",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "assets": { "type": "array" },
+        "cashBalances": { "type": "object" },
+        "selectedCurrency": { "type": "string" }
+      },
+      "required": ["userId"]
+    }
+  },
+  "firestore": {
+    "/trades/{tradeId}": {
+      "schema": { "$ref": "#/entities/Trade" },
+      "description": "User trading journal trades"
+    },
+    "/notes/{noteId}": {
+      "schema": { "$ref": "#/entities/Note" },
+      "description": "User trading notes"
+    },
+    "/journals/{journalId}": {
+      "schema": { "$ref": "#/entities/Journal" },
+      "description": "User daily journal entries"
+    },
+    "/certificates/{certificateId}": {
+      "schema": { "$ref": "#/entities/Certificate" },
+      "description": "User funded certificates and payouts"
+    },
+    "/portfolioTransactions/{transactionId}": {
+      "schema": { "$ref": "#/entities/PortfolioTransaction" },
+      "description": "User portfolio transaction history"
+    },
+    "/settings/{userId}": {
+      "schema": { "$ref": "#/entities/Setting" },
+      "description": "User settings and custom tags"
+    },
+    "/portfolioSettings/{userId}": {
+      "schema": { "$ref": "#/entities/PortfolioSetting" },
+      "description": "User portfolio settings and balances"
+    }
+  }
+}

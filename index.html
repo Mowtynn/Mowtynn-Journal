@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      (function() {
+        function isNoise(msg) {
+          if (!msg) return false;
+          var str = String(msg).toLowerCase();
+          return (
+            str.indexOf('cannot listen to the event from the provided iframe') !== -1 ||
+            str.indexOf('contentwindow is not available') !== -1 ||
+            str.indexOf('speechsynthesis') !== -1 ||
+            str.indexOf('speech synthesis') !== -1 ||
+            str === 'script error.' ||
+            str.indexOf('script error.') !== -1
+          );
+        }
+
+        window.addEventListener('error', function(event) {
+          var msg = event.message || (event.error && (event.error.message || event.error.stack)) || '';
+          if (isNoise(msg)) {
+            event.preventDefault();
+            event.stopPropagation();
+            if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+            return true;
+          }
+        }, true);
+
+        window.addEventListener('unhandledrejection', function(event) {
+          var reason = event.reason;
+          var msg = (reason && (reason.message || reason.stack)) || String(reason || '');
+          if (isNoise(msg)) {
+            event.preventDefault();
+            event.stopPropagation();
+            if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+          }
+        }, true);
+      })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="preconnect" href="https://s3.tradingview.com" crossorigin />
+    <link rel="preconnect" href="https://www.tradingview-widget.com" crossorigin />
+    
+    <meta name="theme-color" content="#000000" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Trading Journal" />
+    <link rel="icon" type="image/svg+xml" href="/tj-icon-v5.svg" />
+    <link rel="apple-touch-icon" href="/tj-icon-v5-180.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/tj-icon-v5-180.png" />
+    <link rel="icon" type="image/x-icon" href="/tj-icon-v5.ico" />
+    <link rel="icon" type="image/png" sizes="64x64" href="/tj-icon-v5-64.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/tj-icon-v5-192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/tj-icon-v5-512.png" />
+    <title>Trading Journal</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
