@@ -203,7 +203,7 @@ export function PasswordGate({ children }: PasswordGateProps) {
             Trading Journal
           </h1>
           <p className="text-xs text-zinc-500 font-mono mt-1 uppercase tracking-widest">
-            Restricted Access
+            Kısıtlı Erişim
           </p>
         </div>
 
@@ -253,7 +253,7 @@ export function PasswordGate({ children }: PasswordGateProps) {
                       onChange={() => setRememberMe(false)}
                     />
                     <div className="flex flex-col">
-                      <span className={`font-medium text-xs ${!rememberMe ? 'text-zinc-200' : 'text-zinc-400'}`}>Sadece Bu Oturum</span>
+                      <span className={`font-medium text-xs ${!rememberMe ? 'text-zinc-200' : 'text-zinc-400'}`}>Tek Seferlik Giriş</span>
                     </div>
                   </label>
                   
@@ -268,7 +268,7 @@ export function PasswordGate({ children }: PasswordGateProps) {
                       onChange={() => setRememberMe(true)}
                     />
                     <div className="flex flex-col">
-                      <span className={`font-medium text-xs ${rememberMe ? 'text-zinc-200' : 'text-zinc-400'}`}>Bu Cihazda Hatırla</span>
+                      <span className={`font-medium text-xs ${rememberMe ? 'text-zinc-200' : 'text-zinc-400'}`}>Beni Hatırla</span>
                     </div>
                   </label>
                 </div>
