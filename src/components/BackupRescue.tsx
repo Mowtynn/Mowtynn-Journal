@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Download, Upload, Database, AlertTriangle, Cloud, X, CheckCircle2 } from 'lucide-react';
 import { Trade, Note, Certificate } from '../types';
+import { useAppStore } from '../store/useAppStore';
 
 function getLocalStorageUsage() {
   if (typeof window === 'undefined' || !window.localStorage) {
@@ -71,6 +72,7 @@ const BackupRescue = React.memo(function BackupRescue({
   const [confirmInput, setConfirmInput] = useState('');
   const [isWiping, setIsWiping] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { isQuantMode } = useAppStore();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -286,7 +288,7 @@ const BackupRescue = React.memo(function BackupRescue({
   return (
     <div id="settings-backup-panel" className="bg-zinc-950/40 border border-zinc-800/80 rounded-2xl p-4 sm:p-6 mt-6 shadow-xl">
       <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-2 mb-4">
-        <Database size={14} className="text-blue-400" /> Veritabanı ve Yedekleme (Güvenlik)
+        <Database size={14} className="text-blue-400" /> {isQuantMode ? "DATABASE & DATA INTEGRITY REGISTRY" : "Veritabanı ve Yedekleme (Güvenlik)"}
       </h2>
 
       {successMsg && (
@@ -302,10 +304,10 @@ const BackupRescue = React.memo(function BackupRescue({
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+      <div className={`grid grid-cols-1 md:${isQuantMode ? 'grid-cols-2' : 'grid-cols-3'} gap-4 mb-4`}>
         <div className="bg-zinc-950/80 border border-zinc-800/80 rounded-xl p-4 flex flex-col justify-between shadow-md">
           <div>
-            <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest block mb-1.5 font-sans">Depolama Durumu</span>
+            <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest block mb-1.5 font-sans">{isQuantMode ? "Allocated Cloud Memory" : "Depolama Durumu"}</span>
             <div className="flex flex-col gap-1.5 mb-1">
               <div className="flex justify-between items-center text-[11px] pb-1.5 border-b border-zinc-800">
                 <span className="text-zinc-400">Kullanılan Alan (Yerel):</span>
@@ -323,89 +325,101 @@ const BackupRescue = React.memo(function BackupRescue({
           </p>
         </div>
 
-        <div className="bg-zinc-950/80 border border-zinc-800/80 rounded-xl p-4 flex flex-col justify-between shadow-md">
-          <div>
-            <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest block mb-1.5">Günlüğü Yedekle</span>
-            <p className="text-[10px] text-zinc-400 leading-relaxed">
-              Kayıtlı kullanıcılar için veriler Google Cloud altyapısında (Firebase) gerçek zamanlı yedeklenir ve korunur. Alternatif olarak çevrimdışı arşivleme ve taşıma için aşağıdaki butonu kullanarak tüm işlem, not, günlük, sertifika ve ayarlarınızı indirebilirsiniz.
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-1.5 mt-3">
-            <button
-              type="button"
-              onClick={handleExport}
-              disabled={trades.length === 0 && notes.length === 0 && journals.length === 0 && certificates.length === 0}
-              className="h-8 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800/80 text-zinc-100 text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors duration-200 ease-out disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-xs"
-            >
-              <Download size={12} className="text-blue-400" /> Yedek İndir (JSON)
-            </button>
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="h-8 rounded-lg bg-zinc-900/50 hover:bg-zinc-800 border border-zinc-800/60 text-zinc-400 hover:text-zinc-200 text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors duration-200 ease-out cursor-pointer shadow-xs"
-            >
-              <Upload size={12} /> Yedekten Veri Yükle
-            </button>
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleImport}
-              accept=".json"
-              className="hidden"
-            />
-          </div>
-        </div>
-
-        <div className="bg-zinc-950/80 border border-zinc-800/80 rounded-xl p-4 flex flex-col justify-between shadow-md">
-          <div>
-            <span className="text-[9px] font-bold text-rose-400 uppercase tracking-widest block mb-1.5">Tehlikeli Bölge</span>
-            <p className="text-[10px] text-zinc-400 leading-relaxed">
-              Tüm işlem kayıtlarını, notları, günlükleri, sertifikaları ve kişisel tanımlamaları kalıcı olarak siler ve sistemi ilk haline sıfırlar. Bu işlem geri alınamaz.
-            </p>
-          </div>
-
-          {!showClearConfirm ? (
-            <button
-              type="button"
-              onClick={() => setShowClearConfirm(true)}
-              className="h-8 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[10px] font-bold uppercase tracking-wider transition-colors duration-200 ease-out mt-3 cursor-pointer"
-            >
-              Verileri Sıfırla
-            </button>
-          ) : (
-            <div className="bg-rose-950/40 border border-rose-500/30 p-2.5 rounded-lg mt-2 space-y-1.5">
-              <span className="text-[9px] text-zinc-300 font-bold block font-mono">Onay için &apos;SIFIRLA&apos; yazın:</span>
-              <div className="flex gap-1.5">
-                <input
-                  type="text"
-                  placeholder="SIFIRLA"
-                  value={confirmInput}
-                  disabled={isWiping}
-                  onChange={(e) => setConfirmInput(e.target.value)}
-                  className="bg-zinc-900 border border-rose-500/40 rounded px-2 text-[10px] font-mono font-bold text-white w-full h-8 focus:outline-none"
-                />
-                <button
-                  type="button"
-                  disabled={isWiping}
-                  onClick={executeWipe}
-                  className="bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 border border-rose-500/30 font-bold text-[9px] px-3 py-1 rounded transition-colors uppercase cursor-pointer disabled:opacity-50 flex items-center justify-center min-w-[50px] active:scale-95"
-                >
-                  {isWiping ? 'Siliniyor...' : 'Sil'}
-                </button>
-                <button
-                  type="button"
-                  disabled={isWiping}
-                  onClick={() => {
-                    setShowClearConfirm(false);
-                    setConfirmInput('');
-                  }}
-                  className="bg-zinc-800 text-zinc-400 p-1.5 rounded hover:text-zinc-100 cursor-pointer"
-                >
-                  <X size={12} />
-                </button>
-              </div>
+        {!isQuantMode && (
+          <div className="bg-zinc-950/80 border border-zinc-800/80 rounded-xl p-4 flex flex-col justify-between shadow-md">
+            <div>
+              <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest block mb-1.5">Günlüğü Yedekle</span>
+              <p className="text-[10px] text-zinc-400 leading-relaxed">
+                Kayıtlı kullanıcılar için veriler Google Cloud altyapısında (Firebase) gerçek zamanlı yedeklenir ve korunur. Alternatif olarak çevrimdışı arşivleme ve taşıma için aşağıdaki butonu kullanarak tüm işlem, not, günlük, sertifika ve ayarlarınızı indirebilirsiniz.
+              </p>
             </div>
+
+            <div className="flex flex-col gap-1.5 mt-3">
+              <button
+                type="button"
+                onClick={handleExport}
+                disabled={trades.length === 0 && notes.length === 0 && journals.length === 0 && certificates.length === 0}
+                className="h-8 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800/80 text-zinc-100 text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors duration-200 ease-out disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-xs"
+              >
+                <Download size={12} className="text-blue-400" /> Yedek İndir (JSON)
+              </button>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="h-8 rounded-lg bg-zinc-900/50 hover:bg-zinc-800 border border-zinc-800/60 text-zinc-400 hover:text-zinc-200 text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors duration-200 ease-out cursor-pointer shadow-xs"
+              >
+                <Upload size={12} /> Yedekten Veri Yükle
+              </button>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleImport}
+                accept=".json"
+                className="hidden"
+              />
+            </div>
+          </div>
+        )}
+
+        <div className="bg-zinc-950/80 border border-zinc-800/80 rounded-xl p-4 flex flex-col justify-between shadow-md">
+          {isQuantMode ? (
+            <div className="h-full flex flex-col justify-center items-center text-center p-4 bg-zinc-900/50 rounded-lg border border-zinc-800">
+              <CheckCircle2 size={24} className="text-emerald-500 mb-2 opacity-50" />
+              <span className="text-[10px] font-bold text-emerald-500/80 uppercase tracking-widest block mb-1">Registry Status</span>
+              <p className="text-[11px] font-mono text-zinc-400 font-bold">Immutable / Read-Only</p>
+            </div>
+          ) : (
+            <>
+              <div>
+                <span className="text-[9px] font-bold text-rose-400 uppercase tracking-widest block mb-1.5">Tehlikeli Bölge</span>
+                <p className="text-[10px] text-zinc-400 leading-relaxed">
+                  Tüm işlem kayıtlarını, notları, günlükleri, sertifikaları ve kişisel tanımlamaları kalıcı olarak siler ve sistemi ilk haline sıfırlar. Bu işlem geri alınamaz.
+                </p>
+              </div>
+
+              {!showClearConfirm ? (
+                <button
+                  type="button"
+                  onClick={() => setShowClearConfirm(true)}
+                  className="h-8 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[10px] font-bold uppercase tracking-wider transition-colors duration-200 ease-out mt-3 cursor-pointer"
+                >
+                  Verileri Sıfırla
+                </button>
+              ) : (
+                <div className="bg-rose-950/40 border border-rose-500/30 p-2.5 rounded-lg mt-2 space-y-1.5">
+                  <span className="text-[9px] text-zinc-300 font-bold block font-mono">Onay için &apos;SIFIRLA&apos; yazın:</span>
+                  <div className="flex gap-1.5">
+                    <input
+                      type="text"
+                      placeholder="SIFIRLA"
+                      value={confirmInput}
+                      disabled={isWiping}
+                      onChange={(e) => setConfirmInput(e.target.value)}
+                      className="bg-zinc-900 border border-rose-500/40 rounded px-2 text-[10px] font-mono font-bold text-white w-full h-8 focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      disabled={isWiping}
+                      onClick={executeWipe}
+                      className="bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 border border-rose-500/30 font-bold text-[9px] px-3 py-1 rounded transition-colors uppercase cursor-pointer disabled:opacity-50 flex items-center justify-center min-w-[50px] active:scale-95"
+                    >
+                      {isWiping ? 'Siliniyor...' : 'Sil'}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isWiping}
+                      onClick={() => {
+                        setShowClearConfirm(false);
+                        setConfirmInput('');
+                      }}
+                      className="bg-zinc-800 text-zinc-400 p-1.5 rounded hover:text-zinc-100 cursor-pointer"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -475,7 +489,7 @@ const BackupRescue = React.memo(function BackupRescue({
                     </>
                   ) : (
                     <p className="text-[11px] text-emerald-500/70 leading-relaxed max-w-2xl">
-                      Mevcut veritabanında tüm işlemler istatistiksel açıdan uyumlu. Çelişen bir kayıt bulunamadı (Tüm WIN'ler pozitif R, LOSS'lar negatif R vb.). Veri sağlığı mükemmel durumda.
+                      {isQuantMode ? "Mevcut veritabanında tüm model kayıtları istatistiksel açıdan uyumlu. Çelişen bir kayıt bulunamadı (Tüm Validated çıktılar pozitif delta, Null sapmalar negatif delta olarak doğrulanmıştır.). Veri sağlığı mükemmel durumda." : "Mevcut veritabanında tüm işlemler istatistiksel açıdan uyumlu. Çelişen bir kayıt bulunamadı (Tüm WIN'ler pozitif R, LOSS'lar negatif R vb.). Veri sağlığı mükemmel durumda."}
                     </p>
                   )}
                 </div>

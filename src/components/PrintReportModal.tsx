@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Download, RefreshCw, X } from 'lucide-react';
+import { Download, RefreshCw, X, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { AuditReportModal } from "./AuditReportModal";
 import { Trade } from '../types';
 import html2canvas from 'html2canvas';
 
@@ -167,6 +168,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
 }) => {
   const reportRef = useRef<HTMLDivElement>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
 
   // Prevent body scroll when preview is open & handle ESC key
   useEffect(() => {
@@ -359,7 +361,9 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
     }
   };
 
-  return createPortal(
+  return (
+    <>
+      {createPortal(
     <AnimatePresence>
       {isOpen && (
         <motion.div
@@ -393,16 +397,24 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
 
           <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
             <button
+              onClick={() => setIsAuditModalOpen(true)}
+              title="Vergilendirme"
+              className="flex items-center justify-center w-9 h-9 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 rounded-xl transition-all duration-200 ease-out cursor-pointer shadow-xs active:scale-95"
+            >
+              <ShieldCheck size={15} />
+            </button>
+
+            <button
               onClick={handleDownloadImage}
               disabled={isGenerating}
-              className="flex items-center gap-2 px-4 py-2 text-[11px] font-bold font-mono tracking-widest uppercase bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 border border-blue-500/30 rounded-xl transition-all duration-200 ease-out cursor-pointer shadow-xs active:scale-95 disabled:opacity-50"
+              title="Görüntü Olarak İndir"
+              className="flex items-center justify-center w-9 h-9 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 border border-blue-500/30 rounded-xl transition-all duration-200 ease-out cursor-pointer shadow-xs active:scale-95 disabled:opacity-50"
             >
               {isGenerating ? (
-                <RefreshCw size={13} className="animate-spin" />
+                <RefreshCw size={15} className="animate-spin" />
               ) : (
-                <Download size={13} />
+                <Download size={15} />
               )}
-              <span>{isGenerating ? 'Hazırlanıyor...' : 'Görüntü Olarak İndir'}</span>
             </button>
             
             <button
@@ -671,5 +683,13 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
       )}
     </AnimatePresence>,
     document.body
+  )}
+      <AuditReportModal
+        isOpen={isAuditModalOpen}
+        onClose={() => setIsAuditModalOpen(false)}
+        trades={trades}
+        dateRangeText={dateRangeText}
+      />
+    </>
   );
 };

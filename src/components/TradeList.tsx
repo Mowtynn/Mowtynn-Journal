@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Trade, TradeFilter } from '../types';
+import { useAppStore } from '../store/useAppStore';
 import { 
   Search, 
   Edit3, 
@@ -235,6 +236,8 @@ interface TradeListProps {
 
 const TradeList = React.memo(function TradeList({ trades, onEdit, onDelete, onViewDetails, currency }: TradeListProps) {
   // Filters State
+  const { isQuantMode } = useAppStore();
+  
   const [filter, setFilter] = useState<TradeFilter>({
     search: '',
     status: 'ALL',
@@ -559,10 +562,10 @@ const TradeList = React.memo(function TradeList({ trades, onEdit, onDelete, onVi
               <Clock size={11} />
             </span>
             <div className="flex items-center gap-1.5 mt-[1px]">
-              <span className="leading-none flex items-center">İşlem Geçmişi</span>
+              <span className="leading-none flex items-center">{isQuantMode ? "EXECUTION & MODEL LOGS" : "İşlem Geçmişi"}</span>
             </div>
             <span className="text-[9px] font-mono bg-zinc-900 px-1.5 py-0.5 rounded border border-zinc-800 text-zinc-300 flex items-center justify-center leading-none mt-[1px]">
-              {filteredTrades.length} / {trades.length} işlem
+              {filteredTrades.length} / {trades.length} {isQuantMode ? "SAMPLES" : "işlem"}
             </span>
           </h2>
         </div>
@@ -573,7 +576,7 @@ const TradeList = React.memo(function TradeList({ trades, onEdit, onDelete, onVi
             <Search className="absolute left-2.5 top-2.5 text-zinc-500" size={12} />
             <input
               type="text"
-              placeholder="Enstrüman veya not ara..."
+              placeholder={isQuantMode ? "Search data stream or log ID..." : "Enstrüman veya not ara..."}
               value={filter.search}
               onChange={(e) => handleFilterChange({ ...filter, search: e.target.value })}
               className="w-full h-10 sm:h-8 bg-zinc-900/80 border border-zinc-800 rounded-lg pl-8 pr-3 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-700 transition duration-200 ease-out font-mono"
@@ -923,43 +926,45 @@ const TradeList = React.memo(function TradeList({ trades, onEdit, onDelete, onVi
               <thead className="sticky top-0 z-20 hidden sm:table-header-group">
                 <tr className="text-[9px] text-zinc-400 uppercase tracking-widest relative after:absolute after:inset-0 after:rounded-lg after:border after:border-zinc-800 after:pointer-events-none">
                   <th 
-                    className="py-1.5 px-3 font-mono select-none w-[18%] min-w-[130px] bg-zinc-950/40 rounded-l-lg cursor-pointer hover:text-zinc-200"
+                    className={`py-1.5 px-3 font-mono select-none min-w-[130px] bg-zinc-950/40 rounded-l-lg cursor-pointer hover:text-zinc-200 ${isQuantMode ? 'w-[20%]' : 'w-[18%]'}`}
                     onClick={() => handleFilterChange({...filter, sortBy: filter.sortBy === 'dateDes' ? 'dateAsc' : 'dateDes'})}
                   >
-                    Tarih {filter.sortBy === 'dateAsc' ? '↑' : filter.sortBy === 'dateDes' ? '↓' : ''}
+                    {isQuantMode ? "TIMESTAMP (UTC)" : "Tarih"} {filter.sortBy === 'dateAsc' ? '↑' : filter.sortBy === 'dateDes' ? '↓' : ''}
                   </th>
                   <th 
-                    className="py-1.5 px-3 font-mono select-none w-[14%] min-w-[90px] bg-zinc-950/40 cursor-pointer hover:text-zinc-200 text-left"
+                    className={`py-1.5 px-3 font-mono select-none min-w-[90px] bg-zinc-950/40 cursor-pointer hover:text-zinc-200 text-left ${isQuantMode ? 'w-[16%]' : 'w-[14%]'}`}
                     onClick={() => handleFilterChange({...filter, sortBy: filter.sortBy === 'assetAsc' ? 'assetDes' : 'assetAsc'})}
                   >
-                    Parite {filter.sortBy === 'assetAsc' ? '↑' : filter.sortBy === 'assetDes' ? '↓' : ''}
+                    {isQuantMode ? "DATA STREAM" : "Parite"} {filter.sortBy === 'assetAsc' ? '↑' : filter.sortBy === 'assetDes' ? '↓' : ''}
                   </th>
                   <th 
-                    className="py-1.5 px-2 text-center font-mono select-none w-[10%] min-w-[65px] bg-zinc-950/40 cursor-pointer hover:text-zinc-200"
+                    className={`py-1.5 px-2 text-center font-mono select-none min-w-[65px] bg-zinc-950/40 cursor-pointer hover:text-zinc-200 ${isQuantMode ? 'w-[12%]' : 'w-[10%]'}`}
                     onClick={() => handleFilterChange({...filter, sortBy: filter.sortBy === 'typeAsc' ? 'typeDes' : 'typeAsc'})}
                   >
-                    Yön {filter.sortBy === 'typeAsc' ? '↑' : filter.sortBy === 'typeDes' ? '↓' : ''}
+                    {isQuantMode ? "BIAS" : "Yön"} {filter.sortBy === 'typeAsc' ? '↑' : filter.sortBy === 'typeDes' ? '↓' : ''}
                   </th>
                   <th 
-                    className="py-1.5 px-2 text-center font-mono select-none w-[10%] min-w-[65px] bg-zinc-950/40 cursor-pointer hover:text-zinc-200"
+                    className={`py-1.5 px-2 text-center font-mono select-none min-w-[65px] bg-zinc-950/40 cursor-pointer hover:text-zinc-200 ${isQuantMode ? 'w-[12%]' : 'w-[10%]'}`}
                     onClick={() => handleFilterChange({...filter, sortBy: filter.sortBy === 'rrDes' ? 'rrAsc' : 'rrDes'})}
                   >
-                    RR {filter.sortBy === 'rrAsc' ? '↑' : filter.sortBy === 'rrDes' ? '↓' : ''}
+                    {isQuantMode ? "R:R METRIC" : "RR"} {filter.sortBy === 'rrAsc' ? '↑' : filter.sortBy === 'rrDes' ? '↓' : ''}
                   </th>
-                  <th className="py-1.5 px-2 text-center font-mono select-none w-[12%] min-w-[75px] bg-zinc-950/40">Sonuç</th>
+                  <th className={`py-1.5 px-2 text-center font-mono select-none min-w-[75px] bg-zinc-950/40 ${isQuantMode ? 'w-[14%]' : 'w-[12%]'}`}>{isQuantMode ? "VALIDATION" : "Sonuç"}</th>
                   <th 
-                    className="py-1.5 px-3 text-right font-mono select-none w-[16%] min-w-[95px] bg-zinc-950/40 cursor-pointer hover:text-zinc-200"
+                    className={`py-1.5 px-3 text-right font-mono select-none min-w-[95px] bg-zinc-950/40 cursor-pointer hover:text-zinc-200 ${isQuantMode ? 'w-[18%]' : 'w-[16%]'}`}
                     onClick={() => handleFilterChange({...filter, sortBy: filter.sortBy === 'pnlDes' ? 'pnlAsc' : 'pnlDes'})}
                   >
-                    <div className="flex items-center justify-end w-full relative"><span>Kâr/Zarar</span><span className="absolute -right-3 text-[10px] w-3 flex justify-center">{filter.sortBy === 'pnlAsc' ? '↑' : filter.sortBy === 'pnlDes' ? '↓' : ''}</span></div>
+                    <div className="flex items-center justify-end w-full relative"><span>{isQuantMode ? "DELTA OUTPUT" : "Kâr/Zarar"}</span><span className="absolute -right-3 text-[10px] w-3 flex justify-center">{filter.sortBy === 'pnlAsc' ? '↑' : filter.sortBy === 'pnlDes' ? '↓' : ''}</span></div>
                   </th>
-                  <th 
-                    className="py-1.5 px-2 text-center font-mono select-none w-[12%] min-w-[75px] bg-zinc-950/40 cursor-pointer hover:text-zinc-200"
-                    onClick={() => handleFilterChange({...filter, sortBy: filter.sortBy === 'platformDes' ? 'platformAsc' : 'platformDes'})}
-                  >
-                    Platform {filter.sortBy === 'platformAsc' ? '↑' : filter.sortBy === 'platformDes' ? '↓' : ''}
-                  </th>
-                  <th className="py-1.5 px-3 text-right font-mono select-none w-[8%] min-w-[60px] bg-zinc-950/40 rounded-r-lg">İşlem</th>
+                  {!isQuantMode && (
+                    <th 
+                      className="py-1.5 px-2 text-center font-mono select-none w-[12%] min-w-[75px] bg-zinc-950/40 cursor-pointer hover:text-zinc-200"
+                      onClick={() => handleFilterChange({...filter, sortBy: filter.sortBy === 'platformDes' ? 'platformAsc' : 'platformDes'})}
+                    >
+                      Platform {filter.sortBy === 'platformAsc' ? '↑' : filter.sortBy === 'platformDes' ? '↓' : ''}
+                    </th>
+                  )}
+                  <th className="py-1.5 px-3 text-right font-mono select-none w-[8%] min-w-[60px] bg-zinc-950/40 rounded-r-lg">{isQuantMode ? "ACTIONS" : "İşlem"}</th>
                 </tr>
               </thead>
               <AnimatePresence mode="wait" initial={false}>
@@ -1008,28 +1013,28 @@ const TradeList = React.memo(function TradeList({ trades, onEdit, onDelete, onVi
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, x: -10 }}
                       transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
-                      onClick={() => onViewDetails(trade)}
-                      className="group cursor-pointer select-none relative flex flex-wrap sm:table-row bg-zinc-950/40 sm:bg-transparent mb-2 sm:mb-0 rounded-xl sm:rounded-none border border-zinc-800/80 hover:border-blue-500/40 sm:border-none p-2 sm:p-0 align-middle"
+                      onClick={() => !isQuantMode && onViewDetails(trade)}
+                      className={`group select-none relative flex flex-wrap sm:table-row bg-zinc-950/40 sm:bg-transparent mb-2 sm:mb-0 rounded-xl sm:rounded-none border border-zinc-800/80 sm:border-none p-2 sm:p-0 align-middle ${isQuantMode ? 'cursor-default' : 'cursor-pointer hover:border-blue-500/40'}`}
                     >
-                      <td className="w-1/2 sm:w-[18%] sm:min-w-[130px] flex justify-start items-center sm:table-cell order-1 py-1 px-0 sm:px-3 text-zinc-400 group-hover:text-zinc-100 font-mono sm:bg-zinc-950/30 group-hover:bg-blue-950/10 sm:rounded-l-lg sm:border-y sm:border-l sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 align-middle">
+                      <td className={`w-1/2 min-w-[130px] flex justify-start items-center sm:table-cell order-1 py-1 px-0 sm:px-3 text-zinc-400 font-mono sm:bg-zinc-950/30 sm:rounded-l-lg sm:border-y sm:border-l sm:border-zinc-800/80 transition-colors duration-200 align-middle ${isQuantMode ? 'sm:w-[20%]' : 'sm:w-[18%] group-hover:text-zinc-100 group-hover:bg-blue-950/10 group-hover:border-blue-500/40'}`}>
                         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-0.5 sm:gap-1.5">
                           <span className="sm:hidden text-white font-bold text-xs">{trade.asset}</span>
                           <span className="text-[10px] sm:text-[10px] text-zinc-500 sm:text-zinc-400 transition-colors">{formattedDate}</span>
                         </div>
                       </td>
-                      <td className="hidden sm:table-cell sm:w-[14%] sm:min-w-[90px] py-1 px-0 sm:px-3 sm:bg-zinc-950/30 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 text-left align-middle">
+                      <td className={`hidden sm:table-cell min-w-[90px] py-1 px-0 sm:px-3 sm:bg-zinc-950/30 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 text-left align-middle ${isQuantMode ? 'sm:w-[16%]' : 'sm:w-[14%]'}`}>
                         <span className="text-white font-bold text-[10px]">{trade.asset}</span>
                       </td>
-                      <td className="w-1/2 sm:w-[10%] sm:min-w-[65px] flex justify-end sm:justify-center items-center sm:table-cell order-2 py-1 px-0 sm:px-2 text-center sm:bg-zinc-950/30 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 align-middle">
+                      <td className={`w-1/2 min-w-[65px] flex justify-end sm:justify-center items-center sm:table-cell order-2 py-1 px-0 sm:px-2 text-center sm:bg-zinc-950/30 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 align-middle ${isQuantMode ? 'sm:w-[12%]' : 'sm:w-[10%]'}`}>
                         <div className="flex items-center justify-center w-full">
                           {trade.type === 'LONG' ? (
-                            <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded-full uppercase tracking-wider font-mono transition-colors">LONG</span>
+                            <span className={`inline-flex items-center justify-center h-[20px] px-2 py-0 text-center text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded-full uppercase tracking-wider font-mono transition-colors ${isQuantMode ? 'w-auto' : 'w-[46px] sm:w-[54px]'}`}>{isQuantMode ? 'BULLISH' : 'LONG'}</span>
                           ) : (
-                            <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 group-hover:border-rose-500/50 rounded-full uppercase tracking-wider font-mono transition-colors">SHORT</span>
+                            <span className={`inline-flex items-center justify-center h-[20px] px-2 py-0 text-center text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 group-hover:border-rose-500/50 rounded-full uppercase tracking-wider font-mono transition-colors ${isQuantMode ? 'w-auto' : 'w-[46px] sm:w-[54px]'}`}>{isQuantMode ? 'BEARISH' : 'SHORT'}</span>
                           )}
                         </div>
                       </td>
-                      <td className="w-1/2 sm:w-[10%] sm:min-w-[65px] flex justify-start sm:justify-center items-center sm:table-cell order-3 py-1 px-0 sm:px-2 text-center sm:bg-zinc-950/30 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 align-middle">
+                      <td className={`w-1/2 min-w-[65px] flex justify-start sm:justify-center items-center sm:table-cell order-3 py-1 px-0 sm:px-2 text-center sm:bg-zinc-950/30 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 align-middle ${isQuantMode ? 'sm:w-[12%]' : 'sm:w-[10%]'}`}>
                         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-1.5 w-full justify-start sm:justify-center">
                           <span className="sm:hidden text-[9px] font-bold text-zinc-500 uppercase tracking-widest leading-none h-[10px]">RR</span>
                           <div className="flex items-center justify-center w-full h-[18px]">
@@ -1053,44 +1058,48 @@ const TradeList = React.memo(function TradeList({ trades, onEdit, onDelete, onVi
                           </div>
                         </div>
                       </td>
-                      <td className="w-1/2 sm:w-[12%] sm:min-w-[75px] flex justify-end sm:justify-center items-center sm:table-cell order-4 py-1 px-0 sm:px-2 text-center sm:bg-zinc-950/30 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 align-middle">
+                      <td className={`w-1/2 min-w-[75px] flex justify-end sm:justify-center items-center sm:table-cell order-4 py-1 px-0 sm:px-2 text-center sm:bg-zinc-950/30 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 align-middle ${isQuantMode ? 'sm:w-[14%]' : 'sm:w-[12%]'}`}>
                         <div className="flex items-center justify-center w-full h-[18px]">
                           {isWin ? (
-                            <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded-full uppercase tracking-wider font-mono transition-colors">WIN</span>
+                            <span className={`inline-flex items-center justify-center h-[20px] px-2 py-0 text-center text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded-full uppercase tracking-wider font-mono transition-colors ${isQuantMode ? 'w-auto' : 'w-[46px] sm:w-[54px]'}`}>{isQuantMode ? 'VALIDATED' : 'WIN'}</span>
                           ) : isLoss ? (
-                            <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 group-hover:border-rose-500/50 rounded-full uppercase tracking-wider font-mono transition-colors">LOSS</span>
+                            <span className={`inline-flex items-center justify-center h-[20px] px-2 py-0 text-center text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 group-hover:border-rose-500/50 rounded-full uppercase tracking-wider font-mono transition-colors ${isQuantMode ? 'w-auto max-w-[90px] leading-tight truncate px-1' : 'w-[46px] sm:w-[54px]'}`}>{isQuantMode ? 'NULL / REJECTED' : 'LOSS'}</span>
                           ) : isBe ? (
-                            <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-zinc-400 bg-zinc-500/10 border border-zinc-500/20 group-hover:border-zinc-500/50 rounded-full uppercase tracking-wider font-mono transition-colors">BE</span>
+                            <span className={`inline-flex items-center justify-center h-[20px] px-2 py-0 text-center text-[10px] font-bold text-zinc-400 bg-zinc-500/10 border border-zinc-500/20 group-hover:border-zinc-500/50 rounded-full uppercase tracking-wider font-mono transition-colors ${isQuantMode ? 'w-auto' : 'w-[46px] sm:w-[54px]'}`}>BE</span>
                           ) : (
-                            <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 group-hover:border-blue-500/50 rounded-full uppercase tracking-wider font-mono transition-colors">AÇIK</span>
+                            <span className={`inline-flex items-center justify-center h-[20px] px-2 py-0 text-center text-[10px] font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 group-hover:border-blue-500/50 rounded-full uppercase tracking-wider font-mono transition-colors ${isQuantMode ? 'w-auto' : 'w-[46px] sm:w-[54px]'}`}>AÇIK</span>
                           )}
                         </div>
                       </td>
-                      <td className={`w-full sm:w-[16%] sm:min-w-[95px] flex justify-between sm:justify-end items-center sm:table-cell order-5 py-1 px-0 sm:px-3 text-right ${pnlColor} sm:bg-zinc-950/30 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 pt-3 sm:pt-0 border-t border-zinc-800/50 align-middle`}>
-                        <span className="sm:hidden text-[10px] font-bold text-zinc-500 uppercase tracking-widest text-left font-sans">Kâr/Zarar</span>
+                      <td className={`w-full min-w-[95px] flex justify-between sm:justify-end items-center sm:table-cell order-5 py-1 px-0 sm:px-3 text-right ${pnlColor} sm:bg-zinc-950/30 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 pt-3 sm:pt-0 border-t border-zinc-800/50 align-middle ${isQuantMode ? 'sm:w-[18%]' : 'sm:w-[16%]'}`}>
+                        <span className="sm:hidden text-[10px] font-bold text-zinc-500 uppercase tracking-widest text-left font-sans">{isQuantMode ? "Delta Output" : "Kâr/Zarar"}</span>
                         <div className="flex flex-col sm:flex-row items-end sm:items-center gap-0.5 sm:gap-1.5 sm:w-full sm:justify-end">
                           <span className="text-sm sm:text-[11px] font-mono font-black">{pnlText}</span>
                         </div>
                       </td>
-                      <td className="hidden sm:table-cell sm:w-[12%] sm:min-w-[75px] py-1.5 px-2 text-center bg-zinc-950/30 group-hover:bg-blue-950/10 border-y border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 align-middle">
-                        <div className="flex items-center justify-center w-full">
-                          {trade.platform ? (
-                            <span className="inline-flex items-center justify-center min-w-[54px] max-w-[130px] h-[20px] px-2.5 py-0 text-center text-[10px] font-bold text-zinc-300 bg-zinc-800/80 border border-zinc-700/80 group-hover:border-zinc-500 rounded-full uppercase tracking-wider font-mono transition-colors whitespace-nowrap truncate" title={trade.platform}>
-                              {trade.platform}
-                            </span>
-                          ) : (
-                            <span className="text-zinc-600">—</span>
-                          )}
-                        </div>
-                      </td>
+                      {!isQuantMode && (
+                        <td className="hidden sm:table-cell sm:w-[12%] sm:min-w-[75px] py-1.5 px-2 text-center bg-zinc-950/30 group-hover:bg-blue-950/10 border-y border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 align-middle">
+                          <div className="flex items-center justify-center w-full">
+                            {trade.platform ? (
+                              <span className="inline-flex items-center justify-center min-w-[54px] max-w-[130px] h-[20px] px-2.5 py-0 text-center text-[10px] font-bold text-zinc-300 bg-zinc-800/80 border border-zinc-700/80 group-hover:border-zinc-500 rounded-full uppercase tracking-wider font-mono transition-colors whitespace-nowrap truncate" title={trade.platform}>
+                                {trade.platform}
+                              </span>
+                            ) : (
+                              <span className="text-zinc-600">—</span>
+                            )}
+                          </div>
+                        </td>
+                      )}
                       <td className="w-full sm:w-[8%] sm:min-w-[60px] flex justify-between sm:justify-end items-center sm:table-cell order-6 py-1 px-0 sm:px-3 text-right sm:bg-zinc-950/30 group-hover:bg-blue-950/10 sm:rounded-r-lg sm:border-y sm:border-r sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 sm:pt-1.5 pt-0 align-middle">
-                        <div className="sm:hidden">
-                          {trade.platform ? (
-                            <span className="inline-flex items-center justify-center min-w-[46px] max-w-[120px] h-[20px] px-2.5 py-0 text-center text-[10px] font-bold text-zinc-300 bg-zinc-800/80 border border-zinc-700/80 rounded-full uppercase tracking-wider font-mono whitespace-nowrap truncate">
-                              {trade.platform}
-                            </span>
-                          ) : null}
-                        </div>
+                        {!isQuantMode && (
+                          <div className="sm:hidden">
+                            {trade.platform ? (
+                              <span className="inline-flex items-center justify-center min-w-[46px] max-w-[120px] h-[20px] px-2.5 py-0 text-center text-[10px] font-bold text-zinc-300 bg-zinc-800/80 border border-zinc-700/80 rounded-full uppercase tracking-wider font-mono whitespace-nowrap truncate">
+                                {trade.platform}
+                              </span>
+                            ) : null}
+                          </div>
+                        )}
                         <div className="flex items-center justify-end gap-1 w-full" onClick={(e) => e.stopPropagation()}>
                           <button
                             type="button"
@@ -1141,7 +1150,7 @@ const TradeList = React.memo(function TradeList({ trades, onEdit, onDelete, onVi
             {!useVirtualScroll && filteredTrades.length > 0 && (
               <div className="flex items-center justify-between p-3 border-t border-zinc-800/80 bg-transparent rounded-b-xl mt-auto">
                 <div className="text-[10px] text-zinc-500 font-mono font-bold uppercase tracking-wider">
-                  Toplam {filteredTrades.length} İşlem ({Math.min((currentPage - 1) * itemsPerPage + 1, filteredTrades.length)} - {Math.min(currentPage * itemsPerPage, filteredTrades.length)})
+                  {isQuantMode ? "TOTAL" : "Toplam"} {filteredTrades.length} {isQuantMode ? "SAMPLES" : "İşlem"} ({Math.min((currentPage - 1) * itemsPerPage + 1, filteredTrades.length)} - {Math.min(currentPage * itemsPerPage, filteredTrades.length)})
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-mono text-zinc-400 font-bold">
@@ -1199,11 +1208,11 @@ const TradeList = React.memo(function TradeList({ trades, onEdit, onDelete, onVi
               </div>
               
               <h3 className="text-base font-bold tracking-wide text-zinc-100 uppercase text-center mb-2">
-                İşlemi Sil
+                {isQuantMode ? "DELETE DATA LOG" : "İşlemi Sil"}
               </h3>
               
               <p className="text-zinc-400 text-xs text-center mb-6 leading-relaxed font-mono">
-                <span className="font-semibold text-zinc-200">{tradeToDelete.asset}</span> ({tradeToDelete.type === 'LONG' ? 'Long' : 'Short'} - {tradeToDelete.platform || 'Platform'}) pozisyonunu silmek istediğinize emin misiniz? Bu işlem geri alınamaz.
+                <span className="font-semibold text-zinc-200">{tradeToDelete.asset}</span> ({isQuantMode ? (tradeToDelete.type === 'LONG' ? 'Bullish' : 'Bearish') : (tradeToDelete.type === 'LONG' ? 'Long' : 'Short')} - {isQuantMode ? (tradeToDelete.platform?.toUpperCase().includes('25K') ? 'Rise Works' : 'FSL PROP DMCC') : (tradeToDelete.platform || 'Platform')}) {isQuantMode ? "model kaydını silmek istediğinize emin misiniz? Bu veri kütüğü geri alınamaz." : "pozisyonunu silmek istediğinize emin misiniz? Bu işlem geri alınamaz."}
               </p>
               
               <div className="flex items-center gap-3">
@@ -1212,7 +1221,7 @@ const TradeList = React.memo(function TradeList({ trades, onEdit, onDelete, onVi
                   onClick={() => setTradeToDelete(null)}
                   className="flex-1 py-2.5 px-4 bg-zinc-800/30 hover:bg-zinc-800/60 text-zinc-300 font-mono text-[11px] font-bold uppercase tracking-widest rounded-xl border border-zinc-700/50 transition-colors duration-200 cursor-pointer"
                 >
-                  Vazgeç
+                  {isQuantMode ? "CANCEL" : "Vazgeç"}
                 </button>
                 <button
                   type="button"
@@ -1225,7 +1234,7 @@ const TradeList = React.memo(function TradeList({ trades, onEdit, onDelete, onVi
                   className="flex-1 py-2.5 px-4 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 hover:border-rose-500/40 font-mono text-[11px] font-bold uppercase tracking-widest rounded-xl transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 active:scale-95"
                 >
                   <Trash2 size={13} />
-                  <span>Evet, Sil</span>
+                  <span>{isQuantMode ? "CONFIRM DELETE" : "Evet, Sil"}</span>
                 </button>
               </div>
             </motion.div>

@@ -298,7 +298,13 @@ export default function App() {
     setGlobalSelectedTypes,
     globalDateLimit,
     setGlobalDateLimit,
+    isQuantMode,
+    setIsQuantMode,
   } = useAppStore();
+
+  useEffect(() => {
+    document.title = isQuantMode ? "Quantitative Data Registry" : "Trading Journal";
+  }, [isQuantMode]);
 
   // Custom platforms management state persistent
   const [platforms, setPlatforms] = useState<string[]>(() => {
@@ -480,6 +486,17 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
 
   // Authentication & Load database from localStorage or Firestore
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && (e.key === 'q' || e.key === 'Q' || e.key === 'a' || e.key === 'A')) {
+        e.preventDefault();
+        setIsQuantMode(!isQuantMode);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isQuantMode, setIsQuantMode]);
+
   useEffect(() => {
     const loadLocal = () => {
       try {
@@ -1633,14 +1650,16 @@ export default function App() {
               }}
             >
               <div className="h-7 w-7 rounded-full bg-blue-400 flex items-center justify-center font-black text-black font-sans text-sm select-none shadow-sm transition-transform duration-200 group-hover:scale-105 group-active:scale-95">
-                TJ
+                {isQuantMode ? "QD" : "TJ"}
               </div>
               <div className="block">
                 <h1 className="text-xs font-black tracking-wider text-zinc-100 flex items-center gap-2 uppercase transition-colors duration-200 group-hover:text-white">
-                  Trading Journal
-                  <span className="text-[10px] font-normal text-zinc-400 normal-case lowercase hidden sm:inline transition-colors duration-200 group-hover:text-zinc-300">
-                    by Mowtynn
-                  </span>
+                  {isQuantMode ? "QUANTITATIVE DATA REGISTRY" : "Trading Journal"}
+                  {!isQuantMode && (
+                    <span className="text-[10px] font-normal text-zinc-400 normal-case lowercase hidden sm:inline transition-colors duration-200 group-hover:text-zinc-300">
+                      by Mawlynn
+                    </span>
+                  )}
                 </h1>
               </div>
             </div>
@@ -1675,13 +1694,14 @@ export default function App() {
                   />
 
                   <div className="absolute right-0 top-full mt-2 w-56 bg-zinc-900 border border-zinc-800 rounded-xl shadow-md p-2 z-50 flex flex-col gap-1 text-xs animate-in fade-in zoom-in-95 duration-200 ease-out">
-                    <div className="px-2.5 py-1.5 text-[10px] font-bold text-zinc-400 uppercase tracking-wider border-b border-zinc-800 flex items-center justify-between">
-                      <span>Sistem & Ayarlar</span>
+                    <div className={`px-2.5 py-1.5 text-[10px] font-bold text-zinc-400 uppercase tracking-wider flex items-center justify-between ${isQuantMode ? 'border-b border-zinc-800/50 mb-1' : 'border-b border-zinc-800'}`}>
+                      <span>{isQuantMode ? "SYSTEM CONFIG" : "Sistem & Ayarlar"}</span>
                       <Settings size={12} className="text-zinc-500" />
                     </div>
 
                     {/* Platform Selector in Settings */}
-                    <div className="px-2 py-2 border-b border-zinc-800 mb-1">
+                    {!isQuantMode && (
+                      <div className="px-2 py-2 border-b border-zinc-800 mb-1">
                       <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5 flex items-center justify-between">
                         <span>Aktif Platform</span>
                         <Monitor size={10} className="text-zinc-500" />
@@ -1721,87 +1741,111 @@ export default function App() {
                         })}
                       </div>
                     </div>
+                  )}
 
-                    {/* 1. Filtreleme */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsSettingsOpen(false);
-                        setIsGlobalFilterModalOpen(true);
-                      }}
-                      className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg hover:bg-zinc-800 text-zinc-200 transition-colors duration-200 ease-out text-left group cursor-pointer"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Filter size={14} className="text-blue-400 group-hover:scale-110 transition-transform" />
-                        <span className="font-medium text-[11px]">Filtreleme</span>
-                      </div>
-                      {activeFilterCount > 0 ? (
-                        <span className="px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">
-                          {activeFilterCount} aktif
-                        </span>
-                      ) : (
-                        <span className="text-[10px] text-zinc-500 font-mono">Tümü</span>
-                      )}
-                    </button>
-
-                    {/* 2. Bulut & Senkronizasyon */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (user) {
-                          setShowUsername(!showUsername);
-                        } else {
-                          setIsSettingsOpen(false);
-                          setIsAuthModalOpen(true);
-                        }
-                      }}
-                      className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg hover:bg-zinc-800 text-zinc-200 transition-colors duration-200 ease-out text-left group cursor-pointer"
-                      
-                    >
-                      <div className="flex items-center gap-2">
-                        <Cloud size={14} className={user ? "text-blue-400" : "text-zinc-500"} />
-                        <div className="flex flex-col">
-                          <span className="font-medium text-[11px]">Bulut Veritabanı</span>
-                          {user && (
-                            <span className="text-[9px] text-blue-400 font-semibold truncate max-w-[100px]">
-                              {showUsername ? (user.displayName || user.email?.split('@')[0] || "Hesap") : "Kullanıcı Gizli"}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded ${
-                        user 
-                          ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" 
-                          : "bg-zinc-800 text-zinc-400"
-                      }`}>
-                        {user ? "Aktif" : "Çevrimdışı"}
-                      </span>
-                    </button>
-
-                    <div className="h-px bg-zinc-800/80 my-0.5" />
-
-                    {/* 3. Çıkış Yap / Giriş Yap */}
-                    {user ? (
-                      <button
-                        type="button"
-                        onClick={handleLogout}
-                        className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg hover:bg-rose-500/10 text-rose-400 transition-colors duration-200 ease-out text-left font-medium text-[11px] cursor-pointer"
-                      >
-                        <LogOut size={14} />
-                        <span>Çıkış Yap</span>
-                      </button>
-                    ) : (
+                  {/* 1. Filtreleme */}
+                    {!isQuantMode && (
                       <button
                         type="button"
                         onClick={() => {
                           setIsSettingsOpen(false);
-                          setIsAuthModalOpen(true);
+                          setIsGlobalFilterModalOpen(true);
                         }}
-                        className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg hover:bg-blue-600/20 text-blue-400 transition-colors duration-200 ease-out text-left font-medium text-[11px] cursor-pointer"
+                        className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg hover:bg-zinc-800 text-zinc-200 transition-colors duration-200 ease-out text-left group cursor-pointer"
                       >
-                        <LogIn size={14} />
-                        <span>Giriş Yap</span>
+                        <div className="flex items-center gap-2">
+                          <Filter size={14} className="text-blue-400 group-hover:scale-110 transition-transform" />
+                          <span className="font-medium text-[11px]">Filtreleme</span>
+                        </div>
+                        {activeFilterCount > 0 ? (
+                          <span className="px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                            {activeFilterCount} aktif
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-zinc-500 font-mono">Tümü</span>
+                        )}
                       </button>
+                    )}
+                    
+                    {/* Quant / Audit Mode Toggle */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsQuantMode(!isQuantMode);
+                      }}
+                      className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg hover:bg-zinc-800 text-zinc-200 transition-colors duration-200 ease-out text-left group cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Activity size={14} className={isQuantMode ? "text-emerald-400 group-hover:scale-110 transition-transform" : "text-zinc-500 group-hover:scale-110 transition-transform"} />
+                        <span className="font-medium text-[11px]">Quant / Audit Mode</span>
+                      </div>
+                      <div className={`w-6 h-3.5 rounded-full relative transition-colors duration-200 ${isQuantMode ? "bg-emerald-500" : "bg-zinc-700"}`}>
+                        <div className={`absolute top-0.5 left-0.5 w-2.5 h-2.5 rounded-full bg-white transition-transform duration-200 ${isQuantMode ? "translate-x-2.5" : "translate-x-0"}`} />
+                      </div>
+                    </button>
+
+                    {/* 2. Bulut & Senkronizasyon */}
+                    {!isQuantMode && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (user) {
+                              setShowUsername(!showUsername);
+                            } else {
+                              setIsSettingsOpen(false);
+                              setIsAuthModalOpen(true);
+                            }
+                          }}
+                          className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg hover:bg-zinc-800 text-zinc-200 transition-colors duration-200 ease-out text-left group cursor-pointer"
+                          
+                        >
+                          <div className="flex items-center gap-2">
+                            <Cloud size={14} className={user ? "text-blue-400" : "text-zinc-500"} />
+                            <div className="flex flex-col">
+                              <span className="font-medium text-[11px]">Bulut Veritabanı</span>
+                              {user && (
+                                <span className="text-[9px] text-blue-400 font-semibold truncate max-w-[100px]">
+                                  {showUsername ? (user.displayName || user.email?.split('@')[0] || "Hesap") : "Kullanıcı Gizli"}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded ${
+                            user 
+                              ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" 
+                              : "bg-zinc-800 text-zinc-400"
+                          }`}>
+                            {user ? "Aktif" : "Çevrimdışı"}
+                          </span>
+                        </button>
+
+                        <div className="h-px bg-zinc-800/80 my-0.5" />
+
+                        {/* 3. Çıkış Yap / Giriş Yap */}
+                        {user ? (
+                          <button
+                            type="button"
+                            onClick={handleLogout}
+                            className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg hover:bg-rose-500/10 text-rose-400 transition-colors duration-200 ease-out text-left font-medium text-[11px] cursor-pointer"
+                          >
+                            <LogOut size={14} />
+                            <span>Çıkış Yap</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsSettingsOpen(false);
+                              setIsAuthModalOpen(true);
+                            }}
+                            className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg hover:bg-blue-600/20 text-blue-400 transition-colors duration-200 ease-out text-left font-medium text-[11px] cursor-pointer"
+                          >
+                            <LogIn size={14} />
+                            <span>Giriş Yap</span>
+                          </button>
+                        )}
+                      </>
                     )}
                   </div>
                 </>
@@ -1834,86 +1878,88 @@ export default function App() {
         )}
 
         {/* VIEW TAB SELECTOR */}
-        <div className="max-w-6xl mx-auto px-4 pt-3">
-          <div className="flex border-b border-zinc-800 pb-0.5 items-center justify-between">
-            <div
-              id="navigation-tabs"
-              className="flex gap-1 overflow-x-auto whitespace-nowrap hide-scrollbar flex-1 relative"
-            >
-              {[
-                { id: "dashboard", label: "Ana Panel", icon: LayoutDashboard },
-                { id: "deep-analysis", label: "Detaylı Analiz & İnceleme", icon: BarChart3 },
-                { id: "economic-calendar", label: "Ekonomik Takvim", icon: Globe },
-                { id: "notes", label: "Notlar", icon: FileText },
-                { id: "journal", label: "Günlük", icon: Book },
-                { id: "certificates", label: "Sertifikalar", icon: Award },
-              ].map((tab) => {
-                const Icon = tab.icon;
-                const isActive = currentTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => handleTabChange(tab.id as any)}
-                    className={`relative px-3.5 py-2.5 sm:py-2 text-[10px] font-black font-mono tracking-widest uppercase rounded-t-lg transition-colors duration-150 flex items-center gap-1.5 cursor-pointer select-none ${
-                      isActive
-                        ? "text-blue-400 font-black"
-                        : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40"
-                    }`}
-                  >
-                    {isActive && (
-                      <motion.div
-                        layoutId="activeNavTabGlow"
-                        className="absolute inset-0 bg-gradient-to-b from-blue-500/15 via-blue-500/5 to-transparent rounded-t-lg border-b-2 border-blue-400 shadow-[0_4px_12px_rgba(59,130,246,0.15)]"
-                        transition={{ type: "spring", stiffness: 450, damping: 35 }}
-                      />
-                    )}
-                    <span className="relative z-10 flex items-center gap-1.5">
-                      <Icon size={12} className={isActive ? "text-blue-400" : "text-zinc-500"} />
-                      {tab.label}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-            
-            {/* Global Metric Switch */}
-            <div className="relative flex bg-zinc-950/80 border border-zinc-800 rounded-full p-0.5 ml-2 shrink-0 shadow-inner">
-              <button
-                type="button"
-                className={`relative z-10 flex items-center justify-center w-8 h-6 rounded-full transition-colors duration-150 cursor-pointer ${
-                  isRrMode ? "text-blue-400 font-extrabold" : "text-zinc-500 hover:text-zinc-300 font-medium"
-                }`}
-                onClick={() => setMode('rr')}
+        {!isQuantMode && (
+          <div className="max-w-6xl mx-auto px-4 pt-3">
+            <div className="flex border-b border-zinc-800 pb-0.5 items-center justify-between">
+              <div
+                id="navigation-tabs"
+                className="flex gap-1 overflow-x-auto whitespace-nowrap hide-scrollbar flex-1 relative"
               >
-                {isRrMode && (
-                  <motion.div
-                    layoutId="metricToggleIndicator"
-                    className="absolute inset-0 bg-zinc-800 border border-zinc-700/80 rounded-full shadow-sm"
-                    transition={{ type: "spring", stiffness: 500, damping: 35 }}
-                  />
-                )}
-                <span className="relative z-10 font-mono text-xs leading-none">R</span>
-              </button>
-              <button
-                type="button"
-                className={`relative z-10 flex items-center justify-center w-8 h-6 rounded-full transition-colors duration-150 cursor-pointer ${
-                  !isRrMode ? "text-emerald-400 font-extrabold" : "text-zinc-500 hover:text-zinc-300 font-medium"
-                }`}
-                onClick={() => setMode('pnl')}
-              >
-                {!isRrMode && (
-                  <motion.div
-                    layoutId="metricToggleIndicator"
-                    className="absolute inset-0 bg-zinc-800 border border-zinc-700/80 rounded-full shadow-sm"
-                    transition={{ type: "spring", stiffness: 500, damping: 35 }}
-                  />
-                )}
-                <span className="relative z-10 font-mono text-xs leading-none">$</span>
-              </button>
+                {[
+                  { id: "dashboard", label: "Ana Panel", icon: LayoutDashboard },
+                  { id: "deep-analysis", label: "Detaylı Analiz & İnceleme", icon: BarChart3 },
+                  { id: "economic-calendar", label: "Ekonomik Takvim", icon: Globe },
+                  { id: "notes", label: "Notlar", icon: FileText },
+                  { id: "journal", label: "Günlük", icon: Book },
+                  { id: "certificates", label: "Sertifikalar", icon: Award },
+                ].map((tab) => {
+                  const Icon = tab.icon;
+                  const isActive = currentTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => handleTabChange(tab.id as any)}
+                      className={`relative px-3.5 py-2.5 sm:py-2 text-[10px] font-black font-mono tracking-widest uppercase rounded-t-lg transition-colors duration-150 flex items-center gap-1.5 cursor-pointer select-none ${
+                        isActive
+                          ? "text-blue-400 font-black"
+                          : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40"
+                      }`}
+                    >
+                      {isActive && (
+                        <motion.div
+                          layoutId="activeNavTabGlow"
+                          className="absolute inset-0 bg-gradient-to-b from-blue-500/15 via-blue-500/5 to-transparent rounded-t-lg border-b-2 border-blue-400 shadow-[0_4px_12px_rgba(59,130,246,0.15)]"
+                          transition={{ type: "spring", stiffness: 450, damping: 35 }}
+                        />
+                      )}
+                      <span className="relative z-10 flex items-center gap-1.5">
+                        <Icon size={12} className={isActive ? "text-blue-400" : "text-zinc-500"} />
+                        {tab.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              
+              {/* Global Metric Switch */}
+              <div className="relative flex bg-zinc-950/80 border border-zinc-800 rounded-full p-0.5 ml-2 shrink-0 shadow-inner">
+                <button
+                  type="button"
+                  className={`relative z-10 flex items-center justify-center w-8 h-6 rounded-full transition-colors duration-150 cursor-pointer ${
+                    isRrMode ? "text-blue-400 font-extrabold" : "text-zinc-500 hover:text-zinc-300 font-medium"
+                  }`}
+                  onClick={() => setMode('rr')}
+                >
+                  {isRrMode && (
+                    <motion.div
+                      layoutId="metricToggleIndicator"
+                      className="absolute inset-0 bg-zinc-800 border border-zinc-700/80 rounded-full shadow-sm"
+                      transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                    />
+                  )}
+                  <span className="relative z-10 font-mono text-xs leading-none">R</span>
+                </button>
+                <button
+                  type="button"
+                  className={`relative z-10 flex items-center justify-center w-8 h-6 rounded-full transition-colors duration-150 cursor-pointer ${
+                    !isRrMode ? "text-emerald-400 font-extrabold" : "text-zinc-500 hover:text-zinc-300 font-medium"
+                  }`}
+                  onClick={() => setMode('pnl')}
+                >
+                  {!isRrMode && (
+                    <motion.div
+                      layoutId="metricToggleIndicator"
+                      className="absolute inset-0 bg-zinc-800 border border-zinc-700/80 rounded-full shadow-sm"
+                      transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                    />
+                  )}
+                  <span className="relative z-10 font-mono text-xs leading-none">$</span>
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         <div className="max-w-6xl mx-auto px-4 py-3 space-y-3 flex flex-col w-full">
           {isLoading ? (
@@ -1930,7 +1976,7 @@ export default function App() {
           ) : (
             <div className="relative">
                 <AnimatePresence mode="wait" initial={false}>
-                  {currentTab === "dashboard" ? (
+                  {currentTab === "dashboard" || isQuantMode ? (
                     <motion.div
                       key="dashboard"
                       initial={{ opacity: 0, y: 6 }}
@@ -1959,7 +2005,7 @@ export default function App() {
                           </div>
                           <div className="text-center sm:text-left">
                             <h3 className="text-xs font-bold text-zinc-100 tracking-wide uppercase font-mono group-hover:text-blue-300 transition-colors">
-                              Yeni Pozisyon Girişi Yap
+                              {isQuantMode ? "EXECUTE MODEL SIMULATION" : "Yeni Pozisyon Girişi Yap"}
                             </h3>
                           </div>
                         </div>
@@ -1968,7 +2014,7 @@ export default function App() {
                           className="w-full sm:w-auto h-9 bg-blue-500/15 hover:bg-blue-500/25 active:scale-95 text-blue-400 font-mono font-bold text-xs px-4 rounded-xl transition-all duration-200 ease-out flex items-center justify-center gap-2 shadow-xs border border-blue-500/30 uppercase tracking-wider cursor-pointer backdrop-blur-sm"
                         >
                           <Plus size={15} />
-                          İşlem Ekle
+                          {isQuantMode ? "ADD DATA LOG" : "İşlem Ekle"}
                         </button>
                       </div>
 
@@ -2117,16 +2163,18 @@ export default function App() {
               onClearAll={handleClearAll}
             />
           {/* CONTROLS AREA AND CHANNELS */}
-          <div className="flex justify-center pb-8 pt-4">
-            <button
-              type="button"
-              onClick={() => setIsPlatformMenuOpen(true)}
-              className="px-4 py-2 border border-zinc-800 hover:border-zinc-700 bg-zinc-900 hover:bg-zinc-800 rounded-xl text-xs font-bold tracking-wider uppercase font-mono transition-colors duration-155 flex items-center gap-2 cursor-pointer text-zinc-400 hover:text-zinc-100 shadow-sm hover:shadow-md"
-            >
-              <SlidersHorizontal size={14} className="text-blue-400" />
-              <span>Tanımlamaları Yönet</span>
-            </button>
-          </div>
+          {!isQuantMode && (
+            <div className="flex justify-center pb-8 pt-4">
+              <button
+                type="button"
+                onClick={() => setIsPlatformMenuOpen(true)}
+                className="px-4 py-2 border border-zinc-800 hover:border-zinc-700 bg-zinc-900 hover:bg-zinc-800 rounded-xl text-xs font-bold tracking-wider uppercase font-mono transition-colors duration-155 flex items-center gap-2 cursor-pointer text-zinc-400 hover:text-zinc-100 shadow-sm hover:shadow-md"
+              >
+                <SlidersHorizontal size={14} className="text-blue-400" />
+                <span>Tanımlamaları Yönet</span>
+              </button>
+            </div>
+          )}
         </div>
       </main>
 
@@ -2151,7 +2199,7 @@ export default function App() {
             >
               <div className="flex flex-col mb-4">
                 <h3 className="text-xl font-black text-zinc-100 flex items-center gap-2">
-                  <SlidersHorizontal className="text-blue-400" /> Tanımlamaları Yönet
+                  <SlidersHorizontal className="text-blue-400" /> {isQuantMode ? "SYSTEM PARAMETERS / CONFIG" : "Tanımlamaları Yönet"}
                 </h3>
                 <p className="text-xs text-zinc-500 mt-1">Platform, Varlık, Konsept ve diğer listeleri düzenleyin.</p>
               </div>

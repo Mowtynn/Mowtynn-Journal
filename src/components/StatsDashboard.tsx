@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { TradeStats } from '../types';
 import { useMetricMode } from '../context/MetricContext';
+import { useAppStore } from '../store/useAppStore';
 import { ValueTransition } from './ValueTransition';
 import { 
   TrendingUp, 
@@ -21,6 +22,7 @@ interface StatsDashboardProps {
 
 const StatsDashboard = React.memo(function StatsDashboard({ stats, currency }: StatsDashboardProps) {
   const { isRrMode } = useMetricMode();
+  const { isQuantMode } = useAppStore();
   
   const isPnlPositive = stats.netPnl > 0;
   const isPnlNegative = stats.netPnl < 0;
@@ -90,7 +92,7 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, currency }: S
                 <Activity size={11} className="group-hover:scale-110 transition-transform" />
               )}
             </span>
-            Net Kâr / Zarar
+            {isQuantMode ? "CUMULATIVE DELTA OUTPUT" : "Net Kâr / Zarar"}
           </p>
         </div>
 
@@ -126,7 +128,7 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, currency }: S
             </div>
             <span className="text-[10px] text-zinc-400 font-mono flex items-center gap-1">
               <span className="text-zinc-300 font-bold bg-zinc-800 px-1.5 py-0.5 rounded border border-zinc-700">{stats.closedTrades}</span>
-              İşlem
+              {isQuantMode ? "Model Samples" : "İşlem"}
             </span>
           </div>
         </div>
@@ -143,7 +145,7 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, currency }: S
             <span className="p-1 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-400">
               <Percent size={11} className="group-hover:scale-110 transition-transform" />
             </span>
-            Kazanma Oranı (WR)
+            {isQuantMode ? "MODEL HIT RATE" : "Kazanma Oranı (WR)"}
           </p>
         </div>
 
@@ -157,10 +159,10 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, currency }: S
           <div className="flex items-center justify-between gap-1 mt-1">
             <div className="flex items-center gap-1.5">
               <span className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold font-mono py-0.5 px-2 rounded-lg">
-                {stats.winningTrades} Win
+                {stats.winningTrades} {isQuantMode ? "Validated" : "Win"}
               </span>
               <span className="bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[10px] font-bold font-mono py-0.5 px-2 rounded-lg">
-                {stats.losingTrades} Loss
+                {stats.losingTrades} {isQuantMode ? "Null" : "Loss"}
               </span>
             </div>
             
@@ -203,7 +205,7 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, currency }: S
             <span className="p-1 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
               <TrendingUp size={11} className="group-hover:scale-110 transition-transform" />
             </span>
-            Profit Factor
+            {isQuantMode ? "EFFICIENCY INDEX" : "Profit Factor"}
           </p>
         </div>
 
@@ -218,12 +220,12 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, currency }: S
             <div className="bg-zinc-900 border border-zinc-800 py-0.5 px-2 rounded-lg flex items-center gap-1.5">
               <span className="text-[10px] font-mono font-bold text-zinc-300">
                 {stats.profitFactor >= 2.0 
-                  ? '⭐ Harika' 
+                  ? (isQuantMode ? '⭐ Optimal Convergence' : '⭐ Harika')
                   : stats.profitFactor >= 1.5 
-                    ? '🏆 Sürdürülebilir' 
+                    ? (isQuantMode ? '🏆 Sustainable' : '🏆 Sürdürülebilir')
                     : stats.profitFactor >= 1.0 
-                      ? '📈 Kazançta' 
-                      : '🚨 Riskli'}
+                      ? (isQuantMode ? '📈 Profitable' : '📈 Kazançta')
+                      : (isQuantMode ? '🚨 High Risk' : '🚨 Riskli')}
               </span>
             </div>
           </div>
@@ -241,13 +243,13 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, currency }: S
             <span className="p-1 rounded-md bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
               <Layers size={11} className="group-hover:scale-110 transition-transform" />
             </span>
-            Ortalama Beklenti
+            {isQuantMode ? "ALGORITHMIC EXPECTANCY" : "Ortalama Beklenti"}
           </p>
         </div>
 
         <div className="mt-auto space-y-1">
           <div className="flex justify-between items-center text-[10px] font-mono">
-            <span className="text-zinc-400">Ort. Win:</span>
+            <span className="text-zinc-400">{isQuantMode ? "Avg. Validated:" : "Ort. Win:"}</span>
             <span className="text-emerald-400 font-bold overflow-hidden">
               <ValueTransition modeKey={isRrMode}>
                 {isRrMode 
@@ -258,7 +260,7 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, currency }: S
             </span>
           </div>
           <div className="flex justify-between items-center text-[10px] font-mono">
-            <span className="text-zinc-400">Ort. Loss:</span>
+            <span className="text-zinc-400">{isQuantMode ? "Avg. Deviation:" : "Ort. Loss:"}</span>
             <span className="text-rose-400 font-bold overflow-hidden">
               <ValueTransition modeKey={isRrMode}>
                 {isRrMode
@@ -269,7 +271,7 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, currency }: S
             </span>
           </div>
           <div className="flex justify-between items-center text-[10px] font-mono border-t border-zinc-800/80 pt-1">
-            <span className="text-zinc-400 font-bold">Beklenti:</span>
+            <span className="text-zinc-400 font-bold">{isQuantMode ? "Net Expectancy:" : "Beklenti:"}</span>
             <span className={`font-black overflow-hidden flex flex-col items-end ${stats.expectancyRR >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
               <ValueTransition modeKey={isRrMode}>
                 {isRrMode
@@ -292,16 +294,16 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, currency }: S
             <span className="p-1 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-400">
               <Trophy size={11} className="group-hover:scale-110 transition-transform" />
             </span>
-            Parite Başarı Analizi
+            {isQuantMode ? "ASSET CORRELATION" : "Parite Başarı Analizi"}
           </p>
         </div>
         <div className="grid grid-cols-2 gap-2 mt-auto">
           <div className="bg-zinc-900 border border-emerald-500/20 rounded-lg p-2.5 flex flex-col justify-between group-hover:border-emerald-500/30 transition-all">
-            <p className="text-[9px] text-zinc-400 uppercase tracking-wider font-bold font-mono">En Verimli Parite</p>
+            <p className="text-[9px] text-zinc-400 uppercase tracking-wider font-bold font-mono">{isQuantMode ? "OPTIMAL DATA STREAM" : "En Verimli Parite"}</p>
             <p className="text-xs sm:text-sm font-bold text-emerald-400 mt-1 font-mono truncate">{stats.bestAsset || '—'}</p>
           </div>
           <div className="bg-zinc-900 border border-rose-500/20 rounded-lg p-2.5 flex flex-col justify-between group-hover:border-rose-500/30 transition-all">
-            <p className="text-[9px] text-zinc-400 uppercase tracking-wider font-bold font-mono">En Verimsiz Parite</p>
+            <p className="text-[9px] text-zinc-400 uppercase tracking-wider font-bold font-mono">{isQuantMode ? "SUBOPTIMAL DATA STREAM" : "En Verimsiz Parite"}</p>
             <p className="text-xs sm:text-sm font-bold text-rose-400 mt-1 font-mono truncate">{stats.worstAsset || '—'}</p>
           </div>
         </div>
@@ -316,13 +318,13 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, currency }: S
             <span className="p-1 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-400">
               <Calendar size={11} className="group-hover:scale-110 transition-transform" />
             </span>
-            Dönemsel Performans
+            {isQuantMode ? "TEMPORAL DELTA OUTPUT" : "Dönemsel Performans"}
           </p>
         </div>
         <div className="grid grid-cols-2 gap-2 mt-auto">
           {/* Haftalık Kâr */}
           <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-2.5 font-mono group-hover:border-zinc-700 transition-all">
-            <p className="text-[9px] text-zinc-400 uppercase tracking-wider font-bold">Haftalık Kâr / Zarar</p>
+            <p className="text-[9px] text-zinc-400 uppercase tracking-wider font-bold">{isQuantMode ? "WEEKLY DELTA OUTPUT" : "Haftalık Kâr / Zarar"}</p>
             <p className={`text-xs sm:text-sm font-bold mt-1 truncate ${
               stats.weeklyPnl > 0 ? 'text-emerald-400' : stats.weeklyPnl < 0 ? 'text-rose-400' : 'text-zinc-400'
             }`}>
@@ -332,7 +334,7 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, currency }: S
 
           {/* Aylık Kâr */}
           <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-2.5 font-mono group-hover:border-zinc-700 transition-all">
-            <p className="text-[9px] text-zinc-400 uppercase tracking-wider font-bold">Aylık Kâr / Zarar</p>
+            <p className="text-[9px] text-zinc-400 uppercase tracking-wider font-bold">{isQuantMode ? "MONTHLY DELTA OUTPUT" : "Aylık Kâr / Zarar"}</p>
             <p className={`text-xs sm:text-sm font-bold mt-1 truncate ${
               stats.monthlyPnl > 0 ? 'text-emerald-400' : stats.monthlyPnl < 0 ? 'text-rose-400' : 'text-zinc-400'
             }`}>

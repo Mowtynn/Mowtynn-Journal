@@ -12,6 +12,7 @@ interface AppState {
   globalSelectedStatuses: string[];
   globalSelectedTypes: string[];
   globalDateLimit: string;
+  isQuantMode: boolean;
   setGlobalSelectedConfirmations: (val: string[]) => void;
   setGlobalSelectedConcepts: (val: string[]) => void;
   setGlobalSelectedPlatforms: (val: string[]) => void;
@@ -22,6 +23,7 @@ interface AppState {
   setGlobalSelectedStatuses: (val: string[]) => void;
   setGlobalSelectedTypes: (val: string[]) => void;
   setGlobalDateLimit: (val: string) => void;
+  setIsQuantMode: (val: boolean) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -37,6 +39,7 @@ export const useAppStore = create<AppState>()(
       globalSelectedStatuses: [],
       globalSelectedTypes: [],
       globalDateLimit: "6m",
+      isQuantMode: false,
       
       setGlobalSelectedConfirmations: (val) => set({ globalSelectedConfirmations: val }),
       setGlobalSelectedConcepts: (val) => set({ globalSelectedConcepts: val }),
@@ -48,6 +51,7 @@ export const useAppStore = create<AppState>()(
       setGlobalSelectedStatuses: (val) => set({ globalSelectedStatuses: val }),
       setGlobalSelectedTypes: (val) => set({ globalSelectedTypes: val }),
       setGlobalDateLimit: (val) => set({ globalDateLimit: val }),
+      setIsQuantMode: (val) => set({ isQuantMode: val }),
     }),
     {
       name: 'trading_journal_filters',
