@@ -241,10 +241,10 @@ export function PasswordGate({ children }: PasswordGateProps) {
                     type="button"
                     disabled={isLockedOut || isProcessing}
                     onClick={() => setRememberMe(false)}
-                    className={`py-2 px-3 text-xs font-bold font-mono tracking-wide rounded-lg transition-all duration-150 cursor-pointer flex items-center justify-center gap-1.5 ${
+                    className={`py-2 px-3 text-xs font-bold font-mono tracking-wide rounded-lg transition-all duration-150 cursor-pointer flex items-center justify-center gap-1.5 focus:outline-none focus:ring-0 focus-visible:outline-none active:outline-none active:ring-0 select-none border ${
                       !rememberMe
-                        ? "bg-zinc-800/80 text-blue-400 border border-zinc-700/40 shadow-xs"
-                        : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/40"
+                        ? "bg-zinc-800/80 text-blue-400 border-zinc-700/40 shadow-xs"
+                        : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/40 border-transparent"
                     }`}
                   >
                     <span>Tek Seferlik Giriş</span>
@@ -253,10 +253,10 @@ export function PasswordGate({ children }: PasswordGateProps) {
                     type="button"
                     disabled={isLockedOut || isProcessing}
                     onClick={() => setRememberMe(true)}
-                    className={`py-2 px-3 text-xs font-bold font-mono tracking-wide rounded-lg transition-all duration-150 cursor-pointer flex items-center justify-center gap-1.5 ${
+                    className={`py-2 px-3 text-xs font-bold font-mono tracking-wide rounded-lg transition-all duration-150 cursor-pointer flex items-center justify-center gap-1.5 focus:outline-none focus:ring-0 focus-visible:outline-none active:outline-none active:ring-0 select-none border ${
                       rememberMe
-                        ? "bg-zinc-800/80 text-blue-400 border border-zinc-700/40 shadow-xs"
-                        : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/40"
+                        ? "bg-zinc-800/80 text-blue-400 border-zinc-700/40 shadow-xs"
+                        : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/40 border-transparent"
                     }`}
                   >
                     <span>Beni Hatırla</span>

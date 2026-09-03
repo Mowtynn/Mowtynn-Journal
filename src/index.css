@@ -153,7 +153,22 @@ td:focus,
 td:focus-visible,
 td:active,
 span:focus,
-span:active {
+span:active,
+div:focus,
+div:focus-visible,
+div:active,
+input:focus,
+input:focus-visible,
+input:active,
+textarea:focus,
+textarea:focus-visible,
+textarea:active,
+select:focus,
+select:focus-visible,
+select:active,
+*:focus,
+*:focus-visible,
+*:active {
   outline: none !important;
   box-shadow: none !important;
   -webkit-tap-highlight-color: transparent !important;

@@ -361,7 +361,6 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
                   ? 'bg-blue-500/15 border-blue-500/30 text-blue-400' 
                   : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
               }`}
-              title="Tarihe Göre Filtrele"
             >
               <CalendarIcon size={13} />
             </button>
@@ -390,7 +389,6 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
                   ? 'bg-amber-500/20 border-amber-500/40 text-amber-400' 
                   : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
               }`}
-              title="Favorileri Göster"
             >
               <Star size={13} className={showOnlyFavorites ? "fill-amber-400 text-amber-400" : ""} />
             </button>
@@ -398,7 +396,6 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
             <button
               onClick={handleCreateNew}
               className="w-7.5 h-7.5 rounded-lg bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 border border-blue-500/30 flex items-center justify-center transition-all cursor-pointer shadow-xs"
-              title="Yeni Günlük Ekle"
             >
               <Plus size={15} />
             </button>
@@ -462,14 +459,12 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
               <button 
                 onClick={() => setWeekOffset(prev => prev - 1)}
                 className="w-5 h-5 rounded flex items-center justify-center bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors border border-zinc-800"
-                title="Önceki Hafta"
               >
                 <ChevronLeft size={11} />
               </button>
               <button 
                 onClick={() => setWeekOffset(prev => prev + 1)}
                 className="w-5 h-5 rounded flex items-center justify-center bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors border border-zinc-800"
-                title="Sonraki Hafta"
               >
                 <ChevronRight size={11} />
               </button>
@@ -490,11 +485,11 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
                       setIsEditing(false);
                     }
                   }}
-                  className={`flex flex-col items-center py-1 rounded-lg transition-all ${
+                  className={`flex flex-col items-center py-1 rounded-lg transition-all border ${
                     entryForDay 
                       ? 'cursor-pointer hover:bg-zinc-800/60' 
                       : 'cursor-default opacity-60'
-                  } ${isCurrentDay ? 'bg-zinc-900/90 border border-zinc-800' : ''}`}
+                  } ${isCurrentDay ? 'bg-zinc-900/90 border-zinc-800' : 'border-transparent'}`}
                 >
                   <span className="text-[8px] font-mono font-bold text-zinc-500 uppercase">{day.shortDay}</span>
                   <div className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] my-0.5 transition-colors ${getMoodColor(day.mood)}`}>
@@ -674,7 +669,6 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
                         setEntryToDelete(activeEntry);
                       }}
                       className="p-1.5 text-rose-400 bg-rose-500/10 rounded-lg hover:bg-rose-500/20 border border-rose-500/20 transition-colors cursor-pointer"
-                      title="Sil"
                     >
                       <Trash2 size={14} />
                     </button>
@@ -732,7 +726,6 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
                                 ? 'bg-zinc-800 border-zinc-500 text-zinc-100 shadow-xs'
                                 : 'bg-zinc-950/80 border-zinc-800/80 text-zinc-500 hover:text-zinc-200 hover:border-zinc-700 hover:bg-zinc-900/80'
                             }`}
-                            title={moodLabels[mood]}
                           >
                             <span className="text-base leading-none select-none">{moodEmojis[mood]}</span>
                           </button>
@@ -831,7 +824,6 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
                       }
                     }}
                     className="flex items-center gap-1 p-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-lg text-xs font-bold transition-all cursor-pointer"
-                    title="Sil"
                   >
                     <Trash2 size={13} />
                   </button>

@@ -1096,7 +1096,6 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                       onClick={() => setAssetsPage(prev => Math.max(1, prev - 1))}
                       disabled={assetsPage <= 1}
                       className="w-6.5 h-6.5 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-400 transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed"
-                      title="Önceki Sayfa"
                     >
                       <ChevronLeft size={13} />
                     </button>
@@ -1106,7 +1105,6 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                       onClick={() => setAssetsPage(prev => Math.min(Math.ceil(processedAssets.length / 9), prev + 1))}
                       disabled={assetsPage >= Math.ceil(processedAssets.length / 9)}
                       className="w-6.5 h-6.5 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-400 transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed"
-                      title="Sonraki Sayfa"
                     >
                       <ChevronRight size={13} />
                     </button>
@@ -1150,7 +1148,6 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                   }
                 }}
                 className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium text-zinc-400 hover:text-zinc-200 bg-zinc-950 border border-zinc-800 hover:bg-transparent hover:border-zinc-700 rounded-lg transition-colors duration-150"
-                title="Tüm pariteleri genişlet veya daralt"
               >
                 <ChevronsUpDown size={13} />
                 <span>{processedDetailedRows.every(r => expandedAssets[r.asset]) ? 'Tümünü Daralt' : 'Tümünü Genişlet'}</span>
@@ -1418,7 +1415,6 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                                 setSelectedAsset(parent.asset);
                               }}
                               className="inline-flex items-center gap-1.5 text-right group-hover:text-zinc-300 transition-colors focus:outline-none focus:ring-0 outline-none select-none"
-                              title="Bu paritedeki işlemleri incele"
                             >
                               <div className="text-[11px] font-mono font-medium text-zinc-300">
                                 <span className="text-emerald-400 font-bold">{parent.wins}W</span>
@@ -1568,7 +1564,6 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                   onClick={() => setDetailedPage(prev => Math.max(1, prev - 1))}
                   disabled={detailedPage <= 1}
                   className="w-6.5 h-6.5 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-400 transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed"
-                  title="Önceki Sayfa"
                 >
                   <ChevronLeft size={13} />
                 </button>
@@ -1578,7 +1573,6 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                   onClick={() => setDetailedPage(prev => Math.min(Math.ceil(processedDetailedRows.length / 10), prev + 1))}
                   disabled={detailedPage >= Math.ceil(processedDetailedRows.length / 10)}
                   className="w-6.5 h-6.5 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-400 transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed"
-                  title="Sonraki Sayfa"
                 >
                   <ChevronRight size={13} />
                 </button>
@@ -1804,8 +1798,8 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                               </div>
                             </div>
                           </td>
-                          <td className="hidden sm:table-cell py-1.5 px-3 text-center text-zinc-400 font-medium sm:bg-transparent group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800 group-hover:border-blue-500/40 transition-colors duration-200 w-[15%] min-w-[80px]">
-                            <span className="inline-flex items-center justify-center min-w-[54px] max-w-[130px] h-[20px] px-2.5 py-0 text-center text-[10px] font-bold text-zinc-300 bg-zinc-800/80 border border-zinc-700/80 group-hover:border-zinc-500 rounded-full uppercase tracking-wider font-mono transition-colors whitespace-nowrap truncate" title={t.session || 'Diğer'}>
+                           <td className="hidden sm:table-cell py-1.5 px-3 text-center text-zinc-400 font-medium sm:bg-transparent group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800 group-hover:border-blue-500/40 transition-colors duration-200 w-[15%] min-w-[80px]">
+                            <span className="inline-flex items-center justify-center min-w-[54px] max-w-[130px] h-[20px] px-2.5 py-0 text-center text-[10px] font-bold text-zinc-300 bg-zinc-800/80 border border-zinc-700/80 group-hover:border-zinc-500 rounded-full uppercase tracking-wider font-mono transition-colors whitespace-nowrap truncate">
                               {t.session || 'Diğer'}
                             </span>
                           </td>
@@ -1833,7 +1827,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                               <span className="text-[9px] text-zinc-500 uppercase font-bold tracking-widest">Platform</span>
                             </div>
                             {t.platform ? (
-                              <span className="inline-flex items-center justify-center min-w-[54px] max-w-[130px] h-[20px] px-2.5 py-0 text-center text-[10px] font-bold text-zinc-300 bg-zinc-800/80 border border-zinc-700/80 group-hover:border-zinc-500 rounded-full uppercase tracking-wider font-mono transition-colors whitespace-nowrap truncate" title={t.platform}>
+                              <span className="inline-flex items-center justify-center min-w-[54px] max-w-[130px] h-[20px] px-2.5 py-0 text-center text-[10px] font-bold text-zinc-300 bg-zinc-800/80 border border-zinc-700/80 group-hover:border-zinc-500 rounded-full uppercase tracking-wider font-mono transition-colors whitespace-nowrap truncate">
                                 {t.platform}
                               </span>
                             ) : (
@@ -2075,8 +2069,8 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                               </div>
                             </div>
                           </td>
-                          <td className="hidden sm:table-cell py-1.5 px-3 text-center text-zinc-400 font-medium sm:bg-transparent group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800 group-hover:border-blue-500/40 transition-colors duration-200 w-[15%] min-w-[80px]">
-                            <span className="inline-flex items-center justify-center min-w-[54px] max-w-[130px] h-[20px] px-2.5 py-0 text-center text-[10px] font-bold text-zinc-300 bg-zinc-800/80 border border-zinc-700/80 group-hover:border-zinc-500 rounded-full uppercase tracking-wider font-mono transition-colors whitespace-nowrap truncate" title={t.session || 'Diğer'}>
+                           <td className="hidden sm:table-cell py-1.5 px-3 text-center text-zinc-400 font-medium sm:bg-transparent group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800 group-hover:border-blue-500/40 transition-colors duration-200 w-[15%] min-w-[80px]">
+                            <span className="inline-flex items-center justify-center min-w-[54px] max-w-[130px] h-[20px] px-2.5 py-0 text-center text-[10px] font-bold text-zinc-300 bg-zinc-800/80 border border-zinc-700/80 group-hover:border-zinc-500 rounded-full uppercase tracking-wider font-mono transition-colors whitespace-nowrap truncate">
                               {t.session || 'Diğer'}
                             </span>
                           </td>
@@ -2104,7 +2098,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                               <span className="text-[9px] text-zinc-500 uppercase font-bold tracking-widest">Platform</span>
                             </div>
                             {t.platform ? (
-                              <span className="inline-flex items-center justify-center min-w-[54px] max-w-[130px] h-[20px] px-2.5 py-0 text-center text-[10px] font-bold text-zinc-300 bg-zinc-800/80 border border-zinc-700/80 group-hover:border-zinc-500 rounded-full uppercase tracking-wider font-mono transition-colors whitespace-nowrap truncate" title={t.platform}>
+                              <span className="inline-flex items-center justify-center min-w-[54px] max-w-[130px] h-[20px] px-2.5 py-0 text-center text-[10px] font-bold text-zinc-300 bg-zinc-800/80 border border-zinc-700/80 group-hover:border-zinc-500 rounded-full uppercase tracking-wider font-mono transition-colors whitespace-nowrap truncate">
                                 {t.platform}
                               </span>
                             ) : (
@@ -2371,7 +2365,6 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                         onClick={() => setDeadZonePage(prev => Math.max(1, prev - 1))}
                         disabled={deadZonePage <= 1}
                         className="w-6.5 h-6.5 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-400 transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed"
-                        title="Önceki Sayfa"
                       >
                         <ChevronLeft size={13} />
                       </button>
@@ -2381,7 +2374,6 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                         onClick={() => setDeadZonePage(prev => Math.min(Math.ceil(processedDeadZone.length / 8), prev + 1))}
                         disabled={deadZonePage >= Math.ceil(processedDeadZone.length / 8)}
                         className="w-6.5 h-6.5 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-400 transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed"
-                        title="Sonraki Sayfa"
                       >
                         <ChevronRight size={13} />
                       </button>

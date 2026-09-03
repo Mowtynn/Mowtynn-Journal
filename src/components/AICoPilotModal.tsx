@@ -1087,7 +1087,6 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                     }, 50);
                   }}
                   className="flex items-center justify-center w-7 h-7 rounded-xl border transition-colors duration-200 cursor-pointer shrink-0 bg-rose-500/10 text-rose-400 border-rose-500/25 hover:bg-rose-500/20"
-                  title="Sohbeti Temizle"
                 >
                   <RefreshCw size={12} />
                 </button>
@@ -1299,7 +1298,6 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                         ? "bg-purple-500/15 text-purple-300 border-purple-500/30"
                         : "bg-zinc-900 hover:bg-zinc-800 text-zinc-400 border-zinc-700/50"
                     }`}
-                    title="Grafik Ekran Görüntüsü Yükle"
                   >
                     <ImageIcon size={15} />
                   </button>
@@ -1996,7 +1994,6 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                         onClick={() => setPresetPage(p => Math.max(1, p - 1))}
                         disabled={currentPage <= 1}
                         className="w-6.5 h-6.5 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-400 transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed"
-                        title="Önceki Sayfa"
                       >
                         <ChevronLeft size={13} />
                       </button>
@@ -2006,7 +2003,6 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                         onClick={() => setPresetPage(p => Math.min(totalPages, p + 1))}
                         disabled={currentPage >= totalPages}
                         className="w-6.5 h-6.5 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-400 transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed"
-                        title="Sonraki Sayfa"
                       >
                         <ChevronRight size={13} />
                       </button>

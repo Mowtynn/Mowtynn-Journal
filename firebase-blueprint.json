@@ -87,6 +87,7 @@
       "type": "object",
       "properties": {
         "userId": { "type": "string" },
+        "displayName": { "type": "string" },
         "platforms": { "type": "array" },
         "timeframes": { "type": "array" },
         "htfTimeframes": { "type": "array" },

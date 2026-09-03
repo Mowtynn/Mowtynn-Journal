@@ -47,6 +47,10 @@ import {
   SlidersHorizontal,
   Settings,
   Monitor,
+  Pencil,
+  Check,
+  X,
+  User as UserIcon,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { auth, db, logout } from "./lib/firebase";
@@ -61,7 +65,7 @@ import {
   writeBatch,
   getDocs,
 } from "firebase/firestore";
-import { onAuthStateChanged, User } from "firebase/auth";
+import { onAuthStateChanged, User, updateProfile } from "firebase/auth";
 import { uploadImageToStorage } from "./lib/storage";
 import { calculateProfitFactor, calculateExpectancy, toRR } from "./lib/statMath";
 
@@ -252,7 +256,11 @@ export default function App() {
   const [isGlobalFilterModalOpen, setIsGlobalFilterModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
   const [isCopilotOpen, setIsCopilotOpen] = useState(false);
+  const [isEditingUsername, setIsEditingUsername] = useState(false);
+  const [tempUsername, setTempUsername] = useState("");
 
   // Navigation tabs state
   const [currentTab, setCurrentTab] = useState<
@@ -558,6 +566,17 @@ export default function App() {
               if (data.concepts) persistConcepts(data.concepts, false);
               if (data.sessions) persistSessions(data.sessions, false);
               if (data.assets) persistAssets(data.assets, false);
+              if (data.displayName) {
+                setUser((prevUser) => {
+                  if (prevUser && prevUser.displayName !== data.displayName) {
+                    return {
+                      ...prevUser,
+                      displayName: data.displayName
+                    } as User;
+                  }
+                  return prevUser;
+                });
+              }
             }
           },
           (err) => console.error("Firestore read settings error", err)
@@ -779,6 +798,31 @@ export default function App() {
     }
   }, []);
 
+  const handleUpdateUsername = useCallback(async (newUsername: string) => {
+    if (!user) return;
+    const trimmed = newUsername.trim();
+    if (!trimmed) {
+      toast.error("Kullanıcı adı boş olamaz.");
+      return;
+    }
+    try {
+      await updateProfile(user, { displayName: trimmed });
+      setUser({
+        ...user,
+        displayName: trimmed
+      } as User);
+      await setDoc(doc(db, "settings", user.uid), cleanForFirestore({
+        displayName: trimmed,
+        userId: user.uid
+      }), { merge: true });
+      toast.success("Kullanıcı adı başarıyla güncellendi!");
+      setIsEditingUsername(false);
+    } catch (err) {
+      console.error("Kullanıcı adı güncellenirken hata oluştu:", err);
+      toast.error("Kullanıcı adı güncellenemedi.");
+    }
+  }, [user]);
+
   // Create or Update single trade
   const handleSaveTrade = useCallback(
     async (
@@ -978,6 +1022,22 @@ export default function App() {
     };
   }, [isSettingsOpen]);
 
+  // Close profile dropdown when clicking anywhere outside
+  useEffect(() => {
+    if (!isProfileOpen) return;
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+        setIsProfileOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside, true);
+    document.addEventListener("touchstart", handleClickOutside, true);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside, true);
+      document.removeEventListener("touchstart", handleClickOutside, true);
+    };
+  }, [isProfileOpen]);
+
   // Delete single trade
   const handleDeleteTrade = useCallback(
     async (id: string) => {
@@ -1121,7 +1181,7 @@ export default function App() {
       const now = Date.now();
       const finalEntry: JournalEntry = {
         ...entryData,
-        id: entryData.id || crypto.randomUUID(),
+        id: entryData.id || (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function" ? crypto.randomUUID() : `journal-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`),
         createdAt: (entryData as any).createdAt || now,
         updatedAt: now,
       };
@@ -1446,6 +1506,13 @@ export default function App() {
     isClearingRef.current = true;
     try {
       if (user) {
+        // Clear Firebase profile name
+        try {
+          await updateProfile(user, { displayName: "" });
+        } catch (authErr) {
+          console.error("Failed to reset auth profile displayName:", authErr);
+        }
+
         // 1. Delete all Firestore user documents across all collections in parallel batches
         const collectionsToClear = [
           "trades",
@@ -1530,6 +1597,12 @@ export default function App() {
       }
 
       // 3. Reset all React States to initial default clean state
+      if (user) {
+        setUser({
+          ...user,
+          displayName: ""
+        } as User);
+      }
       setTrades([]);
       setNotes([]);
       setJournals([]);
@@ -1737,7 +1810,6 @@ export default function App() {
                   isRrMode ? "text-blue-400" : "text-zinc-400 hover:text-zinc-200"
                 }`}
                 onClick={() => setMode('rr')}
-                title="R-Multiple Modu"
               >
                 {isRrMode && (
                   <motion.div
@@ -1754,7 +1826,6 @@ export default function App() {
                   !isRrMode ? "text-emerald-400" : "text-zinc-400 hover:text-zinc-200"
                 }`}
                 onClick={() => setMode('pnl')}
-                title="Nominal PnL ($) Modu"
               >
                 {!isRrMode && (
                   <motion.div
@@ -1778,7 +1849,6 @@ export default function App() {
                     ? "bg-zinc-800 border-zinc-600 text-blue-400 ring-1 ring-blue-500/30"
                     : "bg-zinc-900 hover:bg-zinc-800 border-zinc-700/50 hover:border-zinc-600 text-zinc-300"
                 }`}
-                title="Sistem ve Ayarlar"
               >
                 <Settings size={13} className={`transition-transform duration-200 ${isSettingsOpen ? 'rotate-45 text-blue-400' : ''}`} />
                 {activeFilterCount > 0 && (
@@ -1800,28 +1870,21 @@ export default function App() {
                     style={{ willChange: "opacity" }}
                     className="absolute right-0 top-full mt-2 w-72 bg-zinc-900 border border-zinc-700/60 rounded-2xl shadow-2xl p-2.5 z-50 flex flex-col gap-1.5 text-xs"
                   >
-                    <div className="px-3 py-2 text-[10px] font-bold font-mono text-zinc-400 uppercase tracking-wider flex items-center justify-between border-b border-zinc-700/40">
-                      <span className="flex items-center gap-1.5 text-zinc-300">
-                        <Settings size={12} className="text-blue-400" />
-                        Sistem & Ayarlar
-                      </span>
-                    </div>
-
                       {/* Platform Selector in Settings */}
                       <div className="px-2.5 py-2 border-b border-zinc-700/40 bg-zinc-950/40 rounded-xl">
-                        <label className="block text-[10px] font-bold font-mono text-zinc-400 uppercase tracking-widest mb-1.5 flex items-center justify-between">
+                        <label className="block text-[10px] font-bold font-sans text-zinc-400 uppercase tracking-widest mb-1.5 flex items-center justify-between">
                           <span className="flex items-center gap-1.5">
                             <Monitor size={11} className="text-zinc-400" />
                             Aktif Platform
                           </span>
-                          <span className="text-[9px] text-zinc-500 font-mono">
+                          <span className="text-[9px] text-zinc-500 font-sans">
                             {globalSelectedPlatforms.length === 0 ? "Tümü" : `${globalSelectedPlatforms.length} seçili`}
                           </span>
                         </label>
                         <div className="flex flex-wrap gap-1.5 pt-0.5">
                           <button
                             onClick={() => setGlobalSelectedPlatforms([])}
-                            className={`px-2.5 py-1 text-[10px] font-bold font-mono rounded-xl border transition-all cursor-pointer ${
+                            className={`px-2.5 py-1 text-[10px] font-bold font-sans rounded-xl border transition-all cursor-pointer ${
                               globalSelectedPlatforms.length === 0
                                 ? "bg-blue-500/20 border-blue-500/40 text-blue-400 shadow-xs"
                                 : "bg-zinc-950/60 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700 hover:bg-zinc-800"
@@ -1841,7 +1904,7 @@ export default function App() {
                                     setGlobalSelectedPlatforms([p]);
                                   }
                                 }}
-                                className={`px-2.5 py-1 text-[10px] font-bold font-mono rounded-xl border transition-all cursor-pointer ${
+                                className={`px-2.5 py-1 text-[10px] font-bold font-sans rounded-xl border transition-all cursor-pointer ${
                                   isSelected
                                     ? "bg-blue-500/20 border-blue-500/40 text-blue-400 shadow-xs"
                                     : "bg-zinc-950/60 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700 hover:bg-zinc-800"
@@ -1870,11 +1933,11 @@ export default function App() {
                           <span className="font-medium text-xs">Filtreleme Menüsü</span>
                         </div>
                         {activeFilterCount > 0 ? (
-                          <span className="px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                          <span className="px-1.5 py-0.5 rounded-full text-[9px] font-sans font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">
                             {activeFilterCount} aktif
                           </span>
                         ) : (
-                          <span className="text-[10px] text-zinc-500 font-mono">Tümü</span>
+                          <span className="text-[10px] text-zinc-500 font-sans">Tümü</span>
                         )}
                       </button>
 
@@ -1893,8 +1956,93 @@ export default function App() {
                         <span>Tanımlamaları Yönet</span>
                       </button>
                       
-                      {/* Bulut Veritabanı ve Hesap Durumu */}
-                      {user ? (
+                    </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Profil (Profile) Dropdown Menu */}
+            <div ref={profileRef} className="relative">
+              <button
+                type="button"
+                onClick={() => setIsProfileOpen(!isProfileOpen)}
+                className={`relative w-7 h-7 rounded-lg border transition-all duration-150 flex items-center justify-center cursor-pointer shadow-xs overflow-hidden shrink-0 ${
+                  isProfileOpen
+                    ? "bg-zinc-800 border-zinc-600 ring-1 ring-blue-500/30 text-blue-400"
+                    : "bg-zinc-900 hover:bg-zinc-800 border-zinc-700/50 hover:border-zinc-600 text-zinc-300"
+                }`}
+              >
+                {user ? (
+                  user.photoURL ? (
+                    <img
+                      src={user.photoURL}
+                      alt="Profil"
+                      referrerPolicy="no-referrer"
+                      className="w-full h-full object-cover select-none"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-zinc-800 text-zinc-300 font-bold text-[10px] select-none uppercase">
+                      {user.displayName ? user.displayName.slice(0, 2) : (user.email ? user.email.slice(0, 2) : "U")}
+                    </div>
+                  )
+                ) : (
+                  <UserIcon size={13} className="text-zinc-400" />
+                )}
+              </button>
+
+              {/* Profile Dropdown Panel */}
+              <AnimatePresence>
+                {isProfileOpen && (
+                  <motion.div 
+                    key="profile-dropdown-panel"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.15, ease: "easeOut" }}
+                    style={{ willChange: "opacity" }}
+                    className="absolute right-0 top-full mt-2 w-72 bg-zinc-900 border border-zinc-700/60 rounded-2xl shadow-2xl p-2.5 z-50 flex flex-col gap-1.5 text-xs"
+                  >
+                    {/* Bulut Veritabanı ve Hesap Durumu */}
+                    {user ? (
+                      isEditingUsername ? (
+                        <div className="w-full px-3 py-2.5 rounded-xl bg-zinc-950/40 border border-zinc-800/80 text-zinc-200">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="p-1 rounded bg-emerald-500/10 text-emerald-400">
+                              <Cloud size={12} />
+                            </div>
+                            <span className="font-semibold text-xs text-zinc-200">Kullanıcı Adı Düzenle</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="text"
+                              value={tempUsername}
+                              onChange={(e) => setTempUsername(e.target.value)}
+                              placeholder="Kullanıcı adı..."
+                              className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-hidden focus:ring-1 focus:ring-emerald-500/50"
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  handleUpdateUsername(tempUsername);
+                                } else if (e.key === "Escape") {
+                                  setIsEditingUsername(false);
+                                }
+                              }}
+                              autoFocus
+                            />
+                            <button
+                              onClick={() => handleUpdateUsername(tempUsername)}
+                              className="p-1 rounded-md bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition border border-emerald-500/20 cursor-pointer"
+                            >
+                              <Check size={12} />
+                            </button>
+                            <button
+                              onClick={() => setIsEditingUsername(false)}
+                              className="p-1 rounded-md bg-zinc-800 text-zinc-400 hover:bg-zinc-700 transition border border-zinc-700 cursor-pointer"
+                            >
+                              <X size={12} />
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
                         <div className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-zinc-950/40 border border-zinc-800/80 text-zinc-200">
                           <div className="flex items-center gap-2.5 min-w-0">
                             <div className="p-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
@@ -1902,78 +2050,90 @@ export default function App() {
                             </div>
                             <div className="flex flex-col min-w-0">
                               <span className="font-semibold text-xs text-zinc-200">Bulut Veritabanı</span>
-                              <span 
-                                className="text-[10px] text-zinc-400 font-mono truncate max-w-[130px]" 
-                                title={user.email || user.displayName || "Bağlı Hesap"}
-                              >
-                                {user.displayName || user.email || "Bağlı Hesap"}
-                              </span>
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <span 
+                                  className="text-[10px] text-zinc-400 font-sans truncate max-w-[110px]" 
+                                >
+                                  {user.displayName || user.email || "Bağlı Hesap"}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setTempUsername(user.displayName || "");
+                                    setIsEditingUsername(true);
+                                  }}
+                                  className="p-0.5 rounded text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 shrink-0 transition cursor-pointer"
+                                >
+                                  <Pencil size={10} />
+                                </button>
+                              </div>
                             </div>
                           </div>
-                          <span className="flex items-center gap-1 text-[9px] font-mono font-bold px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
+                          <span className="flex items-center gap-1 text-[9px] font-sans font-bold px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                             Aktif
                           </span>
                         </div>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsSettingsOpen(false);
-                            setIsAuthModalOpen(true);
-                          }}
-                          className="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-zinc-800/80 text-zinc-200 transition-colors duration-150 text-left group cursor-pointer"
-                        >
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <div className="p-1 rounded-lg bg-zinc-800 text-zinc-400 border border-zinc-700/50 shrink-0 group-hover:border-zinc-600 transition-colors">
-                              <Cloud size={13} />
-                            </div>
-                            <div className="flex flex-col min-w-0">
-                              <span className="font-medium text-xs text-zinc-200">Bulut Veritabanı</span>
-                              <span className="text-[10px] text-zinc-400 font-mono truncate">
-                                Çevrimdışı (Yerel Mod)
-                              </span>
-                            </div>
+                      )
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsProfileOpen(false);
+                          setIsAuthModalOpen(true);
+                        }}
+                        className="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-zinc-800/80 text-zinc-200 transition-colors duration-150 text-left group cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="p-1 rounded-lg bg-zinc-800 text-zinc-400 border border-zinc-700/50 shrink-0 group-hover:border-zinc-600 transition-colors">
+                            <Cloud size={13} />
                           </div>
-                          <span className="text-[9px] font-mono font-medium px-2 py-0.5 rounded-lg bg-zinc-800 text-zinc-400 border border-zinc-700/50 shrink-0 group-hover:border-zinc-600 transition-colors">
-                            Giriş Yap
-                          </span>
-                        </button>
-                      )}
+                          <div className="flex flex-col min-w-0">
+                            <span className="font-medium text-xs text-zinc-200">Bulut Veritabanı</span>
+                            <span className="text-[10px] text-zinc-400 font-sans truncate">
+                              Çevrimdışı (Yerel Mod)
+                            </span>
+                          </div>
+                        </div>
+                        <span className="text-[9px] font-sans font-medium px-2 py-0.5 rounded-lg bg-zinc-800 text-zinc-400 border border-zinc-700/50 shrink-0 group-hover:border-zinc-600 transition-colors">
+                          Giriş Yap
+                        </span>
+                      </button>
+                    )}
 
-                      <div className="h-px bg-zinc-700/40 my-0.5" />
+                    <div className="h-px bg-zinc-700/40 my-0.5" />
 
-                      {/* Çıkış Yap / Giriş Yap */}
-                      {user ? (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsSettingsOpen(false);
-                            handleLogout();
-                          }}
-                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-rose-500/10 text-rose-400 hover:text-rose-300 transition-colors duration-150 text-left font-medium text-xs cursor-pointer"
-                        >
-                          <div className="p-1 rounded-lg bg-rose-500/10 text-rose-400">
-                            <LogOut size={13} />
-                          </div>
-                          <span>Oturumu Kapat</span>
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsSettingsOpen(false);
-                            setIsAuthModalOpen(true);
-                          }}
-                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-blue-600/20 text-blue-400 hover:text-blue-300 transition-colors duration-150 text-left font-medium text-xs cursor-pointer"
-                        >
-                          <div className="p-1 rounded-lg bg-blue-500/10 text-blue-400">
-                            <LogIn size={13} />
-                          </div>
-                          <span>Giriş Yap / Kaydol</span>
-                        </button>
-                      )}
-                    </motion.div>
+                    {/* Çıkış Yap / Giriş Yap */}
+                    {user ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsProfileOpen(false);
+                          handleLogout();
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-rose-500/10 text-rose-400 hover:text-rose-300 transition-colors duration-150 text-left font-medium text-xs cursor-pointer"
+                      >
+                        <div className="p-1 rounded-lg bg-rose-500/10 text-rose-400">
+                          <LogOut size={13} />
+                        </div>
+                        <span>Oturumu Kapat</span>
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsProfileOpen(false);
+                          setIsAuthModalOpen(true);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-blue-600/20 text-blue-400 hover:text-blue-300 transition-colors duration-150 text-left font-medium text-xs cursor-pointer"
+                      >
+                        <div className="p-1 rounded-lg bg-blue-500/10 text-blue-400">
+                          <LogIn size={13} />
+                        </div>
+                        <span>Giriş Yap / Kaydol</span>
+                      </button>
+                    )}
+                  </motion.div>
                 )}
               </AnimatePresence>
             </div>
@@ -2294,7 +2454,8 @@ export default function App() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.15, ease: "easeOut" }}
               style={{ willChange: "opacity" }}
-              className="fixed inset-0 z-[1500] overflow-hidden bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4"
+              onClick={handleCancelEdit}
+              className="fixed inset-0 z-[1500] overflow-hidden bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 cursor-pointer"
             >
               <motion.div
                 initial={{ opacity: 0 }}
@@ -2302,7 +2463,8 @@ export default function App() {
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.15, ease: "easeOut" }}
                 style={{ willChange: "opacity" }}
-                className="w-full max-w-2xl max-h-[95vh] overflow-y-auto bg-zinc-900 border border-zinc-700/50 rounded-2xl relative shadow-2xl custom-scrollbar"
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-2xl max-h-[95vh] overflow-y-auto bg-zinc-900 border border-zinc-700/50 rounded-2xl relative shadow-2xl custom-scrollbar cursor-default"
               >
                 <AddTradeForm
                   onSave={handleSaveTradeAndClose}
