@@ -197,7 +197,7 @@ export function PasswordGate({ children }: PasswordGateProps) {
             TJ
           </div>
           <h1 className="text-xl font-bold tracking-wide text-zinc-100 uppercase">
-            Trading Journal
+            TRADING JOURNAL
           </h1>
           <p className="text-xs text-zinc-500 font-mono mt-1 uppercase tracking-widest">
             Kısıtlı Erişim

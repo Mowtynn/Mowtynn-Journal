@@ -1254,16 +1254,12 @@ export default function App() {
           ...processedCert,
           userId: user.uid,
         }))
-          .then(() => {
-            toast.success("Sertifika başarıyla kaydedildi.");
-          })
           .catch((err) => {
             console.error("Failed to save certificate to cloud:", err);
             toast.error("Bulut kaydında gecikme oluştu, verileriniz yerel olarak korundu.");
           });
-      } else {
-        toast.success("Sertifika yerel olarak kaydedildi.");
       }
+      toast.success("Sertifika başarıyla kaydedildi.");
     },
     [user]
   );
@@ -1281,19 +1277,15 @@ export default function App() {
       });
       
       if (user) {
-        try {
-          await deleteDoc(doc(db, "certificates", id));
-          toast.success("Sertifika başarıyla silindi.");
-        } catch (err) {
+        deleteDoc(doc(db, "certificates", id)).catch((err) => {
           console.error("Failed to delete certificate from cloud", err);
           toast.error("Buluttan silinirken hata oluştu.");
           if (deletedCert) {
             setCertificates(current => [...current, deletedCert].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
           }
-        }
-      } else {
-        toast.success("Sertifika yerel olarak silindi.");
+        });
       }
+      toast.success("Sertifika başarıyla silindi.");
     },
     [user, certificates],
   );
@@ -1720,7 +1712,7 @@ export default function App() {
               </div>
               <div className="flex items-baseline gap-2">
                 <h1 className="text-xs font-bold tracking-tight text-zinc-100 uppercase">
-                  Trading Journal
+                  TRADING JOURNAL
                 </h1>
                 <span className="text-[11px] font-medium tracking-normal text-zinc-400 italic">
                   by Mowtynn
