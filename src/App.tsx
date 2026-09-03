@@ -239,6 +239,7 @@ const getMinTimestamp = (limit: string): number => {
 
 export default function App() {
   const { isRrMode, setMode } = useMetricMode();
+  const isClearingRef = useRef(false);
   // Trade Ledger Database State
   const [trades, setTrades] = useLocalStorageState<Trade[]>("trading_journal_db", []);
   const [notes, setNotes] = useLocalStorageState<Note[]>("trading_journal_notes", []);
@@ -670,6 +671,9 @@ export default function App() {
           cloudCertificates.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
           
           setCertificates((prevLocal) => {
+            if (isClearingRef.current) {
+              return [];
+            }
             const cloudIds = new Set(cloudCertificates.map((c) => c.id));
             const unsyncedLocal = prevLocal.filter((c) => !cloudIds.has(c.id));
 
@@ -1439,6 +1443,7 @@ export default function App() {
 
   // Clear all database & project data
   const handleClearAll = useCallback(async () => {
+    isClearingRef.current = true;
     try {
       if (user) {
         // 1. Delete all Firestore user documents across all collections in parallel batches
@@ -1564,6 +1569,8 @@ export default function App() {
     } catch (err) {
       console.error("Sıfırlama hatası:", err);
       toast.error("Veriler sıfırlanırken bir hata oluştu.");
+    } finally {
+      isClearingRef.current = false;
     }
   }, [
     user,
@@ -1711,7 +1718,7 @@ export default function App() {
                 TJ
               </div>
               <div className="flex items-baseline gap-2">
-                <h1 className="text-xs font-bold tracking-tight text-zinc-100 uppercase">
+                <h1 className="text-xs font-bold tracking-tight text-zinc-100">
                   TRADING JOURNAL
                 </h1>
                 <span className="text-[11px] font-medium tracking-normal text-zinc-400 italic">

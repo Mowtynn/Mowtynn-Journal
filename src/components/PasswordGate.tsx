@@ -196,7 +196,7 @@ export function PasswordGate({ children }: PasswordGateProps) {
           <div className="h-11 w-11 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center font-black text-blue-400 font-sans text-lg select-none mb-4">
             TJ
           </div>
-          <h1 className="text-xl font-bold tracking-wide text-zinc-100 uppercase">
+          <h1 className="text-xl font-bold tracking-wide text-zinc-100">
             TRADING JOURNAL
           </h1>
           <p className="text-xs text-zinc-500 font-mono mt-1 uppercase tracking-widest">
