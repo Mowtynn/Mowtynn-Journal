@@ -1,16 +1,12 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Trade, TradeFilter } from '../types';
-import { useAppStore } from '../store/useAppStore';
 import { 
   Search, 
   Edit3, 
   Trash2, 
   Clock,
-  CheckCircle2,
-  
   Filter,
-  X,
   ChevronLeft,
   ChevronRight,
   Zap,
@@ -21,6 +17,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { PrintReportModal } from './PrintReportModal';
+import { TurkishDatePicker } from './TurkishDateTimePicker';
 
 interface CustomSelectOption {
   value: string;
@@ -67,7 +64,7 @@ const CustomSelect = React.memo(function CustomSelect({ value, onChange, options
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full h-10 sm:h-8 bg-zinc-950 hover:bg-zinc-900 border border-zinc-800 hover:border-zinc-700/80 rounded-lg px-2.5 text-[10px] text-zinc-300 font-bold flex items-center justify-between transition-colors duration-200 ease-out cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500/20"
+        className="w-full h-10 sm:h-8 bg-zinc-950 hover:bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm hover:border-zinc-700/80 rounded-xl px-2.5 text-[10px] text-zinc-300 font-bold flex items-center justify-between transition-colors duration-200 ease-out cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500/20"
       >
         <span className="truncate">{selectedOption ? selectedOption.label : placeholder}</span>
         <ChevronDown size={11} className={`text-zinc-500 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180 text-blue-400' : ''}`} />
@@ -76,11 +73,11 @@ const CustomSelect = React.memo(function CustomSelect({ value, onChange, options
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 4, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 4, scale: 0.98 }}
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 4 }}
             transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
-            className="absolute z-50 mt-1 w-full max-h-56 overflow-y-auto bg-zinc-950 border border-zinc-800 rounded-lg shadow-md py-1 custom-scrollbar"
+            className="absolute z-50 mt-1 w-full max-h-56 overflow-y-auto bg-zinc-950 border border-zinc-800 rounded-xl shadow-md py-1 custom-scrollbar"
           >
             {options.map((option) => (
               <button
@@ -155,7 +152,7 @@ const CustomComboBox = React.memo(function CustomComboBox({ value, onChange, opt
 
   return (
     <div className={`relative ${isOpen ? 'z-50' : 'z-10'} ${className}`} ref={dropdownRef}>
-      <div className="relative w-full h-10 sm:h-8 bg-zinc-950 hover:bg-zinc-900 border border-zinc-800 hover:border-zinc-700/80 rounded-lg flex items-center transition-colors duration-200 ease-out focus-within:ring-1 focus-within:ring-blue-500/20 focus-within:border-blue-500/40">
+      <div className="relative w-full h-10 sm:h-8 bg-zinc-950 hover:bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm hover:border-zinc-700/80 rounded-xl flex items-center transition-colors duration-200 ease-out focus-within:ring-1 focus-within:ring-blue-500/20 focus-within:border-blue-500/40">
         <input
           type="text"
           value={search}
@@ -181,11 +178,11 @@ const CustomComboBox = React.memo(function CustomComboBox({ value, onChange, opt
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 4, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 4, scale: 0.98 }}
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 4 }}
             transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
-            className="absolute z-50 mt-1 w-full max-h-56 overflow-y-auto bg-zinc-950 border border-zinc-800 rounded-lg shadow-md py-1 custom-scrollbar"
+            className="absolute z-50 mt-1 w-full max-h-56 overflow-y-auto bg-zinc-950 border border-zinc-800 rounded-xl shadow-md py-1 custom-scrollbar"
           >
             {filteredOptions.length === 0 ? (
               <button
@@ -236,7 +233,6 @@ interface TradeListProps {
 
 const TradeList = React.memo(function TradeList({ trades, onEdit, onDelete, onViewDetails, currency }: TradeListProps) {
   // Filters State
-  const { isQuantMode } = useAppStore();
   
   const [filter, setFilter] = useState<TradeFilter>({
     search: '',
@@ -553,19 +549,19 @@ const TradeList = React.memo(function TradeList({ trades, onEdit, onDelete, onVi
   };
 
   return (
-    <div id="trades-history-section" className="bg-zinc-950/60 border border-zinc-800/80 rounded-xl p-4 flex flex-col shadow-sm">
+    <div id="trades-history-section" className="bg-zinc-950/60 border border-zinc-800/80 rounded-2xl p-4 sm:p-5 flex flex-col shadow-sm">
       {/* HEADER WITH SEARCH BAR */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
         <div>
           <h2 className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-2 font-mono">
-            <span className="p-1 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-400">
+            <span className="p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400">
               <Clock size={11} />
             </span>
             <div className="flex items-center gap-1.5 mt-[1px]">
-              <span className="leading-none flex items-center">{isQuantMode ? "EXECUTION & MODEL LOGS" : "İşlem Geçmişi"}</span>
+              <span className="leading-none flex items-center">{"İşlem Geçmişi"}</span>
             </div>
-            <span className="text-[9px] font-mono bg-zinc-900 px-1.5 py-0.5 rounded border border-zinc-800 text-zinc-300 flex items-center justify-center leading-none mt-[1px]">
-              {filteredTrades.length} / {trades.length} {isQuantMode ? "SAMPLES" : "işlem"}
+            <span className="text-[9px] font-mono bg-zinc-900 px-2 py-0.5 rounded-lg border border-zinc-800 text-zinc-300 flex items-center justify-center leading-none mt-[1px]">
+              {filteredTrades.length} / {trades.length} {"işlem"}
             </span>
           </h2>
         </div>
@@ -576,16 +572,16 @@ const TradeList = React.memo(function TradeList({ trades, onEdit, onDelete, onVi
             <Search className="absolute left-2.5 top-2.5 text-zinc-500" size={12} />
             <input
               type="text"
-              placeholder={isQuantMode ? "Search data stream or log ID..." : "Enstrüman veya not ara..."}
+              placeholder={"Enstrüman veya not ara..."}
               value={filter.search}
               onChange={(e) => handleFilterChange({ ...filter, search: e.target.value })}
-              className="w-full h-10 sm:h-8 bg-zinc-900/80 border border-zinc-800 rounded-lg pl-8 pr-3 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-700 transition duration-200 ease-out font-mono"
+              className="w-full h-10 sm:h-8 bg-zinc-900/80 border border-zinc-800 rounded-xl pl-8 pr-3 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-700 transition duration-200 ease-out font-mono"
             />
           </div>
 
           <button
             onClick={() => setIsFilterOpen(!isFilterOpen)}
-            className={`flex items-center justify-center w-10 sm:w-8 h-10 sm:h-8 rounded-lg border transition-all duration-200 ${
+            className={`flex items-center justify-center w-10 sm:w-8 h-10 sm:h-8 rounded-xl border transition-all duration-200 ${
               isFilterOpen 
                 ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' 
                 : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800/80 hover:text-zinc-200'
@@ -601,7 +597,7 @@ const TradeList = React.memo(function TradeList({ trades, onEdit, onDelete, onVi
           <div className="relative" ref={exportRef}>
             <button
               onClick={() => setIsExportOpen(!isExportOpen)}
-              className={`flex items-center justify-center w-10 sm:w-8 h-10 sm:h-8 rounded-lg border transition-all duration-200 shrink-0 cursor-pointer ${
+              className={`flex items-center justify-center w-10 sm:w-8 h-10 sm:h-8 rounded-xl border transition-all duration-200 shrink-0 cursor-pointer ${
                 isExportOpen
                   ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
                   : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800/80 hover:text-zinc-200'
@@ -613,11 +609,11 @@ const TradeList = React.memo(function TradeList({ trades, onEdit, onDelete, onVi
             <AnimatePresence>
               {isExportOpen && (
                 <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95, y: 5 }}
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 4 }}
                   transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
-                  className="absolute right-0 mt-2 min-w-[260px] bg-zinc-900 border border-zinc-700 rounded-xl shadow-sm z-50 py-1.5 overflow-hidden"
+                  className="absolute right-0 mt-2 min-w-[260px] bg-zinc-900 border border-zinc-700/80 rounded-2xl shadow-xl z-50 py-2 overflow-hidden"
                 >
                   <div className="px-3 py-1 text-[9px] font-black tracking-widest text-zinc-500 uppercase border-b border-zinc-800 mb-1">
                     PDF RAPOR SECENEKLERI
@@ -652,7 +648,7 @@ const TradeList = React.memo(function TradeList({ trades, onEdit, onDelete, onVi
                   <div className="border-t border-zinc-800 my-1"></div>
 
                   <div className="px-3 py-2">
-                    <div className="flex items-center gap-1.5 bg-zinc-950 border border-zinc-700/80 rounded-lg px-2 py-1 text-xs text-zinc-200">
+                    <div className="flex items-center gap-1.5 bg-zinc-950 border border-zinc-700/80 rounded-xl px-2 py-1 text-xs text-zinc-200">
                       <span className="text-zinc-400 text-[10px] font-medium whitespace-nowrap">Son</span>
                       <input
                         type="number"
@@ -661,7 +657,7 @@ const TradeList = React.memo(function TradeList({ trades, onEdit, onDelete, onVi
                         value={customLastCount}
                         onChange={(e) => setCustomLastCount(e.target.value)}
                         onClick={(e) => e.stopPropagation()}
-                        className="w-10 bg-zinc-900 border border-zinc-700 text-center text-blue-400 font-bold rounded py-0.5 text-[11px] focus:outline-none focus:border-blue-500"
+                        className="w-10 bg-zinc-900 border border-zinc-700 text-center text-blue-400 font-bold rounded-lg py-0.5 text-[11px] focus:outline-none focus:border-blue-500"
                       />
                       <span className="text-zinc-400 text-[10px] font-medium whitespace-nowrap">işlem raporu</span>
                       <button
@@ -678,7 +674,7 @@ const TradeList = React.memo(function TradeList({ trades, onEdit, onDelete, onVi
                           });
                           setIsExportOpen(false);
                         }}
-                        className="ml-auto shrink-0 whitespace-nowrap px-3 py-1 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 border border-blue-500/30 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider transition-all duration-200 cursor-pointer active:scale-95"
+                        className="ml-auto shrink-0 whitespace-nowrap px-3 py-1 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 border border-blue-500/30 rounded-xl text-[10px] font-mono font-bold uppercase tracking-wider transition-colors duration-200 cursor-pointer"
                       >
                         İndir
                       </button>
@@ -695,7 +691,7 @@ const TradeList = React.memo(function TradeList({ trades, onEdit, onDelete, onVi
               setUseVirtualScroll(!useVirtualScroll);
               setCurrentPage(1);
             }}
-            className={`flex items-center justify-center w-10 sm:w-8 h-10 sm:h-8 rounded-lg border transition-colors shrink-0 cursor-pointer ${
+            className={`flex items-center justify-center w-10 sm:w-8 h-10 sm:h-8 rounded-xl border transition-colors shrink-0 cursor-pointer ${
               useVirtualScroll
                 ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400'
                 : 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
@@ -716,7 +712,7 @@ const TradeList = React.memo(function TradeList({ trades, onEdit, onDelete, onVi
             transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
             className="relative z-30"
           >
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4.5 shadow-sm">
+            <div className="bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm rounded-2xl p-4.5 shadow-sm">
               <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5 mb-3.5">
                 <span className="text-[10px] uppercase tracking-wider text-zinc-400 font-bold flex items-center gap-1.5">
                   <Filter size={11} className="text-blue-400" /> Filtreler & Sıralama
@@ -738,25 +734,40 @@ const TradeList = React.memo(function TradeList({ trades, onEdit, onDelete, onVi
                   {/* Durum */}
                   <div className="flex items-center justify-between gap-3">
                     <span className="text-[10px] uppercase font-bold tracking-wider text-zinc-400 shrink-0">Durum</span>
-                    <div className="flex bg-zinc-950 p-0.5 rounded-lg border border-zinc-800 gap-0.5 w-48 shrink-0">
+                    <div className="flex bg-zinc-950 p-1 rounded-xl border border-zinc-800 gap-0.5 w-48 shrink-0 relative">
                       {(['ALL', 'WIN', 'LOSS', 'BREAKEVEN'] as const).map((st) => (
                         <button
                           key={st}
                           type="button"
                           onClick={() => handleFilterChange({ ...filter, status: st })}
-                          className={`flex-1 py-1 text-[9px] font-bold rounded-md transition-colors duration-200 ease-out cursor-pointer text-center ${
+                          className={`relative flex-1 py-1 text-[9px] font-bold rounded-lg transition-colors duration-200 ease-out cursor-pointer text-center select-none ${
                             filter.status === st
                               ? st === 'WIN'
-                                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 shadow-sm shadow-emerald-500/5'
+                                ? 'text-emerald-400'
                                 : st === 'LOSS'
-                                ? 'bg-rose-500/15 text-rose-400 border border-rose-500/20 shadow-sm shadow-rose-500/5'
+                                ? 'text-rose-400'
                                 : st === 'BREAKEVEN'
-                                ? 'bg-amber-500/15 text-amber-400 border border-amber-500/20 shadow-sm shadow-amber-500/5'
-                                : 'bg-zinc-800 text-zinc-100 border border-zinc-700/50'
-                              : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900 border border-transparent'
+                                ? 'text-amber-400'
+                                : 'text-zinc-100'
+                              : 'text-zinc-500 hover:text-zinc-300'
                           }`}
                         >
-                          {st === 'ALL' ? 'TÜMÜ' : st === 'BREAKEVEN' ? 'BE' : st}
+                          {filter.status === st && (
+                            <motion.div
+                              layoutId="tradeStatusFilterIndicator"
+                              className={`absolute inset-0 rounded-lg border shadow-xs ${
+                                st === 'WIN'
+                                  ? 'bg-emerald-500/15 border-emerald-500/20 shadow-emerald-500/5'
+                                  : st === 'LOSS'
+                                  ? 'bg-rose-500/15 border-rose-500/20 shadow-rose-500/5'
+                                  : st === 'BREAKEVEN'
+                                  ? 'bg-amber-500/15 border-amber-500/20 shadow-amber-500/5'
+                                  : 'bg-zinc-800 border-zinc-700/50'
+                              }`}
+                              transition={{ type: "spring", stiffness: 450, damping: 35 }}
+                            />
+                          )}
+                          <span className="relative z-10">{st === 'ALL' ? 'TÜMÜ' : st === 'BREAKEVEN' ? 'BE' : st}</span>
                         </button>
                       ))}
                     </div>
@@ -765,23 +776,36 @@ const TradeList = React.memo(function TradeList({ trades, onEdit, onDelete, onVi
                   {/* Yön */}
                   <div className="flex items-center justify-between gap-3">
                     <span className="text-[10px] uppercase font-bold tracking-wider text-zinc-400 shrink-0">Yön</span>
-                    <div className="flex bg-zinc-950 p-0.5 rounded-lg border border-zinc-800 gap-0.5 w-48 shrink-0">
+                    <div className="flex bg-zinc-950 p-1 rounded-xl border border-zinc-800 gap-0.5 w-48 shrink-0 relative">
                       {(['ALL', 'LONG', 'SHORT'] as const).map((dir) => (
                         <button
                           key={dir}
                           type="button"
                           onClick={() => handleFilterChange({ ...filter, type: dir })}
-                          className={`flex-1 py-1 text-[9px] font-bold rounded-md transition-colors duration-200 ease-out cursor-pointer text-center ${
+                          className={`relative flex-1 py-1 text-[9px] font-bold rounded-lg transition-colors duration-200 ease-out cursor-pointer text-center select-none ${
                             filter.type === dir
                               ? dir === 'LONG'
-                                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20'
+                                ? 'text-emerald-400'
                                 : dir === 'SHORT'
-                                ? 'bg-rose-500/15 text-rose-400 border border-rose-500/20'
-                                : 'bg-zinc-800 text-zinc-100 border border-zinc-700/50'
-                              : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900 border border-transparent'
+                                ? 'text-rose-400'
+                                : 'text-zinc-100'
+                              : 'text-zinc-500 hover:text-zinc-300'
                           }`}
                         >
-                          {dir === 'ALL' ? 'TÜMÜ' : dir}
+                          {filter.type === dir && (
+                            <motion.div
+                              layoutId="tradeTypeFilterIndicator"
+                              className={`absolute inset-0 rounded-lg border shadow-xs ${
+                                dir === 'LONG'
+                                  ? 'bg-emerald-500/15 border-emerald-500/20'
+                                  : dir === 'SHORT'
+                                  ? 'bg-rose-500/15 border-rose-500/20'
+                                  : 'bg-zinc-800 border-zinc-700/50'
+                              }`}
+                              transition={{ type: "spring", stiffness: 450, damping: 35 }}
+                            />
+                          )}
+                          <span className="relative z-10">{dir === 'ALL' ? 'TÜMÜ' : dir}</span>
                         </button>
                       ))}
                     </div>
@@ -876,20 +900,18 @@ const TradeList = React.memo(function TradeList({ trades, onEdit, onDelete, onVi
                   {/* Tarih Aralığı */}
                   <div className="flex items-center justify-between gap-3">
                     <span className="text-[10px] uppercase font-bold tracking-wider text-zinc-400 shrink-0">Tarih Aralığı</span>
-                    <div className="grid grid-cols-2 gap-1.5 w-48 shrink-0">
-                      <input
-                        type="date"
+                    <div className="grid grid-cols-2 gap-1.5 w-60 shrink-0">
+                      <TurkishDatePicker
                         value={filter.startDate || ''}
-                        onChange={(e) => handleFilterChange({ ...filter, startDate: e.target.value })}
-                        className="w-full h-10 sm:h-8 bg-zinc-950 hover:bg-zinc-900 border border-zinc-800 hover:border-zinc-700/80 rounded-lg px-1.5 text-[10px] text-zinc-300 font-bold focus:outline-none focus:ring-1 focus:ring-blue-500/20 transition-colors duration-200 ease-out cursor-pointer font-mono"
-                        
+                        onChange={(val) => handleFilterChange({ ...filter, startDate: val || undefined })}
+                        placeholder="Başlangıç"
+                        className="w-full"
                       />
-                      <input
-                        type="date"
+                      <TurkishDatePicker
                         value={filter.endDate || ''}
-                        onChange={(e) => handleFilterChange({ ...filter, endDate: e.target.value })}
-                        className="w-full h-10 sm:h-8 bg-zinc-950 hover:bg-zinc-900 border border-zinc-800 hover:border-zinc-700/80 rounded-lg px-1.5 text-[10px] text-zinc-300 font-bold focus:outline-none focus:ring-1 focus:ring-blue-500/20 transition-colors duration-200 ease-out cursor-pointer font-mono"
-                        
+                        onChange={(val) => handleFilterChange({ ...filter, endDate: val || undefined })}
+                        placeholder="Bitiş"
+                        className="w-full"
                       />
                     </div>
                   </div>
@@ -902,7 +924,7 @@ const TradeList = React.memo(function TradeList({ trades, onEdit, onDelete, onVi
 
       {/* TABLE/GRID CONTAINER */}
       {filteredTrades.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 px-4 text-center border border-zinc-800/80 border-dashed rounded-xl bg-zinc-900/60 relative overflow-hidden my-1">
+        <div className="flex flex-col items-center justify-center py-12 px-4 text-center border border-zinc-800/80 border-dashed rounded-2xl bg-zinc-800/80 relative overflow-hidden my-1">
           <div className="w-10 h-10 rounded-xl bg-zinc-800/80 border border-zinc-700/50 flex items-center justify-center text-zinc-400 mb-2.5 shadow-inner">
             <Clock size={20} className="text-zinc-400" />
           </div>
@@ -918,53 +940,53 @@ const TradeList = React.memo(function TradeList({ trades, onEdit, onDelete, onVi
           <div 
             ref={scrollContainerRef}
             onScroll={handleScroll}
-            className={`relative z-0 overflow-x-auto w-full rounded-lg ${
+            className={`relative z-0 overflow-x-auto w-full rounded-xl ${
               useVirtualScroll ? 'overflow-y-auto max-h-[500px] scrollbar-thin' : 'min-h-[380px] flex flex-col justify-between'
             }`}
           >
             <table className="w-full text-left border-separate sm:border-spacing-x-0 sm:border-spacing-y-1 text-[10px] sm:text-[11px] font-mono whitespace-nowrap sm:table-fixed sm:min-w-[750px] block sm:table">
               <thead className="sticky top-0 z-20 hidden sm:table-header-group">
-                <tr className="text-[9px] text-zinc-400 uppercase tracking-widest relative after:absolute after:inset-0 after:rounded-lg after:border after:border-zinc-800 after:pointer-events-none">
+                <tr className="text-[9px] text-zinc-400 uppercase tracking-widest relative after:absolute after:inset-0 after:rounded-xl after:border after:border-zinc-800 after:pointer-events-none">
                   <th 
-                    className={`py-1.5 px-3 font-mono select-none min-w-[130px] bg-zinc-950/40 rounded-l-lg cursor-pointer hover:text-zinc-200 ${isQuantMode ? 'w-[20%]' : 'w-[18%]'}`}
+                    className={`py-1.5 px-3 font-mono select-none min-w-[130px] bg-zinc-900 rounded-l-xl cursor-pointer hover:text-zinc-200 ${'w-[18%]'}`}
                     onClick={() => handleFilterChange({...filter, sortBy: filter.sortBy === 'dateDes' ? 'dateAsc' : 'dateDes'})}
                   >
-                    {isQuantMode ? "TIMESTAMP (UTC)" : "Tarih"} {filter.sortBy === 'dateAsc' ? '↑' : filter.sortBy === 'dateDes' ? '↓' : ''}
+                    {"Tarih"} {filter.sortBy === 'dateAsc' ? '↑' : filter.sortBy === 'dateDes' ? '↓' : ''}
                   </th>
                   <th 
-                    className={`py-1.5 px-3 font-mono select-none min-w-[90px] bg-zinc-950/40 cursor-pointer hover:text-zinc-200 text-left ${isQuantMode ? 'w-[16%]' : 'w-[14%]'}`}
+                    className={`py-1.5 px-3 font-mono select-none min-w-[90px] bg-zinc-900 cursor-pointer hover:text-zinc-200 text-left ${'w-[14%]'}`}
                     onClick={() => handleFilterChange({...filter, sortBy: filter.sortBy === 'assetAsc' ? 'assetDes' : 'assetAsc'})}
                   >
-                    {isQuantMode ? "DATA STREAM" : "Parite"} {filter.sortBy === 'assetAsc' ? '↑' : filter.sortBy === 'assetDes' ? '↓' : ''}
+                    {"Parite"} {filter.sortBy === 'assetAsc' ? '↑' : filter.sortBy === 'assetDes' ? '↓' : ''}
                   </th>
                   <th 
-                    className={`py-1.5 px-2 text-center font-mono select-none min-w-[65px] bg-zinc-950/40 cursor-pointer hover:text-zinc-200 ${isQuantMode ? 'w-[12%]' : 'w-[10%]'}`}
+                    className={`py-1.5 px-2 text-center font-mono select-none min-w-[65px] bg-zinc-900 cursor-pointer hover:text-zinc-200 ${'w-[10%]'}`}
                     onClick={() => handleFilterChange({...filter, sortBy: filter.sortBy === 'typeAsc' ? 'typeDes' : 'typeAsc'})}
                   >
-                    {isQuantMode ? "BIAS" : "Yön"} {filter.sortBy === 'typeAsc' ? '↑' : filter.sortBy === 'typeDes' ? '↓' : ''}
+                    {"Yön"} {filter.sortBy === 'typeAsc' ? '↑' : filter.sortBy === 'typeDes' ? '↓' : ''}
                   </th>
                   <th 
-                    className={`py-1.5 px-2 text-center font-mono select-none min-w-[65px] bg-zinc-950/40 cursor-pointer hover:text-zinc-200 ${isQuantMode ? 'w-[12%]' : 'w-[10%]'}`}
+                    className={`py-1.5 px-2 text-center font-mono select-none min-w-[65px] bg-zinc-900 cursor-pointer hover:text-zinc-200 ${'w-[10%]'}`}
                     onClick={() => handleFilterChange({...filter, sortBy: filter.sortBy === 'rrDes' ? 'rrAsc' : 'rrDes'})}
                   >
-                    {isQuantMode ? "R:R METRIC" : "RR"} {filter.sortBy === 'rrAsc' ? '↑' : filter.sortBy === 'rrDes' ? '↓' : ''}
+                    {"RR"} {filter.sortBy === 'rrAsc' ? '↑' : filter.sortBy === 'rrDes' ? '↓' : ''}
                   </th>
-                  <th className={`py-1.5 px-2 text-center font-mono select-none min-w-[75px] bg-zinc-950/40 ${isQuantMode ? 'w-[14%]' : 'w-[12%]'}`}>{isQuantMode ? "VALIDATION" : "Sonuç"}</th>
+                  <th className={`py-1.5 px-2 text-center font-mono select-none min-w-[75px] bg-zinc-900 ${'w-[12%]'}`}>{"Sonuç"}</th>
                   <th 
-                    className={`py-1.5 px-3 text-right font-mono select-none min-w-[95px] bg-zinc-950/40 cursor-pointer hover:text-zinc-200 ${isQuantMode ? 'w-[18%]' : 'w-[16%]'}`}
+                    className={`py-1.5 px-3 text-right font-mono select-none min-w-[95px] bg-zinc-900 cursor-pointer hover:text-zinc-200 ${'w-[16%]'}`}
                     onClick={() => handleFilterChange({...filter, sortBy: filter.sortBy === 'pnlDes' ? 'pnlAsc' : 'pnlDes'})}
                   >
-                    <div className="flex items-center justify-end w-full relative"><span>{isQuantMode ? "DELTA OUTPUT" : "Kâr/Zarar"}</span><span className="absolute -right-3 text-[10px] w-3 flex justify-center">{filter.sortBy === 'pnlAsc' ? '↑' : filter.sortBy === 'pnlDes' ? '↓' : ''}</span></div>
+                    <div className="flex items-center justify-end w-full relative"><span>{"Kâr/Zarar"}</span><span className="absolute -right-3 text-[10px] w-3 flex justify-center">{filter.sortBy === 'pnlAsc' ? '↑' : filter.sortBy === 'pnlDes' ? '↓' : ''}</span></div>
                   </th>
-                  {!isQuantMode && (
+                  {true && (
                     <th 
-                      className="py-1.5 px-2 text-center font-mono select-none w-[12%] min-w-[75px] bg-zinc-950/40 cursor-pointer hover:text-zinc-200"
+                      className="py-1.5 px-2 text-center font-mono select-none w-[12%] min-w-[75px] bg-zinc-900 cursor-pointer hover:text-zinc-200"
                       onClick={() => handleFilterChange({...filter, sortBy: filter.sortBy === 'platformDes' ? 'platformAsc' : 'platformDes'})}
                     >
                       Platform {filter.sortBy === 'platformAsc' ? '↑' : filter.sortBy === 'platformDes' ? '↓' : ''}
                     </th>
                   )}
-                  <th className="py-1.5 px-3 text-right font-mono select-none w-[8%] min-w-[60px] bg-zinc-950/40 rounded-r-lg">{isQuantMode ? "ACTIONS" : "İşlem"}</th>
+                  <th className="py-1.5 px-3 text-right font-mono select-none w-[8%] min-w-[60px] bg-zinc-900 rounded-r-xl">{"İşlem"}</th>
                 </tr>
               </thead>
               <AnimatePresence mode="wait" initial={false}>
@@ -995,15 +1017,19 @@ const TradeList = React.memo(function TradeList({ trades, onEdit, onDelete, onVi
                     const pnlValue = trade.pnl || 0;
                     const prefix = pnlValue > 0 ? '+' : '';
                     pnlText = `${prefix}${(pnlValue || 0).toLocaleString()} ${currency}`;
-                    pnlColor = pnlValue > 0 ? 'text-emerald-400 font-black' : (pnlValue < 0 ? 'text-rose-400 font-black' : 'text-zinc-500 font-bold');
+                    pnlColor = pnlValue > 0 ? 'text-emerald-400 font-bold' : (pnlValue < 0 ? 'text-rose-400 font-bold' : 'text-zinc-500 font-bold');
                   }
                   
-                  const formattedDate = new Date(trade.createdAt).toLocaleDateString('tr-TR', {
+                  const dateObj = new Date(trade.createdAt);
+                  const formattedDateOnly = dateObj.toLocaleDateString('tr-TR', {
                     day: 'numeric',
                     month: 'short',
-                    year: 'numeric',
+                    year: 'numeric'
+                  });
+                  const formattedTimeOnly = dateObj.toLocaleTimeString('tr-TR', {
                     hour: '2-digit',
-                    minute: '2-digit'
+                    minute: '2-digit',
+                    hour12: false
                   });
 
                   return (
@@ -1013,28 +1039,32 @@ const TradeList = React.memo(function TradeList({ trades, onEdit, onDelete, onVi
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, x: -10 }}
                       transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
-                      onClick={() => !isQuantMode && onViewDetails(trade)}
-                      className={`group select-none relative flex flex-wrap sm:table-row bg-zinc-950/40 sm:bg-transparent mb-2 sm:mb-0 rounded-xl sm:rounded-none border border-zinc-800/80 sm:border-none p-2 sm:p-0 align-middle ${isQuantMode ? 'cursor-default' : 'cursor-pointer hover:border-blue-500/40'}`}
+                      onClick={() => onViewDetails(trade)}
+                      className={`group select-none relative flex flex-wrap sm:table-row bg-zinc-900 sm:bg-transparent mb-2 sm:mb-0 rounded-xl sm:rounded-none border border-zinc-800/80 sm:border-none p-2 sm:p-0 align-middle ${'cursor-pointer hover:border-blue-500/40'}`}
                     >
-                      <td className={`w-1/2 min-w-[130px] flex justify-start items-center sm:table-cell order-1 py-1 px-0 sm:px-3 text-zinc-400 font-mono sm:bg-zinc-950/30 sm:rounded-l-lg sm:border-y sm:border-l sm:border-zinc-800/80 transition-colors duration-200 align-middle ${isQuantMode ? 'sm:w-[20%]' : 'sm:w-[18%] group-hover:text-zinc-100 group-hover:bg-blue-950/10 group-hover:border-blue-500/40'}`}>
+                      <td className={`w-1/2 min-w-[130px] flex justify-start items-center sm:table-cell order-1 py-1 px-0 sm:px-3 text-zinc-400 font-mono sm:bg-zinc-900 sm:rounded-l-xl sm:border-y sm:border-l sm:border-zinc-800/80 transition-colors duration-200 align-middle ${'sm:w-[18%] group-hover:text-zinc-100 group-hover:bg-blue-950/10 group-hover:border-blue-500/40'}`}>
                         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-0.5 sm:gap-1.5">
                           <span className="sm:hidden text-white font-bold text-xs">{trade.asset}</span>
-                          <span className="text-[10px] sm:text-[10px] text-zinc-500 sm:text-zinc-400 transition-colors">{formattedDate}</span>
+                          <span className="text-[10px] sm:text-[10px] transition-colors flex items-center gap-1.5">
+                            <span className="text-zinc-400 font-medium">{formattedDateOnly}</span>
+                            <span className="text-zinc-600 font-bold">•</span>
+                            <span className="text-zinc-500 font-mono">{formattedTimeOnly}</span>
+                          </span>
                         </div>
                       </td>
-                      <td className={`hidden sm:table-cell min-w-[90px] py-1 px-0 sm:px-3 sm:bg-zinc-950/30 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 text-left align-middle ${isQuantMode ? 'sm:w-[16%]' : 'sm:w-[14%]'}`}>
+                      <td className={`hidden sm:table-cell min-w-[90px] py-1 px-0 sm:px-3 sm:bg-zinc-900 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 text-left align-middle ${'sm:w-[14%]'}`}>
                         <span className="text-white font-bold text-[10px]">{trade.asset}</span>
                       </td>
-                      <td className={`w-1/2 min-w-[65px] flex justify-end sm:justify-center items-center sm:table-cell order-2 py-1 px-0 sm:px-2 text-center sm:bg-zinc-950/30 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 align-middle ${isQuantMode ? 'sm:w-[12%]' : 'sm:w-[10%]'}`}>
+                      <td className={`w-1/2 min-w-[65px] flex justify-end sm:justify-center items-center sm:table-cell order-2 py-1 px-0 sm:px-2 text-center sm:bg-zinc-900 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 align-middle ${'sm:w-[10%]'}`}>
                         <div className="flex items-center justify-center w-full">
                           {trade.type === 'LONG' ? (
-                            <span className={`inline-flex items-center justify-center h-[20px] px-2 py-0 text-center text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded-full uppercase tracking-wider font-mono transition-colors ${isQuantMode ? 'w-auto' : 'w-[46px] sm:w-[54px]'}`}>{isQuantMode ? 'BULLISH' : 'LONG'}</span>
+                            <span className={`inline-flex items-center justify-center h-[20px] px-2 py-0 text-center text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded-full uppercase tracking-wider font-mono transition-colors ${'w-[46px] sm:w-[54px]'}`}>{'LONG'}</span>
                           ) : (
-                            <span className={`inline-flex items-center justify-center h-[20px] px-2 py-0 text-center text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 group-hover:border-rose-500/50 rounded-full uppercase tracking-wider font-mono transition-colors ${isQuantMode ? 'w-auto' : 'w-[46px] sm:w-[54px]'}`}>{isQuantMode ? 'BEARISH' : 'SHORT'}</span>
+                            <span className={`inline-flex items-center justify-center h-[20px] px-2 py-0 text-center text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 group-hover:border-rose-500/50 rounded-full uppercase tracking-wider font-mono transition-colors ${'w-[46px] sm:w-[54px]'}`}>{'SHORT'}</span>
                           )}
                         </div>
                       </td>
-                      <td className={`w-1/2 min-w-[65px] flex justify-start sm:justify-center items-center sm:table-cell order-3 py-1 px-0 sm:px-2 text-center sm:bg-zinc-950/30 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 align-middle ${isQuantMode ? 'sm:w-[12%]' : 'sm:w-[10%]'}`}>
+                      <td className={`w-1/2 min-w-[65px] flex justify-start sm:justify-center items-center sm:table-cell order-3 py-1 px-0 sm:px-2 text-center sm:bg-zinc-900 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 align-middle ${'sm:w-[10%]'}`}>
                         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-1.5 w-full justify-start sm:justify-center">
                           <span className="sm:hidden text-[9px] font-bold text-zinc-500 uppercase tracking-widest leading-none h-[10px]">RR</span>
                           <div className="flex items-center justify-center w-full h-[18px]">
@@ -1053,32 +1083,32 @@ const TradeList = React.memo(function TradeList({ trades, onEdit, onDelete, onVi
                                 </span>
                               )
                             ) : (
-                              <span className="inline-flex items-center justify-center w-[38px] sm:w-[44px] h-[18px] text-center text-[9px] sm:text-[10px] font-medium text-zinc-500 rounded">—</span>
+                              <span className="inline-flex items-center justify-center w-[38px] sm:w-[44px] h-[18px] text-center text-[9px] sm:text-[10px] font-medium text-zinc-500 rounded-md">—</span>
                             )}
                           </div>
                         </div>
                       </td>
-                      <td className={`w-1/2 min-w-[75px] flex justify-end sm:justify-center items-center sm:table-cell order-4 py-1 px-0 sm:px-2 text-center sm:bg-zinc-950/30 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 align-middle ${isQuantMode ? 'sm:w-[14%]' : 'sm:w-[12%]'}`}>
+                      <td className={`w-1/2 min-w-[75px] flex justify-end sm:justify-center items-center sm:table-cell order-4 py-1 px-0 sm:px-2 text-center sm:bg-zinc-900 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 align-middle ${'sm:w-[12%]'}`}>
                         <div className="flex items-center justify-center w-full h-[18px]">
                           {isWin ? (
-                            <span className={`inline-flex items-center justify-center h-[20px] px-2 py-0 text-center text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded-full uppercase tracking-wider font-mono transition-colors ${isQuantMode ? 'w-auto' : 'w-[46px] sm:w-[54px]'}`}>{isQuantMode ? 'VALIDATED' : 'WIN'}</span>
+                            <span className={`inline-flex items-center justify-center h-[20px] px-2 py-0 text-center text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded-full uppercase tracking-wider font-mono transition-colors ${'w-[46px] sm:w-[54px]'}`}>{'WIN'}</span>
                           ) : isLoss ? (
-                            <span className={`inline-flex items-center justify-center h-[20px] px-2 py-0 text-center text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 group-hover:border-rose-500/50 rounded-full uppercase tracking-wider font-mono transition-colors ${isQuantMode ? 'w-auto max-w-[90px] leading-tight truncate px-1' : 'w-[46px] sm:w-[54px]'}`}>{isQuantMode ? 'NULL / REJECTED' : 'LOSS'}</span>
+                            <span className={`inline-flex items-center justify-center h-[20px] px-2 py-0 text-center text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 group-hover:border-rose-500/50 rounded-full uppercase tracking-wider font-mono transition-colors ${'w-[46px] sm:w-[54px]'}`}>{'LOSS'}</span>
                           ) : isBe ? (
-                            <span className={`inline-flex items-center justify-center h-[20px] px-2 py-0 text-center text-[10px] font-bold text-zinc-400 bg-zinc-500/10 border border-zinc-500/20 group-hover:border-zinc-500/50 rounded-full uppercase tracking-wider font-mono transition-colors ${isQuantMode ? 'w-auto' : 'w-[46px] sm:w-[54px]'}`}>BE</span>
+                            <span className={`inline-flex items-center justify-center h-[20px] px-2 py-0 text-center text-[10px] font-bold text-zinc-400 bg-zinc-500/10 border border-zinc-500/20 group-hover:border-zinc-500/50 rounded-full uppercase tracking-wider font-mono transition-colors ${'w-[46px] sm:w-[54px]'}`}>BE</span>
                           ) : (
-                            <span className={`inline-flex items-center justify-center h-[20px] px-2 py-0 text-center text-[10px] font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 group-hover:border-blue-500/50 rounded-full uppercase tracking-wider font-mono transition-colors ${isQuantMode ? 'w-auto' : 'w-[46px] sm:w-[54px]'}`}>AÇIK</span>
+                            <span className={`inline-flex items-center justify-center h-[20px] px-2 py-0 text-center text-[10px] font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 group-hover:border-blue-500/50 rounded-full uppercase tracking-wider font-mono transition-colors ${'w-[46px] sm:w-[54px]'}`}>AÇIK</span>
                           )}
                         </div>
                       </td>
-                      <td className={`w-full min-w-[95px] flex justify-between sm:justify-end items-center sm:table-cell order-5 py-1 px-0 sm:px-3 text-right ${pnlColor} sm:bg-zinc-950/30 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 pt-3 sm:pt-0 border-t border-zinc-800/50 align-middle ${isQuantMode ? 'sm:w-[18%]' : 'sm:w-[16%]'}`}>
-                        <span className="sm:hidden text-[10px] font-bold text-zinc-500 uppercase tracking-widest text-left font-sans">{isQuantMode ? "Delta Output" : "Kâr/Zarar"}</span>
-                        <div className="flex flex-col sm:flex-row items-end sm:items-center gap-0.5 sm:gap-1.5 sm:w-full sm:justify-end">
-                          <span className="text-sm sm:text-[11px] font-mono font-black">{pnlText}</span>
+                      <td className={`w-full min-w-[95px] flex justify-between sm:justify-end items-center sm:table-cell order-5 py-1 px-0 sm:px-3 text-right ${pnlColor} sm:bg-zinc-900 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 max-sm:pt-3 max-sm:border-t max-sm:border-zinc-800/50 sm:py-1 align-middle ${'sm:w-[16%]'}`}>
+                        <span className="sm:hidden text-[10px] font-bold text-zinc-500 uppercase tracking-widest text-left font-sans">{"Kâr/Zarar"}</span>
+                        <div className="flex flex-col sm:flex-row items-end sm:items-center gap-0.5 sm:gap-1.5 sm:w-full sm:justify-end sm:h-[20px]">
+                          <span className="text-sm sm:text-[11px] font-bold font-sans inline-flex items-center justify-end h-[20px] leading-none tracking-tight">{pnlText}</span>
                         </div>
                       </td>
-                      {!isQuantMode && (
-                        <td className="hidden sm:table-cell sm:w-[12%] sm:min-w-[75px] py-1.5 px-2 text-center bg-zinc-950/30 group-hover:bg-blue-950/10 border-y border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 align-middle">
+                      {true && (
+                        <td className="hidden sm:table-cell sm:w-[12%] sm:min-w-[75px] py-1.5 px-2 text-center bg-zinc-900 group-hover:bg-blue-950/10 border-y border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 align-middle">
                           <div className="flex items-center justify-center w-full">
                             {trade.platform ? (
                               <span className="inline-flex items-center justify-center min-w-[54px] max-w-[130px] h-[20px] px-2.5 py-0 text-center text-[10px] font-bold text-zinc-300 bg-zinc-800/80 border border-zinc-700/80 group-hover:border-zinc-500 rounded-full uppercase tracking-wider font-mono transition-colors whitespace-nowrap truncate" title={trade.platform}>
@@ -1090,8 +1120,8 @@ const TradeList = React.memo(function TradeList({ trades, onEdit, onDelete, onVi
                           </div>
                         </td>
                       )}
-                      <td className="w-full sm:w-[8%] sm:min-w-[60px] flex justify-between sm:justify-end items-center sm:table-cell order-6 py-1 px-0 sm:px-3 text-right sm:bg-zinc-950/30 group-hover:bg-blue-950/10 sm:rounded-r-lg sm:border-y sm:border-r sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 sm:pt-1.5 pt-0 align-middle">
-                        {!isQuantMode && (
+                      <td className="w-full sm:w-[8%] sm:min-w-[60px] flex justify-between sm:justify-end items-center sm:table-cell order-6 py-1 px-0 sm:px-3 text-right sm:bg-zinc-900 group-hover:bg-blue-950/10 sm:rounded-r-xl sm:border-y sm:border-r sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 sm:pt-1.5 pt-0 align-middle">
+                        {true && (
                           <div className="sm:hidden">
                             {trade.platform ? (
                               <span className="inline-flex items-center justify-center min-w-[46px] max-w-[120px] h-[20px] px-2.5 py-0 text-center text-[10px] font-bold text-zinc-300 bg-zinc-800/80 border border-zinc-700/80 rounded-full uppercase tracking-wider font-mono whitespace-nowrap truncate">
@@ -1107,7 +1137,7 @@ const TradeList = React.memo(function TradeList({ trades, onEdit, onDelete, onVi
                               e.stopPropagation();
                               onEdit(trade);
                             }}
-                            className="p-1 hover:bg-zinc-800 hover:text-blue-400 text-zinc-400 rounded transition duration-200 ease-out cursor-pointer"
+                            className="p-1 hover:bg-zinc-800 hover:text-blue-400 text-zinc-400 rounded-lg transition duration-200 ease-out cursor-pointer"
                           >
                             <Edit3 size={12} />
                           </button>
@@ -1117,7 +1147,7 @@ const TradeList = React.memo(function TradeList({ trades, onEdit, onDelete, onVi
                               e.stopPropagation();
                               setTradeToDelete(trade);
                             }}
-                            className="p-1 hover:bg-rose-500/20 hover:text-rose-400 text-zinc-400 rounded transition duration-200 ease-out cursor-pointer"
+                            className="p-1 hover:bg-rose-500/20 hover:text-rose-400 text-zinc-400 rounded-lg transition duration-200 ease-out cursor-pointer"
                           >
                             <Trash2 size={12} />
                           </button>
@@ -1148,31 +1178,36 @@ const TradeList = React.memo(function TradeList({ trades, onEdit, onDelete, onVi
 
             {/* PAGINATION CONTROLS */}
             {!useVirtualScroll && filteredTrades.length > 0 && (
-              <div className="flex items-center justify-between p-3 border-t border-zinc-800/80 bg-transparent rounded-b-xl mt-auto">
-                <div className="text-[10px] text-zinc-500 font-mono font-bold uppercase tracking-wider">
-                  {isQuantMode ? "TOTAL" : "Toplam"} {filteredTrades.length} {isQuantMode ? "SAMPLES" : "İşlem"} ({Math.min((currentPage - 1) * itemsPerPage + 1, filteredTrades.length)} - {Math.min(currentPage * itemsPerPage, filteredTrades.length)})
+              <div className="flex items-center justify-between p-3.5 border-t border-zinc-800/80 bg-zinc-950/30 rounded-b-xl mt-auto">
+                <div className="flex items-center gap-1.5 text-[11px] text-zinc-400 font-medium flex-wrap">
+                  <span>Toplam</span>
+                  <span className="text-zinc-200 font-semibold">{filteredTrades.length}</span>
+                  <span>İşlem</span>
+                  <span className="text-zinc-500 font-normal">({Math.min((currentPage - 1) * itemsPerPage + 1, filteredTrades.length)} - {Math.min(currentPage * itemsPerPage, filteredTrades.length)})</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-mono text-zinc-400 font-bold">
-                    Sayfa {currentPage} / {Math.max(1, totalPages)}
+                <div className="flex items-center gap-1">
+                  <span className="text-xs font-medium text-zinc-400 tabular-nums flex items-center leading-none">
+                    Sayfa: {currentPage}/{Math.max(1, totalPages)}
                   </span>
-                  <div className="flex items-center bg-zinc-950/50 border border-zinc-800 rounded-md p-0.5 shadow-sm">
+                  <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-700/50 rounded-xl p-1 shadow-xs">
                     <button
                       type="button"
                       onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                       disabled={currentPage <= 1}
-                      className="w-6 h-6 flex items-center justify-center rounded text-zinc-400 hover:bg-zinc-800 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer disabled:cursor-not-allowed"
+                      className="w-6.5 h-6.5 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-400 transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed"
+                      title="Önceki Sayfa"
                     >
-                      <ChevronLeft size={12} />
+                      <ChevronLeft size={13} />
                     </button>
-                    <div className="w-[1px] h-3.5 bg-zinc-800 mx-0.5" />
+                    <div className="w-px h-3.5 bg-zinc-800" />
                     <button
                       type="button"
                       onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                       disabled={currentPage >= totalPages}
-                      className="w-6 h-6 flex items-center justify-center rounded text-zinc-400 hover:bg-zinc-800 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer disabled:cursor-not-allowed"
+                      className="w-6.5 h-6.5 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-400 transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed"
+                      title="Sonraki Sayfa"
                     >
-                      <ChevronRight size={12} />
+                      <ChevronRight size={13} />
                     </button>
                   </div>
                 </div>
@@ -1189,30 +1224,28 @@ const TradeList = React.memo(function TradeList({ trades, onEdit, onDelete, onVi
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
             className="fixed inset-0 z-[1200] bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-4"
             onClick={() => setTradeToDelete(null)}
           >
             <motion.div
-              initial={{ opacity: 0, scale: 0.94, y: 16 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.94, y: 16 }}
-              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/60 rounded-2xl p-6 max-w-md w-full shadow-2xl overflow-hidden relative shadow-rose-500/5"
+              className="bg-zinc-900 border border-zinc-700/50 rounded-2xl p-6 max-w-md w-full shadow-2xl overflow-hidden relative"
             >
-              <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-rose-500/30 to-transparent"></div>
-              
-              <div className="w-12 h-12 rounded-xl bg-rose-500/10 border border-rose-500/20 shadow-[0_0_15px_rgba(244,63,94,0.15)] text-rose-400 flex items-center justify-center mx-auto mb-4">
+              <div className="w-12 h-12 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center mx-auto mb-4">
                 <Trash2 size={24} />
               </div>
               
               <h3 className="text-base font-bold tracking-wide text-zinc-100 uppercase text-center mb-2">
-                {isQuantMode ? "DELETE DATA LOG" : "İşlemi Sil"}
+                {"İşlemi Sil"}
               </h3>
               
               <p className="text-zinc-400 text-xs text-center mb-6 leading-relaxed font-mono">
-                <span className="font-semibold text-zinc-200">{tradeToDelete.asset}</span> ({isQuantMode ? (tradeToDelete.type === 'LONG' ? 'Bullish' : 'Bearish') : (tradeToDelete.type === 'LONG' ? 'Long' : 'Short')} - {isQuantMode ? (tradeToDelete.platform?.toUpperCase().includes('25K') ? 'Rise Works' : 'FSL PROP DMCC') : (tradeToDelete.platform || 'Platform')}) {isQuantMode ? "model kaydını silmek istediğinize emin misiniz? Bu veri kütüğü geri alınamaz." : "pozisyonunu silmek istediğinize emin misiniz? Bu işlem geri alınamaz."}
+                <span className="font-semibold text-zinc-200">{tradeToDelete.asset}</span> ({false ? (tradeToDelete.type === 'LONG' ? 'Bullish' : 'Bearish') : (tradeToDelete.type === 'LONG' ? 'Long' : 'Short')} - {false ? (tradeToDelete.platform?.toUpperCase().includes('25K') ? 'Rise Works' : 'FSL PROP DMCC') : (tradeToDelete.platform || 'Platform')}) {"pozisyonunu silmek istediğinize emin misiniz? Bu işlem geri alınamaz."}
               </p>
               
               <div className="flex items-center gap-3">
@@ -1221,7 +1254,7 @@ const TradeList = React.memo(function TradeList({ trades, onEdit, onDelete, onVi
                   onClick={() => setTradeToDelete(null)}
                   className="flex-1 py-2.5 px-4 bg-zinc-800/30 hover:bg-zinc-800/60 text-zinc-300 font-mono text-[11px] font-bold uppercase tracking-widest rounded-xl border border-zinc-700/50 transition-colors duration-200 cursor-pointer"
                 >
-                  {isQuantMode ? "CANCEL" : "Vazgeç"}
+                  {"Vazgeç"}
                 </button>
                 <button
                   type="button"
@@ -1231,10 +1264,10 @@ const TradeList = React.memo(function TradeList({ trades, onEdit, onDelete, onVi
                       setTradeToDelete(null);
                     }
                   }}
-                  className="flex-1 py-2.5 px-4 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 hover:border-rose-500/40 font-mono text-[11px] font-bold uppercase tracking-widest rounded-xl transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 active:scale-95"
+                  className="flex-1 py-2.5 px-4 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 hover:border-rose-500/40 font-mono text-[11px] font-bold uppercase tracking-widest rounded-xl transition-colors duration-200 cursor-pointer flex items-center justify-center gap-2"
                 >
                   <Trash2 size={13} />
-                  <span>{isQuantMode ? "CONFIRM DELETE" : "Evet, Sil"}</span>
+                  <span>{"Evet, Sil"}</span>
                 </button>
               </div>
             </motion.div>

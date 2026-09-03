@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Calendar as CalendarIcon, Info, Crown, Skull, X } from 'lucide-react';
 import { Trade } from '../types';
@@ -108,7 +109,7 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
   const { matrix, sessions, days, bestCellKey, worstCellKey } = heatmapData;
 
   const getCellColor = (pnl: number, count: number) => {
-    if (count === 0) return 'bg-zinc-900/60 border-zinc-800/60';
+    if (count === 0) return 'bg-zinc-800 border-zinc-800/60';
     if (pnl > 0) {
       if (pnl > 100) return 'bg-emerald-500/80 border-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.25)]';
       if (pnl > 50) return 'bg-emerald-500/60 border-emerald-500/80';
@@ -123,27 +124,27 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
     return 'bg-zinc-800 border-zinc-700'; // Break even
   };
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm"
+          transition={{ duration: 0.15, ease: "easeOut" }}
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-zinc-950/80 backdrop-blur-sm overflow-y-auto"
           onClick={onClose}
         >
         <motion.div
-          initial={{ opacity: 0, scale: 0.94, y: 16 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.94, y: 16 }}
-          transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-          className="relative w-full max-w-4xl bg-zinc-900 border border-zinc-800/80 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+          initial={{ opacity: 0, scale: 0.96 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.96 }}
+          transition={{ duration: 0.15, ease: "easeOut" }}
+          className="relative w-full max-w-4xl bg-zinc-900 border border-zinc-700/50 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] my-auto"
           onClick={e => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-4 sm:p-5 border-b border-zinc-800/80 bg-zinc-950/60">
+          <div className="flex items-center justify-between p-4 sm:p-5 border-b border-zinc-700/40 bg-zinc-900/60 shrink-0">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
                 <CalendarIcon size={18} />
@@ -155,7 +156,7 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
             </div>
             
             <div className="flex items-center gap-3">
-              <div className="flex bg-zinc-900 border border-zinc-800 rounded-lg p-0.5 overflow-x-auto hide-scrollbar">
+              <div className="flex bg-zinc-900 border border-zinc-700/50 rounded-xl p-0.5 overflow-x-auto hide-scrollbar">
                 {[
                   { id: '7', label: '7G' },
                   { id: '30', label: '1A' },
@@ -166,7 +167,7 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
                   <button
                     key={f.id}
                     onClick={() => setTimeFilter(f.id as any)}
-                    className={`px-2.5 py-1 rounded-md text-[10px] font-mono font-bold transition-all duration-150 ${
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold transition-all duration-150 ${
                       timeFilter === f.id 
                         ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' 
                         : 'text-zinc-400 hover:text-zinc-200 border border-transparent'
@@ -179,14 +180,14 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
 
               <button
                 onClick={onClose}
-                className="w-8 h-8 rounded-lg bg-zinc-800/60 hover:bg-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center transition-colors shrink-0"
+                className="w-8 h-8 rounded-xl bg-zinc-800/60 hover:bg-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center transition-colors shrink-0"
               >
                 <X size={16} />
               </button>
             </div>
           </div>
 
-          <div className="flex-1 overflow-auto p-4 sm:p-6 min-h-0">
+          <div className="flex-1 overflow-auto p-4 sm:p-6 pb-12 min-h-0 bg-zinc-950/30 custom-scrollbar">
             <div className="w-full">
               {/* Heatmap Grid */}
               <div className="flex gap-2">
@@ -210,9 +211,9 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    {days.map(day => (
+                    {days.map((day, dayIndex) => (
                       <div key={day} className="flex gap-2 relative hover:z-50">
-                        {sessions.map((session) => {
+                        {sessions.map((session, sessionIndex) => {
                           const cellKey = `${day}-${session}`;
                           const cell = matrix[day]?.[session];
                           const hasTrades = cell && cell.count > 0;
@@ -220,13 +221,22 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
                           const isWorst = cellKey === worstCellKey;
                           const winRatePercent = hasTrades ? Math.round((cell.winCount / cell.count) * 100) : 0;
 
+                          // Smart directional tooltip positioning to prevent clipping outside overflow
+                          const vertPos = dayIndex <= 1 ? "top-full mt-2" : "bottom-full mb-2";
+                          let horizPos = "left-1/2 -translate-x-1/2";
+                          if (sessionIndex === 0) {
+                            horizPos = "left-0 translate-x-0";
+                          } else if (sessionIndex === sessions.length - 1) {
+                            horizPos = "right-0 left-auto translate-x-0";
+                          }
+
                           return (
                             <div
                               key={cellKey}
                               className="relative group cursor-crosshair flex-1 hover:z-50"
                             >
                               <div 
-                                className={`w-full h-10 rounded-lg border transition-all duration-200 flex items-center justify-center overflow-hidden relative ${
+                                className={`w-full h-10 rounded-xl border transition-all duration-200 flex items-center justify-center overflow-hidden relative ${
                                   getCellColor(cell?.pnl || 0, cell?.count || 0)
                                 } ${isWorst ? 'ring-1 ring-rose-500/50' : ''}`}
                               >
@@ -238,7 +248,7 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
                               </div>
                               
                               {/* Tooltip on hover */}
-                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col bg-zinc-950 border border-zinc-700 text-zinc-200 text-[11px] rounded-lg p-2.5 shadow-2xl z-50 whitespace-nowrap pointer-events-none font-mono">
+                              <div className={`absolute ${vertPos} ${horizPos} hidden group-hover:flex flex-col bg-zinc-950 border border-zinc-700 text-zinc-200 text-[11px] rounded-xl p-2.5 shadow-2xl z-50 whitespace-nowrap pointer-events-none font-mono`}>
                                 <span className="font-bold text-blue-400 border-b border-zinc-800 pb-1 mb-1">{day} — {session}</span>
                                 <div className="space-y-0.5 text-zinc-300">
                                   <div>İşlem: <span className="text-white font-bold">{cell?.count || 0}</span></div>
@@ -271,7 +281,7 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
             </div>
           </div>
           
-          <div className="p-4 border-t border-zinc-800 bg-zinc-950/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-zinc-400 font-sans">
+          <div className="p-4 border-t border-zinc-700/40 bg-zinc-900/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-zinc-400 font-sans shrink-0">
             <div className="flex items-center gap-1.5 text-zinc-400">
               <Info size={13} className="text-blue-400 shrink-0" />
               <span>Renk yoğunluğu PnL büyüklüğünü, kutu içi değerler ise Başarı Oranını (Win Rate %) belirtir.</span>
@@ -279,13 +289,13 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
             <div className="flex items-center gap-2 font-mono text-[10px] shrink-0">
               <span className="text-rose-400 font-bold">Zarar</span>
               <div className="flex gap-1">
-                <div className="w-3.5 h-3.5 rounded bg-rose-500/80 border border-rose-500"></div>
-                <div className="w-3.5 h-3.5 rounded bg-rose-500/40 border border-rose-500/60"></div>
+                <div className="w-3.5 h-3.5 rounded-md bg-rose-500/80 border border-rose-500"></div>
+                <div className="w-3.5 h-3.5 rounded-md bg-rose-500/40 border border-rose-500/60"></div>
               </div>
-              <div className="w-3.5 h-3.5 rounded bg-zinc-800 border border-zinc-700 mx-1"></div>
+              <div className="w-3.5 h-3.5 rounded-md bg-zinc-800 border border-zinc-700 mx-1"></div>
               <div className="flex gap-1">
-                <div className="w-3.5 h-3.5 rounded bg-emerald-500/40 border border-emerald-500/60"></div>
-                <div className="w-3.5 h-3.5 rounded bg-emerald-500/80 border border-emerald-500"></div>
+                <div className="w-3.5 h-3.5 rounded-md bg-emerald-500/40 border border-emerald-500/60"></div>
+                <div className="w-3.5 h-3.5 rounded-md bg-emerald-500/80 border border-emerald-500"></div>
               </div>
               <span className="text-emerald-400 font-bold">Kâr</span>
             </div>
@@ -293,6 +303,8 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
         </motion.div>
       </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 };
+

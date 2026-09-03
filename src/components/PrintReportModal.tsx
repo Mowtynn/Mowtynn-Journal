@@ -370,22 +370,22 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.15, ease: "easeOut" }}
           style={{ willChange: 'opacity' }}
           className="fixed inset-0 z-[2000] overflow-y-auto bg-zinc-950/80 backdrop-blur-sm no-print flex flex-col justify-start items-center p-4 md:p-8"
         >
           <motion.div
-            initial={{ opacity: 0, scale: 0.94, y: 16 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.94, y: 16 }}
-            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            style={{ willChange: 'transform, opacity' }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            style={{ willChange: 'opacity' }}
             className="w-full max-w-4xl flex flex-col items-center"
           >
             {/* ACTION BAR (STAYS FLOATING OR FIXED, NEVER PRINTS) */}
-            <div className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-5 py-3.5 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-md shrink-0">
+            <div className="w-full bg-zinc-900 border border-zinc-700/50 rounded-2xl px-5 py-3.5 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl shrink-0">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-500/10 text-blue-400 rounded-lg">
+            <div className="p-2 bg-blue-500/10 text-blue-400 rounded-xl">
               <Download size={18} />
             </div>
             <div>
@@ -399,7 +399,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
             <button
               onClick={() => setIsAuditModalOpen(true)}
               title="Vergilendirme"
-              className="flex items-center justify-center w-9 h-9 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 rounded-xl transition-all duration-200 ease-out cursor-pointer shadow-xs active:scale-95"
+              className="flex items-center justify-center w-9 h-9 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 rounded-xl transition-colors duration-200 ease-out cursor-pointer shadow-xs"
             >
               <ShieldCheck size={15} />
             </button>
@@ -408,7 +408,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
               onClick={handleDownloadImage}
               disabled={isGenerating}
               title="Görüntü Olarak İndir"
-              className="flex items-center justify-center w-9 h-9 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 border border-blue-500/30 rounded-xl transition-all duration-200 ease-out cursor-pointer shadow-xs active:scale-95 disabled:opacity-50"
+              className="flex items-center justify-center w-9 h-9 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 border border-blue-500/30 rounded-xl transition-colors duration-200 ease-out cursor-pointer shadow-xs disabled:opacity-50"
             >
               {isGenerating ? (
                 <RefreshCw size={15} className="animate-spin" />
@@ -419,7 +419,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
             
             <button
               onClick={onClose}
-              className="p-2 text-zinc-400 hover:text-zinc-100 bg-zinc-800 hover:bg-zinc-700/80 rounded-lg transition-colors duration-200 ease-out cursor-pointer"
+              className="p-2 text-zinc-400 hover:text-zinc-100 bg-zinc-800 hover:bg-zinc-700 rounded-xl transition-colors duration-200 ease-out cursor-pointer"
             >
               <X size={15} />
             </button>
@@ -427,7 +427,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
         </div>
 
         {/* PRINTABLE PREVIEW CONTAINER */}
-        <div className="w-full max-w-4xl overflow-hidden rounded-2xl bg-zinc-900 border border-zinc-800 shadow-md flex-1 mb-8 relative">
+        <div className="w-full max-w-4xl overflow-hidden rounded-2xl bg-zinc-900 border border-zinc-700/50 shadow-2xl flex-1 mb-8 relative">
           {/* Loading overlay */}
           {isGenerating && (
             <div className="absolute inset-0 bg-zinc-950/80 z-50 flex flex-col items-center justify-center text-zinc-100 font-medium">
@@ -444,10 +444,10 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
           )}
 
           {/* Paper Frame (scrollable in preview, perfect dimensions) */}
-          <div className="h-[75vh] w-full overflow-auto bg-zinc-950 text-zinc-100 hide-scrollbar">
+          <div className="h-[75vh] w-full overflow-auto bg-zinc-950/40 text-zinc-100 custom-scrollbar">
             
             {/* START OF PRINT REPORT WRAPPER */}
-            <div id="print-report-root" ref={reportRef} className="w-full min-w-[896px] min-h-full text-zinc-100 select-text p-8 relative overflow-hidden bg-zinc-950 mx-auto">
+            <div id="print-report-root" ref={reportRef} className="w-full min-w-[896px] min-h-full text-zinc-100 select-text p-8 relative overflow-hidden bg-zinc-950/90 mx-auto">
               
               <div className="relative z-10">
                 {/* Header Branding Section */}
@@ -471,7 +471,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
 
                   {/* Empty placeholder to maintain layout */}
                   <div className="mt-3 md:mt-0 md:text-right flex flex-col md:items-end">
-                    <span className={`font-black text-base tracking-tight ${!isGenerating ? 'bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-400' : 'text-blue-400'}`}>
+                    <span className="font-black text-base tracking-tight text-blue-400">
                       Trading Journal by Mowtynn
                     </span>
                     <p className="text-[10px] text-zinc-400 font-medium tracking-wide mt-1">
@@ -483,8 +483,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                 {/* Grid Metric Cards Dashboard Block */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
                   {/* Total Trades Card */}
-                  <div className="border border-white/5 bg-zinc-900 rounded-xl p-4 flex flex-col items-center justify-center text-center gap-1.5 shadow-sm relative overflow-hidden">
-                    <div className={`absolute top-0 inset-x-0 h-px ${!isGenerating ? 'bg-gradient-to-r from-transparent via-blue-500/50 to-transparent' : 'bg-blue-500/20'}`} />
+                  <div className="border border-white/5 bg-zinc-900 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-1.5 shadow-sm relative overflow-hidden">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Toplam İşlem</span>
                     <span className={`text-2xl font-black drop-shadow-sm ${totalPnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{totalTrades}</span>
                     <div className="text-[11px] text-zinc-500 font-medium mt-1">
@@ -493,8 +492,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                   </div>
 
                   {/* Win Rate Card */}
-                  <div className="border border-white/5 bg-zinc-900 rounded-xl p-4 flex flex-col items-center justify-center text-center gap-1.5 shadow-sm relative overflow-hidden">
-                    <div className={`absolute top-0 inset-x-0 h-px ${!isGenerating ? 'bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent' : 'bg-emerald-500/20'}`} />
+                  <div className="border border-white/5 bg-zinc-900 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-1.5 shadow-sm relative overflow-hidden">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Kazanma Oranı</span>
                     <span className={`text-2xl font-black drop-shadow-sm ${totalPnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{winRate.toFixed(1)}%</span>
                     <span className="text-[11px] text-zinc-500 font-medium mt-1">
@@ -503,19 +501,14 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                   </div>
 
                   {/* Net Profit Card */}
-                  <div className="border border-white/5 bg-zinc-900 rounded-xl p-4 flex flex-col items-center justify-center text-center gap-1.5 shadow-sm relative overflow-hidden">
-                    <div className={`absolute top-0 inset-x-0 h-px ${!isGenerating ? 'bg-gradient-to-r from-transparent via-blue-500/50 to-transparent' : 'bg-blue-500/20'}`} />
+                  <div className="border border-white/5 bg-zinc-900 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-1.5 shadow-sm relative overflow-hidden">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Net Kâr / Zarar</span>
-                    <span className={`text-2xl font-black drop-shadow-sm ${totalPnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                      {totalPnl >= 0 ? '+' : ''}
-                      {totalPnl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {currency}
-                    </span>
+                    <span className={`text-2xl font-black drop-shadow-sm ${totalPnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{totalPnl >= 0 ? '+' : ''}{totalPnl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {currency}</span>
                     <span className="text-[11px] text-zinc-500 font-medium mt-1">Toplam Kazanç</span>
                   </div>
 
                   {/* Net R multiple Card */}
-                  <div className="border border-white/5 bg-zinc-900 rounded-xl p-4 flex flex-col items-center justify-center text-center gap-1.5 shadow-sm relative overflow-hidden">
-                    <div className={`absolute top-0 inset-x-0 h-px ${!isGenerating ? 'bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent' : 'bg-emerald-500/20'}`} />
+                  <div className="border border-white/5 bg-zinc-900 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-1.5 shadow-sm relative overflow-hidden">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Net R Kazanımı</span>
                     <span className={`text-2xl font-black drop-shadow-sm ${totalR >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                       {totalR >= 0 ? '+' : ''}
@@ -531,12 +524,14 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                   <h3 className="text-[9px] font-bold uppercase tracking-wider text-zinc-400">
                     İŞLEM GEÇMİŞİ
                   </h3>
-                  <span className="text-[9px] font-medium text-zinc-400">
-                    Toplam {trades.length} işlem
-                  </span>
+                  <div className="flex items-center gap-1 text-[9px] font-medium text-zinc-400">
+                    <span>Toplam</span>
+                    <span className="text-zinc-200 font-semibold">{trades.length}</span>
+                    <span>işlem</span>
+                  </div>
                 </div>
 
-                <div className="border border-zinc-800 rounded-lg overflow-hidden bg-zinc-900">
+                <div className="border border-zinc-800 rounded-xl overflow-hidden bg-zinc-900">
                   <table className="w-full text-left border-collapse text-[10px]">
                     <thead>
                       <tr className="bg-zinc-900 text-zinc-200 font-semibold border-b border-zinc-800">
@@ -559,12 +554,13 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                       ) : (
                         trades.map((trade) => {
                           const dateObj = new Date(trade.createdAt);
-                          const dateStr = dateObj.toLocaleDateString('tr-TR', {
+                          const dateStr = dateObj.toLocaleString('tr-TR', {
                             day: '2-digit',
                             month: '2-digit',
                             year: 'numeric',
                             hour: '2-digit',
                             minute: '2-digit',
+                            hour12: false,
                           });
 
                           const isWin = trade.status === 'WIN';

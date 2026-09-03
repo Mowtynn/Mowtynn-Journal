@@ -129,8 +129,8 @@ export default defineConfig(() => {
         name: 'Trading Journal App',
         short_name: 'Trading Journal',
         description: 'Advanced Trading Journal Application',
-        theme_color: '#000000',
-        background_color: '#000000',
+        theme_color: '#121214',
+        background_color: '#121214',
         display: 'standalone',
         icons: [
           {

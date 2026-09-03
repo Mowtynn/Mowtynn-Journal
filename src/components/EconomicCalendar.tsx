@@ -17,14 +17,12 @@ const widgetUrl = `https://www.tradingview-widget.com/embed-widget/events/?local
 const EconomicCalendar = memo(function EconomicCalendar() {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
-      className="w-full h-[calc(100vh-180px)] min-h-[620px] bg-zinc-950/60 border border-zinc-800/80 rounded-xl p-4 sm:p-5 overflow-hidden flex flex-col relative shadow-sm"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.15, ease: "easeOut" }}
+      className="w-full h-[calc(100vh-180px)] min-h-[620px] bg-zinc-950/60 border border-zinc-800/80 rounded-2xl p-4 sm:p-5 overflow-hidden flex flex-col relative shadow-sm"
     >
-      {/* Top ambient glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-[1px] bg-gradient-to-r from-transparent via-blue-500/25 to-transparent pointer-events-none" />
-
       {/* Header bar */}
       <div className="flex items-center justify-between pb-3.5 mb-2 border-b border-zinc-800/80">
         <div className="flex items-center gap-3">
@@ -33,10 +31,10 @@ const EconomicCalendar = memo(function EconomicCalendar() {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-sm font-black uppercase tracking-wider text-zinc-100 font-mono">
+              <h2 className="text-sm font-bold uppercase tracking-wide text-zinc-100">
                 Ekonomik Takvim
               </h2>
-              <span className="px-2 py-0.5 rounded-md text-[9px] font-mono font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center gap-1">
+              <span className="px-2.5 py-0.5 rounded-lg text-[9px] font-mono font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
                 CANLI VERİ
               </span>
@@ -48,7 +46,7 @@ const EconomicCalendar = memo(function EconomicCalendar() {
         </div>
       </div>
 
-      <div className="w-full h-full flex-grow relative bg-zinc-950 rounded-xl overflow-hidden border border-zinc-800">
+      <div className="w-full h-full flex-grow relative bg-zinc-950 rounded-2xl overflow-hidden border border-zinc-800">
         <iframe
           src={widgetUrl}
           className="w-full h-full border-0"

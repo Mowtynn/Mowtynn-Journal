@@ -14,7 +14,7 @@ export const ValueTransition = React.memo(({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: 0.18, ease: "easeInOut" }}
       className="inline-block"
       style={{ backfaceVisibility: "hidden", transform: "translate3d(0,0,0)" }}
     >

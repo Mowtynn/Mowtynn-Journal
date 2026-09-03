@@ -124,7 +124,7 @@ export const VoiceToJournalButton: React.FC<VoiceToJournalButtonProps> = ({ opti
         <button
           type="button"
           onClick={startRecording}
-          className="h-6 w-6 flex items-center justify-center bg-red-950/80 text-red-400 hover:bg-red-900/60 border border-red-500/50 rounded-lg shrink-0 transition-colors"
+          className="h-6 w-6 flex items-center justify-center bg-red-950/80 text-red-400 hover:bg-red-900/60 border border-red-500/50 rounded-xl shrink-0 transition-colors"
         >
           <AlertCircle size={14} />
         </button>
@@ -132,7 +132,7 @@ export const VoiceToJournalButton: React.FC<VoiceToJournalButtonProps> = ({ opti
         <button
           type="button"
           disabled
-          className="h-6 w-6 flex items-center justify-center bg-zinc-900 text-zinc-400 border border-zinc-800 rounded-lg shrink-0"
+          className="h-6 w-6 flex items-center justify-center bg-zinc-900 text-zinc-400 border border-zinc-800 rounded-xl shrink-0"
         >
           <Loader2 size={11} className="animate-spin text-zinc-300" />
         </button>
@@ -140,7 +140,7 @@ export const VoiceToJournalButton: React.FC<VoiceToJournalButtonProps> = ({ opti
         <button
           type="button"
           onClick={stopRecording}
-          className="h-6 w-6 flex items-center justify-center bg-red-950/80 text-red-400 border border-red-500/50 rounded-lg shrink-0 transition-colors"
+          className="h-6 w-6 flex items-center justify-center bg-red-950/80 text-red-400 border border-red-500/50 rounded-xl shrink-0 transition-colors"
         >
           <Square size={10} fill="currentColor" className="text-red-500" />
         </button>

@@ -123,7 +123,9 @@ export const calculateAdvancedMetrics = (closedTrades: Trade[]) => {
       sumX += x; sumY += y; sumXY += x * y; sumXX += x * x; sumYY += y * y;
     }
     const numerator = (eqLen * sumXY - sumX * sumY);
-    const denominator = Math.sqrt((eqLen * sumXX - sumX * sumX) * (eqLen * sumYY - sumY * sumY));
+    const termX = Math.max(0, eqLen * sumXX - sumX * sumX);
+    const termY = Math.max(0, eqLen * sumYY - sumY * sumY);
+    const denominator = Math.sqrt(termX * termY);
     const r = denominator !== 0 ? numerator / denominator : 0;
     rSquared = r > 0 ? r * r : 0;
   }

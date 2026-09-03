@@ -19,8 +19,7 @@ import {
   Calendar as CalendarIcon,
   Flame,
   CheckCircle2,
-  XCircle,
-  MinusCircle
+  XCircle
 } from "lucide-react";
 import { MetricDetailModal, MetricDetail } from "./MetricDetailModal";
 import { metricDetailsDict } from "../config/metricDetails";
@@ -573,25 +572,24 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
 
   const containerVariants = {
     hidden: { opacity: 0 },
-    show: {
+    show: { 
       opacity: 1,
-      transition: {
-        staggerChildren: 0.04,
-      },
-    },
+      transition: { staggerChildren: 0.05 }
+    }
   };
 
   const itemVariants = {
-    hidden: { opacity: 0 },
+    hidden: { opacity: 0, y: 8 },
     show: { 
-      opacity: 1,
-      transition: { duration: 0.15, ease: "easeInOut" as any },
-    },
+      opacity: 1, 
+      y: 0,
+      transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] as any }
+    }
   };
 
   if (trades.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center p-12 text-center bg-zinc-950/60 border border-zinc-800/80 rounded-xl shadow-sm mt-4">
+      <div className="flex flex-col items-center justify-center p-12 text-center bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm rounded-2xl shadow-sm mt-4">
         <LineChart size={32} className="text-zinc-600 mb-4 opacity-50" />
         <h3 className="text-sm font-bold text-zinc-300 font-mono mb-2">Henüz Yeterli Veri Yok</h3>
         <p className="text-[11px] text-zinc-500 max-w-sm">Derin analiz yapılabilecek filtre kriterlerinize uygun herhangi bir işlem bulunamadı.</p>
@@ -646,7 +644,7 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
 
     return (
       <div className="space-y-2 flex-1 flex flex-col relative">
-        <div className="relative bg-zinc-950/60 border border-zinc-800/80 rounded-xl overflow-visible flex-1 min-h-[180px]">
+        <div className="relative bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm rounded-2xl overflow-visible flex-1 min-h-[180px]">
           <svg viewBox="0 0 600 180" className="absolute inset-0 w-full h-full text-cyan-500 p-2" preserveAspectRatio="none">
             <line x1="0" y1="20" x2="600" y2="20" stroke="#0f172a" strokeWidth="1" strokeDasharray="3,3" />
             <line x1="0" y1="90" x2="600" y2="90" stroke="#1e293b" strokeWidth="1" strokeDasharray="3,3" />
@@ -718,9 +716,9 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
           <AnimatePresence>
             {hoveredPt && hoveredItem && (
               <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: -8 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95 }}
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
                 transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
                 style={{
                   left: `${(hoveredPt.x / 600) * 100}%`,
@@ -738,7 +736,7 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
                   <span className="text-xs text-zinc-200 font-bold font-sans truncate max-w-[140px]">
                     {hoveredItem.fullTitle || hoveredItem.label}
                   </span>
-                  <span className="text-[9px] uppercase font-bold tracking-widest px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 shrink-0 font-mono shadow-xs">
+                  <span className="text-[9px] uppercase font-bold tracking-widest px-2 py-0.5 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20 shrink-0 font-mono shadow-xs">
                     {equityFilter === 'trade' ? 'İşlem' : equityFilter === 'daily' ? 'Gün' : equityFilter === 'weekly' ? 'Hafta' : 'Ay'}
                   </span>
                 </div>
@@ -833,7 +831,7 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
                         });
                       }
                     }}
-                    className="shrink-0 bg-zinc-800/30 border border-transparent hover:border-zinc-700 hover:bg-zinc-800/80 text-zinc-300 px-1.5 py-0.5 rounded cursor-pointer transition-colors"
+                    className="shrink-0 bg-zinc-800/30 border border-transparent hover:border-zinc-700 hover:bg-zinc-800/80 text-zinc-300 px-2 py-0.5 rounded-lg cursor-pointer transition-colors"
                   >
                     {d.label}
                   </span>
@@ -859,7 +857,7 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
                         });
                       }
                     }}
-                    className="shrink-0 bg-zinc-800/30 border border-transparent hover:border-zinc-700 hover:bg-zinc-800/80 text-zinc-300 px-1.5 py-0.5 rounded cursor-pointer transition-colors"
+                    className="shrink-0 bg-zinc-800/30 border border-transparent hover:border-zinc-700 hover:bg-zinc-800/80 text-zinc-300 px-2 py-0.5 rounded-lg cursor-pointer transition-colors"
                   >
                     {item.label}
                   </span>
@@ -878,7 +876,7 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
       initial="hidden"
       animate="show"
       id="deep-analytics-view"
-      className="flex flex-col w-full bg-zinc-950/60 border border-zinc-800/80 rounded-xl shadow-sm overflow-hidden divide-y divide-zinc-800/80 relative"
+      className="flex flex-col w-full bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm rounded-2xl shadow-sm overflow-hidden divide-y divide-zinc-800/80 relative"
     >
       {/* Top 4 KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-0 divide-y md:divide-y-0 md:divide-x divide-zinc-800/80 w-full relative z-20">
@@ -933,7 +931,7 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
               </ValueTransition>
             </h3>
           </div>
-          <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 group-hover:scale-105 transition-transform shrink-0 ml-2">
+          <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 transition-transform shrink-0 ml-2">
             <TrendingUp size={18} />
           </div>
         </motion.div>
@@ -942,7 +940,7 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
         <motion.div variants={itemVariants} className="bg-transparent p-4 transition-all duration-200 ease-out flex flex-col justify-center">
           <div className="flex items-center justify-between mb-2">
             <p className="text-[10px] font-bold uppercase text-zinc-400 tracking-wider font-mono flex items-center gap-1.5">
-              <span className="p-1 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-400">
+              <span className="p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400">
                 <Layers size={11} />
               </span>
               Long / Short Dağılımı
@@ -950,7 +948,7 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
           </div>
           <div className="grid grid-cols-2 gap-2 font-mono text-[10px]">
             <div 
-              className="bg-zinc-950/60 border border-emerald-500/20 hover:border-emerald-500/40 p-2 rounded-lg cursor-pointer hover:bg-emerald-950/10 transition-all"
+              className="bg-zinc-950/60 border border-emerald-500/20 hover:border-emerald-500/40 p-2.5 rounded-xl cursor-pointer hover:bg-emerald-950/10 transition-all"
               onClick={() => handleMetricClick("longPerformance", `%${metrics.longStats.winRate.toFixed(1)} WR`)}
             >
               <div className="flex items-center justify-between mb-0.5">
@@ -960,7 +958,7 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
               <span className="text-xs font-bold text-emerald-400 block font-mono">%{metrics.longStats.winRate.toFixed(1)} WR</span>
             </div>
             <div 
-              className="bg-zinc-950/60 border border-rose-500/20 hover:border-rose-500/40 p-2 rounded-lg cursor-pointer hover:bg-rose-950/10 transition-all"
+              className="bg-zinc-950/60 border border-rose-500/20 hover:border-rose-500/40 p-2.5 rounded-xl cursor-pointer hover:bg-rose-950/10 transition-all"
               onClick={() => handleMetricClick("shortPerformance", `%${metrics.shortStats.winRate.toFixed(1)} WR`)}
             >
               <div className="flex items-center justify-between mb-0.5">
@@ -980,17 +978,17 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
         >
           <div className="flex items-center justify-between mb-2">
             <p className="text-[10px] font-bold uppercase text-zinc-400 tracking-wider font-mono flex items-center gap-1.5">
-              <span className="p-1 rounded-md bg-purple-500/10 border border-purple-500/20 text-purple-400">
+              <span className="p-1.5 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400">
                 <Target size={11} />
               </span>
               Sonuç Dağılımı
             </p>
-            <span className="text-[9px] font-mono font-bold text-zinc-400 bg-zinc-800/90 px-1.5 py-0.5 rounded border border-zinc-700/50">
+            <span className="text-[9px] font-mono font-bold text-zinc-400 bg-zinc-800/90 px-2 py-0.5 rounded-lg border border-zinc-700/50">
               %{metrics.statusAnalysis.total ? ((metrics.statusAnalysis.win / metrics.statusAnalysis.total) * 100).toFixed(1) : 0} WR
             </span>
           </div>
           <div className="flex items-center gap-2 font-mono text-[10px] w-full">
-            <div className="flex-1 bg-zinc-950/60 border border-zinc-800/80 rounded-lg p-1.5">
+            <div className="flex-1 bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm rounded-xl p-1.5">
               <div className="flex justify-between items-center text-[9px] mb-1">
                 <span className="text-emerald-400 font-bold">WIN</span>
                 <span className="text-emerald-400 font-bold">{metrics.statusAnalysis.win}</span>
@@ -1004,7 +1002,7 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
                 ></div>
               </div>
             </div>
-            <div className="flex-1 bg-zinc-950/60 border border-zinc-800/80 rounded-lg p-1.5">
+            <div className="flex-1 bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm rounded-xl p-1.5">
               <div className="flex justify-between items-center text-[9px] mb-1">
                 <span className="text-rose-400 font-bold">LOSS</span>
                 <span className="text-rose-400 font-bold">{metrics.statusAnalysis.loss}</span>
@@ -1018,7 +1016,7 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
                 ></div>
               </div>
             </div>
-            <div className="flex-1 bg-zinc-950/60 border border-zinc-800/80 rounded-lg p-1.5">
+            <div className="flex-1 bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm rounded-xl p-1.5">
               <div className="flex justify-between items-center text-[9px] mb-1">
                 <span className="text-zinc-300 font-bold">BE</span>
                 <span className="text-zinc-300 font-bold">{metrics.statusAnalysis.breakeven}</span>
@@ -1039,7 +1037,7 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
         <motion.div variants={itemVariants} className="bg-transparent p-4 transition-all duration-200 ease-out flex flex-col justify-center relative">
           <div className="flex items-center justify-between mb-2">
             <p className="text-[10px] font-bold uppercase text-zinc-400 tracking-wider font-mono flex items-center gap-1.5">
-              <span className="p-1 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-400">
+              <span className="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400">
                 <Flame size={11} />
               </span>
               Seri Takibi
@@ -1049,7 +1047,7 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
           <div className="flex flex-col gap-1.5 w-full">
             <div className="flex gap-1.5 w-full">
               <div 
-                className="bg-zinc-950/60 border border-emerald-500/20 hover:border-emerald-500/40 px-2 py-1 rounded-lg flex items-center justify-between flex-1 cursor-pointer hover:bg-emerald-950/10 transition-all" 
+                className="bg-zinc-950/60 border border-emerald-500/20 hover:border-emerald-500/40 px-2.5 py-1 rounded-xl flex items-center justify-between flex-1 cursor-pointer hover:bg-emerald-950/10 transition-all" 
                 onClick={() => handleMetricClick("winStreak", metrics.winStreak)}
               >
                 <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-wider font-mono">
@@ -1060,7 +1058,7 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
                 </span>
               </div>
               <div 
-                className="bg-zinc-950/60 border border-rose-500/20 hover:border-rose-500/40 px-2 py-1 rounded-lg flex items-center justify-between flex-1 cursor-pointer hover:bg-rose-950/10 transition-all" 
+                className="bg-zinc-950/60 border border-rose-500/20 hover:border-rose-500/40 px-2.5 py-1 rounded-xl flex items-center justify-between flex-1 cursor-pointer hover:bg-rose-950/10 transition-all" 
                 onClick={() => handleMetricClick("lossStreak", metrics.lossStreak)}
               >
                 <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-wider font-mono">
@@ -1094,7 +1092,7 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
 
               return (
                 <div 
-                  className={`border px-2.5 py-1 rounded-lg flex items-center justify-between w-full transition-all duration-200 cursor-pointer ${
+                  className={`border px-2.5 py-1.5 rounded-xl flex items-center justify-between w-full transition-all duration-200 cursor-pointer ${
                     isGreen 
                       ? 'bg-emerald-500/10 border-emerald-500/30 hover:bg-emerald-500/15' 
                       : isRed 
@@ -1110,7 +1108,7 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
                     <span className={`text-xs font-bold font-mono ${isGreen ? 'text-emerald-400' : isRed ? 'text-rose-400' : 'text-zinc-400'}`}>
                       {streakVal}
                     </span>
-                    <span className={`text-[9px] font-bold uppercase font-mono px-1.5 py-0.5 rounded border ${
+                    <span className={`text-[9px] font-bold uppercase font-mono px-2 py-0.5 rounded-lg border ${
                       isGreen 
                         ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' 
                         : isRed 
@@ -1134,7 +1132,7 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
           <motion.div variants={itemVariants} className="bg-transparent p-4 sm:p-5 transition-colors duration-200 ease-out flex flex-col justify-center flex-1">
             <div className="flex items-center justify-between mb-3">
               <p className="text-[10px] font-bold uppercase text-zinc-400 tracking-wider font-mono flex items-center gap-1.5">
-                <span className="p-1 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                <span className="p-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
                   <TrendingUp size={11} />
                 </span>
                 Matematiksel Beklenti
@@ -1142,7 +1140,7 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
             </div>
             <div className="grid grid-cols-2 gap-3 items-stretch w-full h-full">
               <div 
-                className="bg-zinc-950/60 border border-emerald-500/20 hover:border-emerald-500/40 rounded-xl p-3.5 cursor-pointer hover:bg-emerald-950/10 transition-all duration-200 flex flex-col justify-between" 
+                className="bg-zinc-950/60 border border-emerald-500/20 hover:border-emerald-500/40 rounded-2xl p-3.5 cursor-pointer hover:bg-emerald-950/10 transition-all duration-200 flex flex-col justify-between" 
                 onClick={() => handleMetricClick("averageWin", isRrMode ? "+" + metrics.avgWinRR.toFixed(2) + " R" : "+" + (metrics?.avgWinAmount || 0).toLocaleString() + " " + currency)}
               >
                 <div className="flex items-center justify-between mb-1">
@@ -1168,7 +1166,7 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
               </div>
               
               <div 
-                className="bg-zinc-950/60 border border-rose-500/20 hover:border-rose-500/40 rounded-xl p-3.5 cursor-pointer hover:bg-rose-950/10 transition-all duration-200 flex flex-col justify-between" 
+                className="bg-zinc-950/60 border border-rose-500/20 hover:border-rose-500/40 rounded-2xl p-3.5 cursor-pointer hover:bg-rose-950/10 transition-all duration-200 flex flex-col justify-between" 
                 onClick={() => handleMetricClick("averageLoss", isRrMode ? "-" + metrics.avgLossRR.toFixed(2) + " R" : "-" + (metrics?.avgLossAmount || 0).toLocaleString() + " " + currency)}
               >
                 <div className="flex items-center justify-between mb-1">
@@ -1199,7 +1197,7 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
           <motion.div variants={itemVariants} className="bg-transparent p-4 sm:p-5 transition-colors duration-200 ease-out flex flex-col justify-center flex-1">
             <div className="flex items-center justify-between mb-3">
               <p className="text-[10px] font-bold uppercase text-zinc-400 tracking-wider font-mono flex items-center gap-1.5">
-                <span className="p-1 rounded-md bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+                <span className="p-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
                   <Activity size={11} />
                 </span>
                 Sistem Statüsü & Kalitesi
@@ -1207,7 +1205,7 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
             </div>
             <div className="grid grid-cols-2 gap-3 items-stretch w-full h-full">
               <div 
-                className="bg-zinc-950/60 border border-zinc-800/80 hover:border-zinc-700/80 rounded-xl p-3.5 flex flex-col justify-between cursor-pointer hover:bg-zinc-800/40 transition-all" 
+                className="bg-zinc-950/60 border border-zinc-800/80 rounded-2xl p-3.5 flex flex-col justify-between cursor-pointer hover:bg-amber-950/10 hover:border-amber-500/30 transition-all duration-200 ease-out group shadow-xs" 
                 onClick={() => handleMetricClick("sqn", (isRrMode ? metrics.sqn : (metrics.realSqn ?? metrics.sqn))?.toFixed(2) || "0.00")}
               >
                 <div className="flex items-center justify-between mb-1">
@@ -1218,7 +1216,7 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
                     const s = isRrMode ? metrics.sqn : (metrics.realSqn ?? metrics.sqn);
                     if (s < 1.6) return null;
                     return (
-                      <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border ${
+                      <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-lg border ${
                         s >= 3 
                           ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" 
                           : s >= 2.5 
@@ -1231,14 +1229,16 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
                   })()}
                 </div>
                 <div className="mt-1">
-                  <span className={`text-lg sm:text-xl font-bold font-mono tracking-tight ${(isRrMode ? metrics.sqn : (metrics.realSqn ?? metrics.sqn)) >= 2.5 ? "text-emerald-400" : (isRrMode ? metrics.sqn : (metrics.realSqn ?? metrics.sqn)) >= 1.6 ? "text-amber-400" : "text-rose-400"}`}>
-                    {(isRrMode ? metrics.sqn : (metrics.realSqn ?? metrics.sqn))?.toFixed(2) || "0.00"}
-                  </span>
+                  <ValueTransition modeKey={isRrMode}>
+                    <span className={`text-lg sm:text-xl font-bold font-mono tracking-tight ${(isRrMode ? metrics.sqn : (metrics.realSqn ?? metrics.sqn)) >= 2.5 ? "text-emerald-400" : (isRrMode ? metrics.sqn : (metrics.realSqn ?? metrics.sqn)) >= 1.6 ? "text-amber-400" : "text-rose-400"}`}>
+                      {(isRrMode ? metrics.sqn : (metrics.realSqn ?? metrics.sqn))?.toFixed(2) || "0.00"}
+                    </span>
+                  </ValueTransition>
                 </div>
               </div>
 
               <div 
-                className="bg-zinc-950/60 border border-zinc-800/80 hover:border-zinc-700/80 rounded-xl p-3.5 flex flex-col justify-between cursor-pointer hover:bg-zinc-800/40 transition-all" 
+                className="bg-zinc-950/60 border border-zinc-800/80 rounded-2xl p-3.5 flex flex-col justify-between cursor-pointer hover:bg-indigo-950/10 hover:border-indigo-500/30 transition-all duration-200 ease-out group shadow-xs" 
                 onClick={() => handleMetricClick("expectancy", isRrMode ? (metrics.expectancy > 0 ? "+" : "") + metrics.expectancy.toFixed(2) + " R" : (metrics.expectancyCash > 0 ? "+" : "") + metrics.expectancyCash.toLocaleString() + " " + currency)}
               >
                 <div className="flex items-center justify-between mb-1">
@@ -1302,9 +1302,9 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
                 <AnimatePresence>
                   {isEquityFilterOpen && (
                     <motion.div
-                      initial={{ opacity: 0, x: -10, y: "-50%" }}
-                      animate={{ opacity: 1, x: 0, y: "-50%" }}
-                      exit={{ opacity: 0, x: -10, y: "-50%" }}
+                      initial={{ opacity: 0, y: "-50%" }}
+                      animate={{ opacity: 1, y: "-50%" }}
+                      exit={{ opacity: 0, y: "-50%" }}
                       transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
                       className="absolute left-full ml-2 top-1/2 flex items-center bg-zinc-950 border border-zinc-800/80 rounded-lg p-0.5 z-30 shadow-xl"
                     >
@@ -1318,7 +1318,7 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
                           key={opt.id}
                           type="button"
                           onClick={(e) => { e.stopPropagation(); setEquityFilter(opt.id as any); }}
-                          className={`px-2 py-0.5 text-[9px] font-bold font-mono tracking-wider uppercase rounded transition-all duration-150 ${
+                          className={`px-2 py-0.5 text-[9px] font-bold font-mono tracking-wider uppercase rounded-lg transition-all duration-150 ${
                             equityFilter === opt.id 
                               ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' 
                               : 'text-zinc-400 hover:text-zinc-200 border border-transparent'
@@ -1353,7 +1353,7 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
           
           <div className="flex-1 flex flex-col justify-center">
             {chartEquityCurve.length < 2 ? (
-              <div className="h-36 flex flex-1 items-center justify-center border border-zinc-800 border-dashed rounded-xl bg-zinc-950/40 text-xs text-zinc-500 font-mono">
+              <div className="h-36 flex flex-1 items-center justify-center border border-zinc-800 border-dashed rounded-2xl bg-zinc-900 text-xs text-zinc-500 font-mono">
                 Eğri çizmek için en az 2 tamamlanmış işlem kaydı gereklidir.
               </div>
             ) : renderEquityCurve()}
@@ -1393,7 +1393,7 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
         <motion.div variants={itemVariants} className="bg-transparent p-4 sm:p-5 transition-colors duration-200 ease-out flex flex-col justify-center">
           <div className="flex items-center justify-between mb-3">
             <p className="text-[10px] font-bold uppercase text-zinc-400 tracking-wider font-mono flex items-center gap-1.5">
-              <span className="p-1 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+              <span className="p-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
                 <CalendarIcon size={11} />
               </span>
               Gün Performansı
@@ -1406,7 +1406,7 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
           ) : (
             <div className="grid grid-cols-2 gap-3">
               <div 
-                className="bg-zinc-950/60 border border-emerald-500/20 hover:border-emerald-500/40 p-3.5 rounded-xl cursor-pointer hover:bg-emerald-950/10 transition-all duration-200"
+                className="bg-zinc-950/60 border border-emerald-500/20 hover:border-emerald-500/40 p-3.5 rounded-2xl cursor-pointer hover:bg-emerald-950/10 transition-all duration-200"
                 onClick={(e) => { e.stopPropagation(); handleMetricClick("profitableDays", metrics.greenDays + " Gün"); }}
               >
                 <div className="flex items-center justify-between mb-1">
@@ -1418,7 +1418,7 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
                 </span>
               </div>
               <div 
-                className="bg-zinc-950/60 border border-rose-500/20 hover:border-rose-500/40 p-3.5 rounded-xl cursor-pointer hover:bg-rose-950/10 transition-all duration-200"
+                className="bg-zinc-950/60 border border-rose-500/20 hover:border-rose-500/40 p-3.5 rounded-2xl cursor-pointer hover:bg-rose-950/10 transition-all duration-200"
                 onClick={(e) => { e.stopPropagation(); handleMetricClick("profitableDays", metrics.redDays + " Gün"); }}
               >
                 <div className="flex items-center justify-between mb-1">
@@ -1437,7 +1437,7 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
         <motion.div variants={itemVariants} className="bg-transparent p-4 sm:p-5 transition-colors duration-200 ease-out flex flex-col justify-center">
           <div className="flex items-center justify-between mb-3">
             <p className="text-[10px] font-bold uppercase text-zinc-400 tracking-wider font-mono flex items-center gap-1.5">
-              <span className="p-1 rounded-md bg-purple-500/10 border border-purple-500/20 text-purple-400">
+              <span className="p-1.5 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400">
                 <Target size={11} />
               </span>
               MAKS. İŞLEMLER
@@ -1445,7 +1445,7 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div 
-              className="bg-zinc-950/60 border border-emerald-500/20 hover:border-emerald-500/40 p-3.5 rounded-xl cursor-pointer hover:bg-emerald-950/10 transition-all duration-200"
+              className="bg-zinc-950/60 border border-emerald-500/20 hover:border-emerald-500/40 p-3.5 rounded-2xl cursor-pointer hover:bg-emerald-950/10 transition-all duration-200"
               onClick={(e) => { e.stopPropagation(); handleMetricClick("largestWin", isRrMode ? ("+" + (metrics.bestTrade ? (metrics.bestTrade.rr || 0).toFixed(1) : "0") + " R") : ("+" + (metrics.bestTrade?.pnl || 0).toLocaleString() + " " + currency)); }}
             >
               <div className="flex items-center justify-between mb-1">
@@ -1460,7 +1460,7 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
               </span>
             </div>
             <div 
-              className="bg-zinc-950/60 border border-rose-500/20 hover:border-rose-500/40 p-3.5 rounded-xl cursor-pointer hover:bg-rose-950/10 transition-all duration-200"
+              className="bg-zinc-950/60 border border-rose-500/20 hover:border-rose-500/40 p-3.5 rounded-2xl cursor-pointer hover:bg-rose-950/10 transition-all duration-200"
               onClick={(e) => { e.stopPropagation(); handleMetricClick("largestLoss", isRrMode ? ("-" + (metrics.worstTrade ? Math.abs(metrics.worstTrade.rr || 0).toFixed(1) : "0") + " R") : ("-" + Math.abs(metrics.worstTrade?.pnl || 0).toLocaleString() + " " + currency)); }}
             >
               <div className="flex items-center justify-between mb-1">
@@ -1494,17 +1494,17 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
               style={{ willChange: 'opacity' }}
               className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm"
               onClick={() => setSelectedEquityPoint(null)}
             >
               <motion.div
-                initial={{ opacity: 0, scale: 0.94, y: 16 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.94, y: 16 }}
-                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                style={{ willChange: 'transform, opacity' }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15, ease: "easeOut" }}
+                style={{ willChange: 'opacity' }}
                 className="w-full max-w-4xl max-h-[85vh] flex flex-col bg-zinc-950/90 border border-zinc-800/80 rounded-xl shadow-2xl relative overflow-hidden"
                 onClick={e => e.stopPropagation()}
               >
@@ -1531,21 +1531,21 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
                           dateRangeText: selectedEquityPoint.title
                         });
                       }}
-                      className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/25 rounded-lg transition-colors duration-200 ease-out cursor-pointer group active:scale-95 shadow-xs shrink-0"
+                      className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/25 rounded-lg transition-colors duration-200 ease-out cursor-pointer group shadow-xs shrink-0"
                     >
-                      <Download size={18} className="group-hover:scale-110 transition-transform" />
+                      <Download size={18} className="transition-colors" />
                     </button>
                     <button 
                       type="button"
                       onClick={() => setSelectedEquityPoint(null)}
-                      className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-zinc-400 hover:text-white bg-zinc-950 hover:bg-zinc-900 border border-zinc-800/80 rounded-lg transition-colors duration-200 ease-out cursor-pointer group active:scale-95 shadow-xs shrink-0"
+                      className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-zinc-400 hover:text-white bg-zinc-950 hover:bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm/80 rounded-lg transition-colors duration-200 ease-out cursor-pointer group shadow-xs shrink-0"
                     >
-                      <X size={18} className="group-hover:scale-110 transition-transform" />
+                      <X size={18} className="transition-colors" />
                     </button>
                   </div>
                 </div>
 
-                <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-zinc-950/40 border-b border-zinc-800/80 shrink-0 select-none w-full">
+                <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-zinc-900 border-b border-zinc-800/80 shrink-0 select-none w-full">
                   <div className="flex flex-wrap items-center gap-2">
                     <div className="flex items-center gap-1.5 bg-zinc-950 border border-zinc-800/80 text-zinc-100 rounded-lg px-2.5 py-1.5 shrink-0">
                       <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest font-mono">TOPLAM:</span>
@@ -1603,7 +1603,7 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
                         const labelClass = isProfit ? 'text-emerald-400' : isLoss ? 'text-rose-400' : 'text-zinc-400';
                         
                         return (
-                          <div key={session} className={`flex items-center justify-center gap-1 shrink-0 px-2 py-1 rounded-md border leading-none ${bgClass}`}>
+                          <div key={session} className={`flex items-center justify-center gap-1 shrink-0 px-2.5 py-1 rounded-lg border leading-none ${bgClass}`}>
                             <span className={`text-[9px] font-bold uppercase tracking-widest leading-none font-mono ${labelClass}`}>{session}:</span>
                             <span className={`text-[9px] font-black font-mono leading-none ${textColorClass}`}>
                               {isRrMode ? `${val > 0 ? '+' : ''}${val.toFixed(1)}R` : `${val > 0 ? '+' : ''}${val.toLocaleString('tr-TR', { maximumFractionDigits: 0 })}`}
@@ -1619,13 +1619,13 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
                   <table className="w-full text-left border-separate sm:border-spacing-x-0 sm:border-spacing-y-1 text-[10px] sm:text-[11px] font-mono whitespace-nowrap sm:table-fixed sm:min-w-[700px] block sm:table">
                     <thead className="sticky top-0 z-20 hidden sm:table-header-group">
                       <tr className="text-[9px] text-zinc-400 uppercase tracking-widest relative after:absolute after:inset-0 after:rounded-lg after:border after:border-zinc-800/80 after:pointer-events-none">
-                        <th className="py-1.5 px-3 font-mono select-none w-[20%] min-w-[120px] bg-zinc-950/40 rounded-l-lg text-left">Parite</th>
-                        <th className="py-1.5 px-2 text-center font-mono select-none w-[11%] min-w-[65px] bg-zinc-950/40">Yön</th>
-                        <th className="py-1.5 px-2 text-center font-mono select-none w-[11%] min-w-[65px] bg-zinc-950/40">RR</th>
-                        <th className="py-1.5 px-2 text-center font-mono select-none w-[14%] min-w-[75px] bg-zinc-950/40">Session</th>
-                        <th className="py-1.5 px-2 text-center font-mono select-none w-[14%] min-w-[75px] bg-zinc-950/40">Sonuç</th>
-                        <th className="py-1.5 px-3 text-right font-mono select-none w-[18%] min-w-[95px] bg-zinc-950/40"><div className="flex items-center justify-end w-full relative"><span>Kâr/Zarar</span></div></th>
-                        <th className="py-1.5 px-2 text-center font-mono select-none w-[12%] min-w-[80px] bg-zinc-950/40 rounded-r-lg">Platform</th>
+                        <th className="py-1.5 px-3 font-mono select-none w-[20%] min-w-[120px] bg-zinc-900 rounded-l-xl text-left">Parite</th>
+                        <th className="py-1.5 px-2 text-center font-mono select-none w-[11%] min-w-[65px] bg-zinc-900">Yön</th>
+                        <th className="py-1.5 px-2 text-center font-mono select-none w-[11%] min-w-[65px] bg-zinc-900">RR</th>
+                        <th className="py-1.5 px-2 text-center font-mono select-none w-[14%] min-w-[75px] bg-zinc-900">Session</th>
+                        <th className="py-1.5 px-2 text-center font-mono select-none w-[14%] min-w-[75px] bg-zinc-900">Sonuç</th>
+                        <th className="py-1.5 px-3 text-right font-mono select-none w-[18%] min-w-[95px] bg-zinc-900"><div className="flex items-center justify-end w-full relative"><span>Kâr/Zarar</span></div></th>
+                        <th className="py-1.5 px-2 text-center font-mono select-none w-[12%] min-w-[80px] bg-zinc-900 rounded-r-xl">Platform</th>
                       </tr>
                     </thead>
                     <tbody className="block sm:table-row-group">
@@ -1642,22 +1642,22 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
                           const pnlValue = t.pnl || 0;
                           const prefix = pnlValue > 0 ? '+' : '';
                           pnlText = `${prefix}${(pnlValue || 0).toLocaleString()} ${currency}`;
-                          pnlColor = pnlValue > 0 ? 'text-emerald-400 font-black' : (pnlValue < 0 ? 'text-rose-400 font-black' : 'text-zinc-500 font-bold');
+                          pnlColor = pnlValue > 0 ? 'text-emerald-400 font-bold' : (pnlValue < 0 ? 'text-rose-400 font-bold' : 'text-zinc-500 font-bold');
                         }
                         
                         return (
                           <tr 
                             key={t.id ? `${t.id}-${idx}` : `trade-${idx}`}
                             onClick={() => setSelectedTrade(t)}
-                            className="group cursor-pointer select-none relative flex flex-wrap sm:table-row bg-zinc-900/40 sm:bg-transparent mb-2 sm:mb-0 rounded-xl sm:rounded-none border border-zinc-800/80 hover:border-blue-500/40 sm:border-none p-2 sm:p-0 align-middle"
+                            className="group cursor-pointer select-none relative flex flex-wrap sm:table-row bg-zinc-800 sm:bg-transparent mb-2 sm:mb-0 rounded-xl sm:rounded-none border border-zinc-800/80 hover:border-blue-500/40 sm:border-none p-2 sm:p-0 align-middle"
                           >
-                            <td className="w-1/2 sm:w-[20%] sm:min-w-[120px] flex justify-start items-center sm:table-cell order-1 py-1 px-0 sm:px-3 text-zinc-400 group-hover:text-zinc-100 font-mono sm:bg-zinc-950/30 group-hover:bg-blue-950/10 sm:rounded-l-lg sm:border-y sm:border-l sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 align-middle">
+                            <td className="w-1/2 sm:w-[20%] sm:min-w-[120px] flex justify-start items-center sm:table-cell order-1 py-1 px-0 sm:px-3 text-zinc-400 group-hover:text-zinc-100 font-mono sm:bg-zinc-900 group-hover:bg-blue-950/10 sm:rounded-l-xl sm:border-y sm:border-l sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 align-middle">
                               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-0.5 sm:gap-1.5">
                                 <span className="text-white font-bold text-xs sm:text-[10px]">{t.asset}</span>
-                                <span className="text-[10px] sm:text-[10px] text-zinc-500 sm:text-zinc-400 transition-colors">{new Date(t.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                <span className="text-[10px] sm:text-[10px] text-zinc-500 sm:text-zinc-400 transition-colors">{new Date(t.createdAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>
                               </div>
                             </td>
-                            <td className="w-1/2 sm:w-[11%] sm:min-w-[65px] flex justify-end sm:justify-center items-center sm:table-cell order-2 py-1 px-0 sm:px-2 text-center sm:bg-zinc-950/30 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 align-middle">
+                            <td className="w-1/2 sm:w-[11%] sm:min-w-[65px] flex justify-end sm:justify-center items-center sm:table-cell order-2 py-1 px-0 sm:px-2 text-center sm:bg-zinc-900 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 align-middle">
                               <div className="flex items-center justify-center w-full">
                                 {t.type === 'LONG' ? (
                                   <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded-full uppercase tracking-wider font-mono transition-colors">LONG</span>
@@ -1666,7 +1666,7 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
                                 )}
                               </div>
                             </td>
-                            <td className="w-1/2 sm:w-[11%] sm:min-w-[65px] flex justify-start sm:justify-center items-center sm:table-cell order-3 py-1 px-0 sm:px-2 text-center sm:bg-zinc-950/30 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 align-middle">
+                            <td className="w-1/2 sm:w-[11%] sm:min-w-[65px] flex justify-start sm:justify-center items-center sm:table-cell order-3 py-1 px-0 sm:px-2 text-center sm:bg-zinc-900 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 align-middle">
                               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-1.5 w-full justify-start sm:justify-center">
                                 <span className="sm:hidden text-[9px] font-bold text-zinc-500 uppercase tracking-widest leading-none h-[10px]">RR</span>
                                 <div className="flex items-center justify-center w-full h-[18px]">{t.rr !== undefined && t.rr !== null && t.rr !== 0 ? (
@@ -1684,19 +1684,19 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
                                     </span>
                                   )
                                 ) : (
-                                  <span className="inline-flex items-center justify-center w-[38px] sm:w-[44px] h-[18px] text-center text-[9px] sm:text-[10px] font-medium text-zinc-500 rounded">—</span>
+                                  <span className="inline-flex items-center justify-center w-[38px] sm:w-[44px] h-[18px] text-center text-[9px] sm:text-[10px] font-medium text-zinc-500 rounded-md">—</span>
                                 )}
                                 </div>
                               </div>
                             </td>
-                            <td className="hidden sm:table-cell py-1 px-2 text-center text-zinc-400 font-medium sm:bg-zinc-950/30 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 w-[14%] min-w-[75px] align-middle">
+                            <td className="hidden sm:table-cell py-1 px-2 text-center text-zinc-400 font-medium sm:bg-zinc-900 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 w-[14%] min-w-[75px] align-middle">
                               <div className="flex items-center justify-center w-full">
                                 <span className="inline-flex items-center justify-center min-w-[54px] max-w-[130px] h-[20px] px-2.5 py-0 text-center text-[10px] font-bold text-zinc-300 bg-zinc-800/80 border border-zinc-700/80 group-hover:border-zinc-500 rounded-full uppercase tracking-wider font-mono transition-colors whitespace-nowrap truncate" title={t.session || 'Diğer'}>
                                   {t.session || 'Diğer'}
                                 </span>
                               </div>
                             </td>
-                            <td className="w-1/2 sm:w-[14%] sm:min-w-[75px] flex justify-end sm:justify-center items-center sm:table-cell order-4 py-1 px-0 sm:px-2 text-center sm:bg-zinc-950/30 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 align-middle">
+                            <td className="w-1/2 sm:w-[14%] sm:min-w-[75px] flex justify-end sm:justify-center items-center sm:table-cell order-4 py-1 px-0 sm:px-2 text-center sm:bg-zinc-900 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 align-middle">
                               <div className="flex items-center justify-center w-full h-[18px]">
                                 {isWin ? (
                                   <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded-full uppercase tracking-wider font-mono transition-colors">WIN</span>
@@ -1709,13 +1709,13 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
                                 )}
                               </div>
                             </td>
-                            <td className={`w-full sm:w-[18%] sm:min-w-[95px] flex justify-between sm:justify-end items-center sm:table-cell order-5 py-1 px-0 sm:px-3 text-right ${pnlColor} sm:bg-zinc-950/30 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 pt-3 sm:pt-0 border-t border-zinc-800/50 align-middle`}>
+                            <td className={`w-full sm:w-[18%] sm:min-w-[95px] flex justify-between sm:justify-end items-center sm:table-cell order-5 py-1 px-0 sm:px-3 text-right ${pnlColor} sm:bg-zinc-900 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 max-sm:pt-3 max-sm:border-t max-sm:border-zinc-800/50 sm:py-1 align-middle`}>
                               <span className="sm:hidden text-[10px] font-bold text-zinc-500 uppercase tracking-widest text-left font-sans">Kâr/Zarar</span>
-                              <div className="flex flex-col sm:flex-row items-end sm:items-center gap-0.5 sm:gap-1.5 sm:w-full sm:justify-end">
-                                <span className="text-sm sm:text-[11px] font-mono font-black">{pnlText}</span>
+                              <div className="flex flex-col sm:flex-row items-end sm:items-center gap-0.5 sm:gap-1.5 sm:w-full sm:justify-end sm:h-[20px]">
+                                <span className="text-sm sm:text-[11px] font-bold font-sans inline-flex items-center justify-end h-[20px] leading-none tracking-tight">{pnlText}</span>
                               </div>
                             </td>
-                            <td className="w-full sm:w-[12%] sm:min-w-[80px] flex justify-between sm:justify-center items-center sm:table-cell order-6 py-1 px-0 sm:px-2 text-center sm:bg-zinc-950/30 group-hover:bg-blue-950/10 sm:rounded-r-lg sm:border-y sm:border-r sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 sm:pt-1.5 pt-0 align-middle">
+                            <td className="w-full sm:w-[12%] sm:min-w-[80px] flex justify-between sm:justify-center items-center sm:table-cell order-6 py-1 px-0 sm:px-2 text-center sm:bg-zinc-900 group-hover:bg-blue-950/10 sm:rounded-r-xl sm:border-y sm:border-r sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 sm:pt-1.5 pt-0 align-middle">
                               <div className="sm:hidden">
                                 <span className="text-[9px] text-zinc-500 uppercase font-bold tracking-widest">Platform</span>
                               </div>

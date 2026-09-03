@@ -66,25 +66,24 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.15, ease: "easeOut" }}
           style={{ willChange: 'opacity' }}
           onClick={onClose}
           className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm"
         >
           <motion.div
-            initial={{ opacity: 0, scale: 0.94, y: 16 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.94, y: 16 }}
-            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            style={{ willChange: 'transform, opacity' }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            style={{ willChange: 'opacity' }}
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-sm bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/60 rounded-2xl shadow-2xl p-6 overflow-hidden text-center shadow-blue-500/5"
+            className="relative w-full max-w-sm bg-zinc-900 border border-zinc-700/50 rounded-2xl shadow-2xl p-6 overflow-hidden text-center"
           >
-            <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-blue-500/30 to-transparent z-50 pointer-events-none"></div>
             <button
               type="button"
               onClick={onClose}
-              className="absolute top-4 right-4 p-1.5 text-zinc-400 hover:text-zinc-100 bg-zinc-800/50 hover:bg-zinc-800 rounded-full transition-colors duration-200 ease-out cursor-pointer"
+              className="absolute top-4 right-4 p-1.5 text-zinc-400 hover:text-zinc-100 bg-zinc-800 hover:bg-zinc-700 rounded-full transition-colors duration-200 ease-out cursor-pointer"
             >
               <X size={18} />
             </button>
@@ -111,7 +110,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               type="button"
               onClick={handleGoogleLogin}
               disabled={loading}
-              className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-white hover:bg-zinc-100 active:scale-[0.98] rounded-xl text-xs font-bold font-mono text-zinc-900 transition-colors duration-200 ease-out shadow-sm cursor-pointer disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-white hover:bg-zinc-100 rounded-xl text-xs font-bold font-mono text-zinc-900 transition-colors duration-200 ease-out shadow-sm cursor-pointer disabled:opacity-50"
             >
               <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
                 <path

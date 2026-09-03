@@ -2,11 +2,14 @@ import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Trade } from "../types";
 import { VoiceToTradeButton } from "./VoiceToTradeButton";
-import { useAppStore } from "../store/useAppStore";
+import { TurkishDateTimePicker } from "./TurkishDateTimePicker";
 import {
   Plus,
   AlertCircle,
   X,
+  Search,
+  ChevronDown,
+  Cpu,
 } from "lucide-react";
 
 interface AddTradeFormProps {
@@ -43,7 +46,6 @@ const AddTradeForm = React.memo(function AddTradeForm({
   confirmations,
   assets,
 }: AddTradeFormProps) {
-  const { isQuantMode } = useAppStore();
   const [asset, setAsset] = useState("");
   const [type, setType] = useState<"LONG" | "SHORT">("LONG");
   const [selectedPlatform, setSelectedPlatform] = useState(() => {
@@ -297,12 +299,12 @@ const AddTradeForm = React.memo(function AddTradeForm({
         {editingTrade ? (
           <>
             <span className="h-2 w-2 rounded-full bg-amber-500 " />
-            {isQuantMode ? "UPDATE DATA LOG" : "İşlemi Düzenle"}
+            {"İşlemi Düzenle"}
           </>
         ) : (
           <>
             <span className="h-2 w-2 rounded-full bg-blue-400 " />
-            {isQuantMode ? "DATA STREAM & MODEL LOG REGISTRY" : "Yeni İşlem Kaydı"}
+            {"Yeni İşlem Kaydı"}
           </>
         )}
       </h2>
@@ -311,11 +313,11 @@ const AddTradeForm = React.memo(function AddTradeForm({
         <AnimatePresence>
           {errorMsg && (
             <motion.div
-              initial={{ scaleY: 0.8, opacity: 0, originY: 0 }}
-              animate={{ scaleY: 1, opacity: 1 }}
-              exit={{ scaleY: 0.8, opacity: 0 }}
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
               transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
-              className="flex items-center gap-2 text-rose-400 bg-rose-400/10 border border-rose-400/20 rounded-lg p-3 text-[10px] font-sans leading-relaxed overflow-hidden"
+              className="flex items-center gap-2 text-rose-400 bg-rose-400/10 border border-rose-400/20 rounded-xl p-3 text-[10px] font-sans leading-relaxed overflow-hidden"
             >
               <AlertCircle size={13} className="shrink-0 text-rose-400" />
               <span>{errorMsg}</span>
@@ -323,25 +325,30 @@ const AddTradeForm = React.memo(function AddTradeForm({
           )}
         </AnimatePresence>
 
-        <div className={`grid ${isQuantMode ? 'grid-cols-2' : 'grid-cols-3'} gap-2 sm:gap-3`}>
+        <div className={`grid ${'grid-cols-3'} gap-2 sm:gap-3`}>
           <div className="relative" ref={assetDropdownRef}>
-            <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-0.5">
-              {isQuantMode ? "DATA STREAM" : "Parite"}
+            <label className="block text-[10px] font-extrabold text-zinc-300 uppercase tracking-widest mb-1 font-sans">
+              {"Parite"}
             </label>
-            <input
-              type="text"
-              placeholder="Ara veya seç..."
-              value={asset}
-              onChange={(e) => {
-                setAsset(e.target.value.toUpperCase());
-                setIsAssetDropdownOpen(true);
-              }}
-              onFocus={() => setIsAssetDropdownOpen(true)}
-              className="w-full h-10 sm:h-8 bg-zinc-950 border border-zinc-800 rounded-lg px-3 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500 transition uppercase shadow-inner"
-            />
+            <div className="relative group">
+              <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-500 group-focus-within:text-blue-400 transition-colors duration-200">
+                <Search size={14} />
+              </span>
+              <input
+                type="text"
+                placeholder="Ara veya seç..."
+                value={asset}
+                onChange={(e) => {
+                  setAsset(e.target.value.toUpperCase());
+                  setIsAssetDropdownOpen(true);
+                }}
+                onFocus={() => setIsAssetDropdownOpen(true)}
+                className="w-full h-10 sm:h-9 pl-9 bg-zinc-950 border border-zinc-700/60 hover:border-zinc-600 focus:border-blue-500/80 focus:ring-2 focus:ring-blue-500/15 rounded-xl px-3 text-xs text-white placeholder-zinc-500 focus:outline-none transition-all duration-200 uppercase shadow-inner"
+              />
+            </div>
             {isAssetDropdownOpen && (
-              <div className="absolute z-10 w-full mt-1 bg-zinc-950 border border-zinc-800 rounded-lg max-h-60 flex flex-col overflow-hidden shadow-md">
-                <div className="overflow-y-auto flex-1 py-1">
+              <div className="absolute z-10 w-full mt-1.5 bg-zinc-950 border border-zinc-700/50 rounded-xl max-h-60 flex flex-col overflow-hidden shadow-2xl">
+                <div className="overflow-y-auto flex-1 py-1 divide-y divide-zinc-900">
                   {assets.filter((a) =>
                     a.toLowerCase().includes(asset.toLowerCase()),
                   ).length > 0 ? (
@@ -357,13 +364,13 @@ const AddTradeForm = React.memo(function AddTradeForm({
                             setIsAssetDropdownOpen(false);
                             setErrorMsg(null);
                           }}
-                          className="px-3 py-2 text-xs text-white cursor-pointer hover:bg-zinc-800 uppercase"
+                          className="px-3.5 py-2.5 text-xs text-zinc-200 cursor-pointer hover:bg-zinc-900 hover:text-white uppercase transition-colors"
                         >
                           {a}
                         </div>
                       ))
                   ) : (
-                    <div className="px-3 py-2 text-[10px] text-zinc-500 text-center">
+                    <div className="px-3 py-3 text-[10px] text-zinc-500 text-center">
                       Sonuç bulunamadı
                     </div>
                   )}
@@ -372,23 +379,26 @@ const AddTradeForm = React.memo(function AddTradeForm({
             )}
           </div>
 
-          {!isQuantMode && (
+          {true && (
             <div className="relative" ref={platformDropdownRef}>
-              <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-0.5 font-mono">
+              <label className="block text-[10px] font-extrabold text-zinc-300 uppercase tracking-widest mb-1 font-sans">
                 Platform
               </label>
               <div
                 onClick={() => setIsPlatformDropdownOpen(!isPlatformDropdownOpen)}
-                className="w-full h-10 sm:h-8 bg-zinc-950 border border-zinc-800 rounded-lg px-3 text-xs text-white flex items-center justify-between cursor-pointer focus:outline-none focus:border-zinc-500 transition shadow-inner font-mono uppercase select-none"
+                className="w-full h-10 sm:h-9 bg-zinc-950 border border-zinc-700/60 hover:border-zinc-600 focus:border-blue-500/80 focus:ring-2 focus:ring-blue-500/15 rounded-xl px-3.5 text-xs text-white flex items-center justify-between cursor-pointer focus:outline-none transition-all duration-200 shadow-inner font-mono uppercase select-none"
               >
-                <span className={selectedPlatform ? "text-white" : "text-zinc-500"}>
-                  {selectedPlatform || "Platform Seçin"}
-                </span>
-                <span className="text-zinc-500 text-[10px]">▼</span>
+                <div className="flex items-center gap-2">
+                  <Cpu size={13} className="text-zinc-500" />
+                  <span className={selectedPlatform ? "text-zinc-100" : "text-zinc-500"}>
+                    {selectedPlatform || "Platform Seçin"}
+                  </span>
+                </div>
+                <ChevronDown size={12} className="text-zinc-500" />
               </div>
               {isPlatformDropdownOpen && (
-                <div className="absolute z-10 w-full mt-1 bg-zinc-950 border border-zinc-800 rounded-lg max-h-60 flex flex-col overflow-hidden shadow-md">
-                  <div className="overflow-y-auto flex-1 py-1">
+                <div className="absolute z-10 w-full mt-1.5 bg-zinc-950 border border-zinc-700/50 rounded-xl max-h-60 flex flex-col overflow-hidden shadow-2xl">
+                  <div className="overflow-y-auto flex-1 py-1 divide-y divide-zinc-900">
                     {platforms.map((p, idx) => (
                       <div
                         key={`plat-${p}-${idx}`}
@@ -396,7 +406,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                           setSelectedPlatform(p);
                           setIsPlatformDropdownOpen(false);
                         }}
-                        className="px-3 py-2 text-xs text-white cursor-pointer hover:bg-zinc-800 font-mono uppercase"
+                        className="px-3.5 py-2.5 text-xs text-zinc-200 cursor-pointer hover:bg-zinc-900 hover:text-white font-mono uppercase transition-colors"
                       >
                         {p}
                       </div>
@@ -407,54 +417,54 @@ const AddTradeForm = React.memo(function AddTradeForm({
             </div>
           )}
 
-          <div>
-            <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-0.5 font-mono">
-              {isQuantMode ? "BIAS" : "Yön"}
+            <div>
+            <label className="block text-[10px] font-extrabold text-zinc-300 uppercase tracking-widest mb-1 font-sans">
+              {"Yön"}
             </label>
-            <div className="grid grid-cols-2 gap-1.5 h-10 sm:h-8">
+            <div className="grid grid-cols-2 gap-1.5 h-10 sm:h-9">
               <button
                 type="button"
                 onClick={() => setType("LONG")}
-                className={`rounded-lg text-[10px] font-black tracking-widest transition-colors duration-200 ease-out flex items-center justify-center border cursor-pointer uppercase ${
+                className={`rounded-xl text-[10px] font-mono font-bold tracking-wider transition-all duration-150 flex items-center justify-center border cursor-pointer uppercase ${
                   type === "LONG"
-                    ? "bg-emerald-400/10 text-emerald-400 border-emerald-400/25 shadow-sm"
-                    : "bg-zinc-950 text-zinc-500 border-zinc-800 hover:text-zinc-300 hover:border-zinc-600"
+                    ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-xs"
+                    : "bg-zinc-950 text-zinc-500 border-zinc-800 hover:text-zinc-300 hover:border-zinc-700"
                 }`}
               >
-                {isQuantMode ? "BULLISH" : "LONG"}
+                {"LONG"}
               </button>
               <button
                 type="button"
                 onClick={() => setType("SHORT")}
-                className={`rounded-lg text-[10px] font-black tracking-widest transition-colors duration-200 ease-out flex items-center justify-center border cursor-pointer uppercase ${
+                className={`rounded-xl text-[10px] font-mono font-bold tracking-wider transition-all duration-150 flex items-center justify-center border cursor-pointer uppercase ${
                   type === "SHORT"
-                    ? "bg-rose-400/10 text-rose-400 border-rose-400/25 shadow-sm"
-                    : "bg-zinc-950 text-zinc-500 border-zinc-800 hover:text-zinc-300 hover:border-zinc-600"
+                    ? "bg-rose-500/20 text-rose-300 border-rose-500/40 shadow-xs"
+                    : "bg-zinc-950 text-zinc-500 border-zinc-800 hover:text-zinc-300 hover:border-zinc-700"
                 }`}
               >
-                {isQuantMode ? "BEARISH" : "SHORT"}
+                {"SHORT"}
               </button>
             </div>
           </div>
         </div>
 
-        <div className="bg-zinc-950 border border-zinc-800 rounded-lg p-2.5 flex flex-col md:flex-row gap-3 md:items-center">
+        <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-4 flex flex-col md:flex-row gap-4 md:items-center shadow-lg">
           <div className="flex flex-col gap-1 shrink-0">
-            <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest font-mono">
-              {isQuantMode ? "VALIDATION STATUS" : "İşlem Durumu"}
+            <span className="text-[10px] font-extrabold text-zinc-300 uppercase tracking-widest font-sans mb-1">
+              {"İşlem Durumu"}
             </span>
             <div className="flex gap-1.5 flex-wrap">
               {(["WIN", "LOSS", "BREAKEVEN"] as const).map(
                 (statusValue) => {
                   const colors: Record<string, string> = {
-                    WIN: "bg-emerald-400/10 text-emerald-400 border-emerald-400/25 shadow-sm",
-                    LOSS: "bg-rose-400/10 text-rose-400 border-rose-400/25 shadow-sm",
-                    BREAKEVEN: "bg-blue-400/10 text-blue-400 border-blue-400/25 shadow-sm",
+                    WIN: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-xs",
+                    LOSS: "bg-rose-500/20 text-rose-300 border-rose-500/40 shadow-xs",
+                    BREAKEVEN: "bg-blue-500/20 text-blue-300 border-blue-500/40 shadow-xs",
                   };
                   const labels: Record<string, string> = {
-                    WIN: isQuantMode ? "🏆 VALIDATED" : "🏆 WIN",
-                    LOSS: isQuantMode ? "📈 NULL / REJECTED" : "📈 LOSS",
-                    BREAKEVEN: isQuantMode ? "⚖️ EQUILIBRIUM" : "⚖️ BREAKEVEN",
+                    WIN: "WIN",
+                    LOSS: "LOSS",
+                    BREAKEVEN: "BREAKEVEN",
                   };
                   const active = tradeStatus === statusValue;
                   return (
@@ -470,10 +480,10 @@ const AddTradeForm = React.memo(function AddTradeForm({
                           setRrValue("");
                         }
                       }}
-                      className={`px-2 py-1 text-[10px] font-black font-mono rounded border cursor-pointer uppercase transition-colors duration-200 ease-out ${
+                      className={`px-3 py-1.5 text-[10px] font-bold font-mono rounded-xl border cursor-pointer uppercase transition-all duration-150 ${
                         active
                           ? colors[statusValue]
-                          : "bg-zinc-800 text-zinc-400 border-transparent hover:text-zinc-200 hover:bg-zinc-700/50"
+                          : "bg-zinc-950/80 text-zinc-400 border-zinc-800 hover:text-zinc-200 hover:bg-zinc-800/80 hover:border-zinc-700"
                       }`}
                     >
                       {labels[statusValue]}
@@ -484,39 +494,35 @@ const AddTradeForm = React.memo(function AddTradeForm({
             </div>
           </div>
 
-          <div className="flex flex-col gap-1 shrink-0 pt-2 md:pt-0 md:pl-3 md:border-l border-zinc-700">
-            <label className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest font-mono">
-              {isQuantMode ? "R:R METRIC" : "R:R Oranı"}
+          <div className="flex flex-col gap-1 shrink-0 pt-3 md:pt-0 md:pl-4 md:border-l border-zinc-800/80">
+            <label className="block text-[10px] font-extrabold text-zinc-300 uppercase tracking-widest font-sans mb-1">
+              {"R:R Oranı"}
             </label>
-            <div className="flex h-10 sm:h-8 rounded-lg border border-zinc-700 bg-zinc-950 overflow-hidden focus-within:border-zinc-500 transition w-36">
-              <input
-                type="number"
-                step="0.1"
-                min="0"
-                placeholder="Örn: 2.5"
-                value={tradeStatus === "BREAKEVEN" ? 0 : rrValue}
-                disabled={tradeStatus === "BREAKEVEN"}
-                onChange={(e) =>
-                  setRrValue(
-                    e.target.value !== "" ? Number(e.target.value) : "",
-                  )
-                }
-                className={`w-full bg-transparent px-3 text-xs text-white focus:outline-none placeholder-zinc-700 font-mono ${
-                  tradeStatus === "BREAKEVEN"
-                    ? "opacity-55 cursor-not-allowed"
-                    : ""
-                }`}
-              />
-            </div>
+            <input
+              type="number"
+              step="0.1"
+              min="0"
+              placeholder="Örn: 2.5"
+              value={tradeStatus === "BREAKEVEN" ? 0 : rrValue}
+              disabled={tradeStatus === "BREAKEVEN"}
+              onChange={(e) =>
+                setRrValue(
+                  e.target.value !== "" ? Number(e.target.value) : "",
+                )
+              }
+              className={`w-36 h-10 sm:h-9 bg-zinc-950 border border-zinc-700/60 hover:border-zinc-600 focus:border-blue-500/80 focus:ring-2 focus:ring-blue-500/15 rounded-xl px-3 text-xs text-white focus:outline-none placeholder-zinc-500 font-mono transition-all duration-200 shadow-inner ${
+                tradeStatus === "BREAKEVEN"
+                  ? "opacity-55 cursor-not-allowed"
+                  : ""
+              }`}
+            />
           </div>
 
-          <div className="flex-1 flex flex-col gap-1 pt-2 md:pt-0 md:pl-3 md:border-l border-zinc-700">
-            <label className="block text-[9px] font-black text-zinc-400 uppercase tracking-widest font-mono">
-              {isQuantMode 
-                ? `DELTA OUTPUT (${currency})`
-                : tradeStatus === "BREAKEVEN"
-                  ? "Breakeven"
-                  : `Elde Edilen Net ${tradeStatus === "WIN" ? "Kâr" : tradeStatus === "LOSS" ? "Zarar" : "Kâr / Zarar"} (${currency})`}
+          <div className="flex-1 flex flex-col gap-1 pt-3 md:pt-0 md:pl-4 md:border-l border-zinc-800/80">
+            <label className="block text-[10px] font-extrabold text-zinc-300 uppercase tracking-widest font-sans mb-1">
+              {tradeStatus === "BREAKEVEN"
+                ? "Breakeven"
+                : `Net ${tradeStatus === "WIN" ? "Kâr" : tradeStatus === "LOSS" ? "Zarar" : "Kâr / Zarar"} (${currency})`}
             </label>
             <input
               type="number"
@@ -530,29 +536,29 @@ const AddTradeForm = React.memo(function AddTradeForm({
                   e.target.value !== "" ? Number(e.target.value) : "",
                 )
               }
-              className={`w-full h-10 sm:h-8 bg-zinc-950 border border-zinc-800 rounded-lg px-3 text-xs text-white focus:outline-none focus:border-zinc-500 font-mono transition-colors duration-200 ease-out ${tradeStatus === "BREAKEVEN" ? "opacity-50 cursor-not-allowed !bg-zinc-900" : ""}`}
+              className={`w-full h-10 sm:h-9 bg-zinc-950 border border-zinc-700/60 hover:border-zinc-600 focus:border-blue-500/80 focus:ring-2 focus:ring-blue-500/15 rounded-xl px-3 text-xs text-white focus:outline-none font-mono transition-all duration-200 shadow-inner placeholder-zinc-500 ${tradeStatus === "BREAKEVEN" ? "opacity-50 cursor-not-allowed !bg-zinc-950" : ""}`}
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-0.5 font-mono">
-            {isQuantMode ? "MODEL PARAMETERS & SPECIFICATION" : "Notlar"}
+          <label className="block text-[10px] font-extrabold text-zinc-300 uppercase tracking-widest mb-1 font-sans">
+            {"Notlar"}
           </label>
           <textarea
-            placeholder={isQuantMode ? "Algorithmic bias, model parameters, price variance indicators..." : "Kurgulanan setup, destek direnç seviyeleri veya psikolojik etkenler..."}
-            rows={1}
+            placeholder={"Kurgulanan setup, destek direnç seviyeleri veya psikolojik etkenler..."}
+            rows={2}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2 text-xs text-white placeholder-zinc-700 focus:outline-none focus:border-zinc-500 transition resize-none leading-relaxed font-sans"
+            className="w-full bg-zinc-950 border border-zinc-700/60 hover:border-zinc-600 focus:border-blue-500/80 focus:ring-2 focus:ring-blue-500/15 rounded-xl p-3 text-xs text-white placeholder-zinc-500 focus:outline-none transition-all duration-200 resize-none leading-relaxed font-sans shadow-inner min-h-[68px]"
           />
         </div>
 
-        <div className="bg-zinc-950 border border-zinc-800 rounded-lg p-2 flex flex-col gap-2">
+        <div className="bg-zinc-900 border border-zinc-700/50 rounded-2xl p-3 flex flex-col gap-2.5">
           <div className="flex flex-col sm:flex-row sm:items-start gap-1.5 sm:gap-3 w-full">
             <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 flex-1">
               <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest min-w-[70px]">
-                {isQuantMode ? "TIME WINDOW (UTC)" : "Session"}
+                {"Session"}
               </span>
               <div className="flex flex-wrap gap-1.5 w-full">
                 {sessions.map((sess, idx) => (
@@ -562,7 +568,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                     onClick={() =>
                       setSelectedSession(sess === selectedSession ? "" : sess)
                     }
-                    className={`px-2 py-1 text-[9px] font-bold rounded-md uppercase transition-colors duration-200 ease-out font-mono ${
+                    className={`px-2 py-1 text-[9px] font-bold rounded-lg uppercase transition-colors duration-200 ease-out font-mono ${
                       sess === selectedSession
                         ? "bg-purple-500/20 text-purple-400 border border-purple-500/50"
                         : "bg-zinc-800/80 text-zinc-400 border border-transparent hover:text-zinc-200 hover:bg-zinc-700"
@@ -577,7 +583,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
 
           <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 border-t border-zinc-800 pt-1.5">
             <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest min-w-[70px]">
-              {isQuantMode ? "MACRO TIMEFRAME" : "HTF"}
+              {"HTF"}
             </span>
             <div className="flex flex-wrap gap-1.5 w-full">
               {htfTimeframes.map((tf, idx) => (
@@ -587,7 +593,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                   onClick={() =>
                     setSelectedHtfTimeframe(tf === selectedHtfTimeframe ? "" : tf)
                   }
-                  className={`px-2.5 py-1 text-[9px] font-bold rounded-md uppercase transition-colors duration-200 ease-out font-mono ${
+                  className={`px-2.5 py-1 text-[9px] font-bold rounded-lg uppercase transition-colors duration-200 ease-out font-mono ${
                     tf === selectedHtfTimeframe
                       ? "bg-rose-500/20 text-rose-400 border border-rose-500/50"
                       : "bg-zinc-800/80 text-zinc-400 border border-transparent hover:text-zinc-200 hover:bg-zinc-700"
@@ -601,7 +607,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
 
           <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 border-t border-zinc-800 pt-1.5">
             <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest min-w-[70px]">
-              {isQuantMode ? "MICRO RESOLUTION" : "ETF"}
+              {"ETF"}
             </span>
             <div className="flex flex-wrap gap-1.5 w-full">
               {timeframes.map((tf, idx) => (
@@ -611,7 +617,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                   onClick={() =>
                     setSelectedTimeframe(tf === selectedTimeframe ? "" : tf)
                   }
-                  className={`px-2.5 py-1 text-[9px] font-bold rounded-md uppercase transition-colors duration-200 ease-out font-mono ${
+                  className={`px-2.5 py-1 text-[9px] font-bold rounded-lg uppercase transition-colors duration-200 ease-out font-mono ${
                     tf === selectedTimeframe
                       ? "bg-blue-500/20 text-blue-400 border border-blue-500/50"
                       : "bg-zinc-800/80 text-zinc-400 border border-transparent hover:text-zinc-200 hover:bg-zinc-700"
@@ -625,7 +631,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
 
           <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 border-t border-zinc-800 pt-1.5">
             <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest min-w-[70px]">
-              {isQuantMode ? "MODEL ARCHITECTURE" : "Konsept"}
+              {"Konsept"}
             </span>
             <div className="flex flex-wrap gap-1.5 w-full">
               {concepts.map((s, idx) => {
@@ -650,7 +656,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
 
           <div className="flex flex-col sm:flex-row sm:items-start gap-1.5 border-t border-zinc-800 pt-1.5">
             <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest min-w-[70px] mt-1">
-              {isQuantMode ? "VALIDATION TRIGGERS" : "Onay"}
+              {"Onay"}
             </span>
             <div className="flex flex-wrap gap-1.5 w-full">
               {confirmations.map((c, idx) => {
@@ -661,7 +667,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                   "CHoCH": "Structural Shift",
                   "BOS": "Trend Extension"
                 };
-                const displayLabel = isQuantMode ? (quantLabelMap[c.toUpperCase()] || c) : c;
+                const displayLabel = false ? (quantLabelMap[c.toUpperCase()] || c) : c;
                 return (
                   <button
                     key={`conf-${c}-${idx}`}
@@ -690,9 +696,9 @@ const AddTradeForm = React.memo(function AddTradeForm({
         </div>
 
         <div>
-          <div className="flex items-center justify-between mb-0.5">
-            <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest font-mono">
-              {isQuantMode ? "TECHNICAL SPECIFICATION / URL" : "Görsel"}
+          <div className="flex items-center justify-between mb-1">
+            <label className="block text-[10px] font-extrabold text-zinc-300 uppercase tracking-widest font-sans">
+              {"Görsel"}
             </label>
           </div>
 
@@ -700,14 +706,14 @@ const AddTradeForm = React.memo(function AddTradeForm({
             type="url"
             value={screenshot || ""}
             onChange={(e) => setScreenshot(e.target.value)}
-            placeholder={isQuantMode ? "https://... (Technical spec / log URL)" : "https://... (Görsel URL yapıştırın)"}
-            className="w-full h-10 sm:h-8 bg-zinc-950 border border-zinc-800 rounded-lg px-3 text-xs text-zinc-300 placeholder-zinc-600 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition font-mono"
+            placeholder={"https://... (Görsel URL yapıştırın)"}
+            className="w-full h-10 sm:h-9 bg-zinc-950 border border-zinc-700/60 hover:border-zinc-600 focus:border-blue-500/80 focus:ring-2 focus:ring-blue-500/15 rounded-xl px-3 text-xs text-white placeholder-zinc-500 focus:outline-none transition font-mono shadow-inner"
           />
           {screenshot && (
-            <div className="mt-2 relative group rounded-lg overflow-hidden border border-zinc-800 bg-zinc-950 flex flex-col items-center justify-center p-1 min-h-[100px]">
+            <div className="mt-2 relative group rounded-xl overflow-hidden border border-zinc-800 bg-zinc-950 flex flex-col items-center justify-center p-1 min-h-[100px]">
               {previewError ? (
                 <div className="flex flex-col items-center justify-center p-4 text-center text-rose-400">
-                  <span className="text-xs mb-1">⚠️</span>
+                  <AlertCircle size={14} className="mb-1" />
                   <p className="text-[10px] font-medium font-sans">
                     Geçersiz veya yüklenemeyen görsel URL'si
                   </p>
@@ -720,7 +726,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                 <img
                   src={screenshot}
                   alt="Trade Chart Preview"
-                  className="object-contain max-h-[140px] w-full rounded"
+                  className="object-contain max-h-[140px] w-full rounded-lg"
                   referrerPolicy="no-referrer"
                   loading="lazy"
                   decoding="async"
@@ -740,15 +746,13 @@ const AddTradeForm = React.memo(function AddTradeForm({
 
         <div className="flex flex-col sm:flex-row gap-2 pt-1.5 items-end justify-between border-t border-zinc-800 mt-1">
           <div className="w-full sm:w-auto">
-            <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-0.5 pl-1">
-              {isQuantMode ? "TIMESTAMP (UTC)" : "İşlem Tarihi"}
+            <label className="block text-[9px] font-bold text-zinc-400 font-mono uppercase tracking-widest mb-0.5 pl-1">
+              {"İşlem Tarihi"}
             </label>
             <div className="flex items-center gap-2">
-              <input
-                type="datetime-local"
+              <TurkishDateTimePicker
                 value={tradeDate}
-                onChange={(e) => setTradeDate(e.target.value)}
-                className="w-full sm:w-auto h-10 sm:h-8 bg-zinc-950 border border-zinc-800 rounded-lg px-2 text-[10px] text-zinc-300 focus:outline-none focus:border-zinc-500 transition font-mono"
+                onChange={setTradeDate}
               />
               <VoiceToTradeButton
                 options={{ platforms, sessions, concepts, confirmations, timeframes, htfTimeframes }}
@@ -761,23 +765,23 @@ const AddTradeForm = React.memo(function AddTradeForm({
             <button
               type="button"
               onClick={onCancelEdit}
-              className="bg-red-500/10 px-4 hover:bg-red-500/20 border border-red-500/30 text-red-500 hover:text-red-400 h-10 sm:h-8 text-[9px] font-black tracking-widest rounded-lg uppercase transition-colors duration-200 ease-out cursor-pointer font-mono"
+              className="bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 hover:border-zinc-600 text-zinc-400 hover:text-zinc-200 px-4 h-10 sm:h-8 text-[10px] font-bold tracking-wider rounded-xl uppercase transition-all duration-150 cursor-pointer font-mono"
             >
-              {isQuantMode ? "CANCEL" : "İptal / Kapat"}
+              {"İptal / Kapat"}
             </button>
             <button
               type="submit"
-              className={`px-6 h-10 sm:h-8 flex-1 sm:flex-none text-[9px] font-black tracking-widest rounded-lg uppercase transition-all duration-200 ease-out flex items-center justify-center gap-1 cursor-pointer border shadow-xs backdrop-blur-sm ${
+              className={`px-6 h-10 sm:h-8 flex-1 sm:flex-none text-[10px] font-bold font-mono tracking-wider rounded-xl uppercase transition-all duration-150 flex items-center justify-center gap-1.5 cursor-pointer shadow-xs ${
                 editingTrade
-                  ? "bg-amber-500/15 hover:bg-amber-500/25 border-amber-500/30 text-amber-500"
-                  : "bg-blue-500/15 hover:bg-blue-500/25 border-blue-500/30 text-blue-400"
+                  ? "bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40"
+                  : "bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/40"
               }`}
             >
               {editingTrade ? (
-                <>{isQuantMode ? "UPDATE DATA LOG" : "💾 DEĞİŞİKLİKLERİ KAYDET"}</>
+                <>{"DEĞİŞİKLİKLERİ KAYDET"}</>
               ) : (
                 <>
-                  <Plus size={12} /> {isQuantMode ? "COMMIT DATA LOG" : "POZİSYON EKLE"}
+                  <Plus size={13} /> {"POZİSYON EKLE"}
                 </>
               )}
             </button>

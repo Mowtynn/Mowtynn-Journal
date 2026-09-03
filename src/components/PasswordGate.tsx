@@ -185,18 +185,15 @@ export function PasswordGate({ children }: PasswordGateProps) {
 
   return (
     <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center p-4 text-zinc-100 font-sans selection:bg-blue-500/30 relative overflow-hidden">
-      {/* Background Ambient Glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[300px] bg-blue-500/10 blur-[100px] pointer-events-none rounded-full opacity-50" />
-      
       <motion.div 
-        initial={{ opacity: 0, scale: 0.95, y: 10 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-        className="w-full max-w-md relative z-10"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.15, ease: "easeOut" }}
+        className="w-full max-w-sm relative z-10"
       >
         {/* Brand / Logo */}
         <div className="flex flex-col items-center mb-8">
-          <div className="h-10 w-10 rounded-xl bg-blue-500/10 border border-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.15)] flex items-center justify-center font-black text-blue-400 font-sans text-lg select-none mb-4">
+          <div className="h-11 w-11 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center font-black text-blue-400 font-sans text-lg select-none mb-4">
             TJ
           </div>
           <h1 className="text-xl font-bold tracking-wide text-zinc-100 uppercase">
@@ -207,18 +204,16 @@ export function PasswordGate({ children }: PasswordGateProps) {
           </p>
         </div>
 
-        <div className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/60 rounded-2xl shadow-2xl overflow-hidden relative shadow-blue-500/5">
-          <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-blue-500/30 to-transparent"></div>
-          
-          <div className="p-6 sm:p-8">
+        <div className="bg-zinc-900/60 backdrop-blur-md border border-zinc-800/80 rounded-2xl shadow-2xl overflow-hidden relative">
+          <div className="p-6">
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-4">
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                     {isLockedOut ? (
-                      <AlertCircle className="h-4 w-4 text-red-500" />
+                      <AlertCircle className="h-4 w-4 text-rose-500" />
                     ) : (
-                      <Lock className={`h-4 w-4 transition-colors ${error ? 'text-red-500' : 'text-zinc-500 group-focus-within:text-blue-400'}`} />
+                      <Lock className={`h-4 w-4 transition-colors ${error ? 'text-rose-500' : 'text-zinc-500 group-focus-within:text-blue-400'}`} />
                     )}
                   </div>
                   <input
@@ -228,56 +223,51 @@ export function PasswordGate({ children }: PasswordGateProps) {
                     placeholder={isLockedOut ? `Kilitli (${remainingTime}s)` : "Erişim Şifresi"}
                     autoFocus
                     disabled={isLockedOut || isProcessing}
-                    className={`w-full bg-zinc-950/60 border ${error || isLockedOut ? 'border-red-500/40 focus:border-red-500/60' : 'border-zinc-800 focus:border-blue-500/40'} rounded-xl py-3 pl-10 pr-4 text-white font-mono text-sm placeholder:font-sans placeholder:text-zinc-600 focus:outline-none focus:ring-1 ${error || isLockedOut ? 'focus:ring-red-500/20' : 'focus:ring-blue-500/20'} transition-all disabled:opacity-50 disabled:cursor-not-allowed`}
+                    className={`w-full bg-zinc-950/80 border ${error || isLockedOut ? 'border-rose-500/40 focus:border-rose-500/60' : 'border-zinc-800 focus:border-blue-500/30'} rounded-xl py-3 pl-10 pr-4 text-white font-mono text-sm placeholder:font-sans placeholder:text-zinc-600 focus:outline-none focus:ring-1 ${error || isLockedOut ? 'focus:ring-rose-500/20' : 'focus:ring-blue-500/20'} transition-all disabled:opacity-50 disabled:cursor-not-allowed`}
                   />
                   {error && !isLockedOut && (
                     <motion.p 
                       initial={{ opacity: 0, y: -5 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="absolute -bottom-5 left-1 text-[10px] text-red-400 font-medium"
+                      className="absolute -bottom-5 left-1 text-[10px] text-rose-400 font-medium font-mono"
                     >
                       Hatalı şifre. Kalan hak: {Math.max(0, MAX_ATTEMPTS - attempts)}
                     </motion.p>
                   )}
                 </div>
 
-                <div className="flex flex-col gap-2.5 pt-2">
-                  <label className="flex items-center gap-3 cursor-pointer group p-2 rounded-lg hover:bg-zinc-800/30 transition-colors">
-                    <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center transition-all duration-200 ${!rememberMe ? 'border-blue-500 bg-blue-500/20' : 'border-zinc-700 bg-zinc-950 group-hover:border-zinc-500'}`}>
-                      {!rememberMe && <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]" />}
-                    </div>
-                    <input 
-                      type="radio" 
-                      className="hidden"
-                      checked={!rememberMe}
-                      onChange={() => setRememberMe(false)}
-                    />
-                    <div className="flex flex-col">
-                      <span className={`font-medium text-xs ${!rememberMe ? 'text-zinc-200' : 'text-zinc-400'}`}>Tek Seferlik Giriş</span>
-                    </div>
-                  </label>
-                  
-                  <label className="flex items-center gap-3 cursor-pointer group p-2 rounded-lg hover:bg-zinc-800/30 transition-colors">
-                    <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center transition-all duration-200 ${rememberMe ? 'border-blue-500 bg-blue-500/20' : 'border-zinc-700 bg-zinc-950 group-hover:border-zinc-500'}`}>
-                      {rememberMe && <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]" />}
-                    </div>
-                    <input 
-                      type="radio" 
-                      className="hidden"
-                      checked={rememberMe}
-                      onChange={() => setRememberMe(true)}
-                    />
-                    <div className="flex flex-col">
-                      <span className={`font-medium text-xs ${rememberMe ? 'text-zinc-200' : 'text-zinc-400'}`}>Beni Hatırla</span>
-                    </div>
-                  </label>
+                <div className="bg-zinc-950/80 border border-zinc-800/80 rounded-xl p-1 grid grid-cols-2 gap-1">
+                  <button
+                    type="button"
+                    disabled={isLockedOut || isProcessing}
+                    onClick={() => setRememberMe(false)}
+                    className={`py-2 px-3 text-xs font-bold font-mono tracking-wide rounded-lg transition-all duration-150 cursor-pointer flex items-center justify-center gap-1.5 ${
+                      !rememberMe
+                        ? "bg-zinc-800/80 text-blue-400 border border-zinc-700/40 shadow-xs"
+                        : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/40"
+                    }`}
+                  >
+                    <span>Tek Seferlik Giriş</span>
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isLockedOut || isProcessing}
+                    onClick={() => setRememberMe(true)}
+                    className={`py-2 px-3 text-xs font-bold font-mono tracking-wide rounded-lg transition-all duration-150 cursor-pointer flex items-center justify-center gap-1.5 ${
+                      rememberMe
+                        ? "bg-zinc-800/80 text-blue-400 border border-zinc-700/40 shadow-xs"
+                        : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/40"
+                    }`}
+                  >
+                    <span>Beni Hatırla</span>
+                  </button>
                 </div>
               </div>
 
               <button
                 type="submit"
                 disabled={isLockedOut || isProcessing || !input}
-                className="w-full h-11 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 hover:border-blue-500/40 font-mono font-bold uppercase tracking-widest rounded-xl flex items-center justify-center gap-2 transition-all duration-200 ease-out group disabled:opacity-50 disabled:cursor-not-allowed shadow-xs mt-2 active:scale-95 text-[11px]"
+                className="w-full h-11 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 hover:border-blue-500/40 font-mono font-bold uppercase tracking-widest rounded-xl flex items-center justify-center gap-2 transition-all duration-200 ease-out group disabled:opacity-50 disabled:cursor-not-allowed shadow-xs mt-2 text-[11px] cursor-pointer"
               >
                 <span>{isProcessing ? 'DOĞRULANIYOR...' : 'GİRİŞ YAP'}</span>
                 {!isProcessing && !isLockedOut && (

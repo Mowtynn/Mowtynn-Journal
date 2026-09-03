@@ -1,7 +1,7 @@
 import React, { useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Crosshair, Target, Infinity as InfinityIcon, Calendar, AlertTriangle, Activity, Layers, Percent, X, CheckCircle2, Minus, Filter, ChevronLeft, ChevronRight, ChevronsUpDown, Search, Grid, SlidersHorizontal, Download, Clock } from 'lucide-react';
+import { Crosshair, Target, Infinity as InfinityIcon, Calendar, AlertTriangle, Activity, Layers, Percent, X, Filter, ChevronLeft, ChevronRight, ChevronsUpDown, Search, Grid, SlidersHorizontal, Download, Clock } from 'lucide-react';
 import { Trade } from '../types';
 import { HeatmapModal } from './HeatmapModal';
 import { useMetricMode } from '../context/MetricContext';
@@ -617,7 +617,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
 
   if (!metrics || !customMetrics || trades.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center p-12 text-center bg-zinc-950/60 border border-zinc-800/80 rounded-xl shadow-sm mt-4">
+      <div className="flex flex-col items-center justify-center p-12 text-center bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm rounded-xl transition-all duration-300 shadow-sm mt-4">
         <Target size={32} className="text-zinc-600 mb-4 opacity-50" />
         <h3 className="text-sm font-bold text-zinc-300 font-mono mb-2">Henüz Yeterli Veri Yok</h3>
         <p className="text-[11px] text-zinc-500 max-w-sm">Gelişmiş metriklerin hesaplanabilmesi için sisteme tamamlanmış (WIN/LOSS) işlemler eklemelisiniz.</p>
@@ -641,7 +641,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
   );
 
   return (
-    <div className="mt-4 mb-4 flex flex-col bg-zinc-950/60 border border-zinc-800/80 rounded-xl shadow-sm overflow-hidden divide-y divide-zinc-800/80 w-full">
+    <div className="mt-4 mb-4 flex flex-col bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm rounded-xl transition-all duration-300 shadow-sm overflow-hidden divide-y divide-zinc-800/80 w-full">
       
       {/* SEKSIYON BAŞLIĞI */}
       
@@ -696,7 +696,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                     <motion.div 
                       initial={{ scaleY: 0 }}
                       animate={{ scaleY: 1 }}
-                      className={`absolute bottom-0 w-4 sm:w-6 ${isProfit ? 'bg-emerald-500' : 'bg-rose-500'} rounded-sm  cursor-pointer group-hover:scale-x-110 transition-transform origin-bottom`}
+                      className={`absolute bottom-0 w-4 sm:w-6 ${isProfit ? 'bg-emerald-500' : 'bg-rose-500'} rounded-t-md cursor-pointer  origin-bottom`}
                       style={{
                         height: `${Math.max((Math.abs(metricValue) / maxWeeklyPnlAbs) * 100, 2)}%`,
                         minHeight: '2px'
@@ -738,23 +738,23 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                   </h3>
                   <button
                     onClick={() => setIsSessionFilterOpen(!isSessionFilterOpen)}
-                    className={`flex items-center justify-center w-5 h-5 ml-1 rounded-md border transition-colors duration-200 ease-out ${
+                    className={`flex items-center justify-center w-5 h-5 ml-1 rounded-lg border transition-colors duration-200 ease-out ${
                       isSessionFilterOpen 
                         ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' 
-                        : 'bg-zinc-900 border-zinc-700 text-zinc-300 hover:bg-zinc-800'
+                        : 'bg-zinc-900/50 border-zinc-700/50 text-zinc-300 hover:bg-zinc-800'
                     } shrink-0`}
                   >
                     <Filter size={9} />
                   </button>
                   <button
                     onClick={() => setIsHeatmapOpen(true)}
-                    className="flex items-center justify-center w-5 h-5 rounded-md border transition-colors duration-200 ease-out bg-zinc-900 border-zinc-700 text-zinc-300 hover:bg-emerald-500/10 hover:border-emerald-500/30 hover:text-emerald-400 shrink-0"
+                    className="flex items-center justify-center w-5 h-5 rounded-lg border transition-colors duration-200 ease-out bg-zinc-900/50 border-zinc-700/50 text-zinc-300 hover:bg-emerald-500/10 hover:border-emerald-500/30 hover:text-emerald-400 shrink-0"
                   >
                     <Grid size={9} />
                   </button>
                   <button
                     onClick={() => setIsDeadZoneModalOpen(true)}
-                    className="flex items-center justify-center w-5 h-5 rounded-md border transition-colors duration-200 ease-out bg-zinc-900 border-zinc-700 text-zinc-300 hover:bg-blue-500/10 hover:border-blue-500/30 hover:text-blue-400 shrink-0"
+                    className="flex items-center justify-center w-5 h-5 rounded-lg border transition-colors duration-200 ease-out bg-zinc-900/50 border-zinc-700/50 text-zinc-300 hover:bg-blue-500/10 hover:border-blue-500/30 hover:text-blue-400 shrink-0"
                   >
                     <InfinityIcon size={10} />
                   </button>
@@ -763,16 +763,16 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                 <AnimatePresence>
                   {isSessionFilterOpen && (
                     <motion.div
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.9 }}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
                       transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
                       className="overflow-hidden whitespace-nowrap "
                     >
                       <div className="flex gap-1">
-                        <button onClick={() => setSessionSort('pnl')} className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider transition-colors duration-200 ease-out border ${sessionSort === 'pnl' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'}`}>Kâr</button>
-                        <button onClick={() => setSessionSort('loss')} className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider transition-colors duration-200 ease-out border ${sessionSort === 'loss' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'}`}>Zarar</button>
-                        <button onClick={() => setSessionSort('winrate')} className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider transition-colors duration-200 ease-out border ${sessionSort === 'winrate' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'}`}>WR</button>
+                        <button onClick={() => setSessionSort('pnl')} className={`px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-colors duration-200 ease-out border ${sessionSort === 'pnl' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'}`}>Kâr</button>
+                        <button onClick={() => setSessionSort('loss')} className={`px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-colors duration-200 ease-out border ${sessionSort === 'loss' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'}`}>Zarar</button>
+                        <button onClick={() => setSessionSort('winrate')} className={`px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-colors duration-200 ease-out border ${sessionSort === 'winrate' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'}`}>WR</button>
                       </div>
                     </motion.div>
                   )}
@@ -806,7 +806,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                                           sr.session === 'NY PM' ? 'text-orange-400' : 'text-zinc-300';
 
                     return (
-                      <div key={idx} className="bg-zinc-950 px-2 py-1.5 flex flex-col justify-center rounded-lg border border-zinc-900/40">
+                      <div key={idx} className="bg-zinc-800 px-2 py-1.5 flex flex-col justify-center rounded-lg border border-zinc-700/50">
                         <div className="flex items-center justify-between text-[9px] font-mono mb-1">
                           <div className="flex items-center gap-1.5">
                             <Clock size={9} className={`${sessionColors}`} />
@@ -859,7 +859,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                   </h3>
                   <button
                     onClick={() => setIsOptimalFreqModalOpen(true)}
-                    className="flex items-center justify-center w-5 h-5 ml-1 rounded-md border transition-colors duration-200 ease-out bg-zinc-900 border-zinc-700 text-zinc-300 hover:bg-pink-500/10 hover:border-pink-500/30 hover:text-pink-400 shrink-0"
+                    className="flex items-center justify-center w-5 h-5 ml-1 rounded-lg border transition-colors duration-200 ease-out bg-zinc-900/50 border-zinc-700/50 text-zinc-300 hover:bg-pink-500/10 hover:border-pink-500/30 hover:text-pink-400 shrink-0"
                   >
                     <Crosshair size={10} />
                   </button>
@@ -887,7 +887,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                               {val !== 0 ? (isProfitVal ? '+' : '') + val.toFixed(2) : '0'}{' '}
                               <span className="text-[9px] text-zinc-500">RR</span>
                             </span>
-                            <span className="text-[9px] text-zinc-500 font-bold bg-zinc-950 px-1 py-0.5 rounded border border-zinc-900/60 font-mono">
+                            <span className="text-[9px] text-zinc-500 font-bold bg-zinc-950 px-1.5 py-0.5 rounded-md border border-zinc-900/60 font-mono">
                               {stats.pnl >= 0 ? '+' : ''}{(stats?.pnl || 0).toLocaleString()} {currency}
                             </span>
                           </>
@@ -897,7 +897,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                               {val !== 0 ? (isProfitVal ? '+' : '') + (val || 0).toLocaleString() : '0'}{' '}
                               <span className="text-[9px] text-zinc-500">{currency}</span>
                             </span>
-                            <span className="text-[9px] text-zinc-500 font-bold bg-zinc-950 px-1 py-0.5 rounded border border-zinc-900/60 font-mono">
+                            <span className="text-[9px] text-zinc-500 font-bold bg-zinc-950 px-1.5 py-0.5 rounded-md border border-zinc-900/60 font-mono">
                               {stats.rr >= 0 ? '+' : ''}{stats.rr.toFixed(1)} RR
                             </span>
                           </>
@@ -940,7 +940,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
       {/* PARİTE İSTATİSTİKLERİ SECTION - REPOSITIONED HERE */}
       <motion.div 
         variants={itemVariants} 
-        className="bg-transparent p-5 sm:p-6 shadow-sm transition-colors duration-200 border border-zinc-800 rounded-xl overflow-hidden mb-3 flex flex-col justify-between min-h-[480px]"
+        className="bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm p-5 sm:p-6 shadow-sm transition-colors duration-200 rounded-xl overflow-hidden mb-3 flex flex-col justify-between min-h-[480px]"
       >
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 relative z-20 w-full border-b border-zinc-800 pb-3">
           <div className="flex items-center gap-2">
@@ -954,9 +954,9 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
             <AnimatePresence>
               {isAssetFilterOpen && (
                 <motion.div
-                  initial={{ opacity: 0, x: 15, scale: 0.95 }}
-                  animate={{ opacity: 1, x: 0, scale: 1 }}
-                  exit={{ opacity: 0, x: 15, scale: 0.95 }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
                   transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
                   className="absolute right-9 top-[50%] -translate-y-[50%] z-30 bg-zinc-800/90 border border-zinc-700/50 text-zinc-100 rounded-lg p-1  whitespace-nowrap select-none flex items-center gap-1.5"
                 >
@@ -965,19 +965,19 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                     placeholder="Ara..."
                     value={assetSearch}
                     onChange={(e) => { setAssetSearch(e.target.value); setAssetsPage(1); }}
-                    className="bg-zinc-900 border border-zinc-800 rounded-md px-2 py-0.5 text-[9px] font-mono text-zinc-300 focus:outline-none focus:border-zinc-700 w-20 sm:w-28 placeholder-zinc-600 h-[20px]"
+                    className="bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm rounded-lg px-2 py-0.5 text-[9px] font-mono text-zinc-300 focus:outline-none focus:border-zinc-700 w-20 sm:w-28 placeholder-zinc-600 h-[20px]"
                   />
-                  <div className="flex bg-zinc-900 p-0.5 rounded-md border border-zinc-800">
-                    <button type="button" onClick={() => { setAssetFilter('all'); setAssetsPage(1); }} className={`text-[9px] font-mono px-1.5 py-0.5 rounded transition-colors duration-200 ease-out font-bold ${assetFilter === 'all' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}>TÜMÜ</button>
-                    <button type="button" onClick={() => { setAssetFilter('profitable'); setAssetsPage(1); }} className={`text-[9px] font-mono px-1.5 py-0.5 rounded transition-colors duration-200 ease-out font-bold ${assetFilter === 'profitable' ? 'bg-emerald-500/20 text-emerald-400 shadow-sm' : 'text-zinc-500 hover:text-emerald-400'}`}>KÂR</button>
-                    <button type="button" onClick={() => { setAssetFilter('loss'); setAssetsPage(1); }} className={`text-[9px] font-mono px-1.5 py-0.5 rounded transition-colors duration-200 ease-out font-bold ${assetFilter === 'loss' ? 'bg-rose-500/20 text-rose-400 shadow-sm' : 'text-zinc-500 hover:text-rose-400'}`}>ZARAR</button>
+                  <div className="flex bg-transparent p-0.5 rounded-lg border border-zinc-800">
+                    <button type="button" onClick={() => { setAssetFilter('all'); setAssetsPage(1); }} className={`text-[9px] font-mono px-1.5 py-0.5 rounded-md transition-colors duration-200 ease-out font-bold ${assetFilter === 'all' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}>TÜMÜ</button>
+                    <button type="button" onClick={() => { setAssetFilter('profitable'); setAssetsPage(1); }} className={`text-[9px] font-mono px-1.5 py-0.5 rounded-md transition-colors duration-200 ease-out font-bold ${assetFilter === 'profitable' ? 'bg-emerald-500/20 text-emerald-400 shadow-sm' : 'text-zinc-500 hover:text-emerald-400'}`}>KÂR</button>
+                    <button type="button" onClick={() => { setAssetFilter('loss'); setAssetsPage(1); }} className={`text-[9px] font-mono px-1.5 py-0.5 rounded-md transition-colors duration-200 ease-out font-bold ${assetFilter === 'loss' ? 'bg-rose-500/20 text-rose-400 shadow-sm' : 'text-zinc-500 hover:text-rose-400'}`}>ZARAR</button>
                   </div>
-                  <div className="flex bg-zinc-900 p-0.5 rounded-md border border-zinc-800">
-                    <button type="button" onClick={() => { setAssetSort('pnl'); setAssetsPage(1); }} className={`text-[9px] font-mono px-1.5 py-0.5 rounded transition-colors duration-200 ease-out font-bold ${assetSort === 'pnl' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}>PNL</button>
-                    <button type="button" onClick={() => { setAssetSort('rr'); setAssetsPage(1); }} className={`text-[9px] font-mono px-1.5 py-0.5 rounded transition-colors duration-200 ease-out font-bold ${assetSort === 'rr' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}>RR</button>
-                    <button type="button" onClick={() => { setAssetSort('winrate'); setAssetsPage(1); }} className={`text-[9px] font-mono px-1.5 py-0.5 rounded transition-colors duration-200 ease-out font-bold ${assetSort === 'winrate' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}>WR</button>
-                    <button type="button" onClick={() => { setAssetSort('trades_desc'); setAssetsPage(1); }} className={`text-[9px] font-mono px-1.5 py-0.5 rounded transition-colors duration-200 ease-out font-bold ${assetSort === 'trades_desc' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}>↑</button>
-                    <button type="button" onClick={() => { setAssetSort('trades_asc'); setAssetsPage(1); }} className={`text-[9px] font-mono px-1.5 py-0.5 rounded transition-colors duration-200 ease-out font-bold ${assetSort === 'trades_asc' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}>↓</button>
+                  <div className="flex bg-transparent p-0.5 rounded-lg border border-zinc-800">
+                    <button type="button" onClick={() => { setAssetSort('pnl'); setAssetsPage(1); }} className={`text-[9px] font-mono px-1.5 py-0.5 rounded-md transition-colors duration-200 ease-out font-bold ${assetSort === 'pnl' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}>PNL</button>
+                    <button type="button" onClick={() => { setAssetSort('rr'); setAssetsPage(1); }} className={`text-[9px] font-mono px-1.5 py-0.5 rounded-md transition-colors duration-200 ease-out font-bold ${assetSort === 'rr' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}>RR</button>
+                    <button type="button" onClick={() => { setAssetSort('winrate'); setAssetsPage(1); }} className={`text-[9px] font-mono px-1.5 py-0.5 rounded-md transition-colors duration-200 ease-out font-bold ${assetSort === 'winrate' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}>WR</button>
+                    <button type="button" onClick={() => { setAssetSort('trades_desc'); setAssetsPage(1); }} className={`text-[9px] font-mono px-1.5 py-0.5 rounded-md transition-colors duration-200 ease-out font-bold ${assetSort === 'trades_desc' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}>↑</button>
+                    <button type="button" onClick={() => { setAssetSort('trades_asc'); setAssetsPage(1); }} className={`text-[9px] font-mono px-1.5 py-0.5 rounded-md transition-colors duration-200 ease-out font-bold ${assetSort === 'trades_asc' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}>↓</button>
                   </div>
                 </motion.div>
               )}
@@ -990,7 +990,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
               className={`flex items-center justify-center w-7 h-7 rounded-lg border transition-colors duration-200 ease-out ${
                 isAssetFilterOpen 
                   ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' 
-                  : 'bg-zinc-900 border-zinc-700 text-zinc-300 hover:bg-zinc-800'
+                  : 'bg-zinc-900/50 border-zinc-700/50 text-zinc-300 hover:bg-zinc-800'
               } shrink-0`}
             >
               <Filter size={12} /> 
@@ -1026,19 +1026,19 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                     <button
                       key={ar.asset}
                       onClick={() => setSelectedAsset(isSelected ? null : ar.asset)}
-                      className={`text-left p-2.5 rounded-lg border transition-all duration-200 cursor-pointer flex flex-col justify-between relative overflow-hidden group ${
+                      className={`text-left p-2.5 rounded-lg border transition-all duration-300 cursor-pointer flex flex-col justify-between relative overflow-hidden group ${
                         isSelected 
                           ? (isProfit ? 'bg-emerald-500/10 border-emerald-500/40' : 'bg-rose-500/10 border-rose-500/40')
-                          : 'bg-zinc-950 border-zinc-800/60 hover:border-zinc-700/80'
+                          : 'bg-zinc-950 border-zinc-800 hover:border-zinc-700/80'
                       }`}
                     >
                       {/* Decorative background flare depending on the profitability */}
-                      <div className={`absolute -top-10 -right-10 w-28 h-28 rounded-full opacity-[0.05] ${isProfit ? 'bg-emerald-500' : 'bg-rose-500'} group-hover:opacity-25 transition-all duration-200`} />
+                      <div className={`absolute -top-10 -right-10 w-28 h-28 rounded-full opacity-[0.05] group-hover:opacity-[0.16] group-hover:scale-105 ${isProfit ? 'bg-emerald-500' : 'bg-rose-500'} transition-all duration-300`} />
                       
                       <div className="w-full">
                         <div className="flex justify-between items-center z-10 mb-1">
                           <span className="font-extrabold text-xs text-white uppercase tracking-wider font-mono ">{ar.asset}</span>
-                          <span className={`text-[10px] font-black px-1.5 py-0.5 rounded border uppercase tracking-widest ${isProfit ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-rose-500/10 text-rose-400 border-rose-500/30'}`}>
+                          <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg border uppercase tracking-widest ${isProfit ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-rose-500/10 text-rose-400 border-rose-500/30'}`}>
                             {ar.total} İŞLEM
                           </span>
                         </div>
@@ -1080,31 +1080,35 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
 
             {/* Pagination Controls */}
             {processedAssets.length > 0 && (
-              <div className="flex items-center justify-between border-t border-zinc-800 pt-3 mt-auto">
-                <span className="text-[9px] font-mono text-zinc-500 font-bold uppercase tracking-wider">
-                  Toplam {processedAssets.length} Parite
-                </span>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-mono text-zinc-400 font-bold">
-                    Sayfa {assetsPage} / {Math.max(1, Math.ceil(processedAssets.length / 9))}
+              <div className="flex items-center justify-between border-t border-zinc-800/80 pt-3.5 mt-auto">
+                <div className="flex items-center gap-1.5 text-[11px] text-zinc-400 font-medium">
+                  <span>Toplam</span>
+                  <span className="text-zinc-200 font-semibold">{processedAssets.length}</span>
+                  <span>Parite</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs font-medium text-zinc-400 tabular-nums flex items-center leading-none">
+                    Sayfa: {assetsPage}/{Math.max(1, Math.ceil(processedAssets.length / 9))}
                   </span>
-                  <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-md p-0.5 shadow-sm">
+                  <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-700/50 rounded-xl p-1 shadow-xs">
                     <button
                       type="button"
                       onClick={() => setAssetsPage(prev => Math.max(1, prev - 1))}
                       disabled={assetsPage <= 1}
-                      className="w-6 h-6 flex items-center justify-center rounded text-zinc-400 hover:bg-zinc-800 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent transition-colors duration-200 ease-out cursor-pointer disabled:cursor-not-allowed"
+                      className="w-6.5 h-6.5 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-400 transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed"
+                      title="Önceki Sayfa"
                     >
-                      <ChevronLeft size={12} />
+                      <ChevronLeft size={13} />
                     </button>
-                    <div className="w-[1px] h-3.5 bg-zinc-800 mx-0.5" />
+                    <div className="w-px h-3.5 bg-zinc-800" />
                     <button
                       type="button"
                       onClick={() => setAssetsPage(prev => Math.min(Math.ceil(processedAssets.length / 9), prev + 1))}
                       disabled={assetsPage >= Math.ceil(processedAssets.length / 9)}
-                      className="w-6 h-6 flex items-center justify-center rounded text-zinc-400 hover:bg-zinc-800 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent transition-colors duration-200 ease-out cursor-pointer disabled:cursor-not-allowed"
+                      className="w-6.5 h-6.5 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-400 transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed"
+                      title="Sonraki Sayfa"
                     >
-                      <ChevronRight size={12} />
+                      <ChevronRight size={13} />
                     </button>
                   </div>
                 </div>
@@ -1114,11 +1118,11 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
         )}
       </motion.div>
 
-      <motion.div variants={itemVariants} className="bg-zinc-950/60 p-4 sm:p-5 shadow-sm transition-colors duration-200 mb-2 border border-zinc-800/80 rounded-xl relative overflow-visible mt-1 flex flex-col justify-between">
+      <motion.div variants={itemVariants} className="bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm rounded-xl transition-all duration-300 p-4 sm:p-5 shadow-sm transition-colors duration-200 mb-2 relative overflow-visible mt-1 flex flex-col justify-between">
         {/* Header & Filter Controls */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3 relative z-30 w-full border-b border-zinc-800/80 pb-3.5">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3 relative z-30 w-full border-b border-zinc-800 pb-3.5">
           <div className="flex items-center gap-2.5">
-            <div className="p-1.5 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center">
+            <div className="p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center">
               <Layers size={15} />
             </div>
             <div>
@@ -1145,7 +1149,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                     setExpandedAssets(next);
                   }
                 }}
-                className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium text-zinc-400 hover:text-zinc-200 bg-zinc-950 border border-zinc-800/80 hover:bg-zinc-900 hover:border-zinc-700 rounded-lg transition-colors duration-150"
+                className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium text-zinc-400 hover:text-zinc-200 bg-zinc-950 border border-zinc-800 hover:bg-transparent hover:border-zinc-700 rounded-lg transition-colors duration-150"
                 title="Tüm pariteleri genişlet veya daralt"
               >
                 <ChevronsUpDown size={13} />
@@ -1156,16 +1160,16 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
             {/* Filter Toggle Button */}
             <button
               onClick={() => setIsDetailedFilterOpen(!isDetailedFilterOpen)}
-              className={`flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium rounded-lg border transition-all duration-200 ${
+              className={`flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium rounded-lg border transition-all duration-300 ${
                 isDetailedFilterOpen || detailedFilter !== 'all' || detailedSearch
-                  ? 'bg-purple-500/15 border-purple-500/30 text-purple-300 shadow-xs' 
-                  : 'bg-zinc-950 border-zinc-800/80 text-zinc-300 hover:bg-zinc-900 hover:text-zinc-100'
+                  ? 'bg-blue-500/15 border-blue-500/30 text-blue-300 shadow-xs' 
+                  : 'bg-zinc-950 border-zinc-800 text-zinc-300 hover:bg-transparent hover:text-zinc-100'
               } shrink-0`}
             >
               <Filter size={13} />
               <span>Filtrele</span>
               {(detailedFilter !== 'all' || detailedSearch) && (
-                <span className="w-1.5 h-1.5 rounded-full bg-purple-400 ml-0.5" />
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-400 ml-0.5" />
               )}
             </button>
 
@@ -1173,15 +1177,15 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
             <AnimatePresence>
               {isDetailedFilterOpen && (
                 <motion.div
-                  initial={{ opacity: 0, y: 8, scale: 0.98 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 8, scale: 0.98 }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
                   transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
                   className="absolute right-0 top-full mt-2 z-50 bg-zinc-950 border border-zinc-800/90 text-zinc-100 rounded-xl p-3.5 shadow-2xl w-72 sm:w-80 select-none space-y-3"
                 >
-                  <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2">
+                  <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
                     <span className="text-xs font-semibold text-zinc-300 flex items-center gap-1.5">
-                      <SlidersHorizontal size={13} className="text-purple-400" /> Matris Filtreleri
+                      <SlidersHorizontal size={13} className="text-blue-400" /> Matris Filtreleri
                     </span>
                     <button 
                       onClick={() => setIsDetailedFilterOpen(false)}
@@ -1216,22 +1220,22 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                     <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">
                       Performans Durumu
                     </span>
-                    <div className="grid grid-cols-3 gap-1 bg-zinc-950 p-1 rounded-lg border border-zinc-800/80">
+                    <div className="grid grid-cols-3 gap-1 bg-zinc-950 p-1 rounded-lg border border-zinc-800">
                       <button 
                         onClick={() => { setDetailedFilter('all'); setDetailedPage(1); }} 
-                        className={`text-[11px] py-1 rounded-md transition-all font-medium text-center ${detailedFilter === 'all' ? 'bg-zinc-800 text-white font-semibold shadow-xs' : 'text-zinc-400 hover:text-zinc-200'}`}
+                        className={`text-[11px] py-1 rounded-lg transition-all font-medium text-center ${detailedFilter === 'all' ? 'bg-zinc-800 text-white font-semibold shadow-xs' : 'text-zinc-400 hover:text-zinc-200'}`}
                       >
                         Tümü
                       </button>
                       <button 
                         onClick={() => { setDetailedFilter('mükemmel'); setDetailedPage(1); }} 
-                        className={`text-[11px] py-1 rounded-md transition-all font-medium text-center ${detailedFilter === 'mükemmel' ? 'bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30' : 'text-zinc-400 hover:text-emerald-400'}`}
+                        className={`text-[11px] py-1 rounded-lg transition-all font-medium text-center ${detailedFilter === 'mükemmel' ? 'bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30' : 'text-zinc-400 hover:text-emerald-400'}`}
                       >
                         ≥ %60 WR
                       </button>
                       <button 
                         onClick={() => { setDetailedFilter('riskli'); setDetailedPage(1); }} 
-                        className={`text-[11px] py-1 rounded-md transition-all font-medium text-center ${detailedFilter === 'riskli' ? 'bg-rose-500/20 text-rose-300 font-semibold border border-rose-500/30' : 'text-zinc-400 hover:text-rose-400'}`}
+                        className={`text-[11px] py-1 rounded-lg transition-all font-medium text-center ${detailedFilter === 'riskli' ? 'bg-rose-500/20 text-rose-300 font-semibold border border-rose-500/30' : 'text-zinc-400 hover:text-rose-400'}`}
                       >
                         &lt; %45 WR
                       </button>
@@ -1243,22 +1247,22 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                     <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">
                       Sıralama Ölçütü
                     </span>
-                    <div className="grid grid-cols-3 gap-1 bg-zinc-950 p-1 rounded-lg border border-zinc-800/80">
+                    <div className="grid grid-cols-3 gap-1 bg-zinc-950 p-1 rounded-lg border border-zinc-800">
                       <button 
                         onClick={() => { setDetailedSort('pnl'); setDetailedPage(1); }} 
-                        className={`text-[11px] py-1 rounded-md transition-all font-medium text-center ${detailedSort === 'pnl' ? 'bg-zinc-800 text-white font-semibold shadow-xs' : 'text-zinc-400 hover:text-zinc-200'}`}
+                        className={`text-[11px] py-1 rounded-lg transition-all font-medium text-center ${detailedSort === 'pnl' ? 'bg-zinc-800 text-white font-semibold shadow-xs' : 'text-zinc-400 hover:text-zinc-200'}`}
                       >
                         Net PnL
                       </button>
                       <button 
                         onClick={() => { setDetailedSort('rr'); setDetailedPage(1); }} 
-                        className={`text-[11px] py-1 rounded-md transition-all font-medium text-center ${detailedSort === 'rr' ? 'bg-zinc-800 text-white font-semibold shadow-xs' : 'text-zinc-400 hover:text-zinc-200'}`}
+                        className={`text-[11px] py-1 rounded-lg transition-all font-medium text-center ${detailedSort === 'rr' ? 'bg-zinc-800 text-white font-semibold shadow-xs' : 'text-zinc-400 hover:text-zinc-200'}`}
                       >
                         Net R:R
                       </button>
                       <button 
                         onClick={() => { setDetailedSort('winrate'); setDetailedPage(1); }} 
-                        className={`text-[11px] py-1 rounded-md transition-all font-medium text-center ${detailedSort === 'winrate' ? 'bg-zinc-800 text-white font-semibold shadow-xs' : 'text-zinc-400 hover:text-zinc-200'}`}
+                        className={`text-[11px] py-1 rounded-lg transition-all font-medium text-center ${detailedSort === 'winrate' ? 'bg-zinc-800 text-white font-semibold shadow-xs' : 'text-zinc-400 hover:text-zinc-200'}`}
                       >
                         Kazanma %
                       </button>
@@ -1274,7 +1278,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                         setDetailedSort('pnl');
                         setDetailedPage(1);
                       }}
-                      className="w-full py-1 text-[11px] text-zinc-400 hover:text-zinc-200 text-center border-t border-zinc-800/60 pt-2 transition-colors"
+                      className="w-full py-1 text-[11px] text-zinc-400 hover:text-zinc-200 text-center border-t border-zinc-800 pt-2 transition-colors"
                     >
                       Filtreleri Sıfırla
                     </button>
@@ -1325,10 +1329,10 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                         {/* Parent Asset Row */}
                         <tr 
                           onClick={() => setExpandedAssets(prev => ({ ...prev, [parent.asset]: !prev[parent.asset] }))}
-                          className="hover:bg-zinc-800/40 transition-colors duration-150 group cursor-pointer select-none outline-none focus:outline-none focus:ring-0 active:outline-none"
+                          className="hover:bg-zinc-800/30 transition-all duration-200 group cursor-pointer select-none outline-none focus:outline-none focus:ring-0 active:outline-none"
                         >
                           {/* Asset Name + Expand Toggle */}
-                          <td className="py-3 px-3 rounded-l-xl bg-zinc-900/50 group-hover:bg-zinc-800/50 border-y border-l border-zinc-800/80 transition-colors">
+                          <td className="py-3 px-3 rounded-l-xl bg-zinc-900/90 group-hover:bg-zinc-800/40 border-y border-l border-zinc-800/80 group-hover:border-zinc-700/60 transition-all duration-200">
                             <div className="flex items-center gap-2.5">
                               <button
                                 type="button"
@@ -1336,19 +1340,19 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                                   e.stopPropagation();
                                   setExpandedAssets(prev => ({ ...prev, [parent.asset]: !prev[parent.asset] }));
                                 }}
-                                className="w-5 h-5 rounded-lg flex items-center justify-center text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors focus:outline-none focus:ring-0 outline-none select-none"
+                                className="w-5.5 h-5.5 rounded-lg flex items-center justify-center text-zinc-400 group-hover:text-zinc-300 group-hover:bg-zinc-800 transition-all focus:outline-none focus:ring-0 outline-none select-none"
                               >
                                 <ChevronRight 
                                   size={13} 
-                                  className={`transition-transform duration-200 ${isExpanded ? 'rotate-90 text-purple-400' : 'text-zinc-500'}`} 
+                                  className={`duration-200 ${isExpanded ? 'rotate-90 text-blue-400' : 'text-zinc-500 group-hover:text-zinc-400'}`} 
                                 />
                               </button>
                               
                               <div className="flex items-center gap-2">
-                                <span className="font-mono font-extrabold text-xs text-zinc-100 bg-zinc-950 px-2.5 py-1 rounded-lg border border-zinc-800 group-hover:border-purple-500/50 transition-colors shadow-xs">
+                                <span className="font-mono font-black text-xs text-zinc-100 bg-zinc-950 px-2.5 py-1 rounded-lg border border-zinc-800 group-hover:border-blue-500/20 group-hover:bg-blue-500/10 group-hover:text-blue-300 transition-all duration-200">
                                   {parent.asset}
                                 </span>
-                                <span className="text-[10px] text-zinc-400 font-medium">
+                                <span className="text-[10px] text-zinc-400 group-hover:text-zinc-300 font-medium transition-colors">
                                   {parent.total} İşlem
                                 </span>
                               </div>
@@ -1356,12 +1360,12 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                           </td>
 
                           {/* Quick Summary of Used Confirmations/Concepts */}
-                          <td className="py-3 px-3 bg-zinc-900/50 group-hover:bg-zinc-800/50 border-y border-zinc-800/80 transition-colors">
+                          <td className="py-3 px-3 bg-zinc-900/90 group-hover:bg-zinc-800/40 border-y border-zinc-800/80 group-hover:border-zinc-700/60 transition-all duration-200">
                             <div className="flex items-center gap-1.5 flex-wrap">
                               {parentConfs.length > 0 || parentConcepts.length > 0 ? (
                                 <>
                                   {parentConfs.slice(0, 3).map((conf: any, idx) => (
-                                    <span key={`conf-${idx}`} className="text-[10px] font-medium text-purple-300 bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 rounded-lg">
+                                    <span key={`conf-${idx}`} className="text-[10px] font-medium text-blue-300 bg-blue-500/10 border border-blue-500/20 group-hover:border-blue-500/30 group-hover:bg-blue-500/15 px-2 py-0.5 rounded-lg transition-colors">
                                       {conf}
                                     </span>
                                   ))}
@@ -1371,17 +1375,17 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                                     </span>
                                   ))}
                                   {(parentConfs.length + parentConcepts.length) > 5 && (
-                                    <span className="text-[10px] text-zinc-500 font-medium">+{parentConfs.length + parentConcepts.length - 5} daha</span>
+                                    <span className="text-[10px] text-zinc-500 group-hover:text-zinc-400 font-medium">+{parentConfs.length + parentConcepts.length - 5} daha</span>
                                   )}
                                 </>
                               ) : (
-                                <span className="text-[11px] text-zinc-500 italic">Genel Girişler</span>
+                                <span className="text-[11px] text-zinc-500 group-hover:text-zinc-400 italic">Genel Girişler</span>
                               )}
                             </div>
                           </td>
 
                           {/* Performance: Net PnL & R */}
-                          <td className="py-3 px-3 text-center bg-zinc-900/50 group-hover:bg-zinc-800/50 border-y border-zinc-800/80 transition-colors">
+                          <td className="py-3 px-3 text-center bg-zinc-900/90 group-hover:bg-zinc-800/40 border-y border-zinc-800/80 group-hover:border-zinc-700/60 transition-all duration-200">
                             <div className="inline-flex flex-col items-center">
                               <span className={`text-xs font-bold font-mono ${isProfit ? 'text-emerald-400' : 'text-rose-400'}`}>
                                 {isProfit ? '+' : ''}{(parent?.pnl || 0).toLocaleString()} {currency}
@@ -1393,33 +1397,33 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                           </td>
 
                           {/* Win Rate */}
-                          <td className="py-3 px-3 text-center bg-zinc-900/50 group-hover:bg-zinc-800/50 border-y border-zinc-800/80 transition-colors">
+                          <td className="py-3 px-3 text-center bg-zinc-900/90 group-hover:bg-zinc-800/40 border-y border-zinc-800/80 group-hover:border-zinc-700/60 transition-all duration-200">
                             <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
-                              parent.winRate >= 60 
-                                ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/25' 
-                                : parent.winRate >= 45 
-                                  ? 'bg-amber-500/10 text-amber-300 border-amber-500/25'
-                                  : 'bg-rose-500/10 text-rose-300 border-rose-500/25'
-                            }`}>
+                                parent.winRate >= 60 
+                                  ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/25' 
+                                  : parent.winRate >= 45 
+                                    ? 'bg-amber-500/10 text-amber-300 border-amber-500/25'
+                                    : 'bg-rose-500/10 text-rose-300 border-rose-500/25'
+                              }`}>
                               %{parent.winRate.toFixed(1)} WR
                             </span>
                           </td>
 
                           {/* Total Distribution */}
-                          <td className="py-3 px-3 text-right rounded-r-xl bg-zinc-900/50 group-hover:bg-zinc-800/50 border-y border-r border-zinc-800/80 transition-colors">
+                          <td className="py-3 px-3 text-right rounded-r-xl bg-zinc-900/90 group-hover:bg-zinc-800/40 border-y border-r border-zinc-800/80 group-hover:border-zinc-700/60 transition-all duration-200">
                             <button
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setSelectedAsset(parent.asset);
                               }}
-                              className="inline-flex items-center gap-1.5 text-right group-hover:text-purple-300 transition-colors focus:outline-none focus:ring-0 outline-none select-none"
+                              className="inline-flex items-center gap-1.5 text-right group-hover:text-zinc-300 transition-colors focus:outline-none focus:ring-0 outline-none select-none"
                               title="Bu paritedeki işlemleri incele"
                             >
                               <div className="text-[11px] font-mono font-medium text-zinc-300">
-                                <span className="text-emerald-400 font-bold">{parent.wins}G</span>
+                                <span className="text-emerald-400 font-bold">{parent.wins}W</span>
                                 <span className="text-zinc-600 mx-1">/</span>
-                                <span className="text-rose-400 font-bold">{parent.total - parent.wins}K</span>
+                                <span className="text-rose-400 font-bold">{parent.total - parent.wins}L</span>
                               </div>
                             </button>
                           </td>
@@ -1440,20 +1444,20 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                                 transition={{ duration: 0.12 }}
                                 key={`${parent.asset}-child-${cIdx}`}
                                 onClick={() => setSelectedAsset(parent.asset)}
-                                className="hover:bg-zinc-900/60 transition-colors duration-150 cursor-pointer select-none outline-none focus:outline-none focus:ring-0 active:outline-none group/child"
+                                className="transition-all duration-150 cursor-pointer select-none outline-none focus:outline-none focus:ring-0 active:outline-none group/child"
                               >
                                 {/* Tree Connector & Sub-indicator */}
-                                <td className="py-2 px-3 text-left rounded-l-lg bg-zinc-950/70 group-hover/child:bg-zinc-900/60 border-y border-l border-zinc-800/50 transition-colors">
+                                <td className="py-2 px-3 text-left rounded-l-xl bg-zinc-950/70 group-hover/child:bg-zinc-850/30 border-y border-l border-zinc-800/50 group-hover/child:border-zinc-800 transition-all duration-200">
                                   <div className="flex items-center pl-6 text-zinc-500 text-xs gap-2 select-none">
-                                    <span className="text-zinc-600">↳</span>
-                                    <span className="text-[11px] text-zinc-400 font-medium">
+                                    <span className="text-zinc-600 group-hover/child:text-zinc-400 font-bold transition-colors">↳</span>
+                                    <span className="text-[11px] text-zinc-400 group-hover/child:text-zinc-300 font-medium transition-colors">
                                       Kombinasyon #{cIdx + 1}
                                     </span>
                                   </div>
                                 </td>
 
                                 {/* Clean Dimension Badges */}
-                                <td className="py-2 px-3 bg-zinc-950/70 group-hover/child:bg-zinc-900/60 border-y border-zinc-800/50 transition-colors">
+                                <td className="py-2 px-3 bg-zinc-950/70 group-hover/child:bg-zinc-850/30 border-y border-zinc-800/50 group-hover/child:border-zinc-800 transition-all duration-200">
                                   <div className="flex items-center gap-1.5 flex-wrap">
                                     {hasAnyDimension ? (
                                       <>
@@ -1478,13 +1482,13 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                                           </span>
                                         )}
                                         {child.confirmation && child.confirmation !== 'Diğer' && (
-                                          <span className="text-[10px] font-semibold text-purple-300 bg-purple-500/15 px-2 py-0.5 border border-purple-500/30 rounded-lg">
+                                          <span className="text-[10px] font-semibold text-blue-300 bg-blue-500/15 px-2 py-0.5 border border-blue-500/30 rounded-lg">
                                             {child.confirmation}
                                           </span>
                                         )}
                                       </>
                                     ) : (
-                                      <span className="text-[10px] text-zinc-500 bg-zinc-950 px-2 py-0.5 rounded-lg border border-zinc-800/80">
+                                      <span className="text-[10px] text-zinc-500 bg-zinc-950 px-2 py-0.5 rounded-lg border border-zinc-800">
                                         Doğrudan İşlem (Filtresiz)
                                       </span>
                                     )}
@@ -1492,7 +1496,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                                 </td>
 
                                 {/* Performance: Net PnL & R */}
-                                <td className="py-2 px-3 text-center bg-zinc-950/70 group-hover/child:bg-zinc-900/60 border-y border-zinc-800/50 transition-colors">
+                                <td className="py-2 px-3 text-center bg-zinc-950/70 group-hover/child:bg-zinc-850/30 border-y border-zinc-800/50 group-hover/child:border-zinc-800 transition-all duration-200">
                                   <div className="inline-flex flex-col items-center">
                                     <span className={`text-[11px] font-bold font-mono ${childIsProfit ? 'text-emerald-400' : 'text-rose-400'}`}>
                                       {childIsProfit ? '+' : ''}{(child?.pnl || 0).toLocaleString()} {currency}
@@ -1504,7 +1508,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                                 </td>
 
                                 {/* Win Rate */}
-                                <td className="py-2 px-3 text-center bg-zinc-950/70 group-hover/child:bg-zinc-900/60 border-y border-zinc-800/50 transition-colors">
+                                <td className="py-2 px-3 text-center bg-zinc-950/70 group-hover/child:bg-zinc-850/30 border-y border-zinc-800/50 group-hover/child:border-zinc-800 transition-all duration-200">
                                   <span className={`inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full border ${
                                     child.winRate >= 60 
                                       ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' 
@@ -1517,9 +1521,9 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                                 </td>
 
                                 {/* Trade Breakdown */}
-                                <td className="py-2 px-3 text-right rounded-r-lg bg-zinc-950/70 group-hover/child:bg-zinc-900/60 border-y border-r border-zinc-800/50 transition-colors">
-                                  <div className="text-[10px] font-mono text-zinc-400">
-                                    {child.total} İşlem <span className="text-zinc-500">({child.wins}G)</span>
+                                <td className="py-2 px-3 text-right rounded-r-xl bg-zinc-950/70 group-hover/child:bg-zinc-850/30 border-y border-r border-zinc-800/50 group-hover/child:border-zinc-800 transition-all duration-200">
+                                  <div className="text-[10px] font-mono text-zinc-400 group-hover/child:text-zinc-300">
+                                    {child.total} İşlem <span className="text-zinc-500 group-hover/child:text-zinc-500">({child.wins}W / {child.total - child.wins}L)</span>
                                   </div>
                                 </td>
                               </motion.tr>
@@ -1548,29 +1552,33 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
 
         {/* Pagination Details */}
         {processedDetailedRows.length > 0 && (
-          <div className="flex items-center justify-between border-t border-zinc-800/80 pt-3 mt-3">
-            <span className="text-[10px] font-medium text-zinc-400">
-              Toplam <strong className="text-zinc-200">{processedDetailedRows.length}</strong> Parite Grubu
-            </span>
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-mono text-zinc-400 font-medium">
-                Sayfa {detailedPage} / {Math.max(1, Math.ceil(processedDetailedRows.length / 10))}
+          <div className="flex items-center justify-between border-t border-zinc-800/80 pt-3.5 mt-3">
+            <div className="flex items-center gap-1.5 text-[11px] text-zinc-400 font-medium">
+              <span>Toplam</span>
+              <span className="text-zinc-200 font-semibold">{processedDetailedRows.length}</span>
+              <span>Parite Grubu</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="text-xs font-medium text-zinc-400 tabular-nums flex items-center leading-none">
+                Sayfa: {detailedPage}/{Math.max(1, Math.ceil(processedDetailedRows.length / 10))}
               </span>
-              <div className="flex items-center bg-zinc-950 border border-zinc-800/80 rounded-lg p-0.5 shadow-xs">
+              <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-700/50 rounded-xl p-1 shadow-xs">
                 <button
                   type="button"
                   onClick={() => setDetailedPage(prev => Math.max(1, prev - 1))}
                   disabled={detailedPage <= 1}
-                  className="w-6 h-6 flex items-center justify-center rounded text-zinc-400 hover:bg-zinc-800 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed"
+                  className="w-6.5 h-6.5 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-400 transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed"
+                  title="Önceki Sayfa"
                 >
                   <ChevronLeft size={13} />
                 </button>
-                <div className="w-[1px] h-3.5 bg-zinc-800 mx-0.5" />
+                <div className="w-px h-3.5 bg-zinc-800" />
                 <button
                   type="button"
                   onClick={() => setDetailedPage(prev => Math.min(Math.ceil(processedDetailedRows.length / 10), prev + 1))}
                   disabled={detailedPage >= Math.ceil(processedDetailedRows.length / 10)}
-                  className="w-6 h-6 flex items-center justify-center rounded text-zinc-400 hover:bg-zinc-800 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed"
+                  className="w-6.5 h-6.5 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-400 transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed"
+                  title="Sonraki Sayfa"
                 >
                   <ChevronRight size={13} />
                 </button>
@@ -1600,22 +1608,22 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
               style={{ willChange: 'opacity' }}
               className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm"
               onClick={() => setSelectedPerformancePeriod(null)}
             >
               <motion.div
-                initial={{ opacity: 0, scale: 0.94, y: 16 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.94, y: 16 }}
-                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                style={{ willChange: 'transform, opacity' }}
-                className="w-full max-w-4xl max-h-[85vh] flex flex-col bg-zinc-950/90 border border-zinc-800/80 rounded-xl shadow-2xl relative overflow-hidden backdrop-blur-md"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15, ease: "easeOut" }}
+                style={{ willChange: 'opacity' }}
+                className="w-full max-w-4xl max-h-[85vh] flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl relative overflow-hidden backdrop-blur-md"
                 onClick={e => e.stopPropagation()}
               >
               {/* Header */}
-              <div className="bg-zinc-950/80 border-b border-zinc-800/80 px-3 py-3 sm:px-6 sm:py-4 flex items-center justify-between gap-2 sticky top-0 z-10 shrink-0 flex-wrap sm:flex-nowrap">
+              <div className="bg-zinc-950/80 border-b border-zinc-800 px-3 py-3 sm:px-6 sm:py-4 flex items-center justify-between gap-2 sticky top-0 z-10 shrink-0 flex-wrap sm:flex-nowrap">
                 <div className="flex items-center flex-wrap gap-1.5 sm:gap-3 flex-1 min-w-0">
                   <div className="bg-blue-500/10 border border-blue-500/20 px-2 sm:px-3 py-1.5 rounded-lg flex items-center justify-center shrink-0">
                     <span className="text-[10px] sm:text-sm font-black text-blue-400 font-mono tracking-widest uppercase flex items-center justify-center leading-none">
@@ -1638,24 +1646,24 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                         dateRangeText: selectedPerformancePeriod.label
                       });
                     }}
-                    className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/25 rounded-lg transition-colors duration-200 ease-out cursor-pointer group active:scale-95 shadow-xs shrink-0"
+                    className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/25 rounded-lg transition-colors duration-200 ease-out cursor-pointer group shadow-xs shrink-0"
                   >
-                    <Download size={18} className="group-hover:scale-110 transition-transform" />
+                    <Download size={18} className=" " />
                   </button>
                   <button 
                     type="button"
                     onClick={() => setSelectedPerformancePeriod(null)}
-                    className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-zinc-400 hover:text-white bg-zinc-950 hover:bg-zinc-900 border border-zinc-800/80 rounded-lg transition-colors duration-200 ease-out cursor-pointer group active:scale-95 shadow-xs shrink-0"
+                    className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-zinc-400 hover:text-white bg-zinc-950 hover:bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm rounded-lg transition-colors duration-200 ease-out cursor-pointer group shadow-xs shrink-0"
                   >
-                    <X size={18} className="group-hover:scale-110 transition-transform" />
+                    <X size={18} className=" " />
                   </button>
                 </div>
               </div>
 
               {/* Period Detailed Stats */}
-              <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-zinc-950/40 border-b border-zinc-800/80 shrink-0 select-none w-full">
+              <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-transparent border-b border-zinc-800 shrink-0 select-none w-full">
                 <div className="flex flex-wrap items-center gap-2">
-                  <div className="flex items-center gap-1.5 bg-zinc-950 border border-zinc-800/80 text-zinc-100 rounded-lg px-2.5 py-1.5 shrink-0">
+                  <div className="flex items-center gap-1.5 bg-zinc-950 border border-zinc-800 text-zinc-100 rounded-lg px-2.5 py-1.5 shrink-0">
                     <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest font-mono">TOPLAM:</span>
                     <span className="text-xs font-black text-white font-mono">{selectedPerformancePeriod.trades.length}</span>
                   </div>
@@ -1711,7 +1719,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                       const labelClass = isProfit ? 'text-emerald-400' : isLoss ? 'text-rose-400' : 'text-zinc-400';
                       
                       return (
-                        <div key={session} className={`flex items-center justify-center gap-1 shrink-0 px-1.5 py-0.5 rounded border leading-none ${bgClass}`}>
+                        <div key={session} className={`flex items-center justify-center gap-1 shrink-0 px-2 py-0.5 rounded-lg border leading-none ${bgClass}`}>
                           <span className={`text-[9px] font-bold uppercase tracking-widest leading-none ${labelClass}`}>{session}:</span>
                           <span className={`text-[9px] font-black font-mono leading-none ${textColorClass}`}>
                             {isRrMode ? `${val > 0 ? '+' : ''}${val.toFixed(1)}R` : `${val > 0 ? '+' : ''}${val.toLocaleString('tr-TR', { maximumFractionDigits: 0 })}`}
@@ -1724,17 +1732,17 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
               </div>
 
               {/* Trades Table */}
-              <div className="overflow-x-auto overflow-y-auto flex-1 min-h-[300px] px-2 sm:px-4 pb-2 sm:pb-4 pt-3 bg-zinc-950/60">
+              <div className="overflow-x-auto overflow-y-auto flex-1 min-h-[300px] px-2 sm:px-4 pb-2 sm:pb-4 pt-3 bg-transparent">
                 <table className="w-full text-left border-separate sm:border-spacing-x-0 sm:border-spacing-y-1 text-[10px] sm:text-[11px] font-mono whitespace-nowrap sm:table-fixed sm:min-w-[700px] block sm:table">
                   <thead className="sticky top-0 z-20 hidden sm:table-header-group">
-                    <tr className="text-[9px] text-zinc-400 uppercase tracking-widest relative after:absolute after:inset-0 after:rounded-lg after:border after:border-zinc-800/80 after:pointer-events-none">
-                      <th className="py-2 px-3 font-mono select-none w-[20%] min-w-[120px] bg-zinc-950/40 rounded-l-lg">Parite</th>
-                      <th className="py-2 px-3 text-center font-mono select-none w-[12%] min-w-[65px] bg-zinc-950/40">Yön</th>
-                      <th className="py-2 px-3 text-center font-mono select-none w-[12%] min-w-[65px] bg-zinc-950/40">RR</th>
-                      <th className="py-2 px-3 text-center font-mono select-none w-[14%] min-w-[75px] bg-zinc-950/40">Session</th>
-                      <th className="py-2 px-3 text-center font-mono select-none w-[14%] min-w-[80px] bg-zinc-950/40">Sonuç</th>
-                      <th className="py-2 px-3 text-right font-mono select-none w-[14%] min-w-[90px] bg-zinc-950/40"><div className="flex items-center justify-end w-full"><span>Kâr/Zarar</span></div></th>
-                      <th className="py-2 px-3 text-center font-mono select-none w-[14%] min-w-[80px] bg-zinc-950/40 rounded-r-lg">Platform</th>
+                    <tr className="text-[9px] text-zinc-400 uppercase tracking-widest relative after:absolute after:inset-0 after:rounded-lg after:border after:border-zinc-800 after:pointer-events-none">
+                      <th className="py-2 px-3 font-mono select-none w-[20%] min-w-[120px] bg-transparent rounded-l-xl">Parite</th>
+                      <th className="py-2 px-3 text-center font-mono select-none w-[12%] min-w-[65px] bg-transparent">Yön</th>
+                      <th className="py-2 px-3 text-center font-mono select-none w-[12%] min-w-[65px] bg-transparent">RR</th>
+                      <th className="py-2 px-3 text-center font-mono select-none w-[14%] min-w-[75px] bg-transparent">Session</th>
+                      <th className="py-2 px-3 text-center font-mono select-none w-[14%] min-w-[80px] bg-transparent">Sonuç</th>
+                      <th className="py-2 px-3 text-right font-mono select-none w-[14%] min-w-[90px] bg-transparent"><div className="flex items-center justify-end w-full"><span>Kâr/Zarar</span></div></th>
+                      <th className="py-2 px-3 text-center font-mono select-none w-[14%] min-w-[80px] bg-transparent rounded-r-xl">Platform</th>
                     </tr>
                   </thead>
                   <tbody className="block sm:table-row-group">
@@ -1751,76 +1759,76 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                         const pnlValue = t.pnl || 0;
                         const prefix = pnlValue > 0 ? '+' : '';
                         pnlText = `${prefix}${(pnlValue || 0).toLocaleString()} ${currency}`;
-                        pnlColor = pnlValue > 0 ? 'text-emerald-400 font-black' : (pnlValue < 0 ? 'text-rose-400 font-black' : 'text-zinc-500 font-bold');
+                        pnlColor = pnlValue > 0 ? 'text-emerald-400 font-bold' : (pnlValue < 0 ? 'text-rose-400 font-bold' : 'text-zinc-500 font-bold');
                       }
                       
                       return (
                         <tr 
                           key={t.id ? `${t.id}-${idx}` : `trade-${idx}`}
                           onClick={() => setSelectedTrade ? setSelectedTrade(t) : null}
-                          className="group cursor-pointer select-none relative flex flex-wrap sm:table-row bg-zinc-900/40 sm:bg-transparent mb-2 sm:mb-0 rounded-xl sm:rounded-none border border-zinc-800/80 hover:border-blue-500/40 sm:border-none p-2 sm:p-0"
+                          className="group cursor-pointer select-none relative flex flex-wrap sm:table-row bg-zinc-800 sm:bg-transparent mb-2 sm:mb-0 rounded-xl sm:rounded-none border border-zinc-800 hover:border-blue-500/40 sm:border-none p-2 sm:p-0"
                         >
-                          <td className="w-1/2 sm:w-[22%] sm:min-w-[130px] flex justify-start items-center sm:table-cell order-1 py-1.5 px-0 sm:px-3 text-zinc-400 group-hover:text-zinc-100 font-mono sm:bg-zinc-950/30 group-hover:bg-blue-950/10 sm:rounded-l-lg sm:border-y sm:border-l sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200">
+                          <td className="w-1/2 sm:w-[22%] sm:min-w-[130px] flex justify-start items-center sm:table-cell order-1 py-1.5 px-0 sm:px-3 text-zinc-400 group-hover:text-zinc-100 font-mono sm:bg-transparent group-hover:bg-blue-950/10 sm:rounded-l-xl sm:border-y sm:border-l sm:border-zinc-800 group-hover:border-blue-500/40 transition-colors duration-200">
                             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-0.5 sm:gap-1.5">
                               <span className="text-white font-bold text-xs sm:text-[10px]">{t.asset}</span>
-                              <span className="text-[10px] sm:text-[10px] text-zinc-500 sm:text-zinc-400 transition-colors">{new Date(t.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                              <span className="text-[10px] sm:text-[10px] text-zinc-500 sm:text-zinc-400 transition-colors">{new Date(t.createdAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>
                             </div>
                           </td>
-                          <td className="w-1/2 sm:w-[12%] sm:min-w-[70px] flex justify-end sm:justify-center items-center sm:table-cell order-2 py-1.5 px-0 sm:px-2.5 text-center sm:bg-zinc-950/30 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200">
+                          <td className="w-1/2 sm:w-[12%] sm:min-w-[70px] flex justify-end sm:justify-center items-center sm:table-cell order-2 py-1.5 px-0 sm:px-2.5 text-center sm:bg-transparent group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800 group-hover:border-blue-500/40 transition-colors duration-200">
                             {t.type === 'LONG' ? (
-                              <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded uppercase tracking-wider font-mono transition-colors">LONG</span>
+                              <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded-lg uppercase tracking-wider font-mono transition-colors">LONG</span>
                             ) : (
-                              <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 group-hover:border-rose-500/50 rounded uppercase tracking-wider font-mono transition-colors">SHORT</span>
+                              <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 group-hover:border-rose-500/50 rounded-lg uppercase tracking-wider font-mono transition-colors">SHORT</span>
                             )}
                           </td>
-                          <td className="w-1/2 sm:w-[12%] sm:min-w-[70px] flex justify-start sm:justify-center items-center sm:table-cell order-3 py-1.5 px-0 sm:px-2.5 text-center sm:bg-zinc-950/30 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0">
+                          <td className="w-1/2 sm:w-[12%] sm:min-w-[70px] flex justify-start sm:justify-center items-center sm:table-cell order-3 py-1.5 px-0 sm:px-2.5 text-center sm:bg-transparent group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0">
                             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-1.5 w-full justify-start sm:justify-center">
                               <span className="sm:hidden text-[9px] font-bold text-zinc-500 uppercase tracking-widest leading-none h-[10px]">RR</span>
                               <div className="flex items-center h-[20px]">{t.rr !== undefined && t.rr !== null && t.rr !== 0 ? (
                                 t.rr > 0 ? (
-                                  <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded uppercase tracking-wider font-mono transition-colors">
+                                  <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded-lg uppercase tracking-wider font-mono transition-colors">
                                       +{t.rr}R
                                     </span>
                                 ) : t.rr < 0 ? (
-                                  <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 group-hover:border-rose-500/50 rounded uppercase tracking-wider font-mono transition-colors">
+                                  <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 group-hover:border-rose-500/50 rounded-lg uppercase tracking-wider font-mono transition-colors">
                                       {t.rr}R
                                     </span>
                                 ) : (
-                                  <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-zinc-400 bg-zinc-500/10 border border-zinc-500/20 group-hover:border-zinc-500/50 rounded uppercase tracking-wider font-mono transition-colors">
+                                  <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-zinc-400 bg-zinc-500/10 border border-zinc-500/20 group-hover:border-zinc-600 rounded-lg uppercase tracking-wider font-mono transition-colors">
                                       {t.rr}R
                                     </span>
                                 )
                               ) : (
-                                <span className="inline-flex items-center justify-center w-[38px] sm:w-[44px] h-[18px] text-center text-[9px] sm:text-[10px] font-medium text-zinc-500 rounded">—</span>
+                                <span className="inline-flex items-center justify-center w-[38px] sm:w-[44px] h-[18px] text-center text-[9px] sm:text-[10px] font-medium text-zinc-500 rounded-md">—</span>
                               )}
                               </div>
                             </div>
                           </td>
-                          <td className="hidden sm:table-cell py-1.5 px-3 text-center text-zinc-400 font-medium sm:bg-zinc-950/30 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 w-[15%] min-w-[80px]">
+                          <td className="hidden sm:table-cell py-1.5 px-3 text-center text-zinc-400 font-medium sm:bg-transparent group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800 group-hover:border-blue-500/40 transition-colors duration-200 w-[15%] min-w-[80px]">
                             <span className="inline-flex items-center justify-center min-w-[54px] max-w-[130px] h-[20px] px-2.5 py-0 text-center text-[10px] font-bold text-zinc-300 bg-zinc-800/80 border border-zinc-700/80 group-hover:border-zinc-500 rounded-full uppercase tracking-wider font-mono transition-colors whitespace-nowrap truncate" title={t.session || 'Diğer'}>
                               {t.session || 'Diğer'}
                             </span>
                           </td>
-                          <td className="w-1/2 sm:w-[15%] sm:min-w-[80px] flex justify-end sm:justify-center items-center sm:table-cell order-4 py-1.5 px-0 sm:px-2.5 text-center sm:bg-zinc-950/30 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0">
+                          <td className="w-1/2 sm:w-[15%] sm:min-w-[80px] flex justify-end sm:justify-center items-center sm:table-cell order-4 py-1.5 px-0 sm:px-2.5 text-center sm:bg-transparent group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0">
                             <div className="flex items-center h-[20px]">
                               {isWin ? (
                                 <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded-full uppercase tracking-wider font-mono transition-colors">WIN</span>
                               ) : isLoss ? (
                                 <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 group-hover:border-rose-500/50 rounded-full uppercase tracking-wider font-mono transition-colors">LOSS</span>
                               ) : isBe ? (
-                                <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-zinc-400 bg-zinc-500/10 border border-zinc-500/20 group-hover:border-zinc-500/50 rounded-full uppercase tracking-wider font-mono transition-colors">BE</span>
+                                <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-zinc-400 bg-zinc-500/10 border border-zinc-500/20 group-hover:border-zinc-600 rounded-full uppercase tracking-wider font-mono transition-colors">BE</span>
                               ) : (
                                 <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 group-hover:border-blue-500/50 rounded-full uppercase tracking-wider font-mono transition-colors">AÇIK</span>
                               )}
                             </div>
                           </td>
-                          <td className={`w-full sm:w-[15%] sm:min-w-[80px] flex justify-between sm:justify-end items-center sm:table-cell order-5 py-1 px-0 sm:px-3 text-right ${pnlColor} sm:bg-zinc-950/30 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 pt-3 sm:pt-0 border-t border-zinc-800/50 sm:border-t-0`}>
+                          <td className={`w-full sm:w-[15%] sm:min-w-[80px] flex justify-between sm:justify-end items-center sm:table-cell order-5 py-1 px-0 sm:px-3 text-right ${pnlColor} sm:bg-transparent group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 max-sm:pt-3 max-sm:border-t max-sm:border-zinc-800/50 sm:py-1 align-middle`}>
                             <span className="sm:hidden text-[10px] font-bold text-zinc-500 uppercase tracking-widest text-left font-sans">Kâr/Zarar</span>
-                            <div className="flex flex-col sm:flex-row items-end sm:items-center gap-0.5 sm:gap-1.5 sm:w-full sm:justify-end">
-                              <span className="text-sm sm:text-[11px] font-mono font-black">{pnlText}</span>
+                            <div className="flex flex-col sm:flex-row items-end sm:items-center gap-0.5 sm:gap-1.5 sm:w-full sm:justify-end sm:h-[20px]">
+                              <span className="text-sm sm:text-[11px] font-bold font-sans inline-flex items-center justify-end h-[20px] leading-none tracking-tight">{pnlText}</span>
                             </div>
                           </td>
-                          <td className="w-full sm:w-[7%] sm:min-w-[60px] flex justify-between sm:justify-center items-center sm:table-cell order-6 py-1 px-0 sm:px-3 text-center sm:bg-zinc-950/30 group-hover:bg-blue-950/10 sm:rounded-r-lg sm:border-y sm:border-r sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 sm:pt-1.5 pt-0">
+                          <td className="w-full sm:w-[7%] sm:min-w-[60px] flex justify-between sm:justify-center items-center sm:table-cell order-6 py-1 px-0 sm:px-3 text-center sm:bg-transparent group-hover:bg-blue-950/10 sm:rounded-r-xl sm:border-y sm:border-r sm:border-zinc-800 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 sm:pt-1.5 pt-0">
                             <div className="sm:hidden">
                               <span className="text-[9px] text-zinc-500 uppercase font-bold tracking-widest">Platform</span>
                             </div>
@@ -1874,21 +1882,21 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
               style={{ willChange: 'opacity' }}
               className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm"
               onClick={() => setSelectedAsset(null)}
             >
               <motion.div
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.98 }}
-                transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-                style={{ willChange: 'transform, opacity' }}
-                className="w-full max-w-4xl max-h-[85vh] flex flex-col bg-zinc-950/90 border border-zinc-800/80 rounded-xl shadow-2xl relative overflow-hidden backdrop-blur-md"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15, ease: "easeOut" }}
+                style={{ willChange: 'opacity' }}
+                className="w-full max-w-4xl max-h-[85vh] flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl relative overflow-hidden backdrop-blur-md"
                 onClick={e => e.stopPropagation()}
               >
-                <div className="bg-zinc-950/80 border-b border-zinc-800/80 px-3 py-3 sm:px-6 sm:py-4 flex items-center justify-between gap-2 sticky top-0 z-10 shrink-0 flex-wrap sm:flex-nowrap">
+                <div className="bg-zinc-950/80 border-b border-zinc-800 px-3 py-3 sm:px-6 sm:py-4 flex items-center justify-between gap-2 sticky top-0 z-10 shrink-0 flex-wrap sm:flex-nowrap">
                   <div className="flex items-center flex-wrap gap-1.5 sm:gap-3 flex-1 min-w-0">
                     <div className="bg-emerald-500/10 border border-emerald-500/20 px-2 sm:px-3 py-1.5 rounded-lg flex items-center justify-center shrink-0">
                       <span className="text-[10px] sm:text-sm font-black text-emerald-400 font-mono tracking-widest uppercase flex items-center justify-center leading-none">
@@ -1910,24 +1918,24 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                           dateRangeText: selectedAsset || ''
                         });
                       }}
-                      className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/25 rounded-lg transition-colors duration-200 ease-out cursor-pointer group active:scale-95 shadow-xs shrink-0"
+                      className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/25 rounded-lg transition-colors duration-200 ease-out cursor-pointer group shadow-xs shrink-0"
                     >
-                      <Download size={18} className="group-hover:scale-110 transition-transform" />
+                      <Download size={18} className=" " />
                     </button>
                     <button 
                       type="button"
                       onClick={() => setSelectedAsset(null)}
-                      className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-zinc-400 hover:text-white bg-zinc-950 hover:bg-zinc-900 border border-zinc-800/80 rounded-lg transition-colors duration-200 ease-out cursor-pointer group active:scale-95 shadow-xs shrink-0"
+                      className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-zinc-400 hover:text-white bg-zinc-950 hover:bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm rounded-lg transition-colors duration-200 ease-out cursor-pointer group shadow-xs shrink-0"
                     >
-                      <X size={18} className="group-hover:scale-110 transition-transform" />
+                      <X size={18} className=" " />
                     </button>
                   </div>
                 </div>
 
                 {/* Parite Detay İstatistikleri */}
-                <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-zinc-950/40 border-b border-zinc-800/80 shrink-0 select-none w-full">
+                <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-transparent border-b border-zinc-800 shrink-0 select-none w-full">
                   <div className="flex flex-wrap items-center gap-2">
-                    <div className="flex items-center gap-1.5 bg-zinc-950 border border-zinc-800/80 text-zinc-100 rounded-lg px-2.5 py-1.5 shrink-0">
+                    <div className="flex items-center gap-1.5 bg-zinc-950 border border-zinc-800 text-zinc-100 rounded-lg px-2.5 py-1.5 shrink-0">
                       <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest font-mono">TOPLAM:</span>
                       <span className="text-xs font-black text-white font-mono">{totalCount}</span>
                     </div>
@@ -1967,7 +1975,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                         const labelClass = isProfit ? 'text-emerald-400' : isLoss ? 'text-rose-400' : 'text-zinc-400';
                         
                         return (
-                          <div key={session} className={`flex items-center justify-center gap-1 shrink-0 px-1.5 py-0.5 rounded border leading-none ${bgClass}`}>
+                          <div key={session} className={`flex items-center justify-center gap-1 shrink-0 px-2 py-0.5 rounded-lg border leading-none ${bgClass}`}>
                             <span className={`text-[9px] font-bold uppercase tracking-widest leading-none ${labelClass}`}>{session}:</span>
                             <span className={`text-[9px] font-black font-mono leading-none ${textColorClass}`}>
                               {isRrMode ? `${val > 0 ? '+' : ''}${val.toFixed(1)}R` : `${val > 0 ? '+' : ''}${val.toLocaleString('tr-TR', { maximumFractionDigits: 0 })}`}
@@ -1979,17 +1987,17 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                   </div>
                 </div>
 
-                <div className="overflow-x-auto overflow-y-auto flex-1 min-h-[300px] px-2 sm:px-4 pb-2 sm:pb-4 pt-3 bg-zinc-950/60">
+                <div className="overflow-x-auto overflow-y-auto flex-1 min-h-[300px] px-2 sm:px-4 pb-2 sm:pb-4 pt-3 bg-transparent">
                   <table className="w-full text-left border-separate sm:border-spacing-x-0 sm:border-spacing-y-1 text-[10px] sm:text-[11px] font-mono whitespace-nowrap sm:table-fixed sm:min-w-[700px] block sm:table">
                     <thead className="sticky top-0 z-20 hidden sm:table-header-group">
-                      <tr className="text-[9px] text-zinc-400 uppercase tracking-widest relative after:absolute after:inset-0 after:rounded-lg after:border after:border-zinc-800/80 after:pointer-events-none">
-                        <th className="py-2 px-3 font-mono select-none w-[20%] min-w-[120px] bg-zinc-950/40 rounded-l-lg">Tarih</th>
-                        <th className="py-2 px-3 text-center font-mono select-none w-[12%] min-w-[65px] bg-zinc-950/40">Yön</th>
-                        <th className="py-2 px-3 text-center font-mono select-none w-[12%] min-w-[65px] bg-zinc-950/40">RR</th>
-                        <th className="py-2 px-3 text-center font-mono select-none w-[14%] min-w-[75px] bg-zinc-950/40">Session</th>
-                        <th className="py-2 px-3 text-center font-mono select-none w-[14%] min-w-[80px] bg-zinc-950/40">Sonuç</th>
-                        <th className="py-2 px-3 text-right font-mono select-none w-[14%] min-w-[90px] bg-zinc-950/40"><div className="flex items-center justify-end w-full"><span>Kâr/Zarar</span></div></th>
-                        <th className="py-2 px-3 text-center font-mono select-none w-[14%] min-w-[80px] bg-zinc-950/40 rounded-r-lg">Platform</th>
+                      <tr className="text-[9px] text-zinc-400 uppercase tracking-widest relative after:absolute after:inset-0 after:rounded-lg after:border after:border-zinc-800 after:pointer-events-none">
+                        <th className="py-2 px-3 font-mono select-none w-[20%] min-w-[120px] bg-transparent rounded-l-xl">Tarih</th>
+                        <th className="py-2 px-3 text-center font-mono select-none w-[12%] min-w-[65px] bg-transparent">Yön</th>
+                        <th className="py-2 px-3 text-center font-mono select-none w-[12%] min-w-[65px] bg-transparent">RR</th>
+                        <th className="py-2 px-3 text-center font-mono select-none w-[14%] min-w-[75px] bg-transparent">Session</th>
+                        <th className="py-2 px-3 text-center font-mono select-none w-[14%] min-w-[80px] bg-transparent">Sonuç</th>
+                        <th className="py-2 px-3 text-right font-mono select-none w-[14%] min-w-[90px] bg-transparent"><div className="flex items-center justify-end w-full"><span>Kâr/Zarar</span></div></th>
+                        <th className="py-2 px-3 text-center font-mono select-none w-[14%] min-w-[80px] bg-transparent rounded-r-xl">Platform</th>
                       </tr>
                     </thead>
                     <tbody className="block sm:table-row-group">
@@ -2007,83 +2015,91 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                           const pnlValue = t.pnl || 0;
                           const prefix = pnlValue > 0 ? '+' : '';
                           pnlText = `${prefix}${(pnlValue || 0).toLocaleString()} ${currency}`;
-                          pnlColor = pnlValue > 0 ? 'text-emerald-400 font-black' : (pnlValue < 0 ? 'text-rose-400 font-black' : 'text-zinc-500 font-bold');
+                          pnlColor = pnlValue > 0 ? 'text-emerald-400 font-bold' : (pnlValue < 0 ? 'text-rose-400 font-bold' : 'text-zinc-500 font-bold');
                         }
 
-                        const formattedDate = new Date(t.createdAt).toLocaleDateString('tr-TR', {
+                        const dateObj = new Date(t.createdAt);
+                        const formattedDateOnly = dateObj.toLocaleDateString('tr-TR', {
                           day: 'numeric',
                           month: 'short',
-                          year: 'numeric',
+                          year: 'numeric'
+                        });
+                        const formattedTimeOnly = dateObj.toLocaleTimeString('tr-TR', {
                           hour: '2-digit',
-                          minute: '2-digit'
+                          minute: '2-digit',
+                          hour12: false
                         });
 
                         return (
                           <tr 
                             key={t.id ? `${t.id}-${idx}` : `trade-${idx}`}
                           onClick={() => setSelectedTrade ? setSelectedTrade(t) : null}
-                          className="group cursor-pointer select-none relative flex flex-wrap sm:table-row bg-zinc-900/40 sm:bg-transparent mb-2 sm:mb-0 rounded-xl sm:rounded-none border border-zinc-800/80 hover:border-blue-500/40 sm:border-none p-2 sm:p-0"
+                          className="group cursor-pointer select-none relative flex flex-wrap sm:table-row bg-zinc-800 sm:bg-transparent mb-2 sm:mb-0 rounded-xl sm:rounded-none border border-zinc-800 hover:border-blue-500/40 sm:border-none p-2 sm:p-0"
                         >
-                          <td className="w-1/2 sm:w-[22%] sm:min-w-[130px] flex justify-start items-center sm:table-cell order-1 py-1.5 px-0 sm:px-3 text-zinc-400 group-hover:text-zinc-100 font-mono sm:bg-zinc-950/30 group-hover:bg-blue-950/10 sm:rounded-l-lg sm:border-y sm:border-l sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200">
+                          <td className="w-1/2 sm:w-[22%] sm:min-w-[130px] flex justify-start items-center sm:table-cell order-1 py-1.5 px-0 sm:px-3 text-zinc-400 group-hover:text-zinc-100 font-mono sm:bg-transparent group-hover:bg-blue-950/10 sm:rounded-l-xl sm:border-y sm:border-l sm:border-zinc-800 group-hover:border-blue-500/40 transition-colors duration-200">
                             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-0.5 sm:gap-1.5">
-                              <span className="text-white font-bold text-xs sm:text-[10px]">{formattedDate}</span>
+                              <span className="text-zinc-300 font-medium transition-colors flex items-center gap-1.5">
+                                <span>{formattedDateOnly}</span>
+                                <span className="text-zinc-600 font-bold">•</span>
+                                <span className="text-zinc-500 font-mono">{formattedTimeOnly}</span>
+                              </span>
                             </div>
                           </td>
-                          <td className="w-1/2 sm:w-[12%] sm:min-w-[70px] flex justify-end sm:justify-center items-center sm:table-cell order-2 py-1.5 px-0 sm:px-2.5 text-center sm:bg-zinc-950/30 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200">
+                          <td className="w-1/2 sm:w-[12%] sm:min-w-[70px] flex justify-end sm:justify-center items-center sm:table-cell order-2 py-1.5 px-0 sm:px-2.5 text-center sm:bg-transparent group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800 group-hover:border-blue-500/40 transition-colors duration-200">
                             {t.type === 'LONG' ? (
-                              <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded uppercase tracking-wider font-mono transition-colors">LONG</span>
+                              <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded-lg uppercase tracking-wider font-mono transition-colors">LONG</span>
                             ) : (
-                              <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 group-hover:border-rose-500/50 rounded uppercase tracking-wider font-mono transition-colors">SHORT</span>
+                              <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 group-hover:border-rose-500/50 rounded-lg uppercase tracking-wider font-mono transition-colors">SHORT</span>
                             )}
                           </td>
-                          <td className="w-1/2 sm:w-[12%] sm:min-w-[70px] flex justify-start sm:justify-center items-center sm:table-cell order-3 py-1.5 px-0 sm:px-2.5 text-center sm:bg-zinc-950/30 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0">
+                          <td className="w-1/2 sm:w-[12%] sm:min-w-[70px] flex justify-start sm:justify-center items-center sm:table-cell order-3 py-1.5 px-0 sm:px-2.5 text-center sm:bg-transparent group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0">
                             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-1.5 w-full justify-start sm:justify-center">
                               <span className="sm:hidden text-[9px] font-bold text-zinc-500 uppercase tracking-widest leading-none h-[10px]">RR</span>
                               <div className="flex items-center h-[20px]">{t.rr !== undefined && t.rr !== null && t.rr !== 0 ? (
                                 t.rr > 0 ? (
-                                  <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded uppercase tracking-wider font-mono transition-colors">
+                                  <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded-lg uppercase tracking-wider font-mono transition-colors">
                                       +{t.rr}R
                                     </span>
                                 ) : t.rr < 0 ? (
-                                  <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 group-hover:border-rose-500/50 rounded uppercase tracking-wider font-mono transition-colors">
+                                  <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 group-hover:border-rose-500/50 rounded-lg uppercase tracking-wider font-mono transition-colors">
                                       {t.rr}R
                                     </span>
                                 ) : (
-                                  <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-zinc-400 bg-zinc-500/10 border border-zinc-500/20 group-hover:border-zinc-500/50 rounded uppercase tracking-wider font-mono transition-colors">
+                                  <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-zinc-400 bg-zinc-500/10 border border-zinc-500/20 group-hover:border-zinc-600 rounded-lg uppercase tracking-wider font-mono transition-colors">
                                       {t.rr}R
                                     </span>
                                 )
                               ) : (
-                                <span className="inline-flex items-center justify-center w-[38px] sm:w-[44px] h-[18px] text-center text-[9px] sm:text-[10px] font-medium text-zinc-500 rounded">—</span>
+                                <span className="inline-flex items-center justify-center w-[38px] sm:w-[44px] h-[18px] text-center text-[9px] sm:text-[10px] font-medium text-zinc-500 rounded-md">—</span>
                               )}
                               </div>
                             </div>
                           </td>
-                          <td className="hidden sm:table-cell py-1.5 px-3 text-center text-zinc-400 font-medium sm:bg-zinc-950/30 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 w-[15%] min-w-[80px]">
+                          <td className="hidden sm:table-cell py-1.5 px-3 text-center text-zinc-400 font-medium sm:bg-transparent group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800 group-hover:border-blue-500/40 transition-colors duration-200 w-[15%] min-w-[80px]">
                             <span className="inline-flex items-center justify-center min-w-[54px] max-w-[130px] h-[20px] px-2.5 py-0 text-center text-[10px] font-bold text-zinc-300 bg-zinc-800/80 border border-zinc-700/80 group-hover:border-zinc-500 rounded-full uppercase tracking-wider font-mono transition-colors whitespace-nowrap truncate" title={t.session || 'Diğer'}>
                               {t.session || 'Diğer'}
                             </span>
                           </td>
-                          <td className="w-1/2 sm:w-[15%] sm:min-w-[80px] flex justify-end sm:justify-center items-center sm:table-cell order-4 py-1.5 px-0 sm:px-2.5 text-center sm:bg-zinc-950/30 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0">
+                          <td className="w-1/2 sm:w-[15%] sm:min-w-[80px] flex justify-end sm:justify-center items-center sm:table-cell order-4 py-1.5 px-0 sm:px-2.5 text-center sm:bg-transparent group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0">
                             <div className="flex items-center h-[20px]">
                               {isWin ? (
                                 <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded-full uppercase tracking-wider font-mono transition-colors">WIN</span>
                               ) : isLoss ? (
                                 <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 group-hover:border-rose-500/50 rounded-full uppercase tracking-wider font-mono transition-colors">LOSS</span>
                               ) : isBe ? (
-                                <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-zinc-400 bg-zinc-500/10 border border-zinc-500/20 group-hover:border-zinc-500/50 rounded-full uppercase tracking-wider font-mono transition-colors">BE</span>
+                                <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-zinc-400 bg-zinc-500/10 border border-zinc-500/20 group-hover:border-zinc-600 rounded-full uppercase tracking-wider font-mono transition-colors">BE</span>
                               ) : (
                                 <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 group-hover:border-blue-500/50 rounded-full uppercase tracking-wider font-mono transition-colors">AÇIK</span>
                               )}
                             </div>
                           </td>
-                          <td className={`w-full sm:w-[15%] sm:min-w-[80px] flex justify-between sm:justify-end items-center sm:table-cell order-5 py-1 px-0 sm:px-3 text-right ${pnlColor} sm:bg-zinc-950/30 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 pt-3 sm:pt-0 border-t border-zinc-800/50 sm:border-t-0`}>
+                          <td className={`w-full sm:w-[15%] sm:min-w-[80px] flex justify-between sm:justify-end items-center sm:table-cell order-5 py-1 px-0 sm:px-3 text-right ${pnlColor} sm:bg-transparent group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 max-sm:pt-3 max-sm:border-t max-sm:border-zinc-800/50 sm:py-1 align-middle`}>
                             <span className="sm:hidden text-[10px] font-bold text-zinc-500 uppercase tracking-widest text-left font-sans">Kâr/Zarar</span>
-                            <div className="flex flex-col sm:flex-row items-end sm:items-center gap-0.5 sm:gap-1.5 sm:w-full sm:justify-end">
-                              <span className="text-sm sm:text-[11px] font-mono font-black">{pnlText}</span>
+                            <div className="flex flex-col sm:flex-row items-end sm:items-center gap-0.5 sm:gap-1.5 sm:w-full sm:justify-end sm:h-[20px]">
+                              <span className="text-sm sm:text-[11px] font-bold font-sans inline-flex items-center justify-end h-[20px] leading-none tracking-tight">{pnlText}</span>
                             </div>
                           </td>
-                          <td className="w-full sm:w-[7%] sm:min-w-[60px] flex justify-between sm:justify-center items-center sm:table-cell order-6 py-1 px-0 sm:px-3 text-center sm:bg-zinc-950/30 group-hover:bg-blue-950/10 sm:rounded-r-lg sm:border-y sm:border-r sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 sm:pt-1.5 pt-0">
+                          <td className="w-full sm:w-[7%] sm:min-w-[60px] flex justify-between sm:justify-center items-center sm:table-cell order-6 py-1 px-0 sm:px-3 text-center sm:bg-transparent group-hover:bg-blue-950/10 sm:rounded-r-xl sm:border-y sm:border-r sm:border-zinc-800 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 sm:pt-1.5 pt-0">
                             <div className="sm:hidden">
                               <span className="text-[9px] text-zinc-500 uppercase font-bold tracking-widest">Platform</span>
                             </div>
@@ -2157,7 +2173,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
             <motion.div 
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mt-1 mb-2 px-3 py-2 bg-rose-500/10 border border-rose-500/20 rounded flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 max-w-4xl mx-auto w-full"
+              className="mt-1 mb-2 px-3 py-2 bg-rose-500/10 border border-rose-500/20 rounded-xl flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 max-w-4xl mx-auto w-full"
             >
               <div className="flex items-center gap-1.5 shrink-0 text-rose-400">
                 <AlertTriangle size={13} />
@@ -2199,17 +2215,18 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm"
+              transition={{ duration: 0.15, ease: "easeOut" }}
+              className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm"
             >
               <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                className="bg-zinc-950/90 border border-zinc-800/80 rounded-xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden backdrop-blur-md"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15, ease: "easeOut" }}
+                className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden backdrop-blur-md"
               >
               {/* Header */}
-              <div className="flex items-center justify-between p-4 sm:p-5 border-b border-zinc-800/80 bg-zinc-950/60">
+              <div className="flex items-center justify-between p-4 sm:p-5 border-b border-zinc-800 bg-transparent">
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
                     <InfinityIcon size={18} />
@@ -2232,7 +2249,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
               </div>
 
               {/* Controls Bar */}
-              <div className="p-4 border-b border-zinc-800/60 bg-zinc-950/30 flex flex-wrap items-center justify-between gap-3">
+              <div className="p-4 border-b border-zinc-800 bg-transparent flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <input
                     type="text"
@@ -2247,21 +2264,21 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                   <button
                     type="button"
                     onClick={() => { setDeadZoneSort('pnl'); setDeadZonePage(1); }}
-                    className={`text-xs font-mono px-2.5 py-1 rounded-md transition-colors duration-200 ease-out font-bold border ${deadZoneSort === 'pnl' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'}`}
+                    className={`text-xs font-mono px-3 py-1 rounded-xl transition-colors duration-200 ease-out font-bold border ${deadZoneSort === 'pnl' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'}`}
                   >
                     PNL
                   </button>
                   <button
                     type="button"
                     onClick={() => { setDeadZoneSort('rr'); setDeadZonePage(1); }}
-                    className={`text-xs font-mono px-2.5 py-1 rounded-md transition-colors duration-200 ease-out font-bold border ${deadZoneSort === 'rr' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'}`}
+                    className={`text-xs font-mono px-3 py-1 rounded-xl transition-colors duration-200 ease-out font-bold border ${deadZoneSort === 'rr' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'}`}
                   >
                     RR
                   </button>
                   <button
                     type="button"
                     onClick={() => { setDeadZoneSort('winrate'); setDeadZonePage(1); }}
-                    className={`text-xs font-mono px-2.5 py-1 rounded-md transition-colors duration-200 ease-out font-bold border ${deadZoneSort === 'winrate' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'}`}
+                    className={`text-xs font-mono px-3 py-1 rounded-xl transition-colors duration-200 ease-out font-bold border ${deadZoneSort === 'winrate' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'}`}
                   >
                     WR
                   </button>
@@ -2304,7 +2321,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                           if (!cell || cell.count === 0) return <span className="text-zinc-700">-</span>;
                           const wr = cell.count > 0 ? (cell.wins / cell.count) * 100 : 0;
                           return (
-                            <div className="flex flex-col gap-0.5 items-center justify-center py-1">
+                            <div className="flex flex-col gap-0.5 items-center justify-center py-1.5 px-2 bg-zinc-900/60 border border-zinc-800/80 rounded-xl transition-all hover:border-zinc-700/60 shadow-xs">
                               <span className={`font-black text-xs ${cell.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                                 {cell.pnl >= 0 ? '+' : ''}{Math.round(cell?.pnl || 0).toLocaleString()} {currency}
                               </span>
@@ -2317,12 +2334,14 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                           );
                         };
                         return (
-                          <tr key={asset} className="hover:bg-zinc-800/30 transition-colors">
-                            <td className="py-2.5 px-3 text-left font-black text-white uppercase text-xs tracking-wide border-r border-zinc-800 bg-zinc-950/40 font-mono">
-                              {asset}
+                          <tr key={asset} className="hover:bg-zinc-800/20 transition-colors">
+                            <td className="py-2.5 px-3 text-left border-r border-zinc-800/80 bg-transparent">
+                              <span className="inline-flex items-center px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-700/60 font-black text-white uppercase text-xs tracking-wider font-mono shadow-xs">
+                                {asset}
+                              </span>
                             </td>
-                            {matrixSessions.map((s, idx) => (
-                              <td key={s} className={`py-2 px-2 ${idx % 2 === 0 ? 'bg-zinc-950/20' : ''}`}>
+                            {matrixSessions.map((s) => (
+                              <td key={s} className="py-2 px-2">
                                 {getCell(s)}
                               </td>
                             ))}
@@ -2336,31 +2355,35 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
 
               {/* Footer */}
               {processedDeadZone.length > 0 && (
-                <div className="p-4 border-t border-zinc-800/80 bg-zinc-900/80 flex items-center justify-between">
-                  <span className="text-xs font-mono text-zinc-400 font-bold uppercase tracking-wider">
-                    Toplam {processedDeadZone.length} Parite
-                  </span>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-mono text-zinc-400 font-bold">
-                      Sayfa {deadZonePage} / {Math.max(1, Math.ceil(processedDeadZone.length / 8))}
+                <div className="p-4 border-t border-zinc-800/80 bg-transparent flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-[11px] text-zinc-400 font-medium">
+                    <span>Toplam</span>
+                    <span className="text-zinc-200 font-semibold">{processedDeadZone.length}</span>
+                    <span>Parite</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs font-medium text-zinc-400 tabular-nums flex items-center leading-none">
+                      Sayfa: {deadZonePage}/{Math.max(1, Math.ceil(processedDeadZone.length / 8))}
                     </span>
-                    <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-lg p-1 shadow-sm">
+                    <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-700/50 rounded-xl p-1 shadow-xs">
                       <button
                         type="button"
                         onClick={() => setDeadZonePage(prev => Math.max(1, prev - 1))}
                         disabled={deadZonePage <= 1}
-                        className="w-7 h-7 flex items-center justify-center rounded text-zinc-400 hover:bg-zinc-800 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent transition-colors duration-200 ease-out cursor-pointer disabled:cursor-not-allowed"
+                        className="w-6.5 h-6.5 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-400 transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed"
+                        title="Önceki Sayfa"
                       >
-                        <ChevronLeft size={14} />
+                        <ChevronLeft size={13} />
                       </button>
-                      <div className="w-[1px] h-4 bg-zinc-800 mx-1" />
+                      <div className="w-px h-3.5 bg-zinc-800" />
                       <button
                         type="button"
                         onClick={() => setDeadZonePage(prev => Math.min(Math.ceil(processedDeadZone.length / 8), prev + 1))}
                         disabled={deadZonePage >= Math.ceil(processedDeadZone.length / 8)}
-                        className="w-7 h-7 flex items-center justify-center rounded text-zinc-400 hover:bg-zinc-800 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent transition-colors duration-200 ease-out cursor-pointer disabled:cursor-not-allowed"
+                        className="w-6.5 h-6.5 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-400 transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed"
+                        title="Sonraki Sayfa"
                       >
-                        <ChevronRight size={14} />
+                        <ChevronRight size={13} />
                       </button>
                     </div>
                   </div>
@@ -2381,17 +2404,18 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm"
+              transition={{ duration: 0.15, ease: "easeOut" }}
+              className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm"
             >
               <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                className="bg-zinc-950/90 border border-zinc-800/80 rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden backdrop-blur-md"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15, ease: "easeOut" }}
+                className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden backdrop-blur-md"
               >
               {/* Header */}
-              <div className="flex items-center justify-between p-4 sm:p-5 border-b border-zinc-800/80 bg-zinc-950/60">
+              <div className="flex items-center justify-between p-4 sm:p-5 border-b border-zinc-800 bg-transparent">
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-lg bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-400">
                     <Crosshair size={18} />
@@ -2421,7 +2445,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                       <th className="py-2.5 px-3">İşlem Hacmi (Haftalık)</th>
                       <th className="py-2.5 px-3 text-center">Avg. Profit Factor</th>
                       <th className="py-2.5 px-3 text-center">Ortalama R</th>
-                      <th className="py-2.5 px-3 text-right">Yaşanan Hafta</th>
+                      <th className="py-2.5 px-3 text-right">Aktif Hafta Sayısı</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-800/60">
@@ -2429,12 +2453,12 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                       <tr key={f.label} className="hover:bg-zinc-800/30 transition-colors">
                         <td className="py-3 px-3 text-zinc-200 font-black">{f.label}</td>
                         <td className="py-3 px-3 text-center">
-                          <span className={`px-2 py-0.5 rounded text-xs font-black ${getPFColor(f.avgPF)} bg-zinc-800/90 border border-zinc-700/50 text-zinc-100`}>
+                          <span className={`px-2.5 py-0.5 rounded-lg text-xs font-black ${getPFColor(f.avgPF)} bg-zinc-800/90 border border-zinc-700/50 text-zinc-100`}>
                             {!isFinite(f.avgPF) || f.avgPF === Number.POSITIVE_INFINITY ? "Sonsuz" : f.avgPF.toFixed(2)}
                           </span>
                         </td>
                         <td className="py-3 px-3 text-center">
-                          <span className={`px-2 py-0.5 rounded text-xs font-black font-mono ${f.avgR > 0 ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/30" : f.avgR < 0 ? "text-rose-400 bg-rose-500/10 border-rose-500/30" : "text-zinc-400 bg-zinc-900 border-zinc-800"} border`}>
+                          <span className={`px-2.5 py-0.5 rounded-lg text-xs font-black font-mono ${f.avgR > 0 ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/30" : f.avgR < 0 ? "text-rose-400 bg-rose-500/10 border-rose-500/30" : "text-zinc-400 bg-transparent border-zinc-800"} border`}>
                             {f.avgR > 0 ? "+" : ""}{(f.avgR ?? 0).toFixed(2)} R
                           </span>
                         </td>
@@ -2446,7 +2470,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
               </div>
 
               {/* Footer */}
-              <div className="p-4 border-t border-zinc-800 bg-zinc-950/60 flex justify-end">
+              <div className="p-4 border-t border-zinc-800 bg-transparent flex justify-end">
                 <button
                   onClick={() => setIsOptimalFreqModalOpen(false)}
                   className="px-4 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-bold transition-colors"

@@ -1,10 +1,29 @@
 import React, { useState, memo, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Virtuoso } from 'react-virtuoso';
-import { Plus, ChevronLeft, ChevronRight, Trash2, Edit3, Calendar as CalendarIcon, Save, ArrowLeft, Smile, Frown, Meh, Activity, Zap, Star } from 'lucide-react';
+import { 
+  Plus, 
+  ChevronLeft, 
+  ChevronRight, 
+  Trash2, 
+  Edit3, 
+  Calendar as CalendarIcon, 
+  Save, 
+  ArrowLeft, 
+  Smile, 
+  Frown, 
+  Meh, 
+  Activity, 
+  Zap, 
+  Star,
+  Search,
+  X,
+  Clock
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import { JournalEntry, Trade } from '../types';
 import { JournalCalendar } from './JournalCalendar';
+import { TurkishDatePicker } from './TurkishDateTimePicker';
 import { VoiceToJournalButton } from './VoiceToJournalButton';
 import { useMetricMode } from '../context/MetricContext';
 
@@ -17,11 +36,11 @@ interface JournalViewProps {
 }
 
 const moodIcons = {
-  terrible: <Activity size={16} className="text-red-400" />,
-  bad: <Frown size={16} className="text-orange-400" />,
-  neutral: <Meh size={16} className="text-zinc-400" />,
-  good: <Smile size={16} className="text-green-500" />,
-  excellent: <Zap size={16} className="text-green-700" />,
+  terrible: <Activity size={15} className="text-rose-400" />,
+  bad: <Frown size={15} className="text-amber-400" />,
+  neutral: <Meh size={15} className="text-zinc-400" />,
+  good: <Smile size={15} className="text-emerald-400" />,
+  excellent: <Zap size={15} className="text-emerald-300" />,
 };
 
 const moodEmojis: Record<NonNullable<JournalEntry['mood']>, string> = {
@@ -55,6 +74,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
   const [editMood, setEditMood] = useState<JournalEntry['mood']>('neutral');
   const [editIsFavorite, setEditIsFavorite] = useState(false);
   const [searchDate, setSearchDate] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const [showOnlyFavorites, setShowOnlyFavorites] = useState(false);
   const [weekOffset, setWeekOffset] = useState(0);
@@ -99,33 +119,70 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
     const dayTrades = getTradesForDate(dateStr);
     if (dayTrades.length === 0) return null;
 
+    const totalPnL = dayTrades.reduce((acc, t) => acc + (t.pnl || 0), 0);
+    const totalRR = dayTrades.reduce((acc, t) => acc + (t.rr || 0), 0);
+    const winCount = dayTrades.filter(t => t.status === 'WIN').length;
+
     return (
-      <div className="mt-6 mb-6">
-        <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3 font-mono border-b border-zinc-800 pb-2 flex items-center gap-2">
-          <Activity size={12} /> Bugüne Ait İşlemler ({dayTrades.length})
-        </h3>
+      <div className="mt-6 pt-5 border-t border-zinc-800/80">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Activity size={13} className="text-blue-400" />
+            <h3 className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">
+              Günün İşlemleri ({dayTrades.length})
+            </h3>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-mono font-bold text-zinc-400 bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded-lg">
+              {winCount}W / {dayTrades.length - winCount}L
+            </span>
+            <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-lg border ${
+              totalPnL > 0 
+                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
+                : totalPnL < 0 
+                ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' 
+                : 'bg-zinc-800 text-zinc-400 border-zinc-700'
+            }`}>
+              {isRrMode 
+                ? `${totalRR >= 0 ? '+' : ''}${totalRR.toFixed(2)}R` 
+                : `${totalPnL >= 0 ? '+' : ''}${totalPnL.toFixed(2)} ${currency}`}
+            </span>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {dayTrades.map(trade => {
-             const isWin = trade.status === 'WIN';
-             const isLoss = trade.status === 'LOSS';
-             const pnlColor = isWin ? 'text-emerald-400' : isLoss ? 'text-rose-400' : 'text-zinc-400';
-             const pnlPrefix = isWin ? '+' : isLoss ? '-' : '';
-             const displayValue = isRrMode
-               ? (trade.rr !== undefined && trade.rr !== null ? `${pnlPrefix}${Math.abs(trade.rr)}R` : '—')
-               : (trade.pnl !== undefined ? `${pnlPrefix}${Math.abs(trade.pnl)} ${currency}` : '');
-             
-             return (
-               <div key={trade.id} className="flex justify-between items-center bg-zinc-950/40 border border-zinc-800/80 hover:bg-zinc-900/60 hover:border-zinc-700/80 rounded-lg px-3 py-2 transition-all duration-200 ease-out cursor-pointer group shadow-sm">
-                 <div className="flex items-center gap-2.5">
-                   <span className={`w-1.5 h-1.5 rounded-full ${isWin ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : isLoss ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]' : 'bg-zinc-500'} group-hover:scale-125 transition-all`}></span>
-                   <span className="text-[11px] font-bold text-zinc-200 group-hover:text-white font-mono tracking-wider transition-colors">{trade.asset || 'Bilinmiyor'}</span>
-                   <span className="text-[9px] px-1.5 py-0.5 rounded border border-zinc-800 bg-zinc-900/80 group-hover:bg-zinc-800 text-zinc-400 group-hover:text-zinc-200 font-mono transition-colors">{trade.type}</span>
-                 </div>
-                 <div className={`text-[11px] font-bold font-mono ${pnlColor} group-hover:scale-105 transition-transform`}>
-                   {displayValue}
-                 </div>
-               </div>
-             );
+            const isWin = trade.status === 'WIN';
+            const isLoss = trade.status === 'LOSS';
+            const pnlColor = isWin ? 'text-emerald-400' : isLoss ? 'text-rose-400' : 'text-zinc-400';
+            const pnlPrefix = isWin ? '+' : isLoss ? '-' : '';
+            const displayValue = isRrMode
+              ? (trade.rr !== undefined && trade.rr !== null ? `${pnlPrefix}${Math.abs(trade.rr)}R` : '—')
+              : (trade.pnl !== undefined ? `${pnlPrefix}${Math.abs(trade.pnl)} ${currency}` : '');
+            
+            return (
+              <div 
+                key={trade.id} 
+                className="flex justify-between items-center bg-zinc-950/70 border border-zinc-800/80 hover:border-zinc-700 rounded-xl px-3 py-2.5 transition-colors duration-150"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${isWin ? 'bg-emerald-500' : isLoss ? 'bg-rose-500' : 'bg-zinc-500'}`} />
+                  <div className="min-w-0">
+                    <span className="text-[11px] font-bold text-zinc-200 font-mono tracking-wider block truncate">{trade.asset || 'Bilinmiyor'}</span>
+                  </div>
+                  <span className={`text-[9px] px-1.5 py-0.5 rounded-md border font-mono font-bold shrink-0 ${
+                    trade.type === 'LONG' 
+                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
+                      : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                  }`}>
+                    {trade.type}
+                  </span>
+                </div>
+                <div className={`text-xs font-bold font-mono ${pnlColor} shrink-0`}>
+                  {displayValue}
+                </div>
+              </div>
+            );
           })}
         </div>
       </div>
@@ -145,12 +202,19 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
     if (searchDate) {
       result = result.filter(e => e.date === searchDate);
     }
+    if (searchTerm.trim()) {
+      const query = searchTerm.toLowerCase();
+      result = result.filter(e => 
+        (e.title && e.title.toLowerCase().includes(query)) || 
+        (e.content && e.content.toLowerCase().includes(query))
+      );
+    }
     return result;
-  }, [sortedEntries, showOnlyFavorites, searchDate]);
+  }, [sortedEntries, showOnlyFavorites, searchDate, searchTerm]);
 
   // Modern feature: Last 7 days mood trend heatmap -> Current Week Mon-Sun
   const last7DaysMoods = useMemo(() => {
-    const moods: { date: string; mood: JournalEntry['mood'] | null; shortDay: string }[] = [];
+    const moods: { date: string; mood: JournalEntry['mood'] | null; shortDay: string; dayNumber: number }[] = [];
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
@@ -169,12 +233,13 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
       // Find the most recently updated entry for this day that actually has a mood
       const entryDay = sortedEntries.find(e => e.date === dateStr && e.mood); 
       
-      const shortDay = d.toLocaleDateString('tr-TR', { weekday: 'long' }).charAt(0).toLocaleUpperCase();
+      const shortDay = d.toLocaleDateString('tr-TR', { weekday: 'short' });
       
       moods.push({
         date: dateStr,
         mood: entryDay ? entryDay.mood : null,
         shortDay,
+        dayNumber: d.getDate(),
       });
     }
     return moods;
@@ -187,19 +252,19 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
     const m1 = d1.toLocaleDateString('tr-TR', { month: 'short' });
     const m2 = d2.toLocaleDateString('tr-TR', { month: 'short' });
     if (m1 === m2) {
-        return `${d1.getDate()}-${d2.getDate()} ${m1}`;
+      return `${d1.getDate()}-${d2.getDate()} ${m1}`;
     }
     return `${d1.getDate()} ${m1} - ${d2.getDate()} ${m2}`;
   }, [last7DaysMoods]);
 
   const getMoodColor = (mood: JournalEntry['mood'] | null) => {
     switch(mood) {
-      case 'excellent': return 'bg-green-700 text-white font-black shadow-xs shadow-green-700/30';
-      case 'good': return 'bg-green-500 text-zinc-950 font-black shadow-xs shadow-green-500/30';
-      case 'neutral': return 'bg-zinc-700 text-zinc-100 font-bold shadow-xs';
-      case 'bad': return 'bg-orange-500 text-white font-bold shadow-xs shadow-orange-500/20';
-      case 'terrible': return 'bg-rose-500 text-white font-black shadow-xs shadow-rose-500/30';
-      default: return 'bg-zinc-900 border border-zinc-800 text-zinc-600';
+      case 'excellent': return 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono font-bold shadow-xs';
+      case 'good': return 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-mono font-bold shadow-xs';
+      case 'neutral': return 'bg-zinc-800 text-zinc-300 border border-zinc-700 font-mono font-bold shadow-xs';
+      case 'bad': return 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono font-bold shadow-xs';
+      case 'terrible': return 'bg-rose-500/20 text-rose-300 border border-rose-500/40 font-mono font-bold shadow-xs';
+      default: return 'bg-zinc-900/70 border border-zinc-800 text-zinc-500 font-mono';
     }
   };
 
@@ -222,7 +287,6 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
     setEditIsFavorite(entry.isFavorite || false);
     setIsEditing(true);
   };
-
 
   const handleVoiceParsed = (data: any) => {
     if (data.title) setEditTitle(data.title);
@@ -262,156 +326,201 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
 
   return (
     <motion.div 
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
-      className="flex h-[calc(100vh-180px)] min-h-[620px] bg-zinc-950/60 rounded-xl border border-zinc-800/80 overflow-hidden text-zinc-200 shadow-sm relative"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.15, ease: "easeOut" }}
+      className="flex flex-col md:flex-row h-[calc(100vh-170px)] min-h-[640px] bg-zinc-950/60 border border-zinc-800/80 backdrop-blur-md rounded-2xl overflow-hidden text-zinc-200 shadow-sm relative"
     >
-      {/* Top ambient glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-[1px] bg-gradient-to-r from-transparent via-blue-500/25 to-transparent pointer-events-none z-10" />
-      
       {/* LEFT SIDEBAR: Entry List */}
-      <div className={`w-full md:w-1/3 border-r border-zinc-800/80 flex flex-col ${isEditing && 'hidden md:flex'}`}>
-        <div className="px-4 h-[48px] shrink-0 border-b border-zinc-800/80 flex items-center justify-between bg-zinc-950/40">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
-              <CalendarIcon size={18} />
+      <div className={`w-full md:w-80 lg:w-96 border-r border-zinc-800/80 flex flex-col shrink-0 ${isEditing && 'hidden md:flex'}`}>
+        {/* Top bar */}
+        <div className="px-4 py-3 shrink-0 border-b border-zinc-800/80 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
+              <CalendarIcon size={16} />
             </div>
             <div>
-              <h2 className="text-xs font-black uppercase tracking-wider text-zinc-100 font-mono leading-none">
-                GÜNLÜK
-              </h2>
-              <p className="text-[10px] text-zinc-400 font-sans mt-0.5">Psikoloji ve Seans Notları</p>
+              <div className="flex items-center gap-1.5">
+                <h2 className="text-sm font-bold uppercase tracking-wide text-zinc-100 leading-none">
+                  GÜNLÜK
+                </h2>
+                <span className="px-1.5 py-0.2 rounded-md text-[9px] font-mono font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                  {entries.length}
+                </span>
+              </div>
+              <p className="text-[10px] text-zinc-500 font-sans mt-0.5">Psikoloji & İşlem Notları</p>
             </div>
           </div>
-          <div className="flex items-center gap-1.5 relative">
+          
+          <div className="flex items-center gap-1 relative">
             <button
               onClick={() => setShowSearch(!showSearch)}
-              className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors duration-200 ease-out cursor-pointer active:scale-95 shadow-sm border ${showSearch || searchDate ? 'bg-zinc-800 border-zinc-700 text-blue-400' : 'bg-zinc-950 border-zinc-800/80 text-zinc-400 hover:bg-zinc-900 hover:text-zinc-300'}`}
-              
+              className={`w-7.5 h-7.5 rounded-lg flex items-center justify-center transition-all cursor-pointer border ${
+                showSearch || searchDate 
+                  ? 'bg-blue-500/15 border-blue-500/30 text-blue-400' 
+                  : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
+              }`}
+              title="Tarihe Göre Filtrele"
             >
-              <CalendarIcon size={14} />
+              <CalendarIcon size={13} />
             </button>
             <AnimatePresence>
               {showSearch && (
                 <motion.div
-                  initial={{ opacity: 0, y: -5, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -5, scale: 0.95 }}
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
                   transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
-                  className="absolute top-[calc(100%+8px)] right-0 z-50 flex flex-col gap-2"
+                  className="absolute top-[calc(100%+8px)] right-0 z-50 flex flex-col gap-2 shadow-2xl"
                 >
                   <JournalCalendar 
                     entries={entries} 
                     selectedDate={searchDate} 
                     onSelectDate={(date) => { setSearchDate(date); setShowSearch(false); }} 
-                    getMoodColor={getMoodColor}
                   />
                 </motion.div>
               )}
             </AnimatePresence>
+
             <button
               onClick={() => setShowOnlyFavorites(prev => !prev)}
-              className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors duration-200 ease-out cursor-pointer active:scale-95 shadow-sm border ${
+              className={`w-7.5 h-7.5 rounded-lg flex items-center justify-center transition-all cursor-pointer border ${
                 showOnlyFavorites 
                   ? 'bg-amber-500/20 border-amber-500/40 text-amber-400' 
-                  : 'bg-zinc-950 border-zinc-800/80 text-zinc-400 hover:bg-zinc-900 hover:text-zinc-300'
+                  : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
               }`}
-
+              title="Favorileri Göster"
             >
-              <Star size={14} className={showOnlyFavorites ? "fill-amber-400 text-amber-400" : ""} />
+              <Star size={13} className={showOnlyFavorites ? "fill-amber-400 text-amber-400" : ""} />
             </button>
+
             <button
               onClick={handleCreateNew}
-              className="w-8 h-8 rounded-xl bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 border border-blue-500/30 flex items-center justify-center transition-all duration-200 ease-out cursor-pointer active:scale-95 shadow-xs backdrop-blur-sm"
+              className="w-7.5 h-7.5 rounded-lg bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 border border-blue-500/30 flex items-center justify-center transition-all cursor-pointer shadow-xs"
               title="Yeni Günlük Ekle"
             >
-              <Plus size={16} />
+              <Plus size={15} />
             </button>
           </div>
         </div>
 
-        {showOnlyFavorites && (
-          <div className="px-4 py-2 bg-amber-500/10 border-b border-amber-500/20 flex items-center justify-between text-[10px] font-mono font-bold text-amber-400 shrink-0">
-            <span className="flex items-center gap-1.5 uppercase tracking-wider">
-              <Star size={12} className="fill-amber-400" /> FAVORİ GÜNLÜKLER ({filteredEntries.length})
-            </span>
+        {/* Quick Search Bar */}
+        <div className="px-3 pt-2.5 pb-1">
+          <div className="relative">
+            <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500" />
+            <input
+              type="text"
+              placeholder="Günlüklerde ara..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full h-7.5 bg-zinc-900/90 border border-zinc-800/90 focus:border-zinc-700 rounded-lg pl-7 pr-7 text-[11px] text-zinc-200 placeholder:text-zinc-600 focus:outline-none transition font-sans"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 cursor-pointer"
+              >
+                <X size={12} />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Active Filters Pill Bar */}
+        {(showOnlyFavorites || searchDate) && (
+          <div className="px-3 py-1.5 bg-zinc-900/50 border-b border-zinc-800/60 flex items-center justify-between text-[10px] font-mono shrink-0">
+            <div className="flex items-center gap-1.5 text-zinc-400">
+              {showOnlyFavorites && (
+                <span className="flex items-center gap-1 text-amber-400 font-bold">
+                  <Star size={10} className="fill-amber-400" /> Favoriler
+                </span>
+              )}
+              {searchDate && (
+                <span className="flex items-center gap-1 text-blue-400 font-bold">
+                  <CalendarIcon size={10} /> {searchDate}
+                </span>
+              )}
+            </div>
             <button
-              onClick={() => setShowOnlyFavorites(false)}
-              className="text-amber-400/80 hover:text-amber-300 underline cursor-pointer text-[9px] uppercase tracking-wider"
+              onClick={() => { setShowOnlyFavorites(false); setSearchDate(''); }}
+              className="text-zinc-500 hover:text-rose-400 transition-colors cursor-pointer text-[10px] font-bold"
             >
-              Tümünü Göster
+              Temizle
             </button>
           </div>
         )}
 
-        
-
-        {/* MODERN HEATMAP WIDGET */}
-        <div className="px-4 py-3 border-b border-zinc-800/80 bg-zinc-950/40">
-          <div className="text-[9px] font-mono font-bold text-zinc-400 mb-2.5 uppercase tracking-widest flex justify-between items-center">
-            <span className="flex items-center gap-1.5">
-              Haftalık Mod Takibi
-              <span className="text-zinc-600 normal-case tracking-normal text-[10px]">({weekRangeStr})</span>
+        {/* WEEKLY MOOD TREND CAPSULE WIDGET */}
+        <div className="px-3 py-2.5 border-b border-zinc-800/80 bg-zinc-950/40">
+          <div className="text-[9px] font-mono font-bold text-zinc-400 mb-2 uppercase tracking-wider flex justify-between items-center">
+            <span className="flex items-center gap-1">
+              Haftalık Mod
+              <span className="text-zinc-600 font-normal">({weekRangeStr})</span>
             </span>
             <div className="flex items-center gap-1">
               <button 
                 onClick={() => setWeekOffset(prev => prev - 1)}
-                className="p-1 rounded bg-zinc-800/50 hover:bg-zinc-700/50 text-zinc-400 hover:text-zinc-300 transition-colors"
-                
+                className="w-5 h-5 rounded flex items-center justify-center bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors border border-zinc-800"
+                title="Önceki Hafta"
               >
-                <ChevronLeft size={12} />
+                <ChevronLeft size={11} />
               </button>
               <button 
                 onClick={() => setWeekOffset(prev => prev + 1)}
-                className="p-1 rounded bg-zinc-800/50 hover:bg-zinc-700/50 text-zinc-400 hover:text-zinc-300 transition-colors"
-                
+                className="w-5 h-5 rounded flex items-center justify-center bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors border border-zinc-800"
+                title="Sonraki Hafta"
               >
-                <ChevronRight size={12} />
+                <ChevronRight size={11} />
               </button>
             </div>
           </div>
-          <div className="flex items-center justify-between gap-1">
+
+          <div className="grid grid-cols-7 gap-1">
             {last7DaysMoods.map((day, i) => {
               const entryForDay = sortedEntries.find(e => e.date === day.date && e.mood);
+              const isCurrentDay = day.date === getLocalDateString();
+              
               return (
-                <motion.div 
+                <div 
                   key={i} 
-                  whileHover={{ scale: 1.12 }}
-                  whileTap={{ scale: 0.95 }}
-                  transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
                   onClick={() => {
                     if (entryForDay) {
                       setActiveEntry(entryForDay);
                       setIsEditing(false);
                     }
                   }}
-                  className={`flex flex-col items-center gap-1.5 group select-none ${entryForDay ? 'cursor-pointer' : 'cursor-default'}`} 
+                  className={`flex flex-col items-center py-1 rounded-lg transition-all ${
+                    entryForDay 
+                      ? 'cursor-pointer hover:bg-zinc-800/60' 
+                      : 'cursor-default opacity-60'
+                  } ${isCurrentDay ? 'bg-zinc-900/90 border border-zinc-800' : ''}`}
                 >
-                  <div className={`w-6 h-6 rounded-md flex items-center justify-center text-[11px] transition-colors duration-200 ${getMoodColor(day.mood)}`}>
-                    {day.mood ? moodEmojis[day.mood] : <span className="text-[9px] text-zinc-600 font-mono">•</span>}
+                  <span className="text-[8px] font-mono font-bold text-zinc-500 uppercase">{day.shortDay}</span>
+                  <div className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] my-0.5 transition-colors ${getMoodColor(day.mood)}`}>
+                    {day.mood ? moodEmojis[day.mood] : <span className="text-[8px] text-zinc-600 font-mono">{day.dayNumber}</span>}
                   </div>
-                  <span className="text-[9px] font-bold text-zinc-500 font-mono group-hover:text-zinc-300 transition-colors">{day.shortDay}</span>
-                </motion.div>
+                </div>
               );
             })}
           </div>
         </div>
 
+        {/* LIST AREA */}
         <div className="flex-1 relative overflow-hidden">
           {filteredEntries.length === 0 ? (
             <div className="text-center py-10 opacity-70 absolute inset-0 flex flex-col items-center justify-center pointer-events-none px-4">
               {showOnlyFavorites ? (
                 <>
-                  <Star size={32} className="mx-auto mb-3 text-amber-400/80 fill-amber-400/30" />
-                  <p className="text-xs font-mono uppercase tracking-widest mb-1 text-amber-400 font-bold">Favori Günlük Bulunamadı</p>
-                  <p className="text-[10px] text-zinc-400 max-w-[200px]">Günlüklerin yanındaki yıldız ikonuna tıklayarak favorilerinize ekleyebilirsiniz.</p>
+                  <Star size={28} className="mx-auto mb-2 text-amber-400/80 fill-amber-400/20" />
+                  <p className="text-xs font-mono uppercase tracking-wider mb-1 text-amber-400 font-bold">Favori Bulunamadı</p>
+                  <p className="text-[10px] text-zinc-500 max-w-[180px]">Yıldız ikonuna tıklayarak favorilerinize ekleyebilirsiniz.</p>
                 </>
               ) : (
                 <>
-                  <CalendarIcon size={32} className="mx-auto mb-3 text-zinc-600" />
-                  <p className="text-xs font-mono uppercase tracking-widest mb-1 text-zinc-400">Günlük Boş</p>
-                  <p className="text-[10px] text-zinc-500 max-w-[200px]">Psikolojinizi ve trade seanslarınızı kaydetmeye başlayın.</p>
+                  <CalendarIcon size={28} className="mx-auto mb-2 text-zinc-600" />
+                  <p className="text-xs font-mono uppercase tracking-wider mb-1 text-zinc-400">Günlük Boş</p>
+                  <p className="text-[10px] text-zinc-500 max-w-[180px]">İlk trade günlüğünüzü oluşturmak için '+' butonuna tıklayın.</p>
                 </>
               )}
             </div>
@@ -420,24 +529,25 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
               data={filteredEntries}
               className="h-full w-full"
               itemContent={(_index, entry) => (
-                <div className="px-3 pt-3">
+                <div className="px-2.5 py-1.5">
                   <div
                     onClick={() => {
                       setActiveEntry(entry);
                       setIsEditing(false);
                     }}
-                    className={`p-3 rounded-xl cursor-pointer border transition duration-200 ease-out relative overflow-hidden group ${
+                    className={`p-3 rounded-xl cursor-pointer border transition duration-150 relative overflow-hidden group ${
                       activeEntry?.id === entry.id && !isEditing
-                        ? 'bg-blue-500/10 border-blue-500/50 text-white shadow-md'
-                        : 'bg-zinc-950/40 border-zinc-800/80 hover:bg-zinc-900/60 hover:border-zinc-700/80 text-zinc-400'
+                        ? 'bg-blue-500/10 border-blue-500/40 text-white shadow-xs'
+                        : 'bg-zinc-950/60 border-zinc-800/80 hover:bg-zinc-900 hover:border-zinc-700 text-zinc-400'
                     }`}
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-1.5 text-[10px] font-mono font-bold tracking-wider opacity-70">
-                        <CalendarIcon size={12} />
-                        {new Date(entry.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center gap-1 text-[10px] font-mono font-bold tracking-wider text-zinc-400">
+                        <CalendarIcon size={11} className="text-zinc-500" />
+                        {new Date(entry.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </div>
-                      <div className="flex items-center gap-1.5">
+                      
+                      <div className="flex items-center gap-1">
                         <button
                           type="button"
                           onClick={(e) => {
@@ -451,39 +561,38 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
                             }, { silent: true });
                             toast.success(nextFav ? "Günlük favorilere eklendi." : "Günlük favorilerden çıkarıldı.");
                           }}
-                          className={`p-1 rounded-md transition cursor-pointer active:scale-90 ${
+                          className={`p-1 rounded-md transition-all cursor-pointer ${
                             entry.isFavorite
-                              ? 'text-amber-400 hover:text-amber-300 bg-amber-500/10 border border-amber-500/20'
-                              : 'text-zinc-500 hover:text-amber-400 hover:bg-zinc-800 opacity-0 group-hover:opacity-100'
+                              ? 'text-amber-400 bg-amber-500/10 border border-amber-500/20'
+                              : 'text-zinc-600 hover:text-amber-400 opacity-0 group-hover:opacity-100'
                           }`}
-                          
                         >
-                          <Star size={12} className={entry.isFavorite ? "fill-amber-400" : ""} />
+                          <Star size={11} className={entry.isFavorite ? "fill-amber-400" : ""} />
                         </button>
-                        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setEntryToDelete(entry);
-                            }}
-                            className="p-1 bg-rose-500/20 text-rose-400 hover:bg-rose-500/40 rounded-md transition cursor-pointer"
-                            
-                          >
-                            <Trash2 size={12} />
-                          </button>
-                        </div>
+                        
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setEntryToDelete(entry);
+                          }}
+                          className="p-1 text-zinc-600 hover:text-rose-400 hover:bg-rose-500/10 rounded-md opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
+                        >
+                          <Trash2 size={11} />
+                        </button>
+
                         {entry.mood && (
-                          <div className="p-1.5 rounded-full bg-zinc-800/30 border border-zinc-800 shadow-sm font-bold flex items-center justify-center relative group-hover:scale-110 transition-transform">
-                            {moodIcons[entry.mood]}
+                          <div className="text-xs shrink-0 ml-0.5">
+                            {moodEmojis[entry.mood]}
                           </div>
                         )}
                       </div>
                     </div>
-                    <h3 className="text-sm font-bold leading-tight mb-2 line-clamp-1 truncate font-sans text-white group-hover:text-blue-400 transition-colors">
+
+                    <h3 className="text-xs font-bold leading-snug mb-1 line-clamp-1 truncate font-sans text-zinc-200 group-hover:text-zinc-100">
                       {entry.title}
                     </h3>
-                    <p className="text-[11px] leading-relaxed line-clamp-2 text-zinc-400 font-sans">{entry.content}</p>
+                    <p className="text-[11px] leading-relaxed line-clamp-2 text-zinc-500 font-sans">{entry.content}</p>
                   </div>
                 </div>
               )}
@@ -492,8 +601,8 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
         </div>
       </div>
 
-      {/* RIGHT SIDE: Editor / Viewer */}
-      <div className={`flex-1 flex flex-col bg-zinc-950/20 overflow-hidden relative ${!isEditing && !activeEntry ? 'hidden md:flex items-center justify-center' : 'flex'}`}>
+      {/* RIGHT PANE: Editor / Viewer */}
+      <div className={`flex-1 flex flex-col bg-transparent overflow-hidden relative ${!isEditing && !activeEntry ? 'hidden md:flex items-center justify-center' : 'flex'}`}>
         <AnimatePresence mode="wait">
           {!isEditing && !activeEntry ? (
             <motion.div 
@@ -504,12 +613,12 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
               transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
               className="flex-1 flex items-center justify-center p-6 text-center select-none"
             >
-              <div className="opacity-40">
-                <div className="w-16 h-16 rounded-2xl bg-zinc-950 border border-zinc-800/80 flex items-center justify-center text-zinc-500 mx-auto mb-4 shadow-inner">
-                  <CalendarIcon size={32} />
+              <div className="opacity-60 max-w-xs">
+                <div className="w-14 h-14 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-500 mx-auto mb-3 shadow-inner">
+                  <CalendarIcon size={26} />
                 </div>
-                <p className="text-xs font-bold uppercase tracking-widest font-mono text-zinc-300">Bir günlük girdisi seçin</p>
-                <p className="text-[11px] text-zinc-500 mt-1 font-sans">veya yeni bir kayıt eklemek için '+' butonuna tıklayın.</p>
+                <p className="text-xs font-bold uppercase tracking-wider font-mono text-zinc-300">Bir günlük seçin</p>
+                <p className="text-[11px] text-zinc-500 mt-1 font-sans">veya yeni bir kayıt eklemek için sol üstteki '+' butonuna tıklayın.</p>
               </div>
             </motion.div>
           ) : isEditing ? (
@@ -522,40 +631,41 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
               transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
               className="flex flex-col h-full w-full"
             >
-              <div className="px-4 h-[48px] shrink-0 border-b border-zinc-800/80 flex items-center justify-between bg-zinc-950/40">
+              <div className="px-5 py-3 shrink-0 border-b border-zinc-800/80 flex items-center justify-between bg-zinc-950/30">
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => setIsEditing(false)}
-                    className="md:hidden p-2 bg-zinc-800 rounded-lg hover:bg-zinc-700"
+                    className="md:hidden p-1.5 bg-zinc-900 border border-zinc-800 rounded-lg hover:bg-zinc-800 text-zinc-400"
                   >
-                    <ArrowLeft size={16} />
+                    <ArrowLeft size={14} />
                   </button>
                   <div className="flex items-center gap-3">
-                  <div className="text-[11px] font-black uppercase text-blue-400 tracking-widest font-mono">
-                    {activeEntry ? 'Günlüğü Düzenle' : 'Yeni Günlük'}
+                    <span className="text-xs font-bold uppercase text-blue-400 tracking-wider font-mono">
+                      {activeEntry ? 'Günlüğü Düzenle' : 'Yeni Günlük Kaydı'}
+                    </span>
+                    {!activeEntry && (
+                      <VoiceToJournalButton 
+                        options={{ moods: Object.values(moodLabels) }} 
+                        onParsed={handleVoiceParsed} 
+                      />
+                    )}
                   </div>
-                  {!activeEntry && (
-                    <VoiceToJournalButton 
-                      options={{ moods: Object.values(moodLabels) }} 
-                      onParsed={handleVoiceParsed} 
-                    />
-                  )}
                 </div>
-                </div>
+
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => setEditIsFavorite(prev => !prev)}
-                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold tracking-wider uppercase border transition cursor-pointer active:scale-95 ${
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold tracking-wider uppercase border transition-all cursor-pointer ${
                       editIsFavorite
-                        ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
-                        : 'bg-zinc-950 border-zinc-800/80 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
+                        ? 'bg-amber-500/15 border-amber-500/30 text-amber-400'
+                        : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
                     }`}
-                    
                   >
-                    <Star size={12} className={editIsFavorite ? "fill-amber-400 text-amber-400" : ""} />
+                    <Star size={11} className={editIsFavorite ? "fill-amber-400 text-amber-400" : ""} />
                     <span>{editIsFavorite ? "FAVORİ" : "FAVORİLE"}</span>
                   </button>
+
                   {activeEntry && (
                     <button
                       onClick={(e) => {
@@ -563,78 +673,89 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
                         e.stopPropagation();
                         setEntryToDelete(activeEntry);
                       }}
-                      className="p-1.5 text-rose-400 hover:text-rose-300 bg-rose-500/10 rounded-lg hover:bg-rose-500/20 border border-rose-500/20 transition cursor-pointer active:scale-95"
-                      
+                      className="p-1.5 text-rose-400 bg-rose-500/10 rounded-lg hover:bg-rose-500/20 border border-rose-500/20 transition-colors cursor-pointer"
+                      title="Sil"
                     >
-                      <Trash2 size={16} />
+                      <Trash2 size={14} />
                     </button>
                   )}
+
                   <button
                     onClick={() => setIsEditing(false)}
-                    className="px-2 py-1 text-[10px] uppercase tracking-wider font-bold text-zinc-400 hover:text-zinc-200 font-mono transition"
+                    className="px-2.5 py-1 text-[11px] font-bold text-zinc-400 hover:text-zinc-200 font-mono transition-colors cursor-pointer"
                   >
                     İptal
                   </button>
                   <button
                     onClick={handleSave}
                     disabled={!editTitle.trim()}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 rounded-xl text-[11px] font-bold font-mono tracking-wider uppercase transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-xs border border-blue-500/30 active:scale-95 backdrop-blur-sm"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 rounded-lg text-xs font-bold font-mono tracking-wider uppercase transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-xs border border-blue-500/30"
                   >
                     <Save size={13} /> Kaydet
                   </button>
                 </div>
               </div>
-              <div className="flex-1 p-4 md:p-5 overflow-y-auto space-y-4">
+
+              <div className="flex-1 p-5 md:p-6 overflow-y-auto space-y-4">
                 <input
                   type="text"
-                  placeholder="Günün Özeti / Başlık"
+                  placeholder="Günün Başlığı (Örn: FOMO Kontrolü ve London Seansı)"
                   value={editTitle}
                   onChange={(e) => setEditTitle(e.target.value)}
-                  className="w-full bg-transparent text-lg font-bold font-sans text-white placeholder-zinc-600 border-none outline-none focus:ring-0 px-1 py-1.5"
+                  className="w-full bg-transparent text-lg font-bold font-sans text-zinc-100 placeholder:text-zinc-600 border-none outline-none focus:ring-0 px-0 py-1"
                   autoFocus
                 />
                 
-                <div className="flex gap-4">
-                  <div className="flex-1">
-                    <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5 font-mono">Tarih</label>
-                    <input
-                      type="date"
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
+                  <div>
+                    <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1.5 font-mono">Tarih</label>
+                    <TurkishDatePicker
                       value={editDate}
-                      onChange={(e) => setEditDate(e.target.value)}
-                      className="w-full h-[42px] bg-zinc-950 border border-zinc-800/80 rounded-lg px-3 text-xs text-white focus:outline-none focus:border-blue-500/80 transition font-mono"
+                      onChange={(newDate) => setEditDate(newDate)}
+                      className="w-full"
+                      buttonClassName="h-9"
                     />
                   </div>
-                  <div className="flex-1">
-                    <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5 font-mono">Psikoloji / Ruh Hali</label>
-                    <div className="flex items-center h-[42px] gap-1 bg-zinc-950 border border-zinc-800/80 rounded-lg p-1 overflow-x-auto no-scrollbar">
-                      {(Object.keys(moodIcons) as Array<keyof typeof moodIcons>).map(mood => (
-                        <motion.button
-                          key={mood}
-                          type="button"
-                          whileHover={{ scale: 1.08 }}
-                          whileTap={{ scale: 0.92 }}
-                          transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
-                          onClick={() => setEditMood(mood)}
-                          className={`flex-1 p-2 rounded-lg flex items-center justify-center transition ${
-                            editMood === mood
-                              ? 'bg-zinc-800 border border-zinc-700/80 shadow-sm'
-                              : 'hover:bg-zinc-900 grayscale opacity-50 hover:grayscale-0 hover:opacity-100'
-                          }`}
-                        >
-                          {moodIcons[mood]}
-                        </motion.button>
-                      ))}
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1.5 font-mono">Ruh Hali</label>
+                    <div className="grid grid-cols-5 gap-1.5 h-9">
+                      {(Object.keys(moodIcons) as Array<keyof typeof moodIcons>).map(mood => {
+                        const isSelected = editMood === mood;
+                        return (
+                          <button
+                            key={mood}
+                            type="button"
+                            onClick={() => setEditMood(mood)}
+                            className={`h-9 rounded-xl flex items-center justify-center border transition-all cursor-pointer ${
+                              isSelected
+                                ? 'bg-zinc-800 border-zinc-500 text-zinc-100 shadow-xs'
+                                : 'bg-zinc-950/80 border-zinc-800/80 text-zinc-500 hover:text-zinc-200 hover:border-zinc-700 hover:bg-zinc-900/80'
+                            }`}
+                            title={moodLabels[mood]}
+                          >
+                            <span className="text-base leading-none select-none">{moodEmojis[mood]}</span>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5 font-mono">Günün Notları & Değerlendirme</label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-wider font-mono">
+                      Günün Değerlendirmesi & Psikoloji Notları
+                    </label>
+                    <span className="text-[10px] font-mono text-zinc-500">
+                      {editContent.length} karakter
+                    </span>
+                  </div>
                   <textarea
-                    placeholder="Bugün piyasa nasıldı? Psikolojin nasıldı? Hangi hataları yaptın veya neleri doğru yaptın? Tüm detayları buraya yazabilirsin..."
+                    placeholder="Bugünkü piyasa yapısı, duygu durumun, aldığın kararlar ve disiplin durumu hakkında notlarını buraya yazabilirsin..."
                     value={editContent}
                     onChange={(e) => setEditContent(e.target.value)}
-                    className="w-full h-48 bg-zinc-950 border border-zinc-800/80 rounded-xl px-4 py-3 text-sm text-zinc-300 focus:outline-none focus:border-blue-500/80 transition leading-relaxed resize-y font-sans"
+                    className="w-full h-52 bg-zinc-950/80 border border-zinc-800/80 rounded-xl p-4 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600 transition leading-relaxed resize-y font-sans"
                   />
                 </div>
                 
@@ -651,88 +772,89 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
               transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
               className="flex flex-col h-full w-full"
             >
+              <div className="px-5 py-3.5 shrink-0 border-b border-zinc-800/80 flex items-center justify-between bg-zinc-950/30">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    onClick={() => setActiveEntry(null)}
+                    className="md:hidden p-1.5 bg-zinc-900 border border-zinc-800 rounded-lg hover:bg-zinc-800 text-zinc-400"
+                  >
+                    <ArrowLeft size={14} />
+                  </button>
+                  <span className="inline-flex items-center gap-1.5 text-xs text-blue-400 font-mono font-bold tracking-wider bg-blue-500/10 px-2.5 py-1 rounded-lg border border-blue-500/20">
+                    <CalendarIcon size={12} />
+                    {new Date(activeEntry!.date).toLocaleDateString('tr-TR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                  </span>
+
+                  {activeEntry!.mood && (
+                    <span className="inline-flex items-center gap-1.5 text-xs font-mono font-bold bg-zinc-900 px-2.5 py-1 rounded-lg border border-zinc-800 text-zinc-300">
+                      <span>{moodEmojis[activeEntry!.mood]}</span>
+                      <span>{moodLabels[activeEntry!.mood]}</span>
+                    </span>
+                  )}
+                </div>
+                
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => activeEntry && handleEdit(activeEntry)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 border border-blue-500/30 rounded-lg text-[11px] font-bold transition-all font-mono uppercase tracking-wider cursor-pointer shadow-xs"
+                  >
+                    <Edit3 size={12} /> DÜZENLE
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      if (activeEntry) {
+                        const nextFav = !activeEntry.isFavorite;
+                        onSaveEntry({
+                          ...activeEntry,
+                          isFavorite: nextFav,
+                          updatedAt: Date.now(),
+                        }, { silent: true });
+                        toast.success(nextFav ? "Günlük favorilere eklendi." : "Günlük favorilerden çıkarıldı.");
+                      }
+                    }}
+                    className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-all font-mono uppercase tracking-wider cursor-pointer border ${
+                      activeEntry!.isFavorite
+                        ? 'bg-amber-500/15 border-amber-500/30 text-amber-400'
+                        : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-400 border-zinc-800 hover:text-zinc-200'
+                    }`}
+                  >
+                    <Star size={12} className={activeEntry!.isFavorite ? "fill-amber-400 text-amber-400" : ""} />
+                  </button>
+
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (activeEntry) {
+                        setEntryToDelete(activeEntry);
+                      }
+                    }}
+                    className="flex items-center gap-1 p-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-lg text-xs font-bold transition-all cursor-pointer"
+                    title="Sil"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              </div>
+
               <div className="flex-1 p-6 md:p-8 overflow-y-auto">
-                <div className="max-w-2xl mx-auto">
-                  <div className="flex flex-wrap items-center justify-between gap-3 mb-4 w-full">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <button
-                        onClick={() => setActiveEntry(null)}
-                        className="md:hidden p-1.5 bg-zinc-800 rounded-lg hover:bg-zinc-700 text-zinc-400"
-                        
-                      >
-                        <ArrowLeft size={14} />
-                      </button>
-                      <span className="inline-flex items-center gap-1.5 text-[11px] text-blue-400 font-mono font-bold tracking-wider uppercase bg-blue-500/10 px-2.5 py-1 rounded-full border border-blue-500/20">
-                        <CalendarIcon size={12} />
-                        {new Date(activeEntry!.date).toLocaleDateString('tr-TR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                      </span>
-
-                      {activeEntry!.mood && (
-                        <span className="inline-flex items-center gap-1.5 text-[11px] font-mono font-bold tracking-wider uppercase bg-zinc-900 px-2.5 py-1 rounded-full border border-zinc-800 text-zinc-300">
-                          {moodIcons[activeEntry!.mood]} {moodLabels[activeEntry!.mood]}
-                        </span>
-                      )}
-                    </div>
-                    
-                    <div className="flex items-center gap-1.5 shrink-0 sm:ml-auto">
-                      <button
-                        onClick={() => activeEntry && handleEdit(activeEntry)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 border border-blue-500/30 rounded-xl text-[10px] font-bold transition-all duration-200 font-mono uppercase tracking-wider cursor-pointer active:scale-95 shadow-xs backdrop-blur-sm"
-                      >
-                        <Edit3 size={12} /> DÜZENLE
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          if (activeEntry) {
-                            const nextFav = !activeEntry.isFavorite;
-                            onSaveEntry({
-                              ...activeEntry,
-                              isFavorite: nextFav,
-                              updatedAt: Date.now(),
-                            }, { silent: true });
-                            toast.success(nextFav ? "Günlük favorilere eklendi." : "Günlük favorilerden çıkarıldı.");
-                          }
-                        }}
-                        className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold transition font-mono uppercase tracking-wider cursor-pointer active:scale-95 shadow-sm border ${
-                          activeEntry!.isFavorite
-                            ? 'bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20'
-                            : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-400 border-zinc-700/80 hover:text-zinc-200'
-                        }`}
-                        
-                      >
-                        <Star size={12} className={activeEntry!.isFavorite ? "fill-amber-400 text-amber-400" : ""} />
-                        <span>FAVORİ</span>
-                      </button>
-
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          if (activeEntry) {
-                            setEntryToDelete(activeEntry);
-                          }
-                        }}
-                        className="flex items-center gap-1 px-2.5 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-lg text-[10px] font-bold transition font-mono uppercase tracking-wider cursor-pointer active:scale-95 shadow-sm"
-                        
-                      >
-                        <Trash2 size={12} /> SİL
-                      </button>
-                    </div>
+                <div className="max-w-3xl mx-auto space-y-6">
+                  <div>
+                    <h1 className="text-xl md:text-2xl font-bold text-zinc-100 tracking-tight font-sans">
+                      {activeEntry!.title}
+                    </h1>
                   </div>
                   
-                  <h1 className="text-2xl md:text-3xl font-black text-white mb-6 tracking-tight">{activeEntry!.title}</h1>
-                  
-                  <div className="prose prose-invert prose-zinc max-w-none prose-p:leading-relaxed prose-p:text-zinc-300 prose-headings:text-white prose-a:text-blue-400">
-                    {activeEntry!.content.split('\n').map((paragraph, idx) => (
-                      <p key={idx} className="whitespace-pre-wrap mb-4 font-sans text-base">{paragraph}</p>
-                    ))}
+                  <div className="bg-zinc-950/40 border border-zinc-800/80 rounded-2xl p-5 md:p-6 text-zinc-200 text-sm md:text-base leading-relaxed whitespace-pre-wrap font-sans">
+                    {activeEntry!.content || <span className="italic text-zinc-500">Bu günlüğe ait bir detay yazılmamış.</span>}
                   </div>
 
                   {renderTradesList(activeEntry!.date)}
                   
-                  <div className="mt-8 pt-6 border-t border-zinc-800 flex justify-end items-center gap-4 text-[10px] text-zinc-500 font-mono tracking-widest uppercase">
-                    <span>Son Güncelleme: {new Date(activeEntry!.updatedAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</span>
+                  <div className="pt-4 border-t border-zinc-800/80 flex justify-end items-center gap-2 text-[10px] text-zinc-500 font-mono tracking-wider uppercase">
+                    <Clock size={11} />
+                    <span>Son Güncelleme: {new Date(activeEntry!.updatedAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>
                   </div>
                 </div>
               </div>
@@ -748,36 +870,35 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed inset-0 z-[1200] bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-4"
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            className="fixed inset-0 z-[1200] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
             onClick={() => setEntryToDelete(null)}
           >
             <motion.div
-              initial={{ opacity: 0, scale: 0.94, y: 16 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.94, y: 16 }}
-              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/60 rounded-2xl p-6 max-w-md w-full shadow-2xl overflow-hidden relative shadow-rose-500/5"
+              className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-sm w-full shadow-2xl overflow-hidden relative select-none"
             >
-              <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-rose-500/30 to-transparent"></div>
-              <div className="w-12 h-12 rounded-xl bg-rose-500/10 border border-rose-500/20 shadow-[0_0_15px_rgba(244,63,94,0.15)] text-rose-400 flex items-center justify-center mx-auto mb-4">
-                <Trash2 size={24} />
+              <div className="w-11 h-11 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center mx-auto mb-4">
+                <Trash2 size={20} />
               </div>
               
-              <h3 className="text-base font-bold tracking-wide text-zinc-100 uppercase text-center mb-2">
-                Günlük Kaydını Sil
+              <h3 className="text-sm font-bold tracking-wide text-zinc-100 uppercase text-center mb-1 font-mono">
+                Günlüğü Sil
               </h3>
               
-              <p className="text-zinc-400 text-xs text-center mb-6 leading-relaxed font-mono">
-                <span className="font-semibold text-zinc-200">"{entryToDelete.title}"</span> başlıklı günlüğü silmek istediğinize emin misiniz? Bu işlem geri alınamaz.
+              <p className="text-zinc-400 text-xs text-center mb-6 leading-relaxed">
+                <strong className="text-zinc-200">"{entryToDelete.title}"</strong> başlıklı günlüğü silmek istediğinize emin misiniz?
               </p>
               
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2.5">
                 <button
                   type="button"
                   onClick={() => setEntryToDelete(null)}
-                  className="flex-1 py-2.5 px-4 bg-zinc-800/30 hover:bg-zinc-800/60 text-zinc-300 font-mono text-[11px] font-bold uppercase tracking-widest rounded-xl border border-zinc-700/50 transition-colors duration-200 cursor-pointer"
+                  className="flex-1 py-2 px-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-mono text-xs font-bold uppercase rounded-xl transition-all cursor-pointer"
                 >
                   Vazgeç
                 </button>
@@ -793,10 +914,10 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
                       setEntryToDelete(null);
                     }
                   }}
-                  className="flex-1 py-2.5 px-4 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 hover:border-rose-500/40 font-mono text-[11px] font-bold uppercase tracking-widest rounded-xl transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 active:scale-95"
+                  className="flex-1 py-2 px-3 bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 border border-rose-500/30 font-mono text-xs font-bold uppercase rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
                 >
-                  <Trash2 size={15} />
-                  <span>Evet, Sil</span>
+                  <Trash2 size={13} />
+                  <span>Sil</span>
                 </button>
               </div>
             </motion.div>

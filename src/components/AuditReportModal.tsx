@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Download, FileText, CheckCircle2, XCircle, MinusCircle, ShieldCheck } from 'lucide-react';
+import { X, Download, FileText, CheckCircle2, XCircle, MinusCircle, ShieldCheck, RefreshCw } from 'lucide-react';
 import { Trade } from '../types';
-import html2canvas from 'html2canvas';
 import { generateCanvasWithOklchPolyfill } from '../utils/canvasUtils';
 import { jsPDF } from 'jspdf';
 import toast from 'react-hot-toast';
@@ -78,7 +77,7 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
       const canvas = await generateCanvasWithOklchPolyfill(reportRef.current, {
         scale: 2,
         useCORS: true,
-        backgroundColor: '#09090b', // zinc-950
+        backgroundColor: '#121214', // zinc-950
         logging: false
       });
       if (!canvas) throw new Error("Canvas generation failed");
@@ -89,7 +88,6 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
       const canvasRatio = canvas.height / canvas.width;
-      const pdfRatio = pdfHeight / pdfWidth;
       
       let imgWidth = pdfWidth;
       let imgHeight = pdfWidth * canvasRatio;
@@ -127,7 +125,7 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
       'EXECUTION TICKET'
     ];
     
-    const rows = trades.map((t, i) => {
+    const rows = trades.map((t) => {
        const timestamp = new Date(t.createdAt).toISOString().replace('T', ' ').substring(0, 16) + ' UTC';
        const hexCode = Math.abs(hashString(t.id)).toString(16).substring(0, 5).toUpperCase().padStart(5, '0');
                       const logId = `#LOG-ANL-${hexCode}`;
@@ -192,7 +190,7 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
         className="fixed inset-0 z-[9999] bg-zinc-950 flex flex-col overflow-hidden"
       >
         {/* Toolbar */}
-        <div className="h-16 border-b border-zinc-800 bg-zinc-900/50 flex items-center justify-between px-6 shrink-0">
+        <div className="h-16 border-b border-zinc-700/40 bg-zinc-900/60 flex items-center justify-between px-6 shrink-0">
           <div className="flex items-center gap-3">
             <ShieldCheck size={20} className="text-emerald-500" />
             <h2 className="text-zinc-100 font-bold font-mono text-sm tracking-wider uppercase">
@@ -204,7 +202,7 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
             <button
               onClick={downloadCSV}
               title="CSV Logu İndir"
-              className="flex items-center justify-center w-10 h-10 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg transition-colors border border-zinc-700"
+              className="flex items-center justify-center w-10 h-10 bg-zinc-800/70 hover:bg-zinc-800 text-zinc-300 rounded-xl transition-colors border border-zinc-700/50"
             >
               <FileText size={18} />
             </button>
@@ -212,7 +210,7 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
               onClick={downloadPDF}
               disabled={isGenerating}
               title="Resmi PDF Olarak İndir"
-              className="flex items-center justify-center w-10 h-10 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded-lg transition-colors disabled:opacity-50"
+              className="flex items-center justify-center w-10 h-10 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded-xl transition-colors disabled:opacity-50"
             >
               {isGenerating ? (
                 <RefreshCw size={18} className="animate-spin" />
@@ -222,7 +220,7 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
             </button>
             <button
               onClick={onClose}
-              className="w-10 h-10 flex items-center justify-center bg-zinc-800/50 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-100 rounded-lg transition-colors border border-zinc-700/50 ml-2"
+              className="w-10 h-10 flex items-center justify-center bg-zinc-800/50 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-100 rounded-xl transition-colors border border-zinc-700/50 ml-2"
             >
               <X size={18} />
             </button>
@@ -230,24 +228,24 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
         </div>
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-auto p-4 sm:p-8 bg-zinc-950 flex justify-center">
+        <div className="flex-1 overflow-auto p-4 sm:p-8 bg-zinc-950/30 flex justify-center custom-scrollbar">
           
           {/* Printable A4 Canvas Container */}
           <div 
             ref={reportRef} 
-            className="w-full max-w-[297mm] min-h-[210mm] bg-zinc-950 border border-zinc-800 rounded-xl p-8 sm:p-12 shadow-2xl flex flex-col"
+            className="w-full max-w-[297mm] min-h-[210mm] bg-zinc-900 border border-zinc-700/50 rounded-2xl p-8 sm:p-12 shadow-2xl flex flex-col"
             style={{ 
               boxSizing: 'border-box'
             }}
           >
             {/* Header Block */}
-            <div className="border-b-2 border-zinc-800 pb-6 mb-6">
+            <div className="border-b border-zinc-700/40 pb-6 mb-6">
               <h1 className="text-2xl sm:text-3xl font-black text-zinc-100 uppercase tracking-widest text-center mb-6">
                 KANTİTATİF PİYASA MODELLEMESİ <br/>
                 <span className="text-zinc-500 text-lg sm:text-xl font-medium tracking-[0.2em] mt-1 block">VE VERİ ANALİTİĞİ LOG KÜTÜĞÜ</span>
               </h1>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border border-zinc-800 rounded-lg p-5 bg-zinc-900/30">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border border-zinc-700/50 rounded-xl p-5 bg-zinc-900/60">
                 {/* Hizmet Sağlayıcı (Yüklenici) */}
                 <div className="border-r border-zinc-800/50 pr-4">
                   <span className="text-zinc-600 text-[10px] font-mono font-bold uppercase tracking-widest block mb-3 border-b border-zinc-800/50 pb-1">Hizmet Sağlayıcı</span>
@@ -260,7 +258,7 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
                         type="text"
                         value={providerName}
                         onChange={(e) => setProviderName(e.target.value)}
-                        className="text-emerald-400 font-mono text-xs bg-transparent border-none outline-none p-0 w-full hover:bg-zinc-800/30 focus:bg-zinc-800/50 rounded transition-colors -ml-1 pl-1 py-[1px]"
+                        className="text-emerald-400 font-mono text-xs bg-transparent border-none outline-none p-0 w-full hover:bg-zinc-800/30 focus:bg-zinc-800/50 rounded-md transition-colors -ml-1 pl-1 py-[1px]"
                       />
                     )}
                   </div>
@@ -273,7 +271,7 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
                         type="text"
                         value={providerVKN}
                         onChange={(e) => setProviderVKN(e.target.value)}
-                        className="text-zinc-300 font-mono text-xs bg-transparent border-none outline-none p-0 w-full hover:bg-zinc-800/30 focus:bg-zinc-800/50 rounded transition-colors -ml-1 pl-1 py-[1px]"
+                        className="text-zinc-300 font-mono text-xs bg-transparent border-none outline-none p-0 w-full hover:bg-zinc-800/30 focus:bg-zinc-800/50 rounded-md transition-colors -ml-1 pl-1 py-[1px]"
                       />
                     )}
                   </div>
@@ -286,7 +284,7 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
                         type="text"
                         value={providerTaxOffice}
                         onChange={(e) => setProviderTaxOffice(e.target.value)}
-                        className="text-zinc-300 font-mono text-xs bg-transparent border-none outline-none p-0 w-full hover:bg-zinc-800/30 focus:bg-zinc-800/50 rounded transition-colors -ml-1 pl-1 py-[1px]"
+                        className="text-zinc-300 font-mono text-xs bg-transparent border-none outline-none p-0 w-full hover:bg-zinc-800/30 focus:bg-zinc-800/50 rounded-md transition-colors -ml-1 pl-1 py-[1px]"
                       />
                     )}
                   </div>
@@ -304,7 +302,7 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
                         type="text"
                         value={clientOrg}
                         onChange={(e) => setClientOrg(e.target.value)}
-                        className="text-zinc-200 font-mono text-sm bg-transparent border-none outline-none p-0 w-full hover:bg-zinc-800/30 focus:bg-zinc-800/50 rounded transition-colors -ml-1 pl-1 py-[1px]"
+                        className="text-zinc-200 font-mono text-sm bg-transparent border-none outline-none p-0 w-full hover:bg-zinc-800/30 focus:bg-zinc-800/50 rounded-md transition-colors -ml-1 pl-1 py-[1px]"
                       />
                     )}
                   </div>
@@ -317,7 +315,7 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
                         rows={2}
                         value={contractRef}
                         onChange={(e) => setContractRef(e.target.value)}
-                        className="text-zinc-200 font-mono text-[11px] leading-tight whitespace-normal break-words overflow-visible bg-transparent border-none outline-none p-0 w-full hover:bg-zinc-800/30 focus:bg-zinc-800/50 rounded transition-colors resize-none -ml-1 pl-1 py-[1px]"
+                        className="text-zinc-200 font-mono text-[11px] leading-tight whitespace-normal break-words overflow-visible bg-transparent border-none outline-none p-0 w-full hover:bg-zinc-800/30 focus:bg-zinc-800/50 rounded-md transition-colors resize-none -ml-1 pl-1 py-[1px]"
                       />
                     )}
                   </div>
@@ -335,7 +333,7 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
                         type="text"
                         value={dateRangeState}
                         onChange={(e) => setDateRangeState(e.target.value)}
-                        className="text-zinc-200 font-mono text-sm bg-transparent border-none outline-none p-0 w-full hover:bg-zinc-800/30 focus:bg-zinc-800/50 rounded transition-colors -ml-1 pl-1 py-[1px]"
+                        className="text-zinc-200 font-mono text-sm bg-transparent border-none outline-none p-0 w-full hover:bg-zinc-800/30 focus:bg-zinc-800/50 rounded-md transition-colors -ml-1 pl-1 py-[1px]"
                       />
                     )}
                   </div>
@@ -348,7 +346,7 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
                         rows={2}
                         value={methodology}
                         onChange={(e) => setMethodology(e.target.value)}
-                        className="text-blue-400 font-mono text-[11px] leading-tight whitespace-normal break-words overflow-visible bg-transparent border-none outline-none p-0 w-full hover:bg-zinc-800/30 focus:bg-zinc-800/50 rounded transition-colors resize-none -ml-1 pl-1 py-[1px]"
+                        className="text-blue-400 font-mono text-[11px] leading-tight whitespace-normal break-words overflow-visible bg-transparent border-none outline-none p-0 w-full hover:bg-zinc-800/30 focus:bg-zinc-800/50 rounded-md transition-colors resize-none -ml-1 pl-1 py-[1px]"
                       />
                     )}
                   </div>
@@ -358,10 +356,10 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
 
             {/* Table */}
             <div className="flex-1">
-              <div className="overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900/20">
+              <div className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-800">
                 <table className="w-full text-left border-collapse min-w-[1000px]">
                   <thead>
-                    <tr className="bg-zinc-900/60 border-b border-zinc-800 text-[10px] font-mono uppercase tracking-widest text-zinc-500">
+                    <tr className="bg-zinc-800 border-b border-zinc-800 text-[10px] font-mono uppercase tracking-widest text-zinc-500">
                       <th className="py-3 px-4 font-semibold w-40">LOG ID / TIMESTAMP</th>
                       <th className="py-3 px-4 font-semibold">DATA STREAM</th>
                       <th className="py-3 px-4 font-semibold min-w-[200px]">ANALYTICAL MODEL</th>
@@ -396,7 +394,7 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
                           <td className="py-3 px-4 font-bold text-zinc-200">{t.asset}</td>
                           <td className="py-3 px-4 text-zinc-400 whitespace-normal break-words max-w-[220px]">{model}</td>
                           <td className="py-3 px-4">
-                            <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase border ${
+                            <span className={`inline-flex px-2.5 py-0.5 rounded-lg text-[10px] font-bold tracking-wider uppercase border ${
                               t.type === 'LONG' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
                             }`}>
                               {t.type === 'LONG' ? 'BULLISH' : 'BEARISH'}
@@ -468,7 +466,7 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
 
                 {/* Hash & Legal */}
                 <div className="text-right max-w-md">
-                  <div className="bg-zinc-900/50 border border-zinc-800 rounded p-2 inline-block mb-3">
+                  <div className="bg-zinc-800 border border-zinc-800 rounded-lg p-2 inline-block mb-3">
                     <span className="text-[10px] text-zinc-500 font-mono block">SHA-256 Checksum Validation:</span>
                     <span className="text-xs text-zinc-300 font-mono break-all">{checksum}</span>
                   </div>

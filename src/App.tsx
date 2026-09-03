@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Trade, TradeStats, Note, JournalEntry, Certificate } from "./types";
 import {
   DEFAULT_PLATFORMS,
@@ -28,6 +28,7 @@ import BackupRescue from "./components/BackupRescue";
 import { GlobalFilterModal } from "./components/GlobalFilterModal";
 import { AuthModal } from "./components/AuthModal";
 import AICoPilotModal from "./components/AICoPilotModal";
+import DefinitionsManagerModal from "./components/DefinitionsManagerModal";
 
 
 import {
@@ -44,18 +45,8 @@ import {
   AlertTriangle,
   Filter,
   SlidersHorizontal,
-  GripVertical,
-  Trash2,
   Settings,
   Monitor,
-  Activity,
-  Briefcase,
-  Target,
-  LineChart,
-  Clock,
-  ArrowUpRight,
-  Lightbulb,
-  Sun,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { auth, db, logout } from "./lib/firebase";
@@ -256,10 +247,10 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [, setIsAuthInitializing] = useState(false);
   const [indexErrorUrl] = useState<string | null>(null);
-  const [showUsername, setShowUsername] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isGlobalFilterModalOpen, setIsGlobalFilterModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const settingsRef = useRef<HTMLDivElement>(null);
   const [isCopilotOpen, setIsCopilotOpen] = useState(false);
 
   // Navigation tabs state
@@ -298,13 +289,12 @@ export default function App() {
     setGlobalSelectedTypes,
     globalDateLimit,
     setGlobalDateLimit,
-    isQuantMode,
     setIsQuantMode,
   } = useAppStore();
 
   useEffect(() => {
-    document.title = isQuantMode ? "Quantitative Data Registry" : "Trading Journal";
-  }, [isQuantMode]);
+    document.title = "Trading Journal";
+  }, [false]);
 
   // Custom platforms management state persistent
   const [platforms, setPlatforms] = useState<string[]>(() => {
@@ -472,10 +462,6 @@ export default function App() {
   };
 
   // Settings menu state
-  const [settingsTab, setSettingsTab] = useState<
-    "platforms" | "timeframes" | "htfTimeframes" | "confirmations" | "sessions" | "assets" | "concepts"
-  >("platforms");
-
   // Locked to USD per request
   const currency = "$";
   const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
@@ -490,12 +476,12 @@ export default function App() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.shiftKey && (e.key === 'q' || e.key === 'Q' || e.key === 'a' || e.key === 'A')) {
         e.preventDefault();
-        setIsQuantMode(!isQuantMode);
+        setIsQuantMode(!false);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isQuantMode, setIsQuantMode]);
+  }, [false, setIsQuantMode]);
 
   useEffect(() => {
     const loadLocal = () => {
@@ -951,7 +937,9 @@ export default function App() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (isFormOpen) {
+        if (isSettingsOpen) {
+          setIsSettingsOpen(false);
+        } else if (isFormOpen) {
           handleCancelEdit();
         } else if (isPlatformMenuOpen) {
           setIsPlatformMenuOpen(false);
@@ -968,7 +956,23 @@ export default function App() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isFormOpen, isPlatformMenuOpen, detailedTrade, isGlobalFilterModalOpen, isAuthModalOpen, handleCancelEdit, handleCloseTradeDetail]);
+  }, [isSettingsOpen, isFormOpen, isPlatformMenuOpen, detailedTrade, isGlobalFilterModalOpen, isAuthModalOpen, handleCancelEdit, handleCloseTradeDetail]);
+
+  // Close settings dropdown when clicking anywhere outside
+  useEffect(() => {
+    if (!isSettingsOpen) return;
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
+        setIsSettingsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside, true);
+    document.addEventListener("touchstart", handleClickOutside, true);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside, true);
+      document.removeEventListener("touchstart", handleClickOutside, true);
+    };
+  }, [isSettingsOpen]);
 
   // Delete single trade
   const handleDeleteTrade = useCallback(
@@ -1502,6 +1506,17 @@ export default function App() {
         "trading_sessions_list",
         "trading_assets_list",
         "trading_journal_filters",
+        "ai_copilot_last_cleared",
+        "ai_copilot_messages",
+        "ai_copilot_saved_notes",
+        "ai_copilot_persona",
+        "ai_copilot_last_trades_count",
+        "ai_copilot_last_journals_count",
+        "tj_app_access_granted",
+        "tj_access_token_v2",
+        "tj_access_token_v3",
+        "tj_app_lockout",
+        "tj_app_attempts"
       ];
       keysToRemove.forEach((k) => {
         try {
@@ -1510,6 +1525,12 @@ export default function App() {
           console.error(`Failed to remove ${k} from localStorage`, e);
         }
       });
+
+      try {
+        sessionStorage.clear();
+      } catch (e) {
+        console.error("Failed to clear sessionStorage", e);
+      }
 
       // 3. Reset all React States to initial default clean state
       setTrades([]);
@@ -1631,15 +1652,60 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans antialiased selection:bg-blue-400/30 selection:text-white">
-      <Toaster position="bottom-right" toastOptions={{ style: { background: '#18181b', color: '#e4e4e7', border: '1px solid #27272a' } }} />
-      {/* 1. COMPACT NAVBAR */}
-      <header className="border-b border-zinc-800/80 bg-zinc-950/85 backdrop-blur-md sticky top-0 z-40 transition-colors duration-200">
-        <div className="max-w-6xl mx-auto px-4 py-2.5 sm:py-3.5 flex flex-row items-center justify-between gap-2 sm:gap-3 relative">
+      <Toaster 
+        position="bottom-right" 
+        toastOptions={{ 
+          style: {
+            background: '#09090b',
+            color: '#f4f4f5',
+            border: '1px solid rgba(63, 63, 70, 0.4)',
+            borderRadius: '14px',
+            fontSize: '13px',
+            fontFamily: '"Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif',
+            fontWeight: 500,
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.8), 0 10px 10px -5px rgba(0, 0, 0, 0.8)',
+            padding: '12px 18px',
+            maxWidth: '380px',
+          },
+          success: {
+            style: {
+              borderLeft: '4px solid #10b981',
+              background: '#09090b',
+              color: '#f4f4f5',
+            },
+            iconTheme: {
+              primary: '#10b981',
+              secondary: '#09090b',
+            }
+          },
+          error: {
+            style: {
+              borderLeft: '4px solid #f43f5e',
+              background: '#09090b',
+              color: '#f4f4f5',
+            },
+            iconTheme: {
+              primary: '#f43f5e',
+              secondary: '#09090b',
+            }
+          },
+          loading: {
+            style: {
+              borderLeft: '4px solid #3b82f6',
+              background: '#09090b',
+              color: '#f4f4f5',
+            },
+          }
+        }} 
+      />
+      {/* 1. MODERN COMPACT NAVBAR */}
+      <header className="border-b border-zinc-800/80 bg-zinc-950/90 backdrop-blur-md sticky top-0 z-40 transition-colors duration-200">
+        <div className="max-w-6xl mx-auto px-4 py-2 sm:py-2.5 flex flex-row items-center justify-between gap-3 relative">
           
-          <div className="flex items-center z-10">
+          <div className="flex items-center gap-3 z-10">
             {/* Brand */}
             <div 
-              className="flex items-center gap-3 cursor-pointer group"
+              className="flex items-center gap-2.5 cursor-pointer group select-none transition-transform duration-300 ease-out active:scale-[0.98]"
               onClick={() => {
                 if (currentTab === "dashboard") {
                   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1649,113 +1715,160 @@ export default function App() {
                 }
               }}
             >
-              <div className="h-7 w-7 rounded-full bg-blue-400 flex items-center justify-center font-black text-black font-sans text-sm select-none shadow-sm transition-transform duration-200 group-hover:scale-105 group-active:scale-95">
-                {isQuantMode ? "QD" : "TJ"}
+              <div className="h-7 w-7 rounded-lg bg-blue-500/10 border border-blue-500/25 flex items-center justify-center font-bold text-blue-400 text-xs select-none transition-all duration-300 ease-out group-hover:bg-blue-500/15 group-hover:scale-105">
+                TJ
               </div>
-              <div className="block">
-                <h1 className="text-xs font-black tracking-wider text-zinc-100 flex items-center gap-2 uppercase transition-colors duration-200 group-hover:text-white">
-                  {isQuantMode ? "QUANTITATIVE DATA REGISTRY" : "Trading Journal"}
-                  {!isQuantMode && (
-                    <span className="text-[10px] font-normal text-zinc-400 normal-case lowercase hidden sm:inline transition-colors duration-200 group-hover:text-zinc-300">
-                      by Mawlynn
-                    </span>
-                  )}
+              <div className="flex items-baseline gap-2">
+                <h1 className="text-xs font-bold tracking-tight text-zinc-100 uppercase">
+                  Trading Journal
                 </h1>
+                <span className="text-[11px] font-medium tracking-normal text-zinc-400 italic">
+                  by Mowtynn
+                </span>
               </div>
             </div>
-
-
           </div>
 
           <div className="flex items-center justify-end shrink-0 select-none gap-2 z-10">
-            {/* Ayarlar (Settings) Icon-Only Button & Dropdown Menu at the far right */}
-            <div className="relative">
+            {/* Global Metric Switch ($ / R) - Compact */}
+            <div className="flex bg-zinc-900 border border-zinc-700/50 rounded-lg p-0.5 shadow-xs shrink-0">
               <button
                 type="button"
-                onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-                
-                className="relative w-5.5 h-5.5 rounded bg-zinc-800/90 hover:bg-zinc-700/90 border border-zinc-700/70 hover:border-zinc-500 text-zinc-200 transition-colors duration-200 ease-out cursor-pointer shadow-sm flex items-center justify-center shrink-0 active:scale-95"
+                className={`relative z-10 flex items-center justify-center px-2.5 h-6 rounded-md transition-colors duration-150 cursor-pointer text-[11px] font-bold ${
+                  isRrMode ? "text-blue-400" : "text-zinc-400 hover:text-zinc-200"
+                }`}
+                onClick={() => setMode('rr')}
+                title="R-Multiple Modu"
               >
-                <Settings size={11} className={`text-zinc-300 transition-transform duration-200 ${isSettingsOpen ? 'rotate-45 text-blue-400' : ''}`} />
+                {isRrMode && (
+                  <motion.div
+                    layoutId="metricToggleIndicator"
+                    className="absolute inset-0 bg-blue-500/15 border border-blue-500/30 rounded-md shadow-xs"
+                    transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                  />
+                )}
+                <span className="relative z-10">R</span>
+              </button>
+              <button
+                type="button"
+                className={`relative z-10 flex items-center justify-center px-2.5 h-6 rounded-md transition-colors duration-150 cursor-pointer text-[11px] font-bold ${
+                  !isRrMode ? "text-emerald-400" : "text-zinc-400 hover:text-zinc-200"
+                }`}
+                onClick={() => setMode('pnl')}
+                title="Nominal PnL ($) Modu"
+              >
+                {!isRrMode && (
+                  <motion.div
+                    layoutId="metricToggleIndicator"
+                    className="absolute inset-0 bg-emerald-500/15 border border-emerald-500/30 rounded-md shadow-xs"
+                    transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                  />
+                )}
+                <span className="relative z-10">$</span>
+              </button>
+            </div>
+
+            {/* Ayarlar (Settings) Dropdown Menu - Compact */}
+            <div ref={settingsRef} className="relative">
+              <button
+                type="button"
+                id="header-settings-button"
+                onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+                className={`relative w-7 h-7 rounded-lg border transition-all duration-150 flex items-center justify-center cursor-pointer shadow-xs ${
+                  isSettingsOpen
+                    ? "bg-zinc-800 border-zinc-600 text-blue-400 ring-1 ring-blue-500/30"
+                    : "bg-zinc-900 hover:bg-zinc-800 border-zinc-700/50 hover:border-zinc-600 text-zinc-300"
+                }`}
+                title="Sistem ve Ayarlar"
+              >
+                <Settings size={13} className={`transition-transform duration-200 ${isSettingsOpen ? 'rotate-45 text-blue-400' : ''}`} />
                 {activeFilterCount > 0 && (
-                  <span className="absolute -top-1 -right-1 px-0.5 min-w-[12px] h-[12px] rounded-full text-[9px] font-mono font-black bg-blue-500 text-black shadow flex items-center justify-center leading-none">
+                  <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] px-1 rounded-full text-[8px] font-mono font-black bg-blue-500 text-black shadow-xs flex items-center justify-center leading-none">
                     {activeFilterCount}
                   </span>
                 )}
               </button>
 
               {/* Dropdown Menu */}
-              {isSettingsOpen && (
-                <>
-                  {/* Backdrop overlay */}
-                  <div 
-                    className="fixed inset-0 z-40" 
-                    onClick={() => setIsSettingsOpen(false)} 
-                  />
-
-                  <div className="absolute right-0 top-full mt-2 w-56 bg-zinc-900 border border-zinc-800 rounded-xl shadow-md p-2 z-50 flex flex-col gap-1 text-xs animate-in fade-in zoom-in-95 duration-200 ease-out">
-                    <div className={`px-2.5 py-1.5 text-[10px] font-bold text-zinc-400 uppercase tracking-wider flex items-center justify-between ${isQuantMode ? 'border-b border-zinc-800/50 mb-1' : 'border-b border-zinc-800'}`}>
-                      <span>{isQuantMode ? "SYSTEM CONFIG" : "Sistem & Ayarlar"}</span>
-                      <Settings size={12} className="text-zinc-500" />
+              <AnimatePresence>
+                {isSettingsOpen && (
+                  <motion.div 
+                    key="settings-dropdown-panel"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.15, ease: "easeOut" }}
+                    style={{ willChange: "opacity" }}
+                    className="absolute right-0 top-full mt-2 w-72 bg-zinc-900 border border-zinc-700/60 rounded-2xl shadow-2xl p-2.5 z-50 flex flex-col gap-1.5 text-xs"
+                  >
+                    <div className="px-3 py-2 text-[10px] font-bold font-mono text-zinc-400 uppercase tracking-wider flex items-center justify-between border-b border-zinc-700/40">
+                      <span className="flex items-center gap-1.5 text-zinc-300">
+                        <Settings size={12} className="text-blue-400" />
+                        Sistem & Ayarlar
+                      </span>
                     </div>
 
-                    {/* Platform Selector in Settings */}
-                    {!isQuantMode && (
-                      <div className="px-2 py-2 border-b border-zinc-800 mb-1">
-                      <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5 flex items-center justify-between">
-                        <span>Aktif Platform</span>
-                        <Monitor size={10} className="text-zinc-500" />
-                      </label>
-                      <div className="flex flex-wrap gap-1.5">
-                        <button
-                          onClick={() => setGlobalSelectedPlatforms([])}
-                          className={`px-2 py-1 text-[10px] font-bold rounded-md border transition-all cursor-pointer ${
-                            globalSelectedPlatforms.length === 0
-                              ? "bg-blue-500/20 border-blue-500/40 text-blue-400 shadow-sm"
-                              : "bg-zinc-950 border-zinc-800/80 text-zinc-500 hover:text-zinc-300 hover:border-zinc-700 hover:bg-zinc-900"
-                          }`}
-                        >
-                          Tümü
-                        </button>
-                        {platforms.map((p, idx) => {
-                          const isSelected = globalSelectedPlatforms.includes(p);
-                          return (
-                            <button
-                              key={`${p}-${idx}`}
-                              onClick={() => {
-                                if (isSelected) {
-                                  setGlobalSelectedPlatforms(globalSelectedPlatforms.filter(x => x !== p));
-                                } else {
-                                  setGlobalSelectedPlatforms([p]);
-                                }
-                              }}
-                              className={`px-2 py-1 text-[10px] font-bold rounded-md border transition-all cursor-pointer ${
-                                isSelected
-                                  ? "bg-blue-500/20 border-blue-500/40 text-blue-400 shadow-sm"
-                                  : "bg-zinc-950 border-zinc-800/80 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700 hover:bg-zinc-900"
-                              }`}
-                            >
-                              {p}
-                            </button>
-                          );
-                        })}
+                      {/* Platform Selector in Settings */}
+                      <div className="px-2.5 py-2 border-b border-zinc-700/40 bg-zinc-950/40 rounded-xl">
+                        <label className="block text-[10px] font-bold font-mono text-zinc-400 uppercase tracking-widest mb-1.5 flex items-center justify-between">
+                          <span className="flex items-center gap-1.5">
+                            <Monitor size={11} className="text-zinc-400" />
+                            Aktif Platform
+                          </span>
+                          <span className="text-[9px] text-zinc-500 font-mono">
+                            {globalSelectedPlatforms.length === 0 ? "Tümü" : `${globalSelectedPlatforms.length} seçili`}
+                          </span>
+                        </label>
+                        <div className="flex flex-wrap gap-1.5 pt-0.5">
+                          <button
+                            onClick={() => setGlobalSelectedPlatforms([])}
+                            className={`px-2.5 py-1 text-[10px] font-bold font-mono rounded-xl border transition-all cursor-pointer ${
+                              globalSelectedPlatforms.length === 0
+                                ? "bg-blue-500/20 border-blue-500/40 text-blue-400 shadow-xs"
+                                : "bg-zinc-950/60 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700 hover:bg-zinc-800"
+                            }`}
+                          >
+                            Tümü
+                          </button>
+                          {platforms.map((p, idx) => {
+                            const isSelected = globalSelectedPlatforms.includes(p);
+                            return (
+                              <button
+                                key={`${p}-${idx}`}
+                                onClick={() => {
+                                  if (isSelected) {
+                                    setGlobalSelectedPlatforms(globalSelectedPlatforms.filter(x => x !== p));
+                                  } else {
+                                    setGlobalSelectedPlatforms([p]);
+                                  }
+                                }}
+                                className={`px-2.5 py-1 text-[10px] font-bold font-mono rounded-xl border transition-all cursor-pointer ${
+                                  isSelected
+                                    ? "bg-blue-500/20 border-blue-500/40 text-blue-400 shadow-xs"
+                                    : "bg-zinc-950/60 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700 hover:bg-zinc-800"
+                                }`}
+                              >
+                                {p}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  )}
 
-                  {/* 1. Filtreleme */}
-                    {!isQuantMode && (
+                      {/* Filtreleme Menü Öğesi */}
                       <button
                         type="button"
                         onClick={() => {
                           setIsSettingsOpen(false);
                           setIsGlobalFilterModalOpen(true);
                         }}
-                        className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg hover:bg-zinc-800 text-zinc-200 transition-colors duration-200 ease-out text-left group cursor-pointer"
+                        className="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-zinc-800/80 text-zinc-200 transition-colors duration-150 text-left group cursor-pointer"
                       >
-                        <div className="flex items-center gap-2">
-                          <Filter size={14} className="text-blue-400 group-hover:scale-110 transition-transform" />
-                          <span className="font-medium text-[11px]">Filtreleme</span>
+                        <div className="flex items-center gap-2.5">
+                          <div className="p-1 rounded-lg bg-blue-500/10 text-blue-400">
+                            <Filter size={13} />
+                          </div>
+                          <span className="font-medium text-xs">Filtreleme Menüsü</span>
                         </div>
                         {activeFilterCount > 0 ? (
                           <span className="px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">
@@ -1765,91 +1878,105 @@ export default function App() {
                           <span className="text-[10px] text-zinc-500 font-mono">Tümü</span>
                         )}
                       </button>
-                    )}
-                    
-                    {/* Quant / Audit Mode Toggle */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsQuantMode(!isQuantMode);
-                      }}
-                      className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg hover:bg-zinc-800 text-zinc-200 transition-colors duration-200 ease-out text-left group cursor-pointer"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Activity size={14} className={isQuantMode ? "text-emerald-400 group-hover:scale-110 transition-transform" : "text-zinc-500 group-hover:scale-110 transition-transform"} />
-                        <span className="font-medium text-[11px]">Quant / Audit Mode</span>
-                      </div>
-                      <div className={`w-6 h-3.5 rounded-full relative transition-colors duration-200 ${isQuantMode ? "bg-emerald-500" : "bg-zinc-700"}`}>
-                        <div className={`absolute top-0.5 left-0.5 w-2.5 h-2.5 rounded-full bg-white transition-transform duration-200 ${isQuantMode ? "translate-x-2.5" : "translate-x-0"}`} />
-                      </div>
-                    </button>
 
-                    {/* 2. Bulut & Senkronizasyon */}
-                    {!isQuantMode && (
-                      <>
+                      {/* Tanımlamaları Yönet Öğesi */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsSettingsOpen(false);
+                          setIsPlatformMenuOpen(true);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-zinc-800/80 text-zinc-200 transition-colors duration-150 text-left font-medium text-xs cursor-pointer"
+                      >
+                        <div className="p-1 rounded-lg bg-purple-500/10 text-purple-400">
+                          <SlidersHorizontal size={13} />
+                        </div>
+                        <span>Tanımlamaları Yönet</span>
+                      </button>
+                      
+                      {/* Bulut Veritabanı ve Hesap Durumu */}
+                      {user ? (
+                        <div className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-zinc-950/40 border border-zinc-800/80 text-zinc-200">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="p-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
+                              <Cloud size={13} />
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                              <span className="font-semibold text-xs text-zinc-200">Bulut Veritabanı</span>
+                              <span 
+                                className="text-[10px] text-zinc-400 font-mono truncate max-w-[130px]" 
+                                title={user.email || user.displayName || "Bağlı Hesap"}
+                              >
+                                {user.displayName || user.email || "Bağlı Hesap"}
+                              </span>
+                            </div>
+                          </div>
+                          <span className="flex items-center gap-1 text-[9px] font-mono font-bold px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                            Aktif
+                          </span>
+                        </div>
+                      ) : (
                         <button
                           type="button"
                           onClick={() => {
-                            if (user) {
-                              setShowUsername(!showUsername);
-                            } else {
-                              setIsSettingsOpen(false);
-                              setIsAuthModalOpen(true);
-                            }
+                            setIsSettingsOpen(false);
+                            setIsAuthModalOpen(true);
                           }}
-                          className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg hover:bg-zinc-800 text-zinc-200 transition-colors duration-200 ease-out text-left group cursor-pointer"
-                          
+                          className="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-zinc-800/80 text-zinc-200 transition-colors duration-150 text-left group cursor-pointer"
                         >
-                          <div className="flex items-center gap-2">
-                            <Cloud size={14} className={user ? "text-blue-400" : "text-zinc-500"} />
-                            <div className="flex flex-col">
-                              <span className="font-medium text-[11px]">Bulut Veritabanı</span>
-                              {user && (
-                                <span className="text-[9px] text-blue-400 font-semibold truncate max-w-[100px]">
-                                  {showUsername ? (user.displayName || user.email?.split('@')[0] || "Hesap") : "Kullanıcı Gizli"}
-                                </span>
-                              )}
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="p-1 rounded-lg bg-zinc-800 text-zinc-400 border border-zinc-700/50 shrink-0 group-hover:border-zinc-600 transition-colors">
+                              <Cloud size={13} />
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                              <span className="font-medium text-xs text-zinc-200">Bulut Veritabanı</span>
+                              <span className="text-[10px] text-zinc-400 font-mono truncate">
+                                Çevrimdışı (Yerel Mod)
+                              </span>
                             </div>
                           </div>
-                          <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded ${
-                            user 
-                              ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" 
-                              : "bg-zinc-800 text-zinc-400"
-                          }`}>
-                            {user ? "Aktif" : "Çevrimdışı"}
+                          <span className="text-[9px] font-mono font-medium px-2 py-0.5 rounded-lg bg-zinc-800 text-zinc-400 border border-zinc-700/50 shrink-0 group-hover:border-zinc-600 transition-colors">
+                            Giriş Yap
                           </span>
                         </button>
+                      )}
 
-                        <div className="h-px bg-zinc-800/80 my-0.5" />
+                      <div className="h-px bg-zinc-700/40 my-0.5" />
 
-                        {/* 3. Çıkış Yap / Giriş Yap */}
-                        {user ? (
-                          <button
-                            type="button"
-                            onClick={handleLogout}
-                            className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg hover:bg-rose-500/10 text-rose-400 transition-colors duration-200 ease-out text-left font-medium text-[11px] cursor-pointer"
-                          >
-                            <LogOut size={14} />
-                            <span>Çıkış Yap</span>
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setIsSettingsOpen(false);
-                              setIsAuthModalOpen(true);
-                            }}
-                            className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg hover:bg-blue-600/20 text-blue-400 transition-colors duration-200 ease-out text-left font-medium text-[11px] cursor-pointer"
-                          >
-                            <LogIn size={14} />
-                            <span>Giriş Yap</span>
-                          </button>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </>
-              )}
+                      {/* Çıkış Yap / Giriş Yap */}
+                      {user ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsSettingsOpen(false);
+                            handleLogout();
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-rose-500/10 text-rose-400 hover:text-rose-300 transition-colors duration-150 text-left font-medium text-xs cursor-pointer"
+                        >
+                          <div className="p-1 rounded-lg bg-rose-500/10 text-rose-400">
+                            <LogOut size={13} />
+                          </div>
+                          <span>Oturumu Kapat</span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsSettingsOpen(false);
+                            setIsAuthModalOpen(true);
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-blue-600/20 text-blue-400 hover:text-blue-300 transition-colors duration-150 text-left font-medium text-xs cursor-pointer"
+                        >
+                          <div className="p-1 rounded-lg bg-blue-500/10 text-blue-400">
+                            <LogIn size={13} />
+                          </div>
+                          <span>Giriş Yap / Kaydol</span>
+                        </button>
+                      )}
+                    </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </div>
@@ -1858,7 +1985,7 @@ export default function App() {
       <main className="w-full">
         {indexErrorUrl && (
           <div className="max-w-6xl mx-auto px-4 pt-4">
-            <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-amber-200">
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-amber-200">
               <div className="flex items-center gap-2">
                 <AlertTriangle size={16} className="text-amber-400 shrink-0" />
                 <span>
@@ -1869,7 +1996,7 @@ export default function App() {
                 href={indexErrorUrl}
                 target="_blank"
                 referrerPolicy="no-referrer"
-                className="bg-amber-500 hover:bg-amber-400 text-zinc-900 font-bold px-3 py-1.5 rounded-lg text-[10px] transition-colors duration-200 ease-out whitespace-nowrap"
+                className="bg-amber-500 hover:bg-amber-400 text-zinc-900 font-bold px-3 py-1.5 rounded-xl text-[10px] transition-colors duration-200 ease-out whitespace-nowrap"
               >
                 Endeks Oluştur (Tek Tık)
               </a>
@@ -1878,111 +2005,71 @@ export default function App() {
         )}
 
         {/* VIEW TAB SELECTOR */}
-        {!isQuantMode && (
-          <div className="max-w-6xl mx-auto px-4 pt-3">
-            <div className="flex border-b border-zinc-800 pb-0.5 items-center justify-between">
-              <div
-                id="navigation-tabs"
-                className="flex gap-1 overflow-x-auto whitespace-nowrap hide-scrollbar flex-1 relative"
-              >
-                {[
-                  { id: "dashboard", label: "Ana Panel", icon: LayoutDashboard },
-                  { id: "deep-analysis", label: "Detaylı Analiz & İnceleme", icon: BarChart3 },
-                  { id: "economic-calendar", label: "Ekonomik Takvim", icon: Globe },
-                  { id: "notes", label: "Notlar", icon: FileText },
-                  { id: "journal", label: "Günlük", icon: Book },
-                  { id: "certificates", label: "Sertifikalar", icon: Award },
-                ].map((tab) => {
-                  const Icon = tab.icon;
-                  const isActive = currentTab === tab.id;
-                  return (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      onClick={() => handleTabChange(tab.id as any)}
-                      className={`relative px-3.5 py-2.5 sm:py-2 text-[10px] font-black font-mono tracking-widest uppercase rounded-t-lg transition-colors duration-150 flex items-center gap-1.5 cursor-pointer select-none ${
-                        isActive
-                          ? "text-blue-400 font-black"
-                          : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40"
-                      }`}
-                    >
-                      {isActive && (
-                        <motion.div
-                          layoutId="activeNavTabGlow"
-                          className="absolute inset-0 bg-gradient-to-b from-blue-500/15 via-blue-500/5 to-transparent rounded-t-lg border-b-2 border-blue-400 shadow-[0_4px_12px_rgba(59,130,246,0.15)]"
-                          transition={{ type: "spring", stiffness: 450, damping: 35 }}
-                        />
-                      )}
-                      <span className="relative z-10 flex items-center gap-1.5">
-                        <Icon size={12} className={isActive ? "text-blue-400" : "text-zinc-500"} />
-                        {tab.label}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-              
-              {/* Global Metric Switch */}
-              <div className="relative flex bg-zinc-950/80 border border-zinc-800 rounded-full p-0.5 ml-2 shrink-0 shadow-inner">
+        <div className="max-w-6xl mx-auto px-4 pt-2.5 mb-0.5">
+          <div
+            id="navigation-tabs"
+            className="flex items-center gap-1 overflow-x-auto whitespace-nowrap custom-scrollbar bg-zinc-900 border border-zinc-700/50 p-1 rounded-xl shadow-xs"
+          >
+            {[
+              { id: "dashboard", label: "ANA PANEL", icon: LayoutDashboard },
+              { id: "deep-analysis", label: "DETAYLI ANALİZ", icon: BarChart3 },
+              { id: "economic-calendar", label: "EKONOMİK TAKVİM", icon: Globe },
+              { id: "notes", label: "NOTLAR", icon: FileText },
+              { id: "journal", label: "GÜNLÜK", icon: Book },
+              { id: "certificates", label: "SERTİFİKALAR", icon: Award },
+            ].map((tab) => {
+              const Icon = tab.icon;
+              const isActive = currentTab === tab.id;
+              return (
                 <button
+                  key={tab.id}
                   type="button"
-                  className={`relative z-10 flex items-center justify-center w-8 h-6 rounded-full transition-colors duration-150 cursor-pointer ${
-                    isRrMode ? "text-blue-400 font-extrabold" : "text-zinc-500 hover:text-zinc-300 font-medium"
+                  onClick={() => handleTabChange(tab.id as any)}
+                  className={`relative px-3 py-1.5 text-xs font-bold tracking-normal rounded-lg transition-colors duration-150 flex items-center gap-1.5 cursor-pointer select-none shrink-0 ${
+                    isActive
+                      ? "text-blue-400"
+                      : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
                   }`}
-                  onClick={() => setMode('rr')}
                 >
-                  {isRrMode && (
+                  {isActive && (
                     <motion.div
-                      layoutId="metricToggleIndicator"
-                      className="absolute inset-0 bg-zinc-800 border border-zinc-700/80 rounded-full shadow-sm"
-                      transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                      layoutId="activeNavTabIndicator"
+                      className="absolute inset-0 bg-blue-500/15 rounded-lg border border-blue-500/30 shadow-xs"
+                      transition={{ type: "spring", stiffness: 450, damping: 35 }}
                     />
                   )}
-                  <span className="relative z-10 font-mono text-xs leading-none">R</span>
+                  <span className="relative z-10 flex items-center gap-1.5">
+                    <Icon size={13} className={isActive ? "text-blue-400" : "text-zinc-500"} />
+                    {tab.label}
+                  </span>
                 </button>
-                <button
-                  type="button"
-                  className={`relative z-10 flex items-center justify-center w-8 h-6 rounded-full transition-colors duration-150 cursor-pointer ${
-                    !isRrMode ? "text-emerald-400 font-extrabold" : "text-zinc-500 hover:text-zinc-300 font-medium"
-                  }`}
-                  onClick={() => setMode('pnl')}
-                >
-                  {!isRrMode && (
-                    <motion.div
-                      layoutId="metricToggleIndicator"
-                      className="absolute inset-0 bg-zinc-800 border border-zinc-700/80 rounded-full shadow-sm"
-                      transition={{ type: "spring", stiffness: 500, damping: 35 }}
-                    />
-                  )}
-                  <span className="relative z-10 font-mono text-xs leading-none">$</span>
-                </button>
-              </div>
-            </div>
+              );
+            })}
           </div>
-        )}
+        </div>
 
         <div className="max-w-6xl mx-auto px-4 py-3 space-y-3 flex flex-col w-full">
           {isLoading ? (
             <div className="w-full space-y-3">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2.5">
-                 <div className="h-[110px] bg-zinc-800/50 rounded-xl animate-pulse"></div>
-                 <div className="h-[110px] bg-zinc-800/50 rounded-xl animate-pulse"></div>
-                 <div className="h-[110px] bg-zinc-800/50 rounded-xl animate-pulse"></div>
-                 <div className="h-[110px] bg-zinc-800/50 rounded-xl animate-pulse"></div>
+                 <div className="h-[110px] bg-zinc-800/50 rounded-2xl animate-pulse"></div>
+                 <div className="h-[110px] bg-zinc-800/50 rounded-2xl animate-pulse"></div>
+                 <div className="h-[110px] bg-zinc-800/50 rounded-2xl animate-pulse"></div>
+                 <div className="h-[110px] bg-zinc-800/50 rounded-2xl animate-pulse"></div>
               </div>
-              <div className="h-[60px] bg-zinc-800/50 rounded-xl animate-pulse w-full"></div>
-              <div className="h-[380px] bg-zinc-900 rounded-xl border border-zinc-800 animate-pulse w-full"></div>
+              <div className="h-[60px] bg-zinc-800/50 rounded-2xl animate-pulse w-full"></div>
+              <div className="h-[380px] bg-zinc-900 rounded-2xl border border-zinc-800 animate-pulse w-full"></div>
             </div>
           ) : (
             <div className="relative">
                 <AnimatePresence mode="wait" initial={false}>
-                  {currentTab === "dashboard" || isQuantMode ? (
+                  {currentTab === "dashboard" || false ? (
                     <motion.div
                       key="dashboard"
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -6 }}
-                      transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.15, ease: "easeOut" }}
                       className="flex flex-col gap-3.5"
                     >
                       {/* STATS BENTO ROW */}
@@ -1996,25 +2083,24 @@ export default function App() {
                           setEditingTrade(null);
                           setIsFormOpen(true);
                         }}
-                        className="relative overflow-hidden bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/80 hover:border-blue-500/40 rounded-2xl p-4 sm:p-4.5 flex flex-col sm:flex-row items-center justify-between gap-3 cursor-pointer transition-all duration-200 ease-out select-none group shadow-sm hover:shadow-lg hover:shadow-blue-500/5 active:scale-[0.995]"
+                        className="relative overflow-hidden bg-zinc-900/60 border border-zinc-800/80 backdrop-blur-md hover:border-blue-500/40 rounded-2xl p-4 sm:p-4.5 flex flex-col sm:flex-row items-center justify-between gap-3 cursor-pointer transition-all duration-200 ease-out select-none group shadow-xs hover:shadow-md hover:shadow-blue-500/5"
                       >
-                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-[1px] bg-gradient-to-r from-transparent via-blue-500/25 to-transparent pointer-events-none" />
                         <div className="flex items-center gap-3">
-                          <div className="h-9 w-9 rounded-xl bg-blue-500/10 border border-blue-500/20 group-hover:bg-blue-500/20 group-hover:border-blue-500/40 group-hover:scale-105 flex items-center justify-center text-blue-400 transition-all duration-200 ease-out shrink-0 shadow-xs">
+                          <div className="h-9 w-9 rounded-xl bg-blue-500/10 border border-blue-500/20 group-hover:bg-blue-500/20 group-hover:border-blue-500/40 flex items-center justify-center text-blue-400 transition-colors duration-200 ease-out shrink-0 shadow-xs">
                             <Plus size={18} />
                           </div>
                           <div className="text-center sm:text-left">
-                            <h3 className="text-xs font-bold text-zinc-100 tracking-wide uppercase font-mono group-hover:text-blue-300 transition-colors">
-                              {isQuantMode ? "EXECUTE MODEL SIMULATION" : "Yeni Pozisyon Girişi Yap"}
+                            <h3 className="text-xs sm:text-sm font-bold text-zinc-100 tracking-tight group-hover:text-blue-300 transition-colors">
+                              {"Yeni Pozisyon Girişi Yap"}
                             </h3>
                           </div>
                         </div>
                         <button
                           type="button"
-                          className="w-full sm:w-auto h-9 bg-blue-500/15 hover:bg-blue-500/25 active:scale-95 text-blue-400 font-mono font-bold text-xs px-4 rounded-xl transition-all duration-200 ease-out flex items-center justify-center gap-2 shadow-xs border border-blue-500/30 uppercase tracking-wider cursor-pointer backdrop-blur-sm"
+                          className="w-full sm:w-auto h-9 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 font-semibold text-xs px-4 rounded-xl transition-colors duration-200 ease-out flex items-center justify-center gap-2 shadow-xs border border-blue-500/30 tracking-normal cursor-pointer"
                         >
                           <Plus size={15} />
-                          {isQuantMode ? "ADD DATA LOG" : "İşlem Ekle"}
+                          {"İşlem Ekle"}
                         </button>
                       </div>
 
@@ -2035,10 +2121,10 @@ export default function App() {
                   ) : currentTab === "deep-analysis" ? (
                     <motion.div
                       key="deep-analysis"
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -6 }}
-                      transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.15, ease: "easeOut" }}
                     >
                       <SectionErrorBoundary sectionName="Derin Analiz">
                         <DeepAnalysis
@@ -2054,10 +2140,10 @@ export default function App() {
                   ) : currentTab === "journal" ? (
                     <motion.div
                       key="journal"
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -6 }}
-                      transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.15, ease: "easeOut" }}
                     >
                       <SectionErrorBoundary sectionName="Günlükler">
                         <JournalView
@@ -2072,10 +2158,10 @@ export default function App() {
                   ) : currentTab === "certificates" ? (
                     <motion.div
                       key="certificates"
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -6 }}
-                      transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.15, ease: "easeOut" }}
                     >
                       <SectionErrorBoundary sectionName="Sertifikalar">
                         <CertificatesView
@@ -2088,10 +2174,10 @@ export default function App() {
                   ) : currentTab === "notes" ? (
                     <motion.div
                       key="notes"
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -6 }}
-                      transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.15, ease: "easeOut" }}
                     >
                       <SectionErrorBoundary sectionName="Notlar">
                         <NotesView
@@ -2104,10 +2190,10 @@ export default function App() {
                   ) : currentTab === "economic-calendar" ? (
                     <motion.div
                       key="economic-calendar"
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -6 }}
-                      transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.15, ease: "easeOut" }}
                     >
                       <SectionErrorBoundary sectionName="Ekonomik Takvim">
                         <EconomicCalendar />
@@ -2163,7 +2249,7 @@ export default function App() {
               onClearAll={handleClearAll}
             />
           {/* CONTROLS AREA AND CHANNELS */}
-          {!isQuantMode && (
+          {true && (
             <div className="flex justify-center pb-8 pt-4">
               <button
                 type="button"
@@ -2178,177 +2264,25 @@ export default function App() {
         </div>
       </main>
 
-      <AnimatePresence>
-        {isPlatformMenuOpen && (
-          <motion.div
-            key="platform-menu-modal-backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          >
-            <div className="fixed inset-0 bg-zinc-950/80 backdrop-blur-sm" onClick={() => setIsPlatformMenuOpen(false)} />
-            <motion.div
-              key="platform-menu-modal-card"
-              initial={{ opacity: 0, scale: 0.94, y: 16 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.94, y: 16 }}
-              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-              className="bg-zinc-950/90 border border-zinc-800/80 rounded-xl p-6 shadow-2xl relative w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh]"
-            >
-              <div className="flex flex-col mb-4">
-                <h3 className="text-xl font-black text-zinc-100 flex items-center gap-2">
-                  <SlidersHorizontal className="text-blue-400" /> {isQuantMode ? "SYSTEM PARAMETERS / CONFIG" : "Tanımlamaları Yönet"}
-                </h3>
-                <p className="text-xs text-zinc-500 mt-1">Platform, Varlık, Konsept ve diğer listeleri düzenleyin.</p>
-              </div>
-
-              <div className="flex flex-col md:flex-row gap-4 flex-1 min-h-0 overflow-hidden">
-                <div className="flex md:flex-col gap-1 overflow-x-auto md:overflow-y-auto md:w-48 shrink-0 pb-2 md:pb-0 custom-scrollbar border-b md:border-b-0 md:border-r border-zinc-800/60 md:pr-4">
-                  {[
-                    { id: 'platforms', label: 'Platformlar', icon: Monitor },
-                    { id: 'assets', label: 'Varlıklar (Parite)', icon: LineChart },
-                    { id: 'timeframes', label: 'ETF', icon: Clock },
-                    { id: 'htfTimeframes', label: 'HTF', icon: ArrowUpRight },
-                    { id: 'confirmations', label: 'Onaylar', icon: Lightbulb },
-                    { id: 'concepts', label: 'Konseptler', icon: Target },
-                    { id: 'sessions', label: 'Oturumlar', icon: Sun },
-                  ].map(tab => (
-                    <button
-                      key={tab.id}
-                      onClick={() => setSettingsTab(tab.id as any)}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${settingsTab === tab.id ? 'bg-blue-500/20 text-blue-400' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'}`}
-                    >
-                      <tab.icon size={14} /> {tab.label}
-                    </button>
-                  ))}
-                </div>
-                
-                <div className="flex-1 flex flex-col min-h-0 bg-zinc-950/50 rounded-xl border border-zinc-800/50 p-4">
-                  {(() => {
-                    let activeList = platforms;
-                    let persistFunc = persistPlatforms;
-                    let label = "Platform";
-                    
-                    if (settingsTab === 'timeframes') { activeList = timeframes; persistFunc = persistTimeframes; label = "ETF"; }
-                    if (settingsTab === 'htfTimeframes') { activeList = htfTimeframes; persistFunc = persistHtfTimeframes; label = "HTF"; }
-                    if (settingsTab === 'confirmations') { activeList = confirmations; persistFunc = persistConfirmations; label = "Onay"; }
-                    if (settingsTab === 'concepts') { activeList = concepts; persistFunc = persistConcepts; label = "Konsept"; }
-                    if (settingsTab === 'sessions') { activeList = sessions; persistFunc = persistSessions; label = "Oturum"; }
-                    if (settingsTab === 'assets') { activeList = assets; persistFunc = persistAssets; label = "Varlık"; }
-
-                    return (
-                      <>
-                        <div className="flex items-center gap-2 mb-4">
-                          <input
-                            type="text"
-                            placeholder={`Yeni ${label} Ekle...`}
-                            className="flex-1 bg-zinc-900 border border-zinc-700/80 rounded-lg px-3 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-blue-500 font-mono"
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                const val = e.currentTarget.value.trim();
-                                if (val && !activeList.includes(val)) {
-                                  persistFunc([...activeList, val]);
-                                  e.currentTarget.value = '';
-                                }
-                              }
-                            }}
-                          />
-                        </div>
-                        <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2 mb-2 px-1">
-                          <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
-                            Kayıtlı {label}lar ({activeList.length})
-                          </span>
-                      <span className="text-[9px] text-zinc-500 flex items-center gap-1">
-                        <GripVertical size={11} /> Sıralamak için sürükleyin
-                      </span>
-                    </div>
-
-                    <div className="h-[240px] overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
-                      {activeList.length === 0 ? (
-                        <div className="h-full flex items-center justify-center text-xs text-zinc-500 font-mono italic">
-                          — Henüz tanımlanmış öğe bulunmuyor —
-                        </div>
-                      ) : (
-                        activeList.map((item, index) => (
-                          <div
-                            key={`${item}-${index}`}
-                            draggable
-                            onDragStart={(e) => {
-                              e.dataTransfer.setData(
-                                "text/plain",
-                                index.toString(),
-                              );
-                            }}
-                            onDragOver={(e) => {
-                              e.preventDefault();
-                            }}
-                            onDrop={(e) => {
-                              e.preventDefault();
-                              const dragIndexStr =
-                                e.dataTransfer.getData("text/plain");
-                              if (!dragIndexStr) return;
-                              const dragIndex = parseInt(dragIndexStr, 10);
-                              const hoverIndex = index;
-                              if (dragIndex === hoverIndex) return;
-
-                              const newList = [...activeList];
-                              const [removed] = newList.splice(dragIndex, 1);
-                              newList.splice(hoverIndex, 0, removed);
-                              persistFunc(newList);
-                            }}
-                            className="flex items-center justify-between bg-zinc-800/40 hover:bg-zinc-800/80 border border-zinc-800 hover:border-zinc-700/80 rounded-xl px-3 py-2 text-xs text-zinc-200 font-mono uppercase cursor-move transition-colors duration-200 ease-out group shadow-sm"
-                            
-                          >
-                            <div className="flex items-center gap-2.5">
-                              <span className="text-[10px] text-zinc-600 font-mono w-4 select-none">
-                                {index + 1}.
-                              </span>
-                              <GripVertical size={14} className="text-zinc-600 group-hover:text-zinc-400 transition-colors" />
-                              <span className="font-bold text-[11px] text-zinc-200 group-hover:text-blue-400 transition-colors">
-                                {item}
-                              </span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const updated = activeList.filter(
-                                  (i) => i !== item,
-                                );
-                                persistFunc(updated);
-                              }}
-                              className="text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 p-1.2 rounded-md transition-colors duration-200 ease-out cursor-pointer"
-                              
-                            >
-                              <Trash2 size={13} />
-                            </button>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </>
-                );
-              })()}
-                </div>
-              </div>
-              <div className="mt-5 pt-3.5 border-t border-zinc-800 flex items-center justify-between">
-                <span className="text-[10px] text-zinc-500 font-mono">
-                  Değişiklikler anında kaydedilir
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setIsPlatformMenuOpen(false)}
-                  className="bg-zinc-800 hover:bg-zinc-700 text-zinc-100 text-xs font-bold px-5 py-2 rounded-xl uppercase font-mono transition-colors duration-200 ease-out cursor-pointer border border-zinc-700/60 shadow-sm"
-                >
-                  Tamam
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <DefinitionsManagerModal
+        isOpen={isPlatformMenuOpen}
+        onClose={() => setIsPlatformMenuOpen(false)}
+        trades={filteredGlobalTrades}
+        platforms={platforms}
+        timeframes={timeframes}
+        htfTimeframes={htfTimeframes}
+        confirmations={confirmations}
+        concepts={concepts}
+        sessions={sessions}
+        assets={assets}
+        persistPlatforms={persistPlatforms}
+        persistTimeframes={persistTimeframes}
+        persistHtfTimeframes={persistHtfTimeframes}
+        persistConfirmations={persistConfirmations}
+        persistConcepts={persistConcepts}
+        persistSessions={persistSessions}
+        persistAssets={persistAssets}
+      />
 
       {/* OVERLAY MODALS WRAPPER */}
         {/* OVERLAY MODAL: TRANSACTION FORM (ADD OR EDIT) */}
@@ -2359,17 +2293,17 @@ export default function App() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
               style={{ willChange: "opacity" }}
               className="fixed inset-0 z-[1500] overflow-hidden bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4"
             >
               <motion.div
-                initial={{ opacity: 0, scale: 0.94, y: 16 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.94, y: 16 }}
-                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                style={{ willChange: "transform, opacity" }}
-                className="w-full max-w-2xl max-h-[95vh] overflow-y-auto bg-zinc-950 border border-zinc-800/80 rounded-xl relative shadow-md"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15, ease: "easeOut" }}
+                style={{ willChange: "opacity" }}
+                className="w-full max-w-2xl max-h-[95vh] overflow-y-auto bg-zinc-900 border border-zinc-700/50 rounded-2xl relative shadow-2xl custom-scrollbar"
               >
                 <AddTradeForm
                   onSave={handleSaveTradeAndClose}
@@ -2428,8 +2362,7 @@ export default function App() {
         <button
           type="button"
           onClick={() => setIsCopilotOpen(true)}
-          className="group relative w-9 h-9 flex items-center justify-center bg-zinc-950 hover:bg-zinc-900 text-zinc-100 rounded-full shadow-lg hover:shadow-black/40 transition-all duration-200 cursor-pointer active:scale-95 border border-zinc-800"
-          
+          className="group relative w-10 h-10 flex items-center justify-center bg-zinc-900 hover:bg-zinc-800 text-zinc-100 rounded-full shadow-lg hover:shadow-blue-500/10 transition-colors duration-200 cursor-pointer border border-zinc-700/60"
         >
           <div className="relative flex items-center justify-center">
             <svg viewBox="0 0 24 24" className="w-[16px] h-[16px] text-zinc-100 fill-current" xmlns="http://www.w3.org/2000/svg">

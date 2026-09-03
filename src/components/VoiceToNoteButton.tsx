@@ -121,7 +121,7 @@ export const VoiceToNoteButton: React.FC<VoiceToNoteButtonProps> = ({ onParsed }
         <button
           type="button"
           onClick={startRecording}
-          className="h-9 w-9 flex items-center justify-center bg-red-950/80 text-red-400 hover:bg-red-900/60 border border-red-500/50 rounded-lg shrink-0 transition-colors"
+          className="h-9 w-9 flex items-center justify-center bg-red-950/80 text-red-400 hover:bg-red-900/60 border border-red-500/50 rounded-xl shrink-0 transition-colors"
         >
           <AlertCircle size={16} />
         </button>
@@ -129,7 +129,7 @@ export const VoiceToNoteButton: React.FC<VoiceToNoteButtonProps> = ({ onParsed }
         <button
           type="button"
           disabled
-          className="h-9 w-9 flex items-center justify-center bg-zinc-900 text-zinc-400 border border-zinc-800 rounded-lg shrink-0"
+          className="h-9 w-9 flex items-center justify-center bg-zinc-900 text-zinc-400 border border-zinc-800 rounded-xl shrink-0"
         >
           <Loader2 size={14} className="animate-spin text-zinc-300" />
         </button>
@@ -137,7 +137,7 @@ export const VoiceToNoteButton: React.FC<VoiceToNoteButtonProps> = ({ onParsed }
         <button
           type="button"
           onClick={stopRecording}
-          className="h-9 w-9 flex items-center justify-center bg-red-950/80 text-red-400 border border-red-500/50 rounded-lg shrink-0 transition-colors"
+          className="h-9 w-9 flex items-center justify-center bg-red-950/80 text-red-400 border border-red-500/50 rounded-xl shrink-0 transition-colors"
         >
           <Square size={13} fill="currentColor" className="text-red-500" />
         </button>

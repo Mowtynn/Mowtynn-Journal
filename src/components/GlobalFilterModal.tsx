@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Filter, RotateCcw, Check, Calendar, Layers, Monitor, Activity, ArrowUpRight, Coins, Flame, ChevronRight, Eye, EyeOff, ChevronDown, Clock, Sparkles, X } from 'lucide-react';
 
@@ -70,7 +71,7 @@ const PillMultiSelect = ({
       <button
         type="button"
         onClick={() => onChange([])}
-        className={`px-3 py-2 sm:px-2 sm:py-1 rounded-md text-[10px] font-mono uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer ${
+        className={`px-3 py-2 sm:px-2 sm:py-1 rounded-lg text-[10px] font-mono uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer ${
           isAllSelected 
             ? 'bg-blue-500/20 border-blue-500/50 text-blue-300 font-bold' 
             : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
@@ -85,7 +86,7 @@ const PillMultiSelect = ({
             key={option}
             type="button"
             onClick={() => toggleOption(option)}
-            className={`px-3 py-2 sm:px-2 sm:py-1 rounded-md text-[10px] font-mono uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer flex items-center gap-1 ${
+            className={`px-3 py-2 sm:px-2 sm:py-1 rounded-lg text-[10px] font-mono uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer flex items-center gap-1 ${
               isSelected 
                 ? activeStyle 
                 : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
@@ -122,7 +123,7 @@ const StatusMultiSelect = ({
       <button
         type="button"
         onClick={() => onChange([])}
-        className={`px-3 py-2 sm:px-2.5 sm:py-1 rounded-md text-[10px] font-mono uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer ${
+        className={`px-3 py-2 sm:px-2.5 sm:py-1 rounded-lg text-[10px] font-mono uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer ${
           isAll 
             ? 'bg-blue-500/20 border-blue-500/50 text-blue-300 font-bold' 
             : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
@@ -133,7 +134,7 @@ const StatusMultiSelect = ({
       <button
         type="button"
         onClick={() => toggle("WIN")}
-        className={`px-3 py-2 sm:px-2.5 sm:py-1 rounded-md text-[10px] font-mono uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer flex items-center gap-1 ${
+        className={`px-3 py-2 sm:px-2.5 sm:py-1 rounded-lg text-[10px] font-mono uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer flex items-center gap-1 ${
           selectedValues.includes("WIN")
             ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300 font-bold shadow-sm'
             : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-emerald-400'
@@ -145,7 +146,7 @@ const StatusMultiSelect = ({
       <button
         type="button"
         onClick={() => toggle("LOSS")}
-        className={`px-3 py-2 sm:px-2.5 sm:py-1 rounded-md text-[10px] font-mono uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer flex items-center gap-1 ${
+        className={`px-3 py-2 sm:px-2.5 sm:py-1 rounded-lg text-[10px] font-mono uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer flex items-center gap-1 ${
           selectedValues.includes("LOSS")
             ? 'bg-rose-500/20 border-rose-500/50 text-rose-300 font-bold shadow-sm'
             : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-rose-400'
@@ -157,7 +158,7 @@ const StatusMultiSelect = ({
       <button
         type="button"
         onClick={() => toggle("BREAKEVEN")}
-        className={`px-3 py-2 sm:px-2.5 sm:py-1 rounded-md text-[10px] font-mono uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer flex items-center gap-1 ${
+        className={`px-3 py-2 sm:px-2.5 sm:py-1 rounded-lg text-[10px] font-mono uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer flex items-center gap-1 ${
           selectedValues.includes("BREAKEVEN")
             ? 'bg-amber-500/20 border-amber-500/50 text-amber-300 font-bold shadow-sm'
             : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-amber-400'
@@ -192,7 +193,7 @@ const TypeMultiSelect = ({
       <button
         type="button"
         onClick={() => onChange([])}
-        className={`px-3 py-2 sm:px-2.5 sm:py-1 rounded-md text-[10px] font-mono uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer ${
+        className={`px-3 py-2 sm:px-2.5 sm:py-1 rounded-lg text-[10px] font-mono uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer ${
           isAll 
             ? 'bg-blue-500/20 border-blue-500/50 text-blue-300 font-bold' 
             : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
@@ -203,7 +204,7 @@ const TypeMultiSelect = ({
       <button
         type="button"
         onClick={() => toggle("LONG")}
-        className={`px-3 py-2 sm:px-2.5 sm:py-1 rounded-md text-[10px] font-mono uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer flex items-center gap-1 ${
+        className={`px-3 py-2 sm:px-2.5 sm:py-1 rounded-lg text-[10px] font-mono uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer flex items-center gap-1 ${
           selectedValues.includes("LONG")
             ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300 font-bold shadow-sm'
             : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-emerald-400'
@@ -215,7 +216,7 @@ const TypeMultiSelect = ({
       <button
         type="button"
         onClick={() => toggle("SHORT")}
-        className={`px-3 py-2 sm:px-2.5 sm:py-1 rounded-md text-[10px] font-mono uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer flex items-center gap-1 ${
+        className={`px-3 py-2 sm:px-2.5 sm:py-1 rounded-lg text-[10px] font-mono uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer flex items-center gap-1 ${
           selectedValues.includes("SHORT")
             ? 'bg-rose-500/20 border-rose-500/50 text-rose-300 font-bold shadow-sm'
             : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-rose-400'
@@ -248,7 +249,7 @@ const FilterAccordionRow: React.FC<FilterAccordionRowProps> = ({
   children
 }) => {
   return (
-    <div className="bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden transition-colors">
+    <div className="bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden transition-colors">
       <button
         type="button"
         onClick={onToggle}
@@ -400,34 +401,32 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = ({
 
   const isAnyOpen = Object.values(openSections).some(Boolean);
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.15, ease: "easeOut" }}
           style={{ willChange: 'opacity' }}
           className="fixed inset-0 bg-zinc-950/80 backdrop-blur-sm z-[1500] flex justify-center items-center p-3 sm:p-4 overflow-y-auto"
           onClick={onClose}
         >
           <motion.div
-            initial={{ opacity: 0, scale: 0.94, y: 16 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.94, y: 16 }}
-            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            style={{ willChange: 'transform, opacity' }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            style={{ willChange: 'opacity' }}
             onClick={(e) => e.stopPropagation()}
-            className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/60 rounded-2xl w-full max-w-2xl overflow-hidden flex flex-col relative shadow-2xl shadow-blue-500/5 my-auto"
+            id="global-filter-popup"
+            className="bg-zinc-900 border border-zinc-700/50 rounded-2xl w-full max-w-2xl overflow-hidden flex flex-col relative shadow-2xl my-auto"
           >
-            {/* Ambient top glow */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-[1px] bg-gradient-to-r from-transparent via-blue-500/25 to-transparent pointer-events-none" />
-
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800/60 bg-zinc-950/40">
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-zinc-700/40 bg-zinc-900/60">
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
+                <div className="w-7 h-7 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
                   <Filter size={14} />
                 </div>
                 <div>
@@ -446,7 +445,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = ({
                 <button
                   type="button"
                   onClick={isAnyOpen ? collapseAll : expandAll}
-                  className="px-3 py-2 sm:px-2 sm:py-1 rounded-lg bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 text-[10px] font-bold font-mono transition-colors duration-200 ease-out uppercase tracking-wider cursor-pointer border border-zinc-700/60 hidden sm:flex items-center gap-1"
+                  className="px-3 py-2 sm:px-2 sm:py-1 rounded-xl bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 text-[10px] font-bold font-mono transition-colors duration-200 ease-out uppercase tracking-wider cursor-pointer border border-zinc-700/60 hidden sm:flex items-center gap-1"
                 >
                   {isAnyOpen ? <EyeOff size={11} /> : <Eye size={11} />}
                   {isAnyOpen ? "Tümünü Kapat" : "Tümünü Aç"}
@@ -456,7 +455,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = ({
                   <button
                     type="button"
                     onClick={handleReset}
-                    className="flex items-center gap-1 px-3 py-2 sm:px-2.5 sm:py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px] font-bold font-mono transition-colors duration-200 ease-out uppercase tracking-wider cursor-pointer border border-zinc-700/60"
+                    className="flex items-center gap-1 px-3 py-2 sm:px-2.5 sm:py-1 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px] font-bold font-mono transition-colors duration-200 ease-out uppercase tracking-wider cursor-pointer border border-zinc-700/60"
                   >
                     <RotateCcw size={11} />
                     Sıfırla
@@ -466,7 +465,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = ({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="p-1 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors duration-200 ease-out cursor-pointer"
+                  className="p-1.5 rounded-xl text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors duration-200 ease-out cursor-pointer"
                 >
                   <X size={16} />
                 </button>
@@ -474,7 +473,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = ({
             </div>
 
             {/* Content Body - Menu / Accordion list */}
-            <div className="p-3 sm:p-4 max-h-[70vh] overflow-y-auto custom-scrollbar space-y-2 bg-zinc-900">
+            <div className="p-3 sm:p-4 max-h-[70vh] overflow-y-auto custom-scrollbar space-y-2 bg-zinc-950/30">
               
               {/* 1. ZAMAN ARALIĞI */}
               <FilterAccordionRow title="Zaman Aralığı" 
@@ -493,7 +492,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = ({
                         key={option.value}
                         type="button"
                         onClick={() => setGlobalDateLimit(option.value)}
-                        className={`px-3 py-2 sm:px-2.5 sm:py-1 rounded-md text-[10px] font-mono uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer ${
+                        className={`px-3 py-2 sm:px-2.5 sm:py-1 rounded-lg text-[10px] font-mono uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer ${
                           isSelected 
                             ? 'bg-amber-500/20 border-amber-500/50 text-amber-300 font-bold shadow-sm' 
                             : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
@@ -657,7 +656,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = ({
             </div>
 
             {/* Footer */}
-            <div className="px-4 py-3 border-t border-zinc-800 bg-zinc-900 flex items-center justify-between">
+            <div className="px-5 py-3 border-t border-zinc-700/40 bg-zinc-900/60 flex items-center justify-between">
               <div className="text-[10px] text-zinc-400 font-mono hidden sm:block">
                 {activeFilterCount > 0 ? (
                   <span className="text-blue-400 font-semibold">{activeFilterCount} kriter aktif</span>
@@ -678,7 +677,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = ({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 border border-blue-500/30 font-mono font-black px-5 py-2 rounded-xl text-[11px] uppercase tracking-wider transition-all duration-200 ease-out cursor-pointer shadow-xs active:scale-95 flex items-center justify-center gap-1.5"
+                  className="bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 border border-blue-500/30 font-mono font-black px-5 py-2 rounded-xl text-[11px] uppercase tracking-wider transition-colors duration-200 ease-out cursor-pointer shadow-xs flex items-center justify-center gap-1.5"
                 >
                   <Check size={13} />
                   Uygula
@@ -688,6 +687,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = ({
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 };

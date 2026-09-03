@@ -45,12 +45,12 @@ export class ErrorBoundary extends Component<Props, State> {
           <div className="bg-zinc-900 border border-red-500/20 p-8 rounded-2xl max-w-lg w-full text-center space-y-4">
             <AlertCircle size={48} className="text-red-400 mx-auto" />
             <h1 className="text-xl font-bold text-zinc-100">Beklenmedik bir hata oluştu</h1>
-            <p className="text-sm text-zinc-400 font-mono overflow-auto max-h-32 bg-black p-2 rounded">
+            <p className="text-sm text-zinc-400 font-mono overflow-auto max-h-32 bg-zinc-950 p-2.5 rounded-xl">
               {this.state.errorMsg || "Bilinmeyen bir hata gerçekleşti."}
             </p>
             <button
               onClick={this.handleReset}
-              className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors duration-200 ease-out font-bold uppercase tracking-widest text-sm"
+              className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl transition-colors duration-200 ease-out font-bold uppercase tracking-widest text-sm"
             >
               <RefreshCcw size={16} /> Uygulamayı Yeniden Başlat
             </button>

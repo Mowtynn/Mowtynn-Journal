@@ -5,7 +5,7 @@ import Markdown from "react-markdown";
 import { authFetch } from "../lib/api";
 import { getSiteToken } from "./PasswordGate";
 import {
-  Sparkles, Bot, Send, RefreshCw, X, TrendingUp, TrendingDown, ShieldAlert, Brain, Zap, Target, BarChart3, Clock, CheckCircle2, ShieldCheck, AlertTriangle, Lightbulb, Copy, Check, ChevronRight, ChevronLeft, User, Activity, Flame, Image as ImageIcon, Volume2, Users, Award, Lock, Layers, Compass, Eye, Pin, Bookmark, ArrowLeft, Edit2, Trash2 } from 'lucide-react';
+  Sparkles, Bot, Send, RefreshCw, X, TrendingUp, TrendingDown, ShieldAlert, Brain, Zap, Target, BarChart3, Clock, CheckCircle2, ShieldCheck, AlertTriangle, Lightbulb, Copy, Check, ChevronRight, ChevronLeft, User, Activity, Flame, Image as ImageIcon, Volume2, Award, Lock, Layers, Compass, Eye, Pin, Bookmark, ArrowLeft, Edit2, Trash2 } from 'lucide-react';
 
 interface SavedNote {
   id: string;
@@ -578,7 +578,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
               id: "welcome-1",
               role: "assistant",
               content: welcomeContent,
-              timestamp: new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }),
+              timestamp: new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit", hour12: false }),
             },
           ];
         } else {
@@ -619,7 +619,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
         id: `system-update-${Date.now()}`,
         role: "assistant",
         content: `🔄 **Yeni Veri Girişi Tespit Edildi!**\nSisteme eklediğiniz yeni işlem/günlük verileri doğrultusunda bütün performans metriklerinizi ve disiplin skorunuzu arka planda güncelledim.\n\nYapay zekâ mentor analizlerini ve tavsiyelerini de yeni verilerinizle güncellemek ister misiniz? 🧠`,
-        timestamp: new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }),
+        timestamp: new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit", hour12: false }),
         isSystemPrompt: true,
       };
 
@@ -837,7 +837,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
       id: userMsgId,
       role: "user",
       content: displayPrompt || promptToSend || "Grafik ekran görüntüsünü analiz et.",
-      timestamp: new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }),
+      timestamp: new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit", hour12: false }),
       imageUrl: currentImage || undefined,
     };
 
@@ -906,7 +906,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
         id: aiMsgId,
         role: "assistant",
         content: aiText,
-        timestamp: new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }),
+        timestamp: new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit", hour12: false }),
       };
 
       setMessages((prev) => [...prev, aiMessage]);
@@ -916,7 +916,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
         id: (Date.now() + 1).toString(),
         role: "assistant",
         content: err.message === "AI Limiti Tükendi, Daha Sonra Tekrar Deneyin." ? err.message : `❌ **Hata:** ${err.message || "Yapay zekâ ile iletişim kurulurken bir sorun oluştu."}`,
-        timestamp: new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }),
+        timestamp: new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit", hour12: false }),
       };
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
@@ -935,30 +935,29 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.15, ease: "easeOut" }}
       style={{ willChange: "opacity" }}
       onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-zinc-950/80 backdrop-blur-sm"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-4 bg-zinc-950/80 backdrop-blur-sm"
     >
       <motion.div
-        initial={{ opacity: 0, scale: 0.94, y: 16 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.94, y: 16 }}
-        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-        style={{ willChange: "transform, opacity" }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.15, ease: "easeOut" }}
+        style={{ willChange: "opacity" }}
         onClick={(e) => e.stopPropagation()}
-        className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/60 rounded-2xl w-full max-w-4xl h-[92vh] sm:h-[85vh] flex flex-col shadow-2xl overflow-hidden relative shadow-blue-500/5"
+        id="ai-copilot-popup"
+        className="bg-zinc-900 border border-zinc-700/50 rounded-2xl w-full max-w-4xl h-[92vh] sm:h-[85vh] flex flex-col shadow-2xl overflow-hidden relative"
       >
-        <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-blue-500/30 to-transparent z-50 pointer-events-none"></div>
-        
         {/* HEADER BAR */}
-        <div className="bg-zinc-950/40 border-b border-zinc-800/60 px-5 py-3.5 flex items-center justify-between shrink-0">
+        <div className="bg-zinc-900/60 border-b border-zinc-700/40 px-5 py-3.5 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <div className="relative">
               <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/25 flex items-center justify-center text-blue-400 shadow-xs">
                 <Sparkles size={17} className="animate-pulse" />
               </div>
-              <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 border-zinc-950 rounded-full" />
+              <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 border-zinc-900 rounded-full" />
             </div>
 
             <div>
@@ -966,7 +965,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                 <h2 className="text-xs sm:text-sm font-bold text-zinc-100 uppercase tracking-wider font-mono">
                   AI Co-Pilot & Mentör
                 </h2>
-                <span className="px-2 py-0.5 rounded-md text-[9px] font-mono font-bold bg-blue-500/10 text-blue-400 border border-blue-500/25 uppercase tracking-wider">
+                <span className="px-2.5 py-0.5 rounded-lg text-[9px] font-mono font-bold bg-blue-500/10 text-blue-400 border border-blue-500/25 uppercase tracking-wider">
                   FLASH-LATEST
                 </span>
               </div>
@@ -982,7 +981,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                 stopSpeech();
                 onClose();
               }}
-              className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-900 border border-zinc-800/80 rounded-xl transition-all duration-200 cursor-pointer active:scale-95"
+              className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-xl transition-colors duration-200 cursor-pointer"
             >
               <X size={15} />
             </button>
@@ -990,9 +989,9 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
         </div>
 
         {/* TOP TABS & HEALTH STRIP */}
-        <div className="bg-zinc-950/50 border-b border-zinc-800/80 px-5 py-2.5 flex flex-wrap items-center justify-between gap-3 shrink-0">
+        <div className="bg-zinc-900/40 border-b border-zinc-700/40 px-5 py-2.5 flex flex-wrap items-center justify-between gap-3 shrink-0">
           {/* Tabs */}
-          <div className="flex gap-1.5 overflow-x-auto hide-scrollbar">
+          <div className="flex items-center gap-1 overflow-x-auto hide-scrollbar bg-zinc-900 border border-zinc-700/50 p-1 rounded-xl shadow-xs">
             {[
               { id: "chat", name: "Canlı Chat & Görsel", icon: Bot },
               { id: "report", name: "Sağlık & Disiplin", icon: Activity },
@@ -1004,15 +1003,25 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
               return (
                 <button
                   key={tab.id}
+                  type="button"
                   onClick={() => setActiveTab(tab.id as any)}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold transition-all duration-200 flex items-center gap-2 cursor-pointer shrink-0 uppercase tracking-wider ${
+                  className={`relative px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors duration-150 flex items-center gap-1.5 cursor-pointer select-none shrink-0 ${
                     isActive
-                      ? "bg-blue-500/15 text-blue-400 border border-blue-500/30 shadow-xs backdrop-blur-sm"
-                      : "bg-zinc-900/60 text-zinc-400 border border-zinc-800/80 hover:text-zinc-200 hover:bg-zinc-800/80"
+                      ? "text-blue-400"
+                      : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
                   }`}
                 >
-                  <Icon size={13} />
-                  <span>{tab.name}</span>
+                  {isActive && (
+                    <motion.div
+                      layoutId="activeCopilotTabIndicator"
+                      className="absolute inset-0 bg-blue-500/15 rounded-lg border border-blue-500/30 shadow-xs"
+                      transition={{ type: "spring", stiffness: 450, damping: 35 }}
+                    />
+                  )}
+                  <span className="relative z-10 flex items-center gap-1.5">
+                    <Icon size={13} className={isActive ? "text-blue-400" : "text-zinc-500"} />
+                    <span>{tab.name}</span>
+                  </span>
                 </button>
               );
             })}
@@ -1034,7 +1043,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
               >
               
               {/* Mentör Karakter Seçici - Ultra Kompakt Tasarım */}
-              <div className="flex items-center justify-between overflow-x-auto pb-2 shrink-0 border-b border-zinc-800/80 hide-scrollbar gap-2">
+              <div className="flex items-center justify-between overflow-x-auto pb-2 shrink-0 border-b border-zinc-700/50 hide-scrollbar gap-2">
                 <div className="flex items-center gap-1.5 shrink-0">
                   <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider shrink-0 flex items-center gap-1 select-none mr-1 font-bold">
                     <Bot size={12} className="text-blue-400" /> Mentör:
@@ -1055,7 +1064,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                         className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-[10px] font-mono font-bold border transition-all duration-200 cursor-pointer whitespace-nowrap shrink-0 uppercase tracking-wider ${
                           isSelected
                             ? "bg-blue-500/15 text-blue-300 border-blue-500/40 shadow-xs"
-                            : "bg-zinc-900/80 border-zinc-800/80 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/80"
+                            : "bg-zinc-900/80 border-zinc-700/50 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/80"
                         }`}
                       >
                         <IconComp size={11} />
@@ -1073,11 +1082,11 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                         id: "welcome-1",
                         role: "assistant",
                         content: welcomeContent,
-                        timestamp: new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }),
+                        timestamp: new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit", hour12: false }),
                       }]);
                     }, 50);
                   }}
-                  className="flex items-center justify-center w-7 h-7 rounded-xl border transition-all duration-200 cursor-pointer shrink-0 bg-rose-500/10 text-rose-400 border-rose-500/25 hover:bg-rose-500/20 active:scale-95"
+                  className="flex items-center justify-center w-7 h-7 rounded-xl border transition-colors duration-200 cursor-pointer shrink-0 bg-rose-500/10 text-rose-400 border-rose-500/25 hover:bg-rose-500/20"
                   title="Sohbeti Temizle"
                 >
                   <RefreshCw size={12} />
@@ -1098,7 +1107,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                       className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-xs font-mono font-bold border ${
                         msg.role === "user"
                           ? "bg-blue-500/15 border-blue-500/30 text-blue-400"
-                          : "bg-zinc-900 border-zinc-800 text-blue-400"
+                          : "bg-zinc-900 border-zinc-700/50 text-blue-400"
                       }`}
                     >
                       {msg.role === "user" ? <User size={14} /> : <Bot size={14} />}
@@ -1108,17 +1117,17 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                     <div
                       className={`group relative max-w-[85%] sm:max-w-[80%] rounded-2xl px-4 py-3 text-xs leading-relaxed border shadow-xs ${
                         msg.role === "user"
-                          ? "bg-zinc-900/90 border-zinc-800 text-zinc-100"
-                          : "bg-zinc-900/50 border-zinc-800/80 text-zinc-200"
+                          ? "bg-zinc-900/90 border-zinc-700/50 text-zinc-100"
+                          : "bg-zinc-800 border-zinc-700/50 text-zinc-200"
                       }`}
                     >
                       {/* Optional Attached Screenshot */}
                       {msg.imageUrl && (
-                        <div className="mb-2 max-w-[180px] sm:max-w-[200px] rounded-xl overflow-hidden border border-zinc-800/80 shadow-sm">
+                        <div className="mb-2 max-w-[180px] sm:max-w-[200px] rounded-xl overflow-hidden border border-zinc-700/50 shadow-sm">
                           <img
                             src={msg.imageUrl}
                             alt="Grafik Ekran Görüntüsü"
-                            className="w-full max-h-24 sm:max-h-28 object-cover bg-black/25 cursor-zoom-in hover:opacity-90 transition-opacity"
+                            className="w-full max-h-24 sm:max-h-28 object-cover bg-zinc-950/80 cursor-zoom-in hover:opacity-90 transition-opacity"
                             onClick={() => window.open(msg.imageUrl, '_blank')}
                           />
                         </div>
@@ -1142,7 +1151,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                                   );
                                 }}
                                 disabled={isLoading}
-                                className="px-3 py-1.5 bg-blue-500/15 hover:bg-blue-500/25 disabled:bg-zinc-800/50 disabled:border-zinc-700/50 disabled:text-zinc-500 text-blue-400 font-mono font-bold text-[10px] tracking-wider uppercase rounded-xl transition-all duration-200 cursor-pointer flex items-center gap-1.5 shadow-xs border border-blue-500/30 active:scale-95"
+                                className="px-3 py-1.5 bg-blue-500/15 hover:bg-blue-500/25 disabled:bg-zinc-800/50 disabled:border-zinc-700/50 disabled:text-zinc-500 text-blue-400 font-mono font-bold text-[10px] tracking-wider uppercase rounded-xl transition-colors duration-200 cursor-pointer flex items-center gap-1.5 shadow-xs border border-blue-500/30"
                               >
                                 <Sparkles size={11} />
                                 <span>Yapay Zekâ Analizini Güncelle 🔄</span>
@@ -1154,7 +1163,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                         <p className="whitespace-pre-wrap text-xs sm:text-xs leading-relaxed text-zinc-100 font-sans">{msg.content}</p>
                       )}
 
-                      <div className="flex items-center justify-between gap-4 mt-2.5 pt-2 border-t border-zinc-800/80 text-[10px] font-mono text-zinc-500">
+                      <div className="flex items-center justify-between gap-4 mt-2.5 pt-2 border-t border-zinc-700/50 text-[10px] font-mono text-zinc-500">
                         <span>{msg.timestamp}</span>
 
                         <div className="flex items-center gap-2">
@@ -1204,10 +1213,10 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
 
                 {isLoading && (
                   <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center shrink-0 text-blue-400">
+                    <div className="w-8 h-8 rounded-xl bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm flex items-center justify-center shrink-0 text-blue-400">
                       <Bot size={14} className="animate-spin" />
                     </div>
-                    <div className="bg-zinc-900/50 border border-zinc-800/80 rounded-2xl p-3 text-xs text-zinc-400 flex items-center gap-2 font-mono">
+                    <div className="bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm rounded-2xl p-3 text-xs text-zinc-400 flex items-center gap-2 font-mono">
                       <Sparkles size={13} className="text-blue-400 animate-pulse" />
                       <span>Analiz ediliyor...</span>
                     </div>
@@ -1217,12 +1226,12 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
               </div>
 
               {/* Input & Quick Controls */}
-              <div className="shrink-0 space-y-2 pt-2.5 border-t border-zinc-800/80">
+              <div className="shrink-0 space-y-2 pt-2.5 border-t border-zinc-700/50">
                 
                 {/* Attached Image Thumbnail Bar */}
                 {attachedImage && (
-                  <div className="flex items-center gap-2 bg-zinc-900/80 border border-zinc-800/80 p-2 rounded-xl">
-                    <img src={attachedImage} alt="Ekran Görüntüsü Önizleme" className="w-10 h-10 object-cover rounded-lg border border-zinc-800" />
+                  <div className="flex items-center gap-2 bg-zinc-900/80 border border-zinc-700/50 p-2 rounded-xl">
+                    <img src={attachedImage} alt="Ekran Görüntüsü Önizleme" className="w-10 h-10 object-cover rounded-lg border border-zinc-700/50" />
                     <div className="flex-1 text-[11px] text-zinc-300 font-mono truncate">
                       🖼️ Grafik Ekran Görüntüsü Yüklendi (Gemini Vision Hazır)
                     </div>
@@ -1266,7 +1275,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                       key={idx}
                       onClick={() => handleSendMessage(item.prompt)}
                       disabled={isLoading}
-                      className="px-2.5 py-1 rounded-xl text-[10px] font-mono bg-zinc-900/80 hover:bg-blue-500/10 hover:text-blue-300 hover:border-blue-500/30 text-zinc-300 border border-zinc-800/80 transition-all duration-200 cursor-pointer whitespace-nowrap disabled:opacity-50"
+                      className="px-2.5 py-1 rounded-xl text-[10px] font-mono bg-zinc-900/80 hover:bg-blue-500/10 hover:text-blue-300 hover:border-blue-500/30 text-zinc-300 border border-zinc-700/50 transition-all duration-200 cursor-pointer whitespace-nowrap disabled:opacity-50"
                     >
                       {item.label}
                     </button>
@@ -1274,7 +1283,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                 </div>
 
                 {/* Input Controls */}
-                <div className="flex items-center gap-2 bg-zinc-900/90 border border-zinc-800/80 rounded-2xl p-2.5 focus-within:border-blue-500/50 transition-colors shadow-xs">
+                <div className="flex items-center gap-2 bg-zinc-900/90 border border-zinc-700/50 rounded-2xl p-2.5 focus-within:border-blue-500/50 transition-colors shadow-xs">
                   {/* File Input for Screenshot */}
                   <input
                     type="file"
@@ -1288,7 +1297,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                     className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 cursor-pointer border ${
                       attachedImage
                         ? "bg-purple-500/15 text-purple-300 border-purple-500/30"
-                        : "bg-zinc-900 hover:bg-zinc-800 text-zinc-400 border-zinc-800/80"
+                        : "bg-zinc-900 hover:bg-zinc-800 text-zinc-400 border-zinc-700/50"
                     }`}
                     title="Grafik Ekran Görüntüsü Yükle"
                   >
@@ -1314,7 +1323,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                   <button
                     onClick={() => handleSendMessage()}
                     disabled={(!inputPrompt.trim() && !attachedImage) || isLoading}
-                    className="w-9 h-9 rounded-xl bg-blue-500/15 hover:bg-blue-500/25 disabled:bg-zinc-800/50 disabled:border-zinc-700/50 disabled:text-zinc-500 text-blue-400 flex items-center justify-center transition-all duration-200 cursor-pointer shrink-0 shadow-xs border border-blue-500/30 active:scale-95"
+                    className="w-9 h-9 rounded-xl bg-blue-500/15 hover:bg-blue-500/25 disabled:bg-zinc-800/50 disabled:border-zinc-700/50 disabled:text-zinc-500 text-blue-400 flex items-center justify-center transition-colors duration-200 cursor-pointer shrink-0 shadow-xs border border-blue-500/30"
                   >
                     <Send size={14} />
                   </button>
@@ -1333,14 +1342,14 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                 transition={{ duration: 0.15, ease: "easeOut" }}
                 className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 min-h-0 copilot-scrollbar"
               >
-              <div className="bg-zinc-800/30 border border-zinc-800/60 rounded-xl p-4">
+              <div className="bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm rounded-xl p-4">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">
                         Disiplin & Risk Sağlık Karnesi
                       </span>
-                      <span className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-zinc-900 ${healthMetrics.color}`}>
+                      <span className={`px-2 py-0.5 rounded-lg text-[9px] font-mono font-bold bg-zinc-900 ${healthMetrics.color}`}>
                         {healthMetrics.label}
                       </span>
                     </div>
@@ -1357,7 +1366,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                       setActiveTab("chat");
                       handleSendMessage("Mevcut disiplin skorumu detaylı analiz et ve puanımı artırmak için bana özel 3 altın kural söyle.", "quick_analysis");
                     }}
-                    className="px-3 py-2 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 border border-blue-500/30 font-mono font-bold text-[11px] uppercase tracking-wider rounded-xl transition-all duration-200 cursor-pointer flex items-center gap-1.5 shadow-xs active:scale-95"
+                    className="px-3 py-2 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 border border-blue-500/30 font-mono font-bold text-[11px] uppercase tracking-wider rounded-xl transition-colors duration-200 cursor-pointer flex items-center gap-1.5 shadow-xs"
                   >
                     <Sparkles size={12} />
                     <span>Detaylı Rapor İste</span>
@@ -1373,7 +1382,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                   { label: "Ortalama R-Factor", val: `${healthMetrics.rrRatio} R`, color: "text-purple-400" },
                   { label: "Arka Arkaya Max Kayıp", val: `${healthMetrics.maxLossStreak} İşlem`, color: "text-rose-400" },
                 ].map((m, idx) => (
-                  <div key={idx} className="bg-zinc-800/20 border border-zinc-800/60 rounded-xl p-3.5 flex flex-col justify-between">
+                  <div key={idx} className="bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm rounded-xl p-3.5 flex flex-col justify-between">
                     <span className="text-[9px] font-mono uppercase text-zinc-500 block leading-tight">{m.label}</span>
                     <span className={`text-lg font-bold font-mono tracking-tight ${m.color} mt-1.5 block`}>{m.val}</span>
                   </div>
@@ -1384,7 +1393,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 
                 {/* Mood Sentiment Correlation Card */}
-                <div className="bg-zinc-800/30 border border-zinc-800/60 rounded-xl p-5 space-y-4">
+                <div className="bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm rounded-xl p-5 space-y-4">
                   <div className="flex items-center justify-between border-b border-zinc-850 pb-3">
                     <div className="flex items-center gap-2">
                       <Brain size={14} className="text-purple-400" />
@@ -1392,7 +1401,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                         AI Duygu & Performans Korelasyonu
                       </h4>
                     </div>
-                    <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                    <span className="px-2 py-0.5 rounded-lg text-[9px] font-mono font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20">
                       Zihinsel Sağlık
                     </span>
                   </div>
@@ -1448,7 +1457,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                         </div>
                       </div>
 
-                      <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-lg p-3 text-[11px] leading-relaxed text-zinc-300">
+                      <div className="bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm rounded-xl p-3 text-[11px] leading-relaxed text-zinc-300">
                         <div className="font-sans italic">
                           <span className="font-bold font-mono text-purple-400 uppercase tracking-wider not-italic block mb-1 text-[9px]">💡 Mentör Analizi & Korelasyon:</span>
                           "{journalSentimentStats.insight}"
@@ -1466,7 +1475,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                 </div>
 
                 {/* Trap Detector Card */}
-                <div className="bg-zinc-800/30 border border-zinc-800/60 rounded-xl p-5 space-y-4">
+                <div className="bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm rounded-xl p-5 space-y-4">
                   <div className="flex items-center justify-between border-b border-zinc-850 pb-3">
                     <div className="flex items-center gap-2">
                       <ShieldAlert size={14} className="text-rose-400" />
@@ -1474,14 +1483,14 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                         AI Davranışsal Hata ve Tuzak Dedektörü
                       </h4>
                     </div>
-                    <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20 animate-pulse">
+                    <span className="px-2 py-0.5 rounded-lg text-[9px] font-mono font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20 animate-pulse">
                       Canlı Dedektör
                     </span>
                   </div>
 
                   <div className="space-y-3 max-h-[220px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-zinc-900">
                     {behavioralTraps.map((trap, idx) => (
-                      <div key={idx} className="pb-3 border-b border-zinc-800/40 last:border-0 last:pb-0 space-y-1">
+                      <div key={idx} className="pb-3 border-b border-zinc-700/50/40 last:border-0 last:pb-0 space-y-1">
                         <div className="flex items-center justify-between">
                           <span className="font-mono font-bold text-[11px] text-zinc-100 flex items-center gap-1.5">
                             {trap.id !== "none" ? (
@@ -1491,7 +1500,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                             )}
                             {trap.name}
                           </span>
-                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold ${
+                          <span className={`px-2 py-0.5 rounded-lg text-[9px] font-mono font-bold ${
                             trap.severity === "high" ? "bg-red-500/10 text-red-400" : "bg-yellow-500/10 text-yellow-400"
                           }`}>
                             {trap.severity === "high" ? "Yüksek Risk" : "Orta Risk"}
@@ -1511,7 +1520,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
               </div>
 
               {/* DETAYLI DISIPLIN VE KURAL KONTROL LISTESI */}
-              <div className="bg-zinc-800/20 border border-zinc-800/60 rounded-xl p-5 space-y-4">
+              <div className="bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm rounded-xl p-5 space-y-4">
                 <div className="flex items-center gap-2 border-b border-zinc-850 pb-3">
                   <Activity size={14} className="text-blue-400" />
                   <h4 className="text-xs font-mono font-bold uppercase text-zinc-200 tracking-wider">
@@ -1524,7 +1533,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                     <span className="text-[10px] font-mono text-zinc-500 uppercase">Risk ve Para Yönetimi</span>
                     <div className="space-y-2.5">
                       {/* Rule 1: Stop and target setup */}
-                      <div className="flex items-start gap-2.5 bg-zinc-900/30 p-2.5 rounded-lg border border-zinc-800/60">
+                      <div className="flex items-start gap-2.5 bg-zinc-900/70 p-3 rounded-xl border border-zinc-700/50 backdrop-blur-sm">
                         {parseFloat(healthMetrics.rrRatio) >= 1.2 ? (
                           <CheckCircle2 size={15} className="text-emerald-400 shrink-0 mt-0.5" />
                         ) : (
@@ -1539,7 +1548,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                       </div>
 
                       {/* Rule 2: Max Drawdown Protection */}
-                      <div className="flex items-start gap-2.5 bg-zinc-900/30 p-2.5 rounded-lg border border-zinc-800/60">
+                      <div className="flex items-start gap-2.5 bg-zinc-900/70 p-3 rounded-xl border border-zinc-700/50 backdrop-blur-sm">
                         {healthMetrics.maxLossStreak < 4 ? (
                           <CheckCircle2 size={15} className="text-emerald-400 shrink-0 mt-0.5" />
                         ) : (
@@ -1559,7 +1568,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                     <span className="text-[10px] font-mono text-zinc-500 uppercase">Zihinsel Durum ve İşlem Tutarlılığı</span>
                     <div className="space-y-2.5">
                       {/* Rule 3: Mood Logging */}
-                      <div className="flex items-start gap-2.5 bg-zinc-900/30 p-2.5 rounded-lg border border-zinc-800/60">
+                      <div className="flex items-start gap-2.5 bg-zinc-900/70 p-3 rounded-xl border border-zinc-700/50 backdrop-blur-sm">
                         {journalSentimentStats.totalJournals >= 3 ? (
                           <CheckCircle2 size={15} className="text-emerald-400 shrink-0 mt-0.5" />
                         ) : (
@@ -1574,7 +1583,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                       </div>
 
                       {/* Rule 4: Overtrading and Focus */}
-                      <div className="flex items-start gap-2.5 bg-zinc-900/30 p-2.5 rounded-lg border border-zinc-800/60">
+                      <div className="flex items-start gap-2.5 bg-zinc-900/70 p-3 rounded-xl border border-zinc-700/50 backdrop-blur-sm">
                         {trades.length > 0 && trades.length <= 15 ? (
                           <CheckCircle2 size={15} className="text-emerald-400 shrink-0 mt-0.5" />
                         ) : (
@@ -1592,7 +1601,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                 </div>
 
                 {/* TRADER ARCHETYPE & CUSTOM ACTION PLAN */}
-                <div className="mt-4 p-4 bg-zinc-900/40 rounded-xl border border-zinc-800/80 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="mt-4 p-4 bg-zinc-900/70 rounded-xl border border-zinc-700/50 backdrop-blur-sm grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="md:col-span-1 space-y-1 border-r border-zinc-850 pr-4 last:border-0 last:pr-0">
                     <span className="text-[9px] font-mono text-zinc-500 uppercase">Yatırımcı Arketipiniz</span>
                     <div className="text-xs font-bold text-blue-400 flex items-center gap-1.5 mt-1">
@@ -1656,7 +1665,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Zihinsel Sağlık & Hata Korelasyonu */}
                     <div className="space-y-3">
-                      <div className="bg-zinc-950/35 border border-zinc-900/40 rounded-lg p-3 space-y-2.5">
+                      <div className="bg-zinc-950/35 border border-zinc-900/40 rounded-xl p-3.5 space-y-2.5">
                         <span className="font-mono font-bold text-purple-400 uppercase tracking-wider block text-[9px]">
                           🧠 Zihinsel Sağlık & Hata Korelasyonu
                         </span>
@@ -1665,7 +1674,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                         </p>
                       </div>
 
-                      <div className="bg-zinc-950/35 border border-zinc-900/40 rounded-lg p-3 space-y-2.5">
+                      <div className="bg-zinc-950/35 border border-zinc-900/40 rounded-xl p-3.5 space-y-2.5">
                         <span className="font-mono font-bold text-rose-400 uppercase tracking-wider block text-[9px]">
                           🛡️ Davranışsal Eğilimler & Risk
                         </span>
@@ -1676,7 +1685,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                     </div>
 
                     {/* Kişiselleştirilmiş Gelişim Yol Haritası */}
-                    <div className="bg-zinc-950/35 border border-zinc-900/40 rounded-lg p-4 flex flex-col justify-between">
+                    <div className="bg-zinc-950/35 border border-zinc-900/40 rounded-xl p-4 flex flex-col justify-between">
                       <div className="space-y-2">
                         <span className="font-mono font-bold text-emerald-400 uppercase tracking-wider block text-[9px] border-b border-zinc-900/50 pb-1.5">
                           🚀 Kişiselleştirilmiş Gelişim Yol Haritası
@@ -1814,7 +1823,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
               {
                 id: "emotional_pnl",
                 title: "Ruh Halinin Finansal Etkisi",
-                prompt: "Sistemdeki işlem günlüğü (journal) ruh halleri (mood) ile o günkü işlemlerimi eşleştirip çakıştır. Gergin veya yorgun olduğum günleyen ortalama kayıp büyüklüğü ile harika hissettiğim günlerdeki kârlılık oranını karşılaştır ve zihinsel durumumun kasama olan net finansal etkisini raporla.",
+                prompt: "Sistemdeki işlem günlüğü (journal) ruh halleri (mood) ile o günkü işlemlerimi eşleştirip çakıştır. Gergin veya yorgun olduğum günlerdeki ortalama kayıp büyüklüğü ile harika hissettiğim günlerdeki kârlılık oranını karşılaştır ve zihinsel durumumun kasama olan net finansal etkisini raporla.",
                 desc: "Ruh halinizin (gergin, yorgun vb.) işlemlerinize olan net finansal etkisini çıkarır.",
                 icon: Activity,
                 iconColor: "text-rose-400",
@@ -1973,31 +1982,33 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                 transition={{ duration: 0.15, ease: "easeOut" }}
                 className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 min-h-0 flex flex-col copilot-scrollbar"
               >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-800/60 pb-3 shrink-0">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-700/50 pb-3 shrink-0">
                   <div className="text-[11px] text-zinc-500">
                     Yapay zekâ mentörünüze tek tıkla özel derinlemesine analiz yaptırabilirsiniz:
                   </div>
-                  <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
-                    <span className="text-[10px] font-mono text-zinc-400 font-bold">
-                      Sayfa {currentPage} / {totalPages}
+                  <div className="flex items-center gap-1 shrink-0 self-end sm:self-auto">
+                    <span className="text-xs font-medium text-zinc-400 tabular-nums flex items-center leading-none">
+                      Sayfa: {currentPage}/{totalPages}
                     </span>
-                    <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-md p-0.5 shadow-sm">
+                    <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-700/50 rounded-xl p-1 shadow-xs">
                       <button
                         type="button"
                         onClick={() => setPresetPage(p => Math.max(1, p - 1))}
                         disabled={currentPage <= 1}
-                        className="w-6 h-6 flex items-center justify-center rounded text-zinc-400 hover:bg-zinc-800 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent transition-colors duration-200 ease-out cursor-pointer disabled:cursor-not-allowed"
+                        className="w-6.5 h-6.5 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-400 transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed"
+                        title="Önceki Sayfa"
                       >
-                        <ChevronLeft size={12} />
+                        <ChevronLeft size={13} />
                       </button>
-                      <div className="w-[1px] h-3.5 bg-zinc-800 mx-0.5" />
+                      <div className="w-px h-3.5 bg-zinc-800" />
                       <button
                         type="button"
                         onClick={() => setPresetPage(p => Math.min(totalPages, p + 1))}
                         disabled={currentPage >= totalPages}
-                        className="w-6 h-6 flex items-center justify-center rounded text-zinc-400 hover:bg-zinc-800 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent transition-colors duration-200 ease-out cursor-pointer disabled:cursor-not-allowed"
+                        className="w-6.5 h-6.5 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-400 transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed"
+                        title="Sonraki Sayfa"
                       >
-                        <ChevronRight size={12} />
+                        <ChevronRight size={13} />
                       </button>
                     </div>
                   </div>
@@ -2023,7 +2034,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                               setActiveTab("chat");
                               handleSendMessage(preset.prompt, preset.id);
                             }}
-                            className="w-full h-full p-4.5 bg-zinc-900/40 hover:bg-zinc-900/80 border border-zinc-800/80 hover:border-blue-500/40 rounded-2xl text-left transition-all duration-200 group cursor-pointer space-y-2 flex flex-col justify-center min-h-[110px] shadow-xs hover:shadow-md hover:shadow-blue-500/5 active:scale-[0.99]"
+                            className="w-full h-full p-4.5 bg-zinc-900/70 hover:bg-zinc-800/80 border border-zinc-700/50 backdrop-blur-sm hover:border-blue-500/40 rounded-2xl text-left transition-colors duration-200 group cursor-pointer space-y-2 flex flex-col justify-center min-h-[110px] shadow-xs hover:shadow-md hover:shadow-blue-500/5"
                           >
                             <div className="space-y-2">
                               <div className={`flex items-center gap-2 ${preset.iconColor}`}>
@@ -2065,7 +2076,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                   transition={{ duration: 0.15, ease: "easeOut" }}
                   className="flex flex-col min-h-full space-y-4"
                 >
-                  <div className="flex items-center justify-between border-b border-zinc-800/60 pb-3">
+                  <div className="flex items-center justify-between border-b border-zinc-700/50 pb-3">
                     <div className="flex items-center gap-2">
                       <Bookmark size={15} className="text-amber-400" />
                       <span className="text-xs font-mono font-bold uppercase text-zinc-200 tracking-wider">Kaydedilen Notlar</span>
@@ -2084,7 +2095,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                       {savedNotes.map((note) => (
                         <div
                           key={note.id}
-                          className="bg-zinc-900/40 hover:bg-zinc-900/80 border border-zinc-800/80 hover:border-amber-500/40 rounded-2xl p-4 transition-all duration-200 group flex flex-col justify-between min-h-[140px] cursor-pointer shadow-xs active:scale-[0.99]"
+                          className="bg-zinc-900/70 hover:bg-zinc-800/80 border border-zinc-700/50 backdrop-blur-sm hover:border-amber-500/40 rounded-2xl p-4 transition-colors duration-200 group flex flex-col justify-between min-h-[140px] cursor-pointer shadow-xs"
                           onClick={() => setSelectedNoteId(note.id)}
                         >
                           <div className="space-y-2">
@@ -2145,7 +2156,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                           </div>
                           
                           <div className="mt-3 text-[9px] text-zinc-500 font-mono">
-                            Kaydedildi: {new Date(note.pinnedAt).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}
+                            Kaydedildi: {new Date(note.pinnedAt).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit", hour12: false })}
                           </div>
                         </div>
                       ))}
@@ -2164,11 +2175,11 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                         transition={{ duration: 0.15, ease: "easeOut" }}
                         className="flex flex-col min-h-full space-y-4"
                       >
-                        <div className="flex items-center justify-between border-b border-zinc-800/60 pb-3 shrink-0">
+                        <div className="flex items-center justify-between border-b border-zinc-700/50 pb-3 shrink-0">
                           <div className="flex items-center gap-3">
                             <button
                               onClick={() => setSelectedNoteId(null)}
-                              className="w-7 h-7 flex items-center justify-center rounded-lg bg-zinc-800/50 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
+                              className="w-7 h-7 flex items-center justify-center rounded-xl bg-zinc-800/50 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
                             >
                               <ArrowLeft size={14} />
                             </button>
@@ -2192,7 +2203,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                                       setEditingNoteId(null);
                                     }
                                   }}
-                                  className="bg-zinc-900 border border-amber-500/50 rounded px-2 py-1 text-sm font-bold font-mono text-zinc-200 outline-none w-full max-w-[300px]"
+                                  className="bg-zinc-900 border border-amber-500/50 rounded-xl px-2.5 py-1 text-sm font-bold font-mono text-zinc-200 outline-none w-full max-w-[300px]"
                                 />
                             ) : (
                               <h3 className="font-mono font-bold text-sm text-zinc-200 flex items-center gap-2 group">
@@ -2214,14 +2225,14 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                             onClick={() => {
                               copyToClipboard(activeNote.content, activeNote.id);
                             }}
-                            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-zinc-800/50 hover:bg-zinc-800 text-zinc-300 rounded-lg text-xs font-mono transition-colors"
+                            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-zinc-800/50 hover:bg-zinc-800 text-zinc-300 rounded-xl text-xs font-mono transition-colors"
                           >
                             {copiedId === activeNote.id ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
                             {copiedId === activeNote.id ? "Kopyalandı" : "Kopyala"}
                           </button>
                         </div>
                         
-                        <div className="flex-1 overflow-y-auto bg-zinc-800/20 border border-zinc-800/60 rounded-xl p-4 sm:p-5 prose prose-invert prose-sm max-w-none copilot-scrollbar">
+                        <div className="flex-1 overflow-y-auto bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm rounded-xl p-4 sm:p-5 prose prose-invert prose-sm max-w-none copilot-scrollbar">
                           <Markdown>{activeNote.content}</Markdown>
                         </div>
                       </motion.div>

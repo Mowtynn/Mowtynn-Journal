@@ -46,7 +46,8 @@ const TradeDetailModal = React.memo(function TradeDetailModal({ trade, onClose, 
       month: 'long',
       year: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
+      hour12: false
     });
   };
 
@@ -64,47 +65,47 @@ const TradeDetailModal = React.memo(function TradeDetailModal({ trade, onClose, 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.15, ease: "easeOut" }}
           onClick={onClose}
           className="fixed inset-0 z-[1100] bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-4"
           style={{ willChange: 'opacity' }}
         >
-          {/* Container Card with Motion spring effects */}
+          {/* Container Card with Soft, Fluid transitions */}
           <motion.div 
-            initial={{ opacity: 0, scale: 0.94, y: 16 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.94, y: 16 }}
-            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            style={{ willChange: 'transform, opacity' }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            style={{ willChange: 'opacity' }}
             onClick={(e) => e.stopPropagation()}
             id="trade-detail-popup" 
-            className="w-full max-w-xl bg-zinc-950/60 border border-zinc-800/80 rounded-xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]"
+            className="w-full max-w-xl bg-zinc-900 border border-zinc-700/50 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
           >
               {/* Header Bar */}
-              <div className="border-b border-zinc-800/80 p-4 flex justify-between items-center bg-zinc-950/40">
+              <div className="border-b border-zinc-700/40 px-5 py-4 flex justify-between items-center bg-zinc-900/60 shrink-0">
                 <div className="flex items-center gap-2">
                   <span className="text-base font-black text-zinc-100 font-sans tracking-wider uppercase">{trade.asset}</span>
                   {trade.type === 'LONG' ? (
-                    <span className="text-emerald-400 bg-emerald-400/10 border border-emerald-400/15 text-[9px] font-black px-2 py-0.5 rounded font-sans tracking-wider">
+                    <span className="text-emerald-400 bg-emerald-400/10 border border-emerald-400/15 text-[9px] font-black px-2.5 py-0.5 rounded-lg font-sans tracking-wider">
                       LONG
                     </span>
                   ) : (
-                    <span className="text-rose-400 bg-rose-400/10 border border-rose-400/15 text-[9px] font-black px-2 py-0.5 rounded font-sans tracking-widest">
+                    <span className="text-rose-400 bg-rose-400/10 border border-rose-400/15 text-[9px] font-black px-2.5 py-0.5 rounded-lg font-sans tracking-widest">
                       SHORT
                     </span>
                   )}
 
                   {/* Status Pills */}
                   {isWin ? (
-                    <span className="text-emerald-400 bg-emerald-500/10 border border-emerald-500/25 text-[9px] font-bold px-2 py-0.5 rounded flex items-center gap-1">
+                    <span className="text-emerald-400 bg-emerald-500/10 border border-emerald-500/25 text-[9px] font-bold px-2.5 py-0.5 rounded-lg flex items-center gap-1">
                       🏆 WIN
                     </span>
                   ) : isLoss ? (
-                    <span className="text-rose-400 bg-rose-500/10 border border-rose-500/25 text-[9px] font-bold px-2 py-0.5 rounded flex items-center gap-1 font-mono">
+                    <span className="text-rose-400 bg-rose-500/10 border border-rose-500/25 text-[9px] font-bold px-2.5 py-0.5 rounded-lg flex items-center gap-1 font-mono">
                       📉 LOSS
                     </span>
                   ) : (
-                    <span className="text-zinc-400 bg-zinc-800/80 border border-zinc-700/60 text-[9px] font-bold px-2 py-0.5 rounded">
+                    <span className="text-zinc-400 bg-zinc-800/80 border border-zinc-700/60 text-[9px] font-bold px-2.5 py-0.5 rounded-lg">
                       ⚡ BREAKEVEN
                     </span>
                   )}
@@ -114,7 +115,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({ trade, onClose, 
                   {onDelete && (
                     <button
                       onClick={() => setShowDeleteConfirm(true)}
-                      className="text-[9px] bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/25 text-rose-400 font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition-colors duration-200 ease-out cursor-pointer uppercase font-mono"
+                      className="text-[9px] bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/25 text-rose-400 font-bold px-3 py-1.5 rounded-xl flex items-center gap-1 transition-colors duration-200 ease-out cursor-pointer uppercase font-mono"
                       title="İşlemi Sil"
                     >
                       <Trash2 size={11} /> Sil
@@ -125,13 +126,13 @@ const TradeDetailModal = React.memo(function TradeDetailModal({ trade, onClose, 
                       onEdit(trade);
                       onClose();
                     }}
-                    className="text-[9px] bg-zinc-800 hover:bg-zinc-700 hover:border-zinc-600 border border-zinc-700/80 text-zinc-100 font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors duration-200 ease-out cursor-pointer uppercase font-mono"
+                    className="text-[9px] bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/40 text-blue-300 font-bold px-3.5 py-1.5 rounded-xl flex items-center gap-1 transition-all duration-150 cursor-pointer uppercase font-mono shadow-xs"
                   >
                     <Edit3 size={10} /> Düzenle
                   </button>
                   <button
                     onClick={onClose}
-                    className="p-1.5 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-zinc-200 transition-colors duration-200 ease-out cursor-pointer"
+                    className="p-1.5 hover:bg-zinc-800 rounded-xl text-zinc-400 hover:text-zinc-200 transition-colors duration-200 ease-out cursor-pointer"
                   >
                     <X size={15} />
                   </button>
@@ -139,13 +140,13 @@ const TradeDetailModal = React.memo(function TradeDetailModal({ trade, onClose, 
               </div>
 
               {/* Scrollable Document Content */}
-              <div className="overflow-y-auto p-5 space-y-4 flex-1">
+              <div className="overflow-y-auto p-5 space-y-4 flex-1 bg-zinc-950/30 custom-scrollbar">
                 
                 {/* Main Financial parameters */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   
                   {/* Financial Box */}
-                  <div className="bg-zinc-950 border border-zinc-800 rounded-lg p-3.5">
+                  <div className="bg-zinc-900/60 border border-zinc-700/50 rounded-xl p-3.5">
                     <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest block mb-2 font-mono">FİNANSAL DURUM</span>
                     <div className="space-y-1 text-xs">
                       <div className="flex justify-between items-center">
@@ -158,7 +159,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({ trade, onClose, 
                   </div>
 
                   {/* R:R Multiplier/target Box */}
-                  <div className="bg-zinc-950 border border-zinc-800 rounded-lg p-3.5">
+                  <div className="bg-zinc-900/60 border border-zinc-700/50 rounded-xl p-3.5">
                     <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest block mb-1.5 font-mono">PROFİT / RİSK YÖNETİMİ</span>
                     <div className="space-y-1 font-mono text-xs">
                       <div className="flex justify-between items-center">
@@ -174,7 +175,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({ trade, onClose, 
 
                 {/* Date and Custom platform notes */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="bg-zinc-950 border border-zinc-800 rounded-lg p-3.5">
+                  <div className="bg-zinc-900/60 border border-zinc-700/50 rounded-xl p-3.5">
                     <div className="flex items-center gap-1.5 text-zinc-500 text-[9px] font-black mb-2 uppercase tracking-widest font-mono">
                       📅 İŞLEM ZAMANI
                     </div>
@@ -186,20 +187,20 @@ const TradeDetailModal = React.memo(function TradeDetailModal({ trade, onClose, 
                       {(trade.timeframe || trade.htfTimeframe || trade.session) && (
                         <div className="flex flex-wrap gap-1 mt-1">
                           {trade.htfTimeframe && (
-                            <span key="htf" className="bg-rose-500/10 border border-rose-500/30 text-rose-300 px-2 py-0.5 rounded text-[9px] uppercase tracking-wider font-bold">{trade.htfTimeframe}</span>
+                            <span key="htf" className="bg-rose-500/10 border border-rose-500/30 text-rose-300 px-2 py-0.5 rounded-lg text-[9px] uppercase tracking-wider font-bold">{trade.htfTimeframe}</span>
                           )}
                           {trade.timeframe && (
-                            <span key="tf" className="bg-blue-500/10 border border-blue-500/30 text-blue-300 px-2 py-0.5 rounded text-[9px] uppercase tracking-wider font-bold">{trade.timeframe}</span>
+                            <span key="tf" className="bg-blue-500/10 border border-blue-500/30 text-blue-300 px-2 py-0.5 rounded-lg text-[9px] uppercase tracking-wider font-bold">{trade.timeframe}</span>
                           )}
                           {trade.session && (
-                            <span key="sess" className="bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded text-[9px] uppercase tracking-wider font-bold">{trade.session}</span>
+                            <span key="sess" className="bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded-lg text-[9px] uppercase tracking-wider font-bold">{trade.session}</span>
                           )}
                         </div>
                       )}
                     </div>
                   </div>
 
-                  <div className="bg-zinc-950 border border-zinc-800 rounded-lg p-3.5">
+                  <div className="bg-zinc-900/60 border border-zinc-700/50 rounded-xl p-3.5">
                     <div className="flex items-center gap-1.5 text-zinc-500 text-[9px] font-black mb-2 uppercase tracking-widest font-mono">
                       🖥️ İŞLEM BAĞLAMI
                     </div>
@@ -215,7 +216,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({ trade, onClose, 
                       {trade.confirmations && trade.confirmations.length > 0 && (
                         <div className="flex gap-1 flex-wrap mt-1">
                           {trade.confirmations.map((c, idx) => (
-                            <span key={`${c}-${idx}`} className="bg-blue-500/10 border border-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded text-[9px] tracking-widest">{c}</span>
+                            <span key={`${c}-${idx}`} className="bg-blue-500/10 border border-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded-lg text-[9px] tracking-widest">{c}</span>
                           ))}
                         </div>
                       )}
@@ -223,11 +224,11 @@ const TradeDetailModal = React.memo(function TradeDetailModal({ trade, onClose, 
                   </div>
                 </div>
 
-                <div className="bg-zinc-950 border border-zinc-800 rounded-lg p-3.5">
+                <div className="bg-zinc-900/60 border border-zinc-700/50 rounded-xl p-3.5">
                   <div className="flex items-center gap-1.5 text-zinc-500 text-[9px] font-black mb-2 uppercase tracking-widest font-mono">
                     <FileText size={11} className="text-blue-400" /> GİRİŞ / ANALİZ NOTLARI
                   </div>
-                  <div className="bg-zinc-950/60 border border-zinc-800/80 rounded-lg p-2.5 text-[10px] leading-relaxed text-zinc-300 min-h-[70px] whitespace-pre-wrap font-sans">
+                  <div className="bg-zinc-950/50 border border-zinc-800/80 rounded-xl p-2.5 text-[10px] leading-relaxed text-zinc-300 min-h-[70px] whitespace-pre-wrap font-sans">
                     {trade.notes ? trade.notes : "Bu işlem için henüz bir kurgu veya analiz notu eklenmemiş."}
                   </div>
                 </div>
@@ -240,9 +241,9 @@ const TradeDetailModal = React.memo(function TradeDetailModal({ trade, onClose, 
                   </div>
                   
                   {trade.screenshot ? (
-                    <div className="relative rounded-xl overflow-hidden border border-zinc-800/80 bg-zinc-950/60 p-1 ">
+                    <div className="relative rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-900/60 p-1.5 ">
                       {imageError ? (
-                        <div className="flex flex-col items-center justify-center p-6 text-center text-rose-400 bg-zinc-950 rounded-lg min-h-[140px]">
+                        <div className="flex flex-col items-center justify-center p-6 text-center text-rose-400 bg-zinc-950/60 rounded-xl min-h-[140px]">
                           <span className="text-sm mb-1">⚠️</span>
                           <p className="text-[10px] font-medium font-sans">Görsel yüklenemedi</p>
                           <p className="text-[9px] text-zinc-500 mt-1 max-w-xs leading-relaxed font-mono">Girdiğiniz URL geçersiz, erişilemez veya hotlink korumalı olabilir.</p>
@@ -261,7 +262,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({ trade, onClose, 
                         <img 
                           src={trade.screenshot} 
                           alt="Pasted trading setup chart" 
-                          className="rounded-lg object-contain w-full max-h-[300px]"
+                          className="rounded-xl object-contain w-full max-h-[300px]"
                           referrerPolicy="no-referrer"
                           loading="lazy"
                           decoding="async"
@@ -270,7 +271,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({ trade, onClose, 
                       )}
                     </div>
                   ) : (
-                    <div className="border border-zinc-800/80 border-dashed rounded-xl p-5 text-center text-zinc-500 bg-zinc-950/60">
+                    <div className="border border-zinc-800/80 border-dashed rounded-2xl p-5 text-center text-zinc-500 bg-zinc-900/40">
                       <p className="text-[10px]">Forma herhangi bir ekran görüntüsü yüklenmemiş ya da yapıştırılmamış.</p>
                       <button
                         type="button"
@@ -289,10 +290,10 @@ const TradeDetailModal = React.memo(function TradeDetailModal({ trade, onClose, 
               </div>
 
               {/* Footer closing button */}
-              <div className="bg-zinc-900 border-t border-zinc-800/80 p-3.5 flex justify-end">
+              <div className="bg-zinc-900/60 border-t border-zinc-700/40 p-3.5 px-5 flex justify-end shrink-0">
                 <button
                   onClick={onClose}
-                  className="bg-zinc-100 hover:bg-zinc-200 text-zinc-900 text-[10px] font-black tracking-widest px-5 py-2 rounded-lg uppercase font-mono transition-colors duration-200 ease-out cursor-pointer"
+                  className="bg-zinc-100 hover:bg-zinc-200 text-zinc-900 text-[10px] font-black tracking-widest px-5 py-2 rounded-xl uppercase font-mono transition-colors duration-200 ease-out cursor-pointer"
                 >
                   Kapat
                 </button>
@@ -308,21 +309,19 @@ const TradeDetailModal = React.memo(function TradeDetailModal({ trade, onClose, 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
             className="fixed inset-0 z-[2200] bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-4"
             onClick={() => setShowDeleteConfirm(false)}
           >
             <motion.div
-              initial={{ opacity: 0, scale: 0.94, y: 14 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.94, y: 14 }}
-              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/60 rounded-2xl p-6 max-w-md w-full shadow-2xl overflow-hidden relative shadow-rose-500/5"
+              className="bg-zinc-900 border border-zinc-700/50 rounded-2xl p-6 max-w-md w-full shadow-2xl overflow-hidden relative"
             >
-              <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-rose-500/30 to-transparent"></div>
-              
-              <div className="w-12 h-12 rounded-xl bg-rose-500/10 border border-rose-500/20 shadow-[0_0_15px_rgba(244,63,94,0.15)] text-rose-400 flex items-center justify-center mx-auto mb-4">
+              <div className="w-12 h-12 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center mx-auto mb-4">
                 <Trash2 size={24} />
               </div>
               
@@ -351,7 +350,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({ trade, onClose, 
                       onClose();
                     }
                   }}
-                  className="flex-1 py-2.5 px-4 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 hover:border-rose-500/40 font-mono text-[11px] font-bold uppercase tracking-widest rounded-xl transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 active:scale-95"
+                  className="flex-1 py-2.5 px-4 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 hover:border-rose-500/40 font-mono text-[11px] font-bold uppercase tracking-widest rounded-xl transition-colors duration-200 cursor-pointer flex items-center justify-center gap-2"
                 >
                   <Trash2 size={13} />
                   <span>Evet, Sil</span>

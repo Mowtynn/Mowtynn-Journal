@@ -723,7 +723,7 @@ JSON Şeması (SADECE GEÇERLİ JSON DÖN):
         }
       }
     }));
-    app.get("*", (req, res) => {
+    app.get("*", (_req, res) => {
       res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
       res.sendFile(path.join(distPath, "index.html"));
     });
