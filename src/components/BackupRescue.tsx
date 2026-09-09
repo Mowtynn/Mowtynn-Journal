@@ -288,7 +288,7 @@ const BackupRescue = React.memo(function BackupRescue({
   };
 
   return (
-    <div id="settings-backup-panel" className="bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm/80 rounded-2xl p-4 sm:p-6 mt-6 shadow-xl">
+    <div id="settings-backup-panel" className="bg-zinc-900/70 border border-zinc-700/50 /80 rounded-2xl p-4 sm:p-6 mt-6 shadow-xl">
       <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-2 mb-4">
         <Database size={14} className="text-blue-400" /> {"Veritabanı ve Yedekleme (Güvenlik)"}
       </h2>

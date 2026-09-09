@@ -938,7 +938,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
       transition={{ duration: 0.15, ease: "easeOut" }}
       style={{ willChange: "opacity" }}
       onClick={onClose}
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-4 bg-zinc-950/80 backdrop-blur-sm"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-4 bg-zinc-950/80 "
     >
       <motion.div
         initial={{ opacity: 0 }}
@@ -1212,10 +1212,10 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
 
                 {isLoading && (
                   <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-xl bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm flex items-center justify-center shrink-0 text-blue-400">
+                    <div className="w-8 h-8 rounded-xl bg-zinc-900/70 border border-zinc-700/50  flex items-center justify-center shrink-0 text-blue-400">
                       <Bot size={14} className="animate-spin" />
                     </div>
-                    <div className="bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm rounded-2xl p-3 text-xs text-zinc-400 flex items-center gap-2 font-mono">
+                    <div className="bg-zinc-900/70 border border-zinc-700/50  rounded-2xl p-3 text-xs text-zinc-400 flex items-center gap-2 font-mono">
                       <Sparkles size={13} className="text-blue-400 animate-pulse" />
                       <span>Analiz ediliyor...</span>
                     </div>
@@ -1340,7 +1340,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                 transition={{ duration: 0.15, ease: "easeOut" }}
                 className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 min-h-0 copilot-scrollbar"
               >
-              <div className="bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm rounded-xl p-4">
+              <div className="bg-zinc-900/70 border border-zinc-700/50  rounded-xl p-4">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
@@ -1380,7 +1380,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                   { label: "Ortalama R-Factor", val: `${healthMetrics.rrRatio} R`, color: "text-purple-400" },
                   { label: "Arka Arkaya Max Kayıp", val: `${healthMetrics.maxLossStreak} İşlem`, color: "text-rose-400" },
                 ].map((m, idx) => (
-                  <div key={idx} className="bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm rounded-xl p-3.5 flex flex-col justify-between">
+                  <div key={idx} className="bg-zinc-900/70 border border-zinc-700/50  rounded-xl p-3.5 flex flex-col justify-between">
                     <span className="text-[9px] font-mono uppercase text-zinc-500 block leading-tight">{m.label}</span>
                     <span className={`text-lg font-bold font-mono tracking-tight ${m.color} mt-1.5 block`}>{m.val}</span>
                   </div>
@@ -1391,7 +1391,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 
                 {/* Mood Sentiment Correlation Card */}
-                <div className="bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm rounded-xl p-5 space-y-4">
+                <div className="bg-zinc-900/70 border border-zinc-700/50  rounded-xl p-5 space-y-4">
                   <div className="flex items-center justify-between border-b border-zinc-850 pb-3">
                     <div className="flex items-center gap-2">
                       <Brain size={14} className="text-purple-400" />
@@ -1455,7 +1455,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                         </div>
                       </div>
 
-                      <div className="bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm rounded-xl p-3 text-[11px] leading-relaxed text-zinc-300">
+                      <div className="bg-zinc-900/70 border border-zinc-700/50  rounded-xl p-3 text-[11px] leading-relaxed text-zinc-300">
                         <div className="font-sans italic">
                           <span className="font-bold font-mono text-purple-400 uppercase tracking-wider not-italic block mb-1 text-[9px]">💡 Mentör Analizi & Korelasyon:</span>
                           "{journalSentimentStats.insight}"
@@ -1473,7 +1473,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                 </div>
 
                 {/* Trap Detector Card */}
-                <div className="bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm rounded-xl p-5 space-y-4">
+                <div className="bg-zinc-900/70 border border-zinc-700/50  rounded-xl p-5 space-y-4">
                   <div className="flex items-center justify-between border-b border-zinc-850 pb-3">
                     <div className="flex items-center gap-2">
                       <ShieldAlert size={14} className="text-rose-400" />
@@ -1518,7 +1518,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
               </div>
 
               {/* DETAYLI DISIPLIN VE KURAL KONTROL LISTESI */}
-              <div className="bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm rounded-xl p-5 space-y-4">
+              <div className="bg-zinc-900/70 border border-zinc-700/50  rounded-xl p-5 space-y-4">
                 <div className="flex items-center gap-2 border-b border-zinc-850 pb-3">
                   <Activity size={14} className="text-blue-400" />
                   <h4 className="text-xs font-mono font-bold uppercase text-zinc-200 tracking-wider">
@@ -1531,7 +1531,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                     <span className="text-[10px] font-mono text-zinc-500 uppercase">Risk ve Para Yönetimi</span>
                     <div className="space-y-2.5">
                       {/* Rule 1: Stop and target setup */}
-                      <div className="flex items-start gap-2.5 bg-zinc-900/70 p-3 rounded-xl border border-zinc-700/50 backdrop-blur-sm">
+                      <div className="flex items-start gap-2.5 bg-zinc-900/70 p-3 rounded-xl border border-zinc-700/50 ">
                         {parseFloat(healthMetrics.rrRatio) >= 1.2 ? (
                           <CheckCircle2 size={15} className="text-emerald-400 shrink-0 mt-0.5" />
                         ) : (
@@ -1546,7 +1546,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                       </div>
 
                       {/* Rule 2: Max Drawdown Protection */}
-                      <div className="flex items-start gap-2.5 bg-zinc-900/70 p-3 rounded-xl border border-zinc-700/50 backdrop-blur-sm">
+                      <div className="flex items-start gap-2.5 bg-zinc-900/70 p-3 rounded-xl border border-zinc-700/50 ">
                         {healthMetrics.maxLossStreak < 4 ? (
                           <CheckCircle2 size={15} className="text-emerald-400 shrink-0 mt-0.5" />
                         ) : (
@@ -1566,7 +1566,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                     <span className="text-[10px] font-mono text-zinc-500 uppercase">Zihinsel Durum ve İşlem Tutarlılığı</span>
                     <div className="space-y-2.5">
                       {/* Rule 3: Mood Logging */}
-                      <div className="flex items-start gap-2.5 bg-zinc-900/70 p-3 rounded-xl border border-zinc-700/50 backdrop-blur-sm">
+                      <div className="flex items-start gap-2.5 bg-zinc-900/70 p-3 rounded-xl border border-zinc-700/50 ">
                         {journalSentimentStats.totalJournals >= 3 ? (
                           <CheckCircle2 size={15} className="text-emerald-400 shrink-0 mt-0.5" />
                         ) : (
@@ -1581,7 +1581,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                       </div>
 
                       {/* Rule 4: Overtrading and Focus */}
-                      <div className="flex items-start gap-2.5 bg-zinc-900/70 p-3 rounded-xl border border-zinc-700/50 backdrop-blur-sm">
+                      <div className="flex items-start gap-2.5 bg-zinc-900/70 p-3 rounded-xl border border-zinc-700/50 ">
                         {trades.length > 0 && trades.length <= 15 ? (
                           <CheckCircle2 size={15} className="text-emerald-400 shrink-0 mt-0.5" />
                         ) : (
@@ -1599,7 +1599,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                 </div>
 
                 {/* TRADER ARCHETYPE & CUSTOM ACTION PLAN */}
-                <div className="mt-4 p-4 bg-zinc-900/70 rounded-xl border border-zinc-700/50 backdrop-blur-sm grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="mt-4 p-4 bg-zinc-900/70 rounded-xl border border-zinc-700/50  grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="md:col-span-1 space-y-1 border-r border-zinc-850 pr-4 last:border-0 last:pr-0">
                     <span className="text-[9px] font-mono text-zinc-500 uppercase">Yatırımcı Arketipiniz</span>
                     <div className="text-xs font-bold text-blue-400 flex items-center gap-1.5 mt-1">
@@ -2030,7 +2030,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                               setActiveTab("chat");
                               handleSendMessage(preset.prompt, preset.id);
                             }}
-                            className="w-full h-full p-4.5 bg-zinc-900/70 hover:bg-zinc-800/80 border border-zinc-700/50 backdrop-blur-sm hover:border-blue-500/40 rounded-2xl text-left transition-colors duration-200 group cursor-pointer space-y-2 flex flex-col justify-center min-h-[110px] shadow-xs hover:shadow-md hover:shadow-blue-500/5"
+                            className="w-full h-full p-4.5 bg-zinc-900/70 hover:bg-zinc-800/80 border border-zinc-700/50  hover:border-blue-500/40 rounded-2xl text-left transition-colors duration-200 group cursor-pointer space-y-2 flex flex-col justify-center min-h-[110px] shadow-xs hover:shadow-md hover:shadow-blue-500/5"
                           >
                             <div className="space-y-2">
                               <div className={`flex items-center gap-2 ${preset.iconColor}`}>
@@ -2091,7 +2091,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                       {savedNotes.map((note) => (
                         <div
                           key={note.id}
-                          className="bg-zinc-900/70 hover:bg-zinc-800/80 border border-zinc-700/50 backdrop-blur-sm hover:border-amber-500/40 rounded-2xl p-4 transition-colors duration-200 group flex flex-col justify-between min-h-[140px] cursor-pointer shadow-xs"
+                          className="bg-zinc-900/70 hover:bg-zinc-800/80 border border-zinc-700/50  hover:border-amber-500/40 rounded-2xl p-4 transition-colors duration-200 group flex flex-col justify-between min-h-[140px] cursor-pointer shadow-xs"
                           onClick={() => setSelectedNoteId(note.id)}
                         >
                           <div className="space-y-2">
@@ -2228,7 +2228,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                           </button>
                         </div>
                         
-                        <div className="flex-1 overflow-y-auto bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm rounded-xl p-4 sm:p-5 prose prose-invert prose-sm max-w-none copilot-scrollbar">
+                        <div className="flex-1 overflow-y-auto bg-zinc-900/70 border border-zinc-700/50  rounded-xl p-4 sm:p-5 prose prose-invert prose-sm max-w-none copilot-scrollbar">
                           <Markdown>{activeNote.content}</Markdown>
                         </div>
                       </motion.div>

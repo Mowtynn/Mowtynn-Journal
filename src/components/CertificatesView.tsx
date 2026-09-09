@@ -308,7 +308,7 @@ export function CertificatesView({ certificates, onSaveCertificate, onDeleteCert
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className="fixed inset-0 z-[1200] overflow-y-auto bg-zinc-950/80 backdrop-blur-sm p-4 sm:p-6 flex items-center justify-center"
+            className="fixed inset-0 z-[1200] overflow-y-auto bg-zinc-950/80  p-4 sm:p-6 flex items-center justify-center"
             onClick={() => setIsModalOpen(false)}
           >
             <motion.div
@@ -482,7 +482,7 @@ export function CertificatesView({ certificates, onSaveCertificate, onDeleteCert
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
             onClick={() => setSelectedImage(null)}
-            className="fixed inset-0 z-[1300] flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm"
+            className="fixed inset-0 z-[1300] flex items-center justify-center p-4 bg-zinc-950/80 "
           >
             <button
               type="button"
@@ -513,7 +513,7 @@ export function CertificatesView({ certificates, onSaveCertificate, onDeleteCert
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className="fixed inset-0 bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-[1300]"
+            className="fixed inset-0 bg-zinc-950/80  flex items-center justify-center p-4 z-[1300]"
             onClick={() => setCertToDelete(null)}
           >
             <motion.div
@@ -573,7 +573,7 @@ function CertificateCard({ cert, onDelete, onImageClick }: { cert: Certificate, 
     <div className="bg-zinc-950/60 border border-zinc-800/80 rounded-2xl overflow-hidden group hover:border-zinc-700/80 transition-all duration-200 ease-out relative flex flex-col h-[205px] shadow-sm hover:shadow-md">
       {/* Tip Etiketi (Sol Üst Rozet) */}
       <div className="absolute top-2.5 left-2.5 z-20 pointer-events-none">
-        <span className={`inline-flex items-center gap-1 text-[9px] font-bold px-2.5 py-0.5 rounded-lg uppercase tracking-wider backdrop-blur-md border ${
+        <span className={`inline-flex items-center gap-1 text-[9px] font-bold px-2.5 py-0.5 rounded-lg uppercase tracking-wider  border ${
           isPayout 
             ? 'bg-emerald-950/80 text-emerald-400 border-emerald-500/30 shadow-sm shadow-emerald-950/50' 
             : 'bg-blue-950/80 text-blue-400 border-blue-500/30 shadow-sm shadow-blue-950/50'
@@ -587,7 +587,7 @@ function CertificateCard({ cert, onDelete, onImageClick }: { cert: Certificate, 
       <button 
         type="button"
         onClick={onDelete}
-        className="absolute top-2.5 right-2.5 bg-zinc-950/80 hover:bg-red-500/20 backdrop-blur-md text-zinc-400 hover:text-red-400 p-1.5 rounded-xl opacity-0 group-hover:opacity-100 transition-all z-20 cursor-pointer border border-white/10 hover:border-red-500/30 shadow-md"
+        className="absolute top-2.5 right-2.5 bg-zinc-950/80 hover:bg-red-500/20  text-zinc-400 hover:text-red-400 p-1.5 rounded-xl opacity-0 group-hover:opacity-100 transition-all z-20 cursor-pointer border border-white/10 hover:border-red-500/30 shadow-md"
         title="Sil"
       >
         <Trash2 size={13} />

@@ -165,7 +165,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
             transition={{ duration: 0.15, ease: "easeOut" }}
             className="w-full flex flex-col space-y-4"
           >
-            <div className="bg-zinc-950/60 border border-zinc-800/80 backdrop-blur-md rounded-2xl p-4 sm:p-5 relative overflow-hidden shadow-sm">
+            <div className="bg-zinc-950/60 border border-zinc-800/80  rounded-2xl p-4 sm:p-5 relative overflow-hidden shadow-sm">
               <div className="flex items-center gap-3">
                 <button 
                   onClick={() => setIsEditing(false)}
@@ -236,7 +236,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
             transition={{ duration: 0.15, ease: "easeOut" }}
             className="w-full flex flex-col space-y-4"
           >
-            <div className="bg-zinc-950/60 border border-zinc-800/80 backdrop-blur-md rounded-2xl p-4 sm:p-5 relative overflow-hidden shadow-sm">
+            <div className="bg-zinc-950/60 border border-zinc-800/80  rounded-2xl p-4 sm:p-5 relative overflow-hidden shadow-sm">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-3 min-w-0">
                   <button 
@@ -314,7 +314,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
             className="w-full space-y-4"
           >
             {/* Header bar */}
-            <div className="bg-zinc-950/60 border border-zinc-800/80 backdrop-blur-md rounded-2xl p-4 sm:p-5 relative overflow-hidden shadow-sm">
+            <div className="bg-zinc-950/60 border border-zinc-800/80  rounded-2xl p-4 sm:p-5 relative overflow-hidden shadow-sm">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
@@ -506,7 +506,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="fixed inset-0 z-[1200] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+            className="fixed inset-0 z-[1200] bg-black/80  flex items-center justify-center p-4"
             onClick={() => setNoteToDelete(null)}
           >
             <motion.div

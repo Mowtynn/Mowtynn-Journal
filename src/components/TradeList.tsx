@@ -64,7 +64,7 @@ const CustomSelect = React.memo(function CustomSelect({ value, onChange, options
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full h-10 sm:h-8 bg-zinc-950 hover:bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm hover:border-zinc-700/80 rounded-xl px-2.5 text-[10px] text-zinc-300 font-bold flex items-center justify-between transition-colors duration-200 ease-out cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500/20"
+        className="w-full h-10 sm:h-8 bg-zinc-950 hover:bg-zinc-900/70 border border-zinc-700/50  hover:border-zinc-700/80 rounded-xl px-2.5 text-[10px] text-zinc-300 font-bold flex items-center justify-between transition-colors duration-200 ease-out cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500/20"
       >
         <span className="truncate">{selectedOption ? selectedOption.label : placeholder}</span>
         <ChevronDown size={11} className={`text-zinc-500 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180 text-blue-400' : ''}`} />
@@ -152,7 +152,7 @@ const CustomComboBox = React.memo(function CustomComboBox({ value, onChange, opt
 
   return (
     <div className={`relative ${isOpen ? 'z-50' : 'z-10'} ${className}`} ref={dropdownRef}>
-      <div className="relative w-full h-10 sm:h-8 bg-zinc-950 hover:bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm hover:border-zinc-700/80 rounded-xl flex items-center transition-colors duration-200 ease-out focus-within:ring-1 focus-within:ring-blue-500/20 focus-within:border-blue-500/40">
+      <div className="relative w-full h-10 sm:h-8 bg-zinc-950 hover:bg-zinc-900/70 border border-zinc-700/50  hover:border-zinc-700/80 rounded-xl flex items-center transition-colors duration-200 ease-out focus-within:ring-1 focus-within:ring-blue-500/20 focus-within:border-blue-500/40">
         <input
           type="text"
           value={search}
@@ -712,7 +712,7 @@ const TradeList = React.memo(function TradeList({ trades, onEdit, onDelete, onVi
             transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
             className="relative z-30"
           >
-            <div className="bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm rounded-2xl p-4.5 shadow-sm">
+            <div className="bg-zinc-900/70 border border-zinc-700/50  rounded-2xl p-4.5 shadow-sm">
               <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5 mb-3.5">
                 <span className="text-[10px] uppercase tracking-wider text-zinc-400 font-bold flex items-center gap-1.5">
                   <Filter size={11} className="text-blue-400" /> Filtreler & Sıralama
@@ -1223,7 +1223,7 @@ const TradeList = React.memo(function TradeList({ trades, onEdit, onDelete, onVi
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className="fixed inset-0 z-[1200] bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-4"
+            className="fixed inset-0 z-[1200] bg-zinc-950/80  flex items-center justify-center p-4"
             onClick={() => setTradeToDelete(null)}
           >
             <motion.div

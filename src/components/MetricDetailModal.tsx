@@ -62,7 +62,7 @@ export function MetricDetailModal({
           transition={{ duration: 0.15, ease: "easeOut" }}
           style={{ willChange: 'opacity' }}
           onClick={onClose}
-          className="fixed inset-0 bg-zinc-950/80 backdrop-blur-md z-[1000] flex items-center justify-center p-4"
+          className="fixed inset-0 bg-zinc-950/80  z-[1000] flex items-center justify-center p-4"
         >
           <motion.div
             initial={{ opacity: 0 }}

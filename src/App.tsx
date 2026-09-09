@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import Lenis from 'lenis';
+import 'lenis/dist/lenis.css';
 import { Trade, TradeStats, Note, JournalEntry, Certificate } from "./types";
 import {
   DEFAULT_PLATFORMS,
@@ -242,6 +244,28 @@ const getMinTimestamp = (limit: string): number => {
 };
 
 export default function App() {
+  useEffect(() => {
+    const lenis = new Lenis({
+      lerp: 0.12, // Lower lerp = smoother easing.
+      wheelMultiplier: 1.4, // Faster distance per scroll tick
+      smoothWheel: true,
+      syncTouch: true,
+      autoResize: true,
+    });
+
+    // Use performance.now() to ensure exact frame syncing with D3D11/ANGLE VSync
+    function raf(time: number) {
+      lenis.raf(time);
+      requestAnimationFrame(raf);
+    }
+
+    requestAnimationFrame(raf);
+
+    return () => {
+      lenis.destroy();
+    };
+  }, []);
+
   const { isRrMode, setMode } = useMetricMode();
   const isClearingRef = useRef(false);
   // Trade Ledger Database State
@@ -1771,7 +1795,7 @@ export default function App() {
         }} 
       />
       {/* 1. MODERN COMPACT NAVBAR */}
-      <header className="border-b border-zinc-800/80 bg-zinc-950/90 backdrop-blur-md sticky top-0 z-40 transition-colors duration-200">
+      <header className="border-b border-zinc-800/80 bg-zinc-950/90  sticky top-0 z-40 transition-colors duration-200">
         <div className="max-w-6xl mx-auto px-4 py-2 sm:py-2.5 flex flex-row items-center justify-between gap-3 relative">
           
           <div className="flex items-center gap-3 z-10">
@@ -2242,7 +2266,7 @@ export default function App() {
                           setEditingTrade(null);
                           setIsFormOpen(true);
                         }}
-                        className="relative overflow-hidden bg-zinc-900/60 border border-zinc-800/80 backdrop-blur-md hover:border-blue-500/40 rounded-2xl p-4 sm:p-4.5 flex flex-col sm:flex-row items-center justify-between gap-3 cursor-pointer transition-all duration-200 ease-out select-none group shadow-xs hover:shadow-md hover:shadow-blue-500/5"
+                        className="relative overflow-hidden bg-zinc-900/60 border border-zinc-800/80  hover:border-blue-500/40 rounded-2xl p-4 sm:p-4.5 flex flex-col sm:flex-row items-center justify-between gap-3 cursor-pointer transition-all duration-200 ease-out select-none group shadow-xs hover:shadow-md hover:shadow-blue-500/5"
                       >
                         <div className="flex items-center gap-3">
                           <div className="h-9 w-9 rounded-xl bg-blue-500/10 border border-blue-500/20 group-hover:bg-blue-500/20 group-hover:border-blue-500/40 flex items-center justify-center text-blue-400 transition-colors duration-200 ease-out shrink-0 shadow-xs">
@@ -2455,7 +2479,7 @@ export default function App() {
               transition={{ duration: 0.15, ease: "easeOut" }}
               style={{ willChange: "opacity" }}
               onClick={handleCancelEdit}
-              className="fixed inset-0 z-[1500] overflow-hidden bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 cursor-pointer"
+              className="fixed inset-0 z-[1500] overflow-hidden bg-zinc-950/80 flex items-center justify-center p-2 sm:p-4 cursor-pointer"
             >
               <motion.div
                 initial={{ opacity: 0 }}

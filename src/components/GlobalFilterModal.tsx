@@ -410,7 +410,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = ({
           exit={{ opacity: 0 }}
           transition={{ duration: 0.15, ease: "easeOut" }}
           style={{ willChange: 'opacity' }}
-          className="fixed inset-0 bg-zinc-950/80 backdrop-blur-sm z-[1500] flex justify-center items-center p-3 sm:p-4 overflow-y-auto"
+          className="fixed inset-0 bg-zinc-950/80  z-[1500] flex justify-center items-center p-3 sm:p-4 overflow-y-auto"
           onClick={onClose}
         >
           <motion.div

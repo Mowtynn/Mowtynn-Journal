@@ -266,7 +266,7 @@ export function TurkishDateTimePicker({ value, onChange, className = '' }: Turki
               setActiveDropdown('none');
             }
           }}
-          className="absolute bottom-full mb-2 left-0 z-50 w-[280px] sm:w-[290px] bg-zinc-900/98 border border-zinc-700/60 backdrop-blur-xl rounded-2xl p-3.5 shadow-2xl shadow-black/80 animate-in fade-in zoom-in-95 duration-150 select-none"
+          className="absolute bottom-full mb-2 left-0 z-50 w-[280px] sm:w-[290px] bg-zinc-900/98 border border-zinc-700/60  rounded-2xl p-3.5 shadow-2xl shadow-black/80 animate-in fade-in zoom-in-95 duration-150 select-none"
         >
           {/* Quick Preset Buttons */}
           <div className="flex items-center gap-1.5 mb-3 pb-2.5 border-b border-zinc-800/80">
@@ -400,7 +400,7 @@ export function TurkishDateTimePicker({ value, onChange, className = '' }: Turki
                   <div
                     ref={hourDropdownRef}
                     onClick={(e) => e.stopPropagation()}
-                    className="absolute bottom-full mb-1.5 left-0 w-20 max-h-44 overflow-y-auto bg-zinc-900/98 border border-zinc-700/80 rounded-xl p-1 shadow-2xl z-50 backdrop-blur-md space-y-0.5"
+                    className="absolute bottom-full mb-1.5 left-0 w-20 max-h-44 overflow-y-auto bg-zinc-900/98 border border-zinc-700/80 rounded-xl p-1 shadow-2xl z-50  space-y-0.5"
                     style={{
                       scrollbarWidth: 'thin',
                       scrollbarColor: 'rgba(113, 113, 122, 0.45) rgba(24, 24, 27, 0.6)'
@@ -454,7 +454,7 @@ export function TurkishDateTimePicker({ value, onChange, className = '' }: Turki
                   <div
                     ref={minuteDropdownRef}
                     onClick={(e) => e.stopPropagation()}
-                    className="absolute bottom-full mb-1.5 left-0 w-20 max-h-44 overflow-y-auto bg-zinc-900/98 border border-zinc-700/80 rounded-xl p-1 shadow-2xl z-50 backdrop-blur-md space-y-0.5"
+                    className="absolute bottom-full mb-1.5 left-0 w-20 max-h-44 overflow-y-auto bg-zinc-900/98 border border-zinc-700/80 rounded-xl p-1 shadow-2xl z-50  space-y-0.5"
                     style={{
                       scrollbarWidth: 'thin',
                       scrollbarColor: 'rgba(113, 113, 122, 0.45) rgba(24, 24, 27, 0.6)'
@@ -704,7 +704,7 @@ export function TurkishDatePicker({
       {isOpen && (
         <div 
           onClick={(e) => e.stopPropagation()}
-          className={`absolute ${popupPositionClass} left-0 z-50 w-[280px] sm:w-[290px] bg-zinc-900/98 border border-zinc-700/60 backdrop-blur-xl rounded-2xl p-3.5 shadow-2xl shadow-black/80 animate-in fade-in zoom-in-95 duration-150 select-none`}
+          className={`absolute ${popupPositionClass} left-0 z-50 w-[280px] sm:w-[290px] bg-zinc-900/98 border border-zinc-700/60  rounded-2xl p-3.5 shadow-2xl shadow-black/80 animate-in fade-in zoom-in-95 duration-150 select-none`}
         >
           {/* Quick Preset Buttons */}
           {showPresets && (

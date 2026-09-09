@@ -64,7 +64,7 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, currency }: S
       <motion.div 
         variants={itemVariants}
         id="stat-net-pnl" 
-        className={`cursor-pointer bg-zinc-900/60 border border-zinc-800/80 backdrop-blur-md rounded-2xl p-4 ${
+        className={`cursor-pointer bg-zinc-900/60 border border-zinc-800/80  rounded-2xl p-4 ${
           isPnlPositive 
             ? 'hover:bg-emerald-950/15 hover:border-emerald-500/40' 
             : isPnlNegative 
@@ -135,7 +135,7 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, currency }: S
       <motion.div 
         variants={itemVariants}
         id="stat-win-rate" 
-        className="cursor-pointer bg-zinc-900/60 border border-zinc-800/80 backdrop-blur-md hover:bg-zinc-800/50 hover:border-zinc-700/80 rounded-2xl p-4 transition-colors duration-200 ease-out flex flex-col justify-between group shadow-xs"
+        className="cursor-pointer bg-zinc-900/60 border border-zinc-800/80  hover:bg-zinc-800/50 hover:border-zinc-700/80 rounded-2xl p-4 transition-colors duration-200 ease-out flex flex-col justify-between group shadow-xs"
       >
         <div className="flex items-center justify-between mb-2">
           <p className="text-[10px] font-bold uppercase text-zinc-400 tracking-wider font-mono flex items-center gap-1.5">
@@ -195,7 +195,7 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, currency }: S
       <motion.div 
         variants={itemVariants}
         id="stat-profit-factor" 
-        className="cursor-pointer bg-zinc-900/60 border border-zinc-800/80 backdrop-blur-md hover:bg-zinc-800/50 hover:border-zinc-700/80 rounded-2xl p-4 transition-colors duration-200 ease-out flex flex-col justify-between group shadow-xs"
+        className="cursor-pointer bg-zinc-900/60 border border-zinc-800/80  hover:bg-zinc-800/50 hover:border-zinc-700/80 rounded-2xl p-4 transition-colors duration-200 ease-out flex flex-col justify-between group shadow-xs"
       >
         <div className="flex items-center justify-between mb-2">
           <p className="text-[10px] font-bold uppercase text-zinc-400 tracking-wider font-mono flex items-center gap-1.5">
@@ -233,7 +233,7 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, currency }: S
       <motion.div 
         variants={itemVariants}
         id="stat-win-loss-ratio" 
-        className="cursor-pointer bg-zinc-900/60 border border-zinc-800/80 backdrop-blur-md hover:bg-zinc-800/50 hover:border-zinc-700/80 rounded-2xl p-4 transition-colors duration-200 ease-out flex flex-col justify-between group shadow-xs"
+        className="cursor-pointer bg-zinc-900/60 border border-zinc-800/80  hover:bg-zinc-800/50 hover:border-zinc-700/80 rounded-2xl p-4 transition-colors duration-200 ease-out flex flex-col justify-between group shadow-xs"
       >
         <div className="flex items-center justify-between mb-2">
           <p className="text-[10px] font-bold uppercase text-zinc-400 tracking-wider font-mono flex items-center gap-1.5">
@@ -284,7 +284,7 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, currency }: S
       {/* Secondary Row: Insights */}
       <motion.div 
         variants={itemVariants}
-        className="relative overflow-hidden col-span-1 md:col-span-2 cursor-pointer hover:bg-zinc-800/50 hover:border-zinc-700/80 bg-zinc-900/60 border border-zinc-800/80 backdrop-blur-md rounded-2xl p-4 shadow-xs transition-colors duration-200 ease-out flex flex-col justify-between group"
+        className="relative overflow-hidden col-span-1 md:col-span-2 cursor-pointer hover:bg-zinc-800/50 hover:border-zinc-700/80 bg-zinc-900/60 border border-zinc-800/80  rounded-2xl p-4 shadow-xs transition-colors duration-200 ease-out flex flex-col justify-between group"
       >
         <div className="flex justify-between items-center mb-3">
           <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 font-mono flex items-center gap-1.5">
@@ -308,7 +308,7 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, currency }: S
 
       <motion.div 
         variants={itemVariants}
-        className="relative overflow-hidden col-span-1 md:col-span-2 cursor-pointer hover:bg-zinc-800/50 hover:border-zinc-700/80 bg-zinc-900/60 border border-zinc-800/80 backdrop-blur-md rounded-2xl p-4 shadow-xs transition-colors duration-200 ease-out flex flex-col justify-between group"
+        className="relative overflow-hidden col-span-1 md:col-span-2 cursor-pointer hover:bg-zinc-800/50 hover:border-zinc-700/80 bg-zinc-900/60 border border-zinc-800/80  rounded-2xl p-4 shadow-xs transition-colors duration-200 ease-out flex flex-col justify-between group"
       >
         <div className="flex justify-between items-center mb-3">
           <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 font-mono flex items-center gap-1.5">

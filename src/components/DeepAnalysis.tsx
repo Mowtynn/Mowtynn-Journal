@@ -589,7 +589,7 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
 
   if (trades.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center p-12 text-center bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm rounded-2xl shadow-sm mt-4">
+      <div className="flex flex-col items-center justify-center p-12 text-center bg-zinc-900/70 border border-zinc-700/50  rounded-2xl shadow-sm mt-4">
         <LineChart size={32} className="text-zinc-600 mb-4 opacity-50" />
         <h3 className="text-sm font-bold text-zinc-300 font-mono mb-2">Henüz Yeterli Veri Yok</h3>
         <p className="text-[11px] text-zinc-500 max-w-sm">Derin analiz yapılabilecek filtre kriterlerinize uygun herhangi bir işlem bulunamadı.</p>
@@ -644,7 +644,7 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
 
     return (
       <div className="space-y-2 flex-1 flex flex-col relative">
-        <div className="relative bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm rounded-2xl overflow-visible flex-1 min-h-[180px]">
+        <div className="relative bg-zinc-900/70 border border-zinc-700/50  rounded-2xl overflow-visible flex-1 min-h-[180px]">
           <svg viewBox="0 0 600 180" className="absolute inset-0 w-full h-full text-cyan-500 p-2" preserveAspectRatio="none">
             <line x1="0" y1="20" x2="600" y2="20" stroke="#0f172a" strokeWidth="1" strokeDasharray="3,3" />
             <line x1="0" y1="90" x2="600" y2="90" stroke="#1e293b" strokeWidth="1" strokeDasharray="3,3" />
@@ -724,7 +724,7 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
                   left: `${(hoveredPt.x / 600) * 100}%`,
                   top: `${(hoveredPt.y / 180) * 100}%`
                 }}
-                className={`absolute pointer-events-none z-50 min-w-[160px] bg-zinc-950/95 backdrop-blur-md border border-zinc-800/80 rounded-lg p-2.5 shadow-2xl flex flex-col gap-1.5 ${
+                className={`absolute pointer-events-none z-50 min-w-[160px] bg-zinc-950/95  border border-zinc-800/80 rounded-lg p-2.5 shadow-2xl flex flex-col gap-1.5 ${
                   hoveredPt.x < 110 
                     ? "translate-x-[4%] -translate-y-[calc(100%+14px)]" 
                     : hoveredPt.x > 490 
@@ -876,7 +876,7 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
       initial="hidden"
       animate="show"
       id="deep-analytics-view"
-      className="flex flex-col w-full bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm rounded-2xl shadow-sm overflow-hidden divide-y divide-zinc-800/80 relative"
+      className="flex flex-col w-full bg-zinc-900/70 border border-zinc-700/50  rounded-2xl shadow-sm overflow-hidden divide-y divide-zinc-800/80 relative"
     >
       {/* Top 4 KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-0 divide-y md:divide-y-0 md:divide-x divide-zinc-800/80 w-full relative z-20">
@@ -988,7 +988,7 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
             </span>
           </div>
           <div className="flex items-center gap-2 font-mono text-[10px] w-full">
-            <div className="flex-1 bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm rounded-xl p-1.5">
+            <div className="flex-1 bg-zinc-900/70 border border-zinc-700/50  rounded-xl p-1.5">
               <div className="flex justify-between items-center text-[9px] mb-1">
                 <span className="text-emerald-400 font-bold">WIN</span>
                 <span className="text-emerald-400 font-bold">{metrics.statusAnalysis.win}</span>
@@ -1002,7 +1002,7 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
                 ></div>
               </div>
             </div>
-            <div className="flex-1 bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm rounded-xl p-1.5">
+            <div className="flex-1 bg-zinc-900/70 border border-zinc-700/50  rounded-xl p-1.5">
               <div className="flex justify-between items-center text-[9px] mb-1">
                 <span className="text-rose-400 font-bold">LOSS</span>
                 <span className="text-rose-400 font-bold">{metrics.statusAnalysis.loss}</span>
@@ -1016,7 +1016,7 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
                 ></div>
               </div>
             </div>
-            <div className="flex-1 bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm rounded-xl p-1.5">
+            <div className="flex-1 bg-zinc-900/70 border border-zinc-700/50  rounded-xl p-1.5">
               <div className="flex justify-between items-center text-[9px] mb-1">
                 <span className="text-zinc-300 font-bold">BE</span>
                 <span className="text-zinc-300 font-bold">{metrics.statusAnalysis.breakeven}</span>
@@ -1496,7 +1496,7 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
               exit={{ opacity: 0 }}
               transition={{ duration: 0.15, ease: "easeOut" }}
               style={{ willChange: 'opacity' }}
-              className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm"
+              className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-zinc-950/80 "
               onClick={() => setSelectedEquityPoint(null)}
             >
               <motion.div
@@ -1538,7 +1538,7 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
                     <button 
                       type="button"
                       onClick={() => setSelectedEquityPoint(null)}
-                      className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-zinc-400 hover:text-white bg-zinc-950 hover:bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm/80 rounded-lg transition-colors duration-200 ease-out cursor-pointer group shadow-xs shrink-0"
+                      className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-zinc-400 hover:text-white bg-zinc-950 hover:bg-zinc-900/70 border border-zinc-700/50 /80 rounded-lg transition-colors duration-200 ease-out cursor-pointer group shadow-xs shrink-0"
                     >
                       <X size={18} className="transition-colors" />
                     </button>

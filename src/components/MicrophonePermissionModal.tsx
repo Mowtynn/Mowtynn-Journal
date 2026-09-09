@@ -29,7 +29,7 @@ export const MicrophonePermissionModal: React.FC<MicrophonePermissionModalProps>
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[2500] flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm transition-opacity duration-200 ease-out animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[2500] flex items-center justify-center p-4 bg-zinc-950/80  transition-opacity duration-200 ease-out animate-in fade-in duration-200">
       <div 
         className="relative w-full max-w-md bg-zinc-900 border border-zinc-700/50 rounded-2xl shadow-2xl overflow-hidden p-6 text-zinc-100 animate-in fade-in-0 slide-in-from-bottom-2 duration-200"
         onClick={(e) => e.stopPropagation()}

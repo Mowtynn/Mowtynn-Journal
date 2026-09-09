@@ -67,7 +67,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({ trade, onClose, 
           exit={{ opacity: 0 }}
           transition={{ duration: 0.15, ease: "easeOut" }}
           onClick={onClose}
-          className="fixed inset-0 z-[1100] bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-[1100] bg-zinc-950/80  flex items-center justify-center p-4"
           style={{ willChange: 'opacity' }}
         >
           {/* Container Card with Soft, Fluid transitions */}
@@ -310,7 +310,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({ trade, onClose, 
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className="fixed inset-0 z-[2200] bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-4"
+            className="fixed inset-0 z-[2200] bg-zinc-950/80  flex items-center justify-center p-4"
             onClick={() => setShowDeleteConfirm(false)}
           >
             <motion.div

@@ -330,7 +330,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.15, ease: "easeOut" }}
-      className="flex flex-col md:flex-row h-[calc(100vh-170px)] min-h-[640px] bg-zinc-950/60 border border-zinc-800/80 backdrop-blur-md rounded-2xl overflow-hidden text-zinc-200 shadow-sm relative"
+      className="flex flex-col md:flex-row h-[calc(100vh-170px)] min-h-[640px] bg-zinc-950/60 border border-zinc-800/80  rounded-2xl overflow-hidden text-zinc-200 shadow-sm relative"
     >
       {/* LEFT SIDEBAR: Entry List */}
       <div className={`w-full md:w-80 lg:w-96 border-r border-zinc-800/80 flex flex-col shrink-0 ${isEditing && 'hidden md:flex'}`}>
@@ -863,7 +863,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className="fixed inset-0 z-[1200] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+            className="fixed inset-0 z-[1200] bg-black/80  flex items-center justify-center p-4"
             onClick={() => setEntryToDelete(null)}
           >
             <motion.div

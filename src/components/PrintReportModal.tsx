@@ -372,7 +372,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
           exit={{ opacity: 0 }}
           transition={{ duration: 0.15, ease: "easeOut" }}
           style={{ willChange: 'opacity' }}
-          className="fixed inset-0 z-[2000] overflow-y-auto bg-zinc-950/80 backdrop-blur-sm no-print flex flex-col justify-start items-center p-4 md:p-8"
+          className="fixed inset-0 z-[2000] overflow-y-auto bg-zinc-950/80  no-print flex flex-col justify-start items-center p-4 md:p-8"
         >
           <motion.div
             initial={{ opacity: 0 }}

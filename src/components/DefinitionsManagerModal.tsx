@@ -147,6 +147,32 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
     triggerToast(`${currentTabObj.label} varsayılan değerlere sıfırlandı.`);
   };
 
+  const [draggedItemIndex, setDraggedItemIndex] = useState<number | null>(null);
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    if (searchQuery.trim()) return; // Disable drag during search
+    setDraggedItemIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragEnter = (e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault();
+    if (searchQuery.trim()) return;
+    if (draggedItemIndex === null || draggedItemIndex === targetIndex) return;
+
+    const newList = [...activeList];
+    const itemToMove = newList[draggedItemIndex];
+    newList.splice(draggedItemIndex, 1);
+    newList.splice(targetIndex, 0, itemToMove);
+    
+    currentPersist(newList);
+    setDraggedItemIndex(targetIndex);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedItemIndex(null);
+  };
+
   // Export all definitions as JSON
   const handleExportJSON = () => {
     const data = {
@@ -201,7 +227,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.15, ease: 'easeOut' }}
-          className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-6 bg-zinc-950/80 backdrop-blur-sm overflow-y-auto"
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-6 bg-zinc-950/80  overflow-y-auto"
           onClick={onClose}
         >
           <motion.div
@@ -421,8 +447,17 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
 
                       return (
                         <div
-                          key={`${item}-${idx}`}
-                          className="flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl bg-zinc-950/40 border border-zinc-800/80 hover:border-zinc-700/80 transition-all duration-150 group"
+                          key={item}
+                          draggable={!searchQuery.trim() && !isEditing}
+                          onDragStart={(e) => handleDragStart(e, originalIndex)}
+                          onDragEnter={(e) => handleDragEnter(e, originalIndex)}
+                          onDragEnd={handleDragEnd}
+                          onDragOver={(e) => e.preventDefault()}
+                          className={`flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl border transition-all duration-150 group ${
+                            draggedItemIndex === originalIndex
+                              ? 'bg-zinc-800/80 border-blue-500/50 opacity-50 scale-[0.98]'
+                              : 'bg-zinc-950/40 border-zinc-800/80 hover:border-zinc-700/80'
+                          }`}
                         >
                           {isEditing ? (
                             <div className="flex items-center gap-2 flex-1">
@@ -512,7 +547,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.15, ease: "easeInOut" }}
-                  className="absolute inset-0 z-[10000] bg-zinc-950/85 backdrop-blur-xs flex items-center justify-center p-4"
+                  className="absolute inset-0 z-[10000] bg-zinc-950/85  flex items-center justify-center p-4"
                   onClick={() => setDeleteConfirmItem(null)}
                 >
                   <motion.div

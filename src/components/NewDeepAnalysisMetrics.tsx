@@ -154,13 +154,13 @@ export const NewDeepAnalysisMetrics = React.memo(({ metrics, currency, isRrMode,
              </div>
            </div>
            <div className="flex gap-2">
-              <div className="bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm py-1 px-2.5 rounded-xl flex items-center gap-1.5">
+              <div className="bg-zinc-900/70 border border-zinc-700/50  py-1 px-2.5 rounded-xl flex items-center gap-1.5">
                 <span className="text-[9px] uppercase text-zinc-400 font-bold font-mono">Son 10:</span>
                 <span className="text-xs font-bold text-emerald-400 font-mono">
                   {metrics.last10GrossLoss ? (metrics.last10GrossProfit / metrics.last10GrossLoss).toFixed(2) : "Sonsuz"}
                 </span>
               </div>
-              <div className="bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm py-1 px-2.5 rounded-xl flex items-center gap-1.5">
+              <div className="bg-zinc-900/70 border border-zinc-700/50  py-1 px-2.5 rounded-xl flex items-center gap-1.5">
                 <span className="text-[9px] uppercase text-zinc-400 font-bold font-mono">Genel:</span>
                 <span className="text-xs font-bold text-zinc-300 font-mono">{currentProfitFactor === Infinity ? "Sonsuz" : currentProfitFactor?.toFixed(2)}</span>
               </div>

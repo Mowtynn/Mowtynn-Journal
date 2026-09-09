@@ -235,7 +235,7 @@ export const CalendarView = React.memo(({ trades, currency, onEdit }: { trades: 
 
   return (
     <div className="w-full flex flex-col gap-3">
-       <div className="flex-1 flex flex-col bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm/80 rounded-2xl p-3 sm:p-5 shadow-xl">
+       <div className="flex-1 flex flex-col bg-zinc-900/70 border border-zinc-700/50 /80 rounded-2xl p-3 sm:p-5 shadow-xl">
           {/* Header Controls & Summary Stats */}
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-4">
              {/* Navigation */}
@@ -319,7 +319,7 @@ export const CalendarView = React.memo(({ trades, currency, onEdit }: { trades: 
              exit={{ opacity: 0 }}
              transition={{ duration: 0.15, ease: "easeOut" }}
              style={{ willChange: 'opacity' }}
-             className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm"
+             className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-zinc-950/80 "
              onClick={() => setSelectedDateStr(null)}
            >
              <motion.div
@@ -362,7 +362,7 @@ export const CalendarView = React.memo(({ trades, currency, onEdit }: { trades: 
                     <button 
                       type="button"
                       onClick={() => setSelectedDateStr(null)}
-                      className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-zinc-400 hover:text-white bg-zinc-950 hover:bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm/80 rounded-xl transition-colors duration-200 ease-out cursor-pointer group shadow-xs shrink-0"
+                      className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-zinc-400 hover:text-white bg-zinc-950 hover:bg-zinc-900/70 border border-zinc-700/50 /80 rounded-xl transition-colors duration-200 ease-out cursor-pointer group shadow-xs shrink-0"
                     >
                       <X size={18} className="transition-colors" />
                     </button>

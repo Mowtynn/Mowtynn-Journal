@@ -36,10 +36,12 @@ html {
   letter-spacing: -0.005em;
 }
 
+/* GPU Compositing (ANGLE/D3D11on12) Optimizations */
+/* Removed excessive translateZ to prevent compositor layer explosion and screen tearing */
+
 body {
   font-family: var(--font-sans);
   background-color: #121214; /* default zinc-950 */
-  scroll-behavior: smooth !important;
   scroll-padding-top: 5rem;
   text-rendering: optimizeLegibility;
   overscroll-behavior-y: none;
@@ -188,47 +190,41 @@ select:active,
 /* High-fidelity layered modern shadows */
 .shadow-premium-sm {
   box-shadow: 
-    0 1px 2px rgba(0, 0, 0, 0.3),
-    0 1px 3px rgba(0, 0, 0, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.03) !important;
+    0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
 .shadow-premium-md {
   box-shadow: 
-    0 4px 12px -2px rgba(0, 0, 0, 0.45),
-    0 2px 6px -1px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+    0 4px 10px -2px rgba(0, 0, 0, 0.5);
 }
 
 .shadow-premium-lg {
   box-shadow: 
-    0 12px 24px -6px rgba(0, 0, 0, 0.55),
-    0 4px 12px -2px rgba(0, 0, 0, 0.4),
-    inset 0 1px 1px rgba(255, 255, 255, 0.07) !important;
+    0 10px 20px -4px rgba(0, 0, 0, 0.6);
 }
 
 .shadow-premium-xl {
   box-shadow: 
-    0 24px 48px -12px rgba(0, 0, 0, 0.65),
-    0 8px 20px -4px rgba(0, 0, 0, 0.5),
-    inset 0 1px 1px rgba(255, 255, 255, 0.08) !important;
+    0 20px 40px -8px rgba(0, 0, 0, 0.7);
 }
 
 /* GPU acceleration helpers to enable buttery smooth 120Hz/120FPS rendering without layer explosion */
 .transform-gpu,
 .animate-gpu,
 .will-change-transform {
-  transform: translate3d(0, 0, 0);
-  backface-visibility: hidden;
-  perspective: 1000px;
   will-change: transform, opacity;
 }
 
 .optimize-gpu {
   will-change: transform, opacity;
-  transform: translate3d(0, 0, 0);
-  backface-visibility: hidden;
-  perspective: 1000px;
+}
+
+/* Removed pointer-events: none for scrolling as it breaks interactivity */
+
+/* Enable Content Visibility for off-screen rendering optimization on Iris Xe */
+.content-visibility-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 500px;
 }
 
 /* Hide default number input spin buttons globally */
@@ -245,6 +241,7 @@ input[type=number] {
   -webkit-tap-highlight-color: transparent;
   scrollbar-width: thin;
   scrollbar-color: rgba(82, 82, 91, 0.4) transparent;
+  overscroll-behavior-y: contain; /* Prevents scroll chaining which invalidates GPU compositor layers */
 }
 
 /* Custom Scrollbar for Webkit (Chrome, Safari, Edge) */

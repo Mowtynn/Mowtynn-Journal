@@ -137,7 +137,7 @@ export function JournalCalendar({ entries, selectedDate, onSelectDate }: Journal
   return (
     <div 
       onClick={(e) => e.stopPropagation()}
-      className="w-[280px] sm:w-[290px] bg-zinc-900/98 border border-zinc-700/60 backdrop-blur-xl rounded-2xl p-3.5 shadow-2xl shadow-black/80 select-none animate-in fade-in zoom-in-95 duration-150"
+      className="w-[280px] sm:w-[290px] bg-zinc-900/98 border border-zinc-700/60  rounded-2xl p-3.5 shadow-2xl shadow-black/80 select-none animate-in fade-in zoom-in-95 duration-150"
     >
       {/* Quick Preset / Filter Actions */}
       <div className="flex items-center gap-1.5 mb-3 pb-2.5 border-b border-zinc-800/80">

@@ -617,7 +617,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
 
   if (!metrics || !customMetrics || trades.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center p-12 text-center bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm rounded-xl transition-all duration-300 shadow-sm mt-4">
+      <div className="flex flex-col items-center justify-center p-12 text-center bg-zinc-900/70 border border-zinc-700/50  rounded-xl transition-all duration-300 shadow-sm mt-4">
         <Target size={32} className="text-zinc-600 mb-4 opacity-50" />
         <h3 className="text-sm font-bold text-zinc-300 font-mono mb-2">Henüz Yeterli Veri Yok</h3>
         <p className="text-[11px] text-zinc-500 max-w-sm">Gelişmiş metriklerin hesaplanabilmesi için sisteme tamamlanmış (WIN/LOSS) işlemler eklemelisiniz.</p>
@@ -641,7 +641,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
   );
 
   return (
-    <div className="mt-4 mb-4 flex flex-col bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm rounded-xl transition-all duration-300 shadow-sm overflow-hidden divide-y divide-zinc-800/80 w-full">
+    <div className="mt-4 mb-4 flex flex-col bg-zinc-900/70 border border-zinc-700/50  rounded-xl transition-all duration-300 shadow-sm overflow-hidden divide-y divide-zinc-800/80 w-full">
       
       {/* SEKSIYON BAŞLIĞI */}
       
@@ -940,7 +940,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
       {/* PARİTE İSTATİSTİKLERİ SECTION - REPOSITIONED HERE */}
       <motion.div 
         variants={itemVariants} 
-        className="bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm p-5 sm:p-6 shadow-sm transition-colors duration-200 rounded-xl overflow-hidden mb-3 flex flex-col justify-between min-h-[480px]"
+        className="bg-zinc-900/70 border border-zinc-700/50  p-5 sm:p-6 shadow-sm transition-colors duration-200 rounded-xl overflow-hidden mb-3 flex flex-col justify-between min-h-[480px]"
       >
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 relative z-20 w-full border-b border-zinc-800 pb-3">
           <div className="flex items-center gap-2">
@@ -965,7 +965,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                     placeholder="Ara..."
                     value={assetSearch}
                     onChange={(e) => { setAssetSearch(e.target.value); setAssetsPage(1); }}
-                    className="bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm rounded-lg px-2 py-0.5 text-[9px] font-mono text-zinc-300 focus:outline-none focus:border-zinc-700 w-20 sm:w-28 placeholder-zinc-600 h-[20px]"
+                    className="bg-zinc-900/70 border border-zinc-700/50  rounded-lg px-2 py-0.5 text-[9px] font-mono text-zinc-300 focus:outline-none focus:border-zinc-700 w-20 sm:w-28 placeholder-zinc-600 h-[20px]"
                   />
                   <div className="flex bg-transparent p-0.5 rounded-lg border border-zinc-800">
                     <button type="button" onClick={() => { setAssetFilter('all'); setAssetsPage(1); }} className={`text-[9px] font-mono px-1.5 py-0.5 rounded-md transition-colors duration-200 ease-out font-bold ${assetFilter === 'all' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}>TÜMÜ</button>
@@ -1116,7 +1116,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
         )}
       </motion.div>
 
-      <motion.div variants={itemVariants} className="bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm rounded-xl transition-all duration-300 p-4 sm:p-5 shadow-sm transition-colors duration-200 mb-2 relative overflow-visible mt-1 flex flex-col justify-between">
+      <motion.div variants={itemVariants} className="bg-zinc-900/70 border border-zinc-700/50  rounded-xl transition-all duration-300 p-4 sm:p-5 shadow-sm transition-colors duration-200 mb-2 relative overflow-visible mt-1 flex flex-col justify-between">
         {/* Header & Filter Controls */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3 relative z-30 w-full border-b border-zinc-800 pb-3.5">
           <div className="flex items-center gap-2.5">
@@ -1604,7 +1604,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
               exit={{ opacity: 0 }}
               transition={{ duration: 0.15, ease: "easeOut" }}
               style={{ willChange: 'opacity' }}
-              className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm"
+              className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-zinc-950/80 "
               onClick={() => setSelectedPerformancePeriod(null)}
             >
               <motion.div
@@ -1613,7 +1613,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.15, ease: "easeOut" }}
                 style={{ willChange: 'opacity' }}
-                className="w-full max-w-4xl max-h-[85vh] flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl relative overflow-hidden backdrop-blur-md"
+                className="w-full max-w-4xl max-h-[85vh] flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl relative overflow-hidden "
                 onClick={e => e.stopPropagation()}
               >
               {/* Header */}
@@ -1647,7 +1647,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                   <button 
                     type="button"
                     onClick={() => setSelectedPerformancePeriod(null)}
-                    className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-zinc-400 hover:text-white bg-zinc-950 hover:bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm rounded-lg transition-colors duration-200 ease-out cursor-pointer group shadow-xs shrink-0"
+                    className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-zinc-400 hover:text-white bg-zinc-950 hover:bg-zinc-900/70 border border-zinc-700/50  rounded-lg transition-colors duration-200 ease-out cursor-pointer group shadow-xs shrink-0"
                   >
                     <X size={18} className=" " />
                   </button>
@@ -1878,7 +1878,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
               exit={{ opacity: 0 }}
               transition={{ duration: 0.15, ease: "easeOut" }}
               style={{ willChange: 'opacity' }}
-              className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm"
+              className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-zinc-950/80 "
               onClick={() => setSelectedAsset(null)}
             >
               <motion.div
@@ -1887,7 +1887,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.15, ease: "easeOut" }}
                 style={{ willChange: 'opacity' }}
-                className="w-full max-w-4xl max-h-[85vh] flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl relative overflow-hidden backdrop-blur-md"
+                className="w-full max-w-4xl max-h-[85vh] flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl relative overflow-hidden "
                 onClick={e => e.stopPropagation()}
               >
                 <div className="bg-zinc-950/80 border-b border-zinc-800 px-3 py-3 sm:px-6 sm:py-4 flex items-center justify-between gap-2 sticky top-0 z-10 shrink-0 flex-wrap sm:flex-nowrap">
@@ -1919,7 +1919,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                     <button 
                       type="button"
                       onClick={() => setSelectedAsset(null)}
-                      className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-zinc-400 hover:text-white bg-zinc-950 hover:bg-zinc-900/70 border border-zinc-700/50 backdrop-blur-sm rounded-lg transition-colors duration-200 ease-out cursor-pointer group shadow-xs shrink-0"
+                      className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-zinc-400 hover:text-white bg-zinc-950 hover:bg-zinc-900/70 border border-zinc-700/50  rounded-lg transition-colors duration-200 ease-out cursor-pointer group shadow-xs shrink-0"
                     >
                       <X size={18} className=" " />
                     </button>
@@ -2210,14 +2210,14 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.15, ease: "easeOut" }}
-              className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm"
+              className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-zinc-950/80 "
             >
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.15, ease: "easeOut" }}
-                className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden backdrop-blur-md"
+                className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden "
               >
               {/* Header */}
               <div className="flex items-center justify-between p-4 sm:p-5 border-b border-zinc-800 bg-transparent">
@@ -2397,14 +2397,14 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.15, ease: "easeOut" }}
-              className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm"
+              className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-zinc-950/80 "
             >
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.15, ease: "easeOut" }}
-                className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden backdrop-blur-md"
+                className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden "
               >
               {/* Header */}
               <div className="flex items-center justify-between p-4 sm:p-5 border-b border-zinc-800 bg-transparent">
