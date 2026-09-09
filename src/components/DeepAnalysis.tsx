@@ -1769,4 +1769,4 @@ export const DeepAnalysis = React.memo(function DeepAnalysis({
   );
 });
 
-export default DeepAnalysis;
+export default React.memo(DeepAnalysis);

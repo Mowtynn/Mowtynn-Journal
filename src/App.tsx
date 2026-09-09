@@ -1,6 +1,4 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import Lenis from 'lenis';
-import 'lenis/dist/lenis.css';
 import { Trade, TradeStats, Note, JournalEntry, Certificate } from "./types";
 import {
   DEFAULT_PLATFORMS,
@@ -244,28 +242,6 @@ const getMinTimestamp = (limit: string): number => {
 };
 
 export default function App() {
-  useEffect(() => {
-    const lenis = new Lenis({
-      lerp: 0.12, // Lower lerp = smoother easing.
-      wheelMultiplier: 1.4, // Faster distance per scroll tick
-      smoothWheel: true,
-      syncTouch: true,
-      autoResize: true,
-    });
-
-    // Use performance.now() to ensure exact frame syncing with D3D11/ANGLE VSync
-    function raf(time: number) {
-      lenis.raf(time);
-      requestAnimationFrame(raf);
-    }
-
-    requestAnimationFrame(raf);
-
-    return () => {
-      lenis.destroy();
-    };
-  }, []);
-
   const { isRrMode, setMode } = useMetricMode();
   const isClearingRef = useRef(false);
   // Trade Ledger Database State
@@ -343,7 +319,7 @@ export default function App() {
   });
   const [isPlatformMenuOpen, setIsPlatformMenuOpen] = useState(false);
 
-  const persistPlatforms = (updated: string[], syncCloud = true) => {
+  const persistPlatforms = useCallback((updated: string[], syncCloud = true) => {
     setPlatforms(updated);
     try {
       localStorage.setItem("trading_platforms_list", JSON.stringify(updated));
@@ -354,7 +330,7 @@ export default function App() {
     } catch (e) {
       console.error(e);
     }
-  };
+  }, [user]);
 
   const [timeframes, setTimeframes] = useState<string[]>(() => {
     try {
@@ -366,7 +342,7 @@ export default function App() {
     return DEFAULT_TIMEFRAMES;
   });
 
-  const persistTimeframes = (updated: string[], syncCloud = true) => {
+  const persistTimeframes = useCallback((updated: string[], syncCloud = true) => {
     setTimeframes(updated);
     try {
       localStorage.setItem("trading_timeframes_list", JSON.stringify(updated));
@@ -377,7 +353,7 @@ export default function App() {
     } catch (e) {
       console.error(e);
     }
-  };
+  }, [user]);
 
   const [htfTimeframes, setHtfTimeframes] = useState<string[]>(() => {
     try {
@@ -389,7 +365,7 @@ export default function App() {
     return DEFAULT_HTF_TIMEFRAMES;
   });
 
-  const persistHtfTimeframes = (updated: string[], syncCloud = true) => {
+  const persistHtfTimeframes = useCallback((updated: string[], syncCloud = true) => {
     setHtfTimeframes(updated);
     try {
       localStorage.setItem("trading_htf_timeframes_list", JSON.stringify(updated));
@@ -400,7 +376,7 @@ export default function App() {
     } catch (e) {
       console.error(e);
     }
-  };
+  }, [user]);
 
   const [confirmations, setConfirmations] = useState<string[]>(() => {
     try {
@@ -412,7 +388,7 @@ export default function App() {
     return DEFAULT_CONFIRMATIONS;
   });
 
-  const persistConfirmations = (updated: string[], syncCloud = true) => {
+  const persistConfirmations = useCallback((updated: string[], syncCloud = true) => {
     setConfirmations(updated);
     try {
       localStorage.setItem("trading_confirmations_list", JSON.stringify(updated));
@@ -423,7 +399,7 @@ export default function App() {
     } catch (e) {
       console.error(e);
     }
-  };
+  }, [user]);
 
   const [concepts, setConcepts] = useState<string[]>(() => {
     try {
@@ -435,7 +411,7 @@ export default function App() {
     return DEFAULT_CONCEPTS;
   });
 
-  const persistConcepts = (updated: string[], syncCloud = true) => {
+  const persistConcepts = useCallback((updated: string[], syncCloud = true) => {
     setConcepts(updated);
     try {
       localStorage.setItem("trading_concepts_list", JSON.stringify(updated));
@@ -446,7 +422,7 @@ export default function App() {
     } catch (e) {
       console.error(e);
     }
-  };
+  }, [user]);
 
   const [sessions, setSessions] = useState<string[]>(() => {
     try {
@@ -458,7 +434,7 @@ export default function App() {
     return DEFAULT_SESSIONS;
   });
 
-  const persistSessions = (updated: string[], syncCloud = true) => {
+  const persistSessions = useCallback((updated: string[], syncCloud = true) => {
     setSessions(updated);
     try {
       localStorage.setItem("trading_sessions_list", JSON.stringify(updated));
@@ -469,7 +445,7 @@ export default function App() {
     } catch (e) {
       console.error(e);
     }
-  };
+  }, [user]);
 
   const [assets, setAssets] = useState<string[]>(() => {
     try {
@@ -481,7 +457,7 @@ export default function App() {
     return DEFAULT_ASSETS;
   });
 
-  const persistAssets = (updated: string[], syncCloud = true) => {
+  const persistAssets = useCallback((updated: string[], syncCloud = true) => {
     setAssets(updated);
     try {
       localStorage.setItem("trading_assets_list", JSON.stringify(updated));
@@ -492,7 +468,7 @@ export default function App() {
     } catch (e) {
       console.error(e);
     }
-  };
+  }, [user]);
 
   // Settings menu state
   // Locked to USD per request

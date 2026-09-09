@@ -439,7 +439,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                       <span>— Aranan kriterde tanım bulunamadı —</span>
                     </div>
                   ) : (
-                    filteredList.map((item, idx) => {
+                    filteredList.map((item) => {
                       const originalIndex = activeList.indexOf(item);
                       const isEditing = editingIndex === originalIndex;
                       const usageKey = `${activeTab}:${item}`;
