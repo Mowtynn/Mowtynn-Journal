@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef, startTransition } from "react";
 import { createPortal } from "react-dom";
 import { Trade, TradeStats, Note, JournalEntry, Certificate, DefinitionTitles } from "./types";
 import {
@@ -283,7 +283,9 @@ export default function App() {
   >("dashboard");
 
   const handleTabChange = useCallback((tab: typeof currentTab) => {
-    setCurrentTab(tab);
+    startTransition(() => {
+      setCurrentTab(tab);
+    });
     window.scrollTo(0, 0);
   }, []);
 

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useDeferredValue } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { ValueTransition } from "./ValueTransition";
 import { calculateProfitFactor, calculateExpectancy, calculateSortinoRatio, calculateKellyCriterion, calculateRecoveryFactor, toRR } from "../lib/statMath";
@@ -346,6 +346,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
   planFidelities = [],
 }: DeepAnalysisProps) {
   const { isRrMode } = useMetricMode();
+  const deferredTrades = useDeferredValue(trades);
   const [selectedMetric, setSelectedMetric] = useState<MetricDetail | null>(null);
   const [equityFilter, setEquityFilter] = useState<'trade' | 'daily' | 'weekly' | 'monthly'>('daily');
   const [isEquityFilterOpen, setIsEquityFilterOpen] = useState(false);
@@ -1699,7 +1700,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
         </motion.div>
       </div>
 
-      <AdvancedMetricsDashboard trades={trades} currency={currency} onMetricClick={handleMetricClick} onEdit={onEdit} sessions={sessions} />
+      <AdvancedMetricsDashboard trades={deferredTrades} currency={currency} onMetricClick={handleMetricClick} onEdit={onEdit} sessions={sessions} />
       
       <MetricDetailModal 
         isOpen={!!selectedMetric} 
