@@ -2454,7 +2454,7 @@ export default function App() {
         <div className="max-w-6xl mx-auto px-4 pt-3 mb-1">
           <div
             id="navigation-tabs"
-            className="flex items-center gap-1.5 overflow-x-auto whitespace-nowrap custom-scrollbar bg-zinc-900/60 backdrop-blur-sm border border-zinc-800/80 p-1.5 rounded-2xl shadow-sm"
+            className="flex items-center gap-1.5 overflow-x-auto whitespace-nowrap custom-scrollbar bg-zinc-900 border border-zinc-800/80 p-1.5 rounded-2xl shadow-sm"
           >
             {[
               { id: "dashboard", label: "ANA PANEL", icon: LayoutDashboard },

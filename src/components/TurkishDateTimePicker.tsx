@@ -15,7 +15,7 @@ export const TURKISH_MONTHS = [
 
 export const TURKISH_DAYS_SHORT = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
 
-export function TurkishDateTimePicker({ value, onChange, className = '' }: TurkishDateTimePickerProps) {
+export const TurkishDateTimePicker = React.memo(function TurkishDateTimePicker({ value, onChange, className = '' }: TurkishDateTimePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<'none' | 'hour' | 'minute'>('none');
   const containerRef = useRef<HTMLDivElement>(null);
@@ -589,7 +589,7 @@ export function TurkishDateTimePicker({ value, onChange, className = '' }: Turki
       )}
     </div>
   );
-}
+});
 
 interface TurkishDatePickerProps {
   value: string; // "YYYY-MM-DD" format
@@ -601,7 +601,7 @@ interface TurkishDatePickerProps {
   showPresets?: boolean;
 }
 
-export function TurkishDatePicker({
+export const TurkishDatePicker = React.memo(function TurkishDatePicker({
   value,
   onChange,
   className = '',
@@ -980,4 +980,4 @@ export function TurkishDatePicker({
       )}
     </div>
   );
-}
+});

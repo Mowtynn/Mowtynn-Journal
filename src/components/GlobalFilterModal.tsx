@@ -309,7 +309,7 @@ const FilterAccordionRow: React.FC<FilterAccordionRowProps> = ({
   );
 };
 
-export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = ({
+export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
   isOpen,
   onClose,
   trades = [],
@@ -857,4 +857,4 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = ({
     </AnimatePresence>,
     document.body
   );
-};
+});

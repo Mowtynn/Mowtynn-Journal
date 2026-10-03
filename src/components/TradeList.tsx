@@ -250,14 +250,12 @@ const CustomComboBox = React.memo(function CustomComboBox({ value, onChange, opt
 
 const MemoizedTradeRow = React.memo(function MemoizedTradeRow({ 
   trade, 
-  idx, 
   currency, 
   onViewDetails, 
   onEdit, 
   setTradeToDelete 
 }: { 
   trade: Trade; 
-  idx: number; 
   currency: string; 
   onViewDetails: (trade: Trade) => void; 
   onEdit: (trade: Trade) => void; 
@@ -266,82 +264,73 @@ const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
   const isWin = trade.status === 'WIN';
   const isLoss = trade.status === 'LOSS';
   const isBe = trade.status === 'BREAKEVEN';
-  let pnlText = '—';
-  let pnlColor = 'text-zinc-400';
-  
-  if (isBe) {
-    pnlText = `0.00 ${currency}`;
-    pnlColor = 'text-zinc-500 font-bold';
-  } else {
+
+  const { pnlText, pnlColor } = useMemo(() => {
+    if (isBe) {
+      return { pnlText: `0.00 ${currency}`, pnlColor: 'text-zinc-500 font-bold' };
+    }
     const pnlValue = trade.pnl || 0;
     const prefix = pnlValue > 0 ? '+' : '';
-    pnlText = `${prefix}${(pnlValue || 0).toLocaleString()} ${currency}`;
-    pnlColor = pnlValue > 0 ? 'text-emerald-400 font-bold' : (pnlValue < 0 ? 'text-rose-400 font-bold' : 'text-zinc-500 font-bold');
-  }
-  
-  const dateObj = new Date(trade.createdAt);
-  const formattedDateOnly = dateObj.toLocaleDateString('tr-TR', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric'
-  });
-  const formattedTimeOnly = dateObj.toLocaleTimeString('tr-TR', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false
-  });
+    const text = `${prefix}${(pnlValue || 0).toLocaleString()} ${currency}`;
+    const color = pnlValue > 0 ? 'text-emerald-400 font-bold' : (pnlValue < 0 ? 'text-rose-400 font-bold' : 'text-zinc-500 font-bold');
+    return { pnlText: text, pnlColor: color };
+  }, [isBe, trade.pnl, currency]);
+
+  const { formattedDateOnly, formattedTimeOnly } = useMemo(() => {
+    if (!trade.createdAt) return { formattedDateOnly: '—', formattedTimeOnly: '' };
+    const dateObj = new Date(trade.createdAt);
+    return {
+      formattedDateOnly: dateObj.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' }),
+      formattedTimeOnly: dateObj.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', hour12: false })
+    };
+  }, [trade.createdAt]);
 
   return (
-    <motion.tr 
-      key={trade.id ? `${trade.id}-${idx}` : `trade-${idx}`}
-      initial={{ opacity: 0, y: -5 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, x: -10 }}
-      transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+    <tr 
       onClick={() => onViewDetails(trade)}
-      className={`group select-none relative flex flex-wrap sm:table-row bg-zinc-900 sm:bg-transparent mb-2 sm:mb-0 rounded-xl sm:rounded-none border border-zinc-800/80 sm:border-none p-2 sm:p-0 align-middle cursor-pointer hover:border-blue-500/40`}
+      className="group select-none relative flex flex-wrap sm:table-row bg-zinc-900 mb-2 sm:mb-0 rounded-xl sm:rounded-none border border-zinc-800/80 sm:border-none p-2 sm:p-0 align-middle cursor-pointer hover:bg-zinc-800/50 transition-colors duration-100 cv-auto"
     >
-      <td className={`w-1/2 min-w-[130px] flex justify-start items-center sm:table-cell order-1 py-1 px-0 sm:px-3 text-zinc-400 font-sans sm:bg-zinc-900 sm:rounded-l-xl sm:border-y sm:border-l sm:border-zinc-800/80 transition-colors duration-200 align-middle sm:w-[18%] group-hover:text-zinc-100 group-hover:bg-blue-950/10 group-hover:border-blue-500/40`}>
+      <td className="w-1/2 min-w-[130px] flex justify-start items-center sm:table-cell order-1 py-1 px-0 sm:px-3 text-zinc-400 font-sans sm:bg-transparent sm:rounded-l-xl sm:border-y sm:border-l sm:border-zinc-800/80 align-middle sm:w-[18%] group-hover:text-zinc-100">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-0.5 sm:gap-1.5">
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="sm:hidden text-white font-bold text-xs uppercase">{trade.asset}</span>
           </div>
-          <span className="text-[10px] sm:text-[10px] transition-colors flex items-center gap-1.5">
+          <span className="text-[10px] sm:text-[10px] flex items-center gap-1.5">
             <span className="text-zinc-400 font-medium">{formattedDateOnly}</span>
             <span className="text-zinc-600 font-bold">•</span>
             <span className="text-zinc-500 font-sans">{formattedTimeOnly}</span>
           </span>
         </div>
       </td>
-      <td className={`hidden sm:table-cell min-w-[90px] py-1 px-0 sm:px-3 sm:bg-zinc-900 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 text-left align-middle sm:w-[14%]`}>
+      <td className="hidden sm:table-cell min-w-[90px] py-1 px-0 sm:px-3 sm:bg-transparent sm:border-y sm:border-zinc-800/80 text-left align-middle sm:w-[14%]">
         <div className="flex flex-col gap-0.5">
           <span className="text-white font-bold text-[10px] uppercase">{trade.asset}</span>
         </div>
       </td>
-      <td className={`w-1/2 min-w-[65px] flex justify-end sm:justify-center items-center sm:table-cell order-2 py-1 px-0 sm:px-2 text-center sm:bg-zinc-900 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 align-middle sm:w-[10%]`}>
+      <td className="w-1/2 min-w-[65px] flex justify-end sm:justify-center items-center sm:table-cell order-2 py-1 px-0 sm:px-2 text-center sm:bg-transparent sm:border-y sm:border-zinc-800/80 align-middle sm:w-[10%]">
         <div className="flex items-center justify-center w-full">
           {trade.type === 'LONG' ? (
-            <span className={`inline-flex items-center justify-center h-[20px] px-2 py-0 text-center text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded-full uppercase tracking-wider font-sans transition-colors w-[46px] sm:w-[54px]`}>LONG</span>
+            <span className="inline-flex items-center justify-center h-[20px] px-2 py-0 text-center text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded-full uppercase tracking-wider font-sans w-[46px] sm:w-[54px]">LONG</span>
           ) : (
-            <span className={`inline-flex items-center justify-center h-[20px] px-2 py-0 text-center text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 group-hover:border-rose-500/50 rounded-full uppercase tracking-wider font-sans transition-colors w-[46px] sm:w-[54px]`}>SHORT</span>
+            <span className="inline-flex items-center justify-center h-[20px] px-2 py-0 text-center text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 group-hover:border-rose-500/50 rounded-full uppercase tracking-wider font-sans w-[46px] sm:w-[54px]">SHORT</span>
           )}
         </div>
       </td>
-      <td className={`w-1/2 min-w-[65px] flex justify-start sm:justify-center items-center sm:table-cell order-3 py-1 px-0 sm:px-2 text-center sm:bg-zinc-900 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 align-middle sm:w-[10%]`}>
+      <td className="w-1/2 min-w-[65px] flex justify-start sm:justify-center items-center sm:table-cell order-3 py-1 px-0 sm:px-2 text-center sm:bg-transparent sm:border-y sm:border-zinc-800/80 mt-1.5 sm:mt-0 align-middle sm:w-[10%]">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-1.5 w-full justify-start sm:justify-center">
           <span className="sm:hidden text-[9px] font-bold text-zinc-500 uppercase tracking-widest leading-none h-[10px]">RR</span>
           <div className="flex items-center justify-center w-full h-[18px]">
             {trade.rr !== undefined && trade.rr !== null && trade.rr !== 0 ? (
               trade.rr > 0 ? (
-                <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded-full uppercase tracking-wider font-sans transition-colors">
+                <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded-full uppercase tracking-wider font-sans">
                   +{trade.rr}R
                 </span>
               ) : trade.rr < 0 ? (
-                <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 group-hover:border-rose-500/50 rounded-full uppercase tracking-wider font-sans transition-colors">
+                <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 group-hover:border-rose-500/50 rounded-full uppercase tracking-wider font-sans">
                   {trade.rr}R
                 </span>
               ) : (
-                <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-zinc-400 bg-zinc-500/10 border border-zinc-500/20 group-hover:border-zinc-500/50 rounded-full uppercase tracking-wider font-sans transition-colors">
+                <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-zinc-400 bg-zinc-500/10 border border-zinc-500/20 group-hover:border-zinc-500/50 rounded-full uppercase tracking-wider font-sans">
                   {trade.rr}R
                 </span>
               )
@@ -351,30 +340,30 @@ const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
           </div>
         </div>
       </td>
-      <td className={`w-1/2 min-w-[75px] flex justify-end sm:justify-center items-center sm:table-cell order-4 py-1 px-0 sm:px-2 text-center sm:bg-zinc-900 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 align-middle sm:w-[12%]`}>
+      <td className="w-1/2 min-w-[75px] flex justify-end sm:justify-center items-center sm:table-cell order-4 py-1 px-0 sm:px-2 text-center sm:bg-transparent sm:border-y sm:border-zinc-800/80 mt-1.5 sm:mt-0 align-middle sm:w-[12%]">
         <div className="flex items-center justify-center w-full h-[18px]">
           {isWin ? (
-            <span className={`inline-flex items-center justify-center h-[20px] px-2 py-0 text-center text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded-full uppercase tracking-wider font-sans transition-colors w-[46px] sm:w-[54px]`}>WIN</span>
+            <span className="inline-flex items-center justify-center h-[20px] px-2 py-0 text-center text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded-full uppercase tracking-wider font-sans w-[46px] sm:w-[54px]">WIN</span>
           ) : isLoss ? (
-            <span className={`inline-flex items-center justify-center h-[20px] px-2 py-0 text-center text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 group-hover:border-rose-500/50 rounded-full uppercase tracking-wider font-sans transition-colors w-[46px] sm:w-[54px]`}>LOSS</span>
+            <span className="inline-flex items-center justify-center h-[20px] px-2 py-0 text-center text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 group-hover:border-rose-500/50 rounded-full uppercase tracking-wider font-sans w-[46px] sm:w-[54px]">LOSS</span>
           ) : isBe ? (
-            <span className={`inline-flex items-center justify-center h-[20px] px-2 py-0 text-center text-[10px] font-bold text-zinc-400 bg-zinc-500/10 border border-zinc-500/20 group-hover:border-zinc-500/50 rounded-full uppercase tracking-wider font-sans transition-colors w-[46px] sm:w-[54px]`}>BE</span>
+            <span className="inline-flex items-center justify-center h-[20px] px-2 py-0 text-center text-[10px] font-bold text-zinc-400 bg-zinc-500/10 border border-zinc-500/20 group-hover:border-zinc-500/50 rounded-full uppercase tracking-wider font-sans w-[46px] sm:w-[54px]">BE</span>
           ) : (
-            <span className={`inline-flex items-center justify-center h-[20px] px-2 py-0 text-center text-[10px] font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 group-hover:border-blue-500/50 rounded-full uppercase tracking-wider font-sans transition-colors w-[46px] sm:w-[54px]`}>AÇIK</span>
+            <span className="inline-flex items-center justify-center h-[20px] px-2 py-0 text-center text-[10px] font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 group-hover:border-blue-500/50 rounded-full uppercase tracking-wider font-sans w-[46px] sm:w-[54px]">AÇIK</span>
           )}
         </div>
       </td>
-      <td className={`w-full min-w-[95px] flex justify-between sm:justify-end items-center sm:table-cell order-5 py-1 px-0 sm:px-3 text-right ${pnlColor} sm:bg-zinc-900 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 max-sm:pt-3 max-sm:border-t max-sm:border-zinc-800/50 sm:py-1 align-middle sm:w-[16%]`}>
+      <td className={`w-full min-w-[95px] flex justify-between sm:justify-end items-center sm:table-cell order-5 py-1 px-0 sm:px-3 text-right ${pnlColor} sm:bg-transparent sm:border-y sm:border-zinc-800/80 mt-1.5 sm:mt-0 max-sm:pt-3 max-sm:border-t max-sm:border-zinc-800/50 sm:py-1 align-middle sm:w-[16%]`}>
         <span className="sm:hidden heading-3 text-left font-sans">Kâr/Zarar</span>
         <div className="flex flex-col sm:flex-row items-end sm:items-center gap-0.5 sm:gap-1.5 sm:w-full sm:justify-end sm:h-[20px]">
           <span className="text-sm sm:text-xs font-bold font-sans inline-flex items-center justify-end h-[20px] leading-none tracking-tight">{pnlText}</span>
         </div>
       </td>
       {true && (
-        <td className="hidden sm:table-cell sm:w-[12%] sm:min-w-[75px] py-1.5 px-2 text-center bg-zinc-900 group-hover:bg-blue-950/10 border-y border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 align-middle">
+        <td className="hidden sm:table-cell sm:w-[12%] sm:min-w-[75px] py-1.5 px-2 text-center bg-transparent border-y border-zinc-800/80 align-middle">
           <div className="flex items-center justify-center w-full">
             {trade.platform ? (
-              <span className="inline-flex items-center justify-center min-w-[54px] max-w-[130px] h-[20px] px-2.5 py-0 text-center text-[10px] font-bold text-zinc-300 bg-zinc-800/80 border border-zinc-700/80 group-hover:border-zinc-500 rounded-full uppercase tracking-wider font-sans transition-colors whitespace-nowrap truncate">
+              <span className="inline-flex items-center justify-center min-w-[54px] max-w-[130px] h-[20px] px-2.5 py-0 text-center text-[10px] font-bold text-zinc-300 bg-zinc-800/80 border border-zinc-700/80 group-hover:border-zinc-500 rounded-full uppercase tracking-wider font-sans whitespace-nowrap truncate">
                 {trade.platform}
               </span>
             ) : (
@@ -383,7 +372,7 @@ const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
           </div>
         </td>
       )}
-      <td className="w-full sm:w-[8%] sm:min-w-[60px] flex justify-between sm:justify-end items-center sm:table-cell order-6 py-1 px-0 sm:px-3 text-right sm:bg-zinc-900 group-hover:bg-blue-950/10 sm:rounded-r-xl sm:border-y sm:border-r sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 sm:pt-1.5 pt-0 align-middle">
+      <td className="w-full sm:w-[8%] sm:min-w-[60px] flex justify-between sm:justify-end items-center sm:table-cell order-6 py-1 px-0 sm:px-3 text-right sm:bg-transparent sm:rounded-r-xl sm:border-y sm:border-r sm:border-zinc-800/80 mt-1.5 sm:mt-0 sm:pt-1.5 pt-0 align-middle">
         {true && (
           <div className="sm:hidden">
             {trade.platform ? (
@@ -400,7 +389,7 @@ const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
               e.stopPropagation();
               onEdit(trade);
             }}
-            className="p-1 hover:bg-zinc-800 hover:text-blue-400 text-zinc-400 rounded-lg transition duration-200 ease-out cursor-pointer"
+            className="p-1 hover:bg-zinc-800 hover:text-blue-400 text-zinc-400 rounded-lg transition duration-150 ease-out cursor-pointer"
           >
             <Edit3 size={12} />
           </button>
@@ -410,13 +399,13 @@ const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
               e.stopPropagation();
               setTradeToDelete(trade);
             }}
-            className="p-1 hover:bg-rose-500/20 hover:text-rose-400 text-zinc-400 rounded-lg transition duration-200 ease-out cursor-pointer"
+            className="p-1 hover:bg-rose-500/20 hover:text-rose-400 text-zinc-400 rounded-lg transition duration-150 ease-out cursor-pointer"
           >
             <Trash2 size={12} />
           </button>
         </div>
       </td>
-    </motion.tr>
+    </tr>
   );
 });
 
@@ -1277,7 +1266,6 @@ const TradeList = React.memo(function TradeList({
                   <MemoizedTradeRow 
                     key={trade.id ? `${trade.id}` : `trade-fallback-${idx}`}
                     trade={trade}
-                    idx={idx}
                     currency={currency}
                     onViewDetails={onViewDetails}
                     onEdit={onEdit}

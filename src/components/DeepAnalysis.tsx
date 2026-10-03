@@ -58,47 +58,52 @@ const MemoizedEquityChart = React.memo(function MemoizedEquityChart({
 
   
 
-    const values = chartEquityCurve.map((d: any) => isRrMode ? d.cumulativePnl : d.cumulativeRealPnl);
-    const allValues = [0, ...values];
-    const maxVal = Math.max(...allValues);
-    const minVal = Math.min(...allValues);
-    const range = (maxVal - minVal) || 1;
-    const width = 600, height = 180, padding = 20;
-    const curveLen = allValues.length > 1 ? allValues.length - 1 : 1;
+    const chartData = useMemo(() => {
+      const values = (chartEquityCurve || []).map((d: any) => isRrMode ? d.cumulativePnl : d.cumulativeRealPnl);
+      const allValues = [0, ...values];
+      const maxVal = Math.max(...allValues);
+      const minVal = Math.min(...allValues);
+      const range = (maxVal - minVal) || 1;
+      const width = 600, height = 180, padding = 20;
+      const curveLen = allValues.length > 1 ? allValues.length - 1 : 1;
 
-    const pts = [
-      { x: 20, y: height - padding - ((0 - minVal) / range) * (height - 2*padding) },
-      ...(chartEquityCurve || []).map((pt: any, i: number) => ({
-        x: padding + ((i + 1) / curveLen) * (width - 2 * padding),
-        y: height - padding - (((isRrMode ? (pt?.cumulativePnl ?? 0) : (pt?.cumulativeRealPnl ?? 0)) - minVal) / range) * (height - 2 * padding)
-      }))
-    ];
-
-    const smaPts = [
-      { x: 20, y: height - padding - ((0 - minVal) / range) * (height - 2*padding) },
-      ...(chartEquityCurve || []).map((pt: any, i: number) => {
-        const rawVal = isRrMode ? (pt?.cumulativePnl ?? 0) : (pt?.cumulativeRealPnl ?? 0);
-        const smaVal = isRrMode ? (pt?.sma10 ?? rawVal) : (pt?.realSma10 ?? rawVal);
-        return {
+      const pts = [
+        { x: 20, y: height - padding - ((0 - minVal) / range) * (height - 2*padding) },
+        ...(chartEquityCurve || []).map((pt: any, i: number) => ({
           x: padding + ((i + 1) / curveLen) * (width - 2 * padding),
-          y: height - padding - (((smaVal ?? rawVal) - minVal) / range) * (height - 2 * padding)
-        };
-      })
-    ];
-    const smaPointsStr = smaPts.map(p => p.x + "," + p.y).join(" ");
-    const pointsStr = pts.map(p => p.x + "," + p.y).join(" ");
+          y: height - padding - (((isRrMode ? (pt?.cumulativePnl ?? 0) : (pt?.cumulativeRealPnl ?? 0)) - minVal) / range) * (height - 2 * padding)
+        }))
+      ];
 
-    const peakPts = pts.map((p, i) => {
-      if (i === 0) return { x: p.x, y: p.y };
-      const pt = chartEquityCurve?.[i - 1] as any;
-      const peakPnl = (isRrMode ? (pt?.cumulativePnl ?? 0) : (pt?.cumulativeRealPnl ?? 0)) - (isRrMode ? (pt?.drawdown ?? 0) : (pt?.realDrawdown ?? 0));
-      const peakY = height - padding - ((peakPnl - minVal) / range) * (height - 2 * padding);
-      return { x: p.x, y: peakY };
-    });
-    const peakPathStr = peakPts.map(p => p.x + "," + p.y).join(" L ");
-    const equityPathStr = [...pts].reverse().map(p => p.x + "," + p.y).join(" L ");
-    const underwaterPathStr = `M ${peakPathStr} L ${equityPathStr} Z`;
+      const smaPts = [
+        { x: 20, y: height - padding - ((0 - minVal) / range) * (height - 2*padding) },
+        ...(chartEquityCurve || []).map((pt: any, i: number) => {
+          const rawVal = isRrMode ? (pt?.cumulativePnl ?? 0) : (pt?.cumulativeRealPnl ?? 0);
+          const smaVal = isRrMode ? (pt?.sma10 ?? rawVal) : (pt?.realSma10 ?? rawVal);
+          return {
+            x: padding + ((i + 1) / curveLen) * (width - 2 * padding),
+            y: height - padding - (((smaVal ?? rawVal) - minVal) / range) * (height - 2 * padding)
+          };
+        })
+      ];
+      const smaPointsStr = smaPts.map(p => p.x + "," + p.y).join(" ");
+      const pointsStr = pts.map(p => p.x + "," + p.y).join(" ");
 
+      const peakPts = pts.map((p, i) => {
+        if (i === 0) return { x: p.x, y: p.y };
+        const pt = chartEquityCurve?.[i - 1] as any;
+        const peakPnl = (isRrMode ? (pt?.cumulativePnl ?? 0) : (pt?.cumulativeRealPnl ?? 0)) - (isRrMode ? (pt?.drawdown ?? 0) : (pt?.realDrawdown ?? 0));
+        const peakY = height - padding - ((peakPnl - minVal) / range) * (height - 2 * padding);
+        return { x: p.x, y: peakY };
+      });
+      const peakPathStr = peakPts.map(p => p.x + "," + p.y).join(" L ");
+      const equityPathStr = [...pts].reverse().map(p => p.x + "," + p.y).join(" L ");
+      const underwaterPathStr = `M ${peakPathStr} L ${equityPathStr} Z`;
+
+      return { pts, smaPts, smaPointsStr, pointsStr, underwaterPathStr };
+    }, [chartEquityCurve, isRrMode]);
+
+    const { pts, smaPointsStr, pointsStr, underwaterPathStr } = chartData;
     const hoveredPt = hoveredIndex !== null ? pts[hoveredIndex + 1] : null;
     const hoveredItem = hoveredIndex !== null ? chartEquityCurve[hoveredIndex] : null;
 
