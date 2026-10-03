@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Download, FileText, CheckCircle2, XCircle, MinusCircle, ShieldCheck, RefreshCw } from 'lucide-react';
 import { Trade } from '../types';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { generateCanvasWithOklchPolyfill } from '../utils/canvasUtils';
 import { jsPDF } from 'jspdf';
 import toast from 'react-hot-toast';
@@ -25,9 +27,9 @@ function hashString(str: string) {
 
 
 function formatAnalyticalModel(concept?: string) {
-  if (!concept) return 'Liquidity Inefficiency & Displacement Model';
-  if (concept.toUpperCase() === 'SMT') return 'Cross-Asset Divergence Model v2.0';
-  return concept;
+  if (!concept) return 'LIQUIDITY INEFFICIENCY & DISPLACEMENT MODEL';
+  if (concept.toUpperCase() === 'SMT') return 'CROSS-ASSET DIVERGENCE MODEL V2.0';
+  return concept.toUpperCase();
 }
 
 export const AuditReportModal: React.FC<AuditReportModalProps> = ({
@@ -36,14 +38,26 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
   trades,
   dateRangeText
 }) => {
+  useBodyScrollLock(isOpen);
   const [isGenerating, setIsGenerating] = useState(false);
   const [checksum, setChecksum] = useState<string>('');
   const reportRef = useRef<HTMLDivElement>(null);
 
+  // Preserve displayed state during exit animation
+  const [displayedTrades, setDisplayedTrades] = useState<Trade[]>(trades);
+
   useEffect(() => {
-    if (isOpen && trades.length > 0) {
+    if (isOpen) {
+      setDisplayedTrades(trades);
+    }
+  }, [isOpen, trades]);
+
+  const activeTrades = isOpen ? trades : displayedTrades;
+
+  useEffect(() => {
+    if (isOpen && activeTrades.length > 0) {
       const generateChecksum = async () => {
-        const rawString = trades.map(t => t.id + t.createdAt).join('-');
+        const rawString = activeTrades.map(t => t.id + t.createdAt).join('-');
         const msgBuffer = new TextEncoder().encode(rawString);
         try {
           const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
@@ -56,16 +70,16 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
       };
       generateChecksum();
     }
-  }, [isOpen, trades]);
+  }, [isOpen, activeTrades]);
 
   const metrics = useMemo(() => {
-    if (trades.length === 0) return { count: 0, hitRate: 0, cumulativeDelta: 0 };
-    const wins = trades.filter(t => t.status === 'WIN').length;
-    const hitRate = (wins / trades.length) * 100;
-    const cumulativeDelta = trades.reduce((acc, t) => acc + t.rr, 0);
-    const cumulativeDeltaUSD = trades.reduce((acc, t) => acc + (t.pnl || 0), 0);
-    return { count: trades.length, hitRate, cumulativeDelta, cumulativeDeltaUSD };
-  }, [trades]);
+    if (activeTrades.length === 0) return { count: 0, hitRate: 0, cumulativeDelta: 0, cumulativeDeltaUSD: 0 };
+    const wins = activeTrades.filter(t => t.status === 'WIN').length;
+    const hitRate = (wins / activeTrades.length) * 100;
+    const cumulativeDelta = activeTrades.reduce((acc, t) => acc + t.rr, 0);
+    const cumulativeDeltaUSD = activeTrades.reduce((acc, t) => acc + (t.pnl || 0), 0);
+    return { count: activeTrades.length, hitRate, cumulativeDelta, cumulativeDeltaUSD };
+  }, [activeTrades]);
 
   const downloadPDF = async () => {
     if (!reportRef.current) return;
@@ -118,6 +132,8 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
       'DATA STREAM', 
       'ANALYTICAL MODEL', 
       'MODEL BIAS', 
+      'ENTRY MODEL',
+      'TREND TYPE',
       'DATA RESOLUTION / TIMEFRAME', 
       'R:R METRIC', 
       'VALIDATION (STATUS)', 
@@ -132,13 +148,15 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
        const stream = t.asset;
        const model = formatAnalyticalModel(t.concept);
        const bias = t.type === 'LONG' ? 'Bullish (Long)' : 'Bearish (Short)';
+       const entryModel = (t.entryModels && Array.isArray(t.entryModels) && t.entryModels.length > 0 ? t.entryModels.join("; ") : t.entry) || 'N/A';
+       const trendType = t.trend || 'N/A';
        const trigger = t.timeframe ? `${t.timeframe.toUpperCase()} (${['1s','1m'].includes(t.timeframe.toLowerCase()) ? 'Tick Stream' : 'Aggregated Feed'})` : 'Auto-detected';
        const rr = `1:${Math.abs(t.rr).toFixed(2)} R`;
        const status = t.status === 'WIN' ? 'Validated / Target Hit' : t.status === 'LOSS' ? 'Invalidation' : 'Breakeven';
        const delta = `${t.rr > 0 ? '+' : ''}${t.rr.toFixed(2)}R (${t.pnl > 0 ? '+' : ''}$${Math.abs(t.pnl).toFixed(2)})`;
        const ticket = `ID: #${Math.abs(hashString(t.id)).toString().substring(0, 6)}`;
        
-       return [logId, timestamp, stream, model, bias, trigger, rr, status, delta, ticket].map(v => `"${v}"`).join(',');
+       return [logId, timestamp, stream, model, bias, entryModel, trendType, trigger, rr, status, delta, ticket].map(v => `"${v}"`).join(',');
     });
 
     const csvString = "\uFEFF" + [headers.join(','), ...rows].join('\n');
@@ -177,52 +195,47 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
     }
   }, [isOpen, trades, dateRangeText]);
 
-  if (!isOpen) return null;
-
-
-
-  return (
+  return createPortal(
     <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[9999] bg-zinc-950 flex flex-col overflow-hidden"
-      >
+      {isOpen && (
+        <motion.div
+          key="audit-report-modal"
+          initial={{ opacity: 0, scale: 0.98, y: 12 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.98, y: 12 }}
+          transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          style={{ willChange: "transform, opacity" }}
+          className="fixed inset-0 z-[1500] bg-zinc-950 flex flex-col overflow-hidden"
+        >
         {/* Toolbar */}
-        <div className="h-16 border-b border-zinc-700/40 bg-zinc-900/60 flex items-center justify-between px-6 shrink-0">
-          <div className="flex items-center gap-3">
-            <ShieldCheck size={20} className="text-emerald-500" />
-            <h2 className="text-zinc-100 font-bold font-mono text-sm tracking-wider uppercase">
+        <div className="modal-header">
+          <h2 className="heading-1 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(16,185,129,0.15)]">
+                <ShieldCheck size={16} />
+              </div>
               Veri Analitiği ve Denetim
             </h2>
-          </div>
           
           <div className="flex items-center gap-3">
             <button
               onClick={downloadCSV}
-              title="CSV Logu İndir"
-              className="flex items-center justify-center w-10 h-10 bg-zinc-800/70 hover:bg-zinc-800 text-zinc-300 rounded-xl transition-colors border border-zinc-700/50"
+              className="flex items-center justify-center w-9 h-9 rounded-xl border transition-colors cursor-pointer shrink-0 text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 border-blue-500/20"
             >
-              <FileText size={18} />
+              <FileText size={16} />
             </button>
             <button
               onClick={downloadPDF}
               disabled={isGenerating}
-              title="Resmi PDF Olarak İndir"
-              className="flex items-center justify-center w-10 h-10 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded-xl transition-colors disabled:opacity-50"
+              className="flex items-center justify-center w-9 h-9 rounded-xl border transition-colors cursor-pointer shrink-0 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/20 disabled:opacity-50"
             >
-              {isGenerating ? (
-                <RefreshCw size={18} className="animate-spin" />
-              ) : (
-                <Download size={18} />
-              )}
+              {isGenerating ? <RefreshCw size={16} className="animate-spin" /> : <Download size={16} />}
             </button>
+            <div className="w-px h-6 bg-zinc-800 mx-1 hidden sm:block"></div>
             <button
               onClick={onClose}
-              className="w-10 h-10 flex items-center justify-center bg-zinc-800/50 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-100 rounded-xl transition-colors border border-zinc-700/50 ml-2"
+              className="btn-icon"
             >
-              <X size={18} />
+              <X size={16} />
             </button>
           </div>
         </div>
@@ -248,43 +261,43 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border border-zinc-700/50 rounded-xl p-5 bg-zinc-900/60">
                 {/* Hizmet Sağlayıcı (Yüklenici) */}
                 <div className="border-r border-zinc-800/50 pr-4">
-                  <span className="text-zinc-600 text-[10px] font-mono font-bold uppercase tracking-widest block mb-3 border-b border-zinc-800/50 pb-1">Hizmet Sağlayıcı</span>
+                  <span className="heading-2 block mb-3 border-b border-zinc-800/50 pb-1">Hizmet Sağlayıcı</span>
                   <div className="mb-2">
-                    <span className="text-zinc-500 text-[9px] font-mono font-bold uppercase tracking-widest block mb-0.5">Unvan</span>
+                    <span className="heading-3 mb-1.5">Unvan</span>
                     {isGenerating ? (
-                      <div className="text-emerald-400 font-mono text-xs -ml-1 pl-1 py-[1px]">{providerName}</div>
+                      <div className="text-emerald-400 font-sans text-xs -ml-1 pl-1 py-[1px]">{providerName}</div>
                     ) : (
                       <input 
                         type="text"
                         value={providerName}
                         onChange={(e) => setProviderName(e.target.value)}
-                        className="text-emerald-400 font-mono text-xs bg-transparent border-none outline-none p-0 w-full hover:bg-zinc-800/30 focus:bg-zinc-800/50 rounded-md transition-colors -ml-1 pl-1 py-[1px]"
+                        className="text-emerald-400 font-sans text-xs bg-transparent border-none outline-none p-0 w-full hover:bg-zinc-800/30 focus:bg-zinc-800/50 rounded-md transition-colors -ml-1 pl-1 py-[1px]"
                       />
                     )}
                   </div>
                   <div className="mb-2">
-                    <span className="text-zinc-500 text-[9px] font-mono font-bold uppercase tracking-widest block mb-0.5">VKN / TCKN</span>
+                    <span className="heading-3 mb-1.5">VKN / TCKN</span>
                     {isGenerating ? (
-                      <div className="text-zinc-300 font-mono text-xs -ml-1 pl-1 py-[1px]">{providerVKN}</div>
+                      <div className="text-zinc-300 font-sans text-xs -ml-1 pl-1 py-[1px]">{providerVKN}</div>
                     ) : (
                       <input 
                         type="text"
                         value={providerVKN}
                         onChange={(e) => setProviderVKN(e.target.value)}
-                        className="text-zinc-300 font-mono text-xs bg-transparent border-none outline-none p-0 w-full hover:bg-zinc-800/30 focus:bg-zinc-800/50 rounded-md transition-colors -ml-1 pl-1 py-[1px]"
+                        className="text-zinc-300 font-sans text-xs bg-transparent border-none outline-none p-0 w-full hover:bg-zinc-800/30 focus:bg-zinc-800/50 rounded-md transition-colors -ml-1 pl-1 py-[1px]"
                       />
                     )}
                   </div>
                   <div>
-                    <span className="text-zinc-500 text-[9px] font-mono font-bold uppercase tracking-widest block mb-0.5">Vergi Dairesi</span>
+                    <span className="heading-3 mb-1.5">Vergi Dairesi</span>
                     {isGenerating ? (
-                      <div className="text-zinc-300 font-mono text-xs -ml-1 pl-1 py-[1px]">{providerTaxOffice}</div>
+                      <div className="text-zinc-300 font-sans text-xs -ml-1 pl-1 py-[1px]">{providerTaxOffice}</div>
                     ) : (
                       <input 
                         type="text"
                         value={providerTaxOffice}
                         onChange={(e) => setProviderTaxOffice(e.target.value)}
-                        className="text-zinc-300 font-mono text-xs bg-transparent border-none outline-none p-0 w-full hover:bg-zinc-800/30 focus:bg-zinc-800/50 rounded-md transition-colors -ml-1 pl-1 py-[1px]"
+                        className="text-zinc-300 font-sans text-xs bg-transparent border-none outline-none p-0 w-full hover:bg-zinc-800/30 focus:bg-zinc-800/50 rounded-md transition-colors -ml-1 pl-1 py-[1px]"
                       />
                     )}
                   </div>
@@ -292,30 +305,30 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
 
                 {/* Hizmet Alan Kuruluş */}
                 <div className="border-r border-zinc-800/50 pr-4">
-                  <span className="text-zinc-600 text-[10px] font-mono font-bold uppercase tracking-widest block mb-3 border-b border-zinc-800/50 pb-1">Hizmet Alan Kuruluş</span>
+                  <span className="heading-2 block mb-3 border-b border-zinc-800/50 pb-1">Hizmet Alan Kuruluş</span>
                   <div className="mb-2">
-                    <span className="text-zinc-500 text-[9px] font-mono font-bold uppercase tracking-widest block mb-0.5">Kuruluş / Platform</span>
+                    <span className="heading-3 mb-1.5">Kuruluş / Platform</span>
                     {isGenerating ? (
-                      <div className="text-zinc-200 font-mono text-sm -ml-1 pl-1 py-[1px]">{clientOrg}</div>
+                      <div className="text-zinc-200 font-sans text-sm -ml-1 pl-1 py-[1px]">{clientOrg}</div>
                     ) : (
                       <input 
                         type="text"
                         value={clientOrg}
                         onChange={(e) => setClientOrg(e.target.value)}
-                        className="text-zinc-200 font-mono text-sm bg-transparent border-none outline-none p-0 w-full hover:bg-zinc-800/30 focus:bg-zinc-800/50 rounded-md transition-colors -ml-1 pl-1 py-[1px]"
+                        className="text-zinc-200 font-sans text-sm bg-transparent border-none outline-none p-0 w-full hover:bg-zinc-800/30 focus:bg-zinc-800/50 rounded-md transition-colors -ml-1 pl-1 py-[1px]"
                       />
                     )}
                   </div>
                   <div>
-                    <span className="text-zinc-500 text-[9px] font-mono font-bold uppercase tracking-widest block mb-0.5">Sözleşme Referansı</span>
+                    <span className="heading-3 mb-1.5">Sözleşme Referansı</span>
                     {isGenerating ? (
-                      <div className="text-zinc-200 font-mono text-[11px] leading-tight whitespace-normal break-words overflow-visible -ml-1 pl-1 py-[1px]">{contractRef}</div>
+                      <div className="text-zinc-200 font-sans text-[11px] leading-tight whitespace-normal break-words overflow-visible -ml-1 pl-1 py-[1px]">{contractRef}</div>
                     ) : (
                       <textarea 
                         rows={2}
                         value={contractRef}
                         onChange={(e) => setContractRef(e.target.value)}
-                        className="text-zinc-200 font-mono text-[11px] leading-tight whitespace-normal break-words overflow-visible bg-transparent border-none outline-none p-0 w-full hover:bg-zinc-800/30 focus:bg-zinc-800/50 rounded-md transition-colors resize-none -ml-1 pl-1 py-[1px]"
+                        className="text-zinc-200 font-sans text-[11px] leading-tight whitespace-normal break-words overflow-visible bg-transparent border-none outline-none p-0 w-full hover:bg-zinc-800/30 focus:bg-zinc-800/50 rounded-md transition-colors resize-none -ml-1 pl-1 py-[1px]"
                       />
                     )}
                   </div>
@@ -323,30 +336,30 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
 
                 {/* Rapor Detayları */}
                 <div>
-                  <span className="text-zinc-600 text-[10px] font-mono font-bold uppercase tracking-widest block mb-3 border-b border-zinc-800/50 pb-1">Rapor Detayları</span>
+                  <span className="heading-2 block mb-3 border-b border-zinc-800/50 pb-1">Rapor Detayları</span>
                   <div className="mb-2">
-                    <span className="text-zinc-500 text-[9px] font-mono font-bold uppercase tracking-widest block mb-0.5">Dönem / Filtre Aralığı</span>
+                    <span className="heading-3 mb-1.5">Dönem / Filtre Aralığı</span>
                     {isGenerating ? (
-                      <div className="text-zinc-200 font-mono text-sm -ml-1 pl-1 py-[1px]">{dateRangeState}</div>
+                      <div className="text-zinc-200 font-sans text-sm -ml-1 pl-1 py-[1px]">{dateRangeState}</div>
                     ) : (
                       <input 
                         type="text"
                         value={dateRangeState}
                         onChange={(e) => setDateRangeState(e.target.value)}
-                        className="text-zinc-200 font-mono text-sm bg-transparent border-none outline-none p-0 w-full hover:bg-zinc-800/30 focus:bg-zinc-800/50 rounded-md transition-colors -ml-1 pl-1 py-[1px]"
+                        className="text-zinc-200 font-sans text-sm bg-transparent border-none outline-none p-0 w-full hover:bg-zinc-800/30 focus:bg-zinc-800/50 rounded-md transition-colors -ml-1 pl-1 py-[1px]"
                       />
                     )}
                   </div>
                   <div>
-                    <span className="text-zinc-500 text-[9px] font-mono font-bold uppercase tracking-widest block mb-0.5">Metodoloji</span>
+                    <span className="heading-3 mb-1.5">Metodoloji</span>
                     {isGenerating ? (
-                      <div className="text-blue-400 font-mono text-[11px] leading-tight whitespace-normal break-words overflow-visible -ml-1 pl-1 py-[1px]">{methodology}</div>
+                      <div className="text-blue-400 font-sans text-[11px] leading-tight whitespace-normal break-words overflow-visible -ml-1 pl-1 py-[1px]">{methodology}</div>
                     ) : (
                       <textarea 
                         rows={2}
                         value={methodology}
                         onChange={(e) => setMethodology(e.target.value)}
-                        className="text-blue-400 font-mono text-[11px] leading-tight whitespace-normal break-words overflow-visible bg-transparent border-none outline-none p-0 w-full hover:bg-zinc-800/30 focus:bg-zinc-800/50 rounded-md transition-colors resize-none -ml-1 pl-1 py-[1px]"
+                        className="text-blue-400 font-sans text-[11px] leading-tight whitespace-normal break-words overflow-visible bg-transparent border-none outline-none p-0 w-full hover:bg-zinc-800/30 focus:bg-zinc-800/50 rounded-md transition-colors resize-none -ml-1 pl-1 py-[1px]"
                       />
                     )}
                   </div>
@@ -359,7 +372,7 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
               <div className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-800">
                 <table className="w-full text-left border-collapse min-w-[1000px]">
                   <thead>
-                    <tr className="bg-zinc-800 border-b border-zinc-800 text-[10px] font-mono uppercase tracking-widest text-zinc-500">
+                    <tr className="bg-zinc-800 border-b border-zinc-800 text-[10px] font-sans uppercase tracking-widest text-zinc-500">
                       <th className="py-3 px-4 font-semibold w-40">LOG ID / TIMESTAMP</th>
                       <th className="py-3 px-4 font-semibold">DATA STREAM</th>
                       <th className="py-3 px-4 font-semibold min-w-[200px]">ANALYTICAL MODEL</th>
@@ -386,7 +399,7 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
                       const ticket = `ID: #${Math.abs(hashString(t.id)).toString().substring(0, 6)}`;
 
                       return (
-                        <tr key={t.id} className={`text-xs font-mono transition-colors hover:bg-zinc-800/30 ${i % 2 === 0 ? 'bg-zinc-900/10' : ''}`}>
+                        <tr key={t.id} className={`text-xs font-sans transition-colors hover:bg-zinc-800/30 ${i % 2 === 0 ? 'bg-zinc-900/10' : ''}`}>
                           <td className="py-3 px-4 text-zinc-400">
                             <span className="text-zinc-300 font-bold">{logId}</span><br/>
                             <span className="text-[10px] text-zinc-600">{timestamp}</span>
@@ -395,7 +408,7 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
                           <td className="py-3 px-4 text-zinc-400 whitespace-normal break-words max-w-[220px]">{model}</td>
                           <td className="py-3 px-4">
                             <span className={`inline-flex px-2.5 py-0.5 rounded-lg text-[10px] font-bold tracking-wider uppercase border ${
-                              t.type === 'LONG' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                              t.type === 'LONG' ? 'toggle-item-brand' : 'toggle-item-loss'
                             }`}>
                               {t.type === 'LONG' ? 'BULLISH' : 'BEARISH'}
                             </span>
@@ -426,7 +439,7 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
                     })}
                     {trades.length === 0 && (
                       <tr>
-                        <td colSpan={9} className="py-8 text-center text-zinc-500 text-xs font-mono">
+                        <td colSpan={9} className="py-8 text-center text-zinc-500 text-xs font-sans">
                           Bu aralıkta kayıtlı log bulunmamaktadır.
                         </td>
                       </tr>
@@ -443,22 +456,22 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
                 {/* Summary Metrics */}
                 <div className="flex gap-6">
                   <div>
-                    <span className="text-zinc-600 text-[10px] font-mono font-bold uppercase tracking-widest block mb-1">Data Count</span>
-                    <span className="text-zinc-200 font-mono text-lg font-bold">{metrics.count}</span>
+                    <span className="heading-2 block mb-1">Data Count</span>
+                    <span className="text-zinc-200 font-sans text-lg font-bold">{metrics.count}</span>
                   </div>
                   <div>
-                    <span className="text-zinc-600 text-[10px] font-mono font-bold uppercase tracking-widest block mb-1">Model Hit Rate</span>
-                    <span className="text-zinc-200 font-mono text-lg font-bold">%{metrics.hitRate.toFixed(1)}</span>
+                    <span className="heading-2 block mb-1">Model Hit Rate</span>
+                    <span className="text-zinc-200 font-sans text-lg font-bold">%{metrics.hitRate.toFixed(1)}</span>
                   </div>
                   <div>
-                    <span className="text-zinc-600 text-[10px] font-mono font-bold uppercase tracking-widest block mb-1">Cumulative Delta</span>
-                    <span className={`font-mono text-lg font-bold ${metrics.cumulativeDelta >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    <span className="heading-2 block mb-1">Cumulative Delta</span>
+                    <span className={`font-sans text-lg font-bold ${metrics.cumulativeDelta >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                       {metrics.cumulativeDelta > 0 ? '+' : ''}{metrics.cumulativeDelta.toFixed(2)} R
                     </span>
                   </div>
                   <div>
-                    <span className="text-zinc-600 text-[10px] font-mono font-bold uppercase tracking-widest block mb-1">Total Delta Output (USD)</span>
-                    <span className={`font-mono text-lg font-bold ${(metrics.cumulativeDeltaUSD || 0) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    <span className="heading-2 block mb-1">Total Delta Output (USD)</span>
+                    <span className={`font-sans text-lg font-bold ${(metrics.cumulativeDeltaUSD || 0) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                       {(metrics.cumulativeDeltaUSD || 0) > 0 ? '+' : ''}${Math.abs(metrics.cumulativeDeltaUSD || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                   </div>
@@ -467,8 +480,8 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
                 {/* Hash & Legal */}
                 <div className="text-right max-w-md">
                   <div className="bg-zinc-800 border border-zinc-800 rounded-lg p-2 inline-block mb-3">
-                    <span className="text-[10px] text-zinc-500 font-mono block">SHA-256 Checksum Validation:</span>
-                    <span className="text-xs text-zinc-300 font-mono break-all">{checksum}</span>
+                    <span className="text-[10px] text-zinc-500 font-sans block">SHA-256 Checksum Validation:</span>
+                    <span className="text-xs text-zinc-300 font-sans break-all">{checksum}</span>
                   </div>
                   <p className="text-[9px] text-zinc-600 leading-relaxed font-sans text-justify">
                     İşbu log kütüğü, {clientOrg || 'FSL PROP DMCC (Dubai, UAE)'} adına sağlanan bağımsız piyasa veri analitiği, modelleme ve strateji doğrulama hizmetlerinin teknik çıktı kayıtlarını içermektedir. Kayıtlar bulut veri tabanında zaman damgasıyla kriptografik olarak saklanmaktadır. Bu rapor tamamen bilgi ve iç denetim amaçlıdır.
@@ -480,7 +493,9 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
 
           </div>
         </div>
-      </motion.div>
-    </AnimatePresence>
+        </motion.div>
+      )}
+    </AnimatePresence>,
+    document.body
   );
 };

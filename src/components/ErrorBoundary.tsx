@@ -45,7 +45,7 @@ export class ErrorBoundary extends Component<Props, State> {
           <div className="bg-zinc-900 border border-red-500/20 p-8 rounded-2xl max-w-lg w-full text-center space-y-4">
             <AlertCircle size={48} className="text-red-400 mx-auto" />
             <h1 className="text-xl font-bold text-zinc-100">Beklenmedik bir hata oluştu</h1>
-            <p className="text-sm text-zinc-400 font-mono overflow-auto max-h-32 bg-zinc-950 p-2.5 rounded-xl">
+            <p className="body-text text-zinc-400 font-sans overflow-auto max-h-32 bg-zinc-950 p-2.5 rounded-xl">
               {this.state.errorMsg || "Bilinmeyen bir hata gerçekleşti."}
             </p>
             <button

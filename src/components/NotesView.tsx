@@ -1,4 +1,5 @@
 import React, { useState, memo, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Plus, 
@@ -15,6 +16,7 @@ import {
 import toast from 'react-hot-toast';
 import { Note } from '../types';
 import { VoiceToNoteButton } from './VoiceToNoteButton';
+import { caseInsensitiveMatch } from '../constants/constants';
 
 interface NotesViewProps {
   notes: Note[];
@@ -64,10 +66,9 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
       result = result.filter(n => n.isPinned);
     }
     if (searchTerm.trim()) {
-      const lowerSearch = searchTerm.toLowerCase();
       result = result.filter(n => 
-        (n.title && n.title.toLowerCase().includes(lowerSearch)) || 
-        (n.content && n.content.toLowerCase().includes(lowerSearch))
+        caseInsensitiveMatch(n.title, searchTerm) || 
+        caseInsensitiveMatch(n.content, searchTerm)
       );
     }
     // Sort pinned notes first, then by updatedAt
@@ -170,7 +171,6 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                 <button 
                   onClick={() => setIsEditing(false)}
                   className="p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all cursor-pointer shrink-0"
-                  title="Geri Dön"
                 >
                   <ArrowLeft size={16} />
                 </button>
@@ -196,7 +196,6 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                         setNoteToDelete(activeNote);
                       }}
                       className="p-2 text-rose-400 bg-rose-500/10 rounded-xl hover:bg-rose-500/20 border border-rose-500/20 transition-all cursor-pointer"
-                      title="Notu Sil"
                     >
                       <Trash2 size={15} />
                     </button>
@@ -204,7 +203,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                   <button 
                     onClick={executeSave}
                     disabled={!editTitle.trim() && !editContent.trim()}
-                    className="flex items-center gap-2 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 px-4 py-2 rounded-xl text-xs font-bold font-mono uppercase tracking-wider transition-all cursor-pointer shadow-xs border border-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-2 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 px-4 py-2 rounded-xl text-xs font-bold font-sans uppercase tracking-wider transition-all cursor-pointer shadow-xs border border-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Save size={14} />
                     Kaydet
@@ -216,11 +215,11 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
             <div className="relative rounded-2xl border border-zinc-800/80 bg-zinc-950/60 overflow-hidden focus-within:border-zinc-700 transition-all flex flex-col min-h-[460px] shadow-sm">
               <textarea
                 placeholder="Konsept detayları, grafik analizleri, kurallar veya strateji notlarını buraya yazabilirsin..."
-                className="w-full flex-1 bg-transparent text-zinc-200 p-5 sm:p-6 outline-none resize-none placeholder:text-zinc-600 leading-relaxed font-sans text-sm min-h-[380px]"
+                className="w-full flex-1 bg-transparent text-zinc-200 p-5 outline-none resize-none placeholder:text-zinc-600 leading-relaxed font-sans text-sm min-h-[380px]"
                 value={editContent}
                 onChange={(e) => setEditContent(e.target.value)}
               />
-              <div className="p-3 px-5 text-[10px] text-zinc-500 font-mono font-bold tracking-wider uppercase bg-zinc-900/50 border-t border-zinc-800/80 flex items-center justify-between">
+              <div className="p-3 px-5 text-[10px] text-zinc-500 font-sans font-bold tracking-wider uppercase bg-zinc-900/50 border-t border-zinc-800/80 flex items-center justify-between">
                 <span>{editContent.length} karakter • {editContent.trim() ? editContent.trim().split(/\s+/).length : 0} kelime</span>
                 <span>{activeNote ? `Son Güncelleme: ${formatDateStr(activeNote.updatedAt)}` : 'Yeni Not'}</span>
               </div>
@@ -242,7 +241,6 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                   <button 
                     onClick={() => setActiveNote(null)}
                     className="p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all cursor-pointer shrink-0"
-                    title="Listeye Dön"
                   >
                     <ArrowLeft size={16} />
                   </button>
@@ -252,13 +250,13 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                         {activeNote.title}
                       </h2>
                       {activeNote.isPinned && (
-                        <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-blue-500/15 text-blue-400 border border-blue-500/30 flex items-center gap-1 shrink-0">
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-sans font-bold toggle-item-brand border border-blue-500/30 flex items-center gap-1 shrink-0">
                           <Pin size={10} className="fill-current" />
                           SABİTLENDİ
                         </span>
                       )}
                     </div>
-                    <p className="text-[11px] text-zinc-400 font-mono mt-0.5 flex items-center gap-1.5">
+                    <p className="text-[11px] text-zinc-400 font-sans mt-0.5 flex items-center gap-1.5">
                       <Calendar size={11} className="text-zinc-500" />
                       Son Güncelleme: {formatDateStr(activeNote.updatedAt)}
                     </p>
@@ -273,7 +271,6 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                         ? 'text-blue-400 bg-blue-500/15 border-blue-500/30' 
                         : 'text-zinc-400 hover:text-zinc-200 bg-zinc-900 border-zinc-800 hover:bg-zinc-800'
                     }`}
-                    title={activeNote.isPinned ? "Sabitlemeyi Kaldır" : "Başa Sabitle"}
                   >
                     <Pin size={15} className={activeNote.isPinned ? "fill-current" : ""} />
                   </button>
@@ -282,13 +279,12 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                       setNoteToDelete(activeNote);
                     }}
                     className="p-2 text-rose-400 bg-rose-500/10 rounded-xl hover:bg-rose-500/20 border border-rose-500/20 transition-all cursor-pointer"
-                    title="Notu Sil"
                   >
                     <Trash2 size={15} />
                   </button>
                   <button 
                     onClick={() => setIsEditing(true)}
-                    className="flex items-center gap-2 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 px-4 py-2 rounded-xl text-xs font-bold font-mono uppercase tracking-wider transition-all cursor-pointer shadow-xs border border-blue-500/30"
+                    className="flex items-center gap-2 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 px-4 py-2 rounded-xl text-xs font-bold font-sans uppercase tracking-wider transition-all cursor-pointer shadow-xs border border-blue-500/30"
                   >
                     <Edit3 size={14} />
                     Düzenle
@@ -297,7 +293,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
               </div>
             </div>
 
-            <div className="rounded-2xl border border-zinc-800/80 bg-zinc-950/60 p-6 sm:p-8 min-h-[460px] overflow-y-auto shadow-sm">
+            <div className="rounded-2xl border border-zinc-800/80 bg-zinc-950/60 p-5 min-h-[460px] overflow-y-auto shadow-sm">
               <div className="text-zinc-200 text-sm sm:text-base leading-relaxed whitespace-pre-wrap font-sans break-words select-text">
                 {activeNote.content || <span className="italic text-zinc-500">Bu notta henüz bir içerik bulunmuyor.</span>}
               </div>
@@ -325,7 +321,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                       <h2 className="text-sm font-bold uppercase tracking-wide text-zinc-100">
                         Konsept & Notlar
                       </h2>
-                      <span className="px-2 py-0.5 rounded-md text-[9px] font-mono font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                      <span className="px-2 py-0.5 rounded-md text-[9px] font-sans font-bold toggle-item-brand border border-blue-500/20">
                         {notes.length} NOT
                       </span>
                     </div>
@@ -341,7 +337,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                     <button
                       type="button"
                       onClick={() => setActiveFilter('ALL')}
-                      className={`relative px-3 py-1 text-[10px] font-mono font-bold uppercase rounded-lg transition-colors cursor-pointer select-none ${
+                      className={`relative px-3 py-1 text-[10px] font-sans font-bold uppercase rounded-lg transition-colors cursor-pointer select-none ${
                         activeFilter === 'ALL'
                           ? 'text-zinc-100'
                           : 'text-zinc-400 hover:text-zinc-200'
@@ -359,7 +355,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                     <button
                       type="button"
                       onClick={() => setActiveFilter('PINNED')}
-                      className={`relative px-3 py-1 text-[10px] font-mono font-bold uppercase rounded-lg transition-colors cursor-pointer flex items-center gap-1 select-none ${
+                      className={`relative px-3 py-1 text-[10px] font-sans font-bold uppercase rounded-lg transition-colors cursor-pointer flex items-center gap-1 select-none ${
                         activeFilter === 'PINNED'
                           ? 'text-blue-300'
                           : 'text-zinc-400 hover:text-zinc-200'
@@ -403,7 +399,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
 
                   <button 
                     onClick={handleAddNew}
-                    className="bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 px-3.5 py-1.5 h-8 rounded-xl text-xs font-bold font-mono uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer shadow-xs border border-blue-500/30 shrink-0"
+                    className="bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 px-3.5 py-1.5 h-8 rounded-xl text-xs font-bold font-sans uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer shadow-xs border border-blue-500/30 shrink-0"
                   >
                     <Plus size={14} />
                     Yeni Not
@@ -417,13 +413,13 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                 <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-500 mb-3 shadow-inner">
                   <FileText size={24} />
                 </div>
-                <h3 className="text-xs font-bold text-zinc-200 mb-1 uppercase tracking-wider font-mono">Henüz Not Eklenmedi</h3>
+                <h3 className="text-xs font-bold text-zinc-200 mb-1 uppercase tracking-wider font-sans">Henüz Not Eklenmedi</h3>
                 <p className="text-zinc-500 text-xs max-w-sm mb-5 font-sans leading-relaxed">
                   Öğrendiğiniz işlem stratejilerini, analiz kurallarını ve konseptleri buraya kaydedebilirsiniz.
                 </p>
                 <button 
                   onClick={handleAddNew}
-                  className="bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 px-4 py-2 rounded-xl border border-blue-500/30 text-xs font-bold font-mono uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
+                  className="bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 px-4 py-2 rounded-xl border border-blue-500/30 text-xs font-bold font-sans uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
                 >
                   <Plus size={14} />
                   İlk Notu Yaz
@@ -431,7 +427,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
               </div>
             ) : filteredNotes.length === 0 ? (
               <div className="text-center py-12 bg-zinc-950/60 border border-zinc-800/80 rounded-2xl">
-                <p className="text-xs font-mono font-bold text-zinc-500">Aranan kriterde not bulunamadı.</p>
+                <p className="text-xs font-sans font-bold text-zinc-500">Aranan kriterde not bulunamadı.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
@@ -458,7 +454,6 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                               ? 'text-blue-400 bg-blue-500/15' 
                               : 'text-zinc-500 hover:text-blue-400 hover:bg-zinc-800'
                           }`}
-                          title={note.isPinned ? "Sabitlemeyi Kaldır" : "Başa Sabitle"}
                         >
                           <Pin size={12} className={note.isPinned ? "fill-current" : ""} />
                         </button>
@@ -469,7 +464,6 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                             setNoteToDelete(note);
                           }}
                           className="p-1.5 text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-md transition-all cursor-pointer"
-                          title="Sil"
                         >
                           <Trash2 size={12} />
                         </button>
@@ -480,13 +474,13 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                       {note.content || <span className="italic text-zinc-600">Boş içerik...</span>}
                     </p>
 
-                    <div className="mt-auto pt-2.5 border-t border-zinc-800/80 flex items-center justify-between text-[10px] font-mono text-zinc-500">
+                    <div className="mt-auto pt-2.5 border-t border-zinc-800/80 flex items-center justify-between text-[10px] font-sans text-zinc-500">
                       <span className="flex items-center gap-1 text-zinc-400">
                         <Calendar size={10} className="text-zinc-500" />
                         {formatDateStr(note.updatedAt)}
                       </span>
                       
-                      <span className="opacity-0 group-hover:opacity-100 transition-all text-blue-400 font-bold flex items-center gap-0.5 font-mono">
+                      <span className="opacity-0 group-hover:opacity-100 transition-all text-blue-400 font-bold flex items-center gap-0.5 font-sans">
                         Oku →
                       </span>
                     </div>
@@ -499,62 +493,68 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
       </AnimatePresence>
 
       {/* DELETE CONFIRMATION MODAL */}
-      <AnimatePresence>
-        {noteToDelete && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            className="fixed inset-0 z-[1200] bg-black/80  flex items-center justify-center p-4"
-            onClick={() => setNoteToDelete(null)}
-          >
+      {createPortal(
+        <AnimatePresence>
+          {noteToDelete && (
             <motion.div
+              key="note-delete-modal-backdrop"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.15, ease: "easeOut" }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-sm w-full shadow-2xl overflow-hidden relative select-none"
+              className="will-change-[opacity] fixed inset-0 z-[4500] bg-zinc-950/80 flex items-center justify-center p-4"
+              onClick={() => setNoteToDelete(null)}
             >
-              <div className="w-11 h-11 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center mx-auto mb-4">
-                <Trash2 size={20} />
-              </div>
-              
-              <h3 className="text-sm font-bold tracking-wide text-zinc-100 uppercase text-center mb-1 font-mono">
-                Notu Sil
-              </h3>
-              
-              <p className="text-zinc-400 text-xs text-center mb-6 leading-relaxed">
-                <strong className="text-zinc-200">"{noteToDelete.title}"</strong> başlıklı notu silmek istediğinize emin misiniz?
-              </p>
-              
-              <div className="flex items-center gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => setNoteToDelete(null)}
-                  className="flex-1 py-2 px-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-mono text-xs font-bold uppercase rounded-xl transition-all cursor-pointer"
-                >
-                  Vazgeç
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (noteToDelete) {
-                      executeDelete(noteToDelete.id);
-                      setNoteToDelete(null);
-                    }
-                  }}
-                  className="flex-1 py-2 px-3 bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 border border-rose-500/30 font-mono text-xs font-bold uppercase rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
-                >
-                  <Trash2 size={13} />
-                  <span>Sil</span>
-                </button>
-              </div>
+              <motion.div
+                key="note-delete-modal-content"
+                initial={{ opacity: 0, scale: 0.98, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.98, y: 10 }}
+                transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                style={{ willChange: "transform, opacity" }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 max-w-sm w-full shadow-2xl overflow-hidden relative select-none"
+              >
+                <div className="w-11 h-11 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center mx-auto mb-4">
+                  <Trash2 size={20} />
+                </div>
+                
+                <h3 className="text-sm font-bold tracking-wide text-zinc-100 uppercase text-center mb-1 font-sans">
+                  Notu Sil
+                </h3>
+                
+                <p className="text-zinc-400 text-xs text-center mb-6 leading-relaxed">
+                  <strong className="text-zinc-200">"{noteToDelete.title}"</strong> başlıklı notu silmek istediğinize emin misiniz?
+                </p>
+                
+                <div className="flex items-center gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setNoteToDelete(null)}
+                    className="flex-1 py-2 px-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-sans text-xs font-bold uppercase rounded-xl transition-all cursor-pointer"
+                  >
+                    Vazgeç
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (noteToDelete) {
+                        executeDelete(noteToDelete.id);
+                        setNoteToDelete(null);
+                      }
+                    }}
+                    className="flex-1 py-2 px-3 bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 border border-rose-500/30 font-sans text-xs font-bold uppercase rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <Trash2 size={13} />
+                    <span>Sil</span>
+                  </button>
+                </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 });

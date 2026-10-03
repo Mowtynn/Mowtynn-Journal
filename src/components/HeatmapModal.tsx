@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Calendar as CalendarIcon, Info, Crown, Skull, X } from 'lucide-react';
 import { Trade } from '../types';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 interface HeatmapModalProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface HeatmapModalProps {
 }
 
 export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, trades }) => {
+  useBodyScrollLock(isOpen);
   const [timeFilter, setTimeFilter] = useState<'7' | '30' | '90' | '180' | 'all'>('all');
 
   useEffect(() => {
@@ -49,11 +51,11 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
     if (sessions.length === 0) sessions.push("Bilinmeyen");
 
     // Initialize matrix
-    const matrix: { [day: string]: { [session: string]: { pnl: number, r: number, count: number, winCount: number, conceptCounts: Record<string, number> } } } = {};
+    const matrix: { [day: string]: { [session: string]: { pnl: number, r: number, count: number, winCount: number, conceptCounts: Record<string, number>, planFidelityCounts: Record<string, number> } } } = {};
     days.forEach(d => {
       matrix[d] = {};
       sessions.forEach(s => {
-        matrix[d][s] = { pnl: 0, r: 0, count: 0, winCount: 0, conceptCounts: {} };
+        matrix[d][s] = { pnl: 0, r: 0, count: 0, winCount: 0, conceptCounts: {}, planFidelityCounts: {} };
       });
     });
 
@@ -74,6 +76,11 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
           const strat = t.concept?.trim() || t.confirmations?.[0]?.trim();
           if (strat) {
             matrix[dayName][s].conceptCounts[strat] = (matrix[dayName][s].conceptCounts[strat] || 0) + (t.status === 'WIN' ? 1 : 0);
+          }
+
+          if (t.planFidelity && t.planFidelity.trim()) {
+            const pf = t.planFidelity.trim();
+            matrix[dayName][s].planFidelityCounts[pf] = (matrix[dayName][s].planFidelityCounts[pf] || 0) + 1;
           }
         }
       }
@@ -128,32 +135,32 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
     <AnimatePresence>
       {isOpen && (
         <motion.div
+          key="heatmap-modal-backdrop"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.15, ease: "easeOut" }}
-          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-zinc-950/80  overflow-y-auto"
+          className="will-change-[opacity] fixed inset-0 z-[1500] flex items-center justify-center p-5 bg-zinc-950/80 overflow-y-auto"
           onClick={onClose}
         >
         <motion.div
-          initial={{ opacity: 0, scale: 0.96 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.96 }}
-          transition={{ duration: 0.15, ease: "easeOut" }}
-          className="relative w-full max-w-4xl bg-zinc-900 border border-zinc-700/50 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] my-auto"
+          key="heatmap-modal-content"
+          initial={{ opacity: 0, scale: 0.98, y: 10 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.98, y: 10 }}
+          transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+          style={{ willChange: "transform, opacity" }}
+          className="relative w-full max-w-4xl h-[620px] max-h-[90vh] min-h-0 sm:min-h-[480px] bg-zinc-900 border border-zinc-700/50 rounded-2xl shadow-2xl overflow-hidden flex flex-col my-auto"
           onClick={e => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-4 sm:p-5 border-b border-zinc-700/40 bg-zinc-900/60 shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
-                <CalendarIcon size={18} />
+          <div className="modal-header">
+            <h2 className="heading-1 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(59,130,246,0.15)]">
+                <CalendarIcon size={16} />
               </div>
-              <div>
-                <h2 className="text-sm sm:text-base font-bold text-zinc-100 font-mono">İşlem Isı Haritası</h2>
-                <p className="text-xs text-zinc-400 font-sans mt-0.5">Gün ve Seans bazlı kâr/zarar dağılımınız</p>
-              </div>
-            </div>
+              İşlem Isı Haritası
+            </h2>
             
             <div className="flex items-center gap-3">
               <div className="flex bg-zinc-900 border border-zinc-700/50 rounded-xl p-0.5 overflow-x-auto hide-scrollbar">
@@ -167,7 +174,7 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
                   <button
                     key={f.id}
                     onClick={() => setTimeFilter(f.id as any)}
-                    className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold transition-all duration-150 ${
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-sans font-bold transition-all duration-150 ${
                       timeFilter === f.id 
                         ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' 
                         : 'text-zinc-400 hover:text-zinc-200 border border-transparent'
@@ -179,22 +186,26 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
               </div>
 
               <button
-                onClick={onClose}
-                className="w-8 h-8 rounded-xl bg-zinc-800/60 hover:bg-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center transition-colors shrink-0"
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onClose();
+                }}
+                className="btn-icon"
               >
                 <X size={16} />
               </button>
             </div>
           </div>
 
-          <div className="flex-1 overflow-auto p-4 sm:p-6 pb-12 min-h-0 bg-zinc-950/30 custom-scrollbar">
+          <div className="flex-1 overflow-auto p-5 pb-12 min-h-0 bg-zinc-950/30 custom-scrollbar">
             <div className="w-full">
               {/* Heatmap Grid */}
               <div className="flex gap-2">
                 {/* Y Axis (Days) */}
                 <div className="flex flex-col gap-2 mt-8 mr-2">
                   {days.map(day => (
-                    <div key={day} className="h-10 text-[11px] font-medium text-zinc-400 flex items-center justify-end pr-2 w-24 shrink-0 font-sans">
+                    <div key={day} className="h-10 text-xs font-medium text-zinc-400 flex items-center justify-end pr-2 w-24 shrink-0 font-sans">
                       {day}
                     </div>
                   ))}
@@ -204,7 +215,7 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
                 <div className="flex-1">
                   <div className="flex gap-2 mb-2">
                     {sessions.map(session => (
-                      <div key={session} className="flex-1 text-[11px] font-bold font-mono text-zinc-400 flex items-center justify-center whitespace-nowrap overflow-hidden text-ellipsis px-1 uppercase tracking-wider">
+                      <div key={session} className="flex-1 text-xs font-bold font-sans text-zinc-400 flex items-center justify-center whitespace-nowrap overflow-hidden text-ellipsis px-1 uppercase tracking-wider">
                         {session}
                       </div>
                     ))}
@@ -241,20 +252,25 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
                                 } ${isWorst ? 'ring-1 ring-rose-500/50' : ''}`}
                               >
                                 {hasTrades && (
-                                  <span className="text-[11px] font-mono font-bold text-white select-none pointer-events-none">
+                                  <span className="text-xs font-sans font-bold text-white select-none pointer-events-none">
                                     %{winRatePercent}
                                   </span>
                                 )}
                               </div>
                               
                               {/* Tooltip on hover */}
-                              <div className={`absolute ${vertPos} ${horizPos} hidden group-hover:flex flex-col bg-zinc-950 border border-zinc-700 text-zinc-200 text-[11px] rounded-xl p-2.5 shadow-2xl z-50 whitespace-nowrap pointer-events-none font-mono`}>
+                              <div className={`absolute ${vertPos} ${horizPos} hidden group-hover:flex flex-col bg-zinc-950 border border-zinc-700 text-zinc-200 text-xs rounded-xl p-2.5 shadow-2xl z-50 whitespace-nowrap pointer-events-none font-sans`}>
                                 <span className="font-bold text-blue-400 border-b border-zinc-800 pb-1 mb-1">{day} — {session}</span>
                                 <div className="space-y-0.5 text-zinc-300">
                                   <div>İşlem: <span className="text-white font-bold">{cell?.count || 0}</span></div>
                                   <div>Net PnL: <span className={(cell?.pnl || 0) >= 0 ? "text-emerald-400 font-bold" : "text-rose-400 font-bold"}>{(cell?.pnl || 0).toLocaleString()}</span></div>
                                   <div>Net R: <span className="text-indigo-300 font-bold">{(cell?.r || 0).toFixed(1)} R</span></div>
                                   <div>Başarı Oranı: <span className="text-amber-300 font-bold">%{winRatePercent}</span></div>
+                                  {cell?.planFidelityCounts && Object.keys(cell.planFidelityCounts).length > 0 && (
+                                    <div className="pt-0.5 text-[11px] text-purple-300 border-t border-zinc-800/80 mt-1 uppercase font-bold">
+                                      Setup: <span className="font-bold">{Object.entries(cell.planFidelityCounts).sort((a, b) => b[1] - a[1])[0][0]}</span>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
 
@@ -286,7 +302,7 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
               <Info size={13} className="text-blue-400 shrink-0" />
               <span>Renk yoğunluğu PnL büyüklüğünü, kutu içi değerler ise Başarı Oranını (Win Rate %) belirtir.</span>
             </div>
-            <div className="flex items-center gap-2 font-mono text-[10px] shrink-0">
+            <div className="flex items-center gap-2 font-sans text-[10px] shrink-0">
               <span className="text-rose-400 font-bold">Zarar</span>
               <div className="flex gap-1">
                 <div className="w-3.5 h-3.5 rounded-md bg-rose-500/80 border border-rose-500"></div>

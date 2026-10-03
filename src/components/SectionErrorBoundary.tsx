@@ -41,7 +41,7 @@ export class SectionErrorBoundary extends Component<Props, State> {
         return this.props.fallback;
       }
       return (
-        <div className="w-full h-full min-h-[200px] flex flex-col items-center justify-center p-6 bg-zinc-800 border border-red-500/20 rounded-2xl">
+        <div className="w-full h-full min-h-[200px] flex flex-col items-center justify-center p-5 bg-zinc-800 border border-red-500/20 rounded-2xl">
           <div className="bg-red-500/10 p-4 rounded-full mb-4">
             <AlertTriangle className="text-red-400 w-8 h-8" />
           </div>

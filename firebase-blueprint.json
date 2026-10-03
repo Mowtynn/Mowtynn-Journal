@@ -94,7 +94,8 @@
         "confirmations": { "type": "array" },
         "concepts": { "type": "array" },
         "sessions": { "type": "array" },
-        "assets": { "type": "array" }
+        "assets": { "type": "array" },
+        "planFidelities": { "type": "array" }
       },
       "required": ["userId"]
     },

@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Calendar as CalendarIcon, Clock, ChevronLeft, ChevronRight, ChevronDown, Check } from 'lucide-react';
 
 interface TurkishDateTimePickerProps {
@@ -18,8 +19,10 @@ export function TurkishDateTimePicker({ value, onChange, className = '' }: Turki
   const [isOpen, setIsOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<'none' | 'hour' | 'minute'>('none');
   const containerRef = useRef<HTMLDivElement>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
   const hourDropdownRef = useRef<HTMLDivElement>(null);
   const minuteDropdownRef = useRef<HTMLDivElement>(null);
+  const [popupPos, setPopupPos] = useState<{ top: number; left: number; width: number } | null>(null);
 
   // Parse current value
   const parsedDate = React.useMemo(() => {
@@ -43,21 +46,92 @@ export function TurkishDateTimePicker({ value, onChange, className = '' }: Turki
     setViewMonth(parsedDate.getMonth());
   }, [value, isOpen]);
 
-  // Click outside to close main popup & custom time dropdowns
+  // Position calculation for Portal & Viewport Boundaries
+  const getCalculatedPosition = useCallback(() => {
+    if (!containerRef.current) return null;
+    const rect = containerRef.current.getBoundingClientRect();
+    const popupWidth = Math.min(290, window.innerWidth - 20);
+    const popupHeight = 360; // Estimated max height of the picker
+
+    const spaceBelow = window.innerHeight - rect.bottom - 10;
+    const spaceAbove = rect.top - 10;
+
+    let top = 0;
+    if (spaceBelow >= popupHeight || spaceBelow >= spaceAbove) {
+      // Place below
+      top = rect.bottom + 6;
+      if (top + popupHeight > window.innerHeight - 8) {
+        top = Math.max(8, window.innerHeight - popupHeight - 8);
+      }
+    } else {
+      // Place above
+      top = Math.max(8, rect.top - popupHeight - 6);
+    }
+
+    let left = rect.left;
+    if (left + popupWidth > window.innerWidth - 10) {
+      left = Math.max(10, window.innerWidth - popupWidth - 10);
+    }
+    if (left < 10) {
+      left = 10;
+    }
+
+    return { top, left, width: popupWidth };
+  }, []);
+
+  // Compute position before paint
+  useLayoutEffect(() => {
+    if (!isOpen) return;
+    const pos = getCalculatedPosition();
+    if (pos) {
+      setPopupPos(pos);
+    }
+  }, [isOpen, getCalculatedPosition]);
+
+  // Sync position on open, scroll & resize
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+    if (!isOpen) return;
+
+    const handleUpdate = () => {
+      const pos = getCalculatedPosition();
+      if (pos) {
+        setPopupPos(pos);
+      }
+    };
+
+    window.addEventListener('resize', handleUpdate, { passive: true });
+    window.addEventListener('scroll', handleUpdate, { capture: true, passive: true });
+
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(target) &&
+        popupRef.current &&
+        !popupRef.current.contains(target)
+      ) {
         setIsOpen(false);
         setActiveDropdown('none');
       }
-    }
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isOpen]);
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+        setActiveDropdown('none');
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('resize', handleUpdate);
+      window.removeEventListener('scroll', handleUpdate, true);
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, getCalculatedPosition]);
 
   // Scroll active hour/minute into view when dropdown is opened
   useEffect(() => {
@@ -237,36 +311,54 @@ export function TurkishDateTimePicker({ value, onChange, className = '' }: Turki
   const currentHours = parsedDate.getHours();
   const currentMinutes = parsedDate.getMinutes();
 
+  const handleToggle = () => {
+    if (!isOpen) {
+      const pos = getCalculatedPosition();
+      if (pos) {
+        setPopupPos(pos);
+      }
+      setIsOpen(true);
+      setActiveDropdown('none');
+    } else {
+      setIsOpen(false);
+      setActiveDropdown('none');
+    }
+  };
+
   return (
-    <div ref={containerRef} className={`relative inline-block ${className}`}>
+    <div ref={containerRef} className={`relative ${className || 'inline-block'}`}>
       {/* Input Display Button */}
       <button
         type="button"
-        onClick={() => {
-          setIsOpen(!isOpen);
-          setActiveDropdown('none');
-        }}
-        className="w-full sm:w-auto h-10 sm:h-8 bg-zinc-950 hover:bg-zinc-900 border border-zinc-700/50 hover:border-zinc-600 rounded-xl px-3 text-[11px] text-zinc-200 focus:outline-none focus:border-zinc-500 transition-colors font-mono flex items-center justify-between gap-3 cursor-pointer shadow-xs group"
-        title="İşlem Tarihini ve Saatini Değiştir"
+        onClick={handleToggle}
+        className="w-full h-9.5 bg-zinc-950/80 hover:bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 rounded-xl px-3 text-xs text-zinc-100 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-all font-sans font-bold flex items-center justify-between gap-3 cursor-pointer shadow-inner group"
       >
-        <span className="tracking-wide font-medium">{displayFormatted}</span>
+        <span className="tracking-wide truncate">{displayFormatted}</span>
         
-        {/* Matte White Calendar Icon */}
-        <div className="flex items-center text-zinc-300 group-hover:text-zinc-100 transition-colors">
+        {/* Calendar Icon */}
+        <div className="flex items-center text-zinc-400 group-hover:text-zinc-200 transition-colors">
           <CalendarIcon size={14} className="shrink-0" />
         </div>
       </button>
 
-      {/* Dropdown Popup */}
-      {isOpen && (
+      {/* Dropdown Popup Portal */}
+      {isOpen && popupPos && typeof document !== 'undefined' && createPortal(
         <div 
+          ref={popupRef}
           onClick={(e) => {
             e.stopPropagation();
             if (activeDropdown !== 'none') {
               setActiveDropdown('none');
             }
           }}
-          className="absolute bottom-full mb-2 left-0 z-50 w-[280px] sm:w-[290px] bg-zinc-900/98 border border-zinc-700/60  rounded-2xl p-3.5 shadow-2xl shadow-black/80 animate-in fade-in zoom-in-95 duration-150 select-none"
+          style={{
+            position: 'fixed',
+            top: `${popupPos.top}px`,
+            left: `${popupPos.left}px`,
+            width: `${popupPos.width}px`,
+            zIndex: 99999,
+          }}
+          className="bg-zinc-900/98 border border-zinc-700/80 rounded-2xl p-3.5 shadow-2xl shadow-black/90 animate-in fade-in duration-100 select-none backdrop-blur-md"
         >
           {/* Quick Preset Buttons */}
           <div className="flex items-center gap-1.5 mb-3 pb-2.5 border-b border-zinc-800/80">
@@ -303,7 +395,6 @@ export function TurkishDateTimePicker({ value, onChange, className = '' }: Turki
                 type="button"
                 onClick={handlePrevMonth}
                 className="w-6.5 h-6.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 flex items-center justify-center transition-colors duration-150 cursor-pointer"
-                title="Önceki Ay"
               >
                 <ChevronLeft size={13} />
               </button>
@@ -312,7 +403,6 @@ export function TurkishDateTimePicker({ value, onChange, className = '' }: Turki
                 type="button"
                 onClick={handleNextMonth}
                 className="w-6.5 h-6.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 flex items-center justify-center transition-colors duration-150 cursor-pointer"
-                title="Sonraki Ay"
               >
                 <ChevronRight size={13} />
               </button>
@@ -351,7 +441,7 @@ export function TurkishDateTimePicker({ value, onChange, className = '' }: Turki
                       updateDateTime(newDate);
                     }
                   }}
-                  className={`h-6.5 text-[10px] font-mono rounded-lg transition-all flex items-center justify-center relative cursor-pointer ${
+                  className={`h-6.5 text-[10px] font-sans rounded-lg transition-all flex items-center justify-center relative cursor-pointer ${
                     selected
                       ? 'bg-blue-500/25 text-blue-300 border border-blue-500/40 font-bold shadow-xs'
                       : !item.isCurrentMonth
@@ -384,23 +474,22 @@ export function TurkishDateTimePicker({ value, onChange, className = '' }: Turki
                     e.stopPropagation();
                     setActiveDropdown(activeDropdown === 'hour' ? 'none' : 'hour');
                   }}
-                  className={`h-7 px-2.5 bg-zinc-950 hover:bg-zinc-900 border rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer transition-all shadow-xs ${
+                  className={`h-7 px-2.5 bg-zinc-950 hover:bg-zinc-900 border rounded-lg text-xs font-sans font-bold flex items-center gap-1.5 cursor-pointer transition-all shadow-xs ${
                     activeDropdown === 'hour'
                       ? 'border-blue-500/60 text-blue-300 ring-1 ring-blue-500/30 bg-zinc-900'
                       : 'border-zinc-700/60 hover:border-zinc-500 text-zinc-100'
                   }`}
-                  title="Saat Seç"
                 >
                   <span>{pad(currentHours)}</span>
                   <ChevronDown size={11} className={`text-zinc-400 transition-transform duration-150 ${activeDropdown === 'hour' ? 'rotate-180 text-blue-400' : ''}`} />
                 </button>
 
-                {/* Custom Hour Scrollable Menu with Sleek Dark Theme & Scrollbar */}
+                {/* Custom Hour Scrollable Menu */}
                 {activeDropdown === 'hour' && (
                   <div
                     ref={hourDropdownRef}
                     onClick={(e) => e.stopPropagation()}
-                    className="absolute bottom-full mb-1.5 left-0 w-20 max-h-44 overflow-y-auto bg-zinc-900/98 border border-zinc-700/80 rounded-xl p-1 shadow-2xl z-50  space-y-0.5"
+                    className="absolute bottom-full mb-1.5 left-0 w-20 max-h-40 overflow-y-auto bg-zinc-950 border border-zinc-700/90 rounded-xl p-1 shadow-2xl z-50 space-y-0.5"
                     style={{
                       scrollbarWidth: 'thin',
                       scrollbarColor: 'rgba(113, 113, 122, 0.45) rgba(24, 24, 27, 0.6)'
@@ -414,7 +503,7 @@ export function TurkishDateTimePicker({ value, onChange, className = '' }: Turki
                           type="button"
                           data-selected={isCurrent}
                           onClick={() => handleHourSelect(h)}
-                          className={`w-full py-1 text-center text-xs font-mono font-medium rounded-lg transition-all cursor-pointer flex items-center justify-center ${
+                          className={`w-full py-1 text-center text-xs font-sans font-medium rounded-lg transition-all cursor-pointer flex items-center justify-center ${
                             isCurrent
                               ? 'bg-blue-500/25 text-blue-300 font-bold border border-blue-500/40 shadow-xs'
                               : 'text-zinc-300 hover:text-white hover:bg-zinc-800'
@@ -428,7 +517,7 @@ export function TurkishDateTimePicker({ value, onChange, className = '' }: Turki
                 )}
               </div>
 
-              <span className="text-xs font-mono font-bold text-zinc-500 select-none">:</span>
+              <span className="text-xs font-sans font-bold text-zinc-500 select-none">:</span>
 
               {/* Custom Dark Minute Dropdown */}
               <div className="relative">
@@ -438,23 +527,22 @@ export function TurkishDateTimePicker({ value, onChange, className = '' }: Turki
                     e.stopPropagation();
                     setActiveDropdown(activeDropdown === 'minute' ? 'none' : 'minute');
                   }}
-                  className={`h-7 px-2.5 bg-zinc-950 hover:bg-zinc-900 border rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer transition-all shadow-xs ${
+                  className={`h-7 px-2.5 bg-zinc-950 hover:bg-zinc-900 border rounded-lg text-xs font-sans font-bold flex items-center gap-1.5 cursor-pointer transition-all shadow-xs ${
                     activeDropdown === 'minute'
                       ? 'border-blue-500/60 text-blue-300 ring-1 ring-blue-500/30 bg-zinc-900'
                       : 'border-zinc-700/60 hover:border-zinc-500 text-zinc-100'
                   }`}
-                  title="Dakika Seç"
                 >
                   <span>{pad(currentMinutes)}</span>
                   <ChevronDown size={11} className={`text-zinc-400 transition-transform duration-150 ${activeDropdown === 'minute' ? 'rotate-180 text-blue-400' : ''}`} />
                 </button>
 
-                {/* Custom Minute Scrollable Menu with Sleek Dark Theme & Scrollbar */}
+                {/* Custom Minute Scrollable Menu */}
                 {activeDropdown === 'minute' && (
                   <div
                     ref={minuteDropdownRef}
                     onClick={(e) => e.stopPropagation()}
-                    className="absolute bottom-full mb-1.5 left-0 w-20 max-h-44 overflow-y-auto bg-zinc-900/98 border border-zinc-700/80 rounded-xl p-1 shadow-2xl z-50  space-y-0.5"
+                    className="absolute bottom-full mb-1.5 left-0 w-20 max-h-40 overflow-y-auto bg-zinc-950 border border-zinc-700/90 rounded-xl p-1 shadow-2xl z-50 space-y-0.5"
                     style={{
                       scrollbarWidth: 'thin',
                       scrollbarColor: 'rgba(113, 113, 122, 0.45) rgba(24, 24, 27, 0.6)'
@@ -468,7 +556,7 @@ export function TurkishDateTimePicker({ value, onChange, className = '' }: Turki
                           type="button"
                           data-selected={isCurrent}
                           onClick={() => handleMinuteSelect(m)}
-                          className={`w-full py-1 text-center text-xs font-mono font-medium rounded-lg transition-all cursor-pointer flex items-center justify-center ${
+                          className={`w-full py-1 text-center text-xs font-sans font-medium rounded-lg transition-all cursor-pointer flex items-center justify-center ${
                             isCurrent
                               ? 'bg-blue-500/25 text-blue-300 font-bold border border-blue-500/40 shadow-xs'
                               : 'text-zinc-300 hover:text-white hover:bg-zinc-800'
@@ -490,14 +578,14 @@ export function TurkishDateTimePicker({ value, onChange, className = '' }: Turki
                   setActiveDropdown('none');
                 }}
                 className="ml-1 h-7 px-2.5 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/40 rounded-lg text-xs font-medium transition cursor-pointer flex items-center gap-1 shadow-xs"
-                title="Kaydet ve Kapat"
               >
                 <Check size={11} />
                 <span>Tamam</span>
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
@@ -519,11 +607,13 @@ export function TurkishDatePicker({
   className = '',
   buttonClassName = '',
   placeholder = 'Tarih Seçin',
-  dropDirection = 'down',
+  dropDirection,
   showPresets = true
 }: TurkishDatePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
+  const [popupPos, setPopupPos] = useState<{ top: number; left: number; width: number } | null>(null);
 
   // Parse current value
   const parsedDate = React.useMemo(() => {
@@ -548,19 +638,91 @@ export function TurkishDatePicker({
     }
   }, [value, isOpen]);
 
+  // Viewport calculation
+  const getCalculatedPosition = useCallback(() => {
+    if (!containerRef.current) return null;
+    const rect = containerRef.current.getBoundingClientRect();
+    const popupWidth = Math.min(280, window.innerWidth - 20);
+    const popupHeight = showPresets ? 310 : 270;
+
+    const spaceBelow = window.innerHeight - rect.bottom - 10;
+    const spaceAbove = rect.top - 10;
+
+    let top = 0;
+    if (dropDirection === 'up' && spaceAbove >= popupHeight) {
+      top = Math.max(8, rect.top - popupHeight - 6);
+    } else if (dropDirection === 'down' && spaceBelow >= popupHeight) {
+      top = rect.bottom + 6;
+    } else if (spaceBelow >= popupHeight || spaceBelow >= spaceAbove) {
+      top = rect.bottom + 6;
+      if (top + popupHeight > window.innerHeight - 8) {
+        top = Math.max(8, window.innerHeight - popupHeight - 8);
+      }
+    } else {
+      top = Math.max(8, rect.top - popupHeight - 6);
+    }
+
+    let left = rect.left;
+    if (left + popupWidth > window.innerWidth - 10) {
+      left = Math.max(10, window.innerWidth - popupWidth - 10);
+    }
+    if (left < 10) {
+      left = 10;
+    }
+
+    return { top, left, width: popupWidth };
+  }, [dropDirection, showPresets]);
+
+  // Compute position before paint
+  useLayoutEffect(() => {
+    if (!isOpen) return;
+    const pos = getCalculatedPosition();
+    if (pos) {
+      setPopupPos(pos);
+    }
+  }, [isOpen, getCalculatedPosition]);
+
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+    if (!isOpen) return;
+
+    const handleUpdate = () => {
+      const pos = getCalculatedPosition();
+      if (pos) {
+        setPopupPos(pos);
+      }
+    };
+
+    window.addEventListener('resize', handleUpdate, { passive: true });
+    window.addEventListener('scroll', handleUpdate, { capture: true, passive: true });
+
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(target) &&
+        popupRef.current &&
+        !popupRef.current.contains(target)
+      ) {
         setIsOpen(false);
       }
-    }
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isOpen]);
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('resize', handleUpdate);
+      window.removeEventListener('scroll', handleUpdate, true);
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, getCalculatedPosition]);
 
   const pad = (n: number) => n.toString().padStart(2, '0');
 
@@ -678,33 +840,49 @@ export function TurkishDatePicker({
     );
   };
 
-  const popupPositionClass = dropDirection === 'up'
-    ? 'bottom-full mb-2'
-    : 'top-full mt-2';
+  const handleToggle = () => {
+    if (!isOpen) {
+      const pos = getCalculatedPosition();
+      if (pos) {
+        setPopupPos(pos);
+      }
+      setIsOpen(true);
+    } else {
+      setIsOpen(false);
+    }
+  };
 
   return (
     <div ref={containerRef} className={`relative inline-block ${className}`}>
       {/* Input Display Button */}
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className={`w-full h-9 bg-zinc-950 hover:bg-zinc-900 border border-zinc-700/50 hover:border-zinc-600 rounded-xl px-3 text-[11px] text-zinc-200 focus:outline-none focus:border-zinc-500 transition-colors font-mono flex items-center justify-between gap-3 cursor-pointer shadow-xs group ${buttonClassName}`}
+        onClick={handleToggle}
+        className={`w-full h-9 bg-zinc-950 hover:bg-zinc-900 border border-zinc-700/50 hover:border-zinc-600 rounded-xl px-3 text-[11px] text-zinc-200 focus:outline-none focus:border-zinc-500 transition-colors font-sans flex items-center justify-between gap-3 cursor-pointer shadow-xs group ${buttonClassName}`}
       >
         <span className={`tracking-wide font-medium ${!value ? 'text-zinc-500' : 'text-zinc-200'}`}>
           {displayFormatted}
         </span>
         
-        {/* Matte White Calendar Icon */}
+        {/* Calendar Icon */}
         <div className="flex items-center text-zinc-300 group-hover:text-zinc-100 transition-colors">
           <CalendarIcon size={14} className="shrink-0" />
         </div>
       </button>
 
-      {/* Dropdown Popup */}
-      {isOpen && (
+      {/* Dropdown Popup Portal */}
+      {isOpen && popupPos && typeof document !== 'undefined' && createPortal(
         <div 
+          ref={popupRef}
           onClick={(e) => e.stopPropagation()}
-          className={`absolute ${popupPositionClass} left-0 z-50 w-[280px] sm:w-[290px] bg-zinc-900/98 border border-zinc-700/60  rounded-2xl p-3.5 shadow-2xl shadow-black/80 animate-in fade-in zoom-in-95 duration-150 select-none`}
+          style={{
+            position: 'fixed',
+            top: `${popupPos.top}px`,
+            left: `${popupPos.left}px`,
+            width: `${popupPos.width}px`,
+            zIndex: 99999,
+          }}
+          className="bg-zinc-900/98 border border-zinc-700/80 rounded-2xl p-3.5 shadow-2xl shadow-black/90 animate-in fade-in duration-100 select-none backdrop-blur-md"
         >
           {/* Quick Preset Buttons */}
           {showPresets && (
@@ -736,7 +914,6 @@ export function TurkishDatePicker({
                 type="button"
                 onClick={handlePrevMonth}
                 className="w-6.5 h-6.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 flex items-center justify-center transition-colors duration-150 cursor-pointer"
-                title="Önceki Ay"
               >
                 <ChevronLeft size={13} />
               </button>
@@ -745,7 +922,6 @@ export function TurkishDatePicker({
                 type="button"
                 onClick={handleNextMonth}
                 className="w-6.5 h-6.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 flex items-center justify-center transition-colors duration-150 cursor-pointer"
-                title="Sonraki Ay"
               >
                 <ChevronRight size={13} />
               </button>
@@ -783,7 +959,7 @@ export function TurkishDatePicker({
                       setIsOpen(false);
                     }
                   }}
-                  className={`h-6.5 text-[10px] font-mono rounded-lg transition-all flex items-center justify-center relative cursor-pointer ${
+                  className={`h-6.5 text-[10px] font-sans rounded-lg transition-all flex items-center justify-center relative cursor-pointer ${
                     selected
                       ? 'bg-blue-500/25 text-blue-300 border border-blue-500/40 font-bold shadow-xs'
                       : !item.isCurrentMonth
@@ -799,7 +975,8 @@ export function TurkishDatePicker({
               );
             })}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

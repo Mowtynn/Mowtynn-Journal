@@ -1,392 +1,338 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&subset=latin,latin-ext&display=swap');
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&subset=latin,latin-ext&display=swap');
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
-@theme {
-  --font-sans: "Plus Jakarta Sans", "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: "Plus Jakarta Sans", "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  
-  --color-zinc-850: #222225;
-  --color-zinc-950: #121214;
-  --color-black: #121214;
-  --color-zinc-900: #1c1c1f;
-  --color-zinc-800: #27272a;
-  --color-zinc-700: #3f3f46;
-  --color-zinc-600: #52525b;
+html {
+  scrollbar-gutter: stable;
+  overflow-y: scroll;
+}
 
-  /* Softer, modern curved rounded corners for the entire site */
-  --radius-xs: 0.375rem; /* 6px */
+@theme {
+  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  
+  --color-white: #C5CBD6;
+  
+  /* Overridden Default Tailwind Colors for TradingView Palette (OLED softened) */
+  --color-zinc-50: #C5CBD6;
+  --color-zinc-100: #BEC4D0;
+  --color-zinc-200: #B0B7C4;
+  --color-zinc-300: #939BAA;
+  --color-zinc-400: #737B8B;
+  --color-zinc-500: #575F6E;
+  --color-zinc-600: #3E4552;
+  --color-zinc-700: #272C36;
+  --color-zinc-800: #1B1F27;
+  --color-zinc-900: #11141A;
+  --color-zinc-950: #0A0A0A;
+
+  --color-emerald-50: #e0f2f1;
+  --color-emerald-100: #b2dfdb;
+  --color-emerald-200: #80cbc4;
+  --color-emerald-300: #4db6ac;
+  --color-emerald-400: #2FA376;
+  --color-emerald-500: #258F66;
+  --color-emerald-600: #1D7553;
+  --color-emerald-700: #16615b;
+  --color-emerald-800: #0d3835;
+  --color-emerald-900: #0a332e;
+  --color-emerald-950: rgba(47, 163, 118, 0.12);
+
+  --color-rose-50: #fdeaea;
+  --color-rose-100: #f9caca;
+  --color-rose-200: #f5a8a8;
+  --color-rose-300: #f08383;
+  --color-rose-400: #D65A5A;
+  --color-rose-500: #C24A4A;
+  --color-rose-600: #A83A3A;
+  --color-rose-700: #b71c1c;
+  --color-rose-800: #7a1212;
+  --color-rose-900: #461514;
+  --color-rose-950: rgba(214, 90, 90, 0.12);
+
+  --color-blue-50: #eaeff6;
+  --color-blue-100: #c9d8eb;
+  --color-blue-200: #a6c0df;
+  --color-blue-300: #628DD6;
+  --color-blue-400: #4175CC;
+  --color-blue-500: #3361AD;
+  --color-blue-600: #244987;
+  --color-blue-700: #2a4c77;
+  --color-blue-800: #1b314c;
+  --color-blue-900: #14223a;
+  --color-blue-950: rgba(65, 117, 204, 0.12);
+
+  --color-amber-50: #fff4e5;
+  --color-amber-100: #ffe0b2;
+  --color-amber-200: #ffcc80;
+  --color-amber-300: #ffb74d;
+  --color-amber-400: #D4932E;
+  --color-amber-500: #BF8022;
+  --color-amber-600: #ef6c00;
+  --color-amber-700: #e65100;
+  --color-amber-800: #b33d00;
+  --color-amber-900: #4d3008;
+  --color-amber-950: rgba(212, 147, 46, 0.12);
+
+  --color-indigo-400: #6F79D4;
+  --color-indigo-500: #555FB8;
+  --color-indigo-950: rgba(111, 121, 212, 0.12);
+
+  --color-purple-400: #8E78D4;
+  --color-purple-500: #745FBA;
+  --color-purple-950: rgba(142, 120, 212, 0.12);
+
+  /* Centralized Color Tokens (OLED Gentle & Softened) */
+  --color-brand: #4175CC;
+  --color-brand-hover: #3563B0;
+  
+  --color-win: #2FA376;
+  --color-win-hover: #278C65;
+  --color-win-bg: rgba(47, 163, 118, 0.10);
+  --color-win-border: rgba(47, 163, 118, 0.24);
+  
+  --color-loss: #D65A5A;
+  --color-loss-hover: #C04A4A;
+  --color-loss-bg: rgba(214, 90, 90, 0.10);
+  --color-loss-border: rgba(214, 90, 90, 0.24);
+  
+  --color-breakeven: #D4932E;
+  --color-breakeven-bg: rgba(212, 147, 46, 0.10);
+  --color-breakeven-border: rgba(212, 147, 46, 0.24);
+
+  /* Backgrounds */
+  --color-bg-base: #0A0A0A;
+  --color-bg-surface: #131720;
+  --color-bg-card: #131720;
+  --color-bg-card-hover: #171B24;
+  --color-bg-modal: #131720;
+  --color-bg-input: #0D0F14;
+  
+  /* Borders */
+  --color-border-subtle: #22262F;
+  --color-border-card: #2A2F3A;
+  --color-border-focus: rgba(65, 117, 204, 0.35);
+
+  /* Text */
+  --color-text-primary: #C5CBD6;
+  --color-text-secondary: #7F8796;
+  --color-text-muted: #575E6C;
+  
+  /* Radii */
   --radius-sm: 0.5rem; /* 8px */
   --radius-md: 0.75rem; /* 12px */
   --radius-lg: 1rem; /* 16px */
   --radius-xl: 1.25rem; /* 20px */
   --radius-2xl: 1.5rem; /* 24px */
-  --radius-3xl: 2rem; /* 32px */
-  --radius: 0.75rem; /* 12px */
+  
+  /* Shadows */
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.4);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.5);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.6);
+  --shadow-xl: 0 16px 32px rgba(0,0,0,0.7);
+  --shadow-2xl: 0 24px 48px rgba(0,0,0,0.8);
+  --shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
+  --shadow-modal: 0 20px 40px -8px rgba(0, 0, 0, 0.7);
+  --shadow-glow: 0 0 8px rgba(65, 117, 204, 0.18);
 }
 
-/* Base typography and rendering stabilization - Comfortable, open & highly legible with full Turkish character support */
+@layer components {
+  /* ----- TYPOGRAPHY (3-Level Standard) ----- */
+  /* Level 1: Page / Modal Main Headers */
+  .heading-1 { 
+    @apply text-base font-extrabold text-text-primary uppercase tracking-wider font-sans;
+  }
+  
+  /* Level 2: Card / Section Headers */
+  .heading-2 { 
+    @apply text-xs font-bold text-text-secondary uppercase tracking-widest font-sans flex items-center gap-1.5; 
+  }
+  
+  /* Level 3: Form Labels / Subtext / Counters */
+  .heading-3 { 
+    @apply text-[10px] font-bold text-text-muted uppercase tracking-widest font-sans block; 
+  }
+
+  /* Standard Body Text */
+  .body-text {
+    @apply text-[13px] text-text-primary font-medium leading-relaxed font-sans;
+  }
+  
+  /* Legacy/Utility Typography Mappings */
+  .page-title { @apply text-base font-extrabold text-text-primary uppercase tracking-wider font-sans; }
+  .heading-3-legacy { @apply text-xs font-bold text-text-secondary uppercase tracking-widest font-sans flex items-center gap-1.5; }
+  .card-title { @apply text-xs font-bold text-text-secondary uppercase tracking-widest font-sans flex items-center gap-1.5; }
+  .form-label { @apply text-[10px] font-bold text-text-muted uppercase tracking-widest font-sans block mb-1.5; }
+  .value-text {
+    @apply text-base font-bold text-text-primary font-sans;
+  }
+
+  /* ----- CONTAINERS & CARDS ----- */
+  .layout-base {
+    @apply bg-bg-base text-text-primary min-h-screen selection:bg-brand/30 selection:text-white font-sans;
+  }
+  .card-base { 
+    @apply bg-bg-card border border-border-card rounded-2xl shadow-card transition-colors duration-200 hover:bg-bg-card-hover font-sans; 
+  }
+  .card-header {
+    @apply flex items-center justify-between p-4 sm:p-5 border-b border-border-subtle font-sans;
+  }
+  .card-body {
+    @apply p-4 sm:p-5 font-sans;
+  }
+  
+  /* ----- MODALS ----- */
+  .modal-overlay { 
+    @apply fixed inset-0 z-[2500] flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-sm overflow-y-auto font-sans; 
+  }
+  .modal-content { 
+    @apply bg-bg-modal border border-border-card rounded-2xl shadow-modal w-full flex flex-col my-auto relative overflow-hidden font-sans; 
+  }
+  .modal-header {
+    @apply flex items-center justify-between px-5 py-4 border-b border-border-subtle bg-bg-base font-sans;
+  }
+  .modal-body {
+    @apply p-5 font-sans;
+  }
+  
+  /* ----- INPUTS & FORMS ----- */
+  .input-base { 
+    @apply w-full h-10 bg-bg-input border border-border-subtle hover:border-border-card focus:border-border-focus focus:ring-1 focus:ring-border-focus rounded-xl px-3 text-sm text-text-primary placeholder-text-muted outline-none transition-colors font-sans; 
+  }
+  .input-icon-wrapper {
+    @apply absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-text-muted;
+  }
+  .input-with-icon {
+    @apply pl-9;
+  }
+
+  /* ----- BUTTONS ----- */
+  .btn-base {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-[transform,background-color,color,border-color,box-shadow,opacity] duration-200 outline-none select-none active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none disabled:active:scale-100 font-sans;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-[transform,background-color,color,border-color,box-shadow,opacity] duration-200 outline-none select-none active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none disabled:active:scale-100 bg-brand hover:bg-brand-hover text-white shadow-glow px-4 py-2 text-sm font-sans;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-[transform,background-color,color,border-color,box-shadow,opacity] duration-200 outline-none select-none active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none disabled:active:scale-100 bg-bg-surface border border-border-card hover:bg-bg-card text-text-primary px-4 py-2 text-sm font-sans;
+  }
+  .btn-icon {
+    @apply flex items-center justify-center w-9 h-9 rounded-xl border border-border-subtle bg-bg-surface hover:bg-bg-card hover:text-white text-text-secondary transition-colors cursor-pointer shrink-0 font-sans;
+  }
+
+  /* ----- TOGGLE GROUPS ----- */
+  .toggle-group { 
+    @apply flex flex-wrap gap-2 p-1 bg-bg-input border border-border-subtle rounded-xl; 
+  }
+  .toggle-group-grid {
+    @apply grid gap-1.5 p-1 bg-bg-input border border-border-subtle rounded-xl;
+  }
+  .toggle-item { 
+    @apply flex-1 sm:flex-none flex items-center justify-center rounded-lg py-2 px-3 text-[11px] font-bold font-sans uppercase tracking-wider transition-colors duration-200 cursor-pointer select-none border border-transparent; 
+  }
+  .toggle-item-inactive { 
+    @apply text-text-muted hover:text-text-secondary hover:bg-bg-surface; 
+  }
+  /* Status Toggle Items */
+  .toggle-item-brand { @apply bg-brand/10 border-brand/20 text-brand shadow-xs; }
+  .toggle-item-win { @apply bg-win-bg border-win-border text-win shadow-xs; }
+  .toggle-item-loss { @apply bg-loss-bg border-loss-border text-loss shadow-xs; }
+  .toggle-item-breakeven { @apply bg-breakeven-bg border-breakeven-border text-breakeven shadow-xs; }
+  .toggle-item-zinc { @apply bg-bg-surface border-border-card text-text-primary; }
+  
+  /* ----- BADGES ----- */
+  .badge-base {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold font-sans;
+  }
+  .badge-win { @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-win-bg text-win border border-win-border font-sans; }
+  .badge-loss { @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-loss-bg text-loss border border-loss-border font-sans; }
+  .badge-breakeven { @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-breakeven-bg text-breakeven border border-breakeven-border font-sans; }
+  .badge-brand { @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-brand/10 text-brand border border-brand/20 font-sans; }
+  .badge-neutral { @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-bg-surface text-text-secondary border border-border-subtle font-sans; }
+}
+
+*,
+*::before,
+*::after,
+html,
+body,
+input,
+button,
+select,
+textarea,
+optgroup,
+pre,
+code,
+kbd,
+samp {
+  font-family: "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+}
+
 html {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  font-feature-settings: "tnum" 1, "locl" 1;
+  font-feature-settings: "locl" 1;
   font-language-override: "TRK";
-  letter-spacing: -0.005em;
+  letter-spacing: normal;
 }
-
-/* GPU Compositing (ANGLE/D3D11on12) Optimizations */
-/* Removed excessive translateZ to prevent compositor layer explosion and screen tearing */
 
 body {
   font-family: var(--font-sans);
-  background-color: #121214; /* default zinc-950 */
-  scroll-padding-top: 5rem;
-  text-rendering: optimizeLegibility;
-  color: #f4f4f5;
+  background-color: var(--color-bg-base);
+  color: var(--color-text-primary);
   line-height: 1.55;
+  letter-spacing: normal;
 }
 
-/* Universal Modern Typography & Harmonization */
-*,
-*::before,
-*::after {
-  font-family: var(--font-sans);
-}
-
-/* Modern Numeric & Tabular stabilization across tables, cards, badges and metrics */
-.font-mono,
-code,
-kbd,
-samp,
-pre,
-table,
-.tabular-nums,
-[data-tabular] {
+input, button, select, textarea, optgroup, pre, code, kbd, samp {
   font-family: var(--font-sans) !important;
-  font-variant-numeric: tabular-nums lining-nums;
-  -webkit-font-feature-settings: "tnum" 1, "lnum" 1;
-  font-feature-settings: "tnum" 1, "lnum" 1;
+  letter-spacing: normal;
 }
 
-button, input, optgroup, select, textarea {
-  font-family: var(--font-sans) !important;
-}
-
-/* Context-Aware Regional Typography Optimizations */
-.nav-tab-label {
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0;
-}
-
-.kpi-title {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  color: #a1a1aa;
-}
-
-.kpi-value {
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  font-variant-numeric: tabular-nums lining-nums;
-}
-
-.table-header-cell {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  color: #a1a1aa;
-}
-
-.table-body-cell {
-  font-size: 13px;
-  font-weight: 500;
-  font-variant-numeric: tabular-nums lining-nums;
-}
-
-.form-label-text {
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0;
-  color: #e4e4e7;
-}
-
-.badge-micro {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0;
-}
-
-.journal-text-reading {
-  font-size: 14px;
-  line-height: 1.7;
-  color: #e4e4e7;
-}
-
-/* Soft, Fluid Micro-Interactions & Stable States */
-button, 
-a, 
-select, 
-input[type="submit"], 
-input[type="button"],
-[role="button"] {
-  transition-property: color, background-color, border-color, box-shadow, opacity;
-  transition-duration: 200ms;
-  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-button:focus,
-button:focus-visible,
-button:active,
-a:focus,
-a:focus-visible,
-a:active,
-[role="button"]:focus,
-[role="button"]:focus-visible,
-[role="button"]:active,
-tr:focus,
-tr:focus-visible,
-tr:active,
-td:focus,
-td:focus-visible,
-td:active,
-span:focus,
-span:active,
-div:focus,
-div:focus-visible,
-div:active,
-input:focus,
-input:focus-visible,
-input:active,
-textarea:focus,
-textarea:focus-visible,
-textarea:active,
-select:focus,
-select:focus-visible,
-select:active,
-*:focus,
-*:focus-visible,
-*:active {
-  outline: none !important;
-  -webkit-tap-highlight-color: transparent !important;
-}
-
-/* Soft, stable card hover effect without positional layout shifts */
-.card-hover {
-  transition-property: background-color, border-color, box-shadow;
-  transition-duration: 250ms;
-  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.card-hover:hover {
-  border-color: rgba(63, 63, 70, 0.9);
-  box-shadow: 0 8px 20px -6px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.04);
-}
-
-/* High-fidelity layered modern shadows */
-.shadow-premium-sm {
-  box-shadow: 
-    0 1px 2px rgba(0, 0, 0, 0.4);
-}
-
-.shadow-premium-md {
-  box-shadow: 
-    0 4px 10px -2px rgba(0, 0, 0, 0.5);
-}
-
-.shadow-premium-lg {
-  box-shadow: 
-    0 10px 20px -4px rgba(0, 0, 0, 0.6);
-}
-
-.shadow-premium-xl {
-  box-shadow: 
-    0 20px 40px -8px rgba(0, 0, 0, 0.7);
-}
-
-/* GPU acceleration helpers to enable buttery smooth 120Hz/120FPS rendering without layer explosion */
-.transform-gpu,
-.animate-gpu,
-.will-change-transform {
-  will-change: transform, opacity;
-}
-
-.optimize-gpu {
-  will-change: transform, opacity;
-}
-
-/* Removed pointer-events: none for scrolling as it breaks interactivity */
-
-/* Enable Content Visibility for off-screen rendering optimization on Iris Xe */
-.content-visibility-auto {
-  content-visibility: auto;
-  contain-intrinsic-size: 1px 500px;
-}
-
-/* Hide default number input spin buttons globally */
-input[type=number]::-webkit-inner-spin-button, 
-input[type=number]::-webkit-outer-spin-button { 
-  -webkit-appearance: none; 
-  margin: 0; 
-}
-input[type=number] {
-  -moz-appearance: textfield; /* Firefox */
-}
-
+/* Base utility overrides */
 * {
   -webkit-tap-highlight-color: transparent;
   scrollbar-width: thin;
-  scrollbar-color: #3f3f46 #121214;
+  scrollbar-color: var(--color-border-card) var(--color-bg-base);
 }
 
-/* Theme-Compatible Native Scrollbar */
+/* Fast Touch & Click Responsiveness */
+button, a, input, select, textarea, [role="button"] {
+  touch-action: manipulation;
+}
+
+/* GPU Hardware Acceleration & Smooth Transitions */
+.gpu-layer {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Hide default browser spinners for number inputs */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
 }
-
 ::-webkit-scrollbar-track {
-  background: #121214; /* Default zinc-950 background */
+  background: var(--color-bg-base); 
 }
-
 ::-webkit-scrollbar-thumb {
-  background: #3f3f46; /* zinc-700 */
-  border-radius: 5px;
-  border: 2px solid #121214; /* Gives a slight inset look matching the dark theme */
+  background: var(--color-border-subtle); 
+  border-radius: 4px;
 }
-
 ::-webkit-scrollbar-thumb:hover {
-  background: #52525b; /* zinc-600 */
+  background: var(--color-border-card); 
 }
-
-/* Modern High-Fidelity Print & PDF Styles */
-@media print {
-  /* Hide the entire standard app interface and overlays */
-  body, #root, #root-layout, .no-print {
-    display: none !important;
-    visibility: hidden !important;
-    background: transparent !important;
-  }
-
-  /* Only display the designated print report section */
-  #print-report-root {
-    display: block !important;
-    visibility: visible !important;
-    position: absolute !important;
-    left: 0 !important;
-    top: 0 !important;
-    width: 210mm !important; /* Standard A4 Width */
-    min-height: 297mm !important; /* Standard A4 Height */
-    background-color: #030712 !important; /* Premium Dark Background (slate-950) */
-    color: #f1f5f9 !important; /* Premium Light Text (slate-100) */
-    margin: 0 !important;
-    padding: 15mm !important;
-    box-sizing: border-box !important;
-    font-family: "Plus Jakarta Sans", sans-serif !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-
-  /* Force elements inside printable area to be visible and colored correctly */
-  #print-report-root * {
-    visibility: visible !important;
-  }
-  
-  /* Optimize table and typography for clean print margins */
-  table {
-    page-break-inside: auto;
-  }
-  tr {
-    page-break-inside: avoid;
-    page-break-after: auto;
-  }
-  thead {
-    display: table-header-group;
-  }
-}
-
-/* HTML2Canvas OKLCH Color Fallbacks & Fixes for Print Report */
-#print-report-root {
-  background-color: #18181b !important; /* zinc-950 */
-  color: #f4f4f5 !important; /* zinc-100 */
-}
-
-#print-report-root .text-blue-600,
-#print-report-root .text-blue-400 { color: #60a5fa !important; }
-#print-report-root .text-zinc-950,
-#print-report-root .text-zinc-50,
-#print-report-root .text-slate-950,
-#print-report-root .text-slate-50 { color: #fafafa !important; }
-#print-report-root .text-zinc-100,
-#print-report-root .text-slate-100 { color: #f4f4f5 !important; }
-#print-report-root .text-zinc-200,
-#print-report-root .text-slate-200 { color: #e4e4e7 !important; }
-#print-report-root .text-zinc-300,
-#print-report-root .text-slate-300 { color: #d4d4d8 !important; }
-#print-report-root .text-zinc-400,
-#print-report-root .text-slate-400 { color: #a1a1aa !important; }
-#print-report-root .text-zinc-500,
-#print-report-root .text-slate-500 { color: #71717a !important; }
-#print-report-root .text-zinc-600,
-#print-report-root .text-slate-600 { color: #52525b !important; }
-
-#print-report-root .text-emerald-500,
-#print-report-root .text-emerald-400 { color: #34d399 !important; }
-#print-report-root .text-rose-500,
-#print-report-root .text-rose-400 { color: #f87171 !important; }
-#print-report-root .text-amber-500,
-#print-report-root .text-amber-400 { color: #fbbf24 !important; }
-#print-report-root .text-emerald-600 { color: #10b981 !important; }
-#print-report-root .text-rose-600 { color: #f43f5e !important; }
-#print-report-root .text-white { color: #ffffff !important; }
-
-#print-report-root .bg-zinc-950,
-#print-report-root .bg-slate-950 { background-color: #18181b !important; }
-#print-report-root .bg-zinc-900,
-#print-report-root .bg-slate-900 { background-color: #18181b !important; }
-#print-report-root .bg-zinc-800,
-#print-report-root .bg-slate-800 { background-color: #27272a !important; }
-#print-report-root .bg-zinc-900\/50,
-#print-report-root .bg-slate-900\/50 { background-color: rgba(24, 24, 27, 0.5) !important; }
-#print-report-root .bg-white { background-color: #18181b !important; }
-
-#print-report-root .bg-emerald-50,
-#print-report-root .bg-emerald-950\/50 { background-color: rgba(6, 78, 59, 0.4) !important; }
-#print-report-root .bg-rose-50,
-#print-report-root .bg-rose-950\/50 { background-color: rgba(136, 19, 55, 0.4) !important; }
-#print-report-root .bg-emerald-100,
-#print-report-root .bg-emerald-950 { background-color: #064e3b !important; }
-#print-report-root .bg-rose-100,
-#print-report-root .bg-rose-950 { background-color: #881317 !important; }
-
-#print-report-root .border-zinc-800,
-#print-report-root .border-slate-800 { border-color: #27272a !important; }
-#print-report-root .border-zinc-700,
-#print-report-root .border-slate-700 { border-color: #3f3f46 !important; }
-#print-report-root .divide-zinc-800\/80 > :not([hidden]) ~ :not([hidden]),
-#print-report-root .divide-slate-800\/80 > :not([hidden]) ~ :not([hidden]) { border-color: #27272a !important; }
-#print-report-root .border-b { border-bottom-width: 1px !important; }
-#print-report-root .border { border-width: 1px !important; }
-
-/* Matte-White Soft Calendar & Time Picker Indicator Styling */
-input[type="date"]::-webkit-calendar-picker-indicator,
-input[type="time"]::-webkit-calendar-picker-indicator,
-input[type="datetime-local"]::-webkit-calendar-picker-indicator {
-  filter: invert(0.85) brightness(0.95);
-  opacity: 0.75;
-  cursor: pointer;
-  transition: opacity 0.15s ease, filter 0.15s ease;
-}
-
-input[type="date"]::-webkit-calendar-picker-indicator:hover,
-input[type="time"]::-webkit-calendar-picker-indicator:hover,
-input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
-  opacity: 1;
-  filter: invert(0.95) brightness(1);
-}
-
-
-

@@ -177,6 +177,37 @@ export const metricDetailsDict: Record<string, Omit<MetricDetail, 'value' | 'id'
       "Konseptnin en sert stres testlerinden biridir."
     ]
   },
+  planFidelityRate: {
+    title: "Plan Sadakati & Disiplin Oranı",
+    description: "Önceden belirlenmiş ticaret planınıza tam sadık kalınarak veya A+ kalitede açılan işlemlerin tüm işlemlere oranıdır.",
+    formula: "(A+ / Tam Sadık İşlem Sayısı / Toplam Değerlendirilen İşlem) × 100",
+    type: 'positive',
+    icon: ShieldCheck,
+    details: [
+      "Yüksek plan sadakati (%70 ve üzeri), trader'ın duygusal dürtüler (FOMO, intikam ticareti) yerine sistem kurallarına bağlı kaldığını kanıtlar.",
+      "A+ setup kalitesine sadık kalındığında genellikle kazanma oranı ve R-beklentisi belirgin şekilde yükselir."
+    ]
+  },
+  highQualitySetups: {
+    title: "Yüksek Kalite / Tam Sadık Setup Performansı",
+    description: "Sadece kusursuz, kuralına uygun ve yüksek puanlı / A+ (Tam Sadık) açılan pozisyonların kazanma oranı ve performansıdır.",
+    type: 'positive',
+    icon: Target,
+    details: [
+      "Kurallara tam uyulduğunda sistemin gerçek kârlılık potansiyelini gösterir.",
+      "Bu oran genel kazanma oranınızdan belirgin şekilde yüksekse, sorun stratejinizde değil disiplinsiz işlemlerdedir."
+    ]
+  },
+  lowQualitySetups: {
+    title: "Düşük Kalite / Kural Dışı / FOMO Setup Performansı",
+    description: "Kısmen sadık, aceleci, FOMO veya düşük kaliteli (B/C Setup) işlemlerin kazanma oranı ve performansıdır.",
+    type: 'negative',
+    icon: AlertTriangle,
+    details: [
+      "Kurallardan sapıldığında veya düşük kaliteli setup'lara girildiğinde kasanın uğradığı hasarı ölçer.",
+      "Bu kategorideki işlemleri tamamen elemek sistem performansınızı doğrudan katlayabilir."
+    ]
+  },
   breakevenRate: {
     title: "Başa Baş Oranı (Breakeven)",
     description: "Girişte kapanan veya sıfır PnL ile sonuçlanan işlemlerin genel yüzdesini gösterir.",

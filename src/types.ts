@@ -14,6 +14,10 @@ export interface Trade {
   session?: string;         // Trading session (e.g., London, New York)
   concept?: string;        // Trading concept used
   confirmations?: string[];      // Array of trading confirmations used (e.g., FVG, Orderblock)
+  planFidelity?: string | null; // Setup kalitesi (Plan fidelity)
+  entry?: string;           // Giriş Modeli (Entry Model e.g. IFVG, FVG, Orderblock)
+  entryModels?: string[];   // Birden fazla Giriş Modeli (Multiple Entry Models)
+  trend?: string;           // Trend Yapısı (Trend Type e.g. Continuation, Reversal)
 }
 
 export interface JournalEntry {
@@ -68,6 +72,9 @@ export interface TradeFilter {
   session?: string;
   confirmation?: string;
   concept?: string;
+  planFidelity?: string;
+  entry?: string;
+  trend?: string;
   sortBy: 'dateDes' | 'dateAsc' | 'pnlDes' | 'pnlAsc' | 'assetAsc' | 'assetDes' | 'typeAsc' | 'typeDes' | 'rrAsc' | 'rrDes' | 'platformAsc' | 'platformDes';
   startDate?: string;
   endDate?: string;
@@ -92,3 +99,17 @@ export interface Certificate {
   amount?: number;
   createdAt: number;
 }
+
+export interface DefinitionTitles {
+  platforms: string;
+  assets: string;
+  concepts: string;
+  confirmations: string;
+  timeframes: string;
+  htfTimeframes: string;
+  sessions: string;
+  planFidelities: string;
+  entryModels?: string;
+  trendTypes?: string;
+}
+

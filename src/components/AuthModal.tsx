@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { AlertCircle, ShieldCheck, X } from 'lucide-react';
+import { ShieldCheck, X } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { loginWithGoogle } from '../lib/firebase';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -9,12 +12,11 @@ interface AuthModalProps {
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
+  useBodyScrollLock(isOpen);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isOpen) {
-      setError(null);
       setLoading(false);
     }
   }, [isOpen]);
@@ -35,9 +37,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
   const handleGoogleLogin = () => {
     setLoading(true);
-    setError(null);
     loginWithGoogle().then(() => {
       setLoading(false);
+      toast.success('Giriş başarılı!');
       onClose();
     }).catch((err: any) => {
       setLoading(false);
@@ -50,39 +52,44 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       }
       console.warn('Google Auth notice:', err?.code || err?.message);
       if (err?.code === 'auth/unauthorized-domain') {
-        setError('Bu alan adı Firebase yetkili alan adları listesinde değil.');
+        toast.error('Bu alan adı Firebase yetkili alan adları listesinde değil.');
       } else if (err?.code === 'auth/missing-initial-state' || err?.message?.includes('missing initial state')) {
-        setError('Tarayıcı gizlilik/çerez kısıtlamaları nedeniyle oturum başlatılamadı. Lütfen tarayıcı ayarlarınızdan çerez izinlerini kontrol edin.');
+        toast.error('Tarayıcı gizlilik/çerez kısıtlamaları nedeniyle oturum başlatılamadı. Lütfen çerez izinlerini kontrol edin.');
       } else {
-        setError('Google ile giriş yapılırken bir sorun oluştu. Lütfen tekrar deneyin.');
+        toast.error('Google ile giriş yapılırken bir sorun oluştu. Lütfen tekrar deneyin.');
       }
     });
   };
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <motion.div
+          key="auth-modal-backdrop"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.15, ease: "easeOut" }}
-          style={{ willChange: 'opacity' }}
+          
           onClick={onClose}
-          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-zinc-950/80 "
+           className="will-change-[opacity] fixed inset-0 z-[1500] flex items-center justify-center p-4 bg-zinc-950/80 "
         >
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
-            style={{ willChange: 'opacity' }}
+            key="auth-modal-content"
+            initial={{ opacity: 0, scale: 0.98, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.98, y: 10 }}
+            transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+            style={{ willChange: "transform, opacity" }}
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-sm bg-zinc-900 border border-zinc-700/50 rounded-2xl shadow-2xl p-6 overflow-hidden text-center"
+            className="relative w-full max-w-sm bg-zinc-900 border border-zinc-700/50 rounded-2xl shadow-2xl p-5 overflow-hidden text-center"
           >
             <button
               type="button"
-              onClick={onClose}
+              onClick={(e) => {
+                e.stopPropagation();
+                onClose();
+              }}
               className="absolute top-4 right-4 p-1.5 text-zinc-400 hover:text-zinc-100 bg-zinc-800 hover:bg-zinc-700 rounded-full transition-colors duration-200 ease-out cursor-pointer"
             >
               <X size={18} />
@@ -92,25 +99,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               <ShieldCheck size={26} />
             </div>
 
-            <h2 className="text-lg font-bold text-zinc-100 tracking-tight font-mono">
+            <h2 className="heading-1 flex items-center gap-3">
               Hesabınıza Giriş Yapın
             </h2>
             <p className="text-xs text-zinc-400 mt-1.5 mb-6 font-sans leading-relaxed">
               İşlem günlüğünüzü, analizlerinizi ve grafik notlarınızı tüm cihazlarınızda güvenle saklayın ve senkronize edin.
             </p>
 
-            {error && (
-              <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl flex items-start gap-2 text-xs text-rose-300 text-left font-sans">
-                <AlertCircle size={16} className="text-rose-400 shrink-0 mt-0.5" />
-                <span>{error}</span>
-              </div>
-            )}
-
             <button
               type="button"
               onClick={handleGoogleLogin}
               disabled={loading}
-              className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-white hover:bg-zinc-100 rounded-xl text-xs font-bold font-mono text-zinc-900 transition-colors duration-200 ease-out shadow-sm cursor-pointer disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-white hover:bg-zinc-100 rounded-xl text-xs font-bold font-sans text-zinc-900 transition-colors duration-200 ease-out shadow-sm cursor-pointer disabled:opacity-50"
             >
               <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
                 <path
@@ -133,12 +133,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               <span>{loading ? 'Yönlendiriliyor...' : 'Google ile Giriş Yap'}</span>
             </button>
 
-            <p className="text-[10px] text-zinc-500 font-mono mt-4">
+            <p className="text-[10px] text-zinc-500 font-sans mt-4">
               Tek tıkla güvenli ve hızlı Google doğrulama
             </p>
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 };

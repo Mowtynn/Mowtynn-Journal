@@ -1,153 +1,13 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Download, RefreshCw, X, ShieldCheck } from 'lucide-react';
+import { Download, RefreshCw, X, ShieldCheck, FileText, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { AuditReportModal } from "./AuditReportModal";
 import { Trade } from '../types';
-import html2canvas from 'html2canvas';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
-// --- OKLCH & OKLAB to RGB/RGBA Conversion Helpers for html2canvas Compatibility ---
-function oklabToRgb(L: number, labA: number, labB: number, A: number = 1): string {
-  const l_ = L + 0.3963377774 * labA + 0.2158037573 * labB;
-  const m_ = L - 0.1055613458 * labA - 0.0638541728 * labB;
-  const s_ = L - 0.0894841775 * labA - 1.2914855480 * labB;
 
-  const l3 = l_ * l_ * l_;
-  const m3 = m_ * m_ * m_;
-  const s3 = s_ * s_ * s_;
-
-  let rLin = +4.0767416621 * l3 - 3.3077115913 * m3 + 0.2309699292 * s3;
-  let gLin = -1.2684380046 * l3 + 2.6097574011 * m3 - 0.3413193965 * s3;
-  let bLin = -0.0041960863 * l3 - 0.7034186145 * m3 + 1.7076147010 * s3;
-
-  const transformChannel = (c: number) => {
-    if (c <= 0.0031308) {
-      return 12.92 * c;
-    } else {
-      return 1.055 * Math.pow(c, 1 / 2.4) - 0.055;
-    }
-  };
-
-  const outR = Math.max(0, Math.min(255, Math.round(transformChannel(rLin) * 255)));
-  const outG = Math.max(0, Math.min(255, Math.round(transformChannel(gLin) * 255)));
-  const outB = Math.max(0, Math.min(255, Math.round(transformChannel(bLin) * 255)));
-
-  return A === 1 ? `rgb(${outR},${outG},${outB})` : `rgba(${outR},${outG},${outB},${A})`;
-}
-
-function oklchToRgb(L: number, C: number, H: number, A: number = 1): string {
-  // H is in degrees. Convert to radians.
-  const hRad = (H * Math.PI) / 180;
-  const labA = C * Math.cos(hRad);
-  const labB = C * Math.sin(hRad);
-  return oklabToRgb(L, labA, labB, A);
-}
-
-function parseOklchParts(inner: string) {
-  const rawParts = inner.replace(/,/g, ' ').replace(/\//g, ' ').trim().split(/\s+/);
-  if (rawParts.length < 3) return null;
-
-  let L = 0;
-  if (rawParts[0].endsWith('%')) {
-    L = parseFloat(rawParts[0]) / 100;
-  } else {
-    L = parseFloat(rawParts[0]);
-  }
-
-  let C = 0;
-  if (rawParts[1].endsWith('%')) {
-    C = parseFloat(rawParts[1]) / 100;
-  } else {
-    C = parseFloat(rawParts[1]);
-  }
-
-  let H = 0;
-  const hStr = rawParts[2];
-  if (hStr.endsWith('deg')) {
-    H = parseFloat(hStr);
-  } else if (hStr.endsWith('rad')) {
-    H = (parseFloat(hStr) * 180) / Math.PI;
-  } else if (hStr.endsWith('grad')) {
-    H = (parseFloat(hStr) * 360) / 400;
-  } else if (hStr.endsWith('turn')) {
-    H = parseFloat(hStr) * 360;
-  } else {
-    H = parseFloat(hStr);
-  }
-
-  let A = 1;
-  if (rawParts[3] !== undefined) {
-    const aStr = rawParts[3];
-    if (aStr.endsWith('%')) {
-      A = parseFloat(aStr) / 100;
-    } else {
-      A = parseFloat(aStr);
-    }
-  }
-
-  if (isNaN(L) || isNaN(C) || isNaN(H) || isNaN(A)) return null;
-  return { L, C, H, A };
-}
-
-function parseOklabParts(inner: string) {
-  const rawParts = inner.replace(/,/g, ' ').replace(/\//g, ' ').trim().split(/\s+/);
-  if (rawParts.length < 3) return null;
-
-  let L = 0;
-  if (rawParts[0].endsWith('%')) {
-    L = parseFloat(rawParts[0]) / 100;
-  } else {
-    L = parseFloat(rawParts[0]);
-  }
-
-  let a = 0;
-  if (rawParts[1].endsWith('%')) {
-    a = parseFloat(rawParts[1]) / 100;
-  } else {
-    a = parseFloat(rawParts[1]);
-  }
-
-  let b = 0;
-  if (rawParts[2].endsWith('%')) {
-    b = parseFloat(rawParts[2]) / 100;
-  } else {
-    b = parseFloat(rawParts[2]);
-  }
-
-  let A = 1;
-  if (rawParts[3] !== undefined) {
-    const aStr = rawParts[3];
-    if (aStr.endsWith('%')) {
-      A = parseFloat(aStr) / 100;
-    } else {
-      A = parseFloat(aStr);
-    }
-  }
-
-  if (isNaN(L) || isNaN(a) || isNaN(b) || isNaN(A)) return null;
-  return { L, a, b, A };
-}
-
-const replaceOklchAndOklabInString = (str: string): string => {
-  let replaced = str.replace(/oklch\(([^)]+)\)/gi, (match, inner) => {
-    const parsed = parseOklchParts(inner);
-    if (parsed) {
-      return oklchToRgb(parsed.L, parsed.C, parsed.H, parsed.A);
-    }
-    return match;
-  });
-
-  replaced = replaced.replace(/oklab\(([^)]+)\)/gi, (match, inner) => {
-    const parsed = parseOklabParts(inner);
-    if (parsed) {
-      return oklabToRgb(parsed.L, parsed.a, parsed.b, parsed.A);
-    }
-    return match;
-  });
-
-  return replaced;
-};
 
 interface PrintReportModalProps {
   isOpen: boolean;
@@ -166,11 +26,28 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
   dateRangeText,
   currency,
 }) => {
-  const reportRef = useRef<HTMLDivElement>(null);
+  useBodyScrollLock(isOpen);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
+  const reportRef = useRef<HTMLDivElement>(null);
 
-  // Prevent body scroll when preview is open & handle ESC key
+  // Preserve displayed state so that content remains intact during exit animation when props are cleared
+  const [displayedTrades, setDisplayedTrades] = useState<Trade[]>(trades);
+  const [displayedTitle, setDisplayedTitle] = useState<string>(title);
+  const [displayedDateRangeText, setDisplayedDateRangeText] = useState<string>(dateRangeText);
+
+  useEffect(() => {
+    if (isOpen) {
+      setDisplayedTrades(trades);
+      setDisplayedTitle(title);
+      setDisplayedDateRangeText(dateRangeText);
+    }
+  }, [isOpen, trades, title, dateRangeText]);
+
+  const activeTrades = isOpen ? trades : displayedTrades;
+  const activeTitle = isOpen ? title : displayedTitle;
+  const activeDateRangeText = isOpen ? dateRangeText : displayedDateRangeText;
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -179,178 +56,48 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
     };
 
     if (isOpen) {
-      document.body.style.overflow = 'hidden';
       window.addEventListener('keydown', handleKeyDown);
-    } else {
-      document.body.style.overflow = '';
     }
+
     return () => {
-      document.body.style.overflow = '';
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen, onClose]);
 
   // 1. Calculations
-  const totalTrades = trades.length;
-  const wins = trades.filter((t) => t.status === 'WIN').length;
-  const losses = trades.filter((t) => t.status === 'LOSS').length;
-  const breakevens = trades.filter((t) => t.status === 'BREAKEVEN').length;
+  const totalTrades = activeTrades.length;
+  const wins = activeTrades.filter((t) => t.status === 'WIN').length;
+  const losses = activeTrades.filter((t) => t.status === 'LOSS').length;
+  const breakevens = activeTrades.filter((t) => t.status === 'BREAKEVEN').length;
   const winRate = totalTrades > 0 ? (wins / totalTrades) * 100 : 0;
-  const totalPnl = trades.reduce((sum, t) => sum + (t.pnl || 0), 0);
-  const totalR = trades.reduce((sum, t) => sum + (t.rr || 0), 0);
-  const longs = trades.filter((t) => t.type === 'LONG').length;
-  const shorts = trades.filter((t) => t.type === 'SHORT').length;
-
-  const generateCanvas = async (): Promise<HTMLCanvasElement | null> => {
-    const element = reportRef.current;
-    if (!element) return null;
-
-    // Keep track of elements with inline styles, stylesheets to restore, and temp elements
-    const elementsWithInlineStyles: { el: HTMLElement; originalStyle: string }[] = [];
-    const sheetsToRestore: { sheet: CSSStyleSheet; wasDisabled: boolean }[] = [];
-    const tempStyleElements: HTMLStyleElement[] = [];
-    const originalGetComputedStyle = window.getComputedStyle;
-
-    try {
-      // 1. Temporarily sanitize same-origin stylesheets
-      const sheetsSnapshot = Array.from(document.styleSheets);
-      for (let i = 0; i < sheetsSnapshot.length; i++) {
-        const sheet = sheetsSnapshot[i];
-        try {
-          if (!sheet.cssRules) continue;
-          const rulesArray = Array.from(sheet.cssRules);
-          const cssText = rulesArray.map(r => r.cssText).join('\n');
-          
-          if (cssText.includes('oklch') || cssText.includes('oklab')) {
-            const sanitized = replaceOklchAndOklabInString(cssText);
-            const tempStyle = document.createElement('style');
-            tempStyle.textContent = sanitized;
-            document.head.appendChild(tempStyle);
-            tempStyleElements.push(tempStyle);
-            
-            sheetsToRestore.push({ sheet, wasDisabled: sheet.disabled });
-            sheet.disabled = true;
-          }
-        } catch (err) {}
-      }
-
-      // 2. Temporarily traverse the DOM tree
-      const traverseAndSanitizeInline = (root: HTMLElement) => {
-        const elements = [root, ...Array.from(root.querySelectorAll<HTMLElement>('*'))];
-        const attributesToSanitize = ['style', 'fill', 'stroke', 'stop-color'];
-        
-        elements.forEach((el) => {
-          attributesToSanitize.forEach((attr) => {
-            const val = el.getAttribute(attr);
-            if (val && (val.includes('oklch') || val.includes('oklab'))) {
-              elementsWithInlineStyles.push({ el, originalStyle: `${attr}:${val}` });
-              el.setAttribute(attr, replaceOklchAndOklabInString(val));
-            }
-          });
-        });
-      };
-      traverseAndSanitizeInline(element);
-
-      // 3. Temporarily patch window.getComputedStyle
-      window.getComputedStyle = function (el, pseudo) {
-        const style = originalGetComputedStyle.call(window, el, pseudo);
-        return new Proxy(style, {
-          get(target, prop) {
-            if (prop === 'getPropertyValue') {
-              return function (propertyName: string) {
-                const val = target.getPropertyValue(propertyName);
-                if (typeof val === 'string' && (val.includes('oklch') || val.includes('oklab'))) {
-                  return replaceOklchAndOklabInString(val);
-                }
-                return val;
-              };
-            }
-            const val = Reflect.get(target, prop);
-            if (typeof val === 'string' && (val.includes('oklch') || val.includes('oklab'))) {
-              return replaceOklchAndOklabInString(val);
-            }
-            if (typeof val === 'function') {
-              return val.bind(target);
-            }
-            return val;
-          }
-        });
-      };
-
-      // Temporarily expand height and force desktop width for consistent mobile rendering
-      const originalStyleHeight = element.style.height;
-      const originalStyleMaxHeight = element.style.maxHeight;
-      const originalStyleWidth = element.style.width;
-      const originalStyleMinWidth = element.style.minWidth;
-      const originalStyleMaxWidth = element.style.maxWidth;
-      const originalStyleTransform = element.style.transform;
-      
-      element.style.height = 'auto';
-      element.style.maxHeight = 'none';
-      element.style.width = '896px';
-      element.style.minWidth = '896px';
-      element.style.maxWidth = '896px';
-      element.style.transform = 'none';
-
-      const canvas = await html2canvas(element, {
-        scale: 2.0, // 2.0 provides the best balance between high-res quality and mobile memory limits
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#030712',
-        logging: false,
-        width: 896,
-        windowWidth: 896,
-        height: element.scrollHeight,
-        windowHeight: element.scrollHeight,
-        ignoreElements: (element) => element.tagName.toLowerCase() === 'iframe',
-      });
-
-      // Restore styling
-      element.style.height = originalStyleHeight;
-      element.style.maxHeight = originalStyleMaxHeight;
-      element.style.width = originalStyleWidth;
-      element.style.minWidth = originalStyleMinWidth;
-      element.style.maxWidth = originalStyleMaxWidth;
-      element.style.transform = originalStyleTransform;
-
-      return canvas;
-
-    } finally {
-      // Restore inline styles and attributes
-      elementsWithInlineStyles.forEach(({ el, originalStyle }) => {
-        const colonIndex = originalStyle.indexOf(':');
-        if (colonIndex !== -1) {
-          const attrName = originalStyle.slice(0, colonIndex);
-          const attrVal = originalStyle.slice(colonIndex + 1);
-          el.setAttribute(attrName, attrVal);
-        }
-      });
-
-      // Restore stylesheets disabled state
-      sheetsToRestore.forEach(({ sheet, wasDisabled }) => {
-        sheet.disabled = wasDisabled;
-      });
-
-      // Remove temporary style elements
-      tempStyleElements.forEach((styleEl) => {
-        styleEl.remove();
-      });
-
-      // Restore original window.getComputedStyle
-      window.getComputedStyle = originalGetComputedStyle;
-    }
-  };
+  const totalPnl = activeTrades.reduce((sum, t) => sum + (t.pnl || 0), 0);
+  const totalR = activeTrades.reduce((sum, t) => sum + (t.rr || 0), 0);
+  const longs = activeTrades.filter((t) => t.type === 'LONG').length;
+  const shorts = activeTrades.filter((t) => t.type === 'SHORT').length;
 
   const handleDownloadImage = async () => {
-    setIsGenerating(true);
-    await new Promise((resolve) => setTimeout(resolve, 60));
+    if (!reportRef.current) return;
     try {
-      const canvas = await generateCanvas();
-      if (!canvas) return;
-
-      const link = document.createElement('a');
-      link.download = `${title.toLowerCase().replace(/\s+/g, '_')}_islem_raporu.png`;
-      link.href = canvas.toDataURL('image/png', 0.85);
+      setIsGenerating(true);
+      // Wait a moment for DOM to update with isGenerating classes and base64 images
+      // Ultimate Optimization: Use double requestAnimationFrame to wait for the exact moment the browser paints the new layout, 0ms idle time.
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      const htmlToImage = await import("html-to-image");
+      const dataUrl = await htmlToImage.toPng(reportRef.current, {
+        backgroundColor: "#09090b",
+        pixelRatio: 2,
+        imagePlaceholder: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+        filter: (node) => {
+          if (node.classList && node.classList.contains('no-print')) {
+            return false;
+          }
+          return true;
+        }
+      });
+      
+      const link = document.createElement("a");
+      link.download = `${activeTitle.toLowerCase().replace(/\s+/g, '_')}_islem_raporu.png`;
+      link.href = dataUrl;
       link.click();
       toast.success("Rapor başarıyla indirildi.");
     } catch (error) {
@@ -364,117 +111,106 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
   return (
     <>
       {createPortal(
-    <AnimatePresence>
+    <AnimatePresence
+      onExitComplete={() => {
+        if (!isOpen) {
+          setDisplayedTrades([]);
+        }
+      }}
+    >
       {isOpen && (
         <motion.div
+          key="print-report-modal-backdrop"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.15, ease: "easeOut" }}
-          style={{ willChange: 'opacity' }}
-          className="fixed inset-0 z-[2000] overflow-y-auto bg-zinc-950/80  no-print flex flex-col justify-start items-center p-4 md:p-8"
+          className="will-change-[opacity] fixed inset-0 z-[3500] overflow-y-auto bg-zinc-950/80 no-print flex flex-col justify-start items-center p-4 md:p-8"
+          onClick={onClose}
         >
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
-            style={{ willChange: 'opacity' }}
-            className="w-full max-w-4xl flex flex-col items-center"
-          >
-            {/* ACTION BAR (STAYS FLOATING OR FIXED, NEVER PRINTS) */}
-            <div className="w-full bg-zinc-900 border border-zinc-700/50 rounded-2xl px-5 py-3.5 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-500/10 text-blue-400 rounded-xl">
-              <Download size={18} />
-            </div>
-            <div>
-              <h2 className="text-sm font-bold text-zinc-100 tracking-wide">
-                İşlem Raporu Önizleme
-              </h2>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
-            <button
-              onClick={() => setIsAuditModalOpen(true)}
-              title="Vergilendirme"
-              className="flex items-center justify-center w-9 h-9 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 rounded-xl transition-colors duration-200 ease-out cursor-pointer shadow-xs"
-            >
-              <ShieldCheck size={15} />
-            </button>
-
-            <button
-              onClick={handleDownloadImage}
-              disabled={isGenerating}
-              title="Görüntü Olarak İndir"
-              className="flex items-center justify-center w-9 h-9 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 border border-blue-500/30 rounded-xl transition-colors duration-200 ease-out cursor-pointer shadow-xs disabled:opacity-50"
-            >
-              {isGenerating ? (
-                <RefreshCw size={15} className="animate-spin" />
-              ) : (
-                <Download size={15} />
-              )}
-            </button>
-            
-            <button
-              onClick={onClose}
-              className="p-2 text-zinc-400 hover:text-zinc-100 bg-zinc-800 hover:bg-zinc-700 rounded-xl transition-colors duration-200 ease-out cursor-pointer"
-            >
-              <X size={15} />
-            </button>
-          </div>
-        </div>
-
-        {/* PRINTABLE PREVIEW CONTAINER */}
-        <div className="w-full max-w-4xl overflow-hidden rounded-2xl bg-zinc-900 border border-zinc-700/50 shadow-2xl flex-1 mb-8 relative">
-          {/* Loading overlay */}
-          {isGenerating && (
-            <div className="absolute inset-0 bg-zinc-950/80 z-50 flex flex-col items-center justify-center text-zinc-100 font-medium">
-              <div className="p-4 bg-zinc-900 text-white rounded-2xl flex flex-col items-center gap-3 shadow-md max-w-xs text-center border border-zinc-800">
-                <RefreshCw size={24} className="animate-spin text-blue-400" />
-                <div>
-                  <h3 className="text-xs font-bold tracking-wider">GÖRÜNTÜ HAZIRLANIYOR</h3>
-                  <p className="text-[10px] text-zinc-400 mt-1 leading-relaxed">
-                    İşlem verileri okunuyor ve yüksek çözünürlüklü görüntü oluşturuluyor. Lütfen bekleyin...
-                  </p>
-                </div>
+        {isGenerating && (
+          <div className="fixed inset-0 bg-zinc-950/90 z-[3600] flex flex-col items-center justify-center text-zinc-100 font-medium no-print backdrop-blur-sm">
+            <div className="p-5 bg-zinc-900 text-white rounded-3xl flex flex-col items-center gap-4 shadow-2xl max-w-sm text-center border border-white/10">
+              <RefreshCw size={32} className="animate-spin text-blue-400" />
+              <div>
+                <h3 className="text-sm font-bold tracking-wider text-white">GÖRÜNTÜ HAZIRLANIYOR</h3>
+                <p className="text-xs text-zinc-400 mt-2 leading-relaxed font-medium">
+                  İşlem verileri okunuyor ve yüksek çözünürlüklü görüntü oluşturuluyor. Lütfen pencereyi kapatmayın...
+                </p>
               </div>
             </div>
-          )}
+          </div>
+        )}
+        <motion.div
+          key="print-report-modal-content"
+          initial={{ opacity: 0, scale: 0.96, y: 16 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.96, y: 16 }}
+          transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          style={{ willChange: "transform, opacity" }}
+          className="w-full max-w-4xl rounded-2xl bg-zinc-900 border border-zinc-700/50 shadow-2xl flex flex-col relative overflow-hidden"
+          onClick={(e) => e.stopPropagation()}
+        >
+          
+          {/* Header */}
+          <div className="modal-header">
+            <h2 className="heading-1 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(59,130,246,0.15)]">
+                <FileText size={16} />
+              </div>
+              İşlem Raporu
+            </h2>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => setIsAuditModalOpen(true)}
+                className="flex items-center justify-center w-9 h-9 rounded-xl border transition-colors cursor-pointer shrink-0 text-violet-400 bg-violet-500/10 hover:bg-violet-500/20 border-violet-500/20"
+              >
+                <ShieldCheck size={16} />
+              </button>
+              <button
+                onClick={handleDownloadImage}
+                disabled={isGenerating}
+                className="flex items-center justify-center w-9 h-9 rounded-xl border transition-colors cursor-pointer shrink-0 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/20 disabled:opacity-50"
+              >
+                {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+              </button>
+              <div className="w-px h-6 bg-zinc-800 mx-1 hidden sm:block"></div>
+              <button
+                onClick={onClose}
+                className="btn-icon"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </div>
 
-          {/* Paper Frame (scrollable in preview, perfect dimensions) */}
-          <div className="h-[75vh] w-full overflow-auto bg-zinc-950/40 text-zinc-100 custom-scrollbar">
+          
+          {/* Paper Frame */}
+          <div className={`w-full bg-zinc-950/40 text-zinc-100 ${isGenerating ? "h-auto overflow-visible" : "h-[75vh] overflow-y-auto overflow-x-hidden"} [scrollbar-width:none] [&::-webkit-scrollbar]:hidden`}>
             
             {/* START OF PRINT REPORT WRAPPER */}
-            <div id="print-report-root" ref={reportRef} className="w-full min-w-[896px] min-h-full text-zinc-100 select-text p-8 relative overflow-hidden bg-zinc-950/90 mx-auto">
+            <div id="print-report-root" ref={reportRef} className={`w-full min-h-full text-zinc-100 select-text p-6 md:p-8 relative mx-auto bg-[#09090b] ${isGenerating ? "overflow-visible min-w-[1024px]" : "overflow-hidden"} [scrollbar-width:none] [&::-webkit-scrollbar]:hidden`}>
               
-              <div className="relative z-10">
+              <div className="relative z-10 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {/* Header Branding Section */}
                 <div className="flex flex-col md:flex-row justify-between items-start border-b border-white/10 pb-6 mb-6">
                   <div>
-                    <span className="text-[10px] font-black tracking-[0.25em] text-blue-400 uppercase">
-                      KURUMSAL PERFORMANS RAPORU
-                    </span>
-                    <h1 className="text-2xl font-black text-white tracking-tight mt-2.5 drop-shadow-sm">
-                      {title}
-                    </h1>
-                    <div className="flex items-center gap-2.5 mt-3">
-                      <div className="text-[10px] font-medium text-blue-400 tracking-wide">
-                        İşlem Tarihleri: <span className="text-white font-bold ml-1">{dateRangeText}</span>
-                      </div>
-                      <div className="text-[10px] font-medium text-emerald-400 tracking-wide">
-                        Oluşturulma Tarihi: <span className="text-white font-bold ml-1">{new Date().toLocaleDateString('tr-TR')}</span>
-                      </div>
+                    <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 font-sans">Kurumsal Performans Raporu</h3>
+                    <h1 className="text-3xl font-black text-white tracking-tight">{activeTitle}</h1>
+                    <div className="flex items-center gap-4 mt-2">
+                      <p className="text-[10px] text-zinc-400 font-medium">
+                        <span className="text-zinc-500">İşlem Tarihleri:</span> <span className="text-zinc-300 font-semibold">{activeDateRangeText}</span>
+                      </p>
+                      <p className="text-[10px] text-zinc-400 font-medium">
+                        <span className="text-zinc-500">Oluşturulma Tarihi:</span> <span className="text-zinc-300 font-semibold">{new Date().toLocaleDateString('tr-TR')}</span>
+                      </p>
                     </div>
                   </div>
-
-                  {/* Empty placeholder to maintain layout */}
-                  <div className="mt-3 md:mt-0 md:text-right flex flex-col md:items-end">
-                    <span className="font-black text-base tracking-tight text-blue-400">
-                      Trading Journal by Mowtynn
-                    </span>
-                    <p className="text-[10px] text-zinc-400 font-medium tracking-wide mt-1">
+                  <div className="mt-4 md:mt-0 text-right">
+                    <div className="text-lg font-black tracking-tight text-white flex items-center justify-end">
+                      Trading Journal <span className="text-blue-500 ml-1">by Mowtynn</span>
+                    </div>
+                    <p className="text-[10px] text-zinc-500 font-medium mt-1 uppercase tracking-widest">
                       Gelişmiş İşlem Takip ve Analiz Sistemi
                     </p>
                   </div>
@@ -483,65 +219,60 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                 {/* Grid Metric Cards Dashboard Block */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
                   {/* Total Trades Card */}
-                  <div className="border border-white/5 bg-zinc-900 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-1.5 shadow-sm relative overflow-hidden">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Toplam İşlem</span>
-                    <span className={`text-2xl font-black drop-shadow-sm ${totalPnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{totalTrades}</span>
-                    <div className="text-[11px] text-zinc-500 font-medium mt-1">
-                      <span className="text-emerald-400">{longs} L</span> <span className="text-zinc-600 mx-1">/</span> <span className="text-rose-400">{shorts} S</span>
+                  <div className="border border-blue-500/20 bg-gradient-to-b from-blue-500/10 to-zinc-900/50 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-1.5 shadow-lg relative overflow-hidden backdrop-blur-sm">
+                    <span className="text-[10px] font-bold tracking-wider text-blue-400/90 font-sans uppercase">TOPLAM İŞLEM</span>
+                    <span className="text-3xl font-black drop-shadow-sm text-blue-400 font-sans tracking-tight">{totalTrades}</span>
+                    <div className="text-[11px] text-zinc-400 font-medium mt-1">
+                      <span className="text-emerald-400 font-bold">{longs} L</span> <span className="text-zinc-600 mx-1">/</span> <span className="text-rose-400 font-bold">{shorts} S</span>
                     </div>
                   </div>
-
                   {/* Win Rate Card */}
-                  <div className="border border-white/5 bg-zinc-900 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-1.5 shadow-sm relative overflow-hidden">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Kazanma Oranı</span>
-                    <span className={`text-2xl font-black drop-shadow-sm ${totalPnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{winRate.toFixed(1)}%</span>
-                    <span className="text-[11px] text-zinc-500 font-medium mt-1">
-                      <span className="text-emerald-400">{wins} W</span> <span className="text-zinc-600 mx-1">/</span> <span className="text-rose-400">{losses} L</span> <span className="text-zinc-600 mx-1">/</span> <span className="text-amber-400">{breakevens} BE</span>
-                    </span>
+                  <div className="border border-emerald-500/20 bg-gradient-to-b from-emerald-500/10 to-zinc-900/50 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-1.5 shadow-lg relative overflow-hidden backdrop-blur-sm">
+                    <span className="text-[10px] font-bold tracking-wider text-emerald-400/90 font-sans uppercase">KAZANMA ORANI</span>
+                    <span className={`text-3xl font-black drop-shadow-sm font-sans tracking-tight ${winRate >= 50 ? 'text-emerald-400' : 'text-rose-400'}`}>{winRate.toFixed(1)}%</span>
+                    <div className="text-[11px] text-zinc-400 font-medium mt-1">
+                      <span className="text-emerald-400 font-bold">{wins} W</span> <span className="text-zinc-600 mx-1">/</span> <span className="text-rose-400 font-bold">{losses} L</span> <span className="text-zinc-600 mx-1">/</span> <span className="text-amber-400 font-bold">{breakevens} BE</span>
+                    </div>
                   </div>
-
                   {/* Net Profit Card */}
-                  <div className="border border-white/5 bg-zinc-900 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-1.5 shadow-sm relative overflow-hidden">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Net Kâr / Zarar</span>
-                    <span className={`text-2xl font-black drop-shadow-sm ${totalPnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{totalPnl >= 0 ? '+' : ''}{totalPnl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {currency}</span>
-                    <span className="text-[11px] text-zinc-500 font-medium mt-1">Toplam Kazanç</span>
+                  <div className="border border-purple-500/20 bg-gradient-to-b from-purple-500/10 to-zinc-900/50 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-1.5 shadow-lg relative overflow-hidden backdrop-blur-sm">
+                    <span className="text-[10px] font-bold tracking-wider text-purple-400/90 font-sans uppercase">NET KÂR / ZARAR</span>
+                    <span className={`text-3xl font-black drop-shadow-sm font-sans tracking-tight ${totalPnl >= 0 ? 'text-purple-400' : 'text-rose-400'}`}>{totalPnl >= 0 ? '+' : ''}{totalPnl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {currency}</span>
+                    <span className="text-[11px] text-zinc-400 font-medium mt-1">Toplam Kazanç</span>
                   </div>
-
                   {/* Net R multiple Card */}
-                  <div className="border border-white/5 bg-zinc-900 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-1.5 shadow-sm relative overflow-hidden">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Net R Kazanımı</span>
-                    <span className={`text-2xl font-black drop-shadow-sm ${totalR >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                  <div className="border border-amber-500/20 bg-gradient-to-b from-amber-500/10 to-zinc-900/50 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-1.5 shadow-lg relative overflow-hidden backdrop-blur-sm">
+                    <span className="text-[10px] font-bold tracking-wider text-amber-400/90 font-sans uppercase">NET R KAZANIMI</span>
+                    <span className={`text-3xl font-black drop-shadow-sm font-sans tracking-tight ${totalR >= 0 ? 'text-amber-400' : 'text-rose-400'}`}>
                       {totalR >= 0 ? '+' : ''}
                       {totalR.toFixed(2)} R
                     </span>
-                    <span className="text-[11px] text-zinc-500 font-medium mt-1">Toplam R</span>
+                    <span className="text-[11px] text-zinc-400 font-medium mt-1">Toplam R</span>
                   </div>
                 </div>
 
               {/* Transactions Table Section */}
               <div className="mb-4">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-[9px] font-bold uppercase tracking-wider text-zinc-400">
+                <div className="flex items-center justify-between mb-2.5">
+                  <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-widest font-sans flex items-center gap-1.5">
                     İŞLEM GEÇMİŞİ
-                  </h3>
-                  <div className="flex items-center gap-1 text-[9px] font-medium text-zinc-400">
-                    <span>Toplam</span>
-                    <span className="text-zinc-200 font-semibold">{trades.length}</span>
-                    <span>işlem</span>
+                  </h4>
+                  <div className="text-[10px] font-medium text-zinc-500 font-sans tracking-wider">
+                    Toplam <strong className="text-zinc-300">{trades.length}</strong> işlem
                   </div>
                 </div>
-
-                <div className="border border-zinc-800 rounded-xl overflow-hidden bg-zinc-900">
-                  <table className="w-full text-left border-collapse text-[10px]">
+                
+                <div className={`bg-zinc-900/60 border border-white/10 rounded-2xl p-2 sm:p-3 shadow-inner ${isGenerating ? 'overflow-visible' : 'overflow-hidden'} [scrollbar-width:none] [&::-webkit-scrollbar]:hidden`}>
+                  <table className="w-full text-left border-collapse text-[10px] font-sans">
                     <thead>
-                      <tr className="bg-zinc-900 text-zinc-200 font-semibold border-b border-zinc-800">
-                        <th className="py-2 px-3 font-bold">Tarih</th>
-                        <th className="py-2 px-2 font-bold">Parite</th>
-                        <th className="py-2 px-2 font-bold text-center">Yön</th>
-                        <th className="py-2 px-2 font-bold text-center">Sonuç</th>
-                        <th className="py-2 px-2 font-bold text-center">R</th>
-                        <th className="py-2 px-3 font-bold text-right">P&L</th>
-                        <th className="py-2 px-2 font-bold text-right">Platform</th>
+                      <tr className="border-b border-zinc-800 text-[9px] text-zinc-400 uppercase tracking-widest font-sans select-none">
+                        <th className="py-2.5 px-3 text-left font-bold font-sans">TARİH</th>
+                        <th className="py-2.5 px-2 text-left font-bold font-sans">PARİTE</th>
+                        <th className="py-2.5 px-2 text-center font-bold font-sans">YÖN</th>
+                        <th className="py-2.5 px-2 text-center font-bold font-sans">SONUÇ</th>
+                        <th className="py-2.5 px-2 text-center font-bold font-sans">R</th>
+                        <th className="py-2.5 px-3 text-right font-bold font-sans">KÂR / ZARAR</th>
+                        <th className="py-2.5 px-3 text-right font-bold font-sans">PLATFORM</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-zinc-800/80">
@@ -562,75 +293,86 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                             minute: '2-digit',
                             hour12: false,
                           });
-
+                          
                           const isWin = trade.status === 'WIN';
                           const isLoss = trade.status === 'LOSS';
                           const isBe = trade.status === 'BREAKEVEN';
-
+                          
                           return (
-                            <tr key={trade.id} className="hover:bg-zinc-900 transition-colors">
+                            <tr key={trade.id} className="hover:bg-white/[0.02] transition-colors group">
                               {/* Date */}
-                              <td className="py-2 px-3 text-zinc-400 font-medium font-mono whitespace-nowrap">
+                              <td className="py-2.5 px-3 text-zinc-300 font-medium font-sans whitespace-nowrap">
                                 {dateStr}
                               </td>
                               
                               {/* Asset */}
-                              <td className="py-2 px-2 font-bold text-zinc-100 uppercase">
-                                {trade.asset}
+                              <td className="py-2.5 px-2 font-bold text-white uppercase tracking-wide">
+                                <div className="flex flex-col gap-0.5">
+                                  <span>{trade.asset}</span>
+                                  {((trade.entryModels && Array.isArray(trade.entryModels) && trade.entryModels.length > 0) || trade.entry) && (
+                                    <div className="flex items-center gap-1 font-sans text-[8px] font-normal tracking-normal flex-wrap">
+                                      {(trade.entryModels && Array.isArray(trade.entryModels) && trade.entryModels.length > 0) ? (
+                                        trade.entryModels.map((em, idx) => (
+                                          <span key={idx} className="px-1 py-0.2 rounded bg-amber-500/10 text-amber-300 border border-amber-500/30 font-bold uppercase">
+                                            {em}
+                                          </span>
+                                        ))
+                                      ) : trade.entry ? (
+                                        <span className="px-1 py-0.2 rounded bg-amber-500/10 text-amber-300 border border-amber-500/30 font-bold uppercase">
+                                          {trade.entry}
+                                        </span>
+                                      ) : null}
+                                    </div>
+                                  )}
+                                </div>
                               </td>
 
                               {/* Direction (Yön) */}
-                              <td className="py-2 px-2 text-center whitespace-nowrap">
+                              <td className="py-2.5 px-2 text-center whitespace-nowrap">
                                 {trade.type === 'LONG' ? (
-                                  <span className="text-[10px] font-black text-emerald-400 uppercase tracking-wider font-mono">LONG</span>
+                                  <span className="inline-flex items-center justify-center min-w-[50px] px-2.5 py-0.5 rounded-md border border-emerald-500/20 bg-emerald-500/10 text-[10px] font-black text-emerald-400 uppercase tracking-wider font-sans">LONG</span>
                                 ) : (
-                                  <span className="text-[10px] font-black text-rose-400 uppercase tracking-wider font-mono">SHORT</span>
+                                  <span className="inline-flex items-center justify-center min-w-[50px] px-2.5 py-0.5 rounded-md border border-rose-500/20 bg-rose-500/10 text-[10px] font-black text-rose-400 uppercase tracking-wider font-sans">SHORT</span>
                                 )}
                               </td>
 
                               {/* Result Status */}
-                              <td className="py-2 px-2 text-center whitespace-nowrap">
+                              <td className="py-2.5 px-2 text-center whitespace-nowrap">
                                 {isWin ? (
-                                  <span className="text-[10px] font-black text-emerald-400 uppercase tracking-wider font-mono">WIN</span>
+                                  <span className="inline-flex items-center justify-center min-w-[45px] px-2 py-0.5 rounded-md border border-emerald-500/20 bg-emerald-500/10 text-[10px] font-black text-emerald-400 uppercase tracking-wider font-sans">WIN</span>
                                 ) : isLoss ? (
-                                  <span className="text-[10px] font-black text-rose-400 uppercase tracking-wider font-mono">LOSS</span>
+                                  <span className="inline-flex items-center justify-center min-w-[45px] px-2 py-0.5 rounded-md border border-rose-500/20 bg-rose-500/10 text-[10px] font-black text-rose-400 uppercase tracking-wider font-sans">LOSS</span>
                                 ) : isBe ? (
-                                  <span className="text-[10px] font-black text-zinc-400 uppercase tracking-wider font-mono">BE</span>
+                                  <span className="inline-flex items-center justify-center min-w-[45px] px-2 py-0.5 rounded-md border border-amber-500/20 bg-amber-500/10 text-[10px] font-black text-amber-400 uppercase tracking-wider font-sans">BE</span>
                                 ) : (
-                                  <span className="text-[10px] font-black text-blue-400 uppercase tracking-wider font-mono">AÇIK</span>
+                                  <span className="inline-flex items-center justify-center min-w-[45px] px-2 py-0.5 rounded-md border border-blue-500/20 bg-blue-500/10 text-[10px] font-black text-blue-400 uppercase tracking-wider font-sans">AÇIK</span>
                                 )}
                               </td>
 
                               {/* R multiple */}
-                              <td className="py-2 px-2 text-center font-mono font-bold whitespace-nowrap">
+                              <td className="py-2.5 px-2 text-center font-sans font-bold whitespace-nowrap">
                                 {trade.rr !== undefined && trade.rr !== null && trade.rr !== 0 ? (
                                   trade.rr > 0 ? (
-                                    <span className="text-[10px] font-black text-emerald-400 tracking-wider">
-                                      +{trade.rr}R
-                                    </span>
+                                    <span className="inline-flex items-center justify-center min-w-[48px] px-2 py-0.5 rounded-md border border-emerald-500/20 bg-emerald-500/10 text-[10px] font-black text-emerald-400 tracking-wider font-sans">+{trade.rr}R</span>
                                   ) : trade.rr < 0 ? (
-                                    <span className="text-[10px] font-black text-rose-400 tracking-wider">
-                                      {trade.rr}R
-                                    </span>
+                                    <span className="inline-flex items-center justify-center min-w-[48px] px-2 py-0.5 rounded-md border border-rose-500/20 bg-rose-500/10 text-[10px] font-black text-rose-400 tracking-wider font-sans">{trade.rr}R</span>
                                   ) : (
-                                    <span className="text-[10px] font-black text-zinc-400 tracking-wider">
-                                      {trade.rr}R
-                                    </span>
+                                    <span className="inline-flex items-center justify-center min-w-[48px] px-2 py-0.5 rounded-md border border-amber-500/20 bg-amber-500/10 text-[10px] font-black text-amber-400 tracking-wider font-sans">{trade.rr}R</span>
                                   )
                                 ) : (
-                                  <span className="text-[10px] font-medium text-zinc-500">—</span>
+                                  <span className="text-zinc-600 font-sans">—</span>
                                 )}
                               </td>
 
                               {/* Profit and Loss */}
-                              <td className="py-2 px-3 text-right font-mono font-bold whitespace-nowrap">
+                              <td className="py-2.5 px-3 text-right font-sans font-bold whitespace-nowrap">
                                 <span
                                   className={
                                     isWin
-                                      ? 'text-emerald-400 font-black'
+                                      ? 'text-emerald-400 font-bold'
                                       : isLoss
-                                      ? 'text-rose-400 font-black'
-                                      : 'text-zinc-500 font-bold'
+                                      ? 'text-rose-400 font-bold'
+                                      : 'text-zinc-400 font-bold'
                                   }
                                 >
                                   {isBe ? (
@@ -645,8 +387,14 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                               </td>
 
                               {/* Platform */}
-                              <td className="py-2 px-2 text-right text-zinc-500 font-semibold uppercase font-mono">
-                                {trade.platform || '—'}
+                              <td className="py-2.5 px-3 text-right text-zinc-400 font-medium uppercase font-sans tracking-wider">
+                                {trade.platform ? (
+                                  <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-md bg-zinc-800/80 border border-zinc-700/60 text-zinc-300 text-[9px] font-bold uppercase font-sans">
+                                    {trade.platform}
+                                  </span>
+                                ) : (
+                                  <span className="text-zinc-600">—</span>
+                                )}
                               </td>
                             </tr>
                           );
@@ -668,13 +416,10 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
               </div>
               
               </div> {/* END OF RELATIVE Z-10 */}
-
             </div>
             {/* END OF PRINT REPORT WRAPPER */}
-
           </div>
-        </div>
-      </motion.div>
+        </motion.div>
       </motion.div>
       )}
     </AnimatePresence>,

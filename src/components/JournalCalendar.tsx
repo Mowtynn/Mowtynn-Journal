@@ -178,7 +178,6 @@ export function JournalCalendar({ entries, selectedDate, onSelectDate }: Journal
             type="button"
             onClick={handlePrevMonth}
             className="w-6.5 h-6.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 flex items-center justify-center transition-colors duration-150 cursor-pointer"
-            title="Önceki Ay"
           >
             <ChevronLeft size={13} />
           </button>
@@ -187,7 +186,6 @@ export function JournalCalendar({ entries, selectedDate, onSelectDate }: Journal
             type="button"
             onClick={handleNextMonth}
             className="w-6.5 h-6.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 flex items-center justify-center transition-colors duration-150 cursor-pointer"
-            title="Sonraki Ay"
           >
             <ChevronRight size={13} />
           </button>
@@ -230,7 +228,7 @@ export function JournalCalendar({ entries, selectedDate, onSelectDate }: Journal
                   handleSelectDay(item.dateStr);
                 }
               }}
-              className={`h-7 text-[10px] font-mono rounded-lg transition-all flex flex-col items-center justify-center relative cursor-pointer ${
+              className={`h-7 text-[10px] font-sans rounded-lg transition-all flex flex-col items-center justify-center relative cursor-pointer ${
                 isSelected
                   ? 'bg-blue-500/25 text-blue-300 border border-blue-500/40 font-bold shadow-xs'
                   : entry
@@ -258,7 +256,7 @@ export function JournalCalendar({ entries, selectedDate, onSelectDate }: Journal
 
       {/* Footer info & Clear Filter action */}
       {selectedDate && (
-        <div className="pt-2 border-t border-zinc-800/80 flex items-center justify-between text-[10px] font-mono text-zinc-400">
+        <div className="pt-2 border-t border-zinc-800/80 flex items-center justify-between text-[10px] font-sans text-zinc-400">
           <span className="text-zinc-300">
             Filtre: <strong className="text-blue-400 font-bold">{selectedDate}</strong>
           </span>

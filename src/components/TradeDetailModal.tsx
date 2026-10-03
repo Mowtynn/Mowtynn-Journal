@@ -1,8 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'motion/react';
-import { Trade } from '../types';
-import { Calendar, Edit3, FileText, ImageIcon, Trash2, X } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
+import { motion, AnimatePresence } from "motion/react";
+import toast from "react-hot-toast";
+import { Trade, DefinitionTitles } from "../types";
+import { DEFAULT_DEFINITION_TITLES, cleanDefinitionTitleString } from "../constants/constants";
+import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
+import { 
+
+
+  X, Edit3, Trash2, Calendar, Clock, Target, 
+  Maximize2, ExternalLink, Image as ImageIcon, FileText, 
+  Activity, Layers, Monitor, Bookmark, ShieldCheck, AlertCircle,
+  Download, Loader2, Trophy, TrendingDown, Minus, Zap, TrendingUp
+} from "lucide-react";
 
 interface TradeDetailModalProps {
   trade: Trade | null;
@@ -10,34 +20,140 @@ interface TradeDetailModalProps {
   onEdit: (trade: Trade) => void;
   onDelete?: (id: string) => void;
   currency: string;
+  definitionTitles?: DefinitionTitles;
 }
 
-const TradeDetailModal = React.memo(function TradeDetailModal({ trade, onClose, onEdit, onDelete, currency }: TradeDetailModalProps) {
-  const [imageError, setImageError] = useState(false);
+const TradeDetailModal = React.memo(function TradeDetailModal({ 
+  trade, 
+  onClose, 
+  onEdit, 
+  onDelete,
+  currency,
+  definitionTitles = DEFAULT_DEFINITION_TITLES
+}: TradeDetailModalProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const [isImageLoading, setIsImageLoading] = useState(true);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [resolvedImageUrl, setResolvedImageUrl] = useState<string | null>(null);
+
+  // Preserve displayedTrade so that content remains intact during exit animation when trade prop is cleared
+  const [displayedTrade, setDisplayedTrade] = useState<Trade | null>(trade);
+
+  useBodyScrollLock(!!(trade || displayedTrade));
+
+  useEffect(() => {
+    if (trade) {
+      setDisplayedTrade(trade);
+    }
+  }, [trade]);
+
+  const currentTrade = trade || displayedTrade;
+
+  React.useEffect(() => {
+    setImageError(false);
+    const screenshot = trade?.screenshot || (!trade ? displayedTrade?.screenshot : undefined);
+    if (!screenshot) {
+      setResolvedImageUrl(null);
+      setIsImageLoading(false);
+      return;
+    }
+    
+    setIsImageLoading(true);
+    if (screenshot.includes('tradingview.com/x/')) {
+      fetch(`/api/resolve-tv?url=${encodeURIComponent(screenshot)}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.url) setResolvedImageUrl(data.url);
+          else setResolvedImageUrl(screenshot);
+        })
+        .catch(() => setResolvedImageUrl(screenshot));
+    } else {
+      setResolvedImageUrl(screenshot);
+    }
+  }, [trade?.screenshot, displayedTrade?.screenshot]);
+
+  const contentRef = React.useRef<HTMLDivElement>(null);
+
+  const handleDownload = async () => {
+    if (!contentRef.current) return;
+    try {
+      setIsDownloading(true);
+      setIsExporting(true); // Triggers layout changes
+      
+      // Wait a moment for DOM to update with isExporting classes and base64 image
+      // Ultimate Optimization: Use double requestAnimationFrame to wait for the exact moment the browser paints the new layout, 0ms idle time.
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      const htmlToImage = await import("html-to-image");
+      const dataUrl = await htmlToImage.toPng(contentRef.current, {
+        backgroundColor: "#0a0a0c",
+        pixelRatio: 2,
+        // Removed cacheBust: true to prevent TradingView S3 403 Forbidden errors
+        imagePlaceholder: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+        filter: (node: HTMLElement) => {
+          if (node.classList && node.classList.contains('no-export')) {
+            return false;
+          }
+          return true;
+        }
+      });
+      
+      const link = document.createElement("a");
+      link.href = dataUrl;
+      const dateStr = currentTrade?.createdAt ? new Date(currentTrade.createdAt).toISOString().split('T')[0] : 'export';
+      link.download = `${(currentTrade?.asset || 'Trade').replace('/', '_')}_${dateStr}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Görsel oluşturulurken hata:", error);
+      toast.error("Görsel oluşturulamadı. Harici URL'den gelen görseller (CORS) buna sebep olabilir.");
+    } finally {
+      setIsExporting(false);
+      setIsDownloading(false);
+    }
+  };
 
   useEffect(() => {
     if (trade) {
       setImageError(false);
+      setShowDeleteConfirm(false);
     }
-  }, [trade?.id, trade?.screenshot]);
+  }, [trade]);
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onClose();
+        if (showDeleteConfirm) {
+          setShowDeleteConfirm(false);
+        } else if (trade) {
+          onClose();
+        }
       }
     };
     if (trade) {
-      window.addEventListener('keydown', handleKeyDown);
+      window.addEventListener('keydown', handleEsc);
     }
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [trade, onClose]);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [onClose, showDeleteConfirm, trade]);
 
-  const isWin = trade?.status === 'WIN';
-  const isLoss = trade?.status === 'LOSS';
+  if (!currentTrade) return null;
+
+  const isWin = currentTrade.status === 'WIN';
+  const isLoss = currentTrade.status === 'LOSS';
+  const isBe = currentTrade.status === 'BREAKEVEN';
+  const isOpen = (currentTrade.status as any) === 'OPEN';
+
+  const pnlColorClass = isWin 
+    ? 'text-emerald-400' 
+    : isLoss 
+      ? 'text-rose-400' 
+      : 'text-zinc-400';
+
+  const rrColorClass = currentTrade.rr !== undefined && currentTrade.rr !== null 
+    ? currentTrade.rr > 0 ? 'text-emerald-400' : currentTrade.rr < 0 ? 'text-rose-400' : 'text-zinc-400'
+    : 'text-zinc-600';
 
   const formatDate = (timestamp: number) => {
     return new Date(timestamp).toLocaleString('tr-TR', {
@@ -51,318 +167,442 @@ const TradeDetailModal = React.memo(function TradeDetailModal({ trade, onClose, 
     });
   };
 
-  const pnlColorClass = isWin 
-    ? 'text-emerald-400' 
-    : isLoss 
-      ? 'text-rose-400' 
-      : 'text-zinc-500';
+  const pnlFormatted = currentTrade.pnl !== undefined && currentTrade.pnl !== null 
+    ? `${currentTrade.pnl > 0 ? '+' : ''}${currentTrade.pnl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`
+    : `—`;
+
+  const rrFormatted = currentTrade.rr !== undefined && currentTrade.rr !== null
+    ? `${currentTrade.rr > 0 ? '+' : ''}${currentTrade.rr}R`
+    : `—`;
 
   return createPortal(
-    <AnimatePresence>
-      {trade && (
-        <motion.div 
-          key={trade.id ? `trade-detail-modal-${trade.id}` : 'trade-detail-modal'}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.15, ease: "easeOut" }}
-          onClick={onClose}
-          className="fixed inset-0 z-[1100] bg-zinc-950/80  flex items-center justify-center p-4"
-          style={{ willChange: 'opacity' }}
-        >
-          {/* Container Card with Soft, Fluid transitions */}
+    <>
+      <AnimatePresence
+        onExitComplete={() => {
+          if (!trade) {
+            setDisplayedTrade(null);
+            setShowDeleteConfirm(false);
+          }
+        }}
+      >
+        {trade && (
           <motion.div 
+            key="trade-detail-backdrop"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            style={{ willChange: 'opacity' }}
-            onClick={(e) => e.stopPropagation()}
-            id="trade-detail-popup" 
-            className="w-full max-w-xl bg-zinc-900 border border-zinc-700/50 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+            
+            onClick={onClose}
+             className="will-change-[opacity] modal-overlay"
           >
-              {/* Header Bar */}
-              <div className="border-b border-zinc-700/40 px-5 py-4 flex justify-between items-center bg-zinc-900/60 shrink-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-base font-black text-zinc-100 font-sans tracking-wider uppercase">{trade.asset}</span>
-                  {trade.type === 'LONG' ? (
-                    <span className="text-emerald-400 bg-emerald-400/10 border border-emerald-400/15 text-[9px] font-black px-2.5 py-0.5 rounded-lg font-sans tracking-wider">
-                      LONG
-                    </span>
-                  ) : (
-                    <span className="text-rose-400 bg-rose-400/10 border border-rose-400/15 text-[9px] font-black px-2.5 py-0.5 rounded-lg font-sans tracking-widest">
-                      SHORT
-                    </span>
-                  )}
-
-                  {/* Status Pills */}
-                  {isWin ? (
-                    <span className="text-emerald-400 bg-emerald-500/10 border border-emerald-500/25 text-[9px] font-bold px-2.5 py-0.5 rounded-lg flex items-center gap-1">
-                      🏆 WIN
-                    </span>
-                  ) : isLoss ? (
-                    <span className="text-rose-400 bg-rose-500/10 border border-rose-500/25 text-[9px] font-bold px-2.5 py-0.5 rounded-lg flex items-center gap-1 font-mono">
-                      📉 LOSS
-                    </span>
-                  ) : (
-                    <span className="text-zinc-400 bg-zinc-800/80 border border-zinc-700/60 text-[9px] font-bold px-2.5 py-0.5 rounded-lg">
-                      ⚡ BREAKEVEN
-                    </span>
-                  )}
+            <motion.div 
+              key="trade-detail-content"
+              ref={contentRef}
+              initial={{ opacity: 0, scale: 0.98, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.98, y: 10 }}
+              transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+              style={{ 
+                willChange: "transform, opacity", 
+                ...(isExporting ? { margin: 0, padding: 0, boxShadow: 'none', borderRadius: 0, border: 'none', transform: 'none' } : {}) 
+              }}
+              onClick={(e) => e.stopPropagation()}
+              className={`w-full max-w-6xl modal-content relative ${
+                isExporting 
+                  ? 'h-auto max-h-none overflow-visible shadow-none rounded-none border-0 m-0 p-0 bg-[#0a0a0c]' 
+                  : 'h-[92vh] sm:h-[88vh] max-h-[900px] overflow-hidden'
+              }`}
+            >
+              {/* Header */}
+              <div className="modal-header">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5">
+                  <div className="flex items-center gap-3">
+                    <h2 className="heading-1 flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(59,130,246,0.15)]">
+                        <Activity size={16} />
+                      </div>
+                      {currentTrade.asset}
+                    </h2>
+                    <div className="flex gap-2">
+                      <span className={`badge-base ${currentTrade.type === 'LONG' ? 'badge-win' : 'badge-loss'}`}>
+                        {currentTrade.type}
+                      </span>
+                      <span className={`badge-base flex items-center gap-1.5 ${
+                        isWin ? 'badge-win' : 
+                        isLoss ? 'badge-loss' : 
+                        isBe ? 'bg-zinc-800 text-zinc-300 border border-zinc-700' :
+                        'toggle-item-brand border border-blue-500/20'
+                      }`}>
+                        {isWin && <><Trophy size={12} className="mr-1"/> WIN</>}
+                        {isLoss && <><TrendingDown size={12} className="mr-1"/> LOSS</>}
+                        {isBe && <><Minus size={12} className="mr-1"/> BREAKEVEN</>}
+                        {isOpen && <><Clock size={12} className="mr-1"/> OPEN</>}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="hidden sm:block w-px h-8 bg-zinc-800"></div>
+                  <div className="flex items-center gap-2 text-zinc-400 text-sm font-sans">
+                    <Calendar size={14} className="text-zinc-500"/>
+                    {formatDate(currentTrade.createdAt)}
+                  </div>
                 </div>
-
-                <div className="flex items-center gap-1.5">
+                
+                <div className="flex items-center gap-2 shrink-0 no-export">
+                  <button
+                    onClick={() => { onEdit(currentTrade); onClose(); }}
+                    className="flex items-center justify-center w-9 h-9 rounded-xl border transition-colors cursor-pointer shrink-0 text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 border-blue-500/20"
+                  >
+                    <Edit3 size={16} />
+                  </button>
                   {onDelete && (
                     <button
                       onClick={() => setShowDeleteConfirm(true)}
-                      className="text-[9px] bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/25 text-rose-400 font-bold px-3 py-1.5 rounded-xl flex items-center gap-1 transition-colors duration-200 ease-out cursor-pointer uppercase font-mono"
-                      title="İşlemi Sil"
+                      className="flex items-center justify-center w-9 h-9 rounded-xl border transition-colors cursor-pointer shrink-0 text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border-rose-500/20"
                     >
-                      <Trash2 size={11} /> Sil
+                      <Trash2 size={16} />
                     </button>
                   )}
                   <button
-                    onClick={() => {
-                      onEdit(trade);
+                    onClick={handleDownload}
+                    disabled={isDownloading}
+                    className="flex items-center justify-center w-9 h-9 rounded-xl border transition-colors cursor-pointer shrink-0 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/20 disabled:opacity-50"
+                  >
+                    {isDownloading ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                  </button>
+                  <div className="w-px h-6 bg-zinc-800 mx-1 hidden sm:block"></div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
                       onClose();
                     }}
-                    className="text-[9px] bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/40 text-blue-300 font-bold px-3.5 py-1.5 rounded-xl flex items-center gap-1 transition-all duration-150 cursor-pointer uppercase font-mono shadow-xs"
+                    className="btn-icon"
                   >
-                    <Edit3 size={10} /> Düzenle
-                  </button>
-                  <button
-                    onClick={onClose}
-                    className="p-1.5 hover:bg-zinc-800 rounded-xl text-zinc-400 hover:text-zinc-200 transition-colors duration-200 ease-out cursor-pointer"
-                  >
-                    <X size={15} />
+                    <X size={16} />
                   </button>
                 </div>
               </div>
-
-              {/* Scrollable Document Content */}
-              <div className="overflow-y-auto p-5 space-y-4 flex-1 bg-zinc-950/30 custom-scrollbar">
+              {/* Main Content Layout */}
+              <div className="flex flex-col lg:flex-row flex-1 overflow-hidden min-h-0">
                 
-                {/* Main Financial parameters */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                {/* Left Sidebar - Meta & Context (approx 35%) */}
+                <div className={`w-full lg:w-[35%] bg-zinc-950/30 border-r border-zinc-800/60 p-5 space-y-8 shrink-0 ${isExporting ? 'overflow-visible' : 'overflow-y-auto custom-scrollbar'}`}>
                   
-                  {/* Financial Box */}
-                  <div className="bg-zinc-900/60 border border-zinc-700/50 rounded-xl p-3.5">
-                    <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest block mb-2 font-mono">FİNANSAL DURUM</span>
-                    <div className="space-y-1 text-xs">
-                      <div className="flex justify-between items-center">
-                        <span className="text-zinc-400 text-[10px]">Net Kâr / Zarar:</span>
-                          <span className={`font-black text-sm ${pnlColorClass}`}>
-                            {(trade.pnl || 0) > 0 ? '+' : ''}{(trade.pnl || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {currency}
-                          </span>
+                  {/* Performance Summary */}
+                  <section>
+                    <h4 className="heading-2 mb-3">
+                      <Activity size={12}/> FİNANSAL PERFORMANS
+                    </h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-xl p-4 flex flex-col justify-center">
+                        <span className="heading-3 mb-1.5">NET KÂR / ZARAR</span>
+                        <span className={`text-2xl font-bold ${pnlColorClass}`}>{pnlFormatted}</span>
+                      </div>
+                      <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-xl p-4 flex flex-col justify-center">
+                        <span className="heading-3 mb-1.5">RISK : REWARD</span>
+                        <span className={`text-2xl font-bold ${rrColorClass}`}>{rrFormatted}</span>
                       </div>
                     </div>
-                  </div>
+                  </section>
 
-                  {/* R:R Multiplier/target Box */}
-                  <div className="bg-zinc-900/60 border border-zinc-700/50 rounded-xl p-3.5">
-                    <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest block mb-1.5 font-mono">PROFİT / RİSK YÖNETİMİ</span>
-                    <div className="space-y-1 font-mono text-xs">
-                      <div className="flex justify-between items-center">
-                        <span className="text-zinc-400 text-[10px]">Ulaşılan R:R Oranı:</span>
-                        <span className={`font-black text-sm ${trade.rr !== undefined && trade.rr !== null && trade.rr >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                          {trade.rr !== undefined && trade.rr !== null ? (trade.rr > 0 ? `+${trade.rr}R` : `${trade.rr}R`) : '—'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+                  {/* Execution Context */}
+                  {(() => {
+                    const planLower = (currentTrade.planFidelity || "").toLowerCase();
+                    const planColor = (planLower === "tam" || planLower.includes("uygun") || planLower.includes("sadık") || planLower.includes("a+"))
+                      ? "text-emerald-400 font-bold"
+                      : (planLower === "fomo" || planLower.includes("ihlal") || planLower.includes("disiplinsiz"))
+                      ? "text-rose-400 font-bold"
+                      : planLower ? "text-amber-400 font-bold" : undefined;
+
+                    const trendLower = (currentTrade.trend || "").toLowerCase();
+                    const trendColor = (trendLower.includes("reversal") || trendLower.includes("dönüş") || trendLower.includes("ters"))
+                      ? "text-rose-400 font-bold"
+                      : trendLower ? "text-emerald-400 font-bold" : undefined;
+
+                    return (
+                      <section>
+                        <h4 className="heading-2 mb-3">
+                          <Layers size={12}/> İŞLEM BAĞLAMI
+                        </h4>
+                        <div className="bg-zinc-900/40 border border-zinc-800/60 rounded-xl overflow-hidden divide-y divide-zinc-800/60">
+                          {/* 1. PLATFORM */}
+                          <ContextRow 
+                            label={(cleanDefinitionTitleString(definitionTitles.platforms) || "PLATFORM").toUpperCase()} 
+                            value={currentTrade.platform} 
+                            icon={<Monitor size={14} className="text-zinc-400"/>} 
+                          />
+                          {/* 2. KONSEPT */}
+                          <ContextRow 
+                            label={(cleanDefinitionTitleString(definitionTitles.concepts) || "KONSEPT").toUpperCase()} 
+                            value={currentTrade.concept} 
+                            icon={<Bookmark size={14} className="text-amber-400"/>} 
+                          />
+                          {/* 3. SESSION */}
+                          <ContextRow 
+                            label={(cleanDefinitionTitleString(definitionTitles.sessions) || "SESSION").toUpperCase()} 
+                            value={currentTrade.session} 
+                            icon={<Clock size={14} className="text-purple-400"/>} 
+                          />
+                          {/* 4. TIMEFRAME */}
+                          <ContextRow 
+                            label={(cleanDefinitionTitleString(definitionTitles.htfTimeframes) || "TIMEFRAME").toUpperCase()} 
+                            value={currentTrade.htfTimeframe} 
+                            icon={<Maximize2 size={14} className="text-rose-400"/>} 
+                          />
+                          {/* 5. PD ARRAY */}
+                          <ContextRow 
+                            label={(cleanDefinitionTitleString(definitionTitles.confirmations) || "PD ARRAY").toUpperCase()} 
+                            value={currentTrade.confirmations && currentTrade.confirmations.length > 0 
+                              ? currentTrade.confirmations.map(c => String(c).toLocaleUpperCase('tr-TR')).join(", ") 
+                              : undefined} 
+                            icon={<Layers size={14} className="text-emerald-400"/>} 
+                          />
+                          {/* 6. ENTRY TIMEFRAME */}
+                          <ContextRow 
+                            label={(cleanDefinitionTitleString(definitionTitles.timeframes) || "ENTRY TIMEFRAME").toUpperCase()} 
+                            value={currentTrade.timeframe} 
+                            icon={<Target size={14} className="text-blue-400"/>} 
+                          />
+                          {/* 7. ENTRY MODEL */}
+                          <ContextRow 
+                            label={(cleanDefinitionTitleString(definitionTitles.entryModels) || "ENTRY MODEL").toUpperCase()} 
+                            value={Array.isArray(currentTrade.entryModels) && currentTrade.entryModels.length > 0 
+                              ? currentTrade.entryModels.map(e => String(e).toLocaleUpperCase('tr-TR')).join(", ") 
+                              : currentTrade.entry ? String(currentTrade.entry).toLocaleUpperCase('tr-TR') : undefined} 
+                            icon={<Zap size={14} className="text-amber-400"/>} 
+                          />
+                          {/* 8. TREND YAPISI */}
+                          <ContextRow 
+                            label={(cleanDefinitionTitleString(definitionTitles.trendTypes) || "TREND YAPISI").toUpperCase()} 
+                            value={currentTrade.trend} 
+                            icon={<TrendingUp size={14} className="text-emerald-400"/>} 
+                            valueColor={trendColor}
+                          />
+                          {/* 9. SETUP KALİTESİ */}
+                          <ContextRow 
+                            label={(cleanDefinitionTitleString(definitionTitles.planFidelities) || "SETUP KALİTESİ").toUpperCase()} 
+                            value={currentTrade.planFidelity} 
+                            icon={<ShieldCheck size={14} className="text-blue-400"/>} 
+                            valueColor={planColor}
+                          />
+                        </div>
+                      </section>
+                    );
+                  })()}
 
                 </div>
 
-                {/* Date and Custom platform notes */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="bg-zinc-900/60 border border-zinc-700/50 rounded-xl p-3.5">
-                    <div className="flex items-center gap-1.5 text-zinc-500 text-[9px] font-black mb-2 uppercase tracking-widest font-mono">
-                      📅 İŞLEM ZAMANI
-                    </div>
-                    <div className="text-[10px] text-zinc-400 flex flex-col gap-1.5">
-                      <div className="flex gap-1.5 items-center font-mono">
-                        <Calendar size={11} className="text-zinc-500" />
-                        <span>{formatDate(trade.createdAt)}</span>
-                      </div>
-                      {(trade.timeframe || trade.htfTimeframe || trade.session) && (
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {trade.htfTimeframe && (
-                            <span key="htf" className="bg-rose-500/10 border border-rose-500/30 text-rose-300 px-2 py-0.5 rounded-lg text-[9px] uppercase tracking-wider font-bold">{trade.htfTimeframe}</span>
-                          )}
-                          {trade.timeframe && (
-                            <span key="tf" className="bg-blue-500/10 border border-blue-500/30 text-blue-300 px-2 py-0.5 rounded-lg text-[9px] uppercase tracking-wider font-bold">{trade.timeframe}</span>
-                          )}
-                          {trade.session && (
-                            <span key="sess" className="bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded-lg text-[9px] uppercase tracking-wider font-bold">{trade.session}</span>
-                          )}
-                        </div>
+                {/* Right Panel - Chart & Notes (approx 65%) */}
+                <div className={`w-full lg:w-[65%] min-w-0 bg-[#0a0a0c] flex flex-col p-5 space-y-2.5 min-h-0 ${isExporting ? 'overflow-visible' : 'overflow-y-auto custom-scrollbar'}`}>
+                  
+                  {/* Technical Chart */}
+                  <section className="flex-shrink-0">
+                    <div className="flex justify-between items-center mb-2">
+                      <h4 className="heading-2">
+                        <ImageIcon size={12}/> TEKNİK ANALİZ GÖRSELİ
+                      </h4>
+                      {currentTrade.screenshot && !imageError && (
+                        <a href={currentTrade.screenshot} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-400 hover:text-blue-300 flex items-center gap-1 font-sans uppercase font-bold bg-blue-500/10 px-2.5 py-1 rounded-md transition-colors">
+                          Tam Boyut <ExternalLink size={10}/>
+                        </a>
                       )}
                     </div>
-                  </div>
+                    
+                    <div className={`bg-zinc-900/40 border border-zinc-800/60 rounded-xl overflow-hidden relative group w-full flex items-center justify-center p-2 ${
+                      isExporting 
+                        ? 'h-auto max-h-none' 
+                        : currentTrade.screenshot 
+                          ? 'min-h-[280px] max-h-[520px]' 
+                          : 'h-[220px] sm:h-[260px]'
+                    }`}>
+                    {currentTrade.screenshot ? (
+                      <>
+                        {/* Consistent Loading Overlay - Prevents container shrinking/jumping */}
+                        {isImageLoading && !imageError && (
+                          <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center text-zinc-400 bg-zinc-950/60 backdrop-blur-sm z-10">
+                            <div className="w-8 h-8 border-2 border-zinc-700 border-t-blue-400 rounded-full animate-spin mb-3"></div>
+                            <p className="text-xs text-zinc-400 font-sans">
+                              {currentTrade.screenshot.includes('tradingview.com/x/') && !resolvedImageUrl
+                                ? 'Görsel çözümleniyor...'
+                                : 'Görsel yükleniyor...'}
+                            </p>
+                          </div>
+                        )}
 
-                  <div className="bg-zinc-900/60 border border-zinc-700/50 rounded-xl p-3.5">
-                    <div className="flex items-center gap-1.5 text-zinc-500 text-[9px] font-black mb-2 uppercase tracking-widest font-mono">
-                      🖥️ İŞLEM BAĞLAMI
-                    </div>
-                    <div className="text-[10px] text-zinc-300 font-mono font-bold uppercase flex flex-col gap-1.5">
-                      <div className="flex gap-1 items-center">
-                        <span className="text-zinc-500 mr-1">Platform:</span>
-                        <span>{trade.platform || "Belirtilmedi"}</span>
-                      </div>
-                      <div className="flex gap-1 items-center">
-                        <span className="text-zinc-500 mr-1">Konsept:</span>
-                        <span>{trade.concept || "Belirtilmedi"}</span>
-                      </div>
-                      {trade.confirmations && trade.confirmations.length > 0 && (
-                        <div className="flex gap-1 flex-wrap mt-1">
-                          {trade.confirmations.map((c, idx) => (
-                            <span key={`${c}-${idx}`} className="bg-blue-500/10 border border-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded-lg text-[9px] tracking-widest">{c}</span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-zinc-900/60 border border-zinc-700/50 rounded-xl p-3.5">
-                  <div className="flex items-center gap-1.5 text-zinc-500 text-[9px] font-black mb-2 uppercase tracking-widest font-mono">
-                    <FileText size={11} className="text-blue-400" /> GİRİŞ / ANALİZ NOTLARI
-                  </div>
-                  <div className="bg-zinc-950/50 border border-zinc-800/80 rounded-xl p-2.5 text-[10px] leading-relaxed text-zinc-300 min-h-[70px] whitespace-pre-wrap font-sans">
-                    {trade.notes ? trade.notes : "Bu işlem için henüz bir kurgu veya analiz notu eklenmemiş."}
-                  </div>
-                </div>
-
-                {/* Screen layout screenshot illustration */}
-                <div>
-                  <div className="flex items-center gap-1.5 text-zinc-500 text-[9px] font-black mb-2 uppercase tracking-widest font-mono">
-                    <ImageIcon size={11} className="text-zinc-400" />
-                    <span>Teknik Analiz Görseli</span>
-                  </div>
-                  
-                  {trade.screenshot ? (
-                    <div className="relative rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-900/60 p-1.5 ">
-                      {imageError ? (
-                        <div className="flex flex-col items-center justify-center p-6 text-center text-rose-400 bg-zinc-950/60 rounded-xl min-h-[140px]">
-                          <span className="text-sm mb-1">⚠️</span>
-                          <p className="text-[10px] font-medium font-sans">Görsel yüklenemedi</p>
-                          <p className="text-[9px] text-zinc-500 mt-1 max-w-xs leading-relaxed font-mono">Girdiğiniz URL geçersiz, erişilemez veya hotlink korumalı olabilir.</p>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              onEdit(trade);
-                              onClose();
+                        {imageError ? (
+                          <div className="flex flex-col items-center justify-center p-10 text-center text-rose-400 h-full">
+                            <AlertCircle size={32} className="mb-3 opacity-50" />
+                            <p className="text-sm font-bold font-sans">Görsel yüklenemedi</p>
+                            <p className="text-xs text-zinc-500 mt-2 max-w-sm leading-relaxed font-sans">
+                              URL geçersiz, erişim engellendi veya çapraz köken (CORS) politikası tarafından engellendi.
+                            </p>
+                          </div>
+                        ) : resolvedImageUrl ? (
+                          <img 
+                            src={resolvedImageUrl} 
+                            alt="Trading chart" 
+                            className={`w-auto h-auto max-w-full max-h-[500px] object-contain rounded-lg transition-opacity duration-200 ${isImageLoading ? 'opacity-0' : 'opacity-100'}`}
+                            crossOrigin="anonymous"
+                            referrerPolicy="no-referrer"
+                            onLoad={() => {
+                              setIsImageLoading(false);
+                              setImageError(false);
                             }}
-                            className="text-[9px] text-blue-400 hover:text-blue-300 font-bold mt-2.5 cursor-pointer uppercase font-mono"
-                          >
-                            URL'Yİ GÜNCELLE
-                          </button>
-                        </div>
+                            onError={() => {
+                              setImageError(true);
+                              setIsImageLoading(false);
+                            }}
+                          />
+                        ) : null}
+                      </>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center p-12 text-center text-zinc-600 min-h-[300px]">
+                        <Monitor size={40} className="mb-4 opacity-20" />
+                        <p className="text-sm font-bold font-sans text-zinc-400">Ekran görüntüsü bulunmuyor</p>
+                        <p className="text-xs text-zinc-500 mt-2 font-sans max-w-xs">Bu işlem için bir teknik analiz grafiği eklenmemiş.</p>
+                        <button onClick={() => { onEdit(currentTrade); onClose(); }} className="mt-4 text-xs font-sans font-bold text-blue-400 bg-blue-500/10 px-4 py-2 rounded-lg hover:bg-blue-500/20 transition-colors uppercase cursor-pointer">
+                          Görsel Ekle
+                        </button>
+                      </div>
+                    )}
+                    </div>
+                  </section>
+
+                  {/* Trading Journal / Notes */}
+                  <section className="flex-1 flex flex-col min-h-0">
+                    <h4 className="heading-2 mb-2 shrink-0">
+                      <FileText size={12}/> GİRİŞ VE ANALİZ NOTLARI
+                    </h4>
+                    <div className="bg-zinc-900/40 border border-zinc-800/60 rounded-xl p-4 flex-1 min-h-[110px] overflow-y-auto overflow-x-hidden custom-scrollbar">
+                      {currentTrade.notes ? (
+                        <p className="text-zinc-200 text-sm sm:text-[14px] leading-relaxed whitespace-pre-wrap break-words font-sans">
+                          {currentTrade.notes}
+                        </p>
                       ) : (
-                        <img 
-                          src={trade.screenshot} 
-                          alt="Pasted trading setup chart" 
-                          className="rounded-xl object-contain w-full max-h-[300px]"
-                          referrerPolicy="no-referrer"
-                          loading="lazy"
-                          decoding="async"
-                          onError={() => setImageError(true)}
-                        />
+                        <div className="flex items-center justify-center h-full text-zinc-600 text-xs italic">
+                          Bu işlem için herhangi bir not girilmemiş.
+                        </div>
                       )}
                     </div>
-                  ) : (
-                    <div className="border border-zinc-800/80 border-dashed rounded-2xl p-5 text-center text-zinc-500 bg-zinc-900/40">
-                      <p className="text-[10px]">Forma herhangi bir ekran görüntüsü yüklenmemiş ya da yapıştırılmamış.</p>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onEdit(trade);
-                          onClose();
-                        }}
-                        className="text-[9px] text-zinc-300 hover:text-white hover:underline font-bold mt-1.5 cursor-pointer uppercase font-mono"
-                      >
-                        GÜNCELLEMEK İÇİN DÜZENLEYİN
-                      </button>
-                    </div>
-                  )}
+                  </section>
+
                 </div>
-
               </div>
-
-              {/* Footer closing button */}
-              <div className="bg-zinc-900/60 border-t border-zinc-700/40 p-3.5 px-5 flex justify-end shrink-0">
-                <button
-                  onClick={onClose}
-                  className="bg-zinc-100 hover:bg-zinc-200 text-zinc-900 text-[10px] font-black tracking-widest px-5 py-2 rounded-xl uppercase font-mono transition-colors duration-200 ease-out cursor-pointer"
-                >
-                  Kapat
-                </button>
+              
+              {/* Mobile Actions Footer */}
+              <div className="sm:hidden flex items-center gap-2 p-4 border-t border-zinc-800/80 bg-zinc-950/80 shrink-0 no-export">
+                 <button
+                    onClick={() => { onEdit(currentTrade); onClose(); }}
+                    className="flex items-center justify-center w-9 h-9 rounded-xl border transition-colors cursor-pointer shrink-0 text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 border-blue-500/20 flex-1"
+                  >
+                    <Edit3 size={16} />
+                  </button>
+                 {onDelete && (
+                    <button
+                      onClick={() => setShowDeleteConfirm(true)}
+                      className="flex items-center justify-center w-9 h-9 rounded-xl border transition-colors cursor-pointer shrink-0 text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border-rose-500/20 flex-1"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  )}
+                  <button
+                    onClick={handleDownload}
+                    disabled={isDownloading}
+                    className="flex items-center justify-center w-9 h-9 rounded-xl border transition-colors cursor-pointer shrink-0 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/20 flex-1 disabled:opacity-50"
+                  >
+                    {isDownloading ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                  </button>
               </div>
+            </motion.div>
           </motion.div>
-        </motion.div>
-      )}
+        )}
+      </AnimatePresence>
 
-      {/* DELETE TRADE CONFIRMATION MODAL */}
+      {/* Delete Confirmation Modal Overlay */}
       <AnimatePresence>
-        {showDeleteConfirm && trade && (
+        {showDeleteConfirm && currentTrade && (
           <motion.div
+            key="trade-delete-confirm-backdrop"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className="fixed inset-0 z-[2200] bg-zinc-950/80  flex items-center justify-center p-4"
+            className="will-change-[opacity] fixed inset-0 z-[4500] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
             onClick={() => setShowDeleteConfirm(false)}
           >
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15, ease: "easeOut" }}
+              key="trade-delete-confirm-content"
+              initial={{ opacity: 0, scale: 0.98, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.98, y: 10 }}
+              transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+              style={{ willChange: "transform, opacity" }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-zinc-900 border border-zinc-700/50 rounded-2xl p-6 max-w-md w-full shadow-2xl overflow-hidden relative"
+              className="bg-zinc-900 border border-zinc-700/80 rounded-2xl p-5 max-w-sm w-full shadow-2xl relative"
             >
               <div className="w-12 h-12 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center mx-auto mb-4">
                 <Trash2 size={24} />
               </div>
-              
-              <h3 className="text-base font-bold tracking-wide text-zinc-100 uppercase text-center mb-2">
+              <h3 className="text-base font-bold text-white uppercase text-center mb-2 font-sans">
                 İşlemi Sil
               </h3>
-              
-              <p className="text-zinc-400 text-xs text-center mb-6 leading-relaxed font-mono">
-                <span className="font-semibold text-zinc-200">{trade.asset}</span> ({trade.type === 'LONG' ? 'Long' : 'Short'} - {trade.platform || 'Platform'}) pozisyonunu silmek istediğinize emin misiniz? Bu işlem geri alınamaz.
+              <p className="text-zinc-400 text-xs text-center mb-6 leading-relaxed font-sans">
+                <span className="font-semibold text-zinc-200">{currentTrade.asset}</span> <span className="text-zinc-300 font-bold">{currentTrade.type}</span> pozisyonunu kalıcı olarak silmek istediğinize emin misiniz?
               </p>
-              
-              <div className="flex items-center gap-3">
+              <div className="flex gap-3">
                 <button
                   type="button"
                   onClick={() => setShowDeleteConfirm(false)}
-                  className="flex-1 py-2.5 px-4 bg-zinc-800/30 hover:bg-zinc-800/60 text-zinc-300 font-mono text-[11px] font-bold uppercase tracking-widest rounded-xl border border-zinc-700/50 transition-colors duration-200 cursor-pointer"
+                  className="flex-1 py-2.5 bg-zinc-800 text-white text-xs font-bold uppercase rounded-xl transition-colors hover:bg-zinc-700 cursor-pointer"
                 >
                   Vazgeç
                 </button>
                 <button
                   type="button"
                   onClick={() => {
-                    if (onDelete && trade) {
-                      onDelete(trade.id);
+                    if (onDelete && currentTrade) {
+                      onDelete(currentTrade.id);
                       setShowDeleteConfirm(false);
                       onClose();
                     }
                   }}
-                  className="flex-1 py-2.5 px-4 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 hover:border-rose-500/40 font-mono text-[11px] font-bold uppercase tracking-widest rounded-xl transition-colors duration-200 cursor-pointer flex items-center justify-center gap-2"
+                  className="flex-1 py-2.5 bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-bold uppercase rounded-xl transition-colors hover:bg-rose-500/30 cursor-pointer"
                 >
-                  <Trash2 size={13} />
-                  <span>Evet, Sil</span>
+                  Evet, Sil
                 </button>
               </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
-    </AnimatePresence>,
+    </>,
     document.body
   );
 });
+
+// Helper component for Context rows
+function ContextRow({ 
+  label, 
+  value, 
+  icon, 
+  valueColor 
+}: { 
+  label: string; 
+  value: string | undefined | null; 
+  icon: React.ReactNode; 
+  valueColor?: string;
+}) {
+  const displayValue = value ? String(value).toLocaleUpperCase('tr-TR') : '—';
+  return (
+    <div className="flex items-center justify-between px-4 py-2.5 bg-zinc-950/20 hover:bg-zinc-900/80 transition-colors">
+      <div className="flex items-center gap-2 text-zinc-500">
+        {icon}
+        <span className="text-[10px] font-extrabold uppercase tracking-widest font-sans">{label}</span>
+      </div>
+      <span className={`text-xs font-bold font-sans text-right uppercase ${valueColor || 'text-zinc-300'}`}>{displayValue}</span>
+    </div>
+  );
+}
 
 export default TradeDetailModal;

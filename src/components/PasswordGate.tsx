@@ -186,9 +186,11 @@ export function PasswordGate({ children }: PasswordGateProps) {
   return (
     <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center p-4 text-zinc-100 font-sans selection:bg-blue-500/30 relative overflow-hidden">
       <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.15, ease: "easeOut" }}
+        initial={{ opacity: 0, scale: 0.96, y: 16 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.96, y: 16 }}
+          transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          style={{ willChange: "transform, opacity" }}
         className="w-full max-w-sm relative z-10"
       >
         {/* Brand / Logo */}
@@ -199,13 +201,13 @@ export function PasswordGate({ children }: PasswordGateProps) {
           <h1 className="text-xl font-bold tracking-wide text-zinc-100">
             TRADING JOURNAL
           </h1>
-          <p className="text-xs text-zinc-500 font-mono mt-1 uppercase tracking-widest">
+          <p className="text-xs text-zinc-500 font-sans mt-1 uppercase tracking-widest">
             Kısıtlı Erişim
           </p>
         </div>
 
         <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl shadow-2xl overflow-hidden relative">
-          <div className="p-6">
+          <div className="p-5">
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-4">
                 <div className="relative group">
@@ -223,13 +225,13 @@ export function PasswordGate({ children }: PasswordGateProps) {
                     placeholder={isLockedOut ? `Kilitli (${remainingTime}s)` : "Erişim Şifresi"}
                     autoFocus
                     disabled={isLockedOut || isProcessing}
-                    className={`w-full bg-zinc-950/80 border ${error || isLockedOut ? 'border-rose-500/40 focus:border-rose-500/60' : 'border-zinc-800 focus:border-blue-500/30'} rounded-xl py-3 pl-10 pr-4 text-white font-mono text-sm placeholder:font-sans placeholder:text-zinc-600 focus:outline-none focus:ring-1 ${error || isLockedOut ? 'focus:ring-rose-500/20' : 'focus:ring-blue-500/20'} transition-all disabled:opacity-50 disabled:cursor-not-allowed`}
+                    className={`w-full bg-zinc-950/80 border ${error || isLockedOut ? 'border-rose-500/40 focus:border-rose-500/60' : 'border-zinc-800 focus:border-blue-500/30'} rounded-xl py-3 pl-10 pr-4 text-white font-sans text-sm placeholder:font-sans placeholder:text-zinc-600 focus:outline-none focus:ring-1 ${error || isLockedOut ? 'focus:ring-rose-500/20' : 'focus:ring-blue-500/20'} transition-all disabled:opacity-50 disabled:cursor-not-allowed`}
                   />
                   {error && !isLockedOut && (
                     <motion.p 
                       initial={{ opacity: 0, y: -5 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="absolute -bottom-5 left-1 text-[10px] text-rose-400 font-medium font-mono"
+                      className="absolute -bottom-5 left-1 text-[10px] text-rose-400 font-medium font-sans"
                     >
                       Hatalı şifre. Kalan hak: {Math.max(0, MAX_ATTEMPTS - attempts)}
                     </motion.p>
@@ -241,7 +243,7 @@ export function PasswordGate({ children }: PasswordGateProps) {
                     type="button"
                     disabled={isLockedOut || isProcessing}
                     onClick={() => setRememberMe(false)}
-                    className={`py-2 px-3 text-xs font-bold font-mono tracking-wide rounded-lg transition-all duration-150 cursor-pointer flex items-center justify-center gap-1.5 focus:outline-none focus:ring-0 focus-visible:outline-none active:outline-none active:ring-0 select-none border ${
+                    className={`py-2 px-3 text-xs font-bold font-sans tracking-wide rounded-lg transition-all duration-150 cursor-pointer flex items-center justify-center gap-1.5 focus:outline-none focus:ring-0 focus-visible:outline-none active:outline-none active:ring-0 select-none border ${
                       !rememberMe
                         ? "bg-zinc-800/80 text-blue-400 border-zinc-700/40 shadow-xs"
                         : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/40 border-transparent"
@@ -253,7 +255,7 @@ export function PasswordGate({ children }: PasswordGateProps) {
                     type="button"
                     disabled={isLockedOut || isProcessing}
                     onClick={() => setRememberMe(true)}
-                    className={`py-2 px-3 text-xs font-bold font-mono tracking-wide rounded-lg transition-all duration-150 cursor-pointer flex items-center justify-center gap-1.5 focus:outline-none focus:ring-0 focus-visible:outline-none active:outline-none active:ring-0 select-none border ${
+                    className={`py-2 px-3 text-xs font-bold font-sans tracking-wide rounded-lg transition-all duration-150 cursor-pointer flex items-center justify-center gap-1.5 focus:outline-none focus:ring-0 focus-visible:outline-none active:outline-none active:ring-0 select-none border ${
                       rememberMe
                         ? "bg-zinc-800/80 text-blue-400 border-zinc-700/40 shadow-xs"
                         : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/40 border-transparent"
@@ -267,7 +269,7 @@ export function PasswordGate({ children }: PasswordGateProps) {
               <button
                 type="submit"
                 disabled={isLockedOut || isProcessing || !input}
-                className="w-full h-11 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 hover:border-blue-500/40 font-mono font-bold uppercase tracking-widest rounded-xl flex items-center justify-center gap-2 transition-all duration-200 ease-out group disabled:opacity-50 disabled:cursor-not-allowed shadow-xs mt-2 text-[11px] cursor-pointer"
+                className="w-full h-11 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 hover:border-blue-500/40 font-sans font-bold uppercase tracking-widest rounded-xl flex items-center justify-center gap-2 transition-all duration-200 ease-out group disabled:opacity-50 disabled:cursor-not-allowed shadow-xs mt-2 text-xs cursor-pointer"
               >
                 <span>{isProcessing ? 'DOĞRULANIYOR...' : 'GİRİŞ YAP'}</span>
                 {!isProcessing && !isLockedOut && (
@@ -278,7 +280,7 @@ export function PasswordGate({ children }: PasswordGateProps) {
           </div>
         </div>
         
-        <p className="text-center text-zinc-600 text-[10px] mt-6 font-mono tracking-wide">
+        <p className="text-center text-zinc-600 text-[10px] mt-6 font-sans tracking-wide">
           <ShieldCheck className="w-3 h-3 inline-block mr-1 -mt-0.5 opacity-50" />
           SECURE ENCRYPTED SESSION
         </p>

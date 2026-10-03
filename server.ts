@@ -331,7 +331,25 @@ async function startServer() {
   // AI Co-Pilot & Mentor API Route
   app.post("/api/copilot", requireSiteAuth, async (req, res) => {
     try {
-      const { prompt, mode, tradesData, statsData, chatHistory, imageData, persona, preTradeData, healthMetrics, certificatesData, notesData, journalsData, behavioralTraps, journalSentimentStats } = req.body;
+      const { 
+        prompt, 
+        mode, 
+        tradesData, 
+        tradesSummary,
+        statsData, 
+        breakdownMetrics,
+        definitionsData,
+        chatHistory, 
+        imageData, 
+        persona, 
+        preTradeData, 
+        healthMetrics, 
+        certificatesData, 
+        notesData, 
+        journalsData, 
+        behavioralTraps, 
+        journalSentimentStats 
+      } = req.body;
 
       if (getGeminiKeys().length === 0 && !process.env.GEMINI_API_KEY) {
         return res.status(500).json({
@@ -366,54 +384,70 @@ Hem teknik analiz, hem risk yönetimi hem de trading psikolojisi konularını de
       const systemInstruction = `Sen dünya çapında deneyimli, disiplinli, objektif ve sempatik bir 'Trading Psikolojisi, Risk Yönetimi ve Grafik Desen Analisti Co-Pilot / Mentörü'sün.
 Kullanıcının dilinde (Türkçe) konuşacaksın.
 Senin amacın tüccarın (trader) duygusal hatalar yapmasını engellemek, istatistiklerini objektif analiz etmek, grafik ekran görüntülerini incelemek ve ona somut, uygulanabilir tavsiyeler sunmaktır.
+Kullanıcının projesindeki TÜM VERİLERE (İşlemler, Stratejiler, Tanımlar, Performans Kırılımları, Psikoloji Günlükleri, Notlar ve Sertifikalar) tam erişimin vardır.
 
 [MENTÖRÜN AKTİF KARAKTERİ / ROLÜ]
 ${personaInstruction}
 
-Aşağıda kullanıcının güncel işlem geçmişi özet istatistikleri ve ham verileri bulunuyor:
-[SAĞLIK & DİSİPLİN METRİKLERİ]
-Skor: ${healthMetrics?.score || 0}/100 (${healthMetrics?.label || 'Bilinmiyor'})
-Arka Arkaya Maks. Kayıp (Max Loss Streak): ${healthMetrics?.maxLossStreak || 0}
-Sıcaklık Haritası (Davranışsal Tuzaklar): ${JSON.stringify(behavioralTraps || {})}
-Günlük Duygu Durumu İstatistikleri: ${JSON.stringify(journalSentimentStats || {})}
+[STRATEJİ & TANIM LİSTESİ (DEFINITIONS)]
+${JSON.stringify(definitionsData || {}, null, 2)}
 
-[ÖZET İSTATİSTİKLER]
+[SAĞLIK & DİSİPLİN METRİKLERİ]
+- Disiplin Skoru: ${healthMetrics?.score || 0}/100 (${healthMetrics?.label || 'Bilinmiyor'})
+- Arka Arkaya Maks. Kayıp (Max Loss Streak): ${healthMetrics?.maxLossStreak || 0}
+- Sıcaklık Haritası & Davranışsal Tuzaklar: ${JSON.stringify(behavioralTraps || {})}
+- Günlük Duygu Durumu İstatistikleri: ${JSON.stringify(journalSentimentStats || {})}
+
+[GENEL ÖZET İSTATİSTİKLER]
 - Toplam İşlem Sayısı: ${statsData?.totalTrades || 0}
 - Kazanan İşlem Sayısı: ${statsData?.winningTrades || 0}
 - Kaybeden İşlem Sayısı: ${statsData?.losingTrades || 0}
+- Başabaş (Breakeven) İşlem Sayısı: ${statsData?.breakevenTrades || 0}
 - Başarı Oranı (Win Rate): %${Number(statsData?.winRate || 0).toFixed(1)}
-- Net Kâr/Zarar (PnL): ${statsData?.netPnl || 0}
-- Net Risk/Ödül (R): ${statsData?.netR || 0}
-- Kar Faktörü (Profit Factor): ${statsData?.profitFactor || 0}
+- Net Kâr/Zarar (PnL): ${statsData?.netPnl || 0} ${tradesSummary?.currency || '$'}
+- Net Risk/Ödül (R): ${statsData?.netR || 0} R
+- Kâr Faktörü (Profit Factor): ${statsData?.profitFactor || 0}
 - Ortalama Kazanç R: ${statsData?.averageWinRR || 0} R
 - Ortalama Kayıp R: ${statsData?.averageLossRR || 0} R
+- En Başarılı Parite: ${statsData?.bestAsset || 'N/A'}
+- En Çok Kaybettiren Parite: ${statsData?.worstAsset || 'N/A'}
 - En Büyük Kazanç: ${statsData?.largestWin || 0}
 - En Büyük Kayıp: ${statsData?.largestLoss || 0}
 
-[İŞLEM ÖRNEKLERİ / DETAYLARI]
-${JSON.stringify(tradesData || [], null, 2).slice(0, 50000)}
+[DETAYLI PERFORMANS KIRILIMLARI (BREAKDOWN METRICS)]
+- Parite Bazında: ${JSON.stringify(breakdownMetrics?.byAsset || {})}
+- Seans (Session) Bazında: ${JSON.stringify(breakdownMetrics?.bySession || {})}
+- Giriş Modeli (Entry Model) Bazında: ${JSON.stringify(breakdownMetrics?.byEntryModel || {})}
+- Setup Kalitesi Bazında: ${JSON.stringify(breakdownMetrics?.bySetupQuality || {})}
+- Trend Yapısı Bazında: ${JSON.stringify(breakdownMetrics?.byTrend || {})}
+- İşlem Yönü (Direction / LONG-SHORT) Bazında: ${JSON.stringify(breakdownMetrics?.byDirection || {})}
+- Zaman Dilimi (Timeframe) Bazında: ${JSON.stringify(breakdownMetrics?.byTimeframe || {})}
 
-[GÜNLÜK YAZILARI (JOURNAL)]
-${JSON.stringify(journalsData || [], null, 2).slice(0, 10000)}
+[TÜM İŞLEMLERİN DETAYLI LİSTESİ (${tradesData?.length || 0} Adet İşlem)]
+${JSON.stringify(tradesData || [], null, 2)}
 
-[SERTİFİKALAR VE PAYOUTLAR (CERTIFICATES)]
-${JSON.stringify(certificatesData || [], null, 2).slice(0, 5000)}
+[DUYGU VE ZİHİN GÜNLÜKLERİ (JOURNAL ENTRIES - ${journalsData?.length || 0} Adet)]
+${JSON.stringify(journalsData || [], null, 2)}
 
-[NOTLAR (NOTES)]
-${JSON.stringify(notesData || [], null, 2).slice(0, 10000)}
+[NOTLAR (NOTES - ${notesData?.length || 0} Adet)]
+${JSON.stringify(notesData || [], null, 2)}
+
+[SERTİFİKALAR VE PAYOUTLAR (${certificatesData?.length || 0} Adet)]
+${JSON.stringify(certificatesData || [], null, 2)}
 
 Kurallar ve Tarz:
-1. Eğer kullanıcı bir grafik/ekran görüntüsü gönderdiyse:
+1. Kullanıcının projesindeki tüm verilere tam hakimsin. Kullanıcı belirli bir işlem, tarih, seans, parite, giriş modeli, duygu durumu veya not sorduğunda doğrudan bu verilere dayanarak kesin bilgi ver.
+2. Eğer kullanıcı bir grafik/ekran görüntüsü gönderdiyse:
    - Grafik üzerindeki yapıyı (Destek/Direnç, Trend, Order Block, Likidite, FVG, Formasyonlar vb.) incele.
    - Giriş (Entry), Stop Loss (SL) ve Take Profit (TP) seviyelerinin mantıklı olup olmadığını değerlendir.
    - Risk/Ödül oranını ve olası tuzakları belirt.
-2. Yanıtlarını net, göz alıcı ve okunabilir biçimde ver. Başlıklar (Markdown), maddeler ve öne çıkan ipuçları kullan.
-3. Kesinlikle boş ya da jenerik yatırım tavsiyesi yapma. Verilere ve grafiklere dayanarak konuş.
-4. Eğer üst üste kayıp varsa veya kayıp miktarı büyükse disiplin/psikoloji uyarısı yap (örn: FOMO, intikam ticareti, stop taşımama).
-5. Yapıcı ve cesaretlendirici ol, ama disiplinsizliği net bir dille uyar.
-6. Sorulan sorulara net, doğru ve doğrudan yanıt ver. Yanıtlarında gereksiz laf kalabalığı yapma, boşluk dolduran cümleler (filler text) kullanma.
-7. Türkçe yazım kurallarına (noktalama, büyük-küçük harf, kelime yazılışları) kesinlikle dikkat et, metinde yazım hatası yapma.
-8. DİKKAT: Metinlerinde KESİNLİKLE Markdown tablosu kullanma (örn. | Metrik | Değer | formatı YASAKTIR). Tablolar arayüzde bozuk görünmektedir. Metrikleri ve verileri her zaman kalın yazılmış başlıklar ve madde işaretli listeler (bullet points) halinde alt alta ver.`;
+3. Yanıtlarını net, göz alıcı ve okunabilir biçimde ver. Başlıklar (Markdown), maddeler ve öne çıkan ipuçları kullan.
+4. Kesinlikle boş ya da jenerik yatırım tavsiyesi yapma. Kullanıcının gerçek işlem ve günlük verilerine dayanarak konuş.
+5. Eğer üst üste kayıp varsa veya kayıp miktarı büyükse disiplin/psikoloji uyarısı yap (örn: FOMO, intikam ticareti, stop taşımama).
+6. Yapıcı ve cesaretlendirici ol, ama disiplinsizliği net bir dille uyar.
+7. Sorulan sorulara net, doğru ve doğrudan yanıt ver. Yanıtlarında gereksiz laf kalabalığı yapma, boşluk dolduran cümleler (filler text) kullanma.
+8. Türkçe yazım kurallarına (noktalama, büyük-küçük harf, kelime yazılışları) kesinlikle dikkat et, metinde yazım hatası yapma.
+9. DİKKAT: Metinlerinde KESİNLİKLE Markdown tablosu kullanma (örn. | Metrik | Değer | formatı YASAKTIR). Tablolar arayüzde bozuk görünmektedir. Metrikleri ve verileri her zaman kalın yazılmış başlıklar ve madde işaretli listeler (bullet points) halinde alt alta ver.`;
 
       let userPrompt = prompt || "İşlem geçmişimi ve gönderdiğim verileri incele ve bana mentör tavsiyesi ver.";
 
@@ -527,7 +561,7 @@ Lütfen yanıtını tamamen Türkçe olarak ve şu şekilde yapılandırılmış
   app.post("/api/voice-to-trade", requireSiteAuth, express.json({ limit: '50mb' }), async (req, res) => {
     try {
       const { audioBase64, options } = req.body;
-      const { platforms, sessions, strategies, concepts, timeframes, htfTimeframes } = options || {};
+      const { platforms, sessions, strategies, concepts, timeframes, htfTimeframes, planFidelities, entryModels, trendTypes } = options || {};
 
       const prompt = `
 Aşağıdaki ses kaydı bir tüccarın (trader) yaptığı bir işlemi (trade) sesli anlatımıdır.
@@ -552,7 +586,22 @@ SADECE GEÇERLİ BİR JSON DÖN, BAŞKA METİN VEYA AÇIKLAMA YAZMA.
 4. Sayısal Değerler (RR & PnL):
    - "İki R", "2 RR", "2 re", "İki buçuk R" -> rr: 2.0 veya 2.5
    - "Yüz dolar kâr", "100 dolar pnl", "eksi 50 dolar" -> pnl: 100 veya -50
-5. Parazit Temizliği:
+5. Setup Kalitesi / Plan Sadakati (Plan Fidelity):
+   - "A plus", "A+", "Kusursuz setup", "Plana tam sadık", "Tam sadık", "Disiplinli" -> A+ Setup veya Tam Sadık
+   - "B setup", "Kısmen sadık", "Orta kalite" -> B Setup veya Kısmen Sadık
+   - "C setup", "Plana uymadım", "Fomo", "İntikam işlemi" -> C Setup veya Sadık Değil
+6. Giriş Modeli (Entry Model):
+   - "IFVG", "Inversion FVG", "Ters FVG" -> IFVG
+   - "FVG", "Fair value gap" -> FVG
+   - "Order block", "OB", "Emir bloğu" -> Orderblock
+   - "Breaker", "Breaker block" -> Breaker Block
+   - "Likidite alımı", "Sweep", "Liquidity sweep" -> Liquidity Sweep
+   - Mümkünse listedekilerden seç: ${entryModels?.join(', ')}
+7. Trend Yapısı (Trend Type):
+   - "Trend devamı", "Devam", "Pro trend", "Continuation" -> Continuation
+   - "Trend dönüşü", "Dönüş", "Reversal", "Counter trend" -> Reversal
+   - Mümkünse listedekilerden seç: ${trendTypes?.join(', ')}
+8. Parazit Temizliği:
    - Öksürük, nefes alma sesleri, "ııı", "şey", "yani", "hmm" gibi duraksamaları ve anlamsız sesleri tamamen yoksay.
 
 JSON Şeması:
@@ -565,6 +614,9 @@ JSON Şeması:
   "session": "Seans. Seçenekler: ${sessions?.join(', ')}",
   "strategy": "Strateji. Seçenekler: ${strategies?.join(', ')}",
   "concepts": ["Konsept 1", "Konsept 2"], // Mümkünse listedekilerden seç: ${concepts?.join(', ')}
+  "planFidelity": "Setup Kalitesi / Plan Sadakati. Seçenekler: ${planFidelities?.join(', ')}",
+  "entry": "Giriş Modeli (örn: IFVG, FVG). Seçenekler: ${entryModels?.join(', ')}",
+  "trend": "Trend Yapısı (Continuation veya Reversal). Seçenekler: ${trendTypes?.join(', ')}",
   "status": "WIN, LOSS veya BE",
   "rr": Sayısal değer (örn: 2.5),
   "pnl": Sayısal değer (örn: 150 veya -50),
@@ -705,6 +757,85 @@ JSON Şeması (SADECE GEÇERLİ JSON DÖN):
   });
 
   // Vite middleware for development
+  // Smart Image Proxy: Bypasses CORS and handles TradingView HTML links
+  
+  // Helper route to resolve TradingView share links to direct image URLs
+  app.get("/api/resolve-tv", async (req, res) => {
+    const urlParam = typeof req.query.url === 'string' ? req.query.url : '';
+    try {
+      if (!urlParam || !urlParam.includes('tradingview.com/x/')) {
+        return res.json({ url: urlParam });
+      }
+      
+      const htmlRes = await fetch(urlParam, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }
+      });
+      if (htmlRes.ok) {
+        const htmlText = await htmlRes.text();
+        const match = htmlText.match(/<meta property="og:image" content="([^"]+)"/);
+        if (match && match[1]) {
+          return res.json({ url: match[1] });
+        }
+      }
+      res.json({ url: urlParam });
+    } catch {
+      res.json({ url: urlParam });
+    }
+  });
+
+  app.get("/api/proxy-image", async (req, res) => {
+    try {
+      const urlParam = req.query.url;
+      if (!urlParam || typeof urlParam !== 'string') {
+        return res.status(400).send('Missing url parameter');
+      }
+      
+      let targetUrl = urlParam;
+      
+      // If it's a TradingView HTML share link, fetch the HTML and extract the real image URL
+      if (targetUrl.includes('tradingview.com/x/')) {
+        const htmlRes = await fetch(targetUrl, {
+          headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+        });
+        if (htmlRes.ok) {
+          const htmlText = await htmlRes.text();
+          const match = htmlText.match(/<meta property="og:image" content="([^"]+)"/);
+          if (match && match[1]) {
+            targetUrl = match[1];
+          }
+        }
+      }
+
+      // Fetch the actual image using a generic User-Agent
+      const response = await fetch(targetUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Referer': 'https://www.tradingview.com/'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch image: ${response.statusText}`);
+      }
+      
+      const arrayBuffer = await response.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      
+      const contentType = response.headers.get('content-type') || 'image/png';
+      res.set('Content-Type', contentType);
+      res.set('Cache-Control', 'public, max-age=31536000');
+      res.set('Access-Control-Allow-Origin', '*');
+      
+      res.send(buffer);
+    } catch (error) {
+      console.error('Smart proxy error:', error);
+      res.status(500).send('Error proxying image');
+    }
+  });
+
+
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true, hmr: { server: httpServer, clientPort: 443 } },
@@ -723,7 +854,9 @@ JSON Şeması (SADECE GEÇERLİ JSON DÖN):
         }
       }
     }));
-    app.get("*", (_req, res) => {
+    
+
+app.get("*", (_req, res) => {
       res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
       res.sendFile(path.join(distPath, "index.html"));
     });

@@ -1,22 +1,25 @@
 import React, { useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Crosshair, Target, Infinity as InfinityIcon, Calendar, AlertTriangle, Activity, Layers, Percent, X, Filter, ChevronLeft, ChevronRight, ChevronsUpDown, Search, Grid, SlidersHorizontal, Download, Clock } from 'lucide-react';
+import { Crosshair, Target, Infinity as InfinityIcon, Calendar, AlertTriangle, Activity, Layers, Percent, X, Filter, ChevronLeft, ChevronRight, ChevronsUpDown, Search, Grid, SlidersHorizontal, Clock, Bookmark, Maximize2, Zap, TrendingUp } from 'lucide-react';
 import { Trade } from '../types';
+import { caseInsensitiveMatch } from '../constants/constants';
 import { HeatmapModal } from './HeatmapModal';
 import { useMetricMode } from '../context/MetricContext';
 import { calculateAdvancedMetrics } from '../lib/advancedMetrics';
 import TradeDetailModal from './TradeDetailModal';
 import { PrintReportModal } from './PrintReportModal';
+import { TradeHistoryModal } from './TradeHistoryModal';
 
 
-export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, sessions = [] }: { trades: Trade[], currency: string, onMetricClick?: (id: string, val: string | number) => void, onEdit?: (trade: Trade) => void, sessions?: string[] }) => {
+const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, sessions = [] }: { trades: Trade[], currency: string, onMetricClick?: (id: string, val: string | number) => void, onEdit?: (trade: Trade) => void, sessions?: string[] }) => {
   const [selectedTrade, setSelectedTrade] = React.useState<Trade | null>(null);
   const [selectedAsset, setSelectedAsset] = React.useState<string | null>(null);
   const [selectedPerformancePeriod, setSelectedPerformancePeriod] = React.useState<{
     label: string;
     trades: Trade[];
   } | null>(null);
+
   const [printModalState, setPrintModalState] = React.useState<{
     isOpen: boolean;
     trades: Trade[];
@@ -35,6 +38,8 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
   const [detailedPage, setDetailedPage] = React.useState(1);
   const [deadZonePage, setDeadZonePage] = React.useState(1);
   const [assetsPage, setAssetsPage] = React.useState(1);
+  const [planFidelitySort, setPlanFidelitySort] = React.useState<'pnl' | 'loss' | 'winrate'>('pnl');
+  const [isPlanFidelityFilterOpen, setIsPlanFidelityFilterOpen] = React.useState(false);
   const [sessionSort, setSessionSort] = React.useState<'pnl' | 'loss' | 'winrate'>('pnl');
   const [performanceTimeframe, setPerformanceTimeframe] = React.useState<'day' | 'week' | 'month' | 'year'>('week');
   const { isRrMode } = useMetricMode();
@@ -157,6 +162,8 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
 
     // 4. En kârlı sessionlar (in R)
     const sessionStatsMap: Record<string, { session: string; pnl: number; total: number; wins: number; rr: number }> = {};
+    const planFidelityStatsMap: Record<string, { planFidelity: string; pnl: number; total: number; wins: number; rr: number }> = {};
+
     closedTrades.forEach(t => {
       const s = t.session || 'Bilinmeyen';
       if (!sessionStatsMap[s]) {
@@ -168,8 +175,20 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
       if (t.status === 'WIN') {
         sessionStatsMap[s].wins++;
       }
+
+      const pf = t.planFidelity || 'Belirtilmemiş';
+      if (!planFidelityStatsMap[pf]) {
+        planFidelityStatsMap[pf] = { planFidelity: pf, pnl: 0, total: 0, wins: 0, rr: 0 };
+      }
+      planFidelityStatsMap[pf].pnl += t.pnl || 0;
+      planFidelityStatsMap[pf].rr += t.rr || 0;
+      planFidelityStatsMap[pf].total++;
+      if (t.status === 'WIN') {
+        planFidelityStatsMap[pf].wins++;
+      }
     });
     const sessionRanking = Object.values(sessionStatsMap).sort((a, b) => isRrMode ? b.rr - a.rr : b.pnl - a.pnl);
+    const planFidelityRanking = Object.values(planFidelityStatsMap).sort((a, b) => isRrMode ? b.rr - a.rr : b.pnl - a.pnl);
 
     // 5. Performans Geçmişi (Day, Week, Month, Year PnL OHLC)
     const dailyTradesMap: Record<string, Trade[]> = {};
@@ -403,6 +422,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
       TurkishDayFullNames,
       assetRanking,
       sessionRanking,
+      planFidelityRanking,
       dailyPerformance,
       weeklyPerformance,
       monthlyPerformance,
@@ -445,23 +465,50 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
       const parentRr = assetTrades.reduce((acc, t) => acc + (t.rr || 0), 0);
 
       const childRows: any[] = [];
-      const comboMap: Record<string, { session: string, htfTimeframe?: string, timeframe: string, concept: string, confirmation: string, trades: Trade[] }> = {};
+      const comboMap: Record<string, {
+        session: string;
+        htfTimeframe?: string;
+        trend?: string;
+        concept: string;
+        timeframe: string;
+        confirmation: string;
+        entryModel?: string;
+        planFidelity?: string;
+        trades: Trade[];
+      }> = {};
       
       assetTrades.forEach(t => {
         const tradeConfirmations: string[] = (t.confirmations && t.confirmations.length > 0)
           ? t.confirmations
           : [''];
 
+        const entryModel = (Array.isArray(t.entryModels) && t.entryModels.length > 0)
+          ? t.entryModels.join(', ')
+          : (t.entry || '');
+        const trend = t.trend || '';
+
         tradeConfirmations.forEach(confirmation => {
           const session = t.session || '';
           const htfTimeframe = t.htfTimeframe || '';
           const timeframe = t.timeframe || '';
           const concept = t.concept || '';
+          const planFidelity = t.planFidelity || '';
           const cleanConf = confirmation.trim();
           
-          const key = `${session}|${htfTimeframe}|${timeframe}|${concept}|${cleanConf}`;
+          // Silver Bullet Analysis Hierarchy: Session (Window) -> HTF -> Trend -> Concept -> Execution TF -> PD Array -> Entry Model -> Plan Fidelity
+          const key = `${session}|${htfTimeframe}|${trend}|${concept}|${timeframe}|${cleanConf}|${entryModel}|${planFidelity}`;
           if (!comboMap[key]) {
-            comboMap[key] = { session, htfTimeframe, timeframe, concept, confirmation: cleanConf, trades: [] };
+            comboMap[key] = {
+              session,
+              htfTimeframe,
+              trend,
+              concept,
+              timeframe,
+              confirmation: cleanConf,
+              entryModel,
+              planFidelity,
+              trades: []
+            };
           }
           comboMap[key].trades.push(t);
         });
@@ -477,20 +524,39 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
         childRows.push({
           session: combo.session,
           htfTimeframe: combo.htfTimeframe,
-          timeframe: combo.timeframe,
+          trend: combo.trend,
           concept: combo.concept,
+          timeframe: combo.timeframe,
           confirmation: combo.confirmation,
+          entryModel: combo.entryModel,
+          planFidelity: combo.planFidelity,
           trades: combo.trades,
           total,
           wins,
           winRate,
           pnl,
           rr,
-          label: `${asset} - ${combo.session} - ${combo.htfTimeframe || ''} - ${combo.timeframe} - ${combo.concept} - ${combo.confirmation}`
+          label: `${asset} - ${combo.session} - ${combo.htfTimeframe || ''} - ${combo.trend || ''} - ${combo.concept} - ${combo.timeframe} - ${combo.confirmation}${combo.entryModel ? ` - ${combo.entryModel}` : ''}${combo.planFidelity ? ` - ${combo.planFidelity}` : ''}`
         });
       });
 
-      childRows.sort((a, b) => isRrMode ? b.rr - a.rr : b.pnl - a.pnl);
+      // Sort combinations intelligently for data analysis (Win Rate / RR / PnL aligned)
+      childRows.sort((a, b) => {
+        if (detailedSort === 'winrate') {
+          if (b.winRate !== a.winRate) return b.winRate - a.winRate;
+          return isRrMode ? b.rr - a.rr : b.pnl - a.pnl;
+        }
+        if (detailedSort === 'rr') {
+          if (b.rr !== a.rr) return b.rr - a.rr;
+          return b.winRate - a.winRate;
+        }
+        if (isRrMode) {
+          if (b.rr !== a.rr) return b.rr - a.rr;
+          return b.winRate - a.winRate;
+        }
+        if (b.pnl !== a.pnl) return b.pnl - a.pnl;
+        return b.winRate - a.winRate;
+      });
 
       return {
         asset,
@@ -513,8 +579,20 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
     }
 
     if (detailedSearch.trim()) {
-      const searchLower = detailedSearch.toLowerCase();
-      filteredList = filteredList.filter(item => item.asset.toLowerCase().includes(searchLower));
+      filteredList = filteredList.filter(item => {
+        const matchesAsset = caseInsensitiveMatch(item.asset, detailedSearch);
+        const matchesChild = item.children?.some((c: any) =>
+          caseInsensitiveMatch(c.concept, detailedSearch) ||
+          caseInsensitiveMatch(c.confirmation, detailedSearch) ||
+          caseInsensitiveMatch(c.session, detailedSearch) ||
+          caseInsensitiveMatch(c.timeframe, detailedSearch) ||
+          caseInsensitiveMatch(c.htfTimeframe, detailedSearch) ||
+          caseInsensitiveMatch(c.trend, detailedSearch) ||
+          caseInsensitiveMatch(c.entryModel, detailedSearch) ||
+          caseInsensitiveMatch(c.planFidelity, detailedSearch)
+        );
+        return matchesAsset || matchesChild;
+      });
     }
 
     filteredList.sort((a, b) => {
@@ -538,8 +616,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
     }
 
     if (assetSearch.trim()) {
-      const searchLower = assetSearch.toLowerCase();
-      filtered = filtered.filter(ar => ar.asset.toLowerCase().includes(searchLower));
+      filtered = filtered.filter(ar => caseInsensitiveMatch(ar.asset, assetSearch));
     }
 
     return [...filtered].sort((a, b) => {
@@ -619,8 +696,8 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center bg-zinc-900/70 border border-zinc-700/50  rounded-xl transition-all duration-300 shadow-sm mt-4">
         <Target size={32} className="text-zinc-600 mb-4 opacity-50" />
-        <h3 className="text-sm font-bold text-zinc-300 font-mono mb-2">Henüz Yeterli Veri Yok</h3>
-        <p className="text-[11px] text-zinc-500 max-w-sm">Gelişmiş metriklerin hesaplanabilmesi için sisteme tamamlanmış (WIN/LOSS) işlemler eklemelisiniz.</p>
+        <h3 className="text-sm font-bold text-zinc-300 font-sans mb-2">Henüz Yeterli Veri Yok</h3>
+        <p className="text-xs text-zinc-500 max-w-sm">Gelişmiş metriklerin hesaplanabilmesi için sisteme tamamlanmış (WIN/LOSS) işlemler eklemelisiniz.</p>
       </div>
     );
   }
@@ -647,11 +724,11 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
       
         
         {/* 3. Performans Geçmişi Chart */}
-        <motion.div variants={itemVariants} className="bg-transparent p-5 sm:p-6 flex flex-col justify-between transition-colors duration-200 ">
+        <motion.div variants={itemVariants} className="bg-transparent p-5 flex flex-col justify-between transition-colors duration-200 ">
           <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center mb-3 gap-3">
             <div className="flex items-center gap-2">
               <Calendar size={15} className="text-blue-400" />
-              <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-100 font-mono">
+              <h3 className="heading-2">
                 PERFORMANS GEÇMİŞİ
               </h3>
             </div>
@@ -662,7 +739,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                   <button
                     key={tf}
                     onClick={() => setPerformanceTimeframe(tf)}
-                    className={`px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider transition-colors duration-200 ease-out border rounded-lg ${
+                    className={`px-2.5 py-1 heading-3 transition-colors duration-200 ease-out border rounded-lg ${
                       performanceTimeframe === tf 
                         ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' 
                         : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
@@ -705,10 +782,10 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                   </div>
 
                   {/* Hafta Adı */}
-                  <span className="text-[9px] font-mono font-bold text-zinc-400 uppercase tracking-tighter">
+                  <span className="heading-3">
                     {week.weekLabel}
                   </span>
-                  <span className={`text-[9px] font-mono font-extrabold tracking-tight mt-0.5 ${isProfit ? 'text-emerald-500' : 'text-rose-500'}`}>
+                  <span className={`text-[9px] font-sans font-extrabold tracking-tight mt-0.5 ${isProfit ? 'text-emerald-500' : 'text-rose-500'}`}>
                     {labelValueText}
                   </span>
                 </div>
@@ -716,7 +793,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
             })}
 
             {performanceData.length === 0 && (
-              <div className="absolute inset-0 flex items-center justify-center text-[10px] text-zinc-600 font-mono tracking-widest uppercase">
+              <div className="absolute inset-0 flex items-center justify-center text-[10px] text-zinc-600 font-sans tracking-widest uppercase">
                 Veri Yok
               </div>
             )}
@@ -733,7 +810,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
               <div className="flex justify-between items-center h-6 mb-2.5">
                 <div className="flex items-center gap-1.5">
                   <Clock size={13} className="text-emerald-400" />
-                  <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-100 font-mono">
+                  <h3 className="heading-2">
                     SESSION PERFORMANSI
                   </h3>
                   <button
@@ -763,6 +840,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                 <AnimatePresence>
                   {isSessionFilterOpen && (
                     <motion.div
+                      key="session-filter-panel"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
@@ -770,9 +848,9 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                       className="overflow-hidden whitespace-nowrap "
                     >
                       <div className="flex gap-1">
-                        <button onClick={() => setSessionSort('pnl')} className={`px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-colors duration-200 ease-out border ${sessionSort === 'pnl' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'}`}>Kâr</button>
-                        <button onClick={() => setSessionSort('loss')} className={`px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-colors duration-200 ease-out border ${sessionSort === 'loss' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'}`}>Zarar</button>
-                        <button onClick={() => setSessionSort('winrate')} className={`px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-colors duration-200 ease-out border ${sessionSort === 'winrate' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'}`}>WR</button>
+                        <button onClick={() => setSessionSort('pnl')} className={`px-2 py-0.5 rounded-lg heading-3 transition-colors duration-200 ease-out border ${sessionSort === 'pnl' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'}`}>Kâr</button>
+                        <button onClick={() => setSessionSort('loss')} className={`px-2 py-0.5 rounded-lg heading-3 transition-colors duration-200 ease-out border ${sessionSort === 'loss' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'}`}>Zarar</button>
+                        <button onClick={() => setSessionSort('winrate')} className={`px-2 py-0.5 rounded-lg heading-3 transition-colors duration-200 ease-out border ${sessionSort === 'winrate' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'}`}>WR</button>
                       </div>
                     </motion.div>
                   )}
@@ -807,7 +885,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
 
                     return (
                       <div key={idx} className="bg-zinc-800 px-2 py-1.5 flex flex-col justify-center rounded-lg border border-zinc-700/50">
-                        <div className="flex items-center justify-between text-[9px] font-mono mb-1">
+                        <div className="flex items-center justify-between text-[9px] font-sans mb-1">
                           <div className="flex items-center gap-1.5">
                             <Clock size={9} className={`${sessionColors}`} />
                             <span className={`font-black tracking-wide uppercase ${sessionColors}`}>
@@ -827,8 +905,9 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                         <div className="flex items-center gap-1.5">
                           <div className="flex-1 h-1 bg-zinc-950 rounded-full overflow-hidden flex">
                             <motion.div 
-                              initial={{ width: 0 }}
-                              animate={{ width: `${barWidth}%` }}
+                              initial={{ scaleX: 0 }}
+                              animate={{ scaleX: barWidth / 100 }}
+                              style={{ transformOrigin: "left", width: "100%" }}
                               transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
                               className={`h-full rounded-full ${isProfit ? 'bg-gradient-to-r from-emerald-500/20 to-emerald-500' : 'bg-gradient-to-r from-rose-500/20 to-rose-500'}`}
                             />
@@ -839,7 +918,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                   });
                 })()}
                 {customMetrics.sessionRanking.length === 0 && (
-                  <div className="text-center py-6 text-[9px] text-zinc-600 font-mono uppercase tracking-widest flex-1 flex items-center justify-center">
+                  <div className="text-center py-6 text-[9px] text-zinc-600 font-sans uppercase tracking-widest flex-1 flex items-center justify-center">
                     Veri Yok
                   </div>
                 )}
@@ -854,7 +933,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
               <div className="flex justify-between items-center h-6 mb-2.5">
                 <div className="flex items-center gap-1.5">
                   <Percent size={13} className="text-blue-400" />
-                  <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-100 font-mono">
+                  <h3 className="heading-2">
                     NET KAZANÇ GÜN DAĞILIMI
                   </h3>
                   <button
@@ -879,15 +958,15 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                 return (
                   <div key={dayKey}>
                     <div className="flex justify-between items-baseline mb-0.5">
-                      <span className="text-[11px] font-bold text-zinc-200 tracking-tight font-sans">{fullDayName}</span>
-                      <span className={`text-[10px] font-bold font-mono flex items-center gap-1.5 ${isProfitVal ? 'text-emerald-400' : 'text-rose-400'}`}>
+                      <span className="text-xs font-bold text-zinc-200 tracking-tight font-sans">{fullDayName}</span>
+                      <span className={`text-[10px] font-bold font-sans flex items-center gap-1.5 ${isProfitVal ? 'text-emerald-400' : 'text-rose-400'}`}>
                         {isRrMode ? (
                           <>
                             <span>
                               {val !== 0 ? (isProfitVal ? '+' : '') + val.toFixed(2) : '0'}{' '}
                               <span className="text-[9px] text-zinc-500">RR</span>
                             </span>
-                            <span className="text-[9px] text-zinc-500 font-bold bg-zinc-950 px-1.5 py-0.5 rounded-md border border-zinc-900/60 font-mono">
+                            <span className="text-[9px] text-zinc-500 font-bold bg-zinc-950 px-1.5 py-0.5 rounded-md border border-zinc-900/60 font-sans">
                               {stats.pnl >= 0 ? '+' : ''}{(stats?.pnl || 0).toLocaleString()} {currency}
                             </span>
                           </>
@@ -897,7 +976,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                               {val !== 0 ? (isProfitVal ? '+' : '') + (val || 0).toLocaleString() : '0'}{' '}
                               <span className="text-[9px] text-zinc-500">{currency}</span>
                             </span>
-                            <span className="text-[9px] text-zinc-500 font-bold bg-zinc-950 px-1.5 py-0.5 rounded-md border border-zinc-900/60 font-mono">
+                            <span className="text-[9px] text-zinc-500 font-bold bg-zinc-950 px-1.5 py-0.5 rounded-md border border-zinc-900/60 font-sans">
                               {stats.rr >= 0 ? '+' : ''}{stats.rr.toFixed(1)} RR
                             </span>
                           </>
@@ -913,8 +992,9 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                       <div className="flex justify-end pr-[1px]">
                         {!isProfitVal && val !== 0 && (
                           <motion.div 
-                            initial={{ width: 0 }}
-                            animate={{ width: `${pnlPercentage}%` }}
+                            initial={{ scaleX: 0 }}
+                            animate={{ scaleX: pnlPercentage / 100 }}
+                            style={{ transformOrigin: "right", width: "100%" }}
                             className="bg-gradient-to-l from-rose-500 to-rose-600 rounded-l-full h-full "
                           />
                         )}
@@ -922,8 +1002,9 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                       <div className="flex justify-start pl-[1px]">
                         {isProfitVal && val !== 0 && (
                           <motion.div 
-                            initial={{ width: 0 }}
-                            animate={{ width: `${pnlPercentage}%` }}
+                            initial={{ scaleX: 0 }}
+                            animate={{ scaleX: pnlPercentage / 100 }}
+                            style={{ transformOrigin: "left", width: "100%" }}
                             className="bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-r-full h-full "
                           />
                         )}
@@ -937,15 +1018,129 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
           </motion.div>
         </div>
 
+        {/* SETUP KALİTESİ PERFORMANSI */}
+        <div className="grid grid-cols-1 gap-0 border-b border-zinc-800/80">
+          <motion.div variants={itemVariants} className="bg-transparent p-3.5 sm:p-4 flex flex-col justify-between h-full transition-colors duration-200">
+            <div className="flex flex-col h-full justify-between">
+              <div className="flex justify-between items-center h-6 mb-2.5">
+                <div className="flex items-center gap-1.5">
+                  <Target size={13} className="text-indigo-400" />
+                  <h3 className="heading-2">
+                    SETUP KALİTESİ PERFORMANSI
+                  </h3>
+                  <button
+                    onClick={() => setIsPlanFidelityFilterOpen(!isPlanFidelityFilterOpen)}
+                    className={`flex items-center justify-center w-5 h-5 ml-1 rounded-lg border transition-colors duration-200 ease-out ${
+                      isPlanFidelityFilterOpen 
+                        ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' 
+                        : 'bg-zinc-900/50 border-zinc-700/50 text-zinc-300 hover:bg-zinc-800'
+                    } shrink-0`}
+                  >
+                    <Filter size={9} />
+                  </button>
+                </div>
+                
+                <AnimatePresence>
+                  {isPlanFidelityFilterOpen && (
+                    <motion.div
+                      key="plan-fidelity-filter-panel"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                      className="overflow-hidden whitespace-nowrap "
+                    >
+                      <div className="flex gap-1">
+                        <button onClick={() => setPlanFidelitySort('pnl')} className={`px-2 py-0.5 rounded-lg heading-3 transition-colors duration-200 ease-out border ${planFidelitySort === 'pnl' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'}`}>Kâr</button>
+                        <button onClick={() => setPlanFidelitySort('loss')} className={`px-2 py-0.5 rounded-lg heading-3 transition-colors duration-200 ease-out border ${planFidelitySort === 'loss' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'}`}>Zarar</button>
+                        <button onClick={() => setPlanFidelitySort('winrate')} className={`px-2 py-0.5 rounded-lg heading-3 transition-colors duration-200 ease-out border ${planFidelitySort === 'winrate' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'}`}>WR</button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+            <div className="flex-1 flex flex-col justify-between py-0.5">
+              <div className="flex flex-col gap-1 w-full h-full justify-between">
+                {(() => {
+                  let sortedFidelities = [...customMetrics.planFidelityRanking];
+                  if (planFidelitySort === 'pnl') {
+                    sortedFidelities.sort((a, b) => b.pnl - a.pnl);
+                  } else if (planFidelitySort === 'loss') {
+                    sortedFidelities.sort((a, b) => a.pnl - b.pnl);
+                  } else if (planFidelitySort === 'winrate') {
+                    sortedFidelities.sort((a, b) => (b.total > 0 ? b.wins / b.total : 0) - (a.total > 0 ? a.wins / a.total : 0));
+                  }
+                  
+                  const srMaxPnL = Math.max(...sortedFidelities.map(sr => Math.abs(sr.pnl)), 1);
+
+                  return sortedFidelities.map((sr, idx) => {
+                    const isProfit = sr.pnl >= 0;
+                    const winRate = sr.total > 0 ? (sr.wins / sr.total) * 100 : 0;
+                    const barWidth = Math.min(100, (Math.abs(sr.pnl) / srMaxPnL) * 100);
+
+                    const readableName = sr.planFidelity || 'Belirtilmemiş';
+
+                    const lowerPf = (sr.planFidelity || '').toLowerCase();
+                    const rowColors = lowerPf === 'tam' || lowerPf.includes('sadık') || lowerPf.includes('uygun') || lowerPf.includes('disciplined') ? 'text-emerald-400' :
+                                      lowerPf === 'kısmen' || lowerPf.includes('partial') || lowerPf.includes('orta') ? 'text-amber-400' :
+                                      lowerPf === 'fomo' || lowerPf.includes('ihlal') || lowerPf.includes('disiplinsiz') || lowerPf.includes('hata') ? 'text-rose-400' :
+                                      sr.planFidelity ? 'text-blue-400' : 'text-zinc-400';
+
+                    return (
+                      <div key={idx} className="bg-zinc-800 px-2 py-1.5 flex flex-col justify-center rounded-lg border border-zinc-700/50">
+                        <div className="flex items-center justify-between text-[9px] font-sans mb-1">
+                          <div className="flex items-center gap-1.5">
+                            <Target size={9} className={`${rowColors}`} />
+                            <span className={`font-black tracking-wide uppercase ${rowColors}`}>
+                              {readableName}
+                            </span>
+                            <span className="text-zinc-500 font-normal text-[9px]">
+                              ({sr.total} Trade・%{winRate.toFixed(0)} WR・{sr.rr >= 0 ? '+' : ''}{sr.rr.toFixed(1)} R)
+                            </span>
+                          </div>
+                          <div className="text-right">
+                            <span className={`font-black ${isProfit ? 'text-emerald-400' : 'text-rose-400'}`}>
+                              {isProfit ? '+' : ''}{(sr?.pnl || 0).toLocaleString()} <span className="text-[9px] text-zinc-500">{currency}</span>
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                          <div className="flex-1 h-1 bg-zinc-950 rounded-full overflow-hidden flex">
+                            <motion.div 
+                              initial={{ scaleX: 0 }}
+                              animate={{ scaleX: barWidth / 100 }}
+                              style={{ transformOrigin: "left", width: "100%" }}
+                              transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                              className={`h-full rounded-full ${isProfit ? 'bg-gradient-to-r from-emerald-500/20 to-emerald-500' : 'bg-gradient-to-r from-rose-500/20 to-rose-500'}`}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
+                {customMetrics.planFidelityRanking.length === 0 && (
+                  <div className="text-center py-6 text-[9px] text-zinc-600 font-sans uppercase tracking-widest flex-1 flex items-center justify-center">
+                    Veri Yok
+                  </div>
+                )}
+              </div>
+            </div>
+            </div>
+          </motion.div>
+        </div>
+
       {/* PARİTE İSTATİSTİKLERİ SECTION - REPOSITIONED HERE */}
       <motion.div 
         variants={itemVariants} 
-        className="bg-zinc-900/70 border border-zinc-700/50  p-5 sm:p-6 shadow-sm transition-colors duration-200 rounded-xl overflow-hidden mb-3 flex flex-col justify-between min-h-[480px]"
+        className="bg-zinc-900/70 border border-zinc-700/50  p-5 shadow-sm transition-colors duration-200 rounded-xl overflow-hidden mb-3 flex flex-col justify-between min-h-[480px]"
       >
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 relative z-20 w-full border-b border-zinc-800 pb-3">
           <div className="flex items-center gap-2">
             <Layers size={16} className="text-indigo-400" />
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-100 font-mono">
+            <h3 className="heading-2">
               Parite İstatistikleri
             </h3>
           </div>
@@ -954,6 +1149,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
             <AnimatePresence>
               {isAssetFilterOpen && (
                 <motion.div
+                  key="asset-filter-panel"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
@@ -965,19 +1161,19 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                     placeholder="Ara..."
                     value={assetSearch}
                     onChange={(e) => { setAssetSearch(e.target.value); setAssetsPage(1); }}
-                    className="bg-zinc-900/70 border border-zinc-700/50  rounded-lg px-2 py-0.5 text-[9px] font-mono text-zinc-300 focus:outline-none focus:border-zinc-700 w-20 sm:w-28 placeholder-zinc-600 h-[20px]"
+                    className="bg-zinc-900/70 border border-zinc-700/50  rounded-lg px-2 py-0.5 text-[9px] font-sans text-zinc-300 focus:outline-none focus:border-zinc-700 w-20 sm:w-28 placeholder-zinc-600 h-[20px]"
                   />
                   <div className="flex bg-transparent p-0.5 rounded-lg border border-zinc-800">
-                    <button type="button" onClick={() => { setAssetFilter('all'); setAssetsPage(1); }} className={`text-[9px] font-mono px-1.5 py-0.5 rounded-md transition-colors duration-200 ease-out font-bold ${assetFilter === 'all' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}>TÜMÜ</button>
-                    <button type="button" onClick={() => { setAssetFilter('profitable'); setAssetsPage(1); }} className={`text-[9px] font-mono px-1.5 py-0.5 rounded-md transition-colors duration-200 ease-out font-bold ${assetFilter === 'profitable' ? 'bg-emerald-500/20 text-emerald-400 shadow-sm' : 'text-zinc-500 hover:text-emerald-400'}`}>KÂR</button>
-                    <button type="button" onClick={() => { setAssetFilter('loss'); setAssetsPage(1); }} className={`text-[9px] font-mono px-1.5 py-0.5 rounded-md transition-colors duration-200 ease-out font-bold ${assetFilter === 'loss' ? 'bg-rose-500/20 text-rose-400 shadow-sm' : 'text-zinc-500 hover:text-rose-400'}`}>ZARAR</button>
+                    <button type="button" onClick={() => { setAssetFilter('all'); setAssetsPage(1); }} className={`text-[9px] font-sans px-1.5 py-0.5 rounded-md transition-colors duration-200 ease-out font-bold ${assetFilter === 'all' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}>TÜMÜ</button>
+                    <button type="button" onClick={() => { setAssetFilter('profitable'); setAssetsPage(1); }} className={`text-[9px] font-sans px-1.5 py-0.5 rounded-md transition-colors duration-200 ease-out font-bold ${assetFilter === 'profitable' ? 'bg-emerald-500/20 text-emerald-400 shadow-sm' : 'text-zinc-500 hover:text-emerald-400'}`}>KÂR</button>
+                    <button type="button" onClick={() => { setAssetFilter('loss'); setAssetsPage(1); }} className={`text-[9px] font-sans px-1.5 py-0.5 rounded-md transition-colors duration-200 ease-out font-bold ${assetFilter === 'loss' ? 'bg-rose-500/20 text-rose-400 shadow-sm' : 'text-zinc-500 hover:text-rose-400'}`}>ZARAR</button>
                   </div>
                   <div className="flex bg-transparent p-0.5 rounded-lg border border-zinc-800">
-                    <button type="button" onClick={() => { setAssetSort('pnl'); setAssetsPage(1); }} className={`text-[9px] font-mono px-1.5 py-0.5 rounded-md transition-colors duration-200 ease-out font-bold ${assetSort === 'pnl' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}>PNL</button>
-                    <button type="button" onClick={() => { setAssetSort('rr'); setAssetsPage(1); }} className={`text-[9px] font-mono px-1.5 py-0.5 rounded-md transition-colors duration-200 ease-out font-bold ${assetSort === 'rr' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}>RR</button>
-                    <button type="button" onClick={() => { setAssetSort('winrate'); setAssetsPage(1); }} className={`text-[9px] font-mono px-1.5 py-0.5 rounded-md transition-colors duration-200 ease-out font-bold ${assetSort === 'winrate' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}>WR</button>
-                    <button type="button" onClick={() => { setAssetSort('trades_desc'); setAssetsPage(1); }} className={`text-[9px] font-mono px-1.5 py-0.5 rounded-md transition-colors duration-200 ease-out font-bold ${assetSort === 'trades_desc' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}>↑</button>
-                    <button type="button" onClick={() => { setAssetSort('trades_asc'); setAssetsPage(1); }} className={`text-[9px] font-mono px-1.5 py-0.5 rounded-md transition-colors duration-200 ease-out font-bold ${assetSort === 'trades_asc' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}>↓</button>
+                    <button type="button" onClick={() => { setAssetSort('pnl'); setAssetsPage(1); }} className={`text-[9px] font-sans px-1.5 py-0.5 rounded-md transition-colors duration-200 ease-out font-bold ${assetSort === 'pnl' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}>PNL</button>
+                    <button type="button" onClick={() => { setAssetSort('rr'); setAssetsPage(1); }} className={`text-[9px] font-sans px-1.5 py-0.5 rounded-md transition-colors duration-200 ease-out font-bold ${assetSort === 'rr' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}>RR</button>
+                    <button type="button" onClick={() => { setAssetSort('winrate'); setAssetsPage(1); }} className={`text-[9px] font-sans px-1.5 py-0.5 rounded-md transition-colors duration-200 ease-out font-bold ${assetSort === 'winrate' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}>WR</button>
+                    <button type="button" onClick={() => { setAssetSort('trades_desc'); setAssetsPage(1); }} className={`text-[9px] font-sans px-1.5 py-0.5 rounded-md transition-colors duration-200 ease-out font-bold ${assetSort === 'trades_desc' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}>↑</button>
+                    <button type="button" onClick={() => { setAssetSort('trades_asc'); setAssetsPage(1); }} className={`text-[9px] font-sans px-1.5 py-0.5 rounded-md transition-colors duration-200 ease-out font-bold ${assetSort === 'trades_asc' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}>↓</button>
                   </div>
                 </motion.div>
               )}
@@ -1003,7 +1199,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
         {processedAssets.length === 0 ? (
           <div className="text-center py-8 rounded-lg border border-dashed border-zinc-800 bg-zinc-950 flex-1 min-h-[350px] flex flex-col items-center justify-center">
             <AlertTriangle className="mx-auto text-amber-500/60 mb-2" size={24} />
-            <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">Seçilen kriterlere uygun parite bulunamadı.</p>
+            <p className="text-[10px] font-sans text-zinc-500 uppercase tracking-wider">Seçilen kriterlere uygun parite bulunamadı.</p>
           </div>
         ) : (
           <div className="space-y-4 flex-1 flex flex-col justify-between min-h-[440px]">
@@ -1037,16 +1233,16 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                       
                       <div className="w-full">
                         <div className="flex justify-between items-center z-10 mb-1">
-                          <span className="font-extrabold text-xs text-white uppercase tracking-wider font-mono ">{ar.asset}</span>
-                          <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg border uppercase tracking-widest ${isProfit ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-rose-500/10 text-rose-400 border-rose-500/30'}`}>
+                          <span className="font-extrabold text-xs text-white uppercase tracking-wider font-sans ">{ar.asset}</span>
+                          <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg border uppercase tracking-widest ${isProfit ? 'toggle-item-win' : 'toggle-item-loss'}`}>
                             {ar.total} İŞLEM
                           </span>
                         </div>
                         
                         <div className="flex flex-col gap-1 z-10">
-                          <div className="flex justify-between items-center text-[9px] font-mono">
+                          <div className="flex justify-between items-center text-[9px] font-sans">
                             <span className="text-zinc-500 font-bold tracking-widest uppercase font-sans">PNL</span>
-                            <span className={`font-bold tracking-wider text-[11px] ${isProfit ? 'text-emerald-400' : 'text-rose-400'}`}>
+                            <span className={`font-bold tracking-wider text-xs ${isProfit ? 'text-emerald-400' : 'text-rose-400'}`}>
                               {isProfit ? '+' : ''}{(ar?.pnl || 0).toLocaleString()} {currency}
                             </span>
                           </div>
@@ -1054,9 +1250,9 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                           {/* Divider */}
                           <div className="h-px w-full bg-zinc-800/50 group-hover:bg-zinc-700/60 transition-colors duration-200 my-0.5" />
  
-                          <div className="flex justify-between items-center text-[9px] font-mono">
+                          <div className="flex justify-between items-center text-[9px] font-sans">
                             <span className="text-zinc-500 font-bold tracking-widest uppercase font-sans">RR</span>
-                            <span className={`font-bold tracking-wider text-[11px] ${ar.rr >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>
+                            <span className={`font-bold tracking-wider text-xs ${ar.rr >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>
                               {ar.rr >= 0 ? '+' : ''}{ar.rr.toFixed(2)} RR
                             </span>
                           </div>
@@ -1064,9 +1260,9 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                           {/* Divider */}
                           <div className="h-px w-full bg-zinc-800/50 group-hover:bg-zinc-700/60 transition-colors duration-200 my-0.5" />
  
-                          <div className="flex justify-between items-center text-[9px] font-mono">
+                          <div className="flex justify-between items-center text-[9px] font-sans">
                             <span className="text-zinc-500 font-bold tracking-widest uppercase font-sans">WR</span>
-                            <span className={`font-bold tracking-wider text-[11px] ${winRate >= 50 ? 'text-emerald-400' : 'text-orange-400'}`}>
+                            <span className={`font-bold tracking-wider text-xs ${winRate >= 50 ? 'text-emerald-400' : 'text-orange-400'}`}>
                               %{winRate.toFixed(1)}
                             </span>
                           </div>
@@ -1081,7 +1277,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
             {/* Pagination Controls */}
             {processedAssets.length > 0 && (
               <div className="flex items-center justify-between border-t border-zinc-800/80 pt-3.5 mt-auto">
-                <div className="flex items-center gap-1.5 text-[11px] text-zinc-400 font-medium">
+                <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-medium">
                   <span>Toplam</span>
                   <span className="text-zinc-200 font-semibold">{processedAssets.length}</span>
                   <span>Parite</span>
@@ -1147,7 +1343,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                     setExpandedAssets(next);
                   }
                 }}
-                className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium text-zinc-400 hover:text-zinc-200 bg-zinc-950 border border-zinc-800 hover:bg-transparent hover:border-zinc-700 rounded-lg transition-colors duration-150"
+                className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-zinc-400 hover:text-zinc-200 bg-zinc-950 border border-zinc-800 hover:bg-transparent hover:border-zinc-700 rounded-lg transition-colors duration-150"
               >
                 <ChevronsUpDown size={13} />
                 <span>{processedDetailedRows.every(r => expandedAssets[r.asset]) ? 'Tümünü Daralt' : 'Tümünü Genişlet'}</span>
@@ -1157,7 +1353,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
             {/* Filter Toggle Button */}
             <button
               onClick={() => setIsDetailedFilterOpen(!isDetailedFilterOpen)}
-              className={`flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium rounded-lg border transition-all duration-300 ${
+              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-lg border transition-all duration-300 ${
                 isDetailedFilterOpen || detailedFilter !== 'all' || detailedSearch
                   ? 'bg-blue-500/15 border-blue-500/30 text-blue-300 shadow-xs' 
                   : 'bg-zinc-950 border-zinc-800 text-zinc-300 hover:bg-transparent hover:text-zinc-100'
@@ -1174,6 +1370,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
             <AnimatePresence>
               {isDetailedFilterOpen && (
                 <motion.div
+                  key="matrix-filter-popover"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
@@ -1197,7 +1394,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                     <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500" />
                     <input
                       type="text"
-                      placeholder="Parite veya onay ara..."
+                      placeholder="Parite, Silver Bullet veya PD ARRAY ara..."
                       value={detailedSearch}
                       onChange={(e) => { setDetailedSearch(e.target.value); setDetailedPage(1); }}
                       className="w-full bg-zinc-950 border border-zinc-800 rounded-lg pl-8 pr-7 py-1.5 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-zinc-700"
@@ -1212,27 +1409,85 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                     )}
                   </div>
 
+                  {/* Quick Filters for Silver Bullet & Core PD Arrays */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (detailedSearch.toLowerCase() === 'silver bullet') {
+                          setDetailedSearch('');
+                        } else {
+                          setDetailedSearch('Silver Bullet');
+                        }
+                        setDetailedPage(1);
+                      }}
+                      className={`px-2 py-0.5 text-[10px] font-bold rounded-lg border transition-all cursor-pointer ${
+                        detailedSearch.toLowerCase() === 'silver bullet'
+                          ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-xs'
+                          : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-200 hover:border-zinc-700'
+                      }`}
+                    >
+                      ⚡ Silver Bullet
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (detailedSearch.toLowerCase() === 'fvg') {
+                          setDetailedSearch('');
+                        } else {
+                          setDetailedSearch('FVG');
+                        }
+                        setDetailedPage(1);
+                      }}
+                      className={`px-2 py-0.5 text-[10px] font-bold rounded-lg border transition-all cursor-pointer ${
+                        detailedSearch.toLowerCase() === 'fvg'
+                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-xs'
+                          : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-200 hover:border-zinc-700'
+                      }`}
+                    >
+                      PD: FVG
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (detailedSearch.toLowerCase() === 'ifvg') {
+                          setDetailedSearch('');
+                        } else {
+                          setDetailedSearch('IFVG');
+                        }
+                        setDetailedPage(1);
+                      }}
+                      className={`px-2 py-0.5 text-[10px] font-bold rounded-lg border transition-all cursor-pointer ${
+                        detailedSearch.toLowerCase() === 'ifvg'
+                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-xs'
+                          : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-200 hover:border-zinc-700'
+                      }`}
+                    >
+                      PD: IFVG
+                    </button>
+                  </div>
+
                   {/* Filter by Performance */}
                   <div>
-                    <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">
+                    <span className="heading-3 mb-1.5">
                       Performans Durumu
                     </span>
                     <div className="grid grid-cols-3 gap-1 bg-zinc-950 p-1 rounded-lg border border-zinc-800">
                       <button 
                         onClick={() => { setDetailedFilter('all'); setDetailedPage(1); }} 
-                        className={`text-[11px] py-1 rounded-lg transition-all font-medium text-center ${detailedFilter === 'all' ? 'bg-zinc-800 text-white font-semibold shadow-xs' : 'text-zinc-400 hover:text-zinc-200'}`}
+                        className={`text-xs py-1 rounded-lg transition-all font-medium text-center ${detailedFilter === 'all' ? 'bg-zinc-800 text-white font-semibold shadow-xs' : 'text-zinc-400 hover:text-zinc-200'}`}
                       >
                         Tümü
                       </button>
                       <button 
                         onClick={() => { setDetailedFilter('mükemmel'); setDetailedPage(1); }} 
-                        className={`text-[11px] py-1 rounded-lg transition-all font-medium text-center ${detailedFilter === 'mükemmel' ? 'bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30' : 'text-zinc-400 hover:text-emerald-400'}`}
+                        className={`text-xs py-1 rounded-lg transition-all font-medium text-center ${detailedFilter === 'mükemmel' ? 'bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30' : 'text-zinc-400 hover:text-emerald-400'}`}
                       >
                         ≥ %60 WR
                       </button>
                       <button 
                         onClick={() => { setDetailedFilter('riskli'); setDetailedPage(1); }} 
-                        className={`text-[11px] py-1 rounded-lg transition-all font-medium text-center ${detailedFilter === 'riskli' ? 'bg-rose-500/20 text-rose-300 font-semibold border border-rose-500/30' : 'text-zinc-400 hover:text-rose-400'}`}
+                        className={`text-xs py-1 rounded-lg transition-all font-medium text-center ${detailedFilter === 'riskli' ? 'bg-rose-500/20 text-rose-300 font-semibold border border-rose-500/30' : 'text-zinc-400 hover:text-rose-400'}`}
                       >
                         &lt; %45 WR
                       </button>
@@ -1241,25 +1496,25 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
 
                   {/* Sort By */}
                   <div>
-                    <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">
+                    <span className="heading-3 mb-1.5">
                       Sıralama Ölçütü
                     </span>
                     <div className="grid grid-cols-3 gap-1 bg-zinc-950 p-1 rounded-lg border border-zinc-800">
                       <button 
                         onClick={() => { setDetailedSort('pnl'); setDetailedPage(1); }} 
-                        className={`text-[11px] py-1 rounded-lg transition-all font-medium text-center ${detailedSort === 'pnl' ? 'bg-zinc-800 text-white font-semibold shadow-xs' : 'text-zinc-400 hover:text-zinc-200'}`}
+                        className={`text-xs py-1 rounded-lg transition-all font-medium text-center ${detailedSort === 'pnl' ? 'bg-zinc-800 text-white font-semibold shadow-xs' : 'text-zinc-400 hover:text-zinc-200'}`}
                       >
                         Net PnL
                       </button>
                       <button 
                         onClick={() => { setDetailedSort('rr'); setDetailedPage(1); }} 
-                        className={`text-[11px] py-1 rounded-lg transition-all font-medium text-center ${detailedSort === 'rr' ? 'bg-zinc-800 text-white font-semibold shadow-xs' : 'text-zinc-400 hover:text-zinc-200'}`}
+                        className={`text-xs py-1 rounded-lg transition-all font-medium text-center ${detailedSort === 'rr' ? 'bg-zinc-800 text-white font-semibold shadow-xs' : 'text-zinc-400 hover:text-zinc-200'}`}
                       >
                         Net R:R
                       </button>
                       <button 
                         onClick={() => { setDetailedSort('winrate'); setDetailedPage(1); }} 
-                        className={`text-[11px] py-1 rounded-lg transition-all font-medium text-center ${detailedSort === 'winrate' ? 'bg-zinc-800 text-white font-semibold shadow-xs' : 'text-zinc-400 hover:text-zinc-200'}`}
+                        className={`text-xs py-1 rounded-lg transition-all font-medium text-center ${detailedSort === 'winrate' ? 'bg-zinc-800 text-white font-semibold shadow-xs' : 'text-zinc-400 hover:text-zinc-200'}`}
                       >
                         Kazanma %
                       </button>
@@ -1275,7 +1530,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                         setDetailedSort('pnl');
                         setDetailedPage(1);
                       }}
-                      className="w-full py-1 text-[11px] text-zinc-400 hover:text-zinc-200 text-center border-t border-zinc-800 pt-2 transition-colors"
+                      className="w-full py-1 text-xs text-zinc-400 hover:text-zinc-200 text-center border-t border-zinc-800 pt-2 transition-colors"
                     >
                       Filtreleri Sıfırla
                     </button>
@@ -1293,7 +1548,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
               <thead>
                 <tr className="text-zinc-400 text-[10px] font-semibold uppercase tracking-wider">
                   <th className="py-2 px-3 w-[220px]">Parite & Kombinasyon</th>
-                  <th className="py-2 px-3">İşlem Detayları & Onaylar</th>
+                  <th className="py-2 px-3">İşlem Detayları & PD ARRAY</th>
                   <th className="py-2 px-3 text-center w-[160px]">Net Kazanç</th>
                   <th className="py-2 px-3 text-center w-[130px]">Kazanma Oranı</th>
                   <th className="py-2 px-3 text-right w-[110px]">İşlem Özeti</th>
@@ -1313,12 +1568,15 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                     const isProfit = parent.pnl >= 0;
                     const isRrProfit = parent.rr >= 0;
 
-                    // Collect clean dominant confirmations/concepts for parent row summary
+                    // Parite ana satırında (tıklamadan önce görünen kısım) sadece Session, HTF ve PD Array
+                    const parentSessions = Array.from(new Set(
+                      parent.children?.map((c: any) => c?.session).filter((s: any) => s && s !== 'Unspecified' && s !== 'Diğer') || []
+                    ));
+                    const parentHtfTfs = Array.from(new Set(
+                      parent.children?.map((c: any) => c?.htfTimeframe).filter((h: any) => h && h !== 'Unspecified') || []
+                    ));
                     const parentConfs = Array.from(new Set(
                       parent.children?.map((c: any) => c?.confirmation).filter((c: any) => c && c !== 'Unspecified' && c !== 'Diğer') || []
-                    ));
-                    const parentConcepts = Array.from(new Set(
-                      parent.children?.map((c: any) => c?.concept).filter((c: any) => c && c !== 'Unspecified') || []
                     ));
 
                     return (
@@ -1346,7 +1604,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                               </button>
                               
                               <div className="flex items-center gap-2">
-                                <span className="font-mono font-black text-xs text-zinc-100 bg-zinc-950 px-2.5 py-1 rounded-lg border border-zinc-800 group-hover:border-blue-500/20 group-hover:bg-blue-500/10 group-hover:text-blue-300 transition-all duration-200">
+                                <span className="font-sans font-black text-xs text-zinc-100 bg-zinc-950 px-2.5 py-1 rounded-lg border border-zinc-800 group-hover:border-blue-500/20 group-hover:bg-blue-500/10 group-hover:text-blue-300 transition-all duration-200">
                                   {parent.asset}
                                 </span>
                                 <span className="text-[10px] text-zinc-400 group-hover:text-zinc-300 font-medium transition-colors">
@@ -1356,27 +1614,39 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                             </div>
                           </td>
 
-                          {/* Quick Summary of Used Confirmations/Concepts */}
+                          {/* Parite satırı: Sadece Session, HTF ve PD Array */}
                           <td className="py-3 px-3 bg-zinc-900/90 group-hover:bg-zinc-800/40 border-y border-zinc-800/80 group-hover:border-zinc-700/60 transition-all duration-200">
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              {parentConfs.length > 0 || parentConcepts.length > 0 ? (
+                              {parentSessions.length > 0 || parentHtfTfs.length > 0 || parentConfs.length > 0 ? (
                                 <>
-                                  {parentConfs.slice(0, 3).map((conf: any, idx) => (
-                                    <span key={`conf-${idx}`} className="text-[10px] font-medium text-blue-300 bg-blue-500/10 border border-blue-500/20 group-hover:border-blue-500/30 group-hover:bg-blue-500/15 px-2 py-0.5 rounded-lg transition-colors">
+                                  {/* 1. Seans / Silver Bullet Penceresi */}
+                                  {parentSessions.map((sess: any, idx) => (
+                                    <span key={`sess-${idx}`} className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-purple-300 bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 rounded-lg">
+                                      <Clock size={9} className="text-purple-400" />
+                                      {sess}
+                                    </span>
+                                  ))}
+
+                                  {/* 2. Üst Zaman Dilimi (HTF) */}
+                                  {parentHtfTfs.map((htf: any, idx) => (
+                                    <span key={`htf-${idx}`} className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-rose-300 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded-lg">
+                                      <Maximize2 size={9} className="text-rose-400" />
+                                      <span className="text-[9px] text-rose-400/80 font-medium">HTF:</span>
+                                      {htf}
+                                    </span>
+                                  ))}
+
+                                  {/* 3. PD ARRAY / Onay (Öne Çıkan Vurgu) */}
+                                  {parentConfs.map((conf: any, idx) => (
+                                    <span key={`conf-${idx}`} className="inline-flex items-center gap-1 text-[10px] font-extrabold uppercase text-emerald-300 bg-emerald-500/15 border border-emerald-500/35 group-hover:border-emerald-500/45 group-hover:bg-emerald-500/20 px-2.5 py-0.5 rounded-lg shadow-xs transition-colors">
+                                      <Layers size={9} className="text-emerald-400" />
+                                      <span className="text-[9px] text-emerald-400/90 font-bold">PD:</span>
                                       {conf}
                                     </span>
                                   ))}
-                                  {parentConcepts.slice(0, 2).map((conc: any, idx) => (
-                                    <span key={`conc-${idx}`} className="text-[10px] font-medium text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-lg">
-                                      {conc}
-                                    </span>
-                                  ))}
-                                  {(parentConfs.length + parentConcepts.length) > 5 && (
-                                    <span className="text-[10px] text-zinc-500 group-hover:text-zinc-400 font-medium">+{parentConfs.length + parentConcepts.length - 5} daha</span>
-                                  )}
                                 </>
                               ) : (
-                                <span className="text-[11px] text-zinc-500 group-hover:text-zinc-400 italic">Genel Girişler</span>
+                                <span className="text-xs text-zinc-500 group-hover:text-zinc-400 italic font-bold uppercase">Genel Girişler</span>
                               )}
                             </div>
                           </td>
@@ -1384,10 +1654,10 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                           {/* Performance: Net PnL & R */}
                           <td className="py-3 px-3 text-center bg-zinc-900/90 group-hover:bg-zinc-800/40 border-y border-zinc-800/80 group-hover:border-zinc-700/60 transition-all duration-200">
                             <div className="inline-flex flex-col items-center">
-                              <span className={`text-xs font-bold font-mono ${isProfit ? 'text-emerald-400' : 'text-rose-400'}`}>
+                              <span className={`text-xs font-bold font-sans ${isProfit ? 'text-emerald-400' : 'text-rose-400'}`}>
                                 {isProfit ? '+' : ''}{(parent?.pnl || 0).toLocaleString()} {currency}
                               </span>
-                              <span className={`text-[10px] font-medium font-mono ${isRrProfit ? 'text-emerald-400/80' : 'text-rose-400/80'}`}>
+                              <span className={`text-[10px] font-medium font-sans ${isRrProfit ? 'text-emerald-400/80' : 'text-rose-400/80'}`}>
                                 {isRrProfit ? '+' : ''}{parent.rr.toFixed(1)} R
                               </span>
                             </div>
@@ -1395,7 +1665,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
 
                           {/* Win Rate */}
                           <td className="py-3 px-3 text-center bg-zinc-900/90 group-hover:bg-zinc-800/40 border-y border-zinc-800/80 group-hover:border-zinc-700/60 transition-all duration-200">
-                            <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
+                            <span className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full border ${
                                 parent.winRate >= 60 
                                   ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/25' 
                                   : parent.winRate >= 45 
@@ -1416,7 +1686,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                               }}
                               className="inline-flex items-center gap-1.5 text-right group-hover:text-zinc-300 transition-colors focus:outline-none focus:ring-0 outline-none select-none"
                             >
-                              <div className="text-[11px] font-mono font-medium text-zinc-300">
+                              <div className="text-xs font-sans font-medium text-zinc-300">
                                 <span className="text-emerald-400 font-bold">{parent.wins}W</span>
                                 <span className="text-zinc-600 mx-1">/</span>
                                 <span className="text-rose-400 font-bold">{parent.total - parent.wins}L</span>
@@ -1430,7 +1700,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                           {isExpanded && parent.children?.map((child: any, cIdx: number) => {
                             const childIsProfit = child.pnl >= 0;
                             const childIsRrProfit = child.rr >= 0;
-                            const hasAnyDimension = !!(child.session || child.htfTimeframe || child.timeframe || child.concept || (child.confirmation && child.confirmation !== 'Diğer'));
+                            const hasAnyDimension = !!(child.session || child.htfTimeframe || child.trend || child.concept || child.timeframe || (child.confirmation && child.confirmation !== 'Diğer') || child.entryModel || child.planFidelity);
 
                             return (
                               <motion.tr
@@ -1443,48 +1713,112 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                                 className="transition-all duration-150 cursor-pointer select-none outline-none focus:outline-none focus:ring-0 active:outline-none group/child"
                               >
                                 {/* Tree Connector & Sub-indicator */}
-                                <td className="py-2 px-3 text-left rounded-l-xl bg-zinc-950/70 group-hover/child:bg-zinc-850/30 border-y border-l border-zinc-800/50 group-hover/child:border-zinc-800 transition-all duration-200">
+                                <td className="py-2.5 px-3 text-left rounded-l-xl bg-zinc-950/70 group-hover/child:bg-zinc-850/30 border-y border-l border-zinc-800/50 group-hover/child:border-zinc-800 transition-all duration-200">
                                   <div className="flex items-center pl-6 text-zinc-500 text-xs gap-2 select-none">
                                     <span className="text-zinc-600 group-hover/child:text-zinc-400 font-bold transition-colors">↳</span>
-                                    <span className="text-[11px] text-zinc-400 group-hover/child:text-zinc-300 font-medium transition-colors">
+                                    <span className="text-xs text-zinc-400 group-hover/child:text-zinc-300 font-bold transition-colors">
                                       Kombinasyon #{cIdx + 1}
                                     </span>
                                   </div>
                                 </td>
 
-                                {/* Clean Dimension Badges */}
-                                <td className="py-2 px-3 bg-zinc-950/70 group-hover/child:bg-zinc-850/30 border-y border-zinc-800/50 group-hover/child:border-zinc-800 transition-all duration-200">
+                                {/* Clean Dimension Badges Ordered for Silver Bullet & ICT Analysis */}
+                                <td className="py-2.5 px-3 bg-zinc-950/70 group-hover/child:bg-zinc-850/30 border-y border-zinc-800/50 group-hover/child:border-zinc-800 transition-all duration-200">
                                   <div className="flex items-center gap-1.5 flex-wrap">
                                     {hasAnyDimension ? (
                                       <>
+                                        {/* 1. SEANS / SAAT PENCERESİ (Silver Bullet Zaman Penceresi) */}
                                         {child.session && (
-                                          <span className="text-[10px] font-medium text-amber-300 bg-amber-500/10 px-2 py-0.5 border border-amber-500/20 rounded-lg">
+                                          <span 
+                                            title="Seans / Silver Bullet Penceresi"
+                                            className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-purple-300 bg-purple-500/10 px-2 py-0.5 border border-purple-500/25 rounded-lg shadow-xs"
+                                          >
+                                            <Clock size={10} className="text-purple-400 shrink-0" />
                                             {child.session}
                                           </span>
                                         )}
+
+                                        {/* 2. HTF TIMEFRAME (Üst Zaman Dilimi & Bias) */}
                                         {child.htfTimeframe && (
-                                          <span className="text-[10px] font-medium text-rose-300 bg-rose-500/10 px-2 py-0.5 border border-rose-500/20 rounded-lg">
-                                            HTF: {child.htfTimeframe}
+                                          <span 
+                                            title="Üst Zaman Dilimi (HTF)"
+                                            className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-rose-300 bg-rose-500/10 px-2 py-0.5 border border-rose-500/25 rounded-lg"
+                                          >
+                                            <Maximize2 size={10} className="text-rose-400 shrink-0" />
+                                            <span className="text-[9px] text-rose-400/80 font-medium">HTF:</span>
+                                            {child.htfTimeframe}
                                           </span>
                                         )}
-                                        {child.timeframe && (
-                                          <span className="text-[10px] font-medium text-sky-300 bg-sky-500/10 px-2 py-0.5 border border-sky-500/20 rounded-lg">
-                                            {child.timeframe}
+
+                                        {/* 3. TREND YAPISI */}
+                                        {child.trend && (
+                                          <span 
+                                            title="Trend Yapısı"
+                                            className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-cyan-300 bg-cyan-500/10 px-2 py-0.5 border border-cyan-500/25 rounded-lg"
+                                          >
+                                            <TrendingUp size={10} className="text-cyan-400 shrink-0" />
+                                            {child.trend}
                                           </span>
                                         )}
+
+                                        {/* 4. KONSEPT (Strateji) */}
                                         {child.concept && (
-                                          <span className="text-[10px] font-medium text-emerald-300 bg-emerald-500/10 px-2 py-0.5 border border-emerald-500/20 rounded-lg">
+                                          <span 
+                                            title="Strateji / Konsept"
+                                            className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-amber-300 bg-amber-500/10 px-2 py-0.5 border border-amber-500/25 rounded-lg"
+                                          >
+                                            <Bookmark size={10} className="text-amber-400 shrink-0" />
                                             {child.concept}
                                           </span>
                                         )}
+
+                                        {/* 5. ENTRY TIMEFRAME (Giriş Zaman Dilimi / Execution TF) */}
+                                        {child.timeframe && (
+                                          <span 
+                                            title="Giriş Zaman Dilimi (Entry TF)"
+                                            className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-sky-300 bg-sky-500/10 px-2 py-0.5 border border-sky-500/25 rounded-lg"
+                                          >
+                                            <Target size={10} className="text-sky-400 shrink-0" />
+                                            <span className="text-[9px] text-sky-400/80 font-medium">TF:</span>
+                                            {child.timeframe}
+                                          </span>
+                                        )}
+
+                                        {/* 6. PD ARRAY / ONAY (Merkezi Silver Bullet Alanı: FVG, IFVG, BPR, Sweep, MSS, OB) */}
                                         {child.confirmation && child.confirmation !== 'Diğer' && (
-                                          <span className="text-[10px] font-semibold text-blue-300 bg-blue-500/15 px-2 py-0.5 border border-blue-500/30 rounded-lg">
+                                          <span 
+                                            title="PD ARRAY / Tetikleyici Onay"
+                                            className="inline-flex items-center gap-1 text-[10px] font-extrabold uppercase text-emerald-300 bg-emerald-500/15 px-2.5 py-0.5 border border-emerald-500/40 rounded-lg shadow-xs ring-1 ring-emerald-500/20"
+                                          >
+                                            <Layers size={10} className="text-emerald-400 shrink-0" />
+                                            <span className="text-[9px] text-emerald-400/90 font-bold">PD:</span>
                                             {child.confirmation}
+                                          </span>
+                                        )}
+
+                                        {/* 7. ENTRY MODEL (Giriş Modeli) */}
+                                        {child.entryModel && (
+                                          <span 
+                                            title="Giriş Modeli (Entry Model)"
+                                            className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-teal-300 bg-teal-500/10 px-2 py-0.5 border border-teal-500/25 rounded-lg"
+                                          >
+                                            <Zap size={10} className="text-teal-400 shrink-0" />
+                                            {child.entryModel}
+                                          </span>
+                                        )}
+
+                                        {/* 8. SETUP KALİTESİ / PLANA SADAKAT */}
+                                        {child.planFidelity && (
+                                          <span 
+                                            title="Plana Sadakat / Setup Kalitesi"
+                                            className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-violet-300 bg-violet-500/10 px-2 py-0.5 border border-violet-500/25 rounded-lg"
+                                          >
+                                            {child.planFidelity}
                                           </span>
                                         )}
                                       </>
                                     ) : (
-                                      <span className="text-[10px] text-zinc-500 bg-zinc-950 px-2 py-0.5 rounded-lg border border-zinc-800">
+                                      <span className="text-[10px] font-bold uppercase text-zinc-500 bg-zinc-950 px-2 py-0.5 rounded-lg border border-zinc-800">
                                         Doğrudan İşlem (Filtresiz)
                                       </span>
                                     )}
@@ -1494,10 +1828,10 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                                 {/* Performance: Net PnL & R */}
                                 <td className="py-2 px-3 text-center bg-zinc-950/70 group-hover/child:bg-zinc-850/30 border-y border-zinc-800/50 group-hover/child:border-zinc-800 transition-all duration-200">
                                   <div className="inline-flex flex-col items-center">
-                                    <span className={`text-[11px] font-bold font-mono ${childIsProfit ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                    <span className={`text-xs font-bold font-sans ${childIsProfit ? 'text-emerald-400' : 'text-rose-400'}`}>
                                       {childIsProfit ? '+' : ''}{(child?.pnl || 0).toLocaleString()} {currency}
                                     </span>
-                                    <span className={`text-[9px] font-medium font-mono ${childIsRrProfit ? 'text-emerald-400/70' : 'text-rose-400/70'}`}>
+                                    <span className={`text-[9px] font-medium font-sans ${childIsRrProfit ? 'text-emerald-400/70' : 'text-rose-400/70'}`}>
                                       {childIsRrProfit ? '+' : ''}{child.rr.toFixed(1)} R
                                     </span>
                                   </div>
@@ -1518,7 +1852,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
 
                                 {/* Trade Breakdown */}
                                 <td className="py-2 px-3 text-right rounded-r-xl bg-zinc-950/70 group-hover/child:bg-zinc-850/30 border-y border-r border-zinc-800/50 group-hover/child:border-zinc-800 transition-all duration-200">
-                                  <div className="text-[10px] font-mono text-zinc-400 group-hover/child:text-zinc-300">
+                                  <div className="text-[10px] font-sans text-zinc-400 group-hover/child:text-zinc-300">
                                     {child.total} İşlem <span className="text-zinc-500 group-hover/child:text-zinc-500">({child.wins}W / {child.total - child.wins}L)</span>
                                   </div>
                                 </td>
@@ -1549,7 +1883,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
         {/* Pagination Details */}
         {processedDetailedRows.length > 0 && (
           <div className="flex items-center justify-between border-t border-zinc-800/80 pt-3.5 mt-3">
-            <div className="flex items-center gap-1.5 text-[11px] text-zinc-400 font-medium">
+            <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-medium">
               <span>Toplam</span>
               <span className="text-zinc-200 font-semibold">{processedDetailedRows.length}</span>
               <span>Parite Grubu</span>
@@ -1595,536 +1929,36 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
         currency={currency} 
       />
 
-      {createPortal(
-        <AnimatePresence>
-          {selectedPerformancePeriod && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15, ease: "easeOut" }}
-              style={{ willChange: 'opacity' }}
-              className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-zinc-950/80 "
-              onClick={() => setSelectedPerformancePeriod(null)}
-            >
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.15, ease: "easeOut" }}
-                style={{ willChange: 'opacity' }}
-                className="w-full max-w-4xl max-h-[85vh] flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl relative overflow-hidden "
-                onClick={e => e.stopPropagation()}
-              >
-              {/* Header */}
-              <div className="bg-zinc-950/80 border-b border-zinc-800 px-3 py-3 sm:px-6 sm:py-4 flex items-center justify-between gap-2 sticky top-0 z-10 shrink-0 flex-wrap sm:flex-nowrap">
-                <div className="flex items-center flex-wrap gap-1.5 sm:gap-3 flex-1 min-w-0">
-                  <div className="bg-blue-500/10 border border-blue-500/20 px-2 sm:px-3 py-1.5 rounded-lg flex items-center justify-center shrink-0">
-                    <span className="text-[10px] sm:text-sm font-black text-blue-400 font-mono tracking-widest uppercase flex items-center justify-center leading-none">
-                      <Calendar size={16} className="mr-1.5 text-blue-400 shrink-0" />
-                      {selectedPerformancePeriod.label}
-                    </span>
-                  </div>
-                  <div className="flex items-center">
-                    <h2 className="text-zinc-100 font-black text-[10px] sm:text-sm uppercase tracking-wider font-mono leading-none flex items-center whitespace-nowrap">İşlem Geçmişi</h2>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPrintModalState({
-                        isOpen: true,
-                        trades: selectedPerformancePeriod.trades,
-                        title: `${selectedPerformancePeriod.label} İşlem Raporu`,
-                        dateRangeText: selectedPerformancePeriod.label
-                      });
-                    }}
-                    className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/25 rounded-lg transition-colors duration-200 ease-out cursor-pointer group shadow-xs shrink-0"
-                  >
-                    <Download size={18} className=" " />
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={() => setSelectedPerformancePeriod(null)}
-                    className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-zinc-400 hover:text-white bg-zinc-950 hover:bg-zinc-900/70 border border-zinc-700/50  rounded-lg transition-colors duration-200 ease-out cursor-pointer group shadow-xs shrink-0"
-                  >
-                    <X size={18} className=" " />
-                  </button>
-                </div>
-              </div>
+      <TradeHistoryModal
+        isOpen={!!selectedPerformancePeriod}
+        onClose={() => setSelectedPerformancePeriod(null)}
+        title={selectedPerformancePeriod?.label || ""}
+        icon={<Calendar size={16} className="mr-1.5 text-blue-400 shrink-0" />}
+        trades={selectedPerformancePeriod?.trades || []}
+        currency={currency}
+        onEdit={(trade) => {
+          if (onEdit) onEdit(trade);
+          setSelectedPerformancePeriod(null);
+        }}
+      />
 
-              {/* Period Detailed Stats */}
-              <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-transparent border-b border-zinc-800 shrink-0 select-none w-full">
-                <div className="flex flex-wrap items-center gap-2">
-                  <div className="flex items-center gap-1.5 bg-zinc-950 border border-zinc-800 text-zinc-100 rounded-lg px-2.5 py-1.5 shrink-0">
-                    <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest font-mono">TOPLAM:</span>
-                    <span className="text-xs font-black text-white font-mono">{selectedPerformancePeriod.trades.length}</span>
-                  </div>
-                  {(() => {
-                    const longTrades = selectedPerformancePeriod.trades.filter(t => t.type === 'LONG');
-                    const shortTrades = selectedPerformancePeriod.trades.filter(t => t.type === 'SHORT');
-                    
-                    const longWins = longTrades.filter(t => t.status === 'WIN').length;
-                    const longWinRate = longTrades.length > 0 ? (longWins / longTrades.length) * 100 : 0;
-                    
-                    const shortWins = shortTrades.filter(t => t.status === 'WIN').length;
-                    const shortWinRate = shortTrades.length > 0 ? (shortWins / shortTrades.length) * 100 : 0;
-                    
-                    return (
-                      <>
-                        <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-2.5 py-1.5 shrink-0">
-                          <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-widest font-mono">LONG:</span>
-                          <span className="text-xs font-black text-emerald-400 font-mono">{longTrades.length}</span>
-                          <span className="text-[10px] text-zinc-700 font-bold ml-1 uppercase">|</span>
-                          <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-widest ml-1 font-mono">WR:</span>
-                          <span className="text-xs font-black text-emerald-400 font-mono">%{longWinRate.toFixed(1)}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 bg-rose-500/10 border border-rose-500/20 rounded-lg px-2.5 py-1.5 shrink-0">
-                          <span className="text-[11px] font-bold text-rose-400 uppercase tracking-widest font-mono">SHORT:</span>
-                          <span className="text-xs font-black text-rose-400 font-mono">{shortTrades.length}</span>
-                          <span className="text-[10px] text-zinc-700 font-bold ml-1 uppercase">|</span>
-                          <span className="text-[11px] font-bold text-rose-400 uppercase tracking-widest ml-1 font-mono">WR:</span>
-                          <span className="text-xs font-black text-rose-400 font-mono">%{shortWinRate.toFixed(1)}</span>
-                        </div>
-                      </>
-                    );
-                  })()}
-                </div>
-                <div className="flex flex-wrap items-center justify-end gap-1.5 ml-auto">
-                  {(() => {
-                    const sessionBreakdown = selectedPerformancePeriod.trades.reduce((acc, t) => {
-                      const s = t.session || 'Belirtilmemiş';
-                      if (!acc[s]) acc[s] = { pnl: 0, rr: 0 };
-                      acc[s].pnl += t.pnl || 0;
-                      acc[s].rr += t.rr || 0;
-                      return acc;
-                    }, {} as Record<string, { pnl: number, rr: number }>);
-
-                    return Object.entries(sessionBreakdown).map(([session, vals]) => {
-                      const val = isRrMode ? vals.rr : vals.pnl;
-                      if (val === 0) return null;
-                      
-                      const isProfit = val > 0;
-                      const isLoss = val < 0;
-                      
-                      const textColorClass = isProfit ? 'text-emerald-400' : isLoss ? 'text-rose-400' : 'text-zinc-400';
-                      const bgClass = isProfit ? 'bg-emerald-500/10 border-emerald-500/20' : isLoss ? 'bg-rose-500/10 border-rose-500/20' : 'bg-zinc-500/10 border-zinc-500/20';
-                      const labelClass = isProfit ? 'text-emerald-400' : isLoss ? 'text-rose-400' : 'text-zinc-400';
-                      
-                      return (
-                        <div key={session} className={`flex items-center justify-center gap-1 shrink-0 px-2 py-0.5 rounded-lg border leading-none ${bgClass}`}>
-                          <span className={`text-[9px] font-bold uppercase tracking-widest leading-none ${labelClass}`}>{session}:</span>
-                          <span className={`text-[9px] font-black font-mono leading-none ${textColorClass}`}>
-                            {isRrMode ? `${val > 0 ? '+' : ''}${val.toFixed(1)}R` : `${val > 0 ? '+' : ''}${val.toLocaleString('tr-TR', { maximumFractionDigits: 0 })}`}
-                          </span>
-                        </div>
-                      );
-                    });
-                  })()}
-                </div>
-              </div>
-
-              {/* Trades Table */}
-              <div className="overflow-x-auto overflow-y-auto flex-1 min-h-[300px] px-2 sm:px-4 pb-2 sm:pb-4 pt-3 bg-transparent">
-                <table className="w-full text-left border-separate sm:border-spacing-x-0 sm:border-spacing-y-1 text-[10px] sm:text-[11px] font-mono whitespace-nowrap sm:table-fixed sm:min-w-[700px] block sm:table">
-                  <thead className="sticky top-0 z-20 hidden sm:table-header-group">
-                    <tr className="text-[9px] text-zinc-400 uppercase tracking-widest relative after:absolute after:inset-0 after:rounded-lg after:border after:border-zinc-800 after:pointer-events-none">
-                      <th className="py-2 px-3 font-mono select-none w-[20%] min-w-[120px] bg-transparent rounded-l-xl">Parite</th>
-                      <th className="py-2 px-3 text-center font-mono select-none w-[12%] min-w-[65px] bg-transparent">Yön</th>
-                      <th className="py-2 px-3 text-center font-mono select-none w-[12%] min-w-[65px] bg-transparent">RR</th>
-                      <th className="py-2 px-3 text-center font-mono select-none w-[14%] min-w-[75px] bg-transparent">Session</th>
-                      <th className="py-2 px-3 text-center font-mono select-none w-[14%] min-w-[80px] bg-transparent">Sonuç</th>
-                      <th className="py-2 px-3 text-right font-mono select-none w-[14%] min-w-[90px] bg-transparent"><div className="flex items-center justify-end w-full"><span>Kâr/Zarar</span></div></th>
-                      <th className="py-2 px-3 text-center font-mono select-none w-[14%] min-w-[80px] bg-transparent rounded-r-xl">Platform</th>
-                    </tr>
-                  </thead>
-                  <tbody className="block sm:table-row-group">
-                    {selectedPerformancePeriod.trades.slice(0, 100).map((t, idx) => {
-                      const isWin = t.status === 'WIN';
-                      const isLoss = t.status === 'LOSS';
-                      const isBe = t.status === 'BREAKEVEN';
-                      let pnlText = '—';
-                      let pnlColor = 'text-zinc-400';
-                      if (isBe) {
-                        pnlText = `0.00 ${currency}`;
-                        pnlColor = 'text-zinc-500 font-bold';
-                      } else {
-                        const pnlValue = t.pnl || 0;
-                        const prefix = pnlValue > 0 ? '+' : '';
-                        pnlText = `${prefix}${(pnlValue || 0).toLocaleString()} ${currency}`;
-                        pnlColor = pnlValue > 0 ? 'text-emerald-400 font-bold' : (pnlValue < 0 ? 'text-rose-400 font-bold' : 'text-zinc-500 font-bold');
-                      }
-                      
-                      return (
-                        <tr 
-                          key={t.id ? `${t.id}-${idx}` : `trade-${idx}`}
-                          onClick={() => setSelectedTrade ? setSelectedTrade(t) : null}
-                          className="group cursor-pointer select-none relative flex flex-wrap sm:table-row bg-zinc-800 sm:bg-transparent mb-2 sm:mb-0 rounded-xl sm:rounded-none border border-zinc-800 hover:border-blue-500/40 sm:border-none p-2 sm:p-0"
-                        >
-                          <td className="w-1/2 sm:w-[22%] sm:min-w-[130px] flex justify-start items-center sm:table-cell order-1 py-1.5 px-0 sm:px-3 text-zinc-400 group-hover:text-zinc-100 font-mono sm:bg-transparent group-hover:bg-blue-950/10 sm:rounded-l-xl sm:border-y sm:border-l sm:border-zinc-800 group-hover:border-blue-500/40 transition-colors duration-200">
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-0.5 sm:gap-1.5">
-                              <span className="text-white font-bold text-xs sm:text-[10px]">{t.asset}</span>
-                              <span className="text-[10px] sm:text-[10px] text-zinc-500 sm:text-zinc-400 transition-colors">{new Date(t.createdAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>
-                            </div>
-                          </td>
-                          <td className="w-1/2 sm:w-[12%] sm:min-w-[70px] flex justify-end sm:justify-center items-center sm:table-cell order-2 py-1.5 px-0 sm:px-2.5 text-center sm:bg-transparent group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800 group-hover:border-blue-500/40 transition-colors duration-200">
-                            {t.type === 'LONG' ? (
-                              <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded-lg uppercase tracking-wider font-mono transition-colors">LONG</span>
-                            ) : (
-                              <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 group-hover:border-rose-500/50 rounded-lg uppercase tracking-wider font-mono transition-colors">SHORT</span>
-                            )}
-                          </td>
-                          <td className="w-1/2 sm:w-[12%] sm:min-w-[70px] flex justify-start sm:justify-center items-center sm:table-cell order-3 py-1.5 px-0 sm:px-2.5 text-center sm:bg-transparent group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0">
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-1.5 w-full justify-start sm:justify-center">
-                              <span className="sm:hidden text-[9px] font-bold text-zinc-500 uppercase tracking-widest leading-none h-[10px]">RR</span>
-                              <div className="flex items-center h-[20px]">{t.rr !== undefined && t.rr !== null && t.rr !== 0 ? (
-                                t.rr > 0 ? (
-                                  <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded-lg uppercase tracking-wider font-mono transition-colors">
-                                      +{t.rr}R
-                                    </span>
-                                ) : t.rr < 0 ? (
-                                  <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 group-hover:border-rose-500/50 rounded-lg uppercase tracking-wider font-mono transition-colors">
-                                      {t.rr}R
-                                    </span>
-                                ) : (
-                                  <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-zinc-400 bg-zinc-500/10 border border-zinc-500/20 group-hover:border-zinc-600 rounded-lg uppercase tracking-wider font-mono transition-colors">
-                                      {t.rr}R
-                                    </span>
-                                )
-                              ) : (
-                                <span className="inline-flex items-center justify-center w-[38px] sm:w-[44px] h-[18px] text-center text-[9px] sm:text-[10px] font-medium text-zinc-500 rounded-md">—</span>
-                              )}
-                              </div>
-                            </div>
-                          </td>
-                           <td className="hidden sm:table-cell py-1.5 px-3 text-center text-zinc-400 font-medium sm:bg-transparent group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800 group-hover:border-blue-500/40 transition-colors duration-200 w-[15%] min-w-[80px]">
-                            <span className="inline-flex items-center justify-center min-w-[54px] max-w-[130px] h-[20px] px-2.5 py-0 text-center text-[10px] font-bold text-zinc-300 bg-zinc-800/80 border border-zinc-700/80 group-hover:border-zinc-500 rounded-full uppercase tracking-wider font-mono transition-colors whitespace-nowrap truncate">
-                              {t.session || 'Diğer'}
-                            </span>
-                          </td>
-                          <td className="w-1/2 sm:w-[15%] sm:min-w-[80px] flex justify-end sm:justify-center items-center sm:table-cell order-4 py-1.5 px-0 sm:px-2.5 text-center sm:bg-transparent group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0">
-                            <div className="flex items-center h-[20px]">
-                              {isWin ? (
-                                <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded-full uppercase tracking-wider font-mono transition-colors">WIN</span>
-                              ) : isLoss ? (
-                                <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 group-hover:border-rose-500/50 rounded-full uppercase tracking-wider font-mono transition-colors">LOSS</span>
-                              ) : isBe ? (
-                                <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-zinc-400 bg-zinc-500/10 border border-zinc-500/20 group-hover:border-zinc-600 rounded-full uppercase tracking-wider font-mono transition-colors">BE</span>
-                              ) : (
-                                <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 group-hover:border-blue-500/50 rounded-full uppercase tracking-wider font-mono transition-colors">AÇIK</span>
-                              )}
-                            </div>
-                          </td>
-                          <td className={`w-full sm:w-[15%] sm:min-w-[80px] flex justify-between sm:justify-end items-center sm:table-cell order-5 py-1 px-0 sm:px-3 text-right ${pnlColor} sm:bg-transparent group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 max-sm:pt-3 max-sm:border-t max-sm:border-zinc-800/50 sm:py-1 align-middle`}>
-                            <span className="sm:hidden text-[10px] font-bold text-zinc-500 uppercase tracking-widest text-left font-sans">Kâr/Zarar</span>
-                            <div className="flex flex-col sm:flex-row items-end sm:items-center gap-0.5 sm:gap-1.5 sm:w-full sm:justify-end sm:h-[20px]">
-                              <span className="text-sm sm:text-[11px] font-bold font-sans inline-flex items-center justify-end h-[20px] leading-none tracking-tight">{pnlText}</span>
-                            </div>
-                          </td>
-                          <td className="w-full sm:w-[7%] sm:min-w-[60px] flex justify-between sm:justify-center items-center sm:table-cell order-6 py-1 px-0 sm:px-3 text-center sm:bg-transparent group-hover:bg-blue-950/10 sm:rounded-r-xl sm:border-y sm:border-r sm:border-zinc-800 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 sm:pt-1.5 pt-0">
-                            <div className="sm:hidden">
-                              <span className="text-[9px] text-zinc-500 uppercase font-bold tracking-widest">Platform</span>
-                            </div>
-                            {t.platform ? (
-                              <span className="inline-flex items-center justify-center min-w-[54px] max-w-[130px] h-[20px] px-2.5 py-0 text-center text-[10px] font-bold text-zinc-300 bg-zinc-800/80 border border-zinc-700/80 group-hover:border-zinc-500 rounded-full uppercase tracking-wider font-mono transition-colors whitespace-nowrap truncate">
-                                {t.platform}
-                              </span>
-                            ) : (
-                              <span className="text-zinc-600">—</span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                    {selectedPerformancePeriod.trades.length === 0 && (
-                      <tr>
-                        <td colSpan={7} className="py-8 text-center text-zinc-500 font-medium">Bu dönem için herhangi bir işlem bulunamadı.</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>,
-      document.body
-    )}
-
-      {createPortal(
-        <AnimatePresence>
-          {selectedAsset && (() => {
-          const assetTrades = trades
+      <TradeHistoryModal
+        isOpen={!!selectedAsset}
+        onClose={() => setSelectedAsset(null)}
+        title={selectedAsset || ""}
+        icon={<Activity size={16} className="mr-1.5 text-blue-400 shrink-0" />}
+        trades={useMemo(() => {
+          if (!selectedAsset) return [];
+          return trades
             .filter(t => t.asset === selectedAsset)
             .sort((a, b) => b.createdAt - a.createdAt);
-
-          const totalCount = assetTrades.length;
-          const longTrades = assetTrades.filter(t => t.type === 'LONG');
-          const shortTrades = assetTrades.filter(t => t.type === 'SHORT');
-
-          const closedLongTrades = longTrades;
-          const longWins = closedLongTrades.filter(t => t.status === 'WIN').length;
-          const longWinRate = closedLongTrades.length > 0 ? (longWins / closedLongTrades.length) * 100 : 0;
-
-          const closedShortTrades = shortTrades;
-          const shortWins = closedShortTrades.filter(t => t.status === 'WIN').length;
-          const shortWinRate = closedShortTrades.length > 0 ? (shortWins / closedShortTrades.length) * 100 : 0;
-
-          return (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15, ease: "easeOut" }}
-              style={{ willChange: 'opacity' }}
-              className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-zinc-950/80 "
-              onClick={() => setSelectedAsset(null)}
-            >
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.15, ease: "easeOut" }}
-                style={{ willChange: 'opacity' }}
-                className="w-full max-w-4xl max-h-[85vh] flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl relative overflow-hidden "
-                onClick={e => e.stopPropagation()}
-              >
-                <div className="bg-zinc-950/80 border-b border-zinc-800 px-3 py-3 sm:px-6 sm:py-4 flex items-center justify-between gap-2 sticky top-0 z-10 shrink-0 flex-wrap sm:flex-nowrap">
-                  <div className="flex items-center flex-wrap gap-1.5 sm:gap-3 flex-1 min-w-0">
-                    <div className="bg-emerald-500/10 border border-emerald-500/20 px-2 sm:px-3 py-1.5 rounded-lg flex items-center justify-center shrink-0">
-                      <span className="text-[10px] sm:text-sm font-black text-emerald-400 font-mono tracking-widest uppercase flex items-center justify-center leading-none">
-                        {selectedAsset}
-                      </span>
-                    </div>
-                    <div className="flex items-center">
-                      <h2 className="text-zinc-100 font-black text-[10px] sm:text-sm uppercase tracking-wider font-mono leading-none flex items-center whitespace-nowrap">İşlem Geçmişi</h2>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setPrintModalState({
-                          isOpen: true,
-                          trades: assetTrades,
-                          title: `${selectedAsset} İşlem Raporu`,
-                          dateRangeText: selectedAsset || ''
-                        });
-                      }}
-                      className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/25 rounded-lg transition-colors duration-200 ease-out cursor-pointer group shadow-xs shrink-0"
-                    >
-                      <Download size={18} className=" " />
-                    </button>
-                    <button 
-                      type="button"
-                      onClick={() => setSelectedAsset(null)}
-                      className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-zinc-400 hover:text-white bg-zinc-950 hover:bg-zinc-900/70 border border-zinc-700/50  rounded-lg transition-colors duration-200 ease-out cursor-pointer group shadow-xs shrink-0"
-                    >
-                      <X size={18} className=" " />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Parite Detay İstatistikleri */}
-                <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-transparent border-b border-zinc-800 shrink-0 select-none w-full">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <div className="flex items-center gap-1.5 bg-zinc-950 border border-zinc-800 text-zinc-100 rounded-lg px-2.5 py-1.5 shrink-0">
-                      <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest font-mono">TOPLAM:</span>
-                      <span className="text-xs font-black text-white font-mono">{totalCount}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-2.5 py-1.5 shrink-0">
-                      <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-widest font-mono">LONG:</span>
-                      <span className="text-xs font-black text-emerald-400 font-mono">{longTrades.length}</span>
-                      <span className="text-[10px] text-zinc-700 font-bold ml-1 uppercase">|</span>
-                      <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-widest ml-1 font-mono">WR:</span>
-                      <span className="text-xs font-black text-emerald-400 font-mono">%{longWinRate.toFixed(1)}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 bg-rose-500/10 border border-rose-500/20 rounded-lg px-2.5 py-1.5 shrink-0">
-                      <span className="text-[11px] font-bold text-rose-400 uppercase tracking-widest font-mono">SHORT:</span>
-                      <span className="text-xs font-black text-rose-400 font-mono">{shortTrades.length}</span>
-                      <span className="text-[10px] text-zinc-700 font-bold ml-1 uppercase">|</span>
-                      <span className="text-[11px] font-bold text-rose-400 uppercase tracking-widest ml-1 font-mono">WR:</span>
-                      <span className="text-xs font-black text-rose-400 font-mono">%{shortWinRate.toFixed(1)}</span>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap items-center justify-end gap-1.5 ml-auto">
-                    {(() => {
-                      const sessionBreakdown = assetTrades.reduce((acc, t) => {
-                        const s = t.session || 'Belirtilmemiş';
-                        if (!acc[s]) acc[s] = { pnl: 0, rr: 0 };
-                        acc[s].pnl += t.pnl || 0;
-                        acc[s].rr += t.rr || 0;
-                        return acc;
-                      }, {} as Record<string, { pnl: number, rr: number }>);
-
-                      return Object.entries(sessionBreakdown).map(([session, vals]) => {
-                        const val = isRrMode ? vals.rr : vals.pnl;
-                        if (val === 0) return null;
-                        const isProfit = val > 0;
-                        const isLoss = val < 0;
-                        const textColorClass = isProfit ? 'text-emerald-400' : isLoss ? 'text-rose-400' : 'text-zinc-400';
-                        const bgClass = isProfit ? 'bg-emerald-500/10 border-emerald-500/20' : isLoss ? 'bg-rose-500/10 border-rose-500/20' : 'bg-zinc-500/10 border-zinc-500/20';
-                        const labelClass = isProfit ? 'text-emerald-400' : isLoss ? 'text-rose-400' : 'text-zinc-400';
-                        
-                        return (
-                          <div key={session} className={`flex items-center justify-center gap-1 shrink-0 px-2 py-0.5 rounded-lg border leading-none ${bgClass}`}>
-                            <span className={`text-[9px] font-bold uppercase tracking-widest leading-none ${labelClass}`}>{session}:</span>
-                            <span className={`text-[9px] font-black font-mono leading-none ${textColorClass}`}>
-                              {isRrMode ? `${val > 0 ? '+' : ''}${val.toFixed(1)}R` : `${val > 0 ? '+' : ''}${val.toLocaleString('tr-TR', { maximumFractionDigits: 0 })}`}
-                            </span>
-                          </div>
-                        );
-                      });
-                    })()}
-                  </div>
-                </div>
-
-                <div className="overflow-x-auto overflow-y-auto flex-1 min-h-[300px] px-2 sm:px-4 pb-2 sm:pb-4 pt-3 bg-transparent">
-                  <table className="w-full text-left border-separate sm:border-spacing-x-0 sm:border-spacing-y-1 text-[10px] sm:text-[11px] font-mono whitespace-nowrap sm:table-fixed sm:min-w-[700px] block sm:table">
-                    <thead className="sticky top-0 z-20 hidden sm:table-header-group">
-                      <tr className="text-[9px] text-zinc-400 uppercase tracking-widest relative after:absolute after:inset-0 after:rounded-lg after:border after:border-zinc-800 after:pointer-events-none">
-                        <th className="py-2 px-3 font-mono select-none w-[20%] min-w-[120px] bg-transparent rounded-l-xl">Tarih</th>
-                        <th className="py-2 px-3 text-center font-mono select-none w-[12%] min-w-[65px] bg-transparent">Yön</th>
-                        <th className="py-2 px-3 text-center font-mono select-none w-[12%] min-w-[65px] bg-transparent">RR</th>
-                        <th className="py-2 px-3 text-center font-mono select-none w-[14%] min-w-[75px] bg-transparent">Session</th>
-                        <th className="py-2 px-3 text-center font-mono select-none w-[14%] min-w-[80px] bg-transparent">Sonuç</th>
-                        <th className="py-2 px-3 text-right font-mono select-none w-[14%] min-w-[90px] bg-transparent"><div className="flex items-center justify-end w-full"><span>Kâr/Zarar</span></div></th>
-                        <th className="py-2 px-3 text-center font-mono select-none w-[14%] min-w-[80px] bg-transparent rounded-r-xl">Platform</th>
-                      </tr>
-                    </thead>
-                    <tbody className="block sm:table-row-group">
-                      {assetTrades.slice(0, 100).map((t, idx) => {
-                        const isWin = t.status === 'WIN';
-                        const isLoss = t.status === 'LOSS';
-                        const isBe = t.status === 'BREAKEVEN';
-
-                        let pnlText = '—';
-                        let pnlColor = 'text-zinc-400';
-                        if (isBe) {
-                          pnlText = `0.00 ${currency}`;
-                          pnlColor = 'text-zinc-500 font-bold';
-                        } else {
-                          const pnlValue = t.pnl || 0;
-                          const prefix = pnlValue > 0 ? '+' : '';
-                          pnlText = `${prefix}${(pnlValue || 0).toLocaleString()} ${currency}`;
-                          pnlColor = pnlValue > 0 ? 'text-emerald-400 font-bold' : (pnlValue < 0 ? 'text-rose-400 font-bold' : 'text-zinc-500 font-bold');
-                        }
-
-                        const dateObj = new Date(t.createdAt);
-                        const formattedDateOnly = dateObj.toLocaleDateString('tr-TR', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric'
-                        });
-                        const formattedTimeOnly = dateObj.toLocaleTimeString('tr-TR', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                          hour12: false
-                        });
-
-                        return (
-                          <tr 
-                            key={t.id ? `${t.id}-${idx}` : `trade-${idx}`}
-                          onClick={() => setSelectedTrade ? setSelectedTrade(t) : null}
-                          className="group cursor-pointer select-none relative flex flex-wrap sm:table-row bg-zinc-800 sm:bg-transparent mb-2 sm:mb-0 rounded-xl sm:rounded-none border border-zinc-800 hover:border-blue-500/40 sm:border-none p-2 sm:p-0"
-                        >
-                          <td className="w-1/2 sm:w-[22%] sm:min-w-[130px] flex justify-start items-center sm:table-cell order-1 py-1.5 px-0 sm:px-3 text-zinc-400 group-hover:text-zinc-100 font-mono sm:bg-transparent group-hover:bg-blue-950/10 sm:rounded-l-xl sm:border-y sm:border-l sm:border-zinc-800 group-hover:border-blue-500/40 transition-colors duration-200">
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-0.5 sm:gap-1.5">
-                              <span className="text-zinc-300 font-medium transition-colors flex items-center gap-1.5">
-                                <span>{formattedDateOnly}</span>
-                                <span className="text-zinc-600 font-bold">•</span>
-                                <span className="text-zinc-500 font-mono">{formattedTimeOnly}</span>
-                              </span>
-                            </div>
-                          </td>
-                          <td className="w-1/2 sm:w-[12%] sm:min-w-[70px] flex justify-end sm:justify-center items-center sm:table-cell order-2 py-1.5 px-0 sm:px-2.5 text-center sm:bg-transparent group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800 group-hover:border-blue-500/40 transition-colors duration-200">
-                            {t.type === 'LONG' ? (
-                              <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded-lg uppercase tracking-wider font-mono transition-colors">LONG</span>
-                            ) : (
-                              <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 group-hover:border-rose-500/50 rounded-lg uppercase tracking-wider font-mono transition-colors">SHORT</span>
-                            )}
-                          </td>
-                          <td className="w-1/2 sm:w-[12%] sm:min-w-[70px] flex justify-start sm:justify-center items-center sm:table-cell order-3 py-1.5 px-0 sm:px-2.5 text-center sm:bg-transparent group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0">
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-1.5 w-full justify-start sm:justify-center">
-                              <span className="sm:hidden text-[9px] font-bold text-zinc-500 uppercase tracking-widest leading-none h-[10px]">RR</span>
-                              <div className="flex items-center h-[20px]">{t.rr !== undefined && t.rr !== null && t.rr !== 0 ? (
-                                t.rr > 0 ? (
-                                  <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded-lg uppercase tracking-wider font-mono transition-colors">
-                                      +{t.rr}R
-                                    </span>
-                                ) : t.rr < 0 ? (
-                                  <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 group-hover:border-rose-500/50 rounded-lg uppercase tracking-wider font-mono transition-colors">
-                                      {t.rr}R
-                                    </span>
-                                ) : (
-                                  <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-zinc-400 bg-zinc-500/10 border border-zinc-500/20 group-hover:border-zinc-600 rounded-lg uppercase tracking-wider font-mono transition-colors">
-                                      {t.rr}R
-                                    </span>
-                                )
-                              ) : (
-                                <span className="inline-flex items-center justify-center w-[38px] sm:w-[44px] h-[18px] text-center text-[9px] sm:text-[10px] font-medium text-zinc-500 rounded-md">—</span>
-                              )}
-                              </div>
-                            </div>
-                          </td>
-                           <td className="hidden sm:table-cell py-1.5 px-3 text-center text-zinc-400 font-medium sm:bg-transparent group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800 group-hover:border-blue-500/40 transition-colors duration-200 w-[15%] min-w-[80px]">
-                            <span className="inline-flex items-center justify-center min-w-[54px] max-w-[130px] h-[20px] px-2.5 py-0 text-center text-[10px] font-bold text-zinc-300 bg-zinc-800/80 border border-zinc-700/80 group-hover:border-zinc-500 rounded-full uppercase tracking-wider font-mono transition-colors whitespace-nowrap truncate">
-                              {t.session || 'Diğer'}
-                            </span>
-                          </td>
-                          <td className="w-1/2 sm:w-[15%] sm:min-w-[80px] flex justify-end sm:justify-center items-center sm:table-cell order-4 py-1.5 px-0 sm:px-2.5 text-center sm:bg-transparent group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0">
-                            <div className="flex items-center h-[20px]">
-                              {isWin ? (
-                                <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded-full uppercase tracking-wider font-mono transition-colors">WIN</span>
-                              ) : isLoss ? (
-                                <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 group-hover:border-rose-500/50 rounded-full uppercase tracking-wider font-mono transition-colors">LOSS</span>
-                              ) : isBe ? (
-                                <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-zinc-400 bg-zinc-500/10 border border-zinc-500/20 group-hover:border-zinc-600 rounded-full uppercase tracking-wider font-mono transition-colors">BE</span>
-                              ) : (
-                                <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 group-hover:border-blue-500/50 rounded-full uppercase tracking-wider font-mono transition-colors">AÇIK</span>
-                              )}
-                            </div>
-                          </td>
-                          <td className={`w-full sm:w-[15%] sm:min-w-[80px] flex justify-between sm:justify-end items-center sm:table-cell order-5 py-1 px-0 sm:px-3 text-right ${pnlColor} sm:bg-transparent group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 max-sm:pt-3 max-sm:border-t max-sm:border-zinc-800/50 sm:py-1 align-middle`}>
-                            <span className="sm:hidden text-[10px] font-bold text-zinc-500 uppercase tracking-widest text-left font-sans">Kâr/Zarar</span>
-                            <div className="flex flex-col sm:flex-row items-end sm:items-center gap-0.5 sm:gap-1.5 sm:w-full sm:justify-end sm:h-[20px]">
-                              <span className="text-sm sm:text-[11px] font-bold font-sans inline-flex items-center justify-end h-[20px] leading-none tracking-tight">{pnlText}</span>
-                            </div>
-                          </td>
-                          <td className="w-full sm:w-[7%] sm:min-w-[60px] flex justify-between sm:justify-center items-center sm:table-cell order-6 py-1 px-0 sm:px-3 text-center sm:bg-transparent group-hover:bg-blue-950/10 sm:rounded-r-xl sm:border-y sm:border-r sm:border-zinc-800 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 sm:pt-1.5 pt-0">
-                            <div className="sm:hidden">
-                              <span className="text-[9px] text-zinc-500 uppercase font-bold tracking-widest">Platform</span>
-                            </div>
-                            {t.platform ? (
-                              <span className="inline-flex items-center justify-center min-w-[54px] max-w-[130px] h-[20px] px-2.5 py-0 text-center text-[10px] font-bold text-zinc-300 bg-zinc-800/80 border border-zinc-700/80 group-hover:border-zinc-500 rounded-full uppercase tracking-wider font-mono transition-colors whitespace-nowrap truncate">
-                                {t.platform}
-                              </span>
-                            ) : (
-                              <span className="text-zinc-600">—</span>
-                            )}
-                          </td>
-                        </tr>
-                        );
-                      })}
-                      {assetTrades.length > 100 && (
-                        <tr>
-                          <td colSpan={7} className="py-4 text-center text-[10px] text-zinc-500 font-mono italic">
-                            Sadece son 100 işlem gösteriliyor. Daha fazlası için Geçmiş sekmesine bakınız.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </motion.div>
-            </motion.div>
-          );
-        })()}
-        </AnimatePresence>,
-        document.body
-      )}
+        }, [trades, selectedAsset])}
+        currency={currency}
+        onEdit={(trade) => {
+          if (onEdit) onEdit(trade);
+          setSelectedAsset(null);
+        }}
+      />
 
       {/* Sistem Bütünlüğü ve Veri Analizi */}
       {(() => {
@@ -2171,7 +2005,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
             >
               <div className="flex items-center gap-1.5 shrink-0 text-rose-400">
                 <AlertTriangle size={13} />
-                <span className="font-mono text-[9px] font-bold uppercase tracking-wider">Veri Uyarısı ({warnings.length})</span>
+                <span className="font-sans heading-3">Veri Uyarısı ({warnings.length})</span>
               </div>
               <ul className="flex flex-col sm:flex-row flex-wrap gap-x-4 gap-y-1">
                 {warnings.map((w, idx) => (
@@ -2206,18 +2040,23 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
         <AnimatePresence>
           {isDeadZoneModalOpen && (
             <motion.div
+              key="dead-zone-modal-backdrop"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.15, ease: "easeOut" }}
-              className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-zinc-950/80 "
+              className="will-change-[opacity] fixed inset-0 z-[1500] flex items-center justify-center p-4 bg-zinc-950/80 "
+              onClick={() => setIsDeadZoneModalOpen(false)}
             >
               <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.15, ease: "easeOut" }}
-                className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden "
+                key="dead-zone-modal-content"
+                initial={{ opacity: 0, scale: 0.98, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.98, y: 10 }}
+                transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                style={{ willChange: "transform, opacity" }}
+                className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-4xl h-[82vh] sm:h-[640px] max-h-[90vh] min-h-[460px] flex flex-col shadow-2xl overflow-hidden "
+                onClick={e => e.stopPropagation()}
               >
               {/* Header */}
               <div className="flex items-center justify-between p-4 sm:p-5 border-b border-zinc-800 bg-transparent">
@@ -2226,17 +2065,20 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                     <InfinityIcon size={18} />
                   </div>
                   <div>
-                    <h2 className="text-sm font-black uppercase font-mono text-zinc-100 tracking-wider">
-                      Session Kör Nokta Matrisi
+                    <h2 className="text-sm font-black uppercase font-sans text-zinc-100 tracking-wider">SESSION Kör Nokta Matrisi
                     </h2>
-                    <p className="text-[11px] text-zinc-400 font-sans">
+                    <p className="text-xs text-zinc-400 font-sans">
                       Parite ve seans bazlı kârlılık, R getirisi ve başarı oranı analizi
                     </p>
                   </div>
                 </div>
                 <button
-                  onClick={() => setIsDeadZoneModalOpen(false)}
-                  className="w-8 h-8 rounded-lg bg-zinc-800/60 hover:bg-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center transition-colors"
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsDeadZoneModalOpen(false);
+                  }}
+                  className="w-8 h-8 rounded-lg bg-zinc-800/60 hover:bg-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
                 >
                   <X size={16} />
                 </button>
@@ -2250,29 +2092,29 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                     placeholder="Parite ara..."
                     value={deadZoneSearch}
                     onChange={(e) => { setDeadZoneSearch(e.target.value); setDeadZonePage(1); }}
-                    className="bg-zinc-800/90 border border-zinc-700/50 text-zinc-100 rounded-lg px-3 py-1.5 text-xs font-mono text-zinc-200 focus:outline-none focus:border-blue-500/50 w-44 sm:w-56 placeholder-zinc-500"
+                    className="bg-zinc-800/90 border border-zinc-700/50 text-zinc-100 rounded-lg px-3 py-1.5 text-xs font-sans text-zinc-200 focus:outline-none focus:border-blue-500/50 w-44 sm:w-56 placeholder-zinc-500"
                   />
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-xs text-zinc-400 font-mono font-bold mr-1">Sırala:</span>
+                  <span className="text-xs text-zinc-400 font-sans font-bold mr-1">Sırala:</span>
                   <button
                     type="button"
                     onClick={() => { setDeadZoneSort('pnl'); setDeadZonePage(1); }}
-                    className={`text-xs font-mono px-3 py-1 rounded-xl transition-colors duration-200 ease-out font-bold border ${deadZoneSort === 'pnl' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'}`}
+                    className={`text-xs font-sans px-3 py-1 rounded-xl transition-colors duration-200 ease-out font-bold border ${deadZoneSort === 'pnl' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'}`}
                   >
                     PNL
                   </button>
                   <button
                     type="button"
                     onClick={() => { setDeadZoneSort('rr'); setDeadZonePage(1); }}
-                    className={`text-xs font-mono px-3 py-1 rounded-xl transition-colors duration-200 ease-out font-bold border ${deadZoneSort === 'rr' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'}`}
+                    className={`text-xs font-sans px-3 py-1 rounded-xl transition-colors duration-200 ease-out font-bold border ${deadZoneSort === 'rr' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'}`}
                   >
                     RR
                   </button>
                   <button
                     type="button"
                     onClick={() => { setDeadZoneSort('winrate'); setDeadZonePage(1); }}
-                    className={`text-xs font-mono px-3 py-1 rounded-xl transition-colors duration-200 ease-out font-bold border ${deadZoneSort === 'winrate' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'}`}
+                    className={`text-xs font-sans px-3 py-1 rounded-xl transition-colors duration-200 ease-out font-bold border ${deadZoneSort === 'winrate' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'}`}
                   >
                     WR
                   </button>
@@ -2280,8 +2122,8 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
               </div>
 
               {/* Content Table */}
-              <div className="flex-1 overflow-auto p-4">
-                <table className="w-full text-center border-collapse text-xs font-mono whitespace-nowrap">
+              <div className="flex-1 overflow-auto p-4 min-h-0">
+                <table className="w-full text-center border-collapse text-xs font-sans whitespace-nowrap">
                   <thead>
                     <tr className="border-b border-zinc-800 text-[10px] text-zinc-400 uppercase tracking-widest bg-zinc-950/80">
                       <th className="py-2.5 px-3 text-left">Parite</th>
@@ -2330,7 +2172,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                         return (
                           <tr key={asset} className="hover:bg-zinc-800/20 transition-colors">
                             <td className="py-2.5 px-3 text-left border-r border-zinc-800/80 bg-transparent">
-                              <span className="inline-flex items-center px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-700/60 font-black text-white uppercase text-xs tracking-wider font-mono shadow-xs">
+                              <span className="inline-flex items-center px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-700/60 font-black text-white uppercase text-xs tracking-wider font-sans shadow-xs">
                                 {asset}
                               </span>
                             </td>
@@ -2350,7 +2192,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
               {/* Footer */}
               {processedDeadZone.length > 0 && (
                 <div className="p-4 border-t border-zinc-800/80 bg-transparent flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 text-[11px] text-zinc-400 font-medium">
+                  <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-medium">
                     <span>Toplam</span>
                     <span className="text-zinc-200 font-semibold">{processedDeadZone.length}</span>
                     <span>Parite</span>
@@ -2393,18 +2235,23 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
         <AnimatePresence>
           {isOptimalFreqModalOpen && (
             <motion.div
+              key="optimal-freq-modal-backdrop"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.15, ease: "easeOut" }}
-              className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-zinc-950/80 "
+              className="will-change-[opacity] fixed inset-0 z-[1500] flex items-center justify-center p-4 bg-zinc-950/80 "
+              onClick={() => setIsOptimalFreqModalOpen(false)}
             >
               <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.15, ease: "easeOut" }}
-                className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden "
+                key="optimal-freq-modal-content"
+                initial={{ opacity: 0, scale: 0.98, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.98, y: 10 }}
+                transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                style={{ willChange: "transform, opacity" }}
+                className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-2xl h-[82vh] sm:h-[640px] max-h-[90vh] min-h-[460px] flex flex-col shadow-2xl overflow-hidden "
+                onClick={e => e.stopPropagation()}
               >
               {/* Header */}
               <div className="flex items-center justify-between p-4 sm:p-5 border-b border-zinc-800 bg-transparent">
@@ -2413,25 +2260,29 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                     <Crosshair size={18} />
                   </div>
                   <div>
-                    <h2 className="text-sm font-black uppercase font-mono text-zinc-100 tracking-wider">
+                    <h2 className="text-sm font-black uppercase font-sans text-zinc-100 tracking-wider">
                       Haftalık İdeal İşlem Frekansı
                     </h2>
-                    <p className="text-[11px] text-zinc-400 font-sans">
+                    <p className="text-xs text-zinc-400 font-sans">
                       Haftalık işlem hacminize göre kârlılık, Profit Factor ve R verimlilik analizi
                     </p>
                   </div>
                 </div>
                 <button
-                  onClick={() => setIsOptimalFreqModalOpen(false)}
-                  className="w-8 h-8 rounded-lg bg-zinc-800/60 hover:bg-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center transition-colors"
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsOptimalFreqModalOpen(false);
+                  }}
+                  className="w-8 h-8 rounded-lg bg-zinc-800/60 hover:bg-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
                 >
                   <X size={16} />
                 </button>
               </div>
 
               {/* Content Table */}
-              <div className="flex-1 overflow-auto p-4 space-y-4">
-                <table className="w-full text-left border-collapse text-xs font-mono whitespace-nowrap">
+              <div className="flex-1 overflow-auto p-4 space-y-4 min-h-0">
+                <table className="w-full text-left border-collapse text-xs font-sans whitespace-nowrap">
                   <thead>
                     <tr className="border-b border-zinc-800 text-[10px] text-zinc-400 uppercase tracking-widest bg-zinc-950/80">
                       <th className="py-2.5 px-3">İşlem Hacmi (Haftalık)</th>
@@ -2450,7 +2301,7 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
                           </span>
                         </td>
                         <td className="py-3 px-3 text-center">
-                          <span className={`px-2.5 py-0.5 rounded-lg text-xs font-black font-mono ${f.avgR > 0 ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/30" : f.avgR < 0 ? "text-rose-400 bg-rose-500/10 border-rose-500/30" : "text-zinc-400 bg-transparent border-zinc-800"} border`}>
+                          <span className={`px-2.5 py-0.5 rounded-lg text-xs font-black font-sans ${f.avgR > 0 ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/30" : f.avgR < 0 ? "text-rose-400 bg-rose-500/10 border-rose-500/30" : "text-zinc-400 bg-transparent border-zinc-800"} border`}>
                             {f.avgR > 0 ? "+" : ""}{(f.avgR ?? 0).toFixed(2)} R
                           </span>
                         </td>
@@ -2478,4 +2329,8 @@ export const AdvancedMetricsDashboard = React.memo(({ trades, currency, onEdit, 
     )}
     </div>
   );
+});
+
+export const AdvancedMetricsDashboard = React.memo((props: { trades: Trade[], currency: string, onMetricClick?: (id: string, val: string | number) => void, onEdit?: (trade: Trade) => void, sessions?: string[] }) => {
+  return <AdvancedMetricsDashboardInner {...props} />;
 });

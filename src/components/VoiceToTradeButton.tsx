@@ -12,6 +12,9 @@ interface VoiceToTradeButtonProps {
     confirmations: string[];
     timeframes: string[];
     htfTimeframes: string[];
+    planFidelities?: string[];
+    entryModels?: string[];
+    trendTypes?: string[];
   };
   onParsed: (data: any) => void;
 }
@@ -130,7 +133,7 @@ export const VoiceToTradeButton: React.FC<VoiceToTradeButtonProps> = ({ options,
         <button
           type="button"
           onClick={startRecording}
-          className="h-10 sm:h-8 w-10 sm:w-8 flex items-center justify-center bg-red-950/80 text-red-400 hover:bg-red-900/60 border border-red-500/50 rounded-xl shrink-0 transition-colors"
+          className="h-9 sm:h-8 w-9 sm:w-8 flex items-center justify-center bg-red-950/80 text-red-400 hover:bg-red-900/60 border border-red-500/50 rounded-xl shrink-0 transition-colors"
         >
           <AlertCircle size={16} />
         </button>
@@ -138,7 +141,7 @@ export const VoiceToTradeButton: React.FC<VoiceToTradeButtonProps> = ({ options,
         <button
           type="button"
           disabled
-          className="h-10 sm:h-8 w-10 sm:w-8 flex items-center justify-center bg-zinc-900 text-zinc-400 border border-zinc-800 rounded-xl shrink-0"
+          className="h-9 sm:h-8 w-9 sm:w-8 flex items-center justify-center bg-zinc-900 text-zinc-400 border border-zinc-800 rounded-xl shrink-0"
         >
           <Loader2 size={14} className="animate-spin text-zinc-300" />
         </button>
@@ -146,7 +149,7 @@ export const VoiceToTradeButton: React.FC<VoiceToTradeButtonProps> = ({ options,
         <button
           type="button"
           onClick={stopRecording}
-          className="h-10 sm:h-8 w-10 sm:w-8 flex items-center justify-center bg-red-950/80 text-red-400 border border-red-500/50 rounded-xl shrink-0 transition-colors"
+          className="h-9 sm:h-8 w-9 sm:w-8 flex items-center justify-center bg-red-950/80 text-red-400 border border-red-500/50 rounded-xl shrink-0 transition-colors"
         >
           <Square size={13} fill="currentColor" className="text-red-500" />
         </button>
@@ -154,7 +157,7 @@ export const VoiceToTradeButton: React.FC<VoiceToTradeButtonProps> = ({ options,
         <button
           type="button"
           onClick={startRecording}
-          className="h-10 sm:h-8 w-10 sm:w-8 flex items-center justify-center bg-zinc-900 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-zinc-800 rounded-lg transition-colors duration-200 ease-out shrink-0"
+          className="h-9 sm:h-8 w-9 sm:w-8 flex items-center justify-center bg-zinc-900 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-zinc-800 rounded-lg transition-colors duration-200 ease-out shrink-0"
         >
           <Mic size={16} />
         </button>

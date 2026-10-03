@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { Trade, TradeStats, Note, JournalEntry, Certificate } from "./types";
+import { createPortal } from "react-dom";
+import { Trade, TradeStats, Note, JournalEntry, Certificate, DefinitionTitles } from "./types";
 import {
   DEFAULT_PLATFORMS,
   DEFAULT_TIMEFRAMES,
@@ -8,7 +9,14 @@ import {
   DEFAULT_CONCEPTS,
   DEFAULT_SESSIONS,
   DEFAULT_ASSETS,
+  DEFAULT_PLAN_FIDELITIES,
+  DEFAULT_ENTRY_MODELS,
+  DEFAULT_TREND_TYPES,
+  DEFAULT_DEFINITION_TITLES,
+  sanitizeDefinitionTitles,
+  normalizeSearchString,
 } from "./constants/constants";
+
 import StatsDashboard from "./components/StatsDashboard";
 import TradeList from "./components/TradeList";
 import DeepAnalysis from "./components/DeepAnalysis";
@@ -92,14 +100,9 @@ export const calculateComprehensiveStats = (list: Trade[], isRrMode: boolean = f
   const totalTrades = list.length;
   const closedTrades = totalTrades;
 
-  const closedList = list;
-  const winningTrades = closedList.filter((t) => t.status === "WIN").length;
-  const losingTrades = closedList.filter((t) => t.status === "LOSS").length;
-  const breakevenTrades = closedList.filter(
-    (t) => t.status === "BREAKEVEN",
-  ).length;
-
-  const winRate = closedTrades > 0 ? (winningTrades / closedTrades) * 100 : 0;
+  let winningTrades = 0;
+  let losingTrades = 0;
+  let breakevenTrades = 0;
 
   let totalPnl = 0;
   let grossWins = 0;
@@ -123,7 +126,12 @@ export const calculateComprehensiveStats = (list: Trade[], isRrMode: boolean = f
   const assetPnlMap: { [key: string]: number } = {};
   const assetRrMap: { [key: string]: number } = {};
 
-  closedList.forEach((t) => {
+  for (let i = 0; i < list.length; i++) {
+    const t = list[i];
+    if (t.status === "WIN") winningTrades++;
+    else if (t.status === "LOSS") losingTrades++;
+    else if (t.status === "BREAKEVEN") breakevenTrades++;
+
     const p = t.pnl || 0;
     const rrVal = t.rr || 0;
     
@@ -156,7 +164,9 @@ export const calculateComprehensiveStats = (list: Trade[], isRrMode: boolean = f
       grossLossRR += absLossRR;
       if (absLossRR > largestLossRR) largestLossRR = absLossRR;
     }
-  });
+  }
+
+  const winRate = closedTrades > 0 ? (winningTrades / closedTrades) * 100 : 0;
 
   const netPnl = totalPnl;
   const averageWin = winningTrades > 0 ? grossWins / winningTrades : 0;
@@ -282,6 +292,8 @@ export default function App() {
     setGlobalSelectedConfirmations,
     globalSelectedConcepts,
     setGlobalSelectedConcepts,
+    globalSelectedPlanFidelity,
+    setGlobalSelectedPlanFidelity,
     globalSelectedPlatforms,
     setGlobalSelectedPlatforms,
     globalSelectedAssets,
@@ -296,6 +308,10 @@ export default function App() {
     setGlobalSelectedStatuses,
     globalSelectedTypes,
     setGlobalSelectedTypes,
+    globalSelectedEntryModels,
+    setGlobalSelectedEntryModels,
+    globalSelectedTrendTypes,
+    setGlobalSelectedTrendTypes,
     globalDateLimit,
     setGlobalDateLimit,
     setIsQuantMode,
@@ -470,6 +486,105 @@ export default function App() {
     }
   }, [user]);
 
+  const [planFidelities, setPlanFidelities] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem("trading_plan_fidelities_list");
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    return DEFAULT_PLAN_FIDELITIES;
+  });
+
+  const persistPlanFidelities = useCallback((updated: string[], syncCloud = true) => {
+    setPlanFidelities(updated);
+    try {
+      localStorage.setItem("trading_plan_fidelities_list", JSON.stringify(updated));
+      if (syncCloud && user) {
+        setDoc(doc(db, "settings", user.uid), cleanForFirestore({ planFidelities: updated, userId: user.uid }), { merge: true })
+          .catch(err => console.error(err));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, [user]);
+
+  const [entryModels, setEntryModels] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem("trading_entry_models_list");
+      if (stored) return JSON.parse(stored);
+    } catch (e) {
+      console.error(e);
+    }
+    return DEFAULT_ENTRY_MODELS;
+  });
+
+  const persistEntryModels = useCallback((updated: string[], syncCloud = true) => {
+    setEntryModels(updated);
+    try {
+      localStorage.setItem("trading_entry_models_list", JSON.stringify(updated));
+      if (syncCloud && user) {
+        setDoc(doc(db, "settings", user.uid), cleanForFirestore({ entryModels: updated, userId: user.uid }), { merge: true })
+          .catch(err => console.error(err));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, [user]);
+
+  const [trendTypes, setTrendTypes] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem("trading_trend_types_list");
+      if (stored) return JSON.parse(stored);
+    } catch (e) {
+      console.error(e);
+    }
+    return DEFAULT_TREND_TYPES;
+  });
+
+  const persistTrendTypes = useCallback((updated: string[], syncCloud = true) => {
+    setTrendTypes(updated);
+    try {
+      localStorage.setItem("trading_trend_types_list", JSON.stringify(updated));
+      if (syncCloud && user) {
+        setDoc(doc(db, "settings", user.uid), cleanForFirestore({ trendTypes: updated, userId: user.uid }), { merge: true })
+          .catch(err => console.error(err));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, [user]);
+
+  const [definitionTitles, setDefinitionTitles] = useState<DefinitionTitles>(() => {
+    try {
+      const stored = localStorage.getItem("trading_definition_titles");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return sanitizeDefinitionTitles(parsed);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    return DEFAULT_DEFINITION_TITLES;
+  });
+
+  const persistDefinitionTitles = useCallback((updated: DefinitionTitles, syncCloud = true) => {
+    const sanitized = sanitizeDefinitionTitles(updated);
+    setDefinitionTitles(sanitized);
+    try {
+      localStorage.setItem("trading_definition_titles", JSON.stringify(sanitized));
+      if (syncCloud && user) {
+        setDoc(doc(db, "settings", user.uid), cleanForFirestore({ definitionTitles: sanitized, userId: user.uid }), { merge: true })
+          .catch(err => console.error(err));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, [user]);
+
+
   // Settings menu state
   // Locked to USD per request
   const currency = "$";
@@ -566,7 +681,12 @@ export default function App() {
               if (data.concepts) persistConcepts(data.concepts, false);
               if (data.sessions) persistSessions(data.sessions, false);
               if (data.assets) persistAssets(data.assets, false);
+              if (data.planFidelities) persistPlanFidelities(data.planFidelities, false);
+              if (data.entryModels) persistEntryModels(data.entryModels, false);
+              if (data.trendTypes) persistTrendTypes(data.trendTypes, false);
+              if (data.definitionTitles) persistDefinitionTitles(data.definitionTitles, false);
               if (data.displayName) {
+
                 setUser((prevUser) => {
                   if (prevUser && prevUser.displayName !== data.displayName) {
                     return {
@@ -627,7 +747,25 @@ export default function App() {
             cloudTrades.push({ ...data, id: docSnap.id } as Trade);
           });
           cloudTrades.sort((a, b) => b.createdAt - a.createdAt);
-          setTrades(cloudTrades);
+
+          setTrades((prevLocal) => {
+            if (isClearingRef.current) return [];
+            const cloudIds = new Set(cloudTrades.map((t) => t.id));
+            const unsyncedLocal = prevLocal.filter((t) => !cloudIds.has(t.id));
+
+            unsyncedLocal.forEach((trade) => {
+              setDoc(doc(db, "trades", trade.id), cleanForFirestore({
+                ...trade,
+                userId: user.uid,
+              })).catch((e) => console.error("Sync local trade to cloud error:", e));
+            });
+
+            const merged = [...cloudTrades, ...unsyncedLocal].sort((a, b) => b.createdAt - a.createdAt);
+            try {
+              localStorage.setItem("trading_journal_db", JSON.stringify(merged));
+            } catch (err) {}
+            return merged;
+          });
           setIsLoading(false);
         },
         (err) => {
@@ -650,7 +788,25 @@ export default function App() {
             cloudNotes.push({ ...data, id: docSnap.id } as Note);
           });
           cloudNotes.sort((a, b) => b.updatedAt - a.updatedAt);
-          setNotes(cloudNotes);
+
+          setNotes((prevLocal) => {
+            if (isClearingRef.current) return [];
+            const cloudIds = new Set(cloudNotes.map((n) => n.id));
+            const unsyncedLocal = prevLocal.filter((n) => !cloudIds.has(n.id));
+
+            unsyncedLocal.forEach((note) => {
+              setDoc(doc(db, "notes", note.id), cleanForFirestore({
+                ...note,
+                userId: user.uid,
+              })).catch((e) => console.error("Sync local note to cloud error:", e));
+            });
+
+            const merged = [...cloudNotes, ...unsyncedLocal].sort((a, b) => b.updatedAt - a.updatedAt);
+            try {
+              localStorage.setItem("trading_journal_notes", JSON.stringify(merged));
+            } catch (err) {}
+            return merged;
+          });
         },
         (err) => console.error("Firestore read notes error:", err)
       );
@@ -669,7 +825,25 @@ export default function App() {
             cloudJournals.push({ ...data, id: docSnap.id } as JournalEntry);
           });
           cloudJournals.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-          setJournals(cloudJournals);
+
+          setJournals((prevLocal) => {
+            if (isClearingRef.current) return [];
+            const cloudIds = new Set(cloudJournals.map((j) => j.id));
+            const unsyncedLocal = prevLocal.filter((j) => !cloudIds.has(j.id));
+
+            unsyncedLocal.forEach((journal) => {
+              setDoc(doc(db, "journals", journal.id), cleanForFirestore({
+                ...journal,
+                userId: user.uid,
+              })).catch((e) => console.error("Sync local journal to cloud error:", e));
+            });
+
+            const merged = [...cloudJournals, ...unsyncedLocal].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            try {
+              localStorage.setItem("trading_journal_journals", JSON.stringify(merged));
+            } catch (err) {}
+            return merged;
+          });
         },
         (err) => console.error("Firestore read journals error:", err)
       );
@@ -867,7 +1041,7 @@ export default function App() {
             localStorage.setItem("trading_journal_db", JSON.stringify(updatedTrades));
           } catch (err) {
             console.error("Local storage quota exceeded:", err);
-            alert("Local storage is full! Try deleting old trades or sync to cloud.");
+            toast.error("Tarayıcı hafızası dolu! Eski verileri temizleyebilir veya bulut ile senkronize edebilirsiniz.");
           }
         }
         return updatedTrades;
@@ -911,29 +1085,72 @@ export default function App() {
       }
 
       // Auto-sync any newly entered assets, concepts, confirmations, platforms, or sessions into global lists
+      let settingsUpdates: any = null;
+
       if (tradeData.asset && !assets.some(a => a.toLowerCase() === tradeData.asset.toLowerCase())) {
-        persistAssets([...assets, tradeData.asset], !!user);
+        const newAssets = [...assets, tradeData.asset];
+        persistAssets(newAssets, false);
+        settingsUpdates = { ...settingsUpdates, assets: newAssets };
       }
       if (tradeData.platform && !platforms.includes(tradeData.platform)) {
-        persistPlatforms([...platforms, tradeData.platform], !!user);
+        const newPlatforms = [...platforms, tradeData.platform];
+        persistPlatforms(newPlatforms, false);
+        settingsUpdates = { ...settingsUpdates, platforms: newPlatforms };
       }
       if (tradeData.concept && !concepts.includes(tradeData.concept)) {
-        persistConcepts([...concepts, tradeData.concept], !!user);
+        const newConcepts = [...concepts, tradeData.concept];
+        persistConcepts(newConcepts, false);
+        settingsUpdates = { ...settingsUpdates, concepts: newConcepts };
       }
       if (tradeData.session && !sessions.includes(tradeData.session)) {
-        persistSessions([...sessions, tradeData.session], !!user);
+        const newSessions = [...sessions, tradeData.session];
+        persistSessions(newSessions, false);
+        settingsUpdates = { ...settingsUpdates, sessions: newSessions };
       }
       if (tradeData.timeframe && !timeframes.includes(tradeData.timeframe)) {
-        persistTimeframes([...timeframes, tradeData.timeframe], !!user);
+        const newTimeframes = [...timeframes, tradeData.timeframe];
+        persistTimeframes(newTimeframes, false);
+        settingsUpdates = { ...settingsUpdates, timeframes: newTimeframes };
       }
       if (tradeData.htfTimeframe && !htfTimeframes.includes(tradeData.htfTimeframe)) {
-        persistHtfTimeframes([...htfTimeframes, tradeData.htfTimeframe], !!user);
+        const newHtfTimeframes = [...htfTimeframes, tradeData.htfTimeframe];
+        persistHtfTimeframes(newHtfTimeframes, false);
+        settingsUpdates = { ...settingsUpdates, htfTimeframes: newHtfTimeframes };
       }
       if (tradeData.confirmations && tradeData.confirmations.length > 0) {
         const newConfs = tradeData.confirmations.filter(c => !confirmations.includes(c));
         if (newConfs.length > 0) {
-          persistConfirmations([...confirmations, ...newConfs], !!user);
+          const mergedConfs = [...confirmations, ...newConfs];
+          persistConfirmations(mergedConfs, false);
+          settingsUpdates = { ...settingsUpdates, confirmations: mergedConfs };
         }
+      }
+      if (tradeData.planFidelity && !planFidelities.includes(tradeData.planFidelity)) {
+        const newFidelities = [...planFidelities, tradeData.planFidelity];
+        persistPlanFidelities(newFidelities, false);
+        settingsUpdates = { ...settingsUpdates, planFidelities: newFidelities };
+      }
+      if (tradeData.entryModels && Array.isArray(tradeData.entryModels) && tradeData.entryModels.length > 0) {
+        const newEntries = tradeData.entryModels.filter((em: string) => !entryModels.includes(em));
+        if (newEntries.length > 0) {
+          const mergedEntries = [...entryModels, ...newEntries];
+          persistEntryModels(mergedEntries, false);
+          settingsUpdates = { ...settingsUpdates, entryModels: mergedEntries };
+        }
+      } else if (tradeData.entry && !entryModels.includes(tradeData.entry)) {
+        const newEntries = [...entryModels, tradeData.entry];
+        persistEntryModels(newEntries, false);
+        settingsUpdates = { ...settingsUpdates, entryModels: newEntries };
+      }
+      if (tradeData.trend && !trendTypes.includes(tradeData.trend)) {
+        const newTrends = [...trendTypes, tradeData.trend];
+        persistTrendTypes(newTrends, false);
+        settingsUpdates = { ...settingsUpdates, trendTypes: newTrends };
+      }
+
+      if (user && settingsUpdates) {
+        setDoc(doc(db, "settings", user.uid), cleanForFirestore({ ...settingsUpdates, userId: user.uid }), { merge: true })
+          .catch(err => console.error("Batch settings sync error:", err));
       }
 
       toast.success(isNew ? "İşlem başarıyla kaydedildi." : "İşlem başarıyla güncellendi.");
@@ -950,6 +1167,9 @@ export default function App() {
       timeframes,
       htfTimeframes,
       confirmations,
+      planFidelities,
+      entryModels,
+      trendTypes,
       persistAssets,
       persistPlatforms,
       persistConcepts,
@@ -957,6 +1177,9 @@ export default function App() {
       persistTimeframes,
       persistHtfTimeframes,
       persistConfirmations,
+      persistPlanFidelities,
+      persistEntryModels,
+      persistTrendTypes,
     ],
   );
 
@@ -1110,7 +1333,7 @@ export default function App() {
             );
           } catch (err) {
             console.error("Local storage quota exceeded:", err);
-            alert("Storage limit reached! Cannot save note locally.");
+            toast.error("Tarayıcı hafızası dolu! Not yerel olarak kaydedilemedi.");
           }
         }
         return updatedList;
@@ -1201,7 +1424,7 @@ export default function App() {
             );
           } catch(err) {
             console.error("Local storage quota exceeded:", err);
-            alert("Storage limit reached! Cannot save journal locally.");
+            toast.error("Tarayıcı hafızası dolu! Günlük yerel olarak kaydedilemedi.");
           }
         }
         return updatedList;
@@ -1475,7 +1698,12 @@ export default function App() {
           if (importedSettings.concepts) persistConcepts(importedSettings.concepts, !!user);
           if (importedSettings.sessions) persistSessions(importedSettings.sessions, !!user);
           if (importedSettings.assets) persistAssets(importedSettings.assets, !!user);
+          if (importedSettings.planFidelities) persistPlanFidelities(importedSettings.planFidelities, !!user);
+          if (importedSettings.entryModels) persistEntryModels(importedSettings.entryModels, !!user);
+          if (importedSettings.trendTypes) persistTrendTypes(importedSettings.trendTypes, !!user);
+          if (importedSettings.definitionTitles) persistDefinitionTitles(importedSettings.definitionTitles, !!user);
         }
+
 
         toast.success(
           `Yedek başarıyla yüklendi: ${importedTrades.length} işlem, ${importedNotes.length} not, ${importedJournals.length} günlük, ${importedCertificates.length} sertifika.`
@@ -1494,6 +1722,9 @@ export default function App() {
       persistConcepts,
       persistSessions,
       persistAssets,
+      persistPlanFidelities,
+      persistEntryModels,
+      persistTrendTypes,
       setTrades,
       setNotes,
       setJournals,
@@ -1615,9 +1846,13 @@ export default function App() {
       persistConcepts(DEFAULT_CONCEPTS, !!user);
       persistSessions(DEFAULT_SESSIONS, !!user);
       persistAssets(DEFAULT_ASSETS, !!user);
+      persistPlanFidelities(DEFAULT_PLAN_FIDELITIES, !!user);
+      persistEntryModels(DEFAULT_ENTRY_MODELS, !!user);
+      persistTrendTypes(DEFAULT_TREND_TYPES, !!user);
 
       setGlobalSelectedConfirmations([]);
       setGlobalSelectedConcepts([]);
+      setGlobalSelectedPlanFidelity([]);
       setGlobalSelectedPlatforms([]);
       setGlobalSelectedAssets([]);
       setGlobalSelectedSessions([]);
@@ -1625,6 +1860,8 @@ export default function App() {
       setGlobalSelectedHtfTimeframes([]);
       setGlobalSelectedStatuses([]);
       setGlobalSelectedTypes([]);
+      setGlobalSelectedEntryModels([]);
+      setGlobalSelectedTrendTypes([]);
       setGlobalDateLimit("6m");
 
       setEditingTrade(null);
@@ -1668,28 +1905,71 @@ export default function App() {
     persistConcepts,
     persistSessions,
     persistAssets,
+    persistPlanFidelities,
+    setGlobalSelectedPlanFidelity,
   ]);
 
   const filteredGlobalTrades = useMemo(() => {
     const minTime = getMinTimestamp(globalDateLimit);
+
+    const confirmationSet = globalSelectedConfirmations.length > 0 ? new Set(globalSelectedConfirmations.map(normalizeSearchString)) : null;
+    const conceptSet = globalSelectedConcepts.length > 0 ? new Set(globalSelectedConcepts.map(normalizeSearchString)) : null;
+    const planFidelitySet = globalSelectedPlanFidelity.length > 0 ? new Set(globalSelectedPlanFidelity.map(normalizeSearchString)) : null;
+    const platformSet = globalSelectedPlatforms.length > 0 ? new Set(globalSelectedPlatforms.map(normalizeSearchString)) : null;
+    const assetSet = globalSelectedAssets.length > 0 ? new Set(globalSelectedAssets.map(normalizeSearchString)) : null;
+    const sessionSet = globalSelectedSessions.length > 0 ? new Set(globalSelectedSessions.map(normalizeSearchString)) : null;
+    const timeframeSet = globalSelectedTimeframes.length > 0 ? new Set(globalSelectedTimeframes.map(normalizeSearchString)) : null;
+    const htfTimeframeSet = globalSelectedHtfTimeframes.length > 0 ? new Set(globalSelectedHtfTimeframes.map(normalizeSearchString)) : null;
+    const statusSet = globalSelectedStatuses.length > 0 ? new Set(globalSelectedStatuses.map(normalizeSearchString)) : null;
+    const typeSet = globalSelectedTypes.length > 0 ? new Set(globalSelectedTypes.map(normalizeSearchString)) : null;
+    const entrySet = globalSelectedEntryModels.length > 0 ? new Set(globalSelectedEntryModels.map(normalizeSearchString)) : null;
+    const trendSet = globalSelectedTrendTypes.length > 0 ? new Set(globalSelectedTrendTypes.map(normalizeSearchString)) : null;
+
     return trades.filter((t: Trade) => {
       if (minTime > 0 && (!t.createdAt || t.createdAt < minTime)) {
         return false;
       }
-      const matchConfirmation = globalSelectedConfirmations.length === 0 || (t.confirmations && globalSelectedConfirmations.every(c => t.confirmations!.includes(c)));
-      const matchConcept = globalSelectedConcepts.length === 0 || (t.concept && globalSelectedConcepts.includes(t.concept));
-      const matchPlatform = globalSelectedPlatforms.length === 0 || (t.platform && globalSelectedPlatforms.includes(t.platform));
-      const matchAsset = globalSelectedAssets.length === 0 || (t.asset && globalSelectedAssets.includes(t.asset));
-      const matchSession = globalSelectedSessions.length === 0 || (t.session && globalSelectedSessions.includes(t.session));
-      const matchTimeframe = globalSelectedTimeframes.length === 0 || (t.timeframe && globalSelectedTimeframes.includes(t.timeframe));
-      const matchHtfTimeframe = globalSelectedHtfTimeframes.length === 0 || (t.htfTimeframe && globalSelectedHtfTimeframes.includes(t.htfTimeframe));
-      const matchStatus = globalSelectedStatuses.length === 0 || (t.status && globalSelectedStatuses.includes(t.status));
-      const matchType = globalSelectedTypes.length === 0 || (t.type && globalSelectedTypes.includes(t.type));
-
-      return matchConfirmation && matchConcept && matchPlatform && matchAsset && matchSession && matchTimeframe && matchHtfTimeframe && matchStatus && matchType;
+      if (confirmationSet && (!t.confirmations || !t.confirmations.some(tc => confirmationSet.has(normalizeSearchString(tc))))) {
+        return false;
+      }
+      if (conceptSet && (!t.concept || !conceptSet.has(normalizeSearchString(t.concept)))) {
+        return false;
+      }
+      if (planFidelitySet && (!t.planFidelity || !planFidelitySet.has(normalizeSearchString(t.planFidelity)))) {
+        return false;
+      }
+      if (platformSet && (!t.platform || !platformSet.has(normalizeSearchString(t.platform)))) {
+        return false;
+      }
+      if (assetSet && (!t.asset || !assetSet.has(normalizeSearchString(t.asset)))) {
+        return false;
+      }
+      if (sessionSet && (!t.session || !sessionSet.has(normalizeSearchString(t.session)))) {
+        return false;
+      }
+      if (timeframeSet && (!t.timeframe || !timeframeSet.has(normalizeSearchString(t.timeframe)))) {
+        return false;
+      }
+      if (htfTimeframeSet && (!t.htfTimeframe || !htfTimeframeSet.has(normalizeSearchString(t.htfTimeframe)))) {
+        return false;
+      }
+      if (statusSet && (!t.status || !statusSet.has(normalizeSearchString(t.status)))) {
+        return false;
+      }
+      if (typeSet && (!t.type || !typeSet.has(normalizeSearchString(t.type)))) {
+        return false;
+      }
+      if (entrySet) {
+        const matchEm = t.entryModels && Array.isArray(t.entryModels) && t.entryModels.some(em => entrySet.has(normalizeSearchString(em)));
+        const matchEntryStr = t.entry && t.entry.split(',').some(splitEm => entrySet.has(normalizeSearchString(splitEm.trim())));
+        if (!matchEm && !matchEntryStr) return false;
+      }
+      if (trendSet && (!t.trend || !trendSet.has(normalizeSearchString(t.trend)))) {
+        return false;
+      }
+      return true;
     });
-
-  }, [trades, globalSelectedConfirmations, globalSelectedConcepts, globalSelectedPlatforms, globalDateLimit, globalSelectedAssets, globalSelectedSessions, globalSelectedTimeframes, globalSelectedHtfTimeframes, globalSelectedStatuses, globalSelectedTypes]);
+  }, [trades, globalSelectedConfirmations, globalSelectedConcepts, globalSelectedPlanFidelity, globalSelectedPlatforms, globalDateLimit, globalSelectedAssets, globalSelectedSessions, globalSelectedTimeframes, globalSelectedHtfTimeframes, globalSelectedStatuses, globalSelectedTypes, globalSelectedEntryModels, globalSelectedTrendTypes]);
 
   // Calculate comprehensive statistics (moved outside)
 
@@ -1702,30 +1982,37 @@ export default function App() {
     () =>
       globalSelectedConfirmations.length +
       globalSelectedConcepts.length +
+      globalSelectedPlanFidelity.length +
       globalSelectedAssets.length +
       globalSelectedSessions.length +
       globalSelectedTimeframes.length +
       globalSelectedHtfTimeframes.length +
       globalSelectedStatuses.length +
       globalSelectedTypes.length +
+      globalSelectedEntryModels.length +
+      globalSelectedTrendTypes.length +
       (globalDateLimit !== "6m" ? 1 : 0),
     [
       globalSelectedConfirmations,
       globalSelectedConcepts,
+      globalSelectedPlanFidelity,
       globalSelectedAssets,
       globalSelectedSessions,
       globalSelectedTimeframes,
       globalSelectedHtfTimeframes,
       globalSelectedStatuses,
       globalSelectedTypes,
+      globalSelectedEntryModels,
+      globalSelectedTrendTypes,
       globalDateLimit,
-    ]
+    ],
   );
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans antialiased selection:bg-blue-400/30 selection:text-white">
       <Toaster 
         position="bottom-right" 
+        containerStyle={{ zIndex: 999999 }}
         toastOptions={{ 
           style: {
             background: '#09090b',
@@ -1741,23 +2028,23 @@ export default function App() {
           },
           success: {
             style: {
-              borderLeft: '4px solid #10b981',
+              borderLeft: '4px solid #2FA376',
               background: '#09090b',
-              color: '#f4f4f5',
+              color: '#c5cbd6',
             },
             iconTheme: {
-              primary: '#10b981',
+              primary: '#2FA376',
               secondary: '#09090b',
             }
           },
           error: {
             style: {
-              borderLeft: '4px solid #f43f5e',
+              borderLeft: '4px solid #D65A5A',
               background: '#09090b',
-              color: '#f4f4f5',
+              color: '#c5cbd6',
             },
             iconTheme: {
-              primary: '#f43f5e',
+              primary: '#D65A5A',
               secondary: '#09090b',
             }
           },
@@ -1771,7 +2058,7 @@ export default function App() {
         }} 
       />
       {/* 1. MODERN COMPACT NAVBAR */}
-      <header className="border-b border-zinc-800/80 bg-zinc-950/90  sticky top-0 z-40 transition-colors duration-200">
+      <header className="border-b border-border-subtle bg-bg-base  sticky top-0 z-40 transition-colors duration-200">
         <div className="max-w-6xl mx-auto px-4 py-2 sm:py-2.5 flex flex-row items-center justify-between gap-3 relative">
           
           <div className="flex items-center gap-3 z-10">
@@ -1791,7 +2078,7 @@ export default function App() {
                 TJ
               </div>
               <div className="flex items-baseline gap-2">
-                <h1 className="text-xs font-bold tracking-tight text-zinc-100">
+                <h1 className="page-title">
                   TRADING JOURNAL
                 </h1>
                 <span className="text-[11px] font-medium tracking-normal text-zinc-400 italic">
@@ -1852,7 +2139,7 @@ export default function App() {
               >
                 <Settings size={13} className={`transition-transform duration-200 ${isSettingsOpen ? 'rotate-45 text-blue-400' : ''}`} />
                 {activeFilterCount > 0 && (
-                  <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] px-1 rounded-full text-[8px] font-mono font-black bg-blue-500 text-black shadow-xs flex items-center justify-center leading-none">
+                  <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] px-1 rounded-full text-[8px] font-sans font-black bg-blue-500 text-black shadow-xs flex items-center justify-center leading-none">
                     {activeFilterCount}
                   </span>
                 )}
@@ -1868,7 +2155,7 @@ export default function App() {
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.15, ease: "easeOut" }}
                     style={{ willChange: "opacity" }}
-                    className="absolute right-0 top-full mt-2 w-72 bg-zinc-900 border border-zinc-700/60 rounded-2xl shadow-2xl p-2.5 z-50 flex flex-col gap-1.5 text-xs"
+                    className="absolute right-0 top-full mt-2 w-72 max-w-[calc(100vw-24px)] bg-zinc-900 border border-zinc-700/60 rounded-2xl shadow-2xl p-2.5 z-50 flex flex-col gap-1.5 text-xs"
                   >
                       {/* Platform Selector in Settings */}
                       <div className="px-2.5 py-2 border-b border-zinc-700/40 bg-zinc-950/40 rounded-xl">
@@ -2000,7 +2287,7 @@ export default function App() {
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.15, ease: "easeOut" }}
                     style={{ willChange: "opacity" }}
-                    className="absolute right-0 top-full mt-2 w-72 bg-zinc-900 border border-zinc-700/60 rounded-2xl shadow-2xl p-2.5 z-50 flex flex-col gap-1.5 text-xs"
+                    className="absolute right-0 top-full mt-2 w-72 max-w-[calc(100vw-24px)] bg-zinc-900 border border-zinc-700/60 rounded-2xl shadow-2xl p-2.5 z-50 flex flex-col gap-1.5 text-xs"
                   >
                     {/* Bulut Veritabanı ve Hesap Durumu */}
                     {user ? (
@@ -2164,10 +2451,10 @@ export default function App() {
         )}
 
         {/* VIEW TAB SELECTOR */}
-        <div className="max-w-6xl mx-auto px-4 pt-2.5 mb-0.5">
+        <div className="max-w-6xl mx-auto px-4 pt-3 mb-1">
           <div
             id="navigation-tabs"
-            className="flex items-center gap-1 overflow-x-auto whitespace-nowrap custom-scrollbar bg-zinc-900 border border-zinc-700/50 p-1 rounded-xl shadow-xs"
+            className="flex items-center gap-1.5 overflow-x-auto whitespace-nowrap custom-scrollbar bg-zinc-900/60 backdrop-blur-sm border border-zinc-800/80 p-1.5 rounded-2xl shadow-sm"
           >
             {[
               { id: "dashboard", label: "ANA PANEL", icon: LayoutDashboard },
@@ -2184,7 +2471,7 @@ export default function App() {
                   key={tab.id}
                   type="button"
                   onClick={() => handleTabChange(tab.id as any)}
-                  className={`relative px-3 py-1.5 text-xs font-bold tracking-normal rounded-lg transition-colors duration-150 flex items-center gap-1.5 cursor-pointer select-none shrink-0 ${
+                  className={`relative px-3.5 py-2 text-xs font-bold tracking-wide rounded-xl transition-all duration-150 flex items-center gap-2 cursor-pointer select-none shrink-0 ${
                     isActive
                       ? "text-blue-400"
                       : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
@@ -2193,12 +2480,12 @@ export default function App() {
                   {isActive && (
                     <motion.div
                       layoutId="activeNavTabIndicator"
-                      className="absolute inset-0 bg-blue-500/15 rounded-lg border border-blue-500/30 shadow-xs"
+                      className="absolute inset-0 bg-blue-500/15 rounded-xl border border-blue-500/30 shadow-xs"
                       transition={{ type: "spring", stiffness: 450, damping: 35 }}
                     />
                   )}
-                  <span className="relative z-10 flex items-center gap-1.5">
-                    <Icon size={13} className={isActive ? "text-blue-400" : "text-zinc-500"} />
+                  <span className="relative z-10 flex items-center gap-2">
+                    <Icon size={14} className={isActive ? "text-blue-400" : "text-zinc-500"} />
                     {tab.label}
                   </span>
                 </button>
@@ -2207,7 +2494,7 @@ export default function App() {
           </div>
         </div>
 
-        <div className="max-w-6xl mx-auto px-4 py-3 space-y-3 flex flex-col w-full">
+        <div className="max-w-6xl mx-auto px-4 py-3 space-y-3.5 flex flex-col w-full">
           {isLoading ? (
             <div className="w-full space-y-3">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2.5">
@@ -2222,13 +2509,14 @@ export default function App() {
           ) : (
             <div className="relative">
                 <AnimatePresence mode="wait" initial={false}>
-                  {currentTab === "dashboard" || false ? (
+                  {currentTab === "dashboard" ? (
                     <motion.div
                       key="dashboard"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.15, ease: "easeOut" }}
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      transition={{ duration: 0.12, ease: [0.16, 1, 0.3, 1] }}
+                      style={{ willChange: "transform, opacity" }}
                       className="flex flex-col gap-3.5"
                     >
                       {/* STATS BENTO ROW */}
@@ -2242,21 +2530,21 @@ export default function App() {
                           setEditingTrade(null);
                           setIsFormOpen(true);
                         }}
-                        className="relative overflow-hidden bg-zinc-900/60 border border-zinc-800/80  hover:border-blue-500/40 rounded-2xl p-4 sm:p-4.5 flex flex-col sm:flex-row items-center justify-between gap-3 cursor-pointer transition-all duration-200 ease-out select-none group shadow-xs hover:shadow-md hover:shadow-blue-500/5"
+                        className="relative overflow-hidden bg-zinc-900/50 hover:bg-zinc-900/80 border border-zinc-800/80 hover:border-blue-500/40 rounded-2xl p-4 sm:p-4.5 flex flex-col sm:flex-row items-center justify-between gap-3 cursor-pointer transition-all duration-200 ease-out select-none group shadow-sm hover:shadow-lg hover:shadow-blue-500/5"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="h-9 w-9 rounded-xl bg-blue-500/10 border border-blue-500/20 group-hover:bg-blue-500/20 group-hover:border-blue-500/40 flex items-center justify-center text-blue-400 transition-colors duration-200 ease-out shrink-0 shadow-xs">
-                            <Plus size={18} />
+                          <div className="h-10 w-10 rounded-xl bg-blue-500/10 border border-blue-500/20 group-hover:bg-blue-500/20 group-hover:border-blue-500/40 flex items-center justify-center text-blue-400 transition-colors duration-200 ease-out shrink-0 shadow-xs">
+                            <Plus size={20} />
                           </div>
                           <div className="text-center sm:text-left">
-                            <h3 className="text-xs sm:text-sm font-bold text-zinc-100 tracking-tight group-hover:text-blue-300 transition-colors">
+                            <h3 className="text-sm font-bold text-zinc-100 tracking-tight group-hover:text-blue-300 transition-colors font-sans">
                               {"Yeni Pozisyon Girişi Yap"}
                             </h3>
                           </div>
                         </div>
                         <button
                           type="button"
-                          className="w-full sm:w-auto h-9 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 font-semibold text-xs px-4 rounded-xl transition-colors duration-200 ease-out flex items-center justify-center gap-2 shadow-xs border border-blue-500/30 tracking-normal cursor-pointer"
+                          className="w-full sm:w-auto h-10 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 font-bold text-xs px-5 rounded-xl transition-all duration-200 ease-out flex items-center justify-center gap-2 shadow-xs border border-blue-500/30 tracking-wide cursor-pointer font-sans"
                         >
                           <Plus size={15} />
                           {"İşlem Ekle"}
@@ -2273,17 +2561,23 @@ export default function App() {
                           onDelete={handleDeleteTrade}
                           onViewDetails={setDetailedTrade}
                           currency={currency}
+                          definitionTitles={definitionTitles}
+                          planFidelities={planFidelities}
+                          entryModels={entryModels}
+                          trendTypes={trendTypes}
                         />
+
                       </SectionErrorBoundary>
                       </div>
                     </motion.div>
                   ) : currentTab === "deep-analysis" ? (
                     <motion.div
                       key="deep-analysis"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.15, ease: "easeOut" }}
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      transition={{ duration: 0.12, ease: [0.16, 1, 0.3, 1] }}
+                      style={{ willChange: "transform, opacity" }}
                     >
                       <SectionErrorBoundary sectionName="Derin Analiz">
                         <DeepAnalysis
@@ -2293,16 +2587,21 @@ export default function App() {
                           onDelete={handleDeleteTrade}
                           currency={currency}
                           sessions={sessions}
+                          definitionTitles={definitionTitles}
+                          planFidelities={planFidelities}
+                          entryModels={entryModels}
+                          trendTypes={trendTypes}
                         />
                       </SectionErrorBoundary>
                     </motion.div>
                   ) : currentTab === "journal" ? (
                     <motion.div
                       key="journal"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.15, ease: "easeOut" }}
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      transition={{ duration: 0.12, ease: [0.16, 1, 0.3, 1] }}
+                      style={{ willChange: "transform, opacity" }}
                     >
                       <SectionErrorBoundary sectionName="Günlükler">
                         <JournalView
@@ -2317,10 +2616,11 @@ export default function App() {
                   ) : currentTab === "certificates" ? (
                     <motion.div
                       key="certificates"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.15, ease: "easeOut" }}
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      transition={{ duration: 0.12, ease: [0.16, 1, 0.3, 1] }}
+                      style={{ willChange: "transform, opacity" }}
                     >
                       <SectionErrorBoundary sectionName="Sertifikalar">
                         <CertificatesView
@@ -2333,10 +2633,11 @@ export default function App() {
                   ) : currentTab === "notes" ? (
                     <motion.div
                       key="notes"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.15, ease: "easeOut" }}
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      transition={{ duration: 0.12, ease: [0.16, 1, 0.3, 1] }}
+                      style={{ willChange: "transform, opacity" }}
                     >
                       <SectionErrorBoundary sectionName="Notlar">
                         <NotesView
@@ -2349,10 +2650,11 @@ export default function App() {
                   ) : currentTab === "economic-calendar" ? (
                     <motion.div
                       key="economic-calendar"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.15, ease: "easeOut" }}
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      transition={{ duration: 0.12, ease: [0.16, 1, 0.3, 1] }}
+                      style={{ willChange: "transform, opacity" }}
                     >
                       <SectionErrorBoundary sectionName="Ekonomik Takvim">
                         <EconomicCalendar />
@@ -2363,39 +2665,47 @@ export default function App() {
           </div>
           )}
           
-            {isGlobalFilterModalOpen && (
-              <GlobalFilterModal
-                isOpen={isGlobalFilterModalOpen}
-                onClose={() => setIsGlobalFilterModalOpen(false)}
-                platforms={platforms}
-                timeframes={timeframes}
-                htfTimeframes={htfTimeframes}
-                confirmations={confirmations}
-                concepts={concepts}
-                sessions={sessions}
-                assets={assets}
-                globalSelectedConfirmations={globalSelectedConfirmations}
-                setGlobalSelectedConfirmations={setGlobalSelectedConfirmations}
-                globalSelectedConcepts={globalSelectedConcepts}
-                setGlobalSelectedConcepts={setGlobalSelectedConcepts}
-                globalSelectedPlatforms={globalSelectedPlatforms}
-                setGlobalSelectedPlatforms={setGlobalSelectedPlatforms}
-                globalSelectedAssets={globalSelectedAssets}
-                setGlobalSelectedAssets={setGlobalSelectedAssets}
-                globalSelectedSessions={globalSelectedSessions}
-                setGlobalSelectedSessions={setGlobalSelectedSessions}
-                globalSelectedTimeframes={globalSelectedTimeframes}
-                setGlobalSelectedTimeframes={setGlobalSelectedTimeframes}
-                globalSelectedHtfTimeframes={globalSelectedHtfTimeframes}
-                setGlobalSelectedHtfTimeframes={setGlobalSelectedHtfTimeframes}
-                globalSelectedStatuses={globalSelectedStatuses}
-                setGlobalSelectedStatuses={setGlobalSelectedStatuses}
-                globalSelectedTypes={globalSelectedTypes}
-                setGlobalSelectedTypes={setGlobalSelectedTypes}
-                globalDateLimit={globalDateLimit}
-                setGlobalDateLimit={setGlobalDateLimit}
-              />
-            )}
+            <GlobalFilterModal
+              isOpen={isGlobalFilterModalOpen}
+              onClose={() => setIsGlobalFilterModalOpen(false)}
+              platforms={platforms}
+              timeframes={timeframes}
+              htfTimeframes={htfTimeframes}
+              confirmations={confirmations}
+              concepts={concepts}
+              sessions={sessions}
+              assets={assets}
+              planFidelities={planFidelities}
+              entryModels={entryModels}
+              trendTypes={trendTypes}
+              definitionTitles={definitionTitles}
+              globalSelectedConfirmations={globalSelectedConfirmations}
+              setGlobalSelectedConfirmations={setGlobalSelectedConfirmations}
+              globalSelectedConcepts={globalSelectedConcepts}
+              setGlobalSelectedConcepts={setGlobalSelectedConcepts}
+              globalSelectedPlanFidelity={globalSelectedPlanFidelity}
+              setGlobalSelectedPlanFidelity={setGlobalSelectedPlanFidelity}
+              globalSelectedPlatforms={globalSelectedPlatforms}
+              setGlobalSelectedPlatforms={setGlobalSelectedPlatforms}
+              globalSelectedAssets={globalSelectedAssets}
+              setGlobalSelectedAssets={setGlobalSelectedAssets}
+              globalSelectedSessions={globalSelectedSessions}
+              setGlobalSelectedSessions={setGlobalSelectedSessions}
+              globalSelectedTimeframes={globalSelectedTimeframes}
+              setGlobalSelectedTimeframes={setGlobalSelectedTimeframes}
+              globalSelectedHtfTimeframes={globalSelectedHtfTimeframes}
+              setGlobalSelectedHtfTimeframes={setGlobalSelectedHtfTimeframes}
+              globalSelectedStatuses={globalSelectedStatuses}
+              setGlobalSelectedStatuses={setGlobalSelectedStatuses}
+              globalSelectedTypes={globalSelectedTypes}
+              setGlobalSelectedTypes={setGlobalSelectedTypes}
+              globalSelectedEntryModels={globalSelectedEntryModels}
+              setGlobalSelectedEntryModels={setGlobalSelectedEntryModels}
+              globalSelectedTrendTypes={globalSelectedTrendTypes}
+              setGlobalSelectedTrendTypes={setGlobalSelectedTrendTypes}
+              globalDateLimit={globalDateLimit}
+              setGlobalDateLimit={setGlobalDateLimit}
+            />
 
             {/* RECOVERY BACKUP RESCUE MOD - FOOTNOTE */}
             <BackupRescue
@@ -2403,17 +2713,18 @@ export default function App() {
               notes={notes}
               journals={journals}
               certificates={certificates}
-              settings={{ platforms, timeframes, htfTimeframes, confirmations, concepts, sessions, assets, currency, isRrMode }}
+              settings={{ platforms, timeframes, htfTimeframes, confirmations, concepts, sessions, assets, planFidelities, entryModels, trendTypes, definitionTitles, currency, isRrMode }}
               onImportTrades={handleImportTrades}
               onClearAll={handleClearAll}
             />
+
           {/* CONTROLS AREA AND CHANNELS */}
           {true && (
             <div className="flex justify-center pb-8 pt-4">
               <button
                 type="button"
                 onClick={() => setIsPlatformMenuOpen(true)}
-                className="px-4 py-2 border border-zinc-800 hover:border-zinc-700 bg-zinc-900 hover:bg-zinc-800 rounded-xl text-xs font-bold tracking-wider uppercase font-mono transition-colors duration-155 flex items-center gap-2 cursor-pointer text-zinc-400 hover:text-zinc-100 shadow-sm hover:shadow-md"
+                className="px-4 py-2 border border-zinc-800 hover:border-zinc-700 bg-zinc-900 hover:bg-zinc-800 rounded-xl text-xs font-bold tracking-wider uppercase font-sans transition-colors duration-155 flex items-center gap-2 cursor-pointer text-zinc-400 hover:text-zinc-100 shadow-sm hover:shadow-md"
               >
                 <SlidersHorizontal size={14} className="text-blue-400" />
                 <span>Tanımlamaları Yönet</span>
@@ -2434,6 +2745,10 @@ export default function App() {
         concepts={concepts}
         sessions={sessions}
         assets={assets}
+        planFidelities={planFidelities}
+        entryModels={entryModels}
+        trendTypes={trendTypes}
+        definitionTitles={definitionTitles}
         persistPlatforms={persistPlatforms}
         persistTimeframes={persistTimeframes}
         persistHtfTimeframes={persistHtfTimeframes}
@@ -2441,49 +2756,61 @@ export default function App() {
         persistConcepts={persistConcepts}
         persistSessions={persistSessions}
         persistAssets={persistAssets}
+        persistPlanFidelities={persistPlanFidelities}
+        persistEntryModels={persistEntryModels}
+        persistTrendTypes={persistTrendTypes}
+        persistDefinitionTitles={persistDefinitionTitles}
       />
 
       {/* OVERLAY MODALS WRAPPER */}
         {/* OVERLAY MODAL: TRANSACTION FORM (ADD OR EDIT) */}
-        <AnimatePresence>
-          {isFormOpen && (
-            <motion.div
-              key="add-trade-form-modal"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15, ease: "easeOut" }}
-              style={{ willChange: "opacity" }}
-              onClick={handleCancelEdit}
-              className="fixed inset-0 z-[1500] overflow-hidden bg-zinc-950/80 flex items-center justify-center p-2 sm:p-4 cursor-pointer"
-            >
+        {createPortal(
+          <AnimatePresence>
+            {isFormOpen && (
               <motion.div
+                key="add-trade-form-modal"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.15, ease: "easeOut" }}
                 style={{ willChange: "opacity" }}
-                onClick={(e) => e.stopPropagation()}
-                className="w-full max-w-2xl max-h-[95vh] overflow-y-auto bg-zinc-900 border border-zinc-700/50 rounded-2xl relative shadow-2xl custom-scrollbar cursor-default"
+                onClick={handleCancelEdit}
+                className="fixed inset-0 z-[1500] overflow-hidden bg-zinc-950/80 flex items-center justify-center p-2 sm:p-4 cursor-pointer"
               >
-                <AddTradeForm
-                  onSave={handleSaveTradeAndClose}
-                  editingTrade={editingTrade}
-                  onCancelEdit={handleCancelEdit}
-                  currency={currency}
-                  platforms={platforms}
-                  defaultPlatform={globalSelectedPlatforms.length > 0 ? globalSelectedPlatforms[0] : undefined}
-                  timeframes={timeframes}
-                  htfTimeframes={htfTimeframes}
-                  sessions={sessions}
-                  concepts={concepts}
-                  confirmations={confirmations}
-                  assets={assets}
-                />
+                <motion.div
+                  key="add-trade-form-modal-content"
+                  initial={{ opacity: 0, scale: 0.98, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.98, y: 10 }}
+                  transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                  style={{ willChange: "transform, opacity" }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="w-full max-w-6xl xl:max-w-7xl 2xl:max-w-[1440px] h-auto max-h-[92vh] overflow-hidden bg-[#0a0a0c] border border-zinc-800/80 rounded-2xl relative shadow-2xl flex flex-col cursor-default my-auto"
+                >
+                  <AddTradeForm
+                    onSave={handleSaveTradeAndClose}
+                    editingTrade={editingTrade}
+                    onCancelEdit={handleCancelEdit}
+                    currency={currency}
+                    platforms={platforms}
+                    defaultPlatform={globalSelectedPlatforms.length > 0 ? globalSelectedPlatforms[0] : undefined}
+                    timeframes={timeframes}
+                    htfTimeframes={htfTimeframes}
+                    sessions={sessions}
+                    concepts={concepts}
+                    confirmations={confirmations}
+                    assets={assets}
+                    planFidelities={planFidelities}
+                    entryModels={entryModels}
+                    trendTypes={trendTypes}
+                    definitionTitles={definitionTitles}
+                  />
+                </motion.div>
               </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            )}
+          </AnimatePresence>,
+          document.body
+        )}
 
         {/* LIGHTBOX DETAILS MODAL */}
         <TradeDetailModal
@@ -2493,7 +2820,9 @@ export default function App() {
           onEdit={handleStartEdit}
           onDelete={handleDeleteTrade}
           currency={currency}
+          definitionTitles={definitionTitles}
         />
+
 
         {/* AUTH MODAL */}
         <AuthModal
@@ -2502,21 +2831,31 @@ export default function App() {
         />
 
         {/* AI CO-PILOT MODAL */}
-        <AnimatePresence>
-          {isCopilotOpen && (
-            <AICoPilotModal
-              isOpen={isCopilotOpen}
-              onClose={() => setIsCopilotOpen(false)}
-              trades={filteredGlobalTrades}
-              stats={calculatedStats}
-              currency={currency}
-              isRrMode={isRrMode}
-              journals={journals}
-              certificates={certificates}
-              notes={notes}
-            />
-          )}
-        </AnimatePresence>
+        <AICoPilotModal
+          isOpen={isCopilotOpen}
+          onClose={() => setIsCopilotOpen(false)}
+          allTrades={trades}
+          trades={filteredGlobalTrades}
+          stats={calculatedStats}
+          currency={currency}
+          isRrMode={isRrMode}
+          definitionTitles={definitionTitles}
+          definitions={{
+            platforms,
+            assets,
+            concepts,
+            sessions,
+            timeframes,
+            htfTimeframes,
+            confirmations,
+            entryModels,
+            trendTypes,
+            planFidelities,
+          }}
+          journals={journals}
+          certificates={certificates}
+          notes={notes}
+        />
 
       {/* FLOATING AI CO-PILOT QUICK ACCESS BUTTON */}
       <div className="fixed bottom-5 right-5 z-30">

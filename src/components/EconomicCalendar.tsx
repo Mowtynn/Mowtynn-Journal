@@ -34,7 +34,7 @@ const EconomicCalendar = memo(function EconomicCalendar() {
               <h2 className="text-sm font-bold uppercase tracking-wide text-zinc-100">
                 Ekonomik Takvim
               </h2>
-              <span className="px-2.5 py-0.5 rounded-lg text-[9px] font-mono font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center gap-1">
+              <span className="px-2.5 py-0.5 rounded-lg text-[9px] font-sans font-bold toggle-item-brand border border-blue-500/20 flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
                 CANLI VERİ
               </span>

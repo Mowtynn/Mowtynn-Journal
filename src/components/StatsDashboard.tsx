@@ -40,16 +40,16 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, currency }: S
     hidden: { opacity: 0 },
     show: { 
       opacity: 1,
-      transition: { staggerChildren: 0.05 }
+      transition: { staggerChildren: 0.015 }
     }
   };
 
   const itemVariants = {
-    hidden: { opacity: 0, y: 8 },
+    hidden: { opacity: 0, y: 4 },
     show: { 
       opacity: 1, 
       y: 0,
-      transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] as any }
+      transition: { duration: 0.12, ease: "easeOut" as any }
     }
   };
 
@@ -73,10 +73,10 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, currency }: S
         } transition-colors duration-200 ease-out flex flex-col justify-between group shadow-xs`}
       >
         <div className="flex items-center justify-between mb-2">
-          <p className="text-[10px] font-bold uppercase text-zinc-400 tracking-wider font-mono flex items-center gap-1.5">
+          <p className="heading-3 text-zinc-400 tracking-wider font-sans flex items-center gap-1.5">
             <span className={`p-1.5 rounded-lg border ${
-              isPnlPositive ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 
-              isPnlNegative ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : 
+              isPnlPositive ? 'toggle-item-win' : 
+              isPnlNegative ? 'toggle-item-loss' : 
               'bg-zinc-800 text-zinc-400 border-zinc-700'
             }`}>
               {isPnlPositive ? (
@@ -96,17 +96,17 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, currency }: S
             <ValueTransition modeKey={isRrMode}>
               {isRrMode ? (
                 <>
-                  <span className={`text-lg sm:text-xl font-bold font-mono tracking-tight ${rColorClass}`}>
+                  <span className={`text-lg sm:text-xl font-bold ${rColorClass}`}>
                     {stats.netR > 0 ? '+' : ''}{stats.netR.toFixed(2)}
                   </span>
-                  <span className={`text-[10px] font-bold font-mono ml-0.5 ${isPnlPositive ? 'text-emerald-400/70' : isPnlNegative ? 'text-rose-400/70' : 'text-zinc-400'}`}>R</span>
+                  <span className={`text-[10px] font-bold ml-0.5 ${isPnlPositive ? 'text-emerald-400/70' : isPnlNegative ? 'text-rose-400/70' : 'text-zinc-400'}`}>R</span>
                 </>
               ) : (
                 <>
-                  <span className={`text-lg sm:text-xl font-bold font-mono tracking-tight ${pnlColorClass}`}>
+                  <span className={`text-lg sm:text-xl font-bold ${pnlColorClass}`}>
                     {stats.netPnl > 0 ? '+' : ''}{(stats?.netPnl || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
-                  <span className={`text-[10px] font-bold font-mono ml-0.5 ${isPnlPositive ? 'text-emerald-400/70' : isPnlNegative ? 'text-rose-400/70' : 'text-zinc-400'}`}>{currency}</span>
+                  <span className={`text-[10px] font-bold ml-0.5 ${isPnlPositive ? 'text-emerald-400/70' : isPnlNegative ? 'text-rose-400/70' : 'text-zinc-400'}`}>{currency}</span>
                 </>
               )}
             </ValueTransition>
@@ -114,7 +114,7 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, currency }: S
 
           <div className="flex items-center justify-between gap-1 mt-1">
             <div className="bg-zinc-800/80 border border-zinc-700/60 py-0.5 px-2 rounded-lg flex items-center gap-1.5 overflow-hidden">
-              <span className={`text-[10px] font-bold font-mono ${isPnlPositive ? 'text-emerald-400' : isPnlNegative ? 'text-rose-400' : 'text-zinc-400'}`}>
+              <span className={`text-[10px] font-bold font-sans ${isPnlPositive ? 'text-emerald-400' : isPnlNegative ? 'text-rose-400' : 'text-zinc-400'}`}>
                 <ValueTransition modeKey={isRrMode}>
                   {isRrMode 
                     ? `${stats.netPnl > 0 ? '+' : ''}${(stats?.netPnl || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`
@@ -123,7 +123,7 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, currency }: S
                 </ValueTransition>
               </span>
             </div>
-            <span className="text-[10px] text-zinc-400 font-mono flex items-center gap-1">
+            <span className="text-[10px] text-zinc-400 font-sans flex items-center gap-1">
               <span className="text-zinc-300 font-bold bg-zinc-800 px-1.5 py-0.5 rounded-lg border border-zinc-700">{stats.closedTrades}</span>
               {"İşlem"}
             </span>
@@ -138,7 +138,7 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, currency }: S
         className="cursor-pointer bg-zinc-900/60 border border-zinc-800/80  hover:bg-zinc-800/50 hover:border-zinc-700/80 rounded-2xl p-4 transition-colors duration-200 ease-out flex flex-col justify-between group shadow-xs"
       >
         <div className="flex items-center justify-between mb-2">
-          <p className="text-[10px] font-bold uppercase text-zinc-400 tracking-wider font-mono flex items-center gap-1.5">
+          <p className="heading-3 text-zinc-400 tracking-wider font-sans flex items-center gap-1.5">
             <span className="p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400">
               <Percent size={12} />
             </span>
@@ -148,18 +148,18 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, currency }: S
 
         <div className="flex flex-col gap-1 mt-auto pt-1">
           <div className="flex items-baseline gap-1">
-            <span className="text-lg sm:text-xl font-bold text-blue-300 font-mono tracking-tight">
+            <span className="text-lg sm:text-xl font-bold text-blue-300">
               %{stats.winRate.toFixed(1)}
             </span>
           </div>
 
           <div className="flex items-center justify-between gap-1 mt-1">
             <div className="flex items-center gap-1.5">
-              <span className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold font-mono py-0.5 px-2 rounded-lg">
-                {stats.winningTrades} {"Win"}
+              <span className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold font-sans py-0.5 px-2 rounded-lg">
+                {stats.winningTrades} {"WIN"}
               </span>
-              <span className="bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[10px] font-bold font-mono py-0.5 px-2 rounded-lg">
-                {stats.losingTrades} {"Loss"}
+              <span className="bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[10px] font-bold font-sans py-0.5 px-2 rounded-lg">
+                {stats.losingTrades} {"LOSS"}
               </span>
             </div>
             
@@ -198,24 +198,24 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, currency }: S
         className="cursor-pointer bg-zinc-900/60 border border-zinc-800/80  hover:bg-zinc-800/50 hover:border-zinc-700/80 rounded-2xl p-4 transition-colors duration-200 ease-out flex flex-col justify-between group shadow-xs"
       >
         <div className="flex items-center justify-between mb-2">
-          <p className="text-[10px] font-bold uppercase text-zinc-400 tracking-wider font-mono flex items-center gap-1.5">
+          <p className="heading-3 text-zinc-400 tracking-wider font-sans flex items-center gap-1.5">
             <span className="p-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
               <TrendingUp size={12} />
             </span>
-            {"Profit Factor"}
+            {"PROFIT FACTOR"}
           </p>
         </div>
 
         <div className="flex flex-col gap-1 mt-auto pt-1">
           <div className="flex items-baseline gap-1">
-            <span className={`text-lg sm:text-xl font-bold font-mono tracking-tight ${stats.profitFactor > 1.5 ? "text-emerald-400" : "text-blue-400"}`}>
+            <span className={`text-lg sm:text-xl font-bold ${stats.profitFactor > 1.5 ? "text-emerald-400" : "text-blue-400"}`}>
               {stats.profitFactor === Infinity ? 'Sonsuz' : stats.profitFactor.toFixed(2)}
             </span>
           </div>
 
           <div className="flex items-center justify-between gap-1 mt-1">
             <div className="bg-zinc-800/80 border border-zinc-700/60 py-0.5 px-2 rounded-lg flex items-center gap-1.5">
-              <span className="text-[10px] font-mono font-bold text-zinc-300">
+              <span className="text-[10px] font-sans font-bold text-zinc-300">
                 {stats.profitFactor >= 2.0 
                   ? ('⭐ Harika')
                   : stats.profitFactor >= 1.5 
@@ -236,7 +236,7 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, currency }: S
         className="cursor-pointer bg-zinc-900/60 border border-zinc-800/80  hover:bg-zinc-800/50 hover:border-zinc-700/80 rounded-2xl p-4 transition-colors duration-200 ease-out flex flex-col justify-between group shadow-xs"
       >
         <div className="flex items-center justify-between mb-2">
-          <p className="text-[10px] font-bold uppercase text-zinc-400 tracking-wider font-mono flex items-center gap-1.5">
+          <p className="heading-3 text-zinc-400 tracking-wider font-sans flex items-center gap-1.5">
             <span className="p-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
               <Layers size={12} />
             </span>
@@ -245,8 +245,8 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, currency }: S
         </div>
 
         <div className="mt-auto space-y-1">
-          <div className="flex justify-between items-center text-[10px] font-mono">
-            <span className="text-zinc-400">{"Ort. Win:"}</span>
+          <div className="flex justify-between items-center text-[10px] font-sans">
+            <span className="text-zinc-400">{"Ort. WIN:"}</span>
             <span className="text-emerald-400 font-bold overflow-hidden">
               <ValueTransition modeKey={isRrMode}>
                 {isRrMode 
@@ -256,8 +256,8 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, currency }: S
               </ValueTransition>
             </span>
           </div>
-          <div className="flex justify-between items-center text-[10px] font-mono">
-            <span className="text-zinc-400">{"Ort. Loss:"}</span>
+          <div className="flex justify-between items-center text-[10px] font-sans">
+            <span className="text-zinc-400">{"Ort. LOSS:"}</span>
             <span className="text-rose-400 font-bold overflow-hidden">
               <ValueTransition modeKey={isRrMode}>
                 {isRrMode
@@ -267,7 +267,7 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, currency }: S
               </ValueTransition>
             </span>
           </div>
-          <div className="flex justify-between items-center text-[10px] font-mono border-t border-zinc-800 pt-1">
+          <div className="flex justify-between items-center text-[10px] font-sans border-t border-zinc-800 pt-1">
             <span className="text-zinc-400 font-bold">{"Beklenti:"}</span>
             <span className={`font-black overflow-hidden flex flex-col items-end ${stats.expectancyRR >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
               <ValueTransition modeKey={isRrMode}>
@@ -287,7 +287,7 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, currency }: S
         className="relative overflow-hidden col-span-1 md:col-span-2 cursor-pointer hover:bg-zinc-800/50 hover:border-zinc-700/80 bg-zinc-900/60 border border-zinc-800/80  rounded-2xl p-4 shadow-xs transition-colors duration-200 ease-out flex flex-col justify-between group"
       >
         <div className="flex justify-between items-center mb-3">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 font-mono flex items-center gap-1.5">
+          <p className="heading-3 tracking-wider text-zinc-400 font-sans flex items-center gap-1.5">
             <span className="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400">
               <Trophy size={12} />
             </span>
@@ -296,12 +296,12 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, currency }: S
         </div>
         <div className="grid grid-cols-2 gap-4 mt-auto">
           <div className="flex flex-col justify-between transition-colors">
-            <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold font-mono">{"En Verimli Parite"}</p>
-            <p className="text-xs sm:text-sm font-bold text-emerald-400 mt-1 font-mono truncate">{stats.bestAsset || '—'}</p>
+            <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold font-sans">{"En Verimli Parite"}</p>
+            <p className="text-xs sm:text-sm font-bold text-emerald-400 mt-1 font-sans truncate">{stats.bestAsset || '—'}</p>
           </div>
           <div className="flex flex-col justify-between transition-colors border-l border-zinc-800/80 pl-4">
-            <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold font-mono">{"En Verimsiz Parite"}</p>
-            <p className="text-xs sm:text-sm font-bold text-rose-400 mt-1 font-mono truncate">{stats.worstAsset || '—'}</p>
+            <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold font-sans">{"En Verimsiz Parite"}</p>
+            <p className="text-xs sm:text-sm font-bold text-rose-400 mt-1 font-sans truncate">{stats.worstAsset || '—'}</p>
           </div>
         </div>
       </motion.div>
@@ -311,7 +311,7 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, currency }: S
         className="relative overflow-hidden col-span-1 md:col-span-2 cursor-pointer hover:bg-zinc-800/50 hover:border-zinc-700/80 bg-zinc-900/60 border border-zinc-800/80  rounded-2xl p-4 shadow-xs transition-colors duration-200 ease-out flex flex-col justify-between group"
       >
         <div className="flex justify-between items-center mb-3">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 font-mono flex items-center gap-1.5">
+          <p className="heading-3 tracking-wider text-zinc-400 font-sans flex items-center gap-1.5">
             <span className="p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400">
               <Calendar size={12} />
             </span>
@@ -320,7 +320,7 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, currency }: S
         </div>
         <div className="grid grid-cols-2 gap-4 mt-auto">
           {/* Haftalık Kâr */}
-          <div className="font-mono transition-colors">
+          <div className="font-sans transition-colors">
             <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold">{"Haftalık Kâr / Zarar"}</p>
             <p className={`text-xs sm:text-sm font-bold mt-1 truncate ${
               stats.weeklyPnl > 0 ? 'text-emerald-400' : stats.weeklyPnl < 0 ? 'text-rose-400' : 'text-zinc-400'
@@ -330,7 +330,7 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, currency }: S
           </div>
 
           {/* Aylık Kâr */}
-          <div className="font-mono transition-colors border-l border-zinc-800/80 pl-4">
+          <div className="font-sans transition-colors border-l border-zinc-800/80 pl-4">
             <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold">{"Aylık Kâr / Zarar"}</p>
             <p className={`text-xs sm:text-sm font-bold mt-1 truncate ${
               stats.monthlyPnl > 0 ? 'text-emerald-400' : stats.monthlyPnl < 0 ? 'text-rose-400' : 'text-zinc-400'

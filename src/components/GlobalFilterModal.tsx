@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Filter, RotateCcw, Check, Calendar, Layers, Monitor, Activity, ArrowUpRight, Coins, Flame, ChevronRight, Eye, EyeOff, ChevronDown, Clock, Sparkles, X } from 'lucide-react';
+import { Filter, RotateCcw, Check, Calendar, Layers, Monitor, Activity, ArrowUpRight, Coins, Flame, ChevronRight, Eye, EyeOff, ChevronDown, Clock, Sparkles, X, Target, Zap, TrendingUp } from 'lucide-react';
+import { DEFAULT_PLAN_FIDELITIES, DEFAULT_ENTRY_MODELS, DEFAULT_TREND_TYPES, DEFAULT_DEFINITION_TITLES, caseInsensitiveEquals } from '../constants/constants';
+import { DefinitionTitles } from '../types';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 interface GlobalFilterModalProps {
   isOpen: boolean;
   onClose: () => void;
+  trades?: any[];
   // Options
   platforms: string[];
   timeframes: string[];
@@ -14,11 +18,17 @@ interface GlobalFilterModalProps {
   concepts: string[];
   sessions: string[];
   assets: string[];
+  planFidelities?: string[];
+  entryModels?: string[];
+  trendTypes?: string[];
+  definitionTitles?: DefinitionTitles;
   // Selected
   globalSelectedConfirmations: string[];
   setGlobalSelectedConfirmations: (v: string[]) => void;
   globalSelectedConcepts: string[];
   setGlobalSelectedConcepts: (v: string[]) => void;
+  globalSelectedPlanFidelity: string[];
+  setGlobalSelectedPlanFidelity: (v: string[]) => void;
   globalSelectedPlatforms: string[];
   setGlobalSelectedPlatforms: (v: string[]) => void;
   globalSelectedAssets: string[];
@@ -33,9 +43,14 @@ interface GlobalFilterModalProps {
   setGlobalSelectedStatuses: (v: string[]) => void;
   globalSelectedTypes: string[];
   setGlobalSelectedTypes: (v: string[]) => void;
+  globalSelectedEntryModels?: string[];
+  setGlobalSelectedEntryModels?: (v: string[]) => void;
+  globalSelectedTrendTypes?: string[];
+  setGlobalSelectedTrendTypes?: (v: string[]) => void;
   globalDateLimit: string;
   setGlobalDateLimit: (v: string) => void;
 }
+
 
 const PillMultiSelect = ({ 
   options, 
@@ -51,8 +66,8 @@ const PillMultiSelect = ({
   const isAllSelected = selectedValues.length === 0;
 
   const toggleOption = (option: string) => {
-    if (selectedValues.includes(option)) {
-      onChange(selectedValues.filter(v => v !== option));
+    if (selectedValues.some(v => caseInsensitiveEquals(v, option))) {
+      onChange(selectedValues.filter(v => !caseInsensitiveEquals(v, option)));
     } else {
       onChange([...selectedValues, option]);
     }
@@ -71,7 +86,7 @@ const PillMultiSelect = ({
       <button
         type="button"
         onClick={() => onChange([])}
-        className={`px-3 py-2 sm:px-2 sm:py-1 rounded-lg text-[10px] font-mono uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer ${
+        className={`px-3 py-2 sm:px-2 sm:py-1 rounded-lg text-[10px] font-sans uppercase font-bold tracking-wider transition-colors duration-200 ease-out border cursor-pointer ${
           isAllSelected 
             ? 'bg-blue-500/20 border-blue-500/50 text-blue-300 font-bold' 
             : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
@@ -80,13 +95,13 @@ const PillMultiSelect = ({
         Tümü ({options.length})
       </button>
       {options.map(option => {
-        const isSelected = selectedValues.includes(option);
+        const isSelected = selectedValues.some(v => caseInsensitiveEquals(v, option));
         return (
           <button
             key={option}
             type="button"
             onClick={() => toggleOption(option)}
-            className={`px-3 py-2 sm:px-2 sm:py-1 rounded-lg text-[10px] font-mono uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer flex items-center gap-1 ${
+            className={`px-3 py-2 sm:px-2 sm:py-1 rounded-lg text-[10px] font-sans uppercase font-bold tracking-wider transition-colors duration-200 ease-out border cursor-pointer flex items-center gap-1 ${
               isSelected 
                 ? activeStyle 
                 : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
@@ -111,8 +126,8 @@ const StatusMultiSelect = ({
   const isAll = selectedValues.length === 0;
 
   const toggle = (val: string) => {
-    if (selectedValues.includes(val)) {
-      onChange(selectedValues.filter(v => v !== val));
+    if (selectedValues.some(v => caseInsensitiveEquals(v, val))) {
+      onChange(selectedValues.filter(v => !caseInsensitiveEquals(v, val)));
     } else {
       onChange([...selectedValues, val]);
     }
@@ -123,7 +138,7 @@ const StatusMultiSelect = ({
       <button
         type="button"
         onClick={() => onChange([])}
-        className={`px-3 py-2 sm:px-2.5 sm:py-1 rounded-lg text-[10px] font-mono uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer ${
+        className={`px-3 py-2 sm:px-2.5 sm:py-1 rounded-lg text-[10px] font-sans uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer ${
           isAll 
             ? 'bg-blue-500/20 border-blue-500/50 text-blue-300 font-bold' 
             : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
@@ -134,7 +149,7 @@ const StatusMultiSelect = ({
       <button
         type="button"
         onClick={() => toggle("WIN")}
-        className={`px-3 py-2 sm:px-2.5 sm:py-1 rounded-lg text-[10px] font-mono uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer flex items-center gap-1 ${
+        className={`px-3 py-2 sm:px-2.5 sm:py-1 rounded-lg text-[10px] font-sans uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer flex items-center gap-1 ${
           selectedValues.includes("WIN")
             ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300 font-bold shadow-sm'
             : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-emerald-400'
@@ -146,7 +161,7 @@ const StatusMultiSelect = ({
       <button
         type="button"
         onClick={() => toggle("LOSS")}
-        className={`px-3 py-2 sm:px-2.5 sm:py-1 rounded-lg text-[10px] font-mono uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer flex items-center gap-1 ${
+        className={`px-3 py-2 sm:px-2.5 sm:py-1 rounded-lg text-[10px] font-sans uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer flex items-center gap-1 ${
           selectedValues.includes("LOSS")
             ? 'bg-rose-500/20 border-rose-500/50 text-rose-300 font-bold shadow-sm'
             : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-rose-400'
@@ -158,7 +173,7 @@ const StatusMultiSelect = ({
       <button
         type="button"
         onClick={() => toggle("BREAKEVEN")}
-        className={`px-3 py-2 sm:px-2.5 sm:py-1 rounded-lg text-[10px] font-mono uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer flex items-center gap-1 ${
+        className={`px-3 py-2 sm:px-2.5 sm:py-1 rounded-lg text-[10px] font-sans uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer flex items-center gap-1 ${
           selectedValues.includes("BREAKEVEN")
             ? 'bg-amber-500/20 border-amber-500/50 text-amber-300 font-bold shadow-sm'
             : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-amber-400'
@@ -193,7 +208,7 @@ const TypeMultiSelect = ({
       <button
         type="button"
         onClick={() => onChange([])}
-        className={`px-3 py-2 sm:px-2.5 sm:py-1 rounded-lg text-[10px] font-mono uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer ${
+        className={`px-3 py-2 sm:px-2.5 sm:py-1 rounded-lg text-[10px] font-sans uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer ${
           isAll 
             ? 'bg-blue-500/20 border-blue-500/50 text-blue-300 font-bold' 
             : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
@@ -204,7 +219,7 @@ const TypeMultiSelect = ({
       <button
         type="button"
         onClick={() => toggle("LONG")}
-        className={`px-3 py-2 sm:px-2.5 sm:py-1 rounded-lg text-[10px] font-mono uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer flex items-center gap-1 ${
+        className={`px-3 py-2 sm:px-2.5 sm:py-1 rounded-lg text-[10px] font-sans uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer flex items-center gap-1 ${
           selectedValues.includes("LONG")
             ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300 font-bold shadow-sm'
             : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-emerald-400'
@@ -216,7 +231,7 @@ const TypeMultiSelect = ({
       <button
         type="button"
         onClick={() => toggle("SHORT")}
-        className={`px-3 py-2 sm:px-2.5 sm:py-1 rounded-lg text-[10px] font-mono uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer flex items-center gap-1 ${
+        className={`px-3 py-2 sm:px-2.5 sm:py-1 rounded-lg text-[10px] font-sans uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer flex items-center gap-1 ${
           selectedValues.includes("SHORT")
             ? 'bg-rose-500/20 border-rose-500/50 text-rose-300 font-bold shadow-sm'
             : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-rose-400'
@@ -257,21 +272,21 @@ const FilterAccordionRow: React.FC<FilterAccordionRowProps> = ({
       >
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="shrink-0">{icon}</div>
-          <span className="text-xs font-bold font-mono text-zinc-200 uppercase tracking-wider shrink-0">
+          <span className="text-xs font-bold font-sans text-zinc-200 uppercase tracking-wider shrink-0">
             {title}
           </span>
-          <span className="text-[11px] font-mono text-zinc-400 truncate hidden sm:inline-block">
+          <span className="text-xs font-sans text-zinc-400 truncate hidden sm:inline-block uppercase">
             — {summaryText}
           </span>
         </div>
 
         <div className="flex items-center gap-2 shrink-0 ml-2">
           {badgeCount > 0 ? (
-            <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">
+            <span className="px-2 py-0.5 rounded-full text-[9px] font-sans font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">
               {badgeCount} seçili
             </span>
           ) : (
-            <span className="text-[10px] font-mono text-zinc-400 hidden xs:inline">Tümü</span>
+            <span className="text-[10px] font-sans text-zinc-400 hidden xs:inline">Tümü</span>
           )}
           <div className="text-zinc-400">
             {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
@@ -279,19 +294,17 @@ const FilterAccordionRow: React.FC<FilterAccordionRowProps> = ({
         </div>
       </button>
 
-      <AnimatePresence initial={false}>
-        {isOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
-            className="overflow-hidden border-t border-zinc-800 bg-zinc-900 p-2.5"
-          >
+      <div 
+        className={`grid transition-[grid-template-rows,opacity] duration-200 ease-out will-change-[grid-template-rows,opacity] ${
+          isOpen ? 'grid-rows-[1fr] opacity-100 border-t border-zinc-800' : 'grid-rows-[0fr] opacity-0'
+        }`}
+      >
+        <div className="min-h-0 overflow-hidden bg-zinc-900">
+          <div className="p-2.5">
             {children}
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
@@ -299,6 +312,7 @@ const FilterAccordionRow: React.FC<FilterAccordionRowProps> = ({
 export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = ({
   isOpen,
   onClose,
+  trades = [],
   platforms,
   timeframes,
   htfTimeframes,
@@ -306,8 +320,13 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = ({
   concepts,
   sessions,
   assets,
+  planFidelities = DEFAULT_PLAN_FIDELITIES,
+  entryModels = DEFAULT_ENTRY_MODELS,
+  trendTypes = DEFAULT_TREND_TYPES,
+  definitionTitles = DEFAULT_DEFINITION_TITLES,
   globalSelectedConfirmations, setGlobalSelectedConfirmations,
   globalSelectedConcepts, setGlobalSelectedConcepts,
+  globalSelectedPlanFidelity, setGlobalSelectedPlanFidelity,
   globalSelectedPlatforms, setGlobalSelectedPlatforms,
   globalSelectedAssets, setGlobalSelectedAssets,
   globalSelectedSessions, setGlobalSelectedSessions,
@@ -315,8 +334,83 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = ({
   globalSelectedHtfTimeframes, setGlobalSelectedHtfTimeframes,
   globalSelectedStatuses, setGlobalSelectedStatuses,
   globalSelectedTypes, setGlobalSelectedTypes,
+  globalSelectedEntryModels = [], setGlobalSelectedEntryModels,
+  globalSelectedTrendTypes = [], setGlobalSelectedTrendTypes,
   globalDateLimit, setGlobalDateLimit
 }) => {
+  useBodyScrollLock(isOpen);
+
+  // Dynamic extraction of unique options from both definitions and actual trade data
+  const dynamicPlatforms = React.useMemo(() => {
+    const set = new Set(platforms || []);
+    trades.forEach(t => { if (t.platform) set.add(t.platform); });
+    return Array.from(set);
+  }, [platforms, trades]);
+
+  const dynamicAssets = React.useMemo(() => {
+    const set = new Set(assets || []);
+    trades.forEach(t => { if (t.asset) set.add(t.asset); });
+    return Array.from(set);
+  }, [assets, trades]);
+
+  const dynamicConcepts = React.useMemo(() => {
+    const set = new Set(concepts || []);
+    trades.forEach(t => { if (t.concept) set.add(t.concept); });
+    return Array.from(set);
+  }, [concepts, trades]);
+
+  const dynamicConfirmations = React.useMemo(() => {
+    const set = new Set(confirmations || []);
+    trades.forEach(t => {
+      if (t.confirmations && Array.isArray(t.confirmations)) {
+        t.confirmations.forEach(c => set.add(c));
+      }
+    });
+    return Array.from(set);
+  }, [confirmations, trades]);
+
+  const dynamicSessions = React.useMemo(() => {
+    const set = new Set(sessions || []);
+    trades.forEach(t => { if (t.session) set.add(t.session); });
+    return Array.from(set);
+  }, [sessions, trades]);
+
+  const dynamicTimeframes = React.useMemo(() => {
+    const set = new Set(timeframes || []);
+    trades.forEach(t => { if (t.timeframe) set.add(t.timeframe); });
+    return Array.from(set);
+  }, [timeframes, trades]);
+
+  const dynamicHtfTimeframes = React.useMemo(() => {
+    const set = new Set(htfTimeframes || []);
+    trades.forEach(t => { if (t.htfTimeframe) set.add(t.htfTimeframe); });
+    return Array.from(set);
+  }, [htfTimeframes, trades]);
+
+  const dynamicPlanFidelities = React.useMemo(() => {
+    const set = new Set(planFidelities || []);
+    trades.forEach(t => { if (t.planFidelity) set.add(t.planFidelity); });
+    return Array.from(set);
+  }, [planFidelities, trades]);
+
+  const dynamicEntryModels = React.useMemo(() => {
+    const set = new Set(entryModels || []);
+    trades.forEach(t => {
+      if (t.entryModels && Array.isArray(t.entryModels)) {
+        t.entryModels.forEach(em => set.add(em));
+      } else if (t.entry) {
+        t.entry.split(',').forEach(em => set.add(em.trim()));
+      }
+    });
+    return Array.from(set);
+  }, [entryModels, trades]);
+
+  const dynamicTrendTypes = React.useMemo(() => {
+    const set = new Set(trendTypes || []);
+    trades.forEach(t => { if (t.trend) set.add(t.trend); });
+    return Array.from(set);
+  }, [trendTypes, trades]);
+
   // Keep track of which accordion categories are expanded
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
 
@@ -329,7 +423,10 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = ({
 
   const expandAll = () => {
     setOpenSections({
+      trend: true,
+      entry: true,
       concept: true,
+      planFidelity: true,
       confirmation: true,
       platform: true,
       date: true,
@@ -349,6 +446,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = ({
   const handleReset = () => {
     setGlobalSelectedConfirmations([]);
     setGlobalSelectedConcepts([]);
+    setGlobalSelectedPlanFidelity([]);
     setGlobalSelectedPlatforms([]);
     setGlobalSelectedAssets([]);
     setGlobalSelectedSessions([]);
@@ -356,6 +454,8 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = ({
     setGlobalSelectedHtfTimeframes([]);
     setGlobalSelectedStatuses([]);
     setGlobalSelectedTypes([]);
+    setGlobalSelectedEntryModels?.([]);
+    setGlobalSelectedTrendTypes?.([]);
     setGlobalDateLimit("6m");
   };
 
@@ -376,6 +476,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = ({
   const activeFilterCount = 
     globalSelectedConfirmations.length + 
     globalSelectedConcepts.length + 
+    globalSelectedPlanFidelity.length +
     globalSelectedPlatforms.length +
     globalSelectedAssets.length + 
     globalSelectedSessions.length + 
@@ -383,6 +484,8 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = ({
     globalSelectedHtfTimeframes.length + 
     globalSelectedStatuses.length + 
     globalSelectedTypes.length + 
+    (globalSelectedEntryModels?.length || 0) + 
+    (globalSelectedTrendTypes?.length || 0) + 
     (globalDateLimit !== "6m" ? 1 : 0);
 
   const dateOptions = [
@@ -405,75 +508,65 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = ({
     <AnimatePresence>
       {isOpen && (
         <motion.div
+          key="global-filter-backdrop"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.15, ease: "easeOut" }}
-          style={{ willChange: 'opacity' }}
-          className="fixed inset-0 bg-zinc-950/80  z-[1500] flex justify-center items-center p-3 sm:p-4 overflow-y-auto"
+          className="will-change-[opacity] fixed inset-0 bg-zinc-950/80 z-[1500] flex justify-center items-center p-3 sm:p-4 overflow-y-auto"
           onClick={onClose}
         >
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
-            style={{ willChange: 'opacity' }}
+            key="global-filter-content"
+            initial={{ opacity: 0, scale: 0.98, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.98, y: 10 }}
+            transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+            style={{ willChange: "transform, opacity" }}
             onClick={(e) => e.stopPropagation()}
             id="global-filter-popup"
-            className="bg-zinc-900 border border-zinc-700/50 rounded-2xl w-full max-w-2xl overflow-hidden flex flex-col relative shadow-2xl my-auto"
+            className="bg-zinc-900 border border-zinc-700/50 rounded-2xl w-full max-w-2xl h-[680px] max-h-[88vh] min-h-[480px] overflow-hidden flex flex-col relative shadow-2xl my-auto"
           >
-            {/* Header */}
-            <div className="flex items-center justify-between px-5 py-3.5 border-b border-zinc-700/40 bg-zinc-900/60">
-              <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
-                  <Filter size={14} />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-xs font-black uppercase tracking-wider text-zinc-100 font-mono">
-                      Filtre Menüsü
-                    </h2>
-                    <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                      {activeFilterCount > 0 ? `${activeFilterCount} Aktif` : "Tüm Veriler"}
-                    </span>
-                  </div>
-                </div>
+            
+          {/* Header */}
+          <div className="modal-header">
+            <h2 className="heading-1 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(59,130,246,0.15)]">
+                <Filter size={16} />
               </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={isAnyOpen ? collapseAll : expandAll}
-                  className="px-3 py-2 sm:px-2 sm:py-1 rounded-xl bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 text-[10px] font-bold font-mono transition-colors duration-200 ease-out uppercase tracking-wider cursor-pointer border border-zinc-700/60 hidden sm:flex items-center gap-1"
-                >
-                  {isAnyOpen ? <EyeOff size={11} /> : <Eye size={11} />}
-                  {isAnyOpen ? "Tümünü Kapat" : "Tümünü Aç"}
-                </button>
-
-                {activeFilterCount > 0 && (
-                  <button
-                    type="button"
-                    onClick={handleReset}
-                    className="flex items-center gap-1 px-3 py-2 sm:px-2.5 sm:py-1 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px] font-bold font-mono transition-colors duration-200 ease-out uppercase tracking-wider cursor-pointer border border-zinc-700/60"
-                  >
-                    <RotateCcw size={11} />
-                    Sıfırla
-                  </button>
-                )}
-
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="p-1.5 rounded-xl text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors duration-200 ease-out cursor-pointer"
-                >
-                  <X size={16} />
-                </button>
-              </div>
+              Filtre Menüsü
+            </h2>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={isAnyOpen ? collapseAll : expandAll}
+                className="btn-icon"
+              >
+                {isAnyOpen ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+              <button
+                type="button"
+                onClick={handleReset}
+                className="btn-icon"
+              >
+                <RotateCcw size={16} />
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onClose();
+                }}
+                className="btn-icon"
+              >
+                <X size={16} />
+              </button>
             </div>
+          </div>
+
 
             {/* Content Body - Menu / Accordion list */}
-            <div className="p-3 sm:p-4 max-h-[70vh] overflow-y-auto custom-scrollbar space-y-2 bg-zinc-950/30">
+            <div className="p-3 sm:p-4 flex-1 overflow-y-auto custom-scrollbar space-y-2 bg-zinc-950/30 min-h-0">
               
               {/* 1. ZAMAN ARALIĞI */}
               <FilterAccordionRow title="Zaman Aralığı" 
@@ -492,7 +585,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = ({
                         key={option.value}
                         type="button"
                         onClick={() => setGlobalDateLimit(option.value)}
-                        className={`px-3 py-2 sm:px-2.5 sm:py-1 rounded-lg text-[10px] font-mono uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer ${
+                        className={`px-3 py-2 sm:px-2.5 sm:py-1 rounded-lg text-[10px] font-sans uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer ${
                           isSelected 
                             ? 'bg-amber-500/20 border-amber-500/50 text-amber-300 font-bold shadow-sm' 
                             : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
@@ -506,7 +599,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = ({
               </FilterAccordionRow>
 
               {/* 1.5 PLATFORM */}
-              <FilterAccordionRow title="Platform" 
+              <FilterAccordionRow title={definitionTitles.platforms || "PLATFORM"} 
                 icon={<Monitor size={14} className="text-blue-400" />}
                 summaryText={globalSelectedPlatforms.length > 0 ? globalSelectedPlatforms.join(', ') : 'Tümü'}
                 badgeCount={globalSelectedPlatforms.length}
@@ -514,7 +607,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = ({
                 onToggle={() => toggleSection('platform')}
               >
                 <PillMultiSelect
-                  options={platforms}
+                  options={dynamicPlatforms}
                   selectedValues={globalSelectedPlatforms}
                   onChange={setGlobalSelectedPlatforms}
                   activeColor="blue"
@@ -522,7 +615,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = ({
               </FilterAccordionRow>
 
               {/* 2. PARİTE (ASSET) */}
-              <FilterAccordionRow title="Parite" 
+              <FilterAccordionRow title={definitionTitles.assets || "Parite"} 
                 icon={<Coins size={14} className="text-yellow-400" />}
                 
                 summaryText={globalSelectedAssets.length > 0 ? globalSelectedAssets.join(', ') : 'Tümü'}
@@ -531,7 +624,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = ({
                 onToggle={() => toggleSection('asset')}
               >
                 <PillMultiSelect
-                  options={assets}
+                  options={dynamicAssets}
                   selectedValues={globalSelectedAssets}
                   onChange={setGlobalSelectedAssets}
                   activeColor="amber"
@@ -554,7 +647,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = ({
               </FilterAccordionRow>
 
               {/* 4. SESSION */}
-              <FilterAccordionRow title="Session" 
+              <FilterAccordionRow title={definitionTitles.sessions || "Session"} 
                 icon={<Flame size={14} className="text-orange-400" />}
                 
                 summaryText={globalSelectedSessions.length > 0 ? globalSelectedSessions.join(', ') : 'Tümü'}
@@ -563,15 +656,15 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = ({
                 onToggle={() => toggleSection('session')}
               >
                 <PillMultiSelect
-                  options={sessions}
+                  options={dynamicSessions}
                   selectedValues={globalSelectedSessions}
                   onChange={setGlobalSelectedSessions}
                   activeColor="amber"
                 />
               </FilterAccordionRow>
 
-              {/* 5. HTF */}
-              <FilterAccordionRow title="HTF" 
+              {/* 5. TIMEFRAME */}
+              <FilterAccordionRow title={definitionTitles.htfTimeframes || "Timeframe"} 
                 icon={<Clock size={14} className="text-blue-400" />}
                 
                 summaryText={globalSelectedHtfTimeframes.length > 0 ? globalSelectedHtfTimeframes.join(', ') : 'Tümü'}
@@ -580,15 +673,15 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = ({
                 onToggle={() => toggleSection('htfTf')}
               >
                 <PillMultiSelect
-                  options={htfTimeframes}
+                  options={dynamicHtfTimeframes}
                   selectedValues={globalSelectedHtfTimeframes}
                   onChange={setGlobalSelectedHtfTimeframes}
                   activeColor="blue"
                 />
               </FilterAccordionRow>
 
-              {/* 6. ETF */}
-              <FilterAccordionRow title="ETF" 
+              {/* 6. ENTRY TIMEFRAME */}
+              <FilterAccordionRow title={definitionTitles.timeframes || "Entry Timeframe"} 
                 icon={<Clock size={14} className="text-cyan-400" />}
                 
                 summaryText={globalSelectedTimeframes.length > 0 ? globalSelectedTimeframes.join(', ') : 'Tümü'}
@@ -597,15 +690,57 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = ({
                 onToggle={() => toggleSection('entryTf')}
               >
                 <PillMultiSelect
-                  options={timeframes}
+                  options={dynamicTimeframes}
                   selectedValues={globalSelectedTimeframes}
                   onChange={setGlobalSelectedTimeframes}
                   activeColor="blue"
                 />
               </FilterAccordionRow>
 
-              {/* 7. KONSEPT */}
-              <FilterAccordionRow title="Konsept" 
+              {/* 7. SETUP KALİTESİ */}
+              <FilterAccordionRow title={definitionTitles.planFidelities || "SETUP KALİTESİ"} 
+                icon={<Target size={14} className="text-indigo-400" />}
+                summaryText={globalSelectedPlanFidelity.length > 0 ? globalSelectedPlanFidelity.join(', ') : 'Tümü'}
+                badgeCount={globalSelectedPlanFidelity.length}
+                isOpen={!!openSections.planFidelity}
+                onToggle={() => toggleSection('planFidelity')}
+              >
+                <div className="w-full flex items-center bg-zinc-950/50 p-1.5 rounded-xl border border-zinc-800/80 mt-1 gap-1.5 overflow-hidden">
+                  {dynamicPlanFidelities.map((item) => {
+                    const isSelected = globalSelectedPlanFidelity.includes(item);
+                    const lower = item.toLowerCase();
+                    let activeClasses = 'bg-blue-500/20 border-blue-500/40 text-blue-300 font-bold';
+                    if (lower === 'tam' || lower.includes('uygun') || lower.includes('sadık') || lower.includes('disciplined') || lower.includes('a+') || lower.includes('yüksek') || lower.includes('kusursuz')) {
+                      activeClasses = 'toggle-item-win font-bold';
+                    } else if (lower === 'kısmen' || lower.includes('partial') || lower.includes('orta') || lower === 'b') {
+                      activeClasses = 'toggle-item-breakeven font-bold';
+                    } else if (lower === 'fomo' || lower.includes('ihlal') || lower.includes('disiplinsiz') || lower.includes('intikam') || lower.includes('düşük') || lower === 'c') {
+                      activeClasses = 'toggle-item-loss font-bold';
+                    }
+
+                    return (
+                      <button
+                        key={item}
+                        type="button"
+                        onClick={() => {
+                          if (isSelected) {
+                            setGlobalSelectedPlanFidelity(globalSelectedPlanFidelity.filter(x => x !== item));
+                          } else {
+                            setGlobalSelectedPlanFidelity([...globalSelectedPlanFidelity, item]);
+                          }
+                        }}
+                        className={`flex-1 min-w-0 text-[10px] py-1.5 font-bold uppercase transition-colors duration-200 rounded-lg border text-center truncate cursor-pointer ${
+                          isSelected ? activeClasses : 'border-transparent toggle-item-inactive'
+                        }`}
+                      >
+                        {item}
+                      </button>
+                    );
+                  })}
+                </div>
+              </FilterAccordionRow>
+
+              <FilterAccordionRow title={definitionTitles.concepts || "Konsept"} 
                 icon={<Layers size={14} className="text-blue-400" />}
                 
                 summaryText={globalSelectedConcepts.length > 0 ? globalSelectedConcepts.join(', ') : 'Tümü'}
@@ -614,15 +749,15 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = ({
                 onToggle={() => toggleSection('concept')}
               >
                 <PillMultiSelect
-                  options={concepts}
+                  options={dynamicConcepts}
                   selectedValues={globalSelectedConcepts}
                   onChange={setGlobalSelectedConcepts}
                   activeColor="blue"
                 />
               </FilterAccordionRow>
 
-              {/* 8. ONAYLAR */}
-              <FilterAccordionRow title="Onaylar" 
+              {/* 8. PD ARRAY */}
+              <FilterAccordionRow title={definitionTitles.confirmations || "PD ARRAY"} 
                 icon={<Sparkles size={14} className="text-purple-400" />}
                 
                 summaryText={globalSelectedConfirmations.length > 0 ? globalSelectedConfirmations.join(', ') : 'Tümü'}
@@ -631,14 +766,46 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = ({
                 onToggle={() => toggleSection('confirmation')}
               >
                 <PillMultiSelect
-                  options={confirmations}
+                  options={dynamicConfirmations}
                   selectedValues={globalSelectedConfirmations}
                   onChange={setGlobalSelectedConfirmations}
                   activeColor="purple"
                 />
               </FilterAccordionRow>
 
-              {/* 9. İŞLEM SONUCU */}
+              {/* 9. TREND YAPISI */}
+              <FilterAccordionRow title={definitionTitles.trendTypes || "Trend Yapısı"} 
+                icon={<TrendingUp size={14} className="text-cyan-400" />}
+                summaryText={globalSelectedTrendTypes.length > 0 ? globalSelectedTrendTypes.join(', ') : 'Tümü'}
+                badgeCount={globalSelectedTrendTypes.length}
+                isOpen={!!openSections.trend}
+                onToggle={() => toggleSection('trend')}
+              >
+                <PillMultiSelect
+                  options={dynamicTrendTypes}
+                  selectedValues={globalSelectedTrendTypes}
+                  onChange={(vals) => setGlobalSelectedTrendTypes?.(vals)}
+                  activeColor="purple"
+                />
+              </FilterAccordionRow>
+
+              {/* 10. ENTRY MODEL */}
+              <FilterAccordionRow title={definitionTitles.entryModels || "Entry Model"} 
+                icon={<Zap size={14} className="text-amber-400" />}
+                summaryText={globalSelectedEntryModels.length > 0 ? globalSelectedEntryModels.join(', ') : 'Tümü'}
+                badgeCount={globalSelectedEntryModels.length}
+                isOpen={!!openSections.entry}
+                onToggle={() => toggleSection('entry')}
+              >
+                <PillMultiSelect
+                  options={dynamicEntryModels}
+                  selectedValues={globalSelectedEntryModels}
+                  onChange={(vals) => setGlobalSelectedEntryModels?.(vals)}
+                  activeColor="amber"
+                />
+              </FilterAccordionRow>
+
+              {/* 11. İŞLEM SONUCU */}
               <FilterAccordionRow title="İşlem Sonucu" 
                 icon={<Activity size={14} className="text-emerald-400" />}
                 
@@ -657,7 +824,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = ({
 
             {/* Footer */}
             <div className="px-5 py-3 border-t border-zinc-700/40 bg-zinc-900/60 flex items-center justify-between">
-              <div className="text-[10px] text-zinc-400 font-mono hidden sm:block">
+              <div className="text-[10px] text-zinc-400 font-sans hidden sm:block">
                 {activeFilterCount > 0 ? (
                   <span className="text-blue-400 font-semibold">{activeFilterCount} kriter aktif</span>
                 ) : (
@@ -669,7 +836,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = ({
                   <button
                     type="button"
                     onClick={handleReset}
-                    className="px-4 py-2 sm:px-3 sm:py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[11px] font-mono font-bold uppercase tracking-wider transition-colors duration-200 ease-out cursor-pointer border border-zinc-700/60"
+                    className="px-4 py-2 sm:px-3 sm:py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-sans font-bold uppercase tracking-wider transition-colors duration-200 ease-out cursor-pointer border border-zinc-700/60"
                   >
                     Temizle
                   </button>
@@ -677,7 +844,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = ({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 border border-blue-500/30 font-mono font-black px-5 py-2 rounded-xl text-[11px] uppercase tracking-wider transition-colors duration-200 ease-out cursor-pointer shadow-xs flex items-center justify-center gap-1.5"
+                  className="bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 border border-blue-500/30 font-sans font-black px-5 py-2 rounded-xl text-xs uppercase tracking-wider transition-colors duration-200 ease-out cursor-pointer shadow-xs flex items-center justify-center gap-1.5"
                 >
                   <Check size={13} />
                   Uygula

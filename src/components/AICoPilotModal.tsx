@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
-import { Trade, TradeStats, JournalEntry, Certificate, Note } from "../types";
+import toast from "react-hot-toast";
+import { Trade, TradeStats, JournalEntry, Certificate, Note, DefinitionTitles } from "../types";
+import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
 import Markdown from "react-markdown";
 import { authFetch } from "../lib/api";
 import { getSiteToken } from "./PasswordGate";
@@ -18,10 +21,24 @@ interface SavedNote {
 interface AICoPilotModalProps {
   isOpen: boolean;
   onClose: () => void;
+  allTrades?: Trade[];
   trades: Trade[];
   stats: TradeStats;
   currency: string;
   isRrMode: boolean;
+  definitionTitles?: DefinitionTitles;
+  definitions?: {
+    platforms?: string[];
+    assets?: string[];
+    concepts?: string[];
+    sessions?: string[];
+    timeframes?: string[];
+    htfTimeframes?: string[];
+    confirmations?: string[];
+    entryModels?: string[];
+    trendTypes?: string[];
+    planFidelities?: string[];
+  };
   journals?: JournalEntry[];
   certificates?: Certificate[];
   notes?: Note[];
@@ -39,13 +56,18 @@ interface ChatMessage {
 export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
   isOpen,
   onClose,
+  allTrades,
   trades,
   stats,
+  currency,
   isRrMode,
+  definitionTitles,
+  definitions,
   journals = [],
   certificates = [],
   notes = [],
 }) => {
+  useBodyScrollLock(isOpen);
   const [activeTab, setActiveTab] = useState<"chat" | "report" | "presets" | "saved">("chat");
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
     try {
@@ -84,7 +106,11 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
   });
 
   useEffect(() => {
-    localStorage.setItem("ai_copilot_saved_notes", JSON.stringify(savedNotes));
+    try {
+      localStorage.setItem("ai_copilot_saved_notes", JSON.stringify(savedNotes));
+    } catch (e) {
+      console.warn("Storage quota warning (ai_copilot_saved_notes):", e);
+    }
   }, [savedNotes]);
 
   // Midnight (00:00 TSI) auto-reset logic for chat history
@@ -139,11 +165,19 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
   );
 
   useEffect(() => {
-    localStorage.setItem("ai_copilot_messages", JSON.stringify(messages));
+    try {
+      localStorage.setItem("ai_copilot_messages", JSON.stringify(messages));
+    } catch (e) {
+      console.warn("Storage quota warning (ai_copilot_messages):", e);
+    }
   }, [messages]);
 
   useEffect(() => {
-    localStorage.setItem("ai_copilot_persona", selectedPersona);
+    try {
+      localStorage.setItem("ai_copilot_persona", selectedPersona);
+    } catch (e) {
+      console.warn("Storage quota warning (ai_copilot_persona):", e);
+    }
   }, [selectedPersona]);
 
   // AI Journal Sentiment Correlation Insights
@@ -329,7 +363,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
           name: "Kritik Davranışsal Tuzak Yok",
           severity: "medium",
           desc: "İşlem disiplininiz ve risk dağılımınız şu an oldukça sağlıklı görünüyor. Belirgin bir hatalı kalıp saptanmadı.",
-          solution: "Mevcut plan sadakatinizi bozmadan seans kurallarına bağlı kalmaya devam edin."
+          solution: "Mevcut setup kalitenizi bozmadan seans kurallarına bağlı kalmaya devam edin."
         });
       }
     }
@@ -642,7 +676,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 8 * 1024 * 1024) {
-        alert("Lütfen 8MB'dan küçük bir resim seçin.");
+        toast.error("Lütfen 8MB'dan küçük bir resim seçin.");
         return;
       }
       const reader = new FileReader();
@@ -662,7 +696,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
           const file = items[i].getAsFile();
           if (file) {
             if (file.size > 8 * 1024 * 1024) {
-              alert("Lütfen 8MB'dan küçük bir resim seçin.");
+              toast.error("Lütfen 8MB'dan küçük bir resim seçin.");
               return;
             }
             const reader = new FileReader();
@@ -797,7 +831,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
     if (trapsCount > 0) {
       dynamicTrapAnalysis = `Sistemimizde şu anda aktif olarak saptanan **${trapsCount} adet davranışsal hata/tuzak** mevcuttur. Özellikle R/R asimetrisi ve intikam ticareti eğilimleri sermayenizin kontrolsüz erimesine yol açabilir. Çözüm önerilerinde sunulan pratik kuralları işlem masanıza not alın.`;
     } else {
-      dynamicTrapAnalysis = "Şu anda sisteminizde kritik bir davranışsal hata veya tuzak saptanmamıştır. Bu durum, teknik analizlerinize ve kurallarınıza yüksek sadakatle bağlı olduğunuzu gösterir. Tebrikler!";
+      dynamicTrapAnalysis = "Şu anda sisteminizde kritik bir davranışsal hata veya tuzak saptanmamıştır. Bu durum, teknik analizlerinize ve yüksek setup kalitesi kurallarınıza bağlı olduğunuzu gösterir. Tebrikler!";
     }
 
     let roadmapText = "";
@@ -808,7 +842,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
     } else if (score >= 60) {
       roadmapText = `*   ⚖️ **Dengeleyici Adımlar:** İstikrarlı bir gidişatınız var ancak ara sıra yaşanan odak kayıpları R/R oranınızı baskılıyor. Kazanan işlemlerinizi sonuna kadar tutma (Let winners run) konusunda pratik yapın.\n` +
         `*   🛑 **Kayıp Seansı Yönetimi:** Peş peşe 2 kayıp yaşadığınız günlerde işlem yapmayı durdurun ve seans analiz günlüğünü doldurarak piyasa koşullarını değerlendirin.\n` +
-        `*   📓 **Duygusal Günlük Sadakati:** Haftalık en az 4 adet detaylı zihinsel günlük girişi yaparak duygusal dalgalanmaların işlem hacminiz üzerindeki etkisini izleyin.`;
+        `*   📓 **Duygusal Günlük Disiplini:** Haftalık en az 4 adet detaylı zihinsel günlük girişi yaparak duygusal dalgalanmaların işlem hacminiz üzerindeki etkisini izleyin.`;
     } else if (score >= 40) {
       roadmapText = `*   🚨 **Risk Altında Disiplin:** Kayıpları kabul etmekte zorlandığınız ve işlemlerin dönmesini beklerken stop loss noktalarını kaydırdığınız gözlenmektedir. Bu durum büyük drawdown tuzaklarına kapı aralar.\n` +
         `*   📉 **Pozisyon Küçültme:** Psikolojik baskıyı hafifletmek adına işlem boyutlarınızı (Risk miktarınızı) derhal %50 oranında küçülterek 'mekanik' kararlar almaya odaklanın.\n` +
@@ -846,7 +880,122 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
     setAttachedImage(null);
     setIsLoading(true);
 
+    const effectiveTrades = allTrades && allTrades.length > 0 ? allTrades : trades;
+
+    // Comprehensive performance breakdowns
+    const breakdownMetrics = (() => {
+      const closed = effectiveTrades.filter(t => t.status === "WIN" || t.status === "LOSS" || t.status === "BREAKEVEN");
+      const byAsset: Record<string, { total: number; win: number; loss: number; pnl: number; r: number }> = {};
+      const bySession: Record<string, { total: number; win: number; loss: number; pnl: number; r: number }> = {};
+      const byEntryModel: Record<string, { total: number; win: number; loss: number; pnl: number; r: number }> = {};
+      const byPlanFidelity: Record<string, { total: number; win: number; loss: number; pnl: number; r: number }> = {};
+      const byTrend: Record<string, { total: number; win: number; loss: number; pnl: number; r: number }> = {};
+      const byType: Record<string, { total: number; win: number; loss: number; pnl: number; r: number }> = {};
+      const byTimeframe: Record<string, { total: number; win: number; loss: number; pnl: number; r: number }> = {};
+
+      closed.forEach(t => {
+        const isWin = t.status === "WIN";
+        const isLoss = t.status === "LOSS";
+        const pnl = Number(t.pnl) || 0;
+        const r = Number(t.rr) || 0;
+
+        if (t.asset) {
+          if (!byAsset[t.asset]) byAsset[t.asset] = { total: 0, win: 0, loss: 0, pnl: 0, r: 0 };
+          byAsset[t.asset].total++;
+          if (isWin) byAsset[t.asset].win++;
+          if (isLoss) byAsset[t.asset].loss++;
+          byAsset[t.asset].pnl += pnl;
+          byAsset[t.asset].r += r;
+        }
+
+        if (t.session) {
+          if (!bySession[t.session]) bySession[t.session] = { total: 0, win: 0, loss: 0, pnl: 0, r: 0 };
+          bySession[t.session].total++;
+          if (isWin) bySession[t.session].win++;
+          if (isLoss) bySession[t.session].loss++;
+          bySession[t.session].pnl += pnl;
+          bySession[t.session].r += r;
+        }
+
+        const ems = (t.entryModels && Array.isArray(t.entryModels) && t.entryModels.length > 0) ? t.entryModels : (t.entry ? [t.entry] : []);
+        ems.forEach(em => {
+          if (em) {
+            if (!byEntryModel[em]) byEntryModel[em] = { total: 0, win: 0, loss: 0, pnl: 0, r: 0 };
+            byEntryModel[em].total++;
+            if (isWin) byEntryModel[em].win++;
+            if (isLoss) byEntryModel[em].loss++;
+            byEntryModel[em].pnl += pnl;
+            byEntryModel[em].r += r;
+          }
+        });
+
+        if (t.planFidelity) {
+          if (!byPlanFidelity[t.planFidelity]) byPlanFidelity[t.planFidelity] = { total: 0, win: 0, loss: 0, pnl: 0, r: 0 };
+          byPlanFidelity[t.planFidelity].total++;
+          if (isWin) byPlanFidelity[t.planFidelity].win++;
+          if (isLoss) byPlanFidelity[t.planFidelity].loss++;
+          byPlanFidelity[t.planFidelity].pnl += pnl;
+          byPlanFidelity[t.planFidelity].r += r;
+        }
+
+        if (t.trend) {
+          if (!byTrend[t.trend]) byTrend[t.trend] = { total: 0, win: 0, loss: 0, pnl: 0, r: 0 };
+          byTrend[t.trend].total++;
+          if (isWin) byTrend[t.trend].win++;
+          if (isLoss) byTrend[t.trend].loss++;
+          byTrend[t.trend].pnl += pnl;
+          byTrend[t.trend].r += r;
+        }
+
+        if (t.type) {
+          if (!byType[t.type]) byType[t.type] = { total: 0, win: 0, loss: 0, pnl: 0, r: 0 };
+          byType[t.type].total++;
+          if (isWin) byType[t.type].win++;
+          if (isLoss) byType[t.type].loss++;
+          byType[t.type].pnl += pnl;
+          byType[t.type].r += r;
+        }
+
+        if (t.timeframe) {
+          if (!byTimeframe[t.timeframe]) byTimeframe[t.timeframe] = { total: 0, win: 0, loss: 0, pnl: 0, r: 0 };
+          byTimeframe[t.timeframe].total++;
+          if (isWin) byTimeframe[t.timeframe].win++;
+          if (isLoss) byTimeframe[t.timeframe].loss++;
+          byTimeframe[t.timeframe].pnl += pnl;
+          byTimeframe[t.timeframe].r += r;
+        }
+      });
+
+      const formatHelper = (obj: Record<string, { total: number; win: number; loss: number; pnl: number; r: number }>) => {
+        const res: Record<string, any> = {};
+        Object.keys(obj).forEach(k => {
+          const item = obj[k];
+          res[k] = {
+            totalTrades: item.total,
+            winRate: `%${((item.win / item.total) * 100).toFixed(1)}`,
+            netPnl: `${item.pnl >= 0 ? '+' : ''}${item.pnl.toFixed(2)}$`,
+            netR: `${item.r >= 0 ? '+' : ''}${item.r.toFixed(2)}R`,
+          };
+        });
+        return res;
+      };
+
+      return {
+        byAsset: formatHelper(byAsset),
+        bySession: formatHelper(bySession),
+        byEntryModel: formatHelper(byEntryModel),
+        bySetupQuality: formatHelper(byPlanFidelity),
+        byTrend: formatHelper(byTrend),
+        byDirection: formatHelper(byType),
+        byTimeframe: formatHelper(byTimeframe),
+      };
+    })();
+
     try {
+      const targetTrades = mode === "mistake_pattern" 
+        ? effectiveTrades.filter(t => t.status === "LOSS") 
+        : effectiveTrades;
+
       const response = await authFetch("/api/copilot", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -858,22 +1007,42 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
           healthMetrics,
           behavioralTraps,
           journalSentimentStats,
-          tradesData: (mode === "mistake_pattern" ? trades.filter(t => t.status === "LOSS") : trades).slice(-60).map((t) => ({
+          definitionsData: {
+            titles: definitionTitles,
+            ...definitions
+          },
+          breakdownMetrics,
+          tradesSummary: {
+            totalAllTrades: effectiveTrades.length,
+            currentlyFilteredCount: trades.length,
+            currency: currency || "$",
+          },
+          tradesData: targetTrades.map((t) => ({
+            id: t.id,
             asset: t.asset,
             type: t.type,
             status: t.status,
             pnl: t.pnl,
             rr: t.rr,
+            platform: t.platform,
             session: t.session,
             timeframe: t.timeframe,
+            htfTimeframe: t.htfTimeframe,
             concept: t.concept,
+            confirmations: t.confirmations,
+            entryModel: (t.entryModels && t.entryModels.length > 0) ? t.entryModels.join(", ") : t.entry,
+            trend: t.trend,
+            setupQuality: t.planFidelity,
             notes: t.notes,
             date: new Date(t.createdAt).toLocaleDateString("tr-TR"),
+            time: new Date(t.createdAt).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }),
+            hasScreenshot: !!t.screenshot,
           })),
           statsData: {
             totalTrades: stats.totalTrades,
             winningTrades: stats.winningTrades,
             losingTrades: stats.losingTrades,
+            breakevenTrades: stats.breakevenTrades,
             winRate: stats.winRate,
             netPnl: stats.netPnl,
             netR: stats.netR,
@@ -882,10 +1051,12 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
             averageLossRR: stats.averageLossRR,
             largestWin: stats.largestWin,
             largestLoss: stats.largestLoss,
+            bestAsset: stats.bestAsset,
+            worstAsset: stats.worstAsset,
           },
-          journalsData: journals.slice(-30).map(j => ({ date: j.date, title: j.title, content: j.content, mood: j.mood })),
-          certificatesData: (certificates || []).slice(-30).map(c => ({ title: c.title, type: c.type, date: c.date, amount: c.amount })),
-          notesData: (notes || []).slice(-30).map(n => ({ title: n.title, content: n.content })),
+          journalsData: journals.map(j => ({ date: j.date, title: j.title, mood: j.mood, content: j.content, tags: j.tags })),
+          certificatesData: (certificates || []).map(c => ({ title: c.title, type: c.type, date: c.date, amount: c.amount, description: c.description })),
+          notesData: (notes || []).map(n => ({ title: n.title, content: n.content, isPinned: n.isPinned })),
           chatHistory: messages.slice(-8).map((m) => ({
             role: m.role,
             content: m.content,
@@ -930,26 +1101,29 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.15, ease: "easeOut" }}
-      style={{ willChange: "opacity" }}
-      onClick={onClose}
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-4 bg-zinc-950/80 "
-    >
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.15, ease: "easeOut" }}
-        style={{ willChange: "opacity" }}
-        onClick={(e) => e.stopPropagation()}
-        id="ai-copilot-popup"
-        className="bg-zinc-900 border border-zinc-700/50 rounded-2xl w-full max-w-4xl h-[92vh] sm:h-[85vh] flex flex-col shadow-2xl overflow-hidden relative"
-      >
+  return createPortal(
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          key="ai-copilot-modal-backdrop"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15, ease: "easeOut" }}
+          onClick={onClose}
+          className="will-change-[opacity] fixed inset-0 z-[1500] flex items-center justify-center p-2 sm:p-4 bg-zinc-950/80"
+        >
+          <motion.div
+            key="ai-copilot-modal-content"
+            initial={{ opacity: 0, scale: 0.98, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.98, y: 10 }}
+            transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+            style={{ willChange: "transform, opacity" }}
+            onClick={(e) => e.stopPropagation()}
+            id="ai-copilot-popup"
+            className="bg-zinc-900 border border-zinc-700/50 rounded-2xl w-full max-w-4xl h-[92vh] sm:h-[85vh] flex flex-col shadow-2xl overflow-hidden relative"
+          >
         {/* HEADER BAR */}
         <div className="bg-zinc-900/60 border-b border-zinc-700/40 px-5 py-3.5 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
@@ -962,10 +1136,10 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
 
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-xs sm:text-sm font-bold text-zinc-100 uppercase tracking-wider font-mono">
+                <h2 className="heading-1">
                   AI Co-Pilot & Mentör
                 </h2>
-                <span className="px-2.5 py-0.5 rounded-lg text-[9px] font-mono font-bold bg-blue-500/10 text-blue-400 border border-blue-500/25 uppercase tracking-wider">
+                <span className="px-2.5 py-0.5 rounded-lg heading-3 toggle-item-brand border border-blue-500/25">
                   FLASH-LATEST
                 </span>
               </div>
@@ -1045,7 +1219,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
               {/* Mentör Karakter Seçici - Ultra Kompakt Tasarım */}
               <div className="flex items-center justify-between overflow-x-auto pb-2 shrink-0 border-b border-zinc-700/50 hide-scrollbar gap-2">
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider shrink-0 flex items-center gap-1 select-none mr-1 font-bold">
+                  <span className="text-[10px] font-sans text-zinc-500 uppercase tracking-wider shrink-0 flex items-center gap-1 select-none mr-1 font-bold">
                     <Bot size={12} className="text-blue-400" /> Mentör:
                   </span>
                   {[
@@ -1061,7 +1235,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                       <button
                         key={p.id}
                         onClick={() => setSelectedPersona(p.id as any)}
-                        className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-[10px] font-mono font-bold border transition-all duration-200 cursor-pointer whitespace-nowrap shrink-0 uppercase tracking-wider ${
+                        className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-[10px] font-sans font-bold border transition-all duration-200 cursor-pointer whitespace-nowrap shrink-0 uppercase tracking-wider ${
                           isSelected
                             ? "bg-blue-500/15 text-blue-300 border-blue-500/40 shadow-xs"
                             : "bg-zinc-900/80 border-zinc-700/50 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/80"
@@ -1086,7 +1260,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                       }]);
                     }, 50);
                   }}
-                  className="flex items-center justify-center w-7 h-7 rounded-xl border transition-colors duration-200 cursor-pointer shrink-0 bg-rose-500/10 text-rose-400 border-rose-500/25 hover:bg-rose-500/20"
+                  className="flex items-center justify-center w-7 h-7 rounded-xl border transition-colors duration-200 cursor-pointer shrink-0 toggle-item-loss hover:bg-rose-500/20"
                 >
                   <RefreshCw size={12} />
                 </button>
@@ -1103,7 +1277,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                   >
                     {/* Avatar */}
                     <div
-                      className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-xs font-mono font-bold border ${
+                      className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-xs font-sans font-bold border ${
                         msg.role === "user"
                           ? "bg-blue-500/15 border-blue-500/30 text-blue-400"
                           : "bg-zinc-900 border-zinc-700/50 text-blue-400"
@@ -1150,7 +1324,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                                   );
                                 }}
                                 disabled={isLoading}
-                                className="px-3 py-1.5 bg-blue-500/15 hover:bg-blue-500/25 disabled:bg-zinc-800/50 disabled:border-zinc-700/50 disabled:text-zinc-500 text-blue-400 font-mono font-bold text-[10px] tracking-wider uppercase rounded-xl transition-colors duration-200 cursor-pointer flex items-center gap-1.5 shadow-xs border border-blue-500/30"
+                                className="px-3 py-1.5 bg-blue-500/15 hover:bg-blue-500/25 disabled:bg-zinc-800/50 disabled:border-zinc-700/50 disabled:text-zinc-500 text-blue-400 font-sans font-bold text-[10px] tracking-wider uppercase rounded-xl transition-colors duration-200 cursor-pointer flex items-center gap-1.5 shadow-xs border border-blue-500/30"
                               >
                                 <Sparkles size={11} />
                                 <span>Yapay Zekâ Analizini Güncelle 🔄</span>
@@ -1162,7 +1336,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                         <p className="whitespace-pre-wrap text-xs sm:text-xs leading-relaxed text-zinc-100 font-sans">{msg.content}</p>
                       )}
 
-                      <div className="flex items-center justify-between gap-4 mt-2.5 pt-2 border-t border-zinc-700/50 text-[10px] font-mono text-zinc-500">
+                      <div className="flex items-center justify-between gap-4 mt-2.5 pt-2 border-t border-zinc-700/50 text-[10px] font-sans text-zinc-500">
                         <span>{msg.timestamp}</span>
 
                         <div className="flex items-center gap-2">
@@ -1215,7 +1389,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                     <div className="w-8 h-8 rounded-xl bg-zinc-900/70 border border-zinc-700/50  flex items-center justify-center shrink-0 text-blue-400">
                       <Bot size={14} className="animate-spin" />
                     </div>
-                    <div className="bg-zinc-900/70 border border-zinc-700/50  rounded-2xl p-3 text-xs text-zinc-400 flex items-center gap-2 font-mono">
+                    <div className="bg-zinc-900/70 border border-zinc-700/50  rounded-2xl p-3 text-xs text-zinc-400 flex items-center gap-2 font-sans">
                       <Sparkles size={13} className="text-blue-400 animate-pulse" />
                       <span>Analiz ediliyor...</span>
                     </div>
@@ -1231,7 +1405,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                 {attachedImage && (
                   <div className="flex items-center gap-2 bg-zinc-900/80 border border-zinc-700/50 p-2 rounded-xl">
                     <img src={attachedImage} alt="Ekran Görüntüsü Önizleme" className="w-10 h-10 object-cover rounded-lg border border-zinc-700/50" />
-                    <div className="flex-1 text-[11px] text-zinc-300 font-mono truncate">
+                    <div className="flex-1 text-xs text-zinc-300 font-sans truncate">
                       🖼️ Grafik Ekran Görüntüsü Yüklendi (Gemini Vision Hazır)
                     </div>
                     <button
@@ -1245,10 +1419,14 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
 
                 {/* Quick Prompt Pills */}
                 <div className="flex flex-wrap items-center gap-1.5 pb-1">
-                  <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider shrink-0 flex items-center gap-1 mr-0.5 font-bold">
+                  <span className="text-[10px] font-sans text-zinc-500 uppercase tracking-wider shrink-0 flex items-center gap-1 mr-0.5 font-bold">
                     <Lightbulb size={11} className="text-amber-400" /> Öneriler:
                   </span>
                   {[
+                    {
+                      label: "Silver Bullet",
+                      prompt: "Veritabanımdaki tüm işlemleri tarayarak Silver Bullet (ICT SB) kurulumlarımı, saat pencerelerimi (London/NY AM/NY PM), FVG/IFVG alanlarımı ve başarı oranlarımı analiz et. Silver Bullet stratejimi geliştirmem için somut tavsiyeler ve aksiyon adımları sun."
+                    },
                     {
                       label: "Günün Özeti",
                       prompt: "Günün tüm işlemlerini, kar/zarar durumunu ve yazdığım günlük notlarını tarayarak bana kişiselleştirilmiş gün özeti, işlemlerin analizi ve tavsiye kaydı üret."
@@ -1274,7 +1452,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                       key={idx}
                       onClick={() => handleSendMessage(item.prompt)}
                       disabled={isLoading}
-                      className="px-2.5 py-1 rounded-xl text-[10px] font-mono bg-zinc-900/80 hover:bg-blue-500/10 hover:text-blue-300 hover:border-blue-500/30 text-zinc-300 border border-zinc-700/50 transition-all duration-200 cursor-pointer whitespace-nowrap disabled:opacity-50"
+                      className="px-2.5 py-1 rounded-xl text-[10px] font-sans bg-zinc-900/80 hover:bg-blue-500/10 hover:text-blue-300 hover:border-blue-500/30 text-zinc-300 border border-zinc-700/50 transition-all duration-200 cursor-pointer whitespace-nowrap disabled:opacity-50"
                     >
                       {item.label}
                     </button>
@@ -1338,24 +1516,24 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.15, ease: "easeOut" }}
-                className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 min-h-0 copilot-scrollbar"
+                className="flex-1 overflow-y-auto p-5 space-y-5 min-h-0 copilot-scrollbar"
               >
               <div className="bg-zinc-900/70 border border-zinc-700/50  rounded-xl p-4">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">
+                      <span className="text-[10px] font-sans uppercase tracking-wider text-zinc-500">
                         Disiplin & Risk Sağlık Karnesi
                       </span>
-                      <span className={`px-2 py-0.5 rounded-lg text-[9px] font-mono font-bold bg-zinc-900 ${healthMetrics.color}`}>
+                      <span className={`px-2 py-0.5 rounded-lg text-[9px] font-sans font-bold bg-zinc-900 ${healthMetrics.color}`}>
                         {healthMetrics.label}
                       </span>
                     </div>
                     <div className="flex items-baseline gap-1">
-                      <span className={`text-3xl font-black font-mono tracking-tight ${healthMetrics.color}`}>
+                      <span className={`text-3xl font-black font-sans tracking-tight ${healthMetrics.color}`}>
                         {healthMetrics.score}
                       </span>
-                      <span className="text-zinc-500 font-mono text-[10px]">/ 100 Puan</span>
+                      <span className="text-zinc-500 font-sans text-[10px]">/ 100 Puan</span>
                     </div>
                   </div>
 
@@ -1364,7 +1542,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                       setActiveTab("chat");
                       handleSendMessage("Mevcut disiplin skorumu detaylı analiz et ve puanımı artırmak için bana özel 3 altın kural söyle.", "quick_analysis");
                     }}
-                    className="px-3 py-2 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 border border-blue-500/30 font-mono font-bold text-[11px] uppercase tracking-wider rounded-xl transition-colors duration-200 cursor-pointer flex items-center gap-1.5 shadow-xs"
+                    className="px-3 py-2 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 border border-blue-500/30 font-sans font-bold text-xs uppercase tracking-wider rounded-xl transition-colors duration-200 cursor-pointer flex items-center gap-1.5 shadow-xs"
                   >
                     <Sparkles size={12} />
                     <span>Detaylı Rapor İste</span>
@@ -1375,14 +1553,14 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
               {/* Grid Metrics */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
-                  { label: "Başarı Oranı (Win Rate)", val: `%${healthMetrics.winRate.toFixed(1)}`, color: "text-blue-400" },
-                  { label: "Kâr Faktörü (Profit Factor)", val: healthMetrics.profitFactor.toFixed(2), color: "text-emerald-400" },
+                  { label: "Başarı Oranı (WIN RATE)", val: `%${healthMetrics.winRate.toFixed(1)}`, color: "text-blue-400" },
+                  { label: "Kâr Faktörü (PROFIT FACTOR)", val: healthMetrics.profitFactor.toFixed(2), color: "text-emerald-400" },
                   { label: "Ortalama R-Factor", val: `${healthMetrics.rrRatio} R`, color: "text-purple-400" },
                   { label: "Arka Arkaya Max Kayıp", val: `${healthMetrics.maxLossStreak} İşlem`, color: "text-rose-400" },
                 ].map((m, idx) => (
                   <div key={idx} className="bg-zinc-900/70 border border-zinc-700/50  rounded-xl p-3.5 flex flex-col justify-between">
-                    <span className="text-[9px] font-mono uppercase text-zinc-500 block leading-tight">{m.label}</span>
-                    <span className={`text-lg font-bold font-mono tracking-tight ${m.color} mt-1.5 block`}>{m.val}</span>
+                    <span className="heading-3 text-zinc-500 block leading-tight">{m.label}</span>
+                    <span className={`text-lg font-bold font-sans tracking-tight ${m.color} mt-1.5 block`}>{m.val}</span>
                   </div>
                 ))}
               </div>
@@ -1395,11 +1573,11 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                   <div className="flex items-center justify-between border-b border-zinc-850 pb-3">
                     <div className="flex items-center gap-2">
                       <Brain size={14} className="text-purple-400" />
-                      <h4 className="text-xs font-mono font-bold uppercase text-zinc-200 tracking-wider">
+                      <h4 className="text-xs font-sans font-bold uppercase text-zinc-200 tracking-wider">
                         AI Duygu & Performans Korelasyonu
                       </h4>
                     </div>
-                    <span className="px-2 py-0.5 rounded-lg text-[9px] font-mono font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                    <span className="px-2 py-0.5 rounded-lg text-[9px] font-sans font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20">
                       Zihinsel Sağlık
                     </span>
                   </div>
@@ -1408,7 +1586,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                     <div className="space-y-4">
                       {/* Mood Distribution visual representation */}
                       <div className="space-y-2">
-                        <span className="text-[9px] font-mono uppercase text-zinc-500">Günlük Duygu Durum Dağılımı</span>
+                        <span className="heading-3 text-zinc-500">Günlük Duygu Durum Dağılımı</span>
                         <div className="flex h-1.5 rounded-full overflow-hidden bg-zinc-950 p-0">
                           {journalSentimentStats.excellentCount > 0 && (
                             <div
@@ -1446,7 +1624,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                             />
                           )}
                         </div>
-                        <div className="flex flex-wrap gap-x-3 gap-y-1 text-[9px] font-mono text-zinc-500">
+                        <div className="flex flex-wrap gap-x-3 gap-y-1 text-[9px] font-sans text-zinc-500">
                           <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Harika ({journalSentimentStats.excellentCount})</span>
                           <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-teal-400" /> İyi ({journalSentimentStats.goodCount})</span>
                           <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-blue-400" /> Nötr ({journalSentimentStats.neutralCount})</span>
@@ -1455,9 +1633,9 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                         </div>
                       </div>
 
-                      <div className="bg-zinc-900/70 border border-zinc-700/50  rounded-xl p-3 text-[11px] leading-relaxed text-zinc-300">
+                      <div className="bg-zinc-900/70 border border-zinc-700/50  rounded-xl p-3 text-xs leading-relaxed text-zinc-300">
                         <div className="font-sans italic">
-                          <span className="font-bold font-mono text-purple-400 uppercase tracking-wider not-italic block mb-1 text-[9px]">💡 Mentör Analizi & Korelasyon:</span>
+                          <span className="font-bold font-sans text-purple-400 uppercase tracking-wider not-italic block mb-1 text-[9px]">💡 Mentör Analizi & Korelasyon:</span>
                           "{journalSentimentStats.insight}"
                         </div>
                       </div>
@@ -1465,7 +1643,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                   ) : (
                     <div className="flex flex-col items-center justify-center py-10 text-center space-y-2">
                       <span className="text-xl">📓</span>
-                      <p className="text-[11px] text-zinc-500 font-sans leading-normal max-w-xs">
+                      <p className="text-xs text-zinc-500 font-sans leading-normal max-w-xs">
                         Korelasyon analizi için işlem günlüğünüzde duygu durumu (mood) seçilmiş yazılar olması gerekir. Günlük yazmaya başlayarak AI analizini aktifleştirin!
                       </p>
                     </div>
@@ -1477,11 +1655,11 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                   <div className="flex items-center justify-between border-b border-zinc-850 pb-3">
                     <div className="flex items-center gap-2">
                       <ShieldAlert size={14} className="text-rose-400" />
-                      <h4 className="text-xs font-mono font-bold uppercase text-zinc-200 tracking-wider">
+                      <h4 className="text-xs font-sans font-bold uppercase text-zinc-200 tracking-wider">
                         AI Davranışsal Hata ve Tuzak Dedektörü
                       </h4>
                     </div>
-                    <span className="px-2 py-0.5 rounded-lg text-[9px] font-mono font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20 animate-pulse">
+                    <span className="px-2 py-0.5 rounded-lg text-[9px] font-sans font-bold badge-loss animate-pulse">
                       Canlı Dedektör
                     </span>
                   </div>
@@ -1490,7 +1668,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                     {behavioralTraps.map((trap, idx) => (
                       <div key={idx} className="pb-3 border-b border-zinc-700/50/40 last:border-0 last:pb-0 space-y-1">
                         <div className="flex items-center justify-between">
-                          <span className="font-mono font-bold text-[11px] text-zinc-100 flex items-center gap-1.5">
+                          <span className="font-sans font-bold text-xs text-zinc-100 flex items-center gap-1.5">
                             {trap.id !== "none" ? (
                               <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
                             ) : (
@@ -1498,16 +1676,16 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                             )}
                             {trap.name}
                           </span>
-                          <span className={`px-2 py-0.5 rounded-lg text-[9px] font-mono font-bold ${
+                          <span className={`px-2 py-0.5 rounded-lg text-[9px] font-sans font-bold ${
                             trap.severity === "high" ? "bg-red-500/10 text-red-400" : "bg-yellow-500/10 text-yellow-400"
                           }`}>
                             {trap.severity === "high" ? "Yüksek Risk" : "Orta Risk"}
                           </span>
                         </div>
-                        <p className="text-[11px] text-zinc-400 leading-normal font-sans">
+                        <p className="text-xs text-zinc-400 leading-normal font-sans">
                           {trap.desc}
                         </p>
-                        <p className="text-[10px] text-emerald-400 font-mono">
+                        <p className="text-[10px] text-emerald-400 font-sans">
                           🛡️ <span className="font-bold">Çözüm:</span> {trap.solution}
                         </p>
                       </div>
@@ -1521,14 +1699,14 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
               <div className="bg-zinc-900/70 border border-zinc-700/50  rounded-xl p-5 space-y-4">
                 <div className="flex items-center gap-2 border-b border-zinc-850 pb-3">
                   <Activity size={14} className="text-blue-400" />
-                  <h4 className="text-xs font-mono font-bold uppercase text-zinc-200 tracking-wider">
+                  <h4 className="text-xs font-sans font-bold uppercase text-zinc-200 tracking-wider">
                     Sistem Disiplin Kuralları Uyumluluk Matrisi
                   </h4>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-3">
-                    <span className="text-[10px] font-mono text-zinc-500 uppercase">Risk ve Para Yönetimi</span>
+                    <span className="text-[10px] font-sans text-zinc-500 uppercase">Risk ve Para Yönetimi</span>
                     <div className="space-y-2.5">
                       {/* Rule 1: Stop and target setup */}
                       <div className="flex items-start gap-2.5 bg-zinc-900/70 p-3 rounded-xl border border-zinc-700/50 ">
@@ -1537,10 +1715,10 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                         ) : (
                           <AlertTriangle size={15} className="text-rose-400 shrink-0 mt-0.5" />
                         )}
-                        <div className="text-[11px] leading-relaxed">
+                        <div className="text-xs leading-relaxed">
                           <div className="font-bold text-zinc-200">Pozitif Risk/Ödül Oranı (≥ 1.2 R)</div>
                           <p className="text-zinc-400 mt-0.5">
-                            Ortalama kârınız ortalama zararınızın en az 1.2 katı olmalıdır. Mevcut: <span className="font-mono text-blue-400">{healthMetrics.rrRatio} R</span>.
+                            Ortalama kârınız ortalama zararınızın en az 1.2 katı olmalıdır. Mevcut: <span className="font-sans text-blue-400">{healthMetrics.rrRatio} R</span>.
                           </p>
                         </div>
                       </div>
@@ -1552,10 +1730,10 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                         ) : (
                           <AlertTriangle size={15} className="text-amber-400 shrink-0 mt-0.5" />
                         )}
-                        <div className="text-[11px] leading-relaxed">
+                        <div className="text-xs leading-relaxed">
                           <div className="font-bold text-zinc-200">Maksimum Kayıp Serisi Koruması (&lt; 4)</div>
                           <p className="text-zinc-400 mt-0.5">
-                            Arka arkaya 4 veya daha fazla kayıp sistemik disiplin boşluğuna işaret eder. Mevcut: <span className="font-mono text-blue-400">{healthMetrics.maxLossStreak} İşlem</span>.
+                            Arka arkaya 4 veya daha fazla kayıp sistemik disiplin boşluğuna işaret eder. Mevcut: <span className="font-sans text-blue-400">{healthMetrics.maxLossStreak} İşlem</span>.
                           </p>
                         </div>
                       </div>
@@ -1563,7 +1741,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                   </div>
 
                   <div className="space-y-3">
-                    <span className="text-[10px] font-mono text-zinc-500 uppercase">Zihinsel Durum ve İşlem Tutarlılığı</span>
+                    <span className="text-[10px] font-sans text-zinc-500 uppercase">Zihinsel Durum ve İşlem Tutarlılığı</span>
                     <div className="space-y-2.5">
                       {/* Rule 3: Mood Logging */}
                       <div className="flex items-start gap-2.5 bg-zinc-900/70 p-3 rounded-xl border border-zinc-700/50 ">
@@ -1572,10 +1750,10 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                         ) : (
                           <AlertTriangle size={15} className="text-amber-400 shrink-0 mt-0.5" />
                         )}
-                        <div className="text-[11px] leading-relaxed">
+                        <div className="text-xs leading-relaxed">
                           <div className="font-bold text-zinc-200">Psikolojik Günlük Kaydı (≥ 3 Günlük)</div>
                           <p className="text-zinc-400 mt-0.5">
-                            Karar anındaki zihinsel durumunuzu izlemek için düzenli günlük tutun. Mevcut: <span className="font-mono text-blue-400">{journalSentimentStats.totalJournals} Kayıt</span>.
+                            Karar anındaki zihinsel durumunuzu izlemek için düzenli günlük tutun. Mevcut: <span className="font-sans text-blue-400">{journalSentimentStats.totalJournals} Kayıt</span>.
                           </p>
                         </div>
                       </div>
@@ -1587,10 +1765,10 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                         ) : (
                           <AlertTriangle size={15} className="text-yellow-400 shrink-0 mt-0.5" />
                         )}
-                        <div className="text-[11px] leading-relaxed">
+                        <div className="text-xs leading-relaxed">
                           <div className="font-bold text-zinc-200">Aşırı İşlem Kontrolü (Overtrading)</div>
                           <p className="text-zinc-400 mt-0.5">
-                            Sınırlı sayıda, yüksek kaliteli kuruluma odaklanarak sermayenizi koruyun. Mevcut: <span className="font-mono text-blue-400">{trades.length} Toplam İşlem</span>.
+                            Sınırlı sayıda, yüksek kaliteli kuruluma odaklanarak sermayenizi koruyun. Mevcut: <span className="font-sans text-blue-400">{trades.length} Toplam İşlem</span>.
                           </p>
                         </div>
                       </div>
@@ -1601,7 +1779,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                 {/* TRADER ARCHETYPE & CUSTOM ACTION PLAN */}
                 <div className="mt-4 p-4 bg-zinc-900/70 rounded-xl border border-zinc-700/50  grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="md:col-span-1 space-y-1 border-r border-zinc-850 pr-4 last:border-0 last:pr-0">
-                    <span className="text-[9px] font-mono text-zinc-500 uppercase">Yatırımcı Arketipiniz</span>
+                    <span className="heading-3 text-zinc-500">Yatırımcı Arketipiniz</span>
                     <div className="text-xs font-bold text-blue-400 flex items-center gap-1.5 mt-1">
                       <Brain size={13} />
                       {healthMetrics.score >= 80 ? "🎯 Profesyonel Fon Yöneticisi" :
@@ -1617,15 +1795,15 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                   </div>
 
                   <div className="md:col-span-2 space-y-1 pl-0 md:pl-2">
-                    <span className="text-[9px] font-mono text-zinc-500 uppercase">Mentör Gelişim ve Eylem Planı</span>
+                    <span className="heading-3 text-zinc-500">Mentör Gelişim ve Eylem Planı</span>
                     <div className="text-xs font-bold text-emerald-400 mt-1 flex items-center gap-1">
                       <CheckCircle2 size={12} /> Disiplin Seviyesi: {healthMetrics.label} ({healthMetrics.score}/100 Puan)
                     </div>
-                    <ul className="text-[11px] text-zinc-300 space-y-1.5 leading-normal mt-2 list-disc list-inside">
+                    <ul className="text-xs text-zinc-300 space-y-1.5 leading-normal mt-2 list-disc list-inside">
                       {healthMetrics.score >= 80 ? (
                         <>
                           <li>Kayıplara karşı mükemmel duygusal tampon: Mevcut yapıyı aynen devam ettirin.</li>
-                          <li>İşlem günlüğünüzde kullandığınız onaylari (FVG, Orderblock vb.) etiketlemeyi unutmayın.</li>
+                          <li>İşlem günlüğünüzde kullandığınız PD ARRAY&apos;leri (FVG, Orderblock vb.) etiketlemeyi unutmayın.</li>
                           <li>İleri düzey veri korelasyonları için her işlemine mutlaka ekran görüntüsü ekleyin.</li>
                         </>
                       ) : healthMetrics.score >= 60 ? (
@@ -1655,7 +1833,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                 <div className="mt-4 p-4 bg-purple-950/10 border border-purple-900/30 rounded-xl space-y-4">
                   <div className="flex items-center gap-2 border-b border-purple-900/20 pb-2">
                     <Brain size={14} className="text-purple-400" />
-                    <h4 className="text-xs font-mono font-bold uppercase text-purple-300 tracking-wider">
+                    <h4 className="text-xs font-sans font-bold uppercase text-purple-300 tracking-wider">
                       Yapay Zekâ Disiplin & Psikoloji Değerlendirmesi
                     </h4>
                   </div>
@@ -1664,19 +1842,19 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                     {/* Zihinsel Sağlık & Hata Korelasyonu */}
                     <div className="space-y-3">
                       <div className="bg-zinc-950/35 border border-zinc-900/40 rounded-xl p-3.5 space-y-2.5">
-                        <span className="font-mono font-bold text-purple-400 uppercase tracking-wider block text-[9px]">
+                        <span className="font-sans font-bold text-purple-400 uppercase tracking-wider block text-[9px]">
                           🧠 Zihinsel Sağlık & Hata Korelasyonu
                         </span>
-                        <p className="text-[11px] text-zinc-300 leading-relaxed font-sans">
+                        <p className="text-xs text-zinc-300 leading-relaxed font-sans">
                           {healthDetailedAiInsight.moodAdvice}
                         </p>
                       </div>
 
                       <div className="bg-zinc-950/35 border border-zinc-900/40 rounded-xl p-3.5 space-y-2.5">
-                        <span className="font-mono font-bold text-rose-400 uppercase tracking-wider block text-[9px]">
+                        <span className="font-sans font-bold text-rose-400 uppercase tracking-wider block text-[9px]">
                           🛡️ Davranışsal Eğilimler & Risk
                         </span>
-                        <p className="text-[11px] text-zinc-300 leading-relaxed font-sans">
+                        <p className="text-xs text-zinc-300 leading-relaxed font-sans">
                           {healthDetailedAiInsight.dynamicTrapAnalysis}
                         </p>
                       </div>
@@ -1685,14 +1863,14 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                     {/* Kişiselleştirilmiş Gelişim Yol Haritası */}
                     <div className="bg-zinc-950/35 border border-zinc-900/40 rounded-xl p-4 flex flex-col justify-between">
                       <div className="space-y-2">
-                        <span className="font-mono font-bold text-emerald-400 uppercase tracking-wider block text-[9px] border-b border-zinc-900/50 pb-1.5">
+                        <span className="font-sans font-bold text-emerald-400 uppercase tracking-wider block text-[9px] border-b border-zinc-900/50 pb-1.5">
                           🚀 Kişiselleştirilmiş Gelişim Yol Haritası
                         </span>
-                        <div className="text-[11px] text-zinc-300 leading-relaxed space-y-2 font-sans pt-1">
+                        <div className="text-xs text-zinc-300 leading-relaxed space-y-2 font-sans pt-1">
                           <Markdown>{healthDetailedAiInsight.roadmapText}</Markdown>
                         </div>
                       </div>
-                      <div className="text-[10px] text-zinc-500 font-mono italic mt-4 text-right">
+                      <div className="text-[10px] text-zinc-500 font-sans italic mt-4 text-right">
                         *AI Mentörünüz tarafından anlık işlem performansınıza göre optimize edilmiştir.
                       </div>
                     </div>
@@ -1706,6 +1884,14 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
           {/* TAB 3: PRESETS */}
           {activeTab === "presets" && (() => {
             const presetItems = [
+              {
+                id: "silver_bullet_analysis",
+                title: "Silver Bullet",
+                prompt: "Veritabanımdaki TÜM işlem verilerini (özellikle Concept alanı 'Silver Bullet' / 'ICT SB' olanlar, 03-04 / 10-11 / 14-15 saat pencerelerindeki işlemler, FVG/IFVG ve Liquidity Sweep ile açılmış tüm pozisyonlar) detaylıca tara ve Silver Bullet stratejimi geliştirmem için kapsamlı bir Mentörlük Raporu oluştur.\n\nLütfen aşağıdaki başlıklar altında verilerime dayalı somut bulguları ve geliştirme tavsiyelerini sun:\n\n### 1. Silver Bullet Genel Performans Karnesi\n- **Toplam SB / SB Tipi İşlem Sayısı**: [Verilerdeki sayı]\n- **Kazanma Oranı (Win Rate)**: [%]\n- **Ortalama R/R ve Net Katkı**: [R/R ve PnL]\n- **Beklenen Değer (Expected Value - EV)**: [Silver Bullet kurulumlarının ortalama kârlılığı]\n\n### 2. Saat Pencereleri & Seans Verimliliği (Silver Bullet Windows)\n- **London SB (03:00 - 04:00 NY / 10:00 - 11:00 TSI)**: [Verilerdeki kârlılık & Win Rate]\n- **NY AM SB (10:00 - 11:00 NY / 17:00 - 18:00 TSI)**: [Verilerdeki kârlılık & Win Rate]\n- **NY PM SB (02:00 - 03:00 NY / 21:00 - 22:00 TSI)**: [Verilerdeki kârlılık & Win Rate]\n*Hangi saat penceresinde \"Gold Edge\" yakaladığımı, hangi saat penceresinden uzak durmam gerektiğini belirt.*\n\n### 3. PD Array, Model & Zaman Dilimi Uyumu (Confluence Analysis)\n- **En Başarılı PD Array Elemanları**: [FVG, Inversion FVG, BSL/SSL Sweep, MSS vb.]\n- **En Başarılı HTF / Entry TF İkilisi**: [Örn: 15M HTF + 1M Entry TF]\n- **En Yüksek Başarıya Sahip Enstrümanlar**: [Örn: NASDAQ / NQ, EURUSD, BTC]\n\n### 4. Silver Bullet Zayıf Noktalar & Hata Örüntüleri\n- **Pencere Dışı Dürtüsel İşlemler**: Silver Bullet saat pencereleri dışında açılan sabırsız işlemler var mı?\n- **Disiplin & Setup Kalitesi (Plan Fidelity)**: A+ / Tam Sadakat ile FOMO/Kısmen kurallı SB işlemleri arasındaki finansal fark.\n- **Ters Trend / Yanlış Likidite Seçimi**: Stop olan Silver Bullet işlemlerindeki ortak hata kalıpları.\n\n### 5. Silver Bullet Stratejimi Katlama & Geliştirme Aksiyon Planı (Actionable Mentorship)\n- **Kural 1 (Filtreme)**: [Hangi durum gerçekleşmeden asla SB girilmemeli?]\n- **Kural 2 (Zamanlama & Seans)**: [Hangi saat penceresine odaklanılmalı?]\n- **Kural 3 (Risk & Hedef Yönetimi)**: [R/R ve Kar Alma (TP) optimizasyon önerisi]\n- **Kural 4 (Geliştirme Tavsiyesi)**: [Edge'imi 2 katına çıkaracak 1 somut aksiyon adımı]\n\nEğer veritabanında henüz spesifik \"Silver Bullet\" etiketli işlem sayısı az ise, 1M/5M zaman dilimleri, FVG/IFVG onayları ve NY/London seanslarındaki mevcut işlemlerimden çıkarım yaparak bu şablonu eksiksiz doldur.",
+                desc: "Silver Bullet (ICT SB) kurulumlarınızı, 1H/10-11/14-15 saat pencerelerinizi, FVG/IFVG alanlarınızı ve işlem verimliliğinizi derinlemesine analiz edip geliştirme tavsiyeleri sunar.",
+                icon: Zap,
+                iconColor: "text-amber-400",
+              },
               {
                 id: "mistake_pattern",
                 title: "Temel Hata & Örüntü Tespiti",
@@ -1725,7 +1911,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
               {
                 id: "edge_playbook_matrix",
                 title: "Kişisel Altın Reçete (A+ Setup)",
-                prompt: "Veritabanındaki işlem kombinasyon matrisimi tarayarak benim için bir \"Kişisel Altın Reçete\" (A+ Setup Matrix) oluştur.\nLütfen mevcut işlem verilerime, paritelerime, seanslarıma ve onaylarime bakarak en yüksek Beklenen Değerli (EV - Expected Value) kurulumumu saptayarak tam olarak şu formatta bir çıktı üret:\n\n### Senin En Yüksek Beklenen Değerli (EV) Setup'ın:\n- **Parite**: [En başarılı pariteyi saptayarak yaz, örn: NASDAQ]\n- **Seans**: [En başarılı seansı saptayarak yaz, örn: NY AM]\n- **HTF**: [Verilerdeki HTF'yi analiz et, örn: 4H]\n- **ETF**: [Verilerdeki ETF zaman dilimini analiz et, örn: 5M]\n- **Onay**: [En başarılı onaylari saptayarak yaz, örn: LİKDİTE + FVG]\n- **Win Rate**: [Bu setup için başarı yüzdesi tahmini, örn: %84]\n- **Ort. R**: [Ortalama R/R kazancı, örn: 2.4R]\n- **Net Katkı**: [Toplam net R katkısı, örn: +18.5 R]\n\n### AI Aksiyon Notu:\n\"[Değişkenler bir araya geldiğinde kaybetme olasılığın ve başarı şansın üzerine verilerden yola çıkarak bir aksiyon notu ekle. Hangi seansların verimsiz olduğunu veya hangi seanslardan tamamen uzak durulması gerektiğini sistem önerisi olarak ekle.]\"\n\nEğer işlem sayım henüz 30'un altındaysa bile, mevcut verilerden olabildiğince mantıklı çıkarımlar yaparak bu şablonu doldur.",
+                prompt: "Veritabanındaki işlem kombinasyon matrisimi tarayarak benim için bir \"Kişisel Altın Reçete\" (A+ Setup Matrix) oluştur.\nLütfen mevcut işlem verilerime, paritelerime, sessionlarıma ve PD ARRAY'lerime bakarak en yüksek Beklenen Değerli (EV - Expected Value) kurulumumu saptayarak tam olarak şu formatta bir çıktı üret:\n\n### Senin En Yüksek Beklenen Değerli (EV) Setup'ın:\n- **Parite**: [En başarılı pariteyi saptayarak yaz, örn: NASDAQ]\n- **Session**: [En başarılı sessionı saptayarak yaz, örn: NY AM]\n- **Timeframe**: [Verilerdeki Timeframe'i analiz et, örn: 4H]\n- **Entry Timeframe**: [Verilerdeki Entry Timeframe zaman dilimini analiz et, örn: 5M]\n- **PD ARRAY**: [En başarılı PD ARRAY'leri saptayarak yaz, örn: LİKDİTE + FVG]\n- **Win Rate**: [Bu setup için başarı yüzdesi tahmini, örn: %84]\n- **Ort. R**: [Ortalama R/R kazancı, örn: 2.4R]\n- **Net Katkı**: [Toplam net R katkısı, örn: +18.5 R]\n\n### AI Aksiyon Notu:\n\"[Değişkenler bir araya geldiğinde kaybetme olasılığın ve başarı şansın üzerine verilerden yola çıkarak bir aksiyon notu ekle. Hangi sessionların verimsiz olduğunu veya hangi sessionlardan tamamen uzak durulması gerektiğini sistem önerisi olarak ekle.]\"\n\nEğer işlem sayım henüz 30'un altındaysa bile, mevcut verilerden olabildiğince mantıklı çıkarımlar yaparak bu şablonu doldur.",
                 desc: "30-50 işlem biriktikten sonra AI, veritabanındaki kombinasyon matrisini tarayarak kullanıcının Kişisel Altın Reçetesini (A+ Setup) çıkarır.",
                 icon: Target,
                 iconColor: "text-amber-400",
@@ -1764,9 +1950,9 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
               },
               {
                 id: "edge_validation",
-                title: "Konsept Sadakati & Plan Analizi",
-                prompt: "İşlemlerim kurulumlarımın (setup/edge) ne kadar tutarlı olduğunu analiz et. Belirli bir konseptye veya kurulum tipine ne kadar sadık kalıyorum? Kurallara uygun açtığım işlemler ile dürtüsel/planda olmayan işlemler arasındaki başarı oranını ve finansal farkı karşılaştır.",
-                desc: "Konseptnize sadakat oranınızı ölçer; planlı ve dürtüsel işlemler arasındaki kârlılık farkını gösterir.",
+                title: "Setup Kalitesi & Plan Analizi",
+                prompt: "İşlemlerimdeki planFidelity (Setup Kalitesi) verilerini incele. Tanımlanmış setup kalitesi seviyeleri arasındaki başarı oranını, ortalama R oranını ve finansal farkı karşılaştırıp stratejimin mi yoksa disiplinimin mi zayıf olduğunu yorumla.",
+                desc: "Setup kalitesi oranınızı ölçer; planlı ve dürtüsel işlemler arasındaki kârlılık farkını gösterir.",
                 icon: Compass,
                 iconColor: "text-blue-400",
               },
@@ -1789,7 +1975,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
               {
                 id: "emotional_pattern",
                 title: "Duygusal Durum & Aşırı Güven",
-                prompt: "Geçmiş günlük (journal) yazılarımdaki kelimeleri ve seçtiğim ruh hallerini analiz et. Hangi duygusal durumlarda (sabırsızlık, heyecan vb.) teknik kurallarımı çiğneme eğiliminde oluyorum? Kazançlı geçen günlerin hemen ertesi gününde aşırı güven (overconfidence) tuzağına düşüp daha büyük riskler almış mıyım?",
+                prompt: "Geçmiş günlük (journal) yazılarımdaki ruh hallerini ve işlemlerimdeki planFidelity (Setup Kalitesi) verilerini incele. Hangi durumlarda teknik kurallarımı çiğneyerek dürtüsel veya kuralsız işlemler açma eğiliminde oluyorum? Psikolojimin disipline etkisini çıkar.",
                 desc: "Günlüklerinizdeki duygusal durumların, sabırsızlık ve aşırı güven tuzaklarının analizi.",
                 icon: Target,
                 iconColor: "text-amber-400",
@@ -1978,10 +2164,10 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.15, ease: "easeOut" }}
-                className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 min-h-0 flex flex-col copilot-scrollbar"
+                className="flex-1 overflow-y-auto p-5 space-y-4 min-h-0 flex flex-col copilot-scrollbar"
               >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-700/50 pb-3 shrink-0">
-                  <div className="text-[11px] text-zinc-500">
+                  <div className="text-xs text-zinc-500">
                     Yapay zekâ mentörünüze tek tıkla özel derinlemesine analiz yaptırabilirsiniz:
                   </div>
                   <div className="flex items-center gap-1 shrink-0 self-end sm:self-auto">
@@ -2035,7 +2221,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                             <div className="space-y-2">
                               <div className={`flex items-center gap-2 ${preset.iconColor}`}>
                                 <Icon size={16} />
-                                <span className="font-mono font-bold text-xs uppercase text-zinc-200 group-hover:text-blue-300 transition-colors">
+                                <span className="font-sans font-bold text-xs uppercase text-zinc-200 group-hover:text-blue-300 transition-colors">
                                   {preset.title}
                                 </span>
                               </div>
@@ -2060,7 +2246,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.15, ease: "easeOut" }}
-              className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 min-h-0 copilot-scrollbar"
+              className="flex-1 overflow-y-auto p-5 space-y-4 min-h-0 copilot-scrollbar"
             >
               <AnimatePresence mode="wait">
               {!selectedNoteId ? (
@@ -2075,7 +2261,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                   <div className="flex items-center justify-between border-b border-zinc-700/50 pb-3">
                     <div className="flex items-center gap-2">
                       <Bookmark size={15} className="text-amber-400" />
-                      <span className="text-xs font-mono font-bold uppercase text-zinc-200 tracking-wider">Kaydedilen Notlar</span>
+                      <span className="text-xs font-sans font-bold uppercase text-zinc-200 tracking-wider">Kaydedilen Notlar</span>
                     </div>
                   </div>
 
@@ -2116,12 +2302,12 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                                       setEditingNoteId(null);
                                     }
                                   }}
-                                  className="bg-zinc-950 border border-amber-500/50 rounded-xl px-2.5 py-1 text-xs font-bold font-mono text-zinc-100 outline-none w-full mr-2"
+                                  className="bg-zinc-950 border border-amber-500/50 rounded-xl px-2.5 py-1 text-xs font-bold font-sans text-zinc-100 outline-none w-full mr-2"
                                 />
                               ) : (
                                 <div className="flex items-center gap-2 transition-colors duration-200 ease-out group/title">
                                   <Pin size={12} className="text-amber-400 opacity-80" />
-                                  <h4 className="font-mono font-bold text-xs text-zinc-100 line-clamp-1">{note.title}</h4>
+                                  <h4 className="font-sans font-bold text-xs text-zinc-100 line-clamp-1">{note.title}</h4>
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
@@ -2146,12 +2332,12 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                               </button>
                             </div>
                             
-                            <p className="text-[11px] text-zinc-400 line-clamp-3 leading-relaxed font-sans">
+                            <p className="text-xs text-zinc-400 line-clamp-3 leading-relaxed font-sans">
                               {note.content.substring(0, 150)}{note.content.length > 150 ? "..." : ""}
                             </p>
                           </div>
                           
-                          <div className="mt-3 text-[9px] text-zinc-500 font-mono">
+                          <div className="mt-3 text-[9px] text-zinc-500 font-sans">
                             Kaydedildi: {new Date(note.pinnedAt).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit", hour12: false })}
                           </div>
                         </div>
@@ -2199,10 +2385,10 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                                       setEditingNoteId(null);
                                     }
                                   }}
-                                  className="bg-zinc-900 border border-amber-500/50 rounded-xl px-2.5 py-1 text-sm font-bold font-mono text-zinc-200 outline-none w-full max-w-[300px]"
+                                  className="bg-zinc-900 border border-amber-500/50 rounded-xl px-2.5 py-1 text-sm font-bold font-sans text-zinc-200 outline-none w-full max-w-[300px]"
                                 />
                             ) : (
-                              <h3 className="font-mono font-bold text-sm text-zinc-200 flex items-center gap-2 group">
+                              <h3 className="font-sans font-bold body-text flex items-center gap-2 group">
                                 <Bookmark size={14} className="text-amber-400" />
                                 {activeNote.title}
                                 <button
@@ -2221,7 +2407,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                             onClick={() => {
                               copyToClipboard(activeNote.content, activeNote.id);
                             }}
-                            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-zinc-800/50 hover:bg-zinc-800 text-zinc-300 rounded-xl text-xs font-mono transition-colors"
+                            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-zinc-800/50 hover:bg-zinc-800 text-zinc-300 rounded-xl text-xs font-sans transition-colors"
                           >
                             {copiedId === activeNote.id ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
                             {copiedId === activeNote.id ? "Kopyalandı" : "Kopyala"}
@@ -2245,6 +2431,9 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
 
       </motion.div>
     </motion.div>
+      )}
+    </AnimatePresence>,
+    document.body
   );
 };
 

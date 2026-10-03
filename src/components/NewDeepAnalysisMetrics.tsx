@@ -23,7 +23,7 @@ export const NewDeepAnalysisMetrics = React.memo(({ metrics, currency, isRrMode,
            onClick={() => onMetricClick && onMetricClick("maxDrawdown", isRrMode ? `-${(currentMaxDrawdown || 0).toLocaleString("en-US", {minimumFractionDigits: 1})} R` : `-${(currentMaxDrawdown || 0).toLocaleString("en-US", {minimumFractionDigits: 1})} ${currency}`)}
          >
            <div className="flex items-center justify-between mb-2">
-             <span className="text-[10px] font-bold uppercase text-zinc-400 tracking-wider font-mono flex items-center gap-1.5">
+             <span className="heading-3 text-zinc-400 tracking-wider font-sans flex items-center gap-1.5">
                <span className="p-1.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400">
                  <ArrowDownRight size={11} className="transition-colors" />
                </span>
@@ -32,8 +32,8 @@ export const NewDeepAnalysisMetrics = React.memo(({ metrics, currency, isRrMode,
            </div>
            <div className="flex items-baseline gap-1 mt-auto pt-1">
              <ValueTransition modeKey={isRrMode ?? false}>
-               <span className="text-lg sm:text-xl font-bold text-rose-400 font-mono tracking-tight">-{(currentMaxDrawdown || 0).toLocaleString("en-US", { minimumFractionDigits: 1 })}</span>
-               <span className="text-[10px] text-rose-400/70 font-bold font-mono ml-0.5">{isRrMode ? 'R' : currency}</span>
+               <span className="text-lg sm:text-xl font-bold text-rose-400 font-sans tracking-tight">-{(currentMaxDrawdown || 0).toLocaleString("en-US", { minimumFractionDigits: 1 })}</span>
+               <span className="text-[10px] text-rose-400/70 font-bold font-sans ml-0.5">{isRrMode ? 'R' : currency}</span>
              </ValueTransition>
            </div>
          </motion.div>
@@ -45,7 +45,7 @@ export const NewDeepAnalysisMetrics = React.memo(({ metrics, currency, isRrMode,
            onClick={() => onMetricClick && onMetricClick("recoveryFactor", currentRecoveryFactor?.toFixed(2) || "0.00")}
          >
            <div className="flex items-center justify-between mb-2">
-             <span className="text-[10px] font-bold uppercase text-zinc-400 tracking-wider font-mono flex items-center gap-1.5">
+             <span className="heading-3 text-zinc-400 tracking-wider font-sans flex items-center gap-1.5">
                <span className="p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400">
                  <RefreshCw size={11} className="group-hover:rotate-45 transition-transform" />
                </span>
@@ -54,7 +54,7 @@ export const NewDeepAnalysisMetrics = React.memo(({ metrics, currency, isRrMode,
            </div>
            <div className="flex items-baseline gap-1 mt-auto pt-1">
              <ValueTransition modeKey={isRrMode ?? false}>
-               <span className="text-lg sm:text-xl font-bold text-blue-300 font-mono tracking-tight">{currentRecoveryFactor?.toFixed(2) || '0.00'}</span>
+               <span className="text-lg sm:text-xl font-bold text-blue-300 font-sans tracking-tight">{currentRecoveryFactor?.toFixed(2) || '0.00'}</span>
              </ValueTransition>
            </div>
          </motion.div>
@@ -66,7 +66,7 @@ export const NewDeepAnalysisMetrics = React.memo(({ metrics, currency, isRrMode,
            onClick={() => onMetricClick && onMetricClick("pureProfitFactor", currentProfitFactor === Infinity ? "Sonsuz" : currentProfitFactor?.toFixed(2) || "0.00")}
          >
            <div className="flex items-center justify-between mb-2">
-             <span className="text-[10px] font-bold uppercase text-zinc-400 tracking-wider font-mono flex items-center gap-1.5">
+             <span className="heading-3 text-zinc-400 tracking-wider font-sans flex items-center gap-1.5">
                <span className="p-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
                  <TrendingUp size={11} className="transition-colors" />
                </span>
@@ -75,7 +75,7 @@ export const NewDeepAnalysisMetrics = React.memo(({ metrics, currency, isRrMode,
            </div>
            <div className="flex items-baseline gap-1 mt-auto pt-1">
              <ValueTransition modeKey={isRrMode ?? false}>
-               <span className={`text-lg sm:text-xl font-bold font-mono tracking-tight ${currentProfitFactor > 1.5 ? 'text-emerald-400' : currentProfitFactor >= 1 ? 'text-blue-400' : 'text-rose-400'}`}>
+               <span className={`text-lg sm:text-xl font-bold font-sans tracking-tight ${currentProfitFactor > 1.5 ? 'text-emerald-400' : currentProfitFactor >= 1 ? 'text-blue-400' : 'text-rose-400'}`}>
                  {currentProfitFactor === Infinity ? 'Sonsuz' : currentProfitFactor?.toFixed(2) || '0.00'}
                </span>
              </ValueTransition>
@@ -89,7 +89,7 @@ export const NewDeepAnalysisMetrics = React.memo(({ metrics, currency, isRrMode,
            onClick={() => onMetricClick && onMetricClick("sma10", isRrMode ? `${metrics.equityCurve?.[metrics.equityCurve.length - 1]?.sma10?.toFixed(1) || '0.0'} R` : `${metrics.equityCurve?.[metrics.equityCurve.length - 1]?.realSma10?.toLocaleString("en-US", {minimumFractionDigits: 1}) || '0.0'} ${currency}`)}
          >
            <div className="flex items-center justify-between mb-2">
-             <span className="text-[10px] font-bold uppercase text-zinc-400 tracking-wider font-mono flex items-center gap-1.5">
+             <span className="heading-3 text-zinc-400 tracking-wider font-sans flex items-center gap-1.5">
                <span className="p-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
                  <Layers size={11} className="transition-colors" />
                </span>
@@ -99,14 +99,14 @@ export const NewDeepAnalysisMetrics = React.memo(({ metrics, currency, isRrMode,
            <div className="flex flex-col gap-1 mt-auto pt-1">
              <div className="flex items-baseline gap-1">
                <ValueTransition modeKey={isRrMode ?? false}>
-                 <span className="text-lg sm:text-xl font-bold text-indigo-300 font-mono tracking-tight">
+                 <span className="text-lg sm:text-xl font-bold text-indigo-300 font-sans tracking-tight">
                    {isRrMode ? (
                      `${metrics.equityCurve?.[metrics.equityCurve.length - 1]?.sma10?.toFixed(1) || '0.0'}`
                    ) : (
                      `${metrics.equityCurve?.[metrics.equityCurve.length - 1]?.realSma10?.toLocaleString("en-US", {minimumFractionDigits: 1}) || '0.0'}`
                    )}
                  </span>
-                 <span className="text-[10px] text-indigo-300 font-bold font-mono ml-0.5">{isRrMode ? "R" : currency}</span>
+                 <span className="text-[10px] text-indigo-300 font-bold font-sans ml-0.5">{isRrMode ? "R" : currency}</span>
                </ValueTransition>
              </div>
            </div>
@@ -126,14 +126,14 @@ export const NewDeepAnalysisMetrics = React.memo(({ metrics, currency, isRrMode,
                <Activity size={14} />
              </div>
              <div>
-               <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-200 font-mono">
+               <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-200 font-sans">
                  DD Toparlanma Süresi
                </h3>
              </div>
            </div>
            <div className="flex items-center gap-1.5">
-             <span className="text-lg font-bold text-blue-300 font-mono">{metrics.avgRecoveryTrades?.toFixed(1) || '0'}</span>
-             <span className="text-[10px] font-mono font-medium text-zinc-400">İşlem</span>
+             <span className="text-lg font-bold text-blue-300 font-sans">{metrics.avgRecoveryTrades?.toFixed(1) || '0'}</span>
+             <span className="text-[10px] font-sans font-medium text-zinc-400">İşlem</span>
            </div>
          </motion.div>
          
@@ -148,21 +148,21 @@ export const NewDeepAnalysisMetrics = React.memo(({ metrics, currency, isRrMode,
                <Target size={14} />
              </div>
              <div>
-               <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-200 font-mono">
+               <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-200 font-sans">
                  Sistem Verimlilik Seviyesi
                </h3>
              </div>
            </div>
            <div className="flex gap-2">
               <div className="bg-zinc-900/70 border border-zinc-700/50  py-1 px-2.5 rounded-xl flex items-center gap-1.5">
-                <span className="text-[9px] uppercase text-zinc-400 font-bold font-mono">Son 10:</span>
-                <span className="text-xs font-bold text-emerald-400 font-mono">
+                <span className="text-[9px] uppercase text-zinc-400 font-bold font-sans">Son 10:</span>
+                <span className="text-xs font-bold text-emerald-400 font-sans">
                   {metrics.last10GrossLoss ? (metrics.last10GrossProfit / metrics.last10GrossLoss).toFixed(2) : "Sonsuz"}
                 </span>
               </div>
               <div className="bg-zinc-900/70 border border-zinc-700/50  py-1 px-2.5 rounded-xl flex items-center gap-1.5">
-                <span className="text-[9px] uppercase text-zinc-400 font-bold font-mono">Genel:</span>
-                <span className="text-xs font-bold text-zinc-300 font-mono">{currentProfitFactor === Infinity ? "Sonsuz" : currentProfitFactor?.toFixed(2)}</span>
+                <span className="text-[9px] uppercase text-zinc-400 font-bold font-sans">Genel:</span>
+                <span className="text-xs font-bold text-zinc-300 font-sans">{currentProfitFactor === Infinity ? "Sonsuz" : currentProfitFactor?.toFixed(2)}</span>
               </div>
            </div>
          </motion.div>

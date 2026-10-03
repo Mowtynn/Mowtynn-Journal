@@ -1,8 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Download, Upload, Database, AlertTriangle, Cloud, X, CheckCircle2 } from 'lucide-react';
-import { Trade, Note, Certificate } from '../types';
+import toast from 'react-hot-toast';
+import { Trade, Note, Certificate, DefinitionTitles } from '../types';
 
 function getLocalStorageUsage() {
+
   if (typeof window === 'undefined' || !window.localStorage) {
     return { usedBytes: 0, percentage: 0, isHeavilyUsed: false };
   }
@@ -43,7 +45,12 @@ interface BackupRescueProps {
     concepts: string[];
     sessions: string[];
     assets: string[];
+    planFidelities?: string[];
+    entryModels?: string[];
+    trendTypes?: string[];
+    definitionTitles?: DefinitionTitles;
     currency?: string;
+
     isRrMode?: boolean;
   };
   onImportTrades: (
@@ -65,8 +72,6 @@ const BackupRescue = React.memo(function BackupRescue({
   onImportTrades,
   onClearAll,
 }: BackupRescueProps) {
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [confirmInput, setConfirmInput] = useState('');
   const [isWiping, setIsWiping] = useState(false);
@@ -121,19 +126,14 @@ const BackupRescue = React.memo(function BackupRescue({
       downloadAnchor.remove();
       URL.revokeObjectURL(downloadUrl);
 
-      setSuccessMsg(`Tüm verileriniz (${trades.length} işlem, ${notes.length} not, ${journals.length} günlük, ${certificates.length} sertifika ve ayarlar) başarıyla JSON dosyası olarak dışa aktarıldı.`);
-      setTimeout(() => setSuccessMsg(null), 5000);
+      toast.success(`Tüm verileriniz (${trades.length} işlem, ${notes.length} not, ${journals.length} günlük, ${certificates.length} sertifika ve ayarlar) dışa aktarıldı.`);
     } catch (err) {
       console.error('Export error:', err);
-      setErrorMsg('Dışa aktarım sırasında bir hata oluştu.');
-      setTimeout(() => setErrorMsg(null), 4000);
+      toast.error('Dışa aktarım sırasında bir hata oluştu.');
     }
   };
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setErrorMsg(null);
-    setSuccessMsg(null);
-    
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
       const reader = new FileReader();
@@ -154,10 +154,11 @@ const BackupRescue = React.memo(function BackupRescue({
             if (Array.isArray(parsed.trades)) importedTrades = parsed.trades;
             if (Array.isArray(parsed.notes)) importedNotes = parsed.notes;
             if (Array.isArray(parsed.journals)) importedJournals = parsed.journals;
+            else if (Array.isArray(parsed.entries)) importedJournals = parsed.entries;
             if (Array.isArray(parsed.certificates)) importedCertificates = parsed.certificates;
             if (parsed.settings && typeof parsed.settings === 'object') importedSettings = parsed.settings;
           } else {
-            setErrorMsg('Hata: Yüklenen dosya geçerli bir yedek formatı içermiyor.');
+            toast.error('Hata: Yüklenen dosya geçerli bir yedek formatı içermiyor.');
             return;
           }
 
@@ -196,7 +197,11 @@ const BackupRescue = React.memo(function BackupRescue({
               htfTimeframe: typeof item.htfTimeframe === 'string' ? item.htfTimeframe : undefined,
               session: typeof item.session === 'string' ? item.session : undefined,
               concept: typeof item.concept === 'string' ? item.concept : undefined,
+              planFidelity: typeof item.planFidelity === 'string' && item.planFidelity.trim() ? item.planFidelity.trim() : undefined,
               confirmations: Array.isArray(item.confirmations) ? item.confirmations.filter((c: any) => typeof c === 'string') : undefined,
+              entry: typeof item.entry === 'string' ? item.entry : undefined,
+              entryModels: Array.isArray(item.entryModels) ? item.entryModels.filter((em: any) => typeof em === 'string') : (typeof item.entry === 'string' && item.entry ? [item.entry] : undefined),
+              trend: typeof item.trend === 'string' ? item.trend : undefined,
             });
           }
 
@@ -252,14 +257,13 @@ const BackupRescue = React.memo(function BackupRescue({
             importedSettings
           );
 
-          setSuccessMsg(`Başarıyla içeri aktarıldı: ${validatedTrades.length} işlem, ${validatedNotes.length} not, ${validatedJournals.length} günlük, ${validatedCertificates.length} sertifika ve ayarlar.`);
+          toast.success(`Başarıyla içeri aktarıldı: ${validatedTrades.length} işlem, ${validatedNotes.length} not, ${validatedJournals.length} günlük, ${validatedCertificates.length} sertifika.`);
           if (fileInputRef.current) {
             fileInputRef.current.value = '';
           }
-          setTimeout(() => setSuccessMsg(null), 5000);
         } catch (err: any) {
           console.error('Import error:', err);
-          setErrorMsg(err.message || 'Dosya okunamadı. Lütfen geçerli bir yedek JSON dosyası seçin.');
+          toast.error(err.message || 'Dosya okunamadı. Lütfen geçerli bir yedek JSON dosyası seçin.');
         }
       };
 
@@ -274,48 +278,33 @@ const BackupRescue = React.memo(function BackupRescue({
         await onClearAll();
         setShowClearConfirm(false);
         setConfirmInput('');
-        setSuccessMsg('Projedeki bütün veriler başarıyla sıfırlandı.');
-        setTimeout(() => setSuccessMsg(null), 4000);
+        toast.success('Projedeki bütün veriler başarıyla sıfırlandı.');
       } catch (e) {
-        setErrorMsg('Sıfırlama sırasında bir sorun oluştu.');
+        toast.error('Sıfırlama sırasında bir sorun oluştu.');
       } finally {
         setIsWiping(false);
       }
     } else {
-      setErrorMsg("Doğrulama kelimesi yanlış girildi. Onaylamak için 'SIFIRLA' yazın.");
-      setTimeout(() => setErrorMsg(null), 3000);
+      toast.error("Doğrulama kelimesi yanlış girildi. Onaylamak için 'SIFIRLA' yazın.");
     }
   };
 
   return (
-    <div id="settings-backup-panel" className="bg-zinc-900/70 border border-zinc-700/50 /80 rounded-2xl p-4 sm:p-6 mt-6 shadow-xl">
+    <div id="settings-backup-panel" className="bg-zinc-900/70 border border-zinc-700/50 /80 rounded-2xl p-4 sm:p-5 mt-6 shadow-xl">
       <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-2 mb-4">
         <Database size={14} className="text-blue-400" /> {"Veritabanı ve Yedekleme (Güvenlik)"}
       </h2>
 
-      {successMsg && (
-        <div className="mb-4 flex items-center gap-2 text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 rounded-xl p-3 text-xs font-sans">
-          <CheckCircle2 size={14} className="shrink-0" />
-          <span>{successMsg}</span>
-        </div>
-      )}
-      {errorMsg && (
-        <div className="mb-4 flex items-center gap-2 text-rose-400 bg-rose-400/10 border border-rose-400/20 rounded-xl p-3 text-xs font-sans">
-          <AlertTriangle size={14} className="shrink-0" />
-          <span>{errorMsg}</span>
-        </div>
-      )}
-
       <div className={`grid grid-cols-1 md:${'grid-cols-3'} gap-4 mb-4`}>
         <div className="bg-zinc-950/80 border border-zinc-800/80 rounded-2xl p-4 flex flex-col justify-between shadow-md">
           <div>
-            <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest block mb-1.5 font-sans">{"Depolama Durumu"}</span>
+            <span className="heading-3 mb-1.5 font-sans">{"Depolama Durumu"}</span>
             <div className="flex flex-col gap-1.5 mb-1">
-              <div className="flex justify-between items-center text-[11px] pb-1.5 border-b border-zinc-800">
+              <div className="flex justify-between items-center text-xs pb-1.5 border-b border-zinc-800">
                 <span className="text-zinc-400">Kullanılan Alan (Yerel):</span>
                 <span className="text-zinc-200 font-bold">{formatBytes(usedBytes)}</span>
               </div>
-              <div className="flex justify-between items-center text-[11px] pt-1.5">
+              <div className="flex justify-between items-center text-xs pt-1.5">
                 <span className="text-zinc-400 flex items-center gap-1.5"><Cloud size={10} /> Firebase (Bulut):</span>
                 <span className="text-zinc-200 font-bold">{(usedBytes > 0) ? formatBytes(usedBytes * 0.8) : '0 Bytes'}</span>
               </div>
@@ -330,7 +319,7 @@ const BackupRescue = React.memo(function BackupRescue({
         {true && (
           <div className="bg-zinc-950/80 border border-zinc-800/80 rounded-2xl p-4 flex flex-col justify-between shadow-md">
             <div>
-              <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest block mb-1.5">Günlüğü Yedekle</span>
+              <span className="heading-3 mb-2">Günlüğü Yedekle</span>
               <p className="text-[10px] text-zinc-400 leading-relaxed">
                 Kayıtlı kullanıcılar için veriler Google Cloud altyapısında (Firebase) gerçek zamanlı yedeklenir ve korunur. Alternatif olarak çevrimdışı arşivleme ve taşıma için aşağıdaki butonu kullanarak tüm işlem, not, günlük, sertifika ve ayarlarınızı indirebilirsiniz.
               </p>
@@ -368,12 +357,12 @@ const BackupRescue = React.memo(function BackupRescue({
             <div className="h-full flex flex-col justify-center items-center text-center p-4 bg-zinc-800 rounded-xl border border-zinc-800">
               <CheckCircle2 size={24} className="text-emerald-500 mb-2 opacity-50" />
               <span className="text-[10px] font-bold text-emerald-500/80 uppercase tracking-widest block mb-1">Registry Status</span>
-              <p className="text-[11px] font-mono text-zinc-400 font-bold">Immutable / Read-Only</p>
+              <p className="text-xs font-sans text-zinc-400 font-bold">Immutable / Read-Only</p>
             </div>
           ) : (
             <>
               <div>
-                <span className="text-[9px] font-bold text-rose-400 uppercase tracking-widest block mb-1.5">Tehlikeli Bölge</span>
+                <span className="text-[9px] font-bold text-rose-400 uppercase tracking-widest block mb-2">Tehlikeli Bölge</span>
                 <p className="text-[10px] text-zinc-400 leading-relaxed">
                   Tüm işlem kayıtlarını, notları, günlükleri, sertifikaları ve kişisel tanımlamaları kalıcı olarak siler ve sistemi ilk haline sıfırlar. Bu işlem geri alınamaz.
                 </p>
@@ -389,7 +378,7 @@ const BackupRescue = React.memo(function BackupRescue({
                 </button>
               ) : (
                 <div className="bg-rose-950/40 border border-rose-500/30 p-3 rounded-xl mt-2 space-y-1.5">
-                  <span className="text-[9px] text-zinc-300 font-bold block font-mono">Onay için &apos;SIFIRLA&apos; yazın:</span>
+                  <span className="text-[9px] text-zinc-300 font-bold block font-sans">Onay için &apos;SIFIRLA&apos; yazın:</span>
                   <div className="flex gap-1.5">
                     <input
                       type="text"
@@ -397,7 +386,7 @@ const BackupRescue = React.memo(function BackupRescue({
                       value={confirmInput}
                       disabled={isWiping}
                       onChange={(e) => setConfirmInput(e.target.value)}
-                      className="bg-zinc-900 border border-rose-500/40 rounded-lg px-2.5 text-[10px] font-mono font-bold text-white w-full h-8 focus:outline-none"
+                      className="bg-zinc-900 border border-rose-500/40 rounded-lg px-2.5 text-[10px] font-sans font-bold text-white w-full h-8 focus:outline-none"
                     />
                     <button
                       type="button"
@@ -436,7 +425,7 @@ const BackupRescue = React.memo(function BackupRescue({
         });
 
         const getProblemReason = (t: Trade) => {
-          if (!t.asset || !t.status) return "Kritik veri (Varlık/Durum) eksik";
+          if (!t.asset || !t.status) return "Kritik veri (Parite/Durum) eksik";
           if (t.status === 'WIN' && t.rr < 0) return "Kazançlı (WIN) işlemde R değeri negatif girilmiş, R > 0 olmalıdır";
           if (t.status === 'LOSS' && t.rr > 0) return "Zararlı (LOSS) işlemde R değeri pozitif girilmiş, R < 0 olmalıdır";
           if (t.status === 'BREAKEVEN' && t.rr !== 0) return "Başabaş (BREAKEVEN) işlemde R değeri 0 olmalıdır";
@@ -469,15 +458,15 @@ const BackupRescue = React.memo(function BackupRescue({
                   
                   {hasIssues ? (
                     <>
-                      <p className="text-[11px] text-amber-500/70 leading-relaxed max-w-2xl mb-2">
+                      <p className="text-xs text-amber-500/70 leading-relaxed max-w-2xl mb-2">
                         Veritabanınızda istatistiklerin (Kazanma Oranı, Toplam R, vs.) yanlış hesaplanmasına sebep olabilecek {problematicTrades.length} hatalı kayıt tespit edildi. Lütfen bu kayıtları güncelleyin veya silin.
                       </p>
                       <div className="bg-amber-500/10 rounded-lg overflow-hidden">
-                        <ul className="text-[11px] text-amber-200/90 divide-y divide-amber-500/10">
+                        <ul className="text-xs text-amber-200/90 divide-y divide-amber-500/10">
                           {problematicTrades.slice(0, 5).map(pt => (
                             <li key={pt.id} className="p-2 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
-                              <span className="font-mono text-amber-400 min-w-[80px]">{pt.asset || 'Bilinmiyor'}</span>
-                              <span className="font-mono text-amber-500/60 text-[9px]">{new Date(pt.createdAt).toLocaleDateString()}</span>
+                              <span className="font-sans text-amber-400 min-w-[80px]">{pt.asset || 'Bilinmiyor'}</span>
+                              <span className="font-sans text-amber-500/60 text-[9px]">{new Date(pt.createdAt).toLocaleDateString()}</span>
                               <span className="text-amber-300 flex-1">{getProblemReason(pt)}</span>
                             </li>
                           ))}
@@ -490,7 +479,7 @@ const BackupRescue = React.memo(function BackupRescue({
                       </div>
                     </>
                   ) : (
-                    <p className="text-[11px] text-emerald-500/70 leading-relaxed max-w-2xl">
+                    <p className="text-xs text-emerald-500/70 leading-relaxed max-w-2xl">
                       {"Mevcut veritabanında tüm işlemler istatistiksel açıdan uyumlu. Çelişen bir kayıt bulunamadı (Tüm WIN'ler pozitif R, LOSS'lar negatif R vb.). Veri sağlığı mükemmel durumda."}
                     </p>
                   )}
