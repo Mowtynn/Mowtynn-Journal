@@ -8,7 +8,7 @@ import Markdown from "react-markdown";
 import { authFetch } from "../lib/api";
 import { getSiteToken } from "./PasswordGate";
 import {
-  Sparkles, Bot, Send, RefreshCw, X, TrendingUp, TrendingDown, ShieldAlert, Brain, Zap, Target, BarChart3, Clock, CheckCircle2, ShieldCheck, AlertTriangle, Lightbulb, Copy, Check, ChevronRight, ChevronLeft, User, Activity, Flame, Image as ImageIcon, Volume2, Award, Lock, Layers, Compass, Eye, Pin, Bookmark, ArrowLeft, Edit2, Trash2 } from 'lucide-react';
+  Sparkles, Bot, Send, RefreshCw, X, TrendingUp, TrendingDown, ShieldAlert, Brain, Zap, Target, BarChart3, Clock, CheckCircle2, ShieldCheck, AlertTriangle, Lightbulb, Copy, Check, ChevronRight, ChevronLeft, User, Activity, Flame, Image as ImageIcon, Volume2, Award, Lock, Layers, Compass, Eye, Pin, Bookmark, ArrowLeft, Edit2, Trash2, Crosshair, LineChart } from 'lucide-react';
 
 interface SavedNote {
   id: string;
@@ -1179,23 +1179,14 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveTab(tab.id as any)}
-                  className={`relative px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors duration-150 flex items-center gap-1.5 cursor-pointer select-none shrink-0 ${
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all duration-150 flex items-center gap-1.5 cursor-pointer select-none shrink-0 border ${
                     isActive
-                      ? "text-blue-400"
-                      : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
+                      ? "bg-blue-500/15 text-blue-400 border-blue-500/30 shadow-xs"
+                      : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60 border-transparent"
                   }`}
                 >
-                  {isActive && (
-                    <motion.div
-                      layoutId="activeCopilotTabIndicator"
-                      className="absolute inset-0 bg-blue-500/15 rounded-lg border border-blue-500/30 shadow-xs"
-                      transition={{ type: "spring", stiffness: 450, damping: 35 }}
-                    />
-                  )}
-                  <span className="relative z-10 flex items-center gap-1.5">
-                    <Icon size={13} className={isActive ? "text-blue-400" : "text-zinc-500"} />
-                    <span>{tab.name}</span>
-                  </span>
+                  <Icon size={13} className={isActive ? "text-blue-400" : "text-zinc-500"} />
+                  <span>{tab.name}</span>
                 </button>
               );
             })}
@@ -1203,7 +1194,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
         </div>
 
         {/* MAIN CONTENT AREA */}
-        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden relative w-full h-full">
           <AnimatePresence mode="wait">
             {/* TAB 1: CHAT INTERFACE & MULTIMODAL IMAGE UPLOAD */}
             {activeTab === "chat" && (
@@ -1212,8 +1203,8 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.15, ease: "easeOut" }}
-                className="flex-grow flex flex-col min-h-0 p-4 sm:p-5 justify-between gap-3 overflow-hidden"
+                transition={{ duration: 0.12, ease: "linear" }}
+                className="w-full h-full flex-1 flex flex-col min-h-0 p-4 sm:p-5 justify-between gap-3 overflow-hidden"
               >
               
               {/* Mentör Karakter Seçici - Ultra Kompakt Tasarım */}
@@ -1515,8 +1506,8 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.15, ease: "easeOut" }}
-                className="flex-1 overflow-y-auto p-5 space-y-5 min-h-0 copilot-scrollbar"
+                transition={{ duration: 0.12, ease: "linear" }}
+                className="w-full h-full flex-1 overflow-y-auto p-5 space-y-5 min-h-0 copilot-scrollbar"
               >
               <div className="bg-zinc-900/70 border border-zinc-700/50  rounded-xl p-4">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -1893,6 +1884,62 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                 iconColor: "text-amber-400",
               },
               {
+                id: "liquidity_sweep_entry_expectancy",
+                title: "En Yüksek EV: Sweep + Entry Eşleşmesi",
+                prompt: "Veritabanındaki tüm işlemler arasında en yüksek beklentiye (expectancy) ve kazanma oranına sahip Liquidity Sweep + Entry Model eşleşmesi hangisi? Bu kombinasyon tek başına kaç R üretti?",
+                desc: "Tüm veritabanını tarayarak en kârlı Liquidity Sweep + Entry Model kombinasyonunu ve ürettiği net R getirisini hesaplar.",
+                icon: Target,
+                iconColor: "text-amber-400",
+              },
+              {
+                id: "stop_distance_cross_analysis",
+                title: "Stop Mesafesi & Win Rate Dağılımı",
+                prompt: "Kullandığım stop mesafelerini (pip) kazanma oranıyla çapraz analiz et: 8-10 pip stoplar ile 12+ pip stoplar arasında kârlılık ve stop olma sıklığı nasıl bir dağılım gösteriyor?",
+                desc: "Stop mesafelerinizin (pip) kazanma oranı, kârlılık ve stop olma sıklığı üzerindeki etkisini çapraz analiz eder.",
+                icon: Crosshair,
+                iconColor: "text-emerald-400",
+              },
+              {
+                id: "crt_sweep_pair_efficiency",
+                title: "Parite Bazlı CRT Sweep Verimliliği",
+                prompt: "Paritelerini ayrı ayrı filtrelediğinde; hangi paritede CRT sweep'leri daha temiz çalışmış ve daha az SL üretmiş?",
+                desc: "Pariteler bazında CRT sweep'lerinin çalışma başarısını ve SL oranlarını kıyaslar.",
+                icon: LineChart,
+                iconColor: "text-blue-400",
+              },
+              {
+                id: "continuation_vs_reversal_stat",
+                title: "Continuation vs Reversal İstatistik Farkı",
+                prompt: "Continuation (trend yönü) ve Reversal (dönüş) işlemleri arasında kazanma oranı ve R verimliliği açısından istatistiksel olarak anlamlı bir fark var mı?",
+                desc: "Trend yönü (Continuation) ve trend dönüşü (Reversal) işlemlerinin Win Rate ve R verimliliğini istatistiksel olarak karşılaştırır.",
+                icon: TrendingUp,
+                iconColor: "text-cyan-400",
+              },
+              {
+                id: "london_sb_vs_ny_am_sb",
+                title: "London SB vs NY AM SB Seans Kıyaslaması",
+                prompt: "London SB ile NY AM SB seanslarının win rate, ortalama R/R ve toplam R çıktılarını kıyasla. Hangi seans stratejinin asıl kâr motoru, hangisi performansı aşağı çekiyor?",
+                desc: "London ve New York AM Silver Bullet seanslarının Win Rate, ortalama R/R ve toplam R çıktılarını derinlemesine kıyaslar.",
+                icon: Clock,
+                iconColor: "text-purple-400",
+              },
+              {
+                id: "consecutive_stop_common_factors",
+                title: "Ardışık Stopların Ortak Örüntüsü",
+                prompt: "Üst üste 2 veya daha fazla stop aldığım dönemlerdeki işlemlerin ortak özellikleri neler? (Belli bir seans, haber günü etkisi veya belirli bir likidite süpürme türü var mı?)",
+                desc: "Üst üste 2+ stop alınan dönemlerdeki ortak seans, haber veya likidite sweep faktörlerini tespit eder.",
+                icon: AlertTriangle,
+                iconColor: "text-red-500",
+              },
+              {
+                id: "only_a_plus_simulation",
+                title: "Sadece A+ Kurulum Simülasyonu",
+                prompt: "Tüm veri setindeki FOMO ve Kısmen/A etiketli işlemleri tamamen çıkarsaydık; sadece A+ kurulumlarla kasanın toplam net R kârı ve drawdown grafiği nasıl değişirdi?",
+                desc: "FOMO ve eksik kurallı işlemleri filtreleyerek yalnızca A+ kurulumlarla elde edilecek net R kârını ve drawdown seyrini simüle eder.",
+                icon: ShieldCheck,
+                iconColor: "text-yellow-400",
+              },
+              {
                 id: "mistake_pattern",
                 title: "Temel Hata & Örüntü Tespiti",
                 prompt: "Sadece zararla (Loss) kapanan işlemlerimi analiz edip, 3 Temel Hatan başlığı altında acı gerçekleri listele.",
@@ -2163,8 +2210,8 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.15, ease: "easeOut" }}
-                className="flex-1 overflow-y-auto p-5 space-y-4 min-h-0 flex flex-col copilot-scrollbar"
+                transition={{ duration: 0.12, ease: "linear" }}
+                className="w-full h-full flex-1 overflow-y-auto p-5 space-y-4 min-h-0 flex flex-col copilot-scrollbar"
               >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-700/50 pb-3 shrink-0">
                   <div className="text-xs text-zinc-500">
@@ -2196,15 +2243,15 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                   </div>
                 </div>
 
-                <div className="flex-1 relative min-h-[300px] flex flex-col">
+                <div className="flex-1 w-full min-h-[360px] flex flex-col">
                   <AnimatePresence mode="wait">
                     <motion.div
                       key={currentPage}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
-                      className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 auto-rows-fr"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.12, ease: "linear" }}
+                      className="w-full flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 auto-rows-fr content-start"
                     >
                       {currentPresets.map((preset) => {
                         const Icon = preset.icon;
@@ -2245,8 +2292,8 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.15, ease: "easeOut" }}
-              className="flex-1 overflow-y-auto p-5 space-y-4 min-h-0 copilot-scrollbar"
+              transition={{ duration: 0.12, ease: "linear" }}
+              className="w-full h-full flex-1 overflow-y-auto p-5 space-y-4 min-h-0 copilot-scrollbar"
             >
               <AnimatePresence mode="wait">
               {!selectedNoteId ? (

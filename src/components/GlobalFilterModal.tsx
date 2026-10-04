@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Filter, RotateCcw, Check, Calendar, Layers, Monitor, Activity, ArrowUpRight, Coins, Flame, ChevronRight, Eye, EyeOff, ChevronDown, Clock, Sparkles, X, Target, Zap, TrendingUp } from 'lucide-react';
+import { Filter, RotateCcw, Check, Calendar, Monitor, Activity, ArrowUpRight, Coins, Flame, ChevronRight, Eye, EyeOff, ChevronDown, Clock, Sparkles, X, Target, Zap, TrendingUp } from 'lucide-react';
 import { DEFAULT_PLAN_FIDELITIES, DEFAULT_ENTRY_MODELS, DEFAULT_TREND_TYPES, DEFAULT_DEFINITION_TITLES, caseInsensitiveEquals } from '../constants/constants';
 import { DefinitionTitles } from '../types';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
@@ -355,7 +355,15 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
 
   const dynamicConcepts = React.useMemo(() => {
     const set = new Set(concepts || []);
-    trades.forEach(t => { if (t.concept) set.add(t.concept); });
+    trades.forEach(t => { 
+      if (Array.isArray(t.liquiditySweeps)) {
+        t.liquiditySweeps.forEach(s => s && set.add(s));
+      } else if (t.liquiditySweep) {
+        t.liquiditySweep.split(',').map(s => s.trim()).forEach(s => s && set.add(s));
+      } else if (t.concept) {
+        t.concept.split(',').map(s => s.trim()).forEach(s => s && set.add(s));
+      }
+    });
     return Array.from(set);
   }, [concepts, trades]);
 
@@ -740,8 +748,8 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                 </div>
               </FilterAccordionRow>
 
-              <FilterAccordionRow title={definitionTitles.concepts || "Konsept"} 
-                icon={<Layers size={14} className="text-blue-400" />}
+              <FilterAccordionRow title={definitionTitles.liquiditySweeps || definitionTitles.concepts || "Liquidity Sweep"} 
+                icon={<Target size={14} className="text-blue-400" />}
                 
                 summaryText={globalSelectedConcepts.length > 0 ? globalSelectedConcepts.join(', ') : 'Tümü'}
                 badgeCount={globalSelectedConcepts.length}

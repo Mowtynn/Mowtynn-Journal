@@ -1,16 +1,12 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import toast from "react-hot-toast";
-import { Trade, DefinitionTitles } from "../types";
+import { Trade, DefinitionTitles, PlatformCategory } from "../types";
 import { 
   DEFAULT_PLAN_FIDELITIES, 
   DEFAULT_ENTRY_MODELS, 
   DEFAULT_TREND_TYPES, 
   DEFAULT_DEFINITION_TITLES, 
   cleanDefinitionTitleString,
-  DEMO_PLATFORMS,
-  FUNDED_PLATFORMS,
-  isDemoPlatform,
-  isFundedPlatform,
   getTradeAccountCategory,
   savePlatformCategory
 } from "../constants/constants";
@@ -31,7 +27,6 @@ import {
   TrendingUp,
   ExternalLink,
   Check,
-  Bookmark,
   Clock,
   Maximize2,
   Target,
@@ -55,7 +50,8 @@ interface AddTradeFormProps {
   timeframes: string[];
   htfTimeframes?: string[];
   sessions: string[];
-  concepts: string[];
+  liquiditySweeps?: string[];
+  concepts?: string[];
   confirmations: string[];
   assets: string[];
   planFidelities?: string[];
@@ -75,6 +71,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
   timeframes,
   htfTimeframes = [],
   sessions,
+  liquiditySweeps,
   concepts,
   confirmations,
   assets,
@@ -86,38 +83,36 @@ const AddTradeForm = React.memo(function AddTradeForm({
 }: AddTradeFormProps) {
   useBodyScrollLock(true);
 
+  const effectiveLiquiditySweeps = useMemo(() => {
+    return liquiditySweeps || concepts || [];
+  }, [liquiditySweeps, concepts]);
+
   const [asset, setAsset] = useState("");
   const [type, setType] = useState<"LONG" | "SHORT">("LONG");
   const [selectedPlatform, setSelectedPlatform] = useState(() => {
     return defaultPlatform || localStorage.getItem("last_used_trade_platform") || platforms[0] || "";
   });
-  const [selectedAccountCategory, setSelectedAccountCategory] = useState<'DEMO' | 'FUNDED'>(() => {
+  const [selectedAccountCategory, setSelectedAccountCategory] = useState<PlatformCategory>(() => {
     if (editingTrade) return getTradeAccountCategory(editingTrade);
     const initial = defaultPlatform || localStorage.getItem("last_used_trade_platform") || platforms[0] || "";
-    return isDemoPlatform(initial) ? 'DEMO' : 'FUNDED';
+    return getTradeAccountCategory({ platform: initial });
   });
-  const [platformTabFilter, setPlatformTabFilter] = useState<'ALL' | 'DEMO' | 'FUNDED'>('ALL');
-
-  const demoPlatformList = useMemo(() => {
-    const set = new Set<string>();
-    DEMO_PLATFORMS.forEach(p => set.add(p));
-    platforms.forEach(p => {
-      if (isDemoPlatform(p)) set.add(p);
-    });
-    return Array.from(set);
-  }, [platforms]);
+  const [platformTabFilter, setPlatformTabFilter] = useState<'ALL' | 'FUNDED' | 'CHALLENGE' | 'DEMO'>('ALL');
 
   const fundedPlatformList = useMemo(() => {
-    const set = new Set<string>();
-    FUNDED_PLATFORMS.forEach(p => set.add(p));
-    platforms.forEach(p => {
-      if (isFundedPlatform(p) && !isDemoPlatform(p)) set.add(p);
-    });
-    return Array.from(set);
+    return platforms.filter(p => getTradeAccountCategory({ platform: p }) === 'FUNDED');
+  }, [platforms]);
+
+  const challengePlatformList = useMemo(() => {
+    return platforms.filter(p => getTradeAccountCategory({ platform: p }) === 'CHALLENGE');
+  }, [platforms]);
+
+  const demoPlatformList = useMemo(() => {
+    return platforms.filter(p => getTradeAccountCategory({ platform: p }) === 'DEMO');
   }, [platforms]);
 
   const [newPlatformInput, setNewPlatformInput] = useState("");
-  const [newPlatformCategoryInput, setNewPlatformCategoryInput] = useState<'FUNDED' | 'DEMO'>('FUNDED');
+  const [newPlatformCategoryInput, setNewPlatformCategoryInput] = useState<PlatformCategory>('FUNDED');
 
   const handleQuickAddPlatform = () => {
     const trimmed = newPlatformInput.trim();
@@ -135,7 +130,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
   const [selectedTimeframe, setSelectedTimeframe] = useState("");
   const [selectedHtfTimeframe, setSelectedHtfTimeframe] = useState("");
   const [selectedSession, setSelectedSession] = useState("");
-  const [selectedConcept, setSelectedConcept] = useState("");
+  const [selectedLiquiditySweeps, setSelectedLiquiditySweeps] = useState<string[]>([]);
   const [selectedConfirmations, setSelectedConfirmations] = useState<string[]>([]);
   const [selectedEntries, setSelectedEntries] = useState<string[]>([]);
   const [selectedTrend, setSelectedTrend] = useState("");
@@ -153,9 +148,50 @@ const AddTradeForm = React.memo(function AddTradeForm({
     };
   }, [onCancelEdit]);
 
+  const [stopPips, setStopPips] = useState<number | "">("");
+  const [tpPips, setTpPips] = useState<number | "">("");
   const [rrValue, setRrValue] = useState<number | "">("");
   const [tradeStatus, setTradeStatus] = useState<"WIN" | "LOSS" | "BREAKEVEN">("WIN");
   const [manualPnl, setManualPnl] = useState<number | "">("");
+
+  // Auto calculate R:R from stopPips & tpPips
+  const handleStopPipsChange = (val: string) => {
+    if (val === "") {
+      setStopPips("");
+      return;
+    }
+    const num = parseFloat(val);
+    if (isNaN(num)) {
+      setStopPips("");
+      return;
+    }
+    setStopPips(num);
+    if (tpPips !== "" && typeof tpPips === 'number' && num > 0) {
+      const calculated = parseFloat((tpPips / num).toFixed(2));
+      if (tradeStatus === "WIN") {
+        setRrValue(calculated);
+      }
+    }
+  };
+
+  const handleTpPipsChange = (val: string) => {
+    if (val === "") {
+      setTpPips("");
+      return;
+    }
+    const num = parseFloat(val);
+    if (isNaN(num)) {
+      setTpPips("");
+      return;
+    }
+    setTpPips(num);
+    if (stopPips !== "" && typeof stopPips === 'number' && stopPips > 0) {
+      const calculated = parseFloat((num / stopPips).toFixed(2));
+      if (tradeStatus === "WIN") {
+        setRrValue(calculated);
+      }
+    }
+  };
 
   const [notes, setNotes] = useState("");
   const [screenshot, setScreenshot] = useState<string | null>(null);
@@ -185,6 +221,18 @@ const AddTradeForm = React.memo(function AddTradeForm({
       const initialStatus = editingTrade.status || (editingTrade.rr < 0 ? "LOSS" : editingTrade.rr === 0 ? "BREAKEVEN" : "WIN");
       setTradeStatus(initialStatus);
 
+      if (editingTrade.stopPips !== undefined && editingTrade.stopPips !== null) {
+        setStopPips(editingTrade.stopPips);
+      } else {
+        setStopPips("");
+      }
+
+      if (editingTrade.tpPips !== undefined && editingTrade.tpPips !== null) {
+        setTpPips(editingTrade.tpPips);
+      } else {
+        setTpPips("");
+      }
+
       if (editingTrade.rr !== undefined && editingTrade.rr !== null) {
         setRrValue(Math.abs(editingTrade.rr));
       } else {
@@ -205,7 +253,19 @@ const AddTradeForm = React.memo(function AddTradeForm({
       setSelectedTimeframe(editingTrade.timeframe || "");
       setSelectedHtfTimeframe(editingTrade.htfTimeframe || "");
       setSelectedSession(editingTrade.session || "");
-      setSelectedConcept(editingTrade.concept || "");
+      let initialSweeps: string[] = [];
+      if (Array.isArray(editingTrade.liquiditySweeps) && editingTrade.liquiditySweeps.length > 0) {
+        initialSweeps = editingTrade.liquiditySweeps;
+      } else if (editingTrade.liquiditySweep) {
+        initialSweeps = typeof editingTrade.liquiditySweep === 'string'
+          ? editingTrade.liquiditySweep.split(',').map(s => s.trim()).filter(Boolean)
+          : [];
+      } else if (editingTrade.concept) {
+        initialSweeps = typeof editingTrade.concept === 'string'
+          ? editingTrade.concept.split(',').map(s => s.trim()).filter(Boolean)
+          : [];
+      }
+      setSelectedLiquiditySweeps(initialSweeps);
       setSelectedConfirmations(editingTrade.confirmations || []);
       let initialEntries: string[] = [];
       if (Array.isArray(editingTrade.entryModels) && editingTrade.entryModels.length > 0) {
@@ -258,6 +318,8 @@ const AddTradeForm = React.memo(function AddTradeForm({
   const resetForm = () => {
     setAsset("");
     setType("LONG");
+    setStopPips("");
+    setTpPips("");
     setRrValue("");
     setTradeStatus("WIN");
     setManualPnl("");
@@ -266,11 +328,11 @@ const AddTradeForm = React.memo(function AddTradeForm({
 
     const initialPlat = defaultPlatform || localStorage.getItem("last_used_trade_platform") || platforms[0] || "";
     setSelectedPlatform(initialPlat);
-    setSelectedAccountCategory(isDemoPlatform(initialPlat) ? 'DEMO' : 'FUNDED');
+    setSelectedAccountCategory(getTradeAccountCategory({ platform: initialPlat }));
     setSelectedTimeframe("");
     setSelectedHtfTimeframe("");
     setSelectedSession("");
-    setSelectedConcept("");
+    setSelectedLiquiditySweeps([]);
     setSelectedConfirmations([]);
     setSelectedEntries([]);
     setSelectedTrend("");
@@ -291,7 +353,14 @@ const AddTradeForm = React.memo(function AddTradeForm({
     if (data.timeframe) setSelectedTimeframe(data.timeframe);
     if (data.htfTimeframe) setSelectedHtfTimeframe(data.htfTimeframe);
     if (data.session) setSelectedSession(data.session);
-    if (data.concept) setSelectedConcept(data.concept);
+    if (data.liquiditySweeps && Array.isArray(data.liquiditySweeps)) {
+      setSelectedLiquiditySweeps(data.liquiditySweeps);
+    } else if (data.liquiditySweep || data.concept) {
+      const parsed = typeof (data.liquiditySweep || data.concept) === 'string'
+        ? (data.liquiditySweep || data.concept).split(',').map((s: string) => s.trim()).filter(Boolean)
+        : [data.liquiditySweep || data.concept];
+      setSelectedLiquiditySweeps(parsed);
+    }
     if (data.confirmations && Array.isArray(data.confirmations)) setSelectedConfirmations(data.confirmations);
     if (data.entryModels && Array.isArray(data.entryModels)) {
       setSelectedEntries(data.entryModels);
@@ -379,10 +448,14 @@ const AddTradeForm = React.memo(function AddTradeForm({
       status: tradeStatus,
       rr: Number(numericRR.toFixed(2)),
       pnl: numericPnl,
+      stopPips: stopPips !== "" && typeof stopPips === 'number' ? stopPips : undefined,
+      tpPips: tpPips !== "" && typeof tpPips === 'number' ? tpPips : undefined,
       timeframe: selectedTimeframe || undefined,
       htfTimeframe: selectedHtfTimeframe || undefined,
       session: selectedSession || undefined,
-      concept: selectedConcept || undefined,
+      liquiditySweep: selectedLiquiditySweeps.length > 0 ? selectedLiquiditySweeps.join(", ") : undefined,
+      liquiditySweeps: selectedLiquiditySweeps.length > 0 ? selectedLiquiditySweeps : undefined,
+      concept: selectedLiquiditySweeps.length > 0 ? selectedLiquiditySweeps.join(", ") : undefined,
       confirmations: selectedConfirmations.length > 0 ? selectedConfirmations : undefined,
       entry: entryStr || undefined,
       entryModels: selectedEntries.length > 0 ? selectedEntries : undefined,
@@ -524,18 +597,20 @@ const AddTradeForm = React.memo(function AddTradeForm({
                       </span>
                       {selectedPlatform && (
                         <span className={`text-[8px] sm:text-[9px] px-1.5 py-0.2 rounded-md font-bold shrink-0 ${
-                          selectedAccountCategory === 'DEMO'
-                            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                            : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                          selectedAccountCategory === 'FUNDED'
+                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                            : selectedAccountCategory === 'CHALLENGE'
+                              ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                              : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
                         }`}>
-                          {selectedAccountCategory === 'DEMO' ? 'DEMO' : 'FUNDED'}
+                          {selectedAccountCategory}
                         </span>
                       )}
                     </div>
                     <ChevronDown size={13} className="text-zinc-400 shrink-0" />
                   </div>
                   {isPlatformDropdownOpen && (
-                    <div className="absolute z-30 w-72 sm:w-80 left-0 mt-1.5 bg-zinc-900 border border-zinc-700/80 rounded-xl max-h-60 flex flex-col overflow-hidden shadow-2xl">
+                    <div className="absolute z-30 w-72 sm:w-84 left-0 mt-1.5 bg-zinc-900 border border-zinc-700/80 rounded-xl max-h-64 flex flex-col overflow-hidden shadow-2xl">
                       {/* Category Quick Filter */}
                       <div className="p-1.5 bg-zinc-950/80 border-b border-zinc-800 flex items-center gap-1">
                         <button
@@ -544,24 +619,11 @@ const AddTradeForm = React.memo(function AddTradeForm({
                             e.stopPropagation();
                             setPlatformTabFilter('ALL');
                           }}
-                          className={`flex-1 py-1 text-[10px] font-bold rounded-lg uppercase transition-colors cursor-pointer ${
+                          className={`flex-1 py-1 text-[10px] font-bold rounded-lg uppercase transition-colors cursor-pointer text-center ${
                             platformTabFilter === 'ALL' ? 'bg-zinc-800 text-white shadow-xs' : 'text-zinc-400 hover:text-zinc-200'
                           }`}
                         >
                           Tümü
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setPlatformTabFilter('DEMO');
-                          }}
-                          className={`flex-1 py-1 text-[10px] font-bold rounded-lg uppercase transition-colors flex items-center justify-center gap-1 cursor-pointer ${
-                            platformTabFilter === 'DEMO' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-xs' : 'text-zinc-400 hover:text-amber-400'
-                          }`}
-                        >
-                          <Shield size={10} />
-                          Demo & Challenge
                         </button>
                         <button
                           type="button"
@@ -576,41 +638,37 @@ const AddTradeForm = React.memo(function AddTradeForm({
                           <Trophy size={10} />
                           Funded
                         </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPlatformTabFilter('CHALLENGE');
+                          }}
+                          className={`flex-1 py-1 text-[10px] font-bold rounded-lg uppercase transition-colors flex items-center justify-center gap-1 cursor-pointer ${
+                            platformTabFilter === 'CHALLENGE' ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40 shadow-xs' : 'text-zinc-400 hover:text-blue-400'
+                          }`}
+                        >
+                          <Target size={10} />
+                          Challenge
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPlatformTabFilter('DEMO');
+                          }}
+                          className={`flex-1 py-1 text-[10px] font-bold rounded-lg uppercase transition-colors flex items-center justify-center gap-1 cursor-pointer ${
+                            platformTabFilter === 'DEMO' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-xs' : 'text-zinc-400 hover:text-amber-400'
+                          }`}
+                        >
+                          <Shield size={10} />
+                          Demo
+                        </button>
                       </div>
 
                       <div className="overflow-y-auto flex-1 divide-y divide-zinc-800/50 custom-scrollbar">
-                        {/* SECTION 1: DEMO, LIVETEST, CHALLENGE */}
-                        {(platformTabFilter === 'ALL' || platformTabFilter === 'DEMO') && (
-                          <div>
-                            <div className="px-3 py-1.5 bg-zinc-950/60 text-[9px] font-bold uppercase tracking-wider text-amber-400/90 flex items-center gap-1.5 border-b border-zinc-800/40">
-                              <Shield size={11} className="text-amber-400" />
-                              <span>Demo, LiveTest & Challenge</span>
-                            </div>
-                            <div className="py-0.5">
-                              {demoPlatformList.map((p, idx) => (
-                                <div
-                                  key={`demo-${idx}`}
-                                  onMouseDown={() => {
-                                    setSelectedPlatform(p);
-                                    setSelectedAccountCategory('DEMO');
-                                    setIsPlatformDropdownOpen(false);
-                                  }}
-                                  className={`px-3 py-2 text-xs cursor-pointer hover:bg-amber-500/10 hover:text-amber-200 font-sans font-bold uppercase transition-colors flex items-center justify-between ${
-                                    selectedPlatform === p && selectedAccountCategory === 'DEMO' ? 'bg-amber-500/15 text-amber-300' : 'text-zinc-200'
-                                  }`}
-                                >
-                                  <span>{p}</span>
-                                  <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                                    DEMO
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* SECTION 2: FUNDED & CANLI HESAPLAR */}
-                        {(platformTabFilter === 'ALL' || platformTabFilter === 'FUNDED') && (
+                        {/* SECTION 1: FUNDED & CANLI HESAPLAR */}
+                        {(platformTabFilter === 'ALL' || platformTabFilter === 'FUNDED') && fundedPlatformList.length > 0 && (
                           <div>
                             <div className="px-3 py-1.5 bg-zinc-950/60 text-[9px] font-bold uppercase tracking-wider text-emerald-400/90 flex items-center gap-1.5 border-b border-zinc-800/40">
                               <Trophy size={11} className="text-emerald-400" />
@@ -638,6 +696,75 @@ const AddTradeForm = React.memo(function AddTradeForm({
                             </div>
                           </div>
                         )}
+
+                        {/* SECTION 2: CHALLENGE & DEĞERLENDİRME */}
+                        {(platformTabFilter === 'ALL' || platformTabFilter === 'CHALLENGE') && challengePlatformList.length > 0 && (
+                          <div>
+                            <div className="px-3 py-1.5 bg-zinc-950/60 text-[9px] font-bold uppercase tracking-wider text-blue-400/90 flex items-center gap-1.5 border-b border-zinc-800/40">
+                              <Target size={11} className="text-blue-400" />
+                              <span>Challenge & Değerlendirme</span>
+                            </div>
+                            <div className="py-0.5">
+                              {challengePlatformList.map((p, idx) => (
+                                <div
+                                  key={`challenge-${idx}`}
+                                  onMouseDown={() => {
+                                    setSelectedPlatform(p);
+                                    setSelectedAccountCategory('CHALLENGE');
+                                    setIsPlatformDropdownOpen(false);
+                                  }}
+                                  className={`px-3 py-2 text-xs cursor-pointer hover:bg-blue-500/10 hover:text-blue-200 font-sans font-bold uppercase transition-colors flex items-center justify-between ${
+                                    selectedPlatform === p && selectedAccountCategory === 'CHALLENGE' ? 'bg-blue-500/15 text-blue-300' : 'text-zinc-200'
+                                  }`}
+                                >
+                                  <span>{p}</span>
+                                  <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30">
+                                    CHALLENGE
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* SECTION 3: DEMO & PRATİK */}
+                        {(platformTabFilter === 'ALL' || platformTabFilter === 'DEMO') && demoPlatformList.length > 0 && (
+                          <div>
+                            <div className="px-3 py-1.5 bg-zinc-950/60 text-[9px] font-bold uppercase tracking-wider text-amber-400/90 flex items-center gap-1.5 border-b border-zinc-800/40">
+                              <Shield size={11} className="text-amber-400" />
+                              <span>Demo & Pratik Hesaplar</span>
+                            </div>
+                            <div className="py-0.5">
+                              {demoPlatformList.map((p, idx) => (
+                                <div
+                                  key={`demo-${idx}`}
+                                  onMouseDown={() => {
+                                    setSelectedPlatform(p);
+                                    setSelectedAccountCategory('DEMO');
+                                    setIsPlatformDropdownOpen(false);
+                                  }}
+                                  className={`px-3 py-2 text-xs cursor-pointer hover:bg-amber-500/10 hover:text-amber-200 font-sans font-bold uppercase transition-colors flex items-center justify-between ${
+                                    selectedPlatform === p && selectedAccountCategory === 'DEMO' ? 'bg-amber-500/15 text-amber-300' : 'text-zinc-200'
+                                  }`}
+                                >
+                                  <span>{p}</span>
+                                  <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                                    DEMO
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {((platformTabFilter === 'ALL' && platforms.length === 0) ||
+                          (platformTabFilter === 'FUNDED' && fundedPlatformList.length === 0) ||
+                          (platformTabFilter === 'CHALLENGE' && challengePlatformList.length === 0) ||
+                          (platformTabFilter === 'DEMO' && demoPlatformList.length === 0)) && (
+                          <div className="px-4 py-6 text-center text-xs text-zinc-500 font-sans font-bold">
+                            Tanımlanmış platform bulunamadı
+                          </div>
+                        )}
                       </div>
 
                       {/* Hızlı Yeni Platform Ekle */}
@@ -659,6 +786,21 @@ const AddTradeForm = React.memo(function AddTradeForm({
                             >
                               <Trophy size={9} />
                               Funded
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setNewPlatformCategoryInput('CHALLENGE');
+                              }}
+                              className={`px-2 py-0.5 text-[9px] font-bold rounded uppercase cursor-pointer flex items-center gap-1 ${
+                                newPlatformCategoryInput === 'CHALLENGE'
+                                  ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40'
+                                  : 'text-zinc-500 hover:text-blue-400'
+                              }`}
+                            >
+                              <Target size={9} />
+                              Challenge
                             </button>
                             <button
                               type="button"
@@ -745,8 +887,14 @@ const AddTradeForm = React.memo(function AddTradeForm({
                           if (sVal === "BREAKEVEN") {
                             setRrValue(0);
                             setManualPnl("");
-                          } else if (rrValue === 0) {
-                            setRrValue("");
+                          } else if (sVal === "LOSS") {
+                            setRrValue(1);
+                          } else if (sVal === "WIN") {
+                            if (stopPips !== "" && tpPips !== "" && typeof stopPips === 'number' && typeof tpPips === 'number' && stopPips > 0) {
+                              setRrValue(parseFloat((tpPips / stopPips).toFixed(2)));
+                            } else if (rrValue === 0 || rrValue === 1) {
+                              setRrValue("");
+                            }
                           }
                         }}
                         className={`h-full text-xs font-bold font-sans rounded-lg border uppercase transition-all cursor-pointer ${
@@ -762,6 +910,47 @@ const AddTradeForm = React.memo(function AddTradeForm({
                 </div>
               </div>
 
+              {/* PİP HESAPLAYICI (STOP PİP & TP PİP) */}
+              <div className="grid grid-cols-2 gap-2.5 bg-zinc-950/40 p-2.5 rounded-xl border border-zinc-800/70">
+                {/* STOP PİP */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-[10px] sm:text-[11px] font-bold text-rose-400 uppercase tracking-wide font-sans flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                      STOP (PİP)
+                    </label>
+                  </div>
+                  <input
+                    type="number"
+                    step="any"
+                    min="0"
+                    placeholder="örn: 10"
+                    value={stopPips}
+                    onChange={(e) => handleStopPipsChange(e.target.value)}
+                    className="w-full h-9 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-rose-500 focus:ring-1 focus:ring-rose-500/30 rounded-xl px-3 text-xs sm:text-sm text-zinc-100 focus:outline-none placeholder-zinc-500 font-sans shadow-inner transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
+                  />
+                </div>
+
+                {/* TP PİP */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-[10px] sm:text-[11px] font-bold text-emerald-400 uppercase tracking-wide font-sans flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                      TP (PİP)
+                    </label>
+                  </div>
+                  <input
+                    type="number"
+                    step="any"
+                    min="0"
+                    placeholder="örn: 30"
+                    value={tpPips}
+                    onChange={(e) => handleTpPipsChange(e.target.value)}
+                    className="w-full h-9 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 rounded-xl px-3 text-xs sm:text-sm text-zinc-100 focus:outline-none placeholder-zinc-500 font-sans shadow-inner transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
+                  />
+                </div>
+              </div>
+
               {/* R:R ORANI & PNL */}
               <div className="grid grid-cols-2 gap-2.5">
                 {/* R:R */}
@@ -769,16 +958,26 @@ const AddTradeForm = React.memo(function AddTradeForm({
                   <label className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1.5 block font-sans">
                     R:R ORANI
                   </label>
-                  <input
-                    type="number"
-                    step="any"
-                    min="0"
-                    placeholder="2.5"
-                    value={tradeStatus === "BREAKEVEN" ? 0 : rrValue}
-                    disabled={tradeStatus === "BREAKEVEN"}
-                    onChange={(e) => setRrValue(e.target.value !== "" ? Number(e.target.value) : "")}
-                    className="w-full h-9.5 bg-zinc-950/80 border border-zinc-700/70 hover:border-zinc-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 rounded-xl px-3.5 text-xs sm:text-sm text-zinc-100 focus:outline-none placeholder-zinc-500 font-sans shadow-inner disabled:opacity-50 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
-                  />
+                  <div className="relative">
+                    {tradeStatus === "LOSS" && (
+                      <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-rose-400 font-bold text-xs sm:text-sm font-sans">
+                        -
+                      </span>
+                    )}
+                    <input
+                      type="number"
+                      step="any"
+                      min="0"
+                      placeholder={tradeStatus === "LOSS" ? "1" : "2.5"}
+                      value={tradeStatus === "BREAKEVEN" ? 0 : rrValue}
+                      disabled={tradeStatus === "BREAKEVEN"}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setRrValue(val !== "" ? Math.abs(Number(val)) : "");
+                      }}
+                      className={`w-full h-9.5 bg-zinc-950/80 border border-zinc-700/70 hover:border-zinc-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 rounded-xl ${tradeStatus === "LOSS" ? "pl-6 pr-3.5" : "px-3.5"} text-xs sm:text-sm text-zinc-100 focus:outline-none placeholder-zinc-500 font-sans shadow-inner disabled:opacity-50 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold`}
+                    />
+                  </div>
                 </div>
 
                 {/* PNL */}
@@ -910,31 +1109,40 @@ const AddTradeForm = React.memo(function AddTradeForm({
               </div>
 
               {/* 3 SATIRLI TEKNİK MATRİS:
-                  1. Satır: KONSEPT yanında SESSION
+                  1. Satır: LIQUIDITY SWEEP yanında SESSION
                   2. Satır: TIMEFRAME yanında PD ARRAY
                   3. Satır: ENTRY TIMEFRAME yanında ENTRY MODEL */}
               <div className="grid grid-cols-2 gap-x-4 gap-y-3 pt-1 border-t border-zinc-800/60">
-                {/* 1. SATIR SOL: KONSEPT */}
+                {/* 1. SATIR SOL: LIQUIDITY SWEEP */}
                 <div className="flex flex-col">
                   <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1.5 flex items-center gap-1.5 font-sans">
-                    <Bookmark size={12} className="text-amber-400 shrink-0" />
-                    {(cleanDefinitionTitleString(definitionTitles.concepts) || "KONSEPT").toUpperCase()}
+                    <Target size={12} className="text-amber-400 shrink-0" />
+                    {(cleanDefinitionTitleString(definitionTitles.liquiditySweeps || definitionTitles.concepts) || "LIQUIDITY SWEEP").toUpperCase()}
                   </span>
                   <div className="flex flex-wrap gap-1.5">
-                    {concepts.map((c, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => setSelectedConcept(c === selectedConcept ? "" : c)}
-                        className={`px-3 py-1.5 text-xs rounded-xl transition-all font-sans font-bold tracking-wide cursor-pointer border uppercase ${
-                          c === selectedConcept
-                            ? "bg-amber-500/20 text-amber-300 border-amber-500/60 shadow-xs"
-                            : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
-                        }`}
-                      >
-                        {c}
-                      </button>
-                    ))}
+                    {effectiveLiquiditySweeps.map((c, idx) => {
+                      const isActive = selectedLiquiditySweeps.includes(c);
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() =>
+                            setSelectedLiquiditySweeps(
+                              isActive
+                                ? selectedLiquiditySweeps.filter((x) => x !== c)
+                                : [...selectedLiquiditySweeps, c]
+                            )
+                          }
+                          className={`px-3 py-1.5 text-xs rounded-xl transition-all font-sans font-bold tracking-wide cursor-pointer border uppercase ${
+                            isActive
+                              ? "bg-amber-500/20 text-amber-300 border-amber-500/60 shadow-xs"
+                              : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
+                          }`}
+                        >
+                          {c}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 

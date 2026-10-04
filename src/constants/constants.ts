@@ -1,23 +1,24 @@
-import { DefinitionTitles } from "../types";
+import { DefinitionTitles, PlatformCategory } from "../types";
 
-export const DEMO_PLATFORMS = ["Demo", "LiveTest", "Challenge"];
 export const FUNDED_PLATFORMS = ["Funded", "Live", "Binance", "Bybit", "MetaTrader 4", "TradingView"];
+export const CHALLENGE_PLATFORMS = ["Challenge", "Evaluation", "Phase 1", "Phase 2", "FTMO", "MFF", "FundingPips"];
+export const DEMO_PLATFORMS = ["Demo", "LiveTest", "Paper Trading", "Backtest"];
 
 export const DEFAULT_PLATFORMS = [
-  "Demo",
-  "LiveTest",
-  "Challenge",
   "Funded",
+  "Challenge",
+  "Demo",
   "Live",
+  "LiveTest",
   "Binance",
   "Bybit",
   "MetaTrader 4",
   "TradingView"
 ];
 
-let cachedCategories: Record<string, 'DEMO' | 'FUNDED'> | null = null;
+let cachedCategories: Record<string, PlatformCategory> | null = null;
 
-export function getStoredPlatformCategories(): Record<string, 'DEMO' | 'FUNDED'> {
+export function getStoredPlatformCategories(): Record<string, PlatformCategory> {
   if (cachedCategories) return cachedCategories;
   try {
     const raw = localStorage.getItem('tj_platform_categories');
@@ -30,7 +31,7 @@ export function getStoredPlatformCategories(): Record<string, 'DEMO' | 'FUNDED'>
   return cachedCategories;
 }
 
-export function savePlatformCategory(platform: string, category: 'DEMO' | 'FUNDED'): void {
+export function savePlatformCategory(platform: string, category: PlatformCategory): void {
   try {
     const current = getStoredPlatformCategories();
     current[platform.trim()] = category;
@@ -40,7 +41,27 @@ export function savePlatformCategory(platform: string, category: 'DEMO' | 'FUNDE
   } catch (e) {}
 }
 
-export function isDemoPlatform(platform?: string, customCategories?: Record<string, 'DEMO' | 'FUNDED'>): boolean {
+export function isChallengePlatform(platform?: string, customCategories?: Record<string, PlatformCategory>): boolean {
+  if (!platform) return false;
+  const clean = platform.trim();
+  const cats = customCategories || getStoredPlatformCategories();
+  if (cats[clean]) {
+    return cats[clean] === 'CHALLENGE';
+  }
+  const p = clean.toLowerCase();
+  return (
+    p.includes("challenge") ||
+    p.includes("challange") ||
+    p.includes("eval") ||
+    p.includes("phase") ||
+    p.includes("ftmo") ||
+    p.includes("mff") ||
+    p.includes("fundingpips") ||
+    p.includes("prop")
+  );
+}
+
+export function isDemoPlatform(platform?: string, customCategories?: Record<string, PlatformCategory>): boolean {
   if (!platform) return false;
   const clean = platform.trim();
   const cats = customCategories || getStoredPlatformCategories();
@@ -48,35 +69,58 @@ export function isDemoPlatform(platform?: string, customCategories?: Record<stri
     return cats[clean] === 'DEMO';
   }
   const p = clean.toLowerCase();
+  if (isChallengePlatform(platform, customCategories)) return false;
   return (
     p.includes("demo") ||
-    p.includes("test") ||
     p.includes("livetest") ||
-    p.includes("challenge") ||
+    p.includes("paper") ||
+    p.includes("backtest") ||
     p.includes("pratik") ||
-    p.includes("eval") ||
-    p.includes("phase")
+    (p.includes("test") && !p.includes("livetest"))
   );
 }
 
-export function isFundedPlatform(platform?: string, customCategories?: Record<string, 'DEMO' | 'FUNDED'>): boolean {
+export function isFundedPlatform(platform?: string, customCategories?: Record<string, PlatformCategory>): boolean {
   if (!platform) return true;
-  return !isDemoPlatform(platform, customCategories);
+  const clean = platform.trim();
+  const cats = customCategories || getStoredPlatformCategories();
+  if (cats[clean]) {
+    return cats[clean] === 'FUNDED';
+  }
+  if (isChallengePlatform(platform, customCategories)) return false;
+  if (isDemoPlatform(platform, customCategories)) return false;
+  return true;
 }
 
 export function getTradeAccountCategory(
-  trade: { accountCategory?: 'DEMO' | 'FUNDED'; platform?: string },
-  customCategories?: Record<string, 'DEMO' | 'FUNDED'>
-): 'DEMO' | 'FUNDED' {
-  if (trade.accountCategory === 'DEMO' || trade.accountCategory === 'FUNDED') {
+  trade: { accountCategory?: PlatformCategory; platform?: string },
+  customCategories?: Record<string, PlatformCategory>
+): PlatformCategory {
+  if (trade.accountCategory === 'FUNDED' || trade.accountCategory === 'CHALLENGE' || trade.accountCategory === 'DEMO') {
     return trade.accountCategory;
   }
-  return isDemoPlatform(trade.platform, customCategories) ? 'DEMO' : 'FUNDED';
+  if (isChallengePlatform(trade.platform, customCategories)) {
+    return 'CHALLENGE';
+  }
+  if (isDemoPlatform(trade.platform, customCategories)) {
+    return 'DEMO';
+  }
+  return 'FUNDED';
 }
 export const DEFAULT_TIMEFRAMES = ["1m", "5m", "15m", "1h", "4h", "1D"];
 export const DEFAULT_HTF_TIMEFRAMES = ["15m", "1h", "4h", "1D", "1W", "1M"];
 export const DEFAULT_CONFIRMATIONS = ["FVG", "Orderblock", "Likidite Alımı", "BOS", "CHoCH"];
-export const DEFAULT_CONCEPTS = ["Scalping", "Day Trading", "Swing Trading", "Position Trading"];
+export const DEFAULT_LIQUIDITY_SWEEPS = [
+  "PDH / PDL",
+  "PWH / PWL",
+  "Asia High / Low",
+  "EQH / EQL",
+  "Session High / Low",
+  "Internal Range",
+  "External Range",
+  "Trendline Liquidity"
+];
+export const DEFAULT_CONCEPTS = DEFAULT_LIQUIDITY_SWEEPS;
 export const DEFAULT_SESSIONS = ["London", "New York", "Tokyo", "Sydney", "Asian", "Overlap"];
 export const DEFAULT_ASSETS = ["BTC/USDT", "ETH/USDT", "EUR/USD", "XAU/USD", "NQ100"];
 export const DEFAULT_PLAN_FIDELITIES = ["Tam", "Kısmen", "FOMO"];
@@ -97,7 +141,8 @@ export const DEFAULT_TREND_TYPES = [
 export const DEFAULT_DEFINITION_TITLES: DefinitionTitles = {
   platforms: "Platform",
   assets: "Parite",
-  concepts: "Konsept",
+  liquiditySweeps: "Liquidity Sweep",
+  concepts: "Liquidity Sweep",
   confirmations: "PD ARRAY",
   timeframes: "Entry Timeframe",
   htfTimeframes: "Timeframe",
@@ -165,9 +210,10 @@ export const sanitizeDefinitionTitles = (raw: Partial<DefinitionTitles> = {}): D
     result.assets = "Parite";
   }
 
-  if (!result.concepts || result.concepts === "Konseptler") {
-    result.concepts = "Konsept";
+  if (!result.liquiditySweeps || /konsept|likidite sweep/i.test(result.liquiditySweeps)) {
+    result.liquiditySweeps = "Liquidity Sweep";
   }
+  result.concepts = result.liquiditySweeps;
 
   if (!result.sessions || /oturum|seans/i.test(result.sessions)) {
     result.sessions = "Session";

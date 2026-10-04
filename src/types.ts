@@ -1,4 +1,5 @@
-export type AccountCategory = 'ALL' | 'DEMO' | 'FUNDED';
+export type PlatformCategory = 'FUNDED' | 'CHALLENGE' | 'DEMO';
+export type AccountCategory = 'ALL' | 'FUNDED' | 'CHALLENGE' | 'DEMO';
 
 export interface Trade {
   id: string;
@@ -7,15 +8,19 @@ export interface Trade {
   rr: number;               // Risk/Reward ratio (e.g., +2.5 or -1.0)
   pnl: number;              // Manually entered realized Profit & Loss ($)
   status: 'WIN' | 'LOSS' | 'BREAKEVEN'; // Trade result code
+  stopPips?: number;        // Stop Loss in pips / ticks / points
+  tpPips?: number;          // Take Profit in pips / ticks / points
   notes: string;            // Analysis notes, setup descriptions
   screenshot: string | null; // Base64 data URI of compressed screenshot
   createdAt: number;        // Timestamp of entry
   platform?: string;        // Trading platform (e.g., Binance, Bybit, Metatrader, Demo, Challenge, Funded)
-  accountCategory?: 'DEMO' | 'FUNDED'; // Account category: Demo/Challenge vs Funded/Live
+  accountCategory?: 'FUNDED' | 'CHALLENGE' | 'DEMO'; // Account category: Funded vs Challenge vs Demo
   timeframe?: string;       // Execution timeframe (e.g., 1m, 5m, 1h)
   htfTimeframe?: string;    // Higher Timeframe (HTF)
   session?: string;         // Trading session (e.g., London, New York)
-  concept?: string;        // Trading concept used
+  liquiditySweep?: string;  // Liquidity Sweep türü (e.g. PDH / PDL, Asia High/Low, Session High/Low)
+  liquiditySweeps?: string[]; // Birden fazla Liquidity Sweep seçeneği
+  concept?: string;         // legacy fallback
   confirmations?: string[];      // Array of trading confirmations used (e.g., FVG, Orderblock)
   planFidelity?: string | null; // Setup kalitesi (Plan fidelity)
   entry?: string;           // Giriş Modeli (Entry Model e.g. IFVG, FVG, Orderblock)
@@ -74,6 +79,8 @@ export interface TradeFilter {
   htfTimeframe?: string;
   session?: string;
   confirmation?: string;
+  liquiditySweep?: string;
+  liquiditySweeps?: string[];
   concept?: string;
   planFidelity?: string;
   entry?: string;
@@ -106,7 +113,8 @@ export interface Certificate {
 export interface DefinitionTitles {
   platforms: string;
   assets: string;
-  concepts: string;
+  liquiditySweeps?: string;
+  concepts?: string;
   confirmations: string;
   timeframes: string;
   htfTimeframes: string;

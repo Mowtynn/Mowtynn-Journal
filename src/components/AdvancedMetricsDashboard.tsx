@@ -1,7 +1,7 @@
 import React, { useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Crosshair, Target, Infinity as InfinityIcon, Calendar, AlertTriangle, Activity, Layers, Percent, X, Filter, ChevronLeft, ChevronRight, ChevronsUpDown, Search, Grid, SlidersHorizontal, Clock, Bookmark, Maximize2, Zap, TrendingUp } from 'lucide-react';
+import { Crosshair, Target, Infinity as InfinityIcon, Calendar, AlertTriangle, Activity, Layers, Percent, X, Filter, ChevronLeft, ChevronRight, ChevronsUpDown, Search, Grid, SlidersHorizontal, Clock, Maximize2, Zap, TrendingUp } from 'lucide-react';
 import { Trade } from '../types';
 import { caseInsensitiveMatch } from '../constants/constants';
 import { HeatmapModal } from './HeatmapModal';
@@ -491,7 +491,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
           const session = t.session || '';
           const htfTimeframe = t.htfTimeframe || '';
           const timeframe = t.timeframe || '';
-          const concept = t.concept || '';
+          const concept = t.liquiditySweep || t.concept || '';
           const planFidelity = t.planFidelity || '';
           const cleanConf = confirmation.trim();
           
@@ -1808,13 +1808,13 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                                           </span>
                                         )}
 
-                                        {/* 4. KONSEPT (Strateji) */}
+                                        {/* 4. LIQUIDITY SWEEP */}
                                         {child.concept && (
                                           <span 
-                                            title="Strateji / Konsept"
+                                            title="Liquidity Sweep"
                                             className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-amber-300 bg-amber-500/10 px-2 py-0.5 border border-amber-500/25 rounded-lg"
                                           >
-                                            <Bookmark size={10} className="text-amber-400 shrink-0" />
+                                            <Target size={10} className="text-amber-400 shrink-0" />
                                             {child.concept}
                                           </span>
                                         )}

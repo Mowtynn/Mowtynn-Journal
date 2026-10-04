@@ -10,7 +10,7 @@ import {
 
   X, Edit3, Trash2, Calendar, Clock, Target, 
   Maximize2, ExternalLink, Image as ImageIcon, FileText, 
-  Activity, Layers, Monitor, Bookmark, ShieldCheck, AlertCircle,
+  Activity, Layers, Monitor, ShieldCheck, AlertCircle,
   Download, Loader2, Trophy, TrendingDown, Minus, Zap, TrendingUp
 } from "lucide-react";
 
@@ -300,8 +300,26 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                         <span className={`text-2xl font-bold ${pnlColorClass}`}>{pnlFormatted}</span>
                       </div>
                       <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-xl p-4 flex flex-col justify-center">
-                        <span className="heading-3 mb-1.5">RISK : REWARD</span>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="heading-3">RISK : REWARD</span>
+                          {(currentTrade.stopPips !== undefined || currentTrade.tpPips !== undefined) && (
+                            <span className="text-[10px] font-mono text-zinc-400">
+                              {currentTrade.stopPips ?? '-'}p / {currentTrade.tpPips ?? '-'}p
+                            </span>
+                          )}
+                        </div>
                         <span className={`text-2xl font-bold ${rrColorClass}`}>{rrFormatted}</span>
+                        {(currentTrade.stopPips !== undefined || currentTrade.tpPips !== undefined) && (
+                          <div className="flex items-center gap-2 mt-1 text-[10px] font-mono text-zinc-400">
+                            {currentTrade.stopPips !== undefined && (
+                              <span className="text-rose-400 font-medium">Stop: {currentTrade.stopPips}p</span>
+                            )}
+                            {currentTrade.stopPips !== undefined && currentTrade.tpPips !== undefined && <span>•</span>}
+                            {currentTrade.tpPips !== undefined && (
+                              <span className="text-emerald-400 font-medium">TP: {currentTrade.tpPips}p</span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </section>
@@ -330,26 +348,34 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                           <ContextRow 
                             label={(cleanDefinitionTitleString(definitionTitles.platforms) || "PLATFORM").toUpperCase()} 
                             value={
-                              currentTrade.platform ? (
-                                <span className="inline-flex items-center gap-1.5">
-                                  <span>{currentTrade.platform}</span>
-                                  <span className={`text-[9px] px-1.5 py-0.2 rounded-md font-bold uppercase ${
-                                    getTradeAccountCategory(currentTrade) === 'DEMO'
-                                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                                      : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                                  }`}>
-                                    {getTradeAccountCategory(currentTrade) === 'DEMO' ? 'DEMO' : 'FUNDED'}
+                              currentTrade.platform ? (() => {
+                                const cat = getTradeAccountCategory(currentTrade);
+                                const catClass = cat === 'FUNDED'
+                                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                                  : cat === 'CHALLENGE'
+                                    ? 'bg-blue-500/20 text-blue-300 border-blue-500/30'
+                                    : 'bg-amber-500/20 text-amber-300 border-amber-500/30';
+                                return (
+                                  <span className="inline-flex items-center gap-1.5">
+                                    <span>{currentTrade.platform}</span>
+                                    <span className={`text-[9px] px-1.5 py-0.2 rounded-md font-bold uppercase border ${catClass}`}>
+                                      {cat}
+                                    </span>
                                   </span>
-                                </span>
-                              ) : undefined
+                                );
+                              })() : undefined
                             } 
                             icon={<Monitor size={14} className="text-zinc-400"/>} 
                           />
-                          {/* 2. KONSEPT */}
+                          {/* 2. LIQUIDITY SWEEP */}
                           <ContextRow 
-                            label={(cleanDefinitionTitleString(definitionTitles.concepts) || "KONSEPT").toUpperCase()} 
-                            value={currentTrade.concept} 
-                            icon={<Bookmark size={14} className="text-amber-400"/>} 
+                            label={(cleanDefinitionTitleString(definitionTitles.liquiditySweeps || definitionTitles.concepts) || "LIQUIDITY SWEEP").toUpperCase()} 
+                            value={
+                              currentTrade.liquiditySweeps && currentTrade.liquiditySweeps.length > 0
+                                ? currentTrade.liquiditySweeps.join(", ")
+                                : (currentTrade.liquiditySweep || currentTrade.concept)
+                            } 
+                            icon={<Target size={14} className="text-amber-400"/>} 
                           />
                           {/* 3. SESSION */}
                           <ContextRow 

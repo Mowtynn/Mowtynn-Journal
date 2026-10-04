@@ -268,6 +268,13 @@ const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
   const isLoss = trade.status === 'LOSS';
   const isBe = trade.status === 'BREAKEVEN';
 
+  const category = getTradeAccountCategory(trade);
+  const categoryBadgeClass = category === 'FUNDED'
+    ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30 group-hover:border-emerald-500/60'
+    : category === 'CHALLENGE'
+      ? 'bg-blue-500/10 text-blue-300 border-blue-500/30 group-hover:border-blue-500/60'
+      : 'bg-amber-500/10 text-amber-300 border-amber-500/30 group-hover:border-amber-500/60';
+
   const { pnlText, pnlColor } = useMemo(() => {
     if (isBe) {
       return { pnlText: `0.00 ${currency}`, pnlColor: 'text-zinc-500 font-bold' };
@@ -366,11 +373,7 @@ const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
         <td className="hidden sm:table-cell sm:w-[12%] sm:min-w-[75px] py-1.5 px-2 text-center bg-transparent border-y border-zinc-800/80 align-middle">
           <div className="flex items-center justify-center w-full">
             {trade.platform ? (
-              <span className={`inline-flex items-center justify-center min-w-[54px] max-w-[130px] h-[20px] px-2.5 py-0 text-center text-[10px] font-bold rounded-full uppercase tracking-wider font-sans whitespace-nowrap truncate border transition-colors ${
-                getTradeAccountCategory(trade) === 'DEMO'
-                  ? 'bg-amber-500/10 text-amber-300 border-amber-500/30 group-hover:border-amber-500/60'
-                  : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30 group-hover:border-emerald-500/60'
-              }`}>
+              <span className={`inline-flex items-center justify-center min-w-[54px] max-w-[130px] h-[20px] px-2.5 py-0 text-center text-[10px] font-bold rounded-full uppercase tracking-wider font-sans whitespace-nowrap truncate border transition-colors ${categoryBadgeClass}`}>
                 {trade.platform}
               </span>
             ) : (
@@ -383,11 +386,7 @@ const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
         {true && (
           <div className="sm:hidden">
             {trade.platform ? (
-              <span className={`inline-flex items-center justify-center min-w-[46px] max-w-[120px] h-[20px] px-2.5 py-0 text-center text-[10px] font-bold rounded-full uppercase tracking-wider font-sans whitespace-nowrap truncate border ${
-                getTradeAccountCategory(trade) === 'DEMO'
-                  ? 'bg-amber-500/10 text-amber-300 border-amber-500/30'
-                  : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
-              }`}>
+              <span className={`inline-flex items-center justify-center min-w-[46px] max-w-[120px] h-[20px] px-2.5 py-0 text-center text-[10px] font-bold rounded-full uppercase tracking-wider font-sans whitespace-nowrap truncate border ${categoryBadgeClass}`}>
                 {trade.platform}
               </span>
             ) : null}
@@ -585,7 +584,19 @@ const TradeList = React.memo(function TradeList({
   const uniqueHtfTimeframes = useMemo(() => Array.from(new Set(trades.map(t => t.htfTimeframe).filter(Boolean) as string[])).sort(), [trades]);
   const uniqueSessions = useMemo(() => Array.from(new Set(trades.map(t => t.session).filter(Boolean) as string[])).sort(), [trades]);
   const uniqueConfirmations = useMemo(() => Array.from(new Set(trades.flatMap(t => t.confirmations || []))).sort(), [trades]);
-  const uniqueConcepts = useMemo(() => Array.from(new Set(trades.map(t => t.concept).filter(Boolean) as string[])).sort(), [trades]);
+  const uniqueConcepts = useMemo(() => {
+    const set = new Set<string>();
+    trades.forEach(t => {
+      if (Array.isArray(t.liquiditySweeps)) {
+        t.liquiditySweeps.forEach(s => s && set.add(s));
+      } else if (t.liquiditySweep) {
+        t.liquiditySweep.split(',').map(s => s.trim()).forEach(s => s && set.add(s));
+      } else if (t.concept) {
+        t.concept.split(',').map(s => s.trim()).forEach(s => s && set.add(s));
+      }
+    });
+    return Array.from(set).sort();
+  }, [trades]);
   const uniquePlanFidelities = useMemo(() => {
     const set = new Set<string>();
     trades.forEach(t => {
@@ -693,6 +704,8 @@ const TradeList = React.memo(function TradeList({
         const matchesSearch = !deferredFilter.search || 
           caseInsensitiveMatch(trade.asset, deferredFilter.search) || 
           caseInsensitiveMatch(trade.notes, deferredFilter.search) ||
+          (trade.liquiditySweeps && trade.liquiditySweeps.some(s => caseInsensitiveMatch(s, deferredFilter.search))) ||
+          caseInsensitiveMatch(trade.liquiditySweep, deferredFilter.search) ||
           caseInsensitiveMatch(trade.concept, deferredFilter.search) ||
           caseInsensitiveMatch(trade.session, deferredFilter.search) ||
           caseInsensitiveMatch(trade.platform, deferredFilter.search) ||
@@ -724,7 +737,11 @@ const TradeList = React.memo(function TradeList({
         const matchesConfirmation = !deferredFilter.confirmation || (trade.confirmations && trade.confirmations.some(c => caseInsensitiveEquals(c, deferredFilter.confirmation)));
         if (!matchesConfirmation) return false;
 
-        const matchesConcept = !deferredFilter.concept || caseInsensitiveEquals(trade.concept, deferredFilter.concept);
+        const targetSweepFilter = deferredFilter.liquiditySweep || deferredFilter.concept;
+        const matchesConcept = !targetSweepFilter ||
+          (trade.liquiditySweeps && trade.liquiditySweeps.some(s => caseInsensitiveEquals(s, targetSweepFilter))) ||
+          (trade.liquiditySweep && trade.liquiditySweep.split(',').map(s => s.trim()).some(s => caseInsensitiveEquals(s, targetSweepFilter))) ||
+          (trade.concept && trade.concept.split(',').map(s => s.trim()).some(s => caseInsensitiveEquals(s, targetSweepFilter)));
         if (!matchesConcept) return false;
 
         const matchesPlanFidelity = !deferredFilter.planFidelity || caseInsensitiveEquals(trade.planFidelity, deferredFilter.planFidelity);
@@ -1063,14 +1080,14 @@ const TradeList = React.memo(function TradeList({
                   />
                 </div>
 
-                {/* Konsept */}
+                {/* Liquidity Sweep */}
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-zinc-400">{definitionTitles.concepts || "Konsept"}</span>
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-zinc-400">{definitionTitles.liquiditySweeps || definitionTitles.concepts || "Liquidity Sweep"}</span>
                   <CustomSelect
-                    value={filter.concept || ''}
-                    onChange={(val) => handleFilterChange({ ...filter, concept: val || undefined })}
+                    value={filter.liquiditySweep || filter.concept || ''}
+                    onChange={(val) => handleFilterChange({ ...filter, liquiditySweep: val || undefined, concept: val || undefined })}
                     options={conceptOptions}
-                    placeholder={`${definitionTitles.concepts || "Konsept"} Seçin`}
+                    placeholder={`${definitionTitles.liquiditySweeps || definitionTitles.concepts || "Liquidity Sweep"} Seçin`}
                     className="w-full"
                   />
                 </div>

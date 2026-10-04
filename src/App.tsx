@@ -6,6 +6,7 @@ import {
   DEFAULT_TIMEFRAMES,
   DEFAULT_HTF_TIMEFRAMES,
   DEFAULT_CONFIRMATIONS,
+  DEFAULT_LIQUIDITY_SWEEPS,
   DEFAULT_CONCEPTS,
   DEFAULT_SESSIONS,
   DEFAULT_ASSETS,
@@ -290,11 +291,11 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, []);
 
-  // Account Category Switcher State (ALL | DEMO | FUNDED)
+  // Account Category Switcher State (ALL | FUNDED | CHALLENGE | DEMO)
   const [activeAccountCategory, setActiveAccountCategory] = useState<AccountCategory>(() => {
     try {
       const saved = localStorage.getItem('tj_active_account_category');
-      if (saved === 'DEMO' || saved === 'FUNDED' || saved === 'ALL') {
+      if (saved === 'DEMO' || saved === 'FUNDED' || saved === 'CHALLENGE' || saved === 'ALL') {
         return saved as AccountCategory;
       }
     } catch (e) {}
@@ -321,18 +322,21 @@ export default function App() {
   }, []);
 
   const accountCategoryCounts = useMemo(() => {
-    let demo = 0;
     let funded = 0;
+    let challenge = 0;
+    let demo = 0;
     const customCategories = getStoredPlatformCategories();
     trades.forEach((t) => {
       const cat = getTradeAccountCategory(t, customCategories);
-      if (cat === 'DEMO') demo++;
-      else funded++;
+      if (cat === 'FUNDED') funded++;
+      else if (cat === 'CHALLENGE') challenge++;
+      else demo++;
     });
     return {
       all: trades.length,
-      demo,
       funded,
+      challenge,
+      demo,
     };
   }, [trades, categoryVersion]);
 
@@ -466,28 +470,32 @@ export default function App() {
     }
   }, [user]);
 
-  const [concepts, setConcepts] = useState<string[]>(() => {
+  const [liquiditySweeps, setLiquiditySweeps] = useState<string[]>(() => {
     try {
-      const stored = localStorage.getItem("trading_concepts_list");
+      const stored = localStorage.getItem("trading_liquidity_sweeps_list") || localStorage.getItem("trading_concepts_list");
       if (stored) return JSON.parse(stored);
     } catch (e) {
       console.error(e);
     }
-    return DEFAULT_CONCEPTS;
+    return DEFAULT_LIQUIDITY_SWEEPS;
   });
 
-  const persistConcepts = useCallback((updated: string[], syncCloud = true) => {
-    setConcepts(updated);
+  const persistLiquiditySweeps = useCallback((updated: string[], syncCloud = true) => {
+    setLiquiditySweeps(updated);
     try {
+      localStorage.setItem("trading_liquidity_sweeps_list", JSON.stringify(updated));
       localStorage.setItem("trading_concepts_list", JSON.stringify(updated));
       if (syncCloud && user) {
-        setDoc(doc(db, "settings", user.uid), cleanForFirestore({ concepts: updated, userId: user.uid }), { merge: true })
+        setDoc(doc(db, "settings", user.uid), cleanForFirestore({ liquiditySweeps: updated, concepts: updated, userId: user.uid }), { merge: true })
           .catch(err => console.error(err));
       }
     } catch (e) {
       console.error(e);
     }
   }, [user]);
+
+  const concepts = liquiditySweeps;
+  const persistConcepts = persistLiquiditySweeps;
 
   const [sessions, setSessions] = useState<string[]>(() => {
     try {
@@ -983,8 +991,8 @@ export default function App() {
         const confsRaw = localStorage.getItem("trading_confirmations_list");
         if (confsRaw) setConfirmations(JSON.parse(confsRaw));
 
-        const conceptsRaw = localStorage.getItem("trading_concepts_list");
-        if (conceptsRaw) setConcepts(JSON.parse(conceptsRaw));
+        const conceptsRaw = localStorage.getItem("trading_liquidity_sweeps_list") || localStorage.getItem("trading_concepts_list");
+        if (conceptsRaw) setLiquiditySweeps(JSON.parse(conceptsRaw));
 
         const sessionsRaw = localStorage.getItem("trading_sessions_list");
         if (sessionsRaw) setSessions(JSON.parse(sessionsRaw));
@@ -1146,10 +1154,19 @@ export default function App() {
         persistPlatforms(newPlatforms, false);
         settingsUpdates = { ...settingsUpdates, platforms: newPlatforms };
       }
-      if (tradeData.concept && !concepts.includes(tradeData.concept)) {
-        const newConcepts = [...concepts, tradeData.concept];
-        persistConcepts(newConcepts, false);
-        settingsUpdates = { ...settingsUpdates, concepts: newConcepts };
+      const sweepsToCheck = Array.isArray(tradeData.liquiditySweeps)
+        ? tradeData.liquiditySweeps
+        : tradeData.liquiditySweep
+        ? [tradeData.liquiditySweep]
+        : tradeData.concept
+        ? [tradeData.concept]
+        : [];
+      
+      const newItems = sweepsToCheck.filter(s => s && !liquiditySweeps.includes(s));
+      if (newItems.length > 0) {
+        const newSweeps = [...liquiditySweeps, ...newItems];
+        persistLiquiditySweeps(newSweeps, false);
+        settingsUpdates = { ...settingsUpdates, liquiditySweeps: newSweeps, concepts: newSweeps };
       }
       if (tradeData.session && !sessions.includes(tradeData.session)) {
         const newSessions = [...sessions, tradeData.session];
@@ -1989,8 +2006,15 @@ export default function App() {
       if (confirmationSet && (!t.confirmations || !t.confirmations.some(tc => confirmationSet.has(normalizeSearchString(tc))))) {
         return false;
       }
-      if (conceptSet && (!t.concept || !conceptSet.has(normalizeSearchString(t.concept)))) {
-        return false;
+      if (conceptSet) {
+        const tradeSweeps = Array.isArray(t.liquiditySweeps) && t.liquiditySweeps.length > 0
+          ? t.liquiditySweeps
+          : (t.liquiditySweep || t.concept)
+          ? [t.liquiditySweep || t.concept]
+          : [];
+        if (tradeSweeps.length === 0 || !tradeSweeps.some(s => s && conceptSet.has(normalizeSearchString(s)))) {
+          return false;
+        }
       }
       if (planFidelitySet && (!t.planFidelity || !planFidelitySet.has(normalizeSearchString(t.planFidelity)))) {
         return false;
@@ -2040,6 +2064,7 @@ export default function App() {
       globalSelectedConfirmations.length +
       globalSelectedConcepts.length +
       globalSelectedPlanFidelity.length +
+      globalSelectedPlatforms.length +
       globalSelectedAssets.length +
       globalSelectedSessions.length +
       globalSelectedTimeframes.length +
@@ -2053,6 +2078,7 @@ export default function App() {
       globalSelectedConfirmations,
       globalSelectedConcepts,
       globalSelectedPlanFidelity,
+      globalSelectedPlatforms,
       globalSelectedAssets,
       globalSelectedSessions,
       globalSelectedTimeframes,

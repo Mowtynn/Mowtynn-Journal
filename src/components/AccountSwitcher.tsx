@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Shield, Trophy, Layers } from 'lucide-react';
+import { Shield, Trophy, Layers, Target } from 'lucide-react';
 import { AccountCategory } from '../types';
 
 interface AccountSwitcherProps {
@@ -8,8 +8,9 @@ interface AccountSwitcherProps {
   onSelectCategory: (category: AccountCategory) => void;
   counts: {
     all: number;
-    demo: number;
     funded: number;
+    challenge: number;
+    demo: number;
   };
 }
 
@@ -49,9 +50,19 @@ export const AccountSwitcher: React.FC<AccountSwitcherProps> = React.memo(({
       count: counts.funded,
     },
     {
+      id: 'CHALLENGE',
+      label: 'CHALLENGE',
+      subLabel: 'Challenge & Değerlendirme Hesapları',
+      icon: <Target size={11} className="shrink-0" />,
+      colorClass: 'text-blue-400',
+      activeBorderClass: 'border-blue-500/40',
+      activeBgClass: 'bg-blue-500/15',
+      count: counts.challenge,
+    },
+    {
       id: 'DEMO',
       label: 'DEMO',
-      subLabel: 'Demo, LiveTest, Challenge',
+      subLabel: 'Demo & Pratik Hesaplar',
       icon: <Shield size={11} className="shrink-0" />,
       colorClass: 'text-amber-400',
       activeBorderClass: 'border-amber-500/40',
@@ -63,7 +74,7 @@ export const AccountSwitcher: React.FC<AccountSwitcherProps> = React.memo(({
   return (
     <div 
       className="flex items-center bg-zinc-900 border border-zinc-700/60 rounded-xl p-0.5 shadow-xs shrink-0 select-none"
-      title="Hesap Türü Filtresi (Demo vs Funded)"
+      title="Hesap Türü Filtresi (Tümü / Funded / Challenge / Demo)"
     >
       {options.map((opt) => {
         const isActive = activeCategory === opt.id;

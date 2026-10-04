@@ -8,12 +8,12 @@ import {
   GripVertical, RotateCcw, Download, Upload, AlertCircle,
   Crosshair, Zap, TrendingUp, Trophy, Shield
 } from 'lucide-react';
-import { Trade, DefinitionTitles } from '../types';
+import { Trade, DefinitionTitles, PlatformCategory } from '../types';
 import { 
   DEFAULT_PLATFORMS, DEFAULT_TIMEFRAMES, DEFAULT_HTF_TIMEFRAMES, 
-  DEFAULT_CONFIRMATIONS, DEFAULT_CONCEPTS, DEFAULT_SESSIONS, DEFAULT_ASSETS,
+  DEFAULT_CONFIRMATIONS, DEFAULT_LIQUIDITY_SWEEPS, DEFAULT_SESSIONS, DEFAULT_ASSETS,
   DEFAULT_PLAN_FIDELITIES, DEFAULT_ENTRY_MODELS, DEFAULT_TREND_TYPES, DEFAULT_DEFINITION_TITLES,
-  caseInsensitiveMatch, caseInsensitiveEquals, isDemoPlatform, savePlatformCategory
+  caseInsensitiveMatch, caseInsensitiveEquals, savePlatformCategory, getTradeAccountCategory
 } from '../constants/constants';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
@@ -78,7 +78,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
   const [activeTab, setActiveTab] = useState<TabType>('platforms');
   const [searchQuery, setSearchQuery] = useState('');
   const [newItemText, setNewItemText] = useState('');
-  const [newPlatformCategory, setNewPlatformCategory] = useState<'FUNDED' | 'DEMO'>('FUNDED');
+  const [newPlatformCategory, setNewPlatformCategory] = useState<PlatformCategory>('FUNDED');
   const [, setCategoryVersion] = useState(0);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingText, setEditingText] = useState('');
@@ -97,7 +97,17 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
       if (t.asset) counts[`assets:${t.asset}`] = (counts[`assets:${t.asset}`] || 0) + 1;
       if (t.timeframe) counts[`timeframes:${t.timeframe}`] = (counts[`timeframes:${t.timeframe}`] || 0) + 1;
       if (t.htfTimeframe) counts[`htfTimeframes:${t.htfTimeframe}`] = (counts[`htfTimeframes:${t.htfTimeframe}`] || 0) + 1;
-      if (t.concept) counts[`concepts:${t.concept}`] = (counts[`concepts:${t.concept}`] || 0) + 1;
+      const sweepsList = Array.isArray(t.liquiditySweeps)
+        ? t.liquiditySweeps
+        : (t.liquiditySweep || t.concept)
+        ? (t.liquiditySweep || t.concept)!.split(',').map(s => s.trim())
+        : [];
+      sweepsList.forEach(swp => {
+        if (swp) {
+          counts[`concepts:${swp}`] = (counts[`concepts:${swp}`] || 0) + 1;
+          counts[`liquiditySweeps:${swp}`] = (counts[`liquiditySweeps:${swp}`] || 0) + 1;
+        }
+      });
       if (t.session) counts[`sessions:${t.session}`] = (counts[`sessions:${t.session}`] || 0) + 1;
       if (t.planFidelity) counts[`planFidelities:${t.planFidelity}`] = (counts[`planFidelities:${t.planFidelity}`] || 0) + 1;
       if (t.entryModels && Array.isArray(t.entryModels)) {
@@ -127,7 +137,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
     { id: 'timeframes', label: definitionTitles.timeframes || DEFAULT_DEFINITION_TITLES.timeframes, icon: Clock, list: timeframes, persist: persistTimeframes, defaultList: DEFAULT_TIMEFRAMES },
     { id: 'htfTimeframes', label: definitionTitles.htfTimeframes || DEFAULT_DEFINITION_TITLES.htfTimeframes, icon: ArrowUpRight, list: htfTimeframes, persist: persistHtfTimeframes, defaultList: DEFAULT_HTF_TIMEFRAMES },
     { id: 'confirmations', label: definitionTitles.confirmations || DEFAULT_DEFINITION_TITLES.confirmations, icon: Lightbulb, list: confirmations, persist: persistConfirmations, defaultList: DEFAULT_CONFIRMATIONS },
-    { id: 'concepts', label: definitionTitles.concepts || DEFAULT_DEFINITION_TITLES.concepts, icon: Target, list: concepts, persist: persistConcepts, defaultList: DEFAULT_CONCEPTS },
+    { id: 'concepts', label: definitionTitles.liquiditySweeps || definitionTitles.concepts || DEFAULT_DEFINITION_TITLES.liquiditySweeps || "Liquidity Sweep", icon: Target, list: concepts, persist: persistConcepts, defaultList: DEFAULT_LIQUIDITY_SWEEPS },
     { id: 'sessions', label: definitionTitles.sessions || DEFAULT_DEFINITION_TITLES.sessions, icon: Sun, list: sessions, persist: persistSessions, defaultList: DEFAULT_SESSIONS },
     { id: 'planFidelities', label: definitionTitles.planFidelities || DEFAULT_DEFINITION_TITLES.planFidelities, icon: Crosshair, list: planFidelities, persist: persistPlanFidelities, defaultList: DEFAULT_PLAN_FIDELITIES },
   ];
@@ -520,6 +530,18 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                         </button>
                         <button
                           type="button"
+                          onClick={() => setNewPlatformCategory('CHALLENGE')}
+                          className={`px-2 sm:px-2.5 py-1 text-[10px] font-bold rounded-lg uppercase transition-colors cursor-pointer flex items-center gap-1 ${
+                            newPlatformCategory === 'CHALLENGE'
+                              ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40 shadow-xs'
+                              : 'text-zinc-400 hover:text-blue-400'
+                          }`}
+                        >
+                          <Target size={11} />
+                          <span>Challenge</span>
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => setNewPlatformCategory('DEMO')}
                           className={`px-2 sm:px-2.5 py-1 text-[10px] font-bold rounded-lg uppercase transition-colors cursor-pointer flex items-center gap-1 ${
                             newPlatformCategory === 'DEMO'
@@ -620,37 +642,33 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                                 <span className="font-sans font-bold text-xs text-zinc-200 tracking-wide truncate uppercase">
                                   {item}
                                 </span>
-                                {activeTab === 'platforms' && (
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      const currentIsDemo = isDemoPlatform(item);
-                                      const nextCat = currentIsDemo ? 'FUNDED' : 'DEMO';
-                                      savePlatformCategory(item, nextCat);
-                                      setCategoryVersion(v => v + 1);
-                                      toast.success(`"${item}" kategorisi ${nextCat} olarak güncellendi.`);
-                                    }}
-                                    title="Kategoriyi değiştirmek için tıklayın (FUNDED / DEMO)"
-                                    className={`text-[8px] sm:text-[9px] px-2 py-0.5 rounded-md font-bold uppercase shrink-0 transition-transform active:scale-95 cursor-pointer flex items-center gap-1 border ${
-                                      isDemoPlatform(item)
-                                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/30 hover:bg-amber-500/30'
-                                        : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/30'
-                                    }`}
-                                  >
-                                    {isDemoPlatform(item) ? (
-                                      <>
-                                        <Shield size={10} />
-                                        <span>DEMO</span>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Trophy size={10} />
-                                        <span>FUNDED</span>
-                                      </>
-                                    )}
-                                  </button>
-                                )}
+                                {activeTab === 'platforms' && (() => {
+                                  const currentCat = getTradeAccountCategory({ platform: item });
+                                  const nextCat: PlatformCategory = currentCat === 'FUNDED' ? 'CHALLENGE' : (currentCat === 'CHALLENGE' ? 'DEMO' : 'FUNDED');
+                                  const badgeClass = currentCat === 'FUNDED'
+                                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/30'
+                                    : currentCat === 'CHALLENGE'
+                                      ? 'bg-blue-500/20 text-blue-300 border-blue-500/30 hover:bg-blue-500/30'
+                                      : 'bg-amber-500/20 text-amber-300 border-amber-500/30 hover:bg-amber-500/30';
+                                  return (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        savePlatformCategory(item, nextCat);
+                                        setCategoryVersion(v => v + 1);
+                                        toast.success(`"${item}" kategorisi ${nextCat} olarak güncellendi.`);
+                                      }}
+                                      title="Kategoriyi değiştirmek için tıklayın (FUNDED -> CHALLENGE -> DEMO)"
+                                      className={`text-[8px] sm:text-[9px] px-2 py-0.5 rounded-md font-bold uppercase shrink-0 transition-transform active:scale-95 cursor-pointer flex items-center gap-1 border ${badgeClass}`}
+                                    >
+                                      {currentCat === 'FUNDED' && <Trophy size={10} />}
+                                      {currentCat === 'CHALLENGE' && <Target size={10} />}
+                                      {currentCat === 'DEMO' && <Shield size={10} />}
+                                      <span>{currentCat}</span>
+                                    </button>
+                                  );
+                                })()}
                               </div>
 
                               <div className="flex items-center gap-2 shrink-0">

@@ -146,7 +146,7 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
        const hexCode = Math.abs(hashString(t.id)).toString(16).substring(0, 5).toUpperCase().padStart(5, '0');
                       const logId = `#LOG-ANL-${hexCode}`;
        const stream = t.asset;
-       const model = formatAnalyticalModel(t.concept);
+       const model = formatAnalyticalModel(t.liquiditySweep || t.concept);
        const bias = t.type === 'LONG' ? 'Bullish (Long)' : 'Bearish (Short)';
        const entryModel = (t.entryModels && Array.isArray(t.entryModels) && t.entryModels.length > 0 ? t.entryModels.join("; ") : t.entry) || 'N/A';
        const trendType = t.trend || 'N/A';
@@ -389,7 +389,7 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
                       const hexCode = Math.abs(hashString(t.id)).toString(16).substring(0, 5).toUpperCase().padStart(5, '0');
                       const logId = `#LOG-ANL-${hexCode}`;
                       const timestamp = new Date(t.createdAt).toISOString().replace('T', ' ').substring(0, 16) + ' UTC';
-                      const model = formatAnalyticalModel(t.concept);
+                      const model = formatAnalyticalModel(t.liquiditySweep || t.concept);
                       const triggerText = t.timeframe ? `${t.timeframe.toUpperCase()} (${['1s','1m'].includes(t.timeframe.toLowerCase()) ? 'Tick Stream' : 'Aggregated Feed'})` : 'Auto-detected';
                       const isWin = t.status === 'WIN';
                       const isLoss = t.status === 'LOSS';

@@ -73,7 +73,7 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
           matrix[dayName][s].pnl += (t.pnl || 0);
           matrix[dayName][s].r += (t.rr || 0);
           
-          const strat = t.concept?.trim() || t.confirmations?.[0]?.trim();
+          const strat = t.liquiditySweep?.trim() || t.concept?.trim() || t.confirmations?.[0]?.trim();
           if (strat) {
             matrix[dayName][s].conceptCounts[strat] = (matrix[dayName][s].conceptCounts[strat] || 0) + (t.status === 'WIN' ? 1 : 0);
           }
