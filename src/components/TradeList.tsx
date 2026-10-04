@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useRef, useDeferredValue, useCallb
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Trade, TradeFilter, DefinitionTitles } from '../types';
-import { DEFAULT_DEFINITION_TITLES, caseInsensitiveMatch, caseInsensitiveEquals } from '../constants/constants';
+import { DEFAULT_DEFINITION_TITLES, caseInsensitiveMatch, caseInsensitiveEquals, getTradeAccountCategory } from '../constants/constants';
 import { 
   Search, 
   Edit3, 
@@ -248,6 +248,9 @@ const CustomComboBox = React.memo(function CustomComboBox({ value, onChange, opt
   );
 });
 
+const tradeRowDateFormatter = new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' });
+const tradeRowTimeFormatter = new Intl.DateTimeFormat('tr-TR', { hour: '2-digit', minute: '2-digit', hour12: false });
+
 const MemoizedTradeRow = React.memo(function MemoizedTradeRow({ 
   trade, 
   currency, 
@@ -280,8 +283,8 @@ const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
     if (!trade.createdAt) return { formattedDateOnly: '—', formattedTimeOnly: '' };
     const dateObj = new Date(trade.createdAt);
     return {
-      formattedDateOnly: dateObj.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' }),
-      formattedTimeOnly: dateObj.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', hour12: false })
+      formattedDateOnly: tradeRowDateFormatter.format(dateObj),
+      formattedTimeOnly: tradeRowTimeFormatter.format(dateObj)
     };
   }, [trade.createdAt]);
 
@@ -363,7 +366,11 @@ const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
         <td className="hidden sm:table-cell sm:w-[12%] sm:min-w-[75px] py-1.5 px-2 text-center bg-transparent border-y border-zinc-800/80 align-middle">
           <div className="flex items-center justify-center w-full">
             {trade.platform ? (
-              <span className="inline-flex items-center justify-center min-w-[54px] max-w-[130px] h-[20px] px-2.5 py-0 text-center text-[10px] font-bold text-zinc-300 bg-zinc-800/80 border border-zinc-700/80 group-hover:border-zinc-500 rounded-full uppercase tracking-wider font-sans whitespace-nowrap truncate">
+              <span className={`inline-flex items-center justify-center min-w-[54px] max-w-[130px] h-[20px] px-2.5 py-0 text-center text-[10px] font-bold rounded-full uppercase tracking-wider font-sans whitespace-nowrap truncate border transition-colors ${
+                getTradeAccountCategory(trade) === 'DEMO'
+                  ? 'bg-amber-500/10 text-amber-300 border-amber-500/30 group-hover:border-amber-500/60'
+                  : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30 group-hover:border-emerald-500/60'
+              }`}>
                 {trade.platform}
               </span>
             ) : (
@@ -376,7 +383,11 @@ const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
         {true && (
           <div className="sm:hidden">
             {trade.platform ? (
-              <span className="inline-flex items-center justify-center min-w-[46px] max-w-[120px] h-[20px] px-2.5 py-0 text-center text-[10px] font-bold text-zinc-300 bg-zinc-800/80 border border-zinc-700/80 rounded-full uppercase tracking-wider font-sans whitespace-nowrap truncate">
+              <span className={`inline-flex items-center justify-center min-w-[46px] max-w-[120px] h-[20px] px-2.5 py-0 text-center text-[10px] font-bold rounded-full uppercase tracking-wider font-sans whitespace-nowrap truncate border ${
+                getTradeAccountCategory(trade) === 'DEMO'
+                  ? 'bg-amber-500/10 text-amber-300 border-amber-500/30'
+                  : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
+              }`}>
                 {trade.platform}
               </span>
             ) : null}
@@ -670,8 +681,15 @@ const TradeList = React.memo(function TradeList({
 
   // Apply filters & sorting
   const filteredTrades = useMemo(() => {
+    const startTime = deferredFilter.startDate ? new Date(deferredFilter.startDate).setHours(0, 0, 0, 0) : null;
+    const endTime = deferredFilter.endDate ? new Date(deferredFilter.endDate).setHours(23, 59, 59, 999) : null;
+    const collator = new Intl.Collator('tr', { sensitivity: 'base' });
+
     return trades
       .filter(trade => {
+        if (startTime !== null && trade.createdAt < startTime) return false;
+        if (endTime !== null && trade.createdAt > endTime) return false;
+
         const matchesSearch = !deferredFilter.search || 
           caseInsensitiveMatch(trade.asset, deferredFilter.search) || 
           caseInsensitiveMatch(trade.notes, deferredFilter.search) ||
@@ -683,39 +701,44 @@ const TradeList = React.memo(function TradeList({
           (trade.entryModels && trade.entryModels.some(em => caseInsensitiveMatch(em, deferredFilter.search))) ||
           (trade.confirmations && trade.confirmations.some(c => caseInsensitiveMatch(c, deferredFilter.search)));
         
+        if (!matchesSearch) return false;
+
         const matchesStatus = deferredFilter.status === 'ALL' || caseInsensitiveEquals(trade.status, deferredFilter.status);
+        if (!matchesStatus) return false;
+
         const matchesType = deferredFilter.type === 'ALL' || caseInsensitiveEquals(trade.type, deferredFilter.type);
+        if (!matchesType) return false;
+
         const matchesAsset = !deferredFilter.asset || caseInsensitiveEquals(trade.asset, deferredFilter.asset);
+        if (!matchesAsset) return false;
+
         const matchesTimeframe = !deferredFilter.timeframe || caseInsensitiveEquals(trade.timeframe, deferredFilter.timeframe);
+        if (!matchesTimeframe) return false;
+
         const matchesHtfTimeframe = !deferredFilter.htfTimeframe || caseInsensitiveEquals(trade.htfTimeframe, deferredFilter.htfTimeframe);
+        if (!matchesHtfTimeframe) return false;
+
         const matchesSession = !deferredFilter.session || caseInsensitiveEquals(trade.session, deferredFilter.session);
+        if (!matchesSession) return false;
+
         const matchesConfirmation = !deferredFilter.confirmation || (trade.confirmations && trade.confirmations.some(c => caseInsensitiveEquals(c, deferredFilter.confirmation)));
+        if (!matchesConfirmation) return false;
+
         const matchesConcept = !deferredFilter.concept || caseInsensitiveEquals(trade.concept, deferredFilter.concept);
+        if (!matchesConcept) return false;
+
         const matchesPlanFidelity = !deferredFilter.planFidelity || caseInsensitiveEquals(trade.planFidelity, deferredFilter.planFidelity);
+        if (!matchesPlanFidelity) return false;
+
         const matchesEntry = !deferredFilter.entry || 
           (trade.entryModels && trade.entryModels.some(em => caseInsensitiveEquals(em, deferredFilter.entry))) ||
           (trade.entry && trade.entry.split(',').map(s => s.trim()).some(em => caseInsensitiveEquals(em, deferredFilter.entry)));
-        const matchesTrend = !deferredFilter.trend || caseInsensitiveEquals(trade.trend, deferredFilter.trend);
-        
-        let matchesDate = true;
-        if (deferredFilter.startDate || deferredFilter.endDate) {
-          const tradeDate = new Date(trade.createdAt);
-          tradeDate.setHours(0, 0, 0, 0);
-          
-          if (deferredFilter.startDate) {
-            const start = new Date(deferredFilter.startDate);
-            start.setHours(0, 0, 0, 0);
-            if (tradeDate < start) matchesDate = false;
-          }
-          
-          if (deferredFilter.endDate) {
-            const end = new Date(deferredFilter.endDate);
-            end.setHours(23, 59, 59, 999);
-            if (tradeDate > end) matchesDate = false;
-          }
-        }
+        if (!matchesEntry) return false;
 
-        return matchesSearch && matchesStatus && matchesType && matchesAsset && matchesDate && matchesTimeframe && matchesHtfTimeframe && matchesSession && matchesConfirmation && matchesConcept && matchesPlanFidelity && matchesEntry && matchesTrend;
+        const matchesTrend = !deferredFilter.trend || caseInsensitiveEquals(trade.trend, deferredFilter.trend);
+        if (!matchesTrend) return false;
+
+        return true;
       })
       .sort((a, b) => {
         switch (deferredFilter.sortBy) {
@@ -728,21 +751,21 @@ const TradeList = React.memo(function TradeList({
           case 'pnlAsc':
             return (a.pnl || 0) - (b.pnl || 0);
           case 'assetAsc':
-            return a.asset.localeCompare(b.asset);
+            return collator.compare(a.asset, b.asset);
           case 'assetDes':
-            return b.asset.localeCompare(a.asset);
+            return collator.compare(b.asset, a.asset);
           case 'typeAsc':
-            return a.type.localeCompare(b.type);
+            return collator.compare(a.type, b.type);
           case 'typeDes':
-            return b.type.localeCompare(a.type);
+            return collator.compare(b.type, a.type);
           case 'rrAsc':
             return (a.rr || 0) - (b.rr || 0);
           case 'rrDes':
             return (b.rr || 0) - (a.rr || 0);
           case 'platformAsc':
-            return (a.platform || '').localeCompare(b.platform || '');
+            return collator.compare(a.platform || '', b.platform || '');
           case 'platformDes':
-            return (b.platform || '').localeCompare(a.platform || '');
+            return collator.compare(b.platform || '', a.platform || '');
           default:
             return b.createdAt - a.createdAt;
         }
@@ -1253,13 +1276,14 @@ const TradeList = React.memo(function TradeList({
                   <th className="py-2 px-3 text-right font-sans select-none w-[8%] min-w-[60px]">İşlem</th>
                 </tr>
               </thead>
-              <AnimatePresence mode="wait" initial={false}>
+              <AnimatePresence initial={false}>
                 <motion.tbody
                   key={currentPage}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                  initial={{ opacity: 0.8 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0.8 }}
+                  transition={{ duration: 0.08, ease: "easeOut" }}
+                  style={{ willChange: "opacity" }}
                   className="block sm:table-row-group"
                 >
                 {paginatedTrades.map((trade, idx) => (

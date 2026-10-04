@@ -25,6 +25,8 @@ const monthNames = [
   "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"
 ];
 
+const displayDateFormatter = new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
+
 const formatDisplayDate = (dateStr: string | null) => {
   if (!dateStr) return '';
   const parts = dateStr.split('-');
@@ -32,7 +34,7 @@ const formatDisplayDate = (dateStr: string | null) => {
   const [y, m, d] = parts.map(Number);
   if (isNaN(y) || isNaN(m) || isNaN(d)) return dateStr;
   const dateObj = new Date(y, m - 1, d);
-  return dateObj.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
+  return displayDateFormatter.format(dateObj);
 };
 
 export const CalendarView = React.memo(({ trades, currency, onEdit }: { trades: Trade[], currency: string, onEdit?: (trade: Trade) => void }) => {

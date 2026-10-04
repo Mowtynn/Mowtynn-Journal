@@ -6,14 +6,14 @@ import {
   SlidersHorizontal, X, Monitor, LineChart, Clock, ArrowUpRight, 
   Lightbulb, Target, Sun, Plus, Search, Edit2, Check, Trash2, 
   GripVertical, RotateCcw, Download, Upload, AlertCircle,
-  Crosshair, Zap, TrendingUp
+  Crosshair, Zap, TrendingUp, Trophy, Shield
 } from 'lucide-react';
 import { Trade, DefinitionTitles } from '../types';
 import { 
   DEFAULT_PLATFORMS, DEFAULT_TIMEFRAMES, DEFAULT_HTF_TIMEFRAMES, 
   DEFAULT_CONFIRMATIONS, DEFAULT_CONCEPTS, DEFAULT_SESSIONS, DEFAULT_ASSETS,
   DEFAULT_PLAN_FIDELITIES, DEFAULT_ENTRY_MODELS, DEFAULT_TREND_TYPES, DEFAULT_DEFINITION_TITLES,
-  caseInsensitiveMatch, caseInsensitiveEquals
+  caseInsensitiveMatch, caseInsensitiveEquals, isDemoPlatform, savePlatformCategory
 } from '../constants/constants';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
@@ -78,6 +78,8 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
   const [activeTab, setActiveTab] = useState<TabType>('platforms');
   const [searchQuery, setSearchQuery] = useState('');
   const [newItemText, setNewItemText] = useState('');
+  const [newPlatformCategory, setNewPlatformCategory] = useState<'FUNDED' | 'DEMO'>('FUNDED');
+  const [, setCategoryVersion] = useState(0);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingText, setEditingText] = useState('');
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -165,12 +167,16 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
       toast.error(`"${val.toUpperCase()}" zaten listede mevcut!`);
       return;
     }
+    if (activeTab === 'platforms') {
+      savePlatformCategory(val, newPlatformCategory);
+    }
     currentPersist([...activeList, val]);
     setNewItemText('');
     const singularLabel = currentTabObj.label.endsWith('lar') || currentTabObj.label.endsWith('ler')
       ? currentTabObj.label.slice(0, -3)
       : currentTabObj.label;
-    toast.success(`Yeni ${singularLabel} eklendi: ${val.toUpperCase()}`);
+    const catSuffix = activeTab === 'platforms' ? ` (${newPlatformCategory})` : '';
+    toast.success(`Yeni ${singularLabel} eklendi: ${val.toUpperCase()}${catSuffix}`);
   };
 
   const handleSaveEdit = (originalIndex: number) => {
@@ -498,6 +504,34 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
 
                   {/* Add Input */}
                   <div className="flex items-center gap-1.5 flex-1 sm:flex-none">
+                    {activeTab === 'platforms' && (
+                      <div className="flex items-center bg-zinc-900 border border-zinc-700/60 rounded-xl p-0.5 shadow-xs shrink-0 select-none">
+                        <button
+                          type="button"
+                          onClick={() => setNewPlatformCategory('FUNDED')}
+                          className={`px-2 sm:px-2.5 py-1 text-[10px] font-bold rounded-lg uppercase transition-colors cursor-pointer flex items-center gap-1 ${
+                            newPlatformCategory === 'FUNDED'
+                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-xs'
+                              : 'text-zinc-400 hover:text-emerald-400'
+                          }`}
+                        >
+                          <Trophy size={11} />
+                          <span>Funded</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setNewPlatformCategory('DEMO')}
+                          className={`px-2 sm:px-2.5 py-1 text-[10px] font-bold rounded-lg uppercase transition-colors cursor-pointer flex items-center gap-1 ${
+                            newPlatformCategory === 'DEMO'
+                              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-xs'
+                              : 'text-zinc-400 hover:text-amber-400'
+                          }`}
+                        >
+                          <Shield size={11} />
+                          <span>Demo</span>
+                        </button>
+                      </div>
+                    )}
                     <input
                       type="text"
                       placeholder={`Yeni ${currentTabObj.label} Ekle...`}
@@ -586,6 +620,37 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                                 <span className="font-sans font-bold text-xs text-zinc-200 tracking-wide truncate uppercase">
                                   {item}
                                 </span>
+                                {activeTab === 'platforms' && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      const currentIsDemo = isDemoPlatform(item);
+                                      const nextCat = currentIsDemo ? 'FUNDED' : 'DEMO';
+                                      savePlatformCategory(item, nextCat);
+                                      setCategoryVersion(v => v + 1);
+                                      toast.success(`"${item}" kategorisi ${nextCat} olarak güncellendi.`);
+                                    }}
+                                    title="Kategoriyi değiştirmek için tıklayın (FUNDED / DEMO)"
+                                    className={`text-[8px] sm:text-[9px] px-2 py-0.5 rounded-md font-bold uppercase shrink-0 transition-transform active:scale-95 cursor-pointer flex items-center gap-1 border ${
+                                      isDemoPlatform(item)
+                                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/30 hover:bg-amber-500/30'
+                                        : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/30'
+                                    }`}
+                                  >
+                                    {isDemoPlatform(item) ? (
+                                      <>
+                                        <Shield size={10} />
+                                        <span>DEMO</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Trophy size={10} />
+                                        <span>FUNDED</span>
+                                      </>
+                                    )}
+                                  </button>
+                                )}
                               </div>
 
                               <div className="flex items-center gap-2 shrink-0">

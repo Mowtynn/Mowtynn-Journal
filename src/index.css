@@ -296,21 +296,48 @@ button, a, input, select, textarea, [role="button"] {
 }
 
 /* GPU Hardware Acceleration & Smooth Transitions */
-.gpu-layer {
+.gpu-layer,
+.hardware-accelerated {
   will-change: transform, opacity;
-  transform: translateZ(0);
+  transform: translate3d(0, 0, 0);
   backface-visibility: hidden;
 }
 
-/* High-Refresh 144Hz Rendering Optimizations */
-.cv-auto {
+/* High-Refresh 144Hz/240Hz Rendering Optimizations */
+html {
+  scroll-behavior: smooth;
+}
+
+@keyframes tabEnter {
+  from {
+    opacity: 0.88;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tab-content-active {
+  animation: tabEnter 0.1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: opacity, transform;
+}
+
+tr, .cv-auto {
   content-visibility: auto;
   contain-intrinsic-size: auto 48px;
+  contain: layout style;
 }
 
 .cv-card {
   content-visibility: auto;
   contain-intrinsic-size: auto 120px;
+  contain: layout style;
+}
+
+svg {
+  shape-rendering: geometricPrecision;
 }
 
 /* Hide default browser spinners for number inputs */

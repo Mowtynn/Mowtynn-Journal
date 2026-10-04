@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
 import toast from "react-hot-toast";
 import { Trade, DefinitionTitles } from "../types";
-import { DEFAULT_DEFINITION_TITLES, cleanDefinitionTitleString } from "../constants/constants";
+import { DEFAULT_DEFINITION_TITLES, cleanDefinitionTitleString, getTradeAccountCategory } from "../constants/constants";
 import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
 import { 
 
@@ -326,10 +326,23 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                           <Layers size={12}/> İŞLEM BAĞLAMI
                         </h4>
                         <div className="bg-zinc-900/40 border border-zinc-800/60 rounded-xl overflow-hidden divide-y divide-zinc-800/60">
-                          {/* 1. PLATFORM */}
+                          {/* 1. PLATFORM & HESAP TÜRÜ */}
                           <ContextRow 
                             label={(cleanDefinitionTitleString(definitionTitles.platforms) || "PLATFORM").toUpperCase()} 
-                            value={currentTrade.platform} 
+                            value={
+                              currentTrade.platform ? (
+                                <span className="inline-flex items-center gap-1.5">
+                                  <span>{currentTrade.platform}</span>
+                                  <span className={`text-[9px] px-1.5 py-0.2 rounded-md font-bold uppercase ${
+                                    getTradeAccountCategory(currentTrade) === 'DEMO'
+                                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                                      : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                  }`}>
+                                    {getTradeAccountCategory(currentTrade) === 'DEMO' ? 'DEMO' : 'FUNDED'}
+                                  </span>
+                                </span>
+                              ) : undefined
+                            } 
                             icon={<Monitor size={14} className="text-zinc-400"/>} 
                           />
                           {/* 2. KONSEPT */}
@@ -589,18 +602,20 @@ function ContextRow({
   valueColor 
 }: { 
   label: string; 
-  value: string | undefined | null; 
+  value: React.ReactNode; 
   icon: React.ReactNode; 
   valueColor?: string;
 }) {
-  const displayValue = value ? String(value).toLocaleUpperCase('tr-TR') : '—';
+  const displayValue = value !== undefined && value !== null ? value : '—';
   return (
     <div className="flex items-center justify-between px-4 py-2.5 bg-zinc-950/20 hover:bg-zinc-900/80 transition-colors">
       <div className="flex items-center gap-2 text-zinc-500">
         {icon}
         <span className="text-[10px] font-extrabold uppercase tracking-widest font-sans">{label}</span>
       </div>
-      <span className={`text-xs font-bold font-sans text-right uppercase ${valueColor || 'text-zinc-300'}`}>{displayValue}</span>
+      <div className={`text-xs font-bold font-sans text-right uppercase ${valueColor || 'text-zinc-300'}`}>
+        {typeof displayValue === 'string' ? displayValue.toLocaleUpperCase('tr-TR') : displayValue}
+      </div>
     </div>
   );
 }

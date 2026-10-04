@@ -52,7 +52,6 @@ const EconomicCalendar = memo(function EconomicCalendar() {
           className="w-full h-full border-0"
           title="TradingView Ekonomik Takvim"
           sandbox="allow-scripts allow-same-origin allow-popups"
-          loading="lazy"
         />
       </div>
     </motion.div>

@@ -1,6 +1,78 @@
 import { DefinitionTitles } from "../types";
 
-export const DEFAULT_PLATFORMS = ["Binance", "Bybit", "MetaTrader 4", "TradingView"];
+export const DEMO_PLATFORMS = ["Demo", "LiveTest", "Challenge"];
+export const FUNDED_PLATFORMS = ["Funded", "Live", "Binance", "Bybit", "MetaTrader 4", "TradingView"];
+
+export const DEFAULT_PLATFORMS = [
+  "Demo",
+  "LiveTest",
+  "Challenge",
+  "Funded",
+  "Live",
+  "Binance",
+  "Bybit",
+  "MetaTrader 4",
+  "TradingView"
+];
+
+let cachedCategories: Record<string, 'DEMO' | 'FUNDED'> | null = null;
+
+export function getStoredPlatformCategories(): Record<string, 'DEMO' | 'FUNDED'> {
+  if (cachedCategories) return cachedCategories;
+  try {
+    const raw = localStorage.getItem('tj_platform_categories');
+    if (raw) {
+      cachedCategories = JSON.parse(raw);
+      return cachedCategories!;
+    }
+  } catch (e) {}
+  cachedCategories = {};
+  return cachedCategories;
+}
+
+export function savePlatformCategory(platform: string, category: 'DEMO' | 'FUNDED'): void {
+  try {
+    const current = getStoredPlatformCategories();
+    current[platform.trim()] = category;
+    cachedCategories = { ...current };
+    localStorage.setItem('tj_platform_categories', JSON.stringify(current));
+    window.dispatchEvent(new CustomEvent('tj_platform_categories_updated'));
+  } catch (e) {}
+}
+
+export function isDemoPlatform(platform?: string, customCategories?: Record<string, 'DEMO' | 'FUNDED'>): boolean {
+  if (!platform) return false;
+  const clean = platform.trim();
+  const cats = customCategories || getStoredPlatformCategories();
+  if (cats[clean]) {
+    return cats[clean] === 'DEMO';
+  }
+  const p = clean.toLowerCase();
+  return (
+    p.includes("demo") ||
+    p.includes("test") ||
+    p.includes("livetest") ||
+    p.includes("challenge") ||
+    p.includes("pratik") ||
+    p.includes("eval") ||
+    p.includes("phase")
+  );
+}
+
+export function isFundedPlatform(platform?: string, customCategories?: Record<string, 'DEMO' | 'FUNDED'>): boolean {
+  if (!platform) return true;
+  return !isDemoPlatform(platform, customCategories);
+}
+
+export function getTradeAccountCategory(
+  trade: { accountCategory?: 'DEMO' | 'FUNDED'; platform?: string },
+  customCategories?: Record<string, 'DEMO' | 'FUNDED'>
+): 'DEMO' | 'FUNDED' {
+  if (trade.accountCategory === 'DEMO' || trade.accountCategory === 'FUNDED') {
+    return trade.accountCategory;
+  }
+  return isDemoPlatform(trade.platform, customCategories) ? 'DEMO' : 'FUNDED';
+}
 export const DEFAULT_TIMEFRAMES = ["1m", "5m", "15m", "1h", "4h", "1D"];
 export const DEFAULT_HTF_TIMEFRAMES = ["15m", "1h", "4h", "1D", "1W", "1M"];
 export const DEFAULT_CONFIRMATIONS = ["FVG", "Orderblock", "Likidite Alımı", "BOS", "CHoCH"];
@@ -42,9 +114,13 @@ export const cleanDefinitionTitleString = (str?: string): string => {
   return clean;
 };
 
+const normalizeCache = new Map<string, string>();
+
 export function normalizeSearchString(str: string | undefined | null): string {
   if (!str) return "";
-  return String(str)
+  const cached = normalizeCache.get(str);
+  if (cached !== undefined) return cached;
+  const res = String(str)
     .replace(/İ/g, "i")
     .replace(/I/g, "i")
     .replace(/ı/g, "i")
@@ -52,6 +128,11 @@ export function normalizeSearchString(str: string | undefined | null): string {
     .replace(/ı/g, "i")
     .toLowerCase()
     .trim();
+  if (normalizeCache.size > 3000) {
+    normalizeCache.clear();
+  }
+  normalizeCache.set(str, res);
+  return res;
 }
 
 export function caseInsensitiveMatch(text: string | undefined | null, query: string | undefined | null): boolean {

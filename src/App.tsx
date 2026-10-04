@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo, useCallback, useRef, startTransition } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
-import { Trade, TradeStats, Note, JournalEntry, Certificate, DefinitionTitles } from "./types";
+import { Trade, TradeStats, Note, JournalEntry, Certificate, DefinitionTitles, AccountCategory } from "./types";
 import {
   DEFAULT_PLATFORMS,
   DEFAULT_TIMEFRAMES,
@@ -15,6 +15,8 @@ import {
   DEFAULT_DEFINITION_TITLES,
   sanitizeDefinitionTitles,
   normalizeSearchString,
+  getTradeAccountCategory,
+  getStoredPlatformCategories,
 } from "./constants/constants";
 
 import StatsDashboard from "./components/StatsDashboard";
@@ -25,6 +27,7 @@ import JournalView from "./components/JournalView";
 import { CertificatesView } from "./components/CertificatesView";
 import { SectionErrorBoundary } from "./components/SectionErrorBoundary";
 import EconomicCalendar from "./components/EconomicCalendar";
+import { AccountSwitcher } from "./components/AccountSwitcher";
 import { useMetricMode } from "./context/MetricContext";
 import { useLocalStorageState } from "./hooks/useLocalStorageState";
 import { useAppStore } from "./store/useAppStore";
@@ -283,11 +286,55 @@ export default function App() {
   >("dashboard");
 
   const handleTabChange = useCallback((tab: typeof currentTab) => {
-    startTransition(() => {
-      setCurrentTab(tab);
-    });
-    window.scrollTo(0, 0);
+    setCurrentTab(tab);
+    window.scrollTo({ top: 0, behavior: 'instant' });
   }, []);
+
+  // Account Category Switcher State (ALL | DEMO | FUNDED)
+  const [activeAccountCategory, setActiveAccountCategory] = useState<AccountCategory>(() => {
+    try {
+      const saved = localStorage.getItem('tj_active_account_category');
+      if (saved === 'DEMO' || saved === 'FUNDED' || saved === 'ALL') {
+        return saved as AccountCategory;
+      }
+    } catch (e) {}
+    return 'ALL';
+  });
+
+  const handleAccountCategoryChange = useCallback((category: AccountCategory) => {
+    setActiveAccountCategory(category);
+    try {
+      localStorage.setItem('tj_active_account_category', category);
+    } catch (e) {}
+  }, []);
+
+  const [categoryVersion, setCategoryVersion] = useState(0);
+
+  useEffect(() => {
+    const handleCatUpdate = () => {
+      setCategoryVersion((v) => v + 1);
+    };
+    window.addEventListener('tj_platform_categories_updated', handleCatUpdate);
+    return () => {
+      window.removeEventListener('tj_platform_categories_updated', handleCatUpdate);
+    };
+  }, []);
+
+  const accountCategoryCounts = useMemo(() => {
+    let demo = 0;
+    let funded = 0;
+    const customCategories = getStoredPlatformCategories();
+    trades.forEach((t) => {
+      const cat = getTradeAccountCategory(t, customCategories);
+      if (cat === 'DEMO') demo++;
+      else funded++;
+    });
+    return {
+      all: trades.length,
+      demo,
+      funded,
+    };
+  }, [trades, categoryVersion]);
 
     const {
     globalSelectedConfirmations,
@@ -1240,7 +1287,7 @@ export default function App() {
       }
     };
     document.addEventListener("mousedown", handleClickOutside, true);
-    document.addEventListener("touchstart", handleClickOutside, true);
+    document.addEventListener("touchstart", handleClickOutside, { passive: true, capture: true });
     return () => {
       document.removeEventListener("mousedown", handleClickOutside, true);
       document.removeEventListener("touchstart", handleClickOutside, true);
@@ -1256,7 +1303,7 @@ export default function App() {
       }
     };
     document.addEventListener("mousedown", handleClickOutside, true);
-    document.addEventListener("touchstart", handleClickOutside, true);
+    document.addEventListener("touchstart", handleClickOutside, { passive: true, capture: true });
     return () => {
       document.removeEventListener("mousedown", handleClickOutside, true);
       document.removeEventListener("touchstart", handleClickOutside, true);
@@ -1927,7 +1974,15 @@ export default function App() {
     const entrySet = globalSelectedEntryModels.length > 0 ? new Set(globalSelectedEntryModels.map(normalizeSearchString)) : null;
     const trendSet = globalSelectedTrendTypes.length > 0 ? new Set(globalSelectedTrendTypes.map(normalizeSearchString)) : null;
 
+    const customCategories = getStoredPlatformCategories();
+
     return trades.filter((t: Trade) => {
+      if (activeAccountCategory !== 'ALL') {
+        const cat = getTradeAccountCategory(t, customCategories);
+        if (cat !== activeAccountCategory) {
+          return false;
+        }
+      }
       if (minTime > 0 && (!t.createdAt || t.createdAt < minTime)) {
         return false;
       }
@@ -1971,7 +2026,7 @@ export default function App() {
       }
       return true;
     });
-  }, [trades, globalSelectedConfirmations, globalSelectedConcepts, globalSelectedPlanFidelity, globalSelectedPlatforms, globalDateLimit, globalSelectedAssets, globalSelectedSessions, globalSelectedTimeframes, globalSelectedHtfTimeframes, globalSelectedStatuses, globalSelectedTypes, globalSelectedEntryModels, globalSelectedTrendTypes]);
+  }, [trades, activeAccountCategory, categoryVersion, globalSelectedConfirmations, globalSelectedConcepts, globalSelectedPlanFidelity, globalSelectedPlatforms, globalDateLimit, globalSelectedAssets, globalSelectedSessions, globalSelectedTimeframes, globalSelectedHtfTimeframes, globalSelectedStatuses, globalSelectedTypes, globalSelectedEntryModels, globalSelectedTrendTypes]);
 
   // Calculate comprehensive statistics (moved outside)
 
@@ -2091,6 +2146,13 @@ export default function App() {
           </div>
 
           <div className="flex items-center justify-end shrink-0 select-none gap-2 z-10">
+            {/* Account Switcher (TÜMÜ / DEMO / FUNDED) */}
+            <AccountSwitcher
+              activeCategory={activeAccountCategory}
+              onSelectCategory={handleAccountCategoryChange}
+              counts={accountCategoryCounts}
+            />
+
             {/* Global Metric Switch ($ / R) - Compact */}
             <div className="flex bg-zinc-900 border border-zinc-700/50 rounded-lg p-0.5 shadow-xs shrink-0">
               <button
@@ -2510,53 +2572,52 @@ export default function App() {
             </div>
           ) : (
             <div className="relative">
-                <AnimatePresence mode="wait" initial={false}>
-                  {currentTab === "dashboard" ? (
-                    <motion.div
-                      key="dashboard"
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -4 }}
-                      transition={{ duration: 0.12, ease: [0.16, 1, 0.3, 1] }}
-                      style={{ willChange: "transform, opacity" }}
-                      className="flex flex-col gap-3.5"
+              <AnimatePresence mode="wait" initial={false}>
+                {currentTab === "dashboard" ? (
+                  <motion.div
+                    key="dashboard"
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -5 }}
+                    transition={{ duration: 0.14, ease: [0.16, 1, 0.3, 1] }}
+                    style={{ willChange: "transform, opacity", transform: "translate3d(0,0,0)" }}
+                    className="flex flex-col gap-3.5"
+                  >
+                    {/* STATS BENTO ROW */}
+                    <SectionErrorBoundary sectionName="İstatistik Panosu">
+                      <StatsDashboard stats={calculatedStats} currency={currency} />
+                    </SectionErrorBoundary>
+
+                    {/* 2. DYNAMIC ACTION TRIGGER (YOUTUBE PLUS BOX) */}
+                    <div
+                      onClick={() => {
+                        setEditingTrade(null);
+                        setIsFormOpen(true);
+                      }}
+                      className="relative overflow-hidden bg-zinc-900/50 hover:bg-zinc-900/80 border border-zinc-800/80 hover:border-blue-500/40 rounded-2xl p-4 sm:p-4.5 flex flex-col sm:flex-row items-center justify-between gap-3 cursor-pointer transition-all duration-200 ease-out select-none group shadow-sm hover:shadow-lg hover:shadow-blue-500/5"
                     >
-                      {/* STATS BENTO ROW */}
-                      <SectionErrorBoundary sectionName="İstatistik Panosu">
-                        <StatsDashboard stats={calculatedStats} currency={currency} />
-                      </SectionErrorBoundary>
-
-                      {/* 2. DYNAMIC ACTION TRIGGER (YOUTUBE PLUS BOX) */}
-                      <div
-                        onClick={() => {
-                          setEditingTrade(null);
-                          setIsFormOpen(true);
-                        }}
-                        className="relative overflow-hidden bg-zinc-900/50 hover:bg-zinc-900/80 border border-zinc-800/80 hover:border-blue-500/40 rounded-2xl p-4 sm:p-4.5 flex flex-col sm:flex-row items-center justify-between gap-3 cursor-pointer transition-all duration-200 ease-out select-none group shadow-sm hover:shadow-lg hover:shadow-blue-500/5"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-xl bg-blue-500/10 border border-blue-500/20 group-hover:bg-blue-500/20 group-hover:border-blue-500/40 flex items-center justify-center text-blue-400 transition-colors duration-200 ease-out shrink-0 shadow-xs">
-                            <Plus size={20} />
-                          </div>
-                          <div className="text-center sm:text-left">
-                            <h3 className="text-sm font-bold text-zinc-100 tracking-tight group-hover:text-blue-300 transition-colors font-sans">
-                              {"Yeni Pozisyon Girişi Yap"}
-                            </h3>
-                          </div>
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-xl bg-blue-500/10 border border-blue-500/20 group-hover:bg-blue-500/20 group-hover:border-blue-500/40 flex items-center justify-center text-blue-400 transition-colors duration-200 ease-out shrink-0 shadow-xs">
+                          <Plus size={20} />
                         </div>
-                        <button
-                          type="button"
-                          className="w-full sm:w-auto h-10 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 font-bold text-xs px-5 rounded-xl transition-all duration-200 ease-out flex items-center justify-center gap-2 shadow-xs border border-blue-500/30 tracking-wide cursor-pointer font-sans"
-                        >
-                          <Plus size={15} />
-                          {"İşlem Ekle"}
-                        </button>
+                        <div className="text-center sm:text-left">
+                          <h3 className="text-sm font-bold text-zinc-100 tracking-tight group-hover:text-blue-300 transition-colors font-sans">
+                            {"Yeni Pozisyon Girişi Yap"}
+                          </h3>
+                        </div>
                       </div>
+                      <button
+                        type="button"
+                        className="w-full sm:w-auto h-10 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 font-bold text-xs px-5 rounded-xl transition-all duration-200 ease-out flex items-center justify-center gap-2 shadow-xs border border-blue-500/30 tracking-wide cursor-pointer font-sans"
+                      >
+                        <Plus size={15} />
+                        {"İşlem Ekle"}
+                      </button>
+                    </div>
 
-                      {/* WORKSPACE DOUBLE GRID - NOW SINGLE-COLUMN EXPANDED FOR UTMOST PRECISION */}
-                      <div className="w-full space-y-3">
-                        {/* Main ledger list takes full width of screen as requested */}
-                        <SectionErrorBoundary sectionName="İşlem Listesi">
+                    {/* WORKSPACE DOUBLE GRID - NOW SINGLE-COLUMN EXPANDED FOR UTMOST PRECISION */}
+                    <div className="w-full space-y-3">
+                      <SectionErrorBoundary sectionName="İşlem Listesi">
                         <TradeList
                           trades={filteredGlobalTrades}
                           onEdit={handleStartEdit}
@@ -2568,103 +2629,102 @@ export default function App() {
                           entryModels={entryModels}
                           trendTypes={trendTypes}
                         />
-
                       </SectionErrorBoundary>
-                      </div>
-                    </motion.div>
-                  ) : currentTab === "deep-analysis" ? (
-                    <motion.div
-                      key="deep-analysis"
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -4 }}
-                      transition={{ duration: 0.12, ease: [0.16, 1, 0.3, 1] }}
-                      style={{ willChange: "transform, opacity" }}
-                    >
-                      <SectionErrorBoundary sectionName="Derin Analiz">
-                        <DeepAnalysis
-                          trades={filteredGlobalTrades}
-                          onViewDetails={setDetailedTrade}
-                          onEdit={handleStartEdit}
-                          onDelete={handleDeleteTrade}
-                          currency={currency}
-                          sessions={sessions}
-                          definitionTitles={definitionTitles}
-                          planFidelities={planFidelities}
-                          entryModels={entryModels}
-                          trendTypes={trendTypes}
-                        />
-                      </SectionErrorBoundary>
-                    </motion.div>
-                  ) : currentTab === "journal" ? (
-                    <motion.div
-                      key="journal"
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -4 }}
-                      transition={{ duration: 0.12, ease: [0.16, 1, 0.3, 1] }}
-                      style={{ willChange: "transform, opacity" }}
-                    >
-                      <SectionErrorBoundary sectionName="Günlükler">
-                        <JournalView
-                          entries={journals}
-                          trades={trades}
-                          currency={currency}
-                          onSaveEntry={handleSaveJournal}
-                          onDeleteEntry={handleDeleteJournal}
-                        />
-                      </SectionErrorBoundary>
-                    </motion.div>
-                  ) : currentTab === "certificates" ? (
-                    <motion.div
-                      key="certificates"
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -4 }}
-                      transition={{ duration: 0.12, ease: [0.16, 1, 0.3, 1] }}
-                      style={{ willChange: "transform, opacity" }}
-                    >
-                      <SectionErrorBoundary sectionName="Sertifikalar">
-                        <CertificatesView
-                          certificates={certificates}
-                          onSaveCertificate={handleSaveCertificate}
-                          onDeleteCertificate={handleDeleteCertificate}
-                        />
-                      </SectionErrorBoundary>
-                    </motion.div>
-                  ) : currentTab === "notes" ? (
-                    <motion.div
-                      key="notes"
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -4 }}
-                      transition={{ duration: 0.12, ease: [0.16, 1, 0.3, 1] }}
-                      style={{ willChange: "transform, opacity" }}
-                    >
-                      <SectionErrorBoundary sectionName="Notlar">
-                        <NotesView
-                          notes={notes}
-                          onSaveNote={handleSaveNote}
-                          onDeleteNote={handleDeleteNote}
-                        />
-                      </SectionErrorBoundary>
-                    </motion.div>
-                  ) : currentTab === "economic-calendar" ? (
-                    <motion.div
-                      key="economic-calendar"
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -4 }}
-                      transition={{ duration: 0.12, ease: [0.16, 1, 0.3, 1] }}
-                      style={{ willChange: "transform, opacity" }}
-                    >
-                      <SectionErrorBoundary sectionName="Ekonomik Takvim">
-                        <EconomicCalendar />
-                      </SectionErrorBoundary>
-                    </motion.div>
-                  ) : null}
-                </AnimatePresence>
-          </div>
+                    </div>
+                  </motion.div>
+                ) : currentTab === "deep-analysis" ? (
+                  <motion.div
+                    key="deep-analysis"
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -5 }}
+                    transition={{ duration: 0.14, ease: [0.16, 1, 0.3, 1] }}
+                    style={{ willChange: "transform, opacity", transform: "translate3d(0,0,0)" }}
+                  >
+                    <SectionErrorBoundary sectionName="Derin Analiz">
+                      <DeepAnalysis
+                        trades={filteredGlobalTrades}
+                        onViewDetails={setDetailedTrade}
+                        onEdit={handleStartEdit}
+                        onDelete={handleDeleteTrade}
+                        currency={currency}
+                        sessions={sessions}
+                        definitionTitles={definitionTitles}
+                        planFidelities={planFidelities}
+                        entryModels={entryModels}
+                        trendTypes={trendTypes}
+                      />
+                    </SectionErrorBoundary>
+                  </motion.div>
+                ) : currentTab === "journal" ? (
+                  <motion.div
+                    key="journal"
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -5 }}
+                    transition={{ duration: 0.14, ease: [0.16, 1, 0.3, 1] }}
+                    style={{ willChange: "transform, opacity", transform: "translate3d(0,0,0)" }}
+                  >
+                    <SectionErrorBoundary sectionName="Günlükler">
+                      <JournalView
+                        entries={journals}
+                        trades={trades}
+                        currency={currency}
+                        onSaveEntry={handleSaveJournal}
+                        onDeleteEntry={handleDeleteJournal}
+                      />
+                    </SectionErrorBoundary>
+                  </motion.div>
+                ) : currentTab === "certificates" ? (
+                  <motion.div
+                    key="certificates"
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -5 }}
+                    transition={{ duration: 0.14, ease: [0.16, 1, 0.3, 1] }}
+                    style={{ willChange: "transform, opacity", transform: "translate3d(0,0,0)" }}
+                  >
+                    <SectionErrorBoundary sectionName="Sertifikalar">
+                      <CertificatesView
+                        certificates={certificates}
+                        onSaveCertificate={handleSaveCertificate}
+                        onDeleteCertificate={handleDeleteCertificate}
+                      />
+                    </SectionErrorBoundary>
+                  </motion.div>
+                ) : currentTab === "notes" ? (
+                  <motion.div
+                    key="notes"
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -5 }}
+                    transition={{ duration: 0.14, ease: [0.16, 1, 0.3, 1] }}
+                    style={{ willChange: "transform, opacity", transform: "translate3d(0,0,0)" }}
+                  >
+                    <SectionErrorBoundary sectionName="Notlar">
+                      <NotesView
+                        notes={notes}
+                        onSaveNote={handleSaveNote}
+                        onDeleteNote={handleDeleteNote}
+                      />
+                    </SectionErrorBoundary>
+                  </motion.div>
+                ) : currentTab === "economic-calendar" ? (
+                  <motion.div
+                    key="economic-calendar"
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -5 }}
+                    transition={{ duration: 0.14, ease: [0.16, 1, 0.3, 1] }}
+                    style={{ willChange: "transform, opacity", transform: "translate3d(0,0,0)" }}
+                  >
+                    <SectionErrorBoundary sectionName="Ekonomik Takvim">
+                      <EconomicCalendar />
+                    </SectionErrorBoundary>
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
+            </div>
           )}
           
             <GlobalFilterModal
@@ -2806,6 +2866,7 @@ export default function App() {
                     entryModels={entryModels}
                     trendTypes={trendTypes}
                     definitionTitles={definitionTitles}
+                    persistPlatforms={persistPlatforms}
                   />
                 </motion.div>
               </motion.div>

@@ -1,7 +1,19 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import toast from "react-hot-toast";
 import { Trade, DefinitionTitles } from "../types";
-import { DEFAULT_PLAN_FIDELITIES, DEFAULT_ENTRY_MODELS, DEFAULT_TREND_TYPES, DEFAULT_DEFINITION_TITLES, cleanDefinitionTitleString } from "../constants/constants";
+import { 
+  DEFAULT_PLAN_FIDELITIES, 
+  DEFAULT_ENTRY_MODELS, 
+  DEFAULT_TREND_TYPES, 
+  DEFAULT_DEFINITION_TITLES, 
+  cleanDefinitionTitleString,
+  DEMO_PLATFORMS,
+  FUNDED_PLATFORMS,
+  isDemoPlatform,
+  isFundedPlatform,
+  getTradeAccountCategory,
+  savePlatformCategory
+} from "../constants/constants";
 import { VoiceToTradeButton } from "./VoiceToTradeButton";
 import { TurkishDateTimePicker } from "./TurkishDateTimePicker";
 import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
@@ -23,7 +35,9 @@ import {
   Clock,
   Maximize2,
   Target,
-  Monitor
+  Monitor,
+  Shield,
+  Trophy
 } from "lucide-react";
 
 interface AddTradeFormProps {
@@ -48,6 +62,7 @@ interface AddTradeFormProps {
   entryModels?: string[];
   trendTypes?: string[];
   definitionTitles?: DefinitionTitles;
+  persistPlatforms?: (platforms: string[]) => void;
 }
 
 const AddTradeForm = React.memo(function AddTradeForm({
@@ -67,6 +82,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
   entryModels = DEFAULT_ENTRY_MODELS,
   trendTypes = DEFAULT_TREND_TYPES,
   definitionTitles = DEFAULT_DEFINITION_TITLES,
+  persistPlatforms,
 }: AddTradeFormProps) {
   useBodyScrollLock(true);
 
@@ -75,6 +91,47 @@ const AddTradeForm = React.memo(function AddTradeForm({
   const [selectedPlatform, setSelectedPlatform] = useState(() => {
     return defaultPlatform || localStorage.getItem("last_used_trade_platform") || platforms[0] || "";
   });
+  const [selectedAccountCategory, setSelectedAccountCategory] = useState<'DEMO' | 'FUNDED'>(() => {
+    if (editingTrade) return getTradeAccountCategory(editingTrade);
+    const initial = defaultPlatform || localStorage.getItem("last_used_trade_platform") || platforms[0] || "";
+    return isDemoPlatform(initial) ? 'DEMO' : 'FUNDED';
+  });
+  const [platformTabFilter, setPlatformTabFilter] = useState<'ALL' | 'DEMO' | 'FUNDED'>('ALL');
+
+  const demoPlatformList = useMemo(() => {
+    const set = new Set<string>();
+    DEMO_PLATFORMS.forEach(p => set.add(p));
+    platforms.forEach(p => {
+      if (isDemoPlatform(p)) set.add(p);
+    });
+    return Array.from(set);
+  }, [platforms]);
+
+  const fundedPlatformList = useMemo(() => {
+    const set = new Set<string>();
+    FUNDED_PLATFORMS.forEach(p => set.add(p));
+    platforms.forEach(p => {
+      if (isFundedPlatform(p) && !isDemoPlatform(p)) set.add(p);
+    });
+    return Array.from(set);
+  }, [platforms]);
+
+  const [newPlatformInput, setNewPlatformInput] = useState("");
+  const [newPlatformCategoryInput, setNewPlatformCategoryInput] = useState<'FUNDED' | 'DEMO'>('FUNDED');
+
+  const handleQuickAddPlatform = () => {
+    const trimmed = newPlatformInput.trim();
+    if (!trimmed) return;
+    savePlatformCategory(trimmed, newPlatformCategoryInput);
+    if (persistPlatforms && !platforms.includes(trimmed)) {
+      persistPlatforms([...platforms, trimmed]);
+    }
+    setSelectedPlatform(trimmed);
+    setSelectedAccountCategory(newPlatformCategoryInput);
+    setNewPlatformInput("");
+    setIsPlatformDropdownOpen(false);
+    toast.success(`Platform eklendi: ${trimmed.toUpperCase()} (${newPlatformCategoryInput})`);
+  };
   const [selectedTimeframe, setSelectedTimeframe] = useState("");
   const [selectedHtfTimeframe, setSelectedHtfTimeframe] = useState("");
   const [selectedSession, setSelectedSession] = useState("");
@@ -142,7 +199,9 @@ const AddTradeForm = React.memo(function AddTradeForm({
 
       setNotes(editingTrade.notes || "");
       setScreenshot(editingTrade.screenshot || null);
-      setSelectedPlatform(editingTrade.platform || defaultPlatform || platforms[0] || "");
+      const plat = editingTrade.platform || defaultPlatform || platforms[0] || "";
+      setSelectedPlatform(plat);
+      setSelectedAccountCategory(editingTrade.accountCategory || getTradeAccountCategory({ accountCategory: editingTrade.accountCategory, platform: plat }));
       setSelectedTimeframe(editingTrade.timeframe || "");
       setSelectedHtfTimeframe(editingTrade.htfTimeframe || "");
       setSelectedSession(editingTrade.session || "");
@@ -205,7 +264,9 @@ const AddTradeForm = React.memo(function AddTradeForm({
     setNotes("");
     setScreenshot(null);
 
-    setSelectedPlatform(defaultPlatform || localStorage.getItem("last_used_trade_platform") || platforms[0] || "");
+    const initialPlat = defaultPlatform || localStorage.getItem("last_used_trade_platform") || platforms[0] || "";
+    setSelectedPlatform(initialPlat);
+    setSelectedAccountCategory(isDemoPlatform(initialPlat) ? 'DEMO' : 'FUNDED');
     setSelectedTimeframe("");
     setSelectedHtfTimeframe("");
     setSelectedSession("");
@@ -330,6 +391,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
       notes: safeNotes || undefined,
       screenshot: screenshot || undefined,
       platform: selectedPlatform || undefined,
+      accountCategory: selectedAccountCategory || getTradeAccountCategory({ platform: selectedPlatform }),
     });
   };
 
@@ -453,31 +515,195 @@ const AddTradeForm = React.memo(function AddTradeForm({
                   </label>
                   <div
                     onClick={() => setIsPlatformDropdownOpen(!isPlatformDropdownOpen)}
-                    className="w-full h-9.5 bg-zinc-950/80 border border-zinc-700/70 hover:border-zinc-500 rounded-xl px-3 text-xs text-white flex items-center justify-between cursor-pointer transition-all shadow-inner font-sans uppercase select-none"
+                    className="w-full h-9.5 bg-zinc-950/80 border border-zinc-700/70 hover:border-zinc-500 rounded-xl px-2.5 sm:px-3 text-xs text-white flex items-center justify-between cursor-pointer transition-all shadow-inner font-sans uppercase select-none"
                   >
                     <div className="flex items-center gap-1.5 truncate">
                       <Monitor size={13} className="text-zinc-400 shrink-0" />
                       <span className={`truncate font-sans font-bold uppercase ${selectedPlatform ? "text-zinc-100" : "text-zinc-500"}`}>
                         {selectedPlatform || "Seç"}
                       </span>
+                      {selectedPlatform && (
+                        <span className={`text-[8px] sm:text-[9px] px-1.5 py-0.2 rounded-md font-bold shrink-0 ${
+                          selectedAccountCategory === 'DEMO'
+                            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                            : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                        }`}>
+                          {selectedAccountCategory === 'DEMO' ? 'DEMO' : 'FUNDED'}
+                        </span>
+                      )}
                     </div>
                     <ChevronDown size={13} className="text-zinc-400 shrink-0" />
                   </div>
                   {isPlatformDropdownOpen && (
-                    <div className="absolute z-30 w-full mt-1.5 bg-zinc-900 border border-zinc-700/80 rounded-xl max-h-48 flex flex-col overflow-hidden shadow-2xl">
-                      <div className="overflow-y-auto flex-1 py-1 divide-y divide-zinc-800/50 custom-scrollbar">
-                        {platforms.map((p, idx) => (
-                          <div
-                            key={idx}
-                            onMouseDown={() => {
-                              setSelectedPlatform(p);
-                              setIsPlatformDropdownOpen(false);
-                            }}
-                            className="px-3 py-2 text-xs text-zinc-200 cursor-pointer hover:bg-zinc-800 hover:text-white font-sans font-bold uppercase transition-colors"
-                          >
-                            {p}
+                    <div className="absolute z-30 w-72 sm:w-80 left-0 mt-1.5 bg-zinc-900 border border-zinc-700/80 rounded-xl max-h-60 flex flex-col overflow-hidden shadow-2xl">
+                      {/* Category Quick Filter */}
+                      <div className="p-1.5 bg-zinc-950/80 border-b border-zinc-800 flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPlatformTabFilter('ALL');
+                          }}
+                          className={`flex-1 py-1 text-[10px] font-bold rounded-lg uppercase transition-colors cursor-pointer ${
+                            platformTabFilter === 'ALL' ? 'bg-zinc-800 text-white shadow-xs' : 'text-zinc-400 hover:text-zinc-200'
+                          }`}
+                        >
+                          Tümü
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPlatformTabFilter('DEMO');
+                          }}
+                          className={`flex-1 py-1 text-[10px] font-bold rounded-lg uppercase transition-colors flex items-center justify-center gap-1 cursor-pointer ${
+                            platformTabFilter === 'DEMO' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-xs' : 'text-zinc-400 hover:text-amber-400'
+                          }`}
+                        >
+                          <Shield size={10} />
+                          Demo & Challenge
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPlatformTabFilter('FUNDED');
+                          }}
+                          className={`flex-1 py-1 text-[10px] font-bold rounded-lg uppercase transition-colors flex items-center justify-center gap-1 cursor-pointer ${
+                            platformTabFilter === 'FUNDED' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-xs' : 'text-zinc-400 hover:text-emerald-400'
+                          }`}
+                        >
+                          <Trophy size={10} />
+                          Funded
+                        </button>
+                      </div>
+
+                      <div className="overflow-y-auto flex-1 divide-y divide-zinc-800/50 custom-scrollbar">
+                        {/* SECTION 1: DEMO, LIVETEST, CHALLENGE */}
+                        {(platformTabFilter === 'ALL' || platformTabFilter === 'DEMO') && (
+                          <div>
+                            <div className="px-3 py-1.5 bg-zinc-950/60 text-[9px] font-bold uppercase tracking-wider text-amber-400/90 flex items-center gap-1.5 border-b border-zinc-800/40">
+                              <Shield size={11} className="text-amber-400" />
+                              <span>Demo, LiveTest & Challenge</span>
+                            </div>
+                            <div className="py-0.5">
+                              {demoPlatformList.map((p, idx) => (
+                                <div
+                                  key={`demo-${idx}`}
+                                  onMouseDown={() => {
+                                    setSelectedPlatform(p);
+                                    setSelectedAccountCategory('DEMO');
+                                    setIsPlatformDropdownOpen(false);
+                                  }}
+                                  className={`px-3 py-2 text-xs cursor-pointer hover:bg-amber-500/10 hover:text-amber-200 font-sans font-bold uppercase transition-colors flex items-center justify-between ${
+                                    selectedPlatform === p && selectedAccountCategory === 'DEMO' ? 'bg-amber-500/15 text-amber-300' : 'text-zinc-200'
+                                  }`}
+                                >
+                                  <span>{p}</span>
+                                  <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                                    DEMO
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
                           </div>
-                        ))}
+                        )}
+
+                        {/* SECTION 2: FUNDED & CANLI HESAPLAR */}
+                        {(platformTabFilter === 'ALL' || platformTabFilter === 'FUNDED') && (
+                          <div>
+                            <div className="px-3 py-1.5 bg-zinc-950/60 text-[9px] font-bold uppercase tracking-wider text-emerald-400/90 flex items-center gap-1.5 border-b border-zinc-800/40">
+                              <Trophy size={11} className="text-emerald-400" />
+                              <span>Funded & Canlı Hesaplar</span>
+                            </div>
+                            <div className="py-0.5">
+                              {fundedPlatformList.map((p, idx) => (
+                                <div
+                                  key={`funded-${idx}`}
+                                  onMouseDown={() => {
+                                    setSelectedPlatform(p);
+                                    setSelectedAccountCategory('FUNDED');
+                                    setIsPlatformDropdownOpen(false);
+                                  }}
+                                  className={`px-3 py-2 text-xs cursor-pointer hover:bg-emerald-500/10 hover:text-emerald-200 font-sans font-bold uppercase transition-colors flex items-center justify-between ${
+                                    selectedPlatform === p && selectedAccountCategory === 'FUNDED' ? 'bg-emerald-500/15 text-emerald-300' : 'text-zinc-200'
+                                  }`}
+                                >
+                                  <span>{p}</span>
+                                  <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                                    FUNDED
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Hızlı Yeni Platform Ekle */}
+                      <div className="p-2 bg-zinc-950 border-t border-zinc-800 flex flex-col gap-1.5 shrink-0">
+                        <div className="flex items-center justify-between text-[10px] text-zinc-400 font-sans font-bold uppercase">
+                          <span>Yeni Platform Ekle</span>
+                          <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-lg p-0.5">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setNewPlatformCategoryInput('FUNDED');
+                              }}
+                              className={`px-2 py-0.5 text-[9px] font-bold rounded uppercase cursor-pointer flex items-center gap-1 ${
+                                newPlatformCategoryInput === 'FUNDED'
+                                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                                  : 'text-zinc-500 hover:text-emerald-400'
+                              }`}
+                            >
+                              <Trophy size={9} />
+                              Funded
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setNewPlatformCategoryInput('DEMO');
+                              }}
+                              className={`px-2 py-0.5 text-[9px] font-bold rounded uppercase cursor-pointer flex items-center gap-1 ${
+                                newPlatformCategoryInput === 'DEMO'
+                                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                                  : 'text-zinc-500 hover:text-amber-400'
+                              }`}
+                            >
+                              <Shield size={9} />
+                              Demo
+                            </button>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="text"
+                            placeholder="Platform adı (örn: Topstep)..."
+                            value={newPlatformInput}
+                            onChange={(e) => setNewPlatformInput(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleQuickAddPlatform();
+                              }
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex-1 bg-zinc-900 border border-zinc-700/80 rounded-lg px-2 py-1 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500 font-sans uppercase"
+                          />
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleQuickAddPlatform();
+                            }}
+                            disabled={!newPlatformInput.trim()}
+                            className="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white rounded-lg text-xs font-bold font-sans cursor-pointer shrink-0 transition-colors"
+                          >
+                            Ekle
+                          </button>
+                        </div>
                       </div>
                     </div>
                   )}

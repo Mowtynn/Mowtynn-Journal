@@ -155,7 +155,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
 
   return (
     <div className="w-full max-w-6xl mx-auto space-y-4">
-      <AnimatePresence mode="wait">
+      <AnimatePresence>
         {isEditing ? (
           // EDIT / CREATE MODE
           <motion.div 

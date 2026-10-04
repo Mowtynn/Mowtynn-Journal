@@ -681,6 +681,51 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
     });
   }, [metrics.deadZone, deadZoneSearch, deadZoneSort]);
 
+  const selectedAssetTrades = useMemo(() => {
+    if (!selectedAsset) return [];
+    return trades
+      .filter(t => t.asset === selectedAsset)
+      .sort((a, b) => b.createdAt - a.createdAt);
+  }, [trades, selectedAsset]);
+
+  const integrityAnalysis = useMemo(() => {
+    let hasIntegrityIssue = false;
+    let warnings: string[] = [];
+
+    const closedTrades = trades;
+    const winTrades = closedTrades.filter(t => t.status === 'WIN');
+    const lossTrades = closedTrades.filter(t => t.status === 'LOSS');
+    const winRate = closedTrades.length > 0 ? (winTrades.length / closedTrades.length) * 100 : 0;
+    
+    const grossProfit = winTrades.reduce((acc, t) => acc + (t.rr || 0), 0);
+    const grossLoss = Math.abs(lossTrades.reduce((acc, t) => acc + (t.rr || 0), 0));
+    const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : (grossProfit > 0 ? 99 : 0);
+
+    if (winRate > 95 && trades.length > 5) {
+      hasIntegrityIssue = true;
+      warnings.push("Kazanma oranınız çok yüksek (>95%). Girilen verilerde hatalı WIN işlemleri olabilir.");
+    }
+    
+    if (profitFactor > 50) {
+      hasIntegrityIssue = true;
+      warnings.push("Kâr Faktörü (Profit Factor) çok yüksek. Zarar (Loss) işlemlerinin eksik veya hatalı girilmediğinden emin olun.");
+    }
+
+    const extremeRRTrades = trades.filter(t => t.rr && (t.rr > 50 || t.rr < -10));
+    if (extremeRRTrades.length > 0) {
+      hasIntegrityIssue = true;
+      warnings.push("İstatistikleri bozabilecek ekstrem R:R değerlerine sahip işlemler tespit edildi (örn >50R veya <-10R).");
+    }
+
+    const noPnlWinTrades = trades.filter(t => t.status === 'WIN' && (t.pnl === 0 || !t.pnl) && (t.rr === 0 || !t.rr));
+    if (noPnlWinTrades.length > 0) {
+      hasIntegrityIssue = true;
+      warnings.push("Sıfır kâr ile kaydedilmiş 'WIN' statüsünde işlemler var. Lütfen bunları 'BREAKEVEN' olarak değiştirin veya R:R/PnL girin.");
+    }
+
+    return { hasIntegrityIssue, warnings };
+  }, [trades]);
+
   const itemVariants = {
     hidden: { opacity: 0 },
     show: { opacity: 1, transition: { duration: 0.15, ease: "easeInOut" as any } }
@@ -1204,13 +1249,14 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
         ) : (
           <div className="space-y-4 flex-1 flex flex-col justify-between min-h-[440px]">
             {/* Parite Kart Grubu Grid */}
-            <AnimatePresence mode="wait" initial={false}>
+            <AnimatePresence initial={false}>
               <motion.div
                 key={assetsPage}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                initial={{ opacity: 0.8 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0.8 }}
+                transition={{ duration: 0.08, ease: "easeOut" }}
+                style={{ willChange: "opacity" }}
                 className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 flex-1 content-start min-h-[385px]"
               >
                 {processedAssets.slice((assetsPage - 1) * 9, assetsPage * 9).map((ar) => {
@@ -1554,13 +1600,14 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                   <th className="py-2 px-3 text-right w-[110px]">İşlem Özeti</th>
                 </tr>
               </thead>
-              <AnimatePresence mode="wait" initial={false}>
+              <AnimatePresence initial={false}>
                 <motion.tbody
                   key={detailedPage}
-                  initial={{ opacity: 0 }}
+                  initial={{ opacity: 0.8 }}
                   animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                  exit={{ opacity: 0.8 }}
+                  transition={{ duration: 0.08, ease: "easeOut" }}
+                  style={{ willChange: "opacity" }}
                   className="bg-transparent"
                 >
                   {processedDetailedRows.slice((detailedPage - 1) * 10, detailedPage * 10).map((parent) => {
@@ -1947,12 +1994,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
         onClose={() => setSelectedAsset(null)}
         title={selectedAsset || ""}
         icon={<Activity size={16} className="mr-1.5 text-blue-400 shrink-0" />}
-        trades={useMemo(() => {
-          if (!selectedAsset) return [];
-          return trades
-            .filter(t => t.asset === selectedAsset)
-            .sort((a, b) => b.createdAt - a.createdAt);
-        }, [trades, selectedAsset])}
+        trades={selectedAssetTrades}
         currency={currency}
         onEdit={(trade) => {
           if (onEdit) onEdit(trade);
@@ -1961,65 +2003,26 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
       />
 
       {/* Sistem Bütünlüğü ve Veri Analizi */}
-      {(() => {
-        let hasIntegrityIssue = false;
-        let warnings: string[] = [];
-
-        const closedTrades = trades;
-        const winTrades = closedTrades.filter(t => t.status === 'WIN');
-        const lossTrades = closedTrades.filter(t => t.status === 'LOSS');
-        const winRate = closedTrades.length > 0 ? (winTrades.length / closedTrades.length) * 100 : 0;
-        
-        const grossProfit = winTrades.reduce((acc, t) => acc + (t.rr || 0), 0);
-        const grossLoss = Math.abs(lossTrades.reduce((acc, t) => acc + (t.rr || 0), 0));
-        const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : (grossProfit > 0 ? 99 : 0);
-
-        if (winRate > 95 && trades.length > 5) {
-          hasIntegrityIssue = true;
-          warnings.push("Kazanma oranınız çok yüksek (>95%). Girilen verilerde hatalı WIN işlemleri olabilir.");
-        }
-        
-        if (profitFactor > 50) {
-          hasIntegrityIssue = true;
-          warnings.push("Kâr Faktörü (Profit Factor) çok yüksek. Zarar (Loss) işlemlerinin eksik veya hatalı girilmediğinden emin olun.");
-        }
-
-        const extremeRRTrades = trades.filter(t => t.rr && (t.rr > 50 || t.rr < -10));
-        if (extremeRRTrades.length > 0) {
-          hasIntegrityIssue = true;
-          warnings.push("İstatistikleri bozabilecek ekstrem R:R değerlerine sahip işlemler tespit edildi (örn >50R veya <-10R).");
-        }
-
-        const noPnlWinTrades = trades.filter(t => t.status === 'WIN' && (t.pnl === 0 || !t.pnl) && (t.rr === 0 || !t.rr));
-        if (noPnlWinTrades.length > 0) {
-          hasIntegrityIssue = true;
-          warnings.push("Sıfır kâr ile kaydedilmiş 'WIN' statüsünde işlemler var. Lütfen bunları 'BREAKEVEN' olarak değiştirin veya R:R/PnL girin.");
-        }
-
-        if (hasIntegrityIssue) {
-          return (
-            <motion.div 
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mt-1 mb-2 px-3 py-2 bg-rose-500/10 border border-rose-500/20 rounded-xl flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 max-w-4xl mx-auto w-full"
-            >
-              <div className="flex items-center gap-1.5 shrink-0 text-rose-400">
-                <AlertTriangle size={13} />
-                <span className="font-sans heading-3">Veri Uyarısı ({warnings.length})</span>
-              </div>
-              <ul className="flex flex-col sm:flex-row flex-wrap gap-x-4 gap-y-1">
-                {warnings.map((w, idx) => (
-                  <li key={idx} className="text-zinc-400 text-[9px] flex items-center gap-1">
-                    <span className="h-0.5 w-0.5 rounded-full bg-rose-500/50 shrink-0" />
-                    <span className="leading-none">{w}</span>
-                  </li>
-                ))}
-              </ul>
-            </motion.div>
-          );
-        }
-        return null;
-      })()}
+      {integrityAnalysis.hasIntegrityIssue && (
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-1 mb-2 px-3 py-2 bg-rose-500/10 border border-rose-500/20 rounded-xl flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 max-w-4xl mx-auto w-full"
+        >
+          <div className="flex items-center gap-1.5 shrink-0 text-rose-400">
+            <AlertTriangle size={13} />
+            <span className="font-sans heading-3">Veri Uyarısı ({integrityAnalysis.warnings.length})</span>
+          </div>
+          <ul className="flex flex-col sm:flex-row flex-wrap gap-x-4 gap-y-1">
+            {integrityAnalysis.warnings.map((w, idx) => (
+              <li key={idx} className="text-zinc-400 text-[9px] flex items-center gap-1">
+                <span className="h-0.5 w-0.5 rounded-full bg-rose-500/50 shrink-0" />
+                <span className="leading-none">{w}</span>
+              </li>
+            ))}
+          </ul>
+        </motion.div>
+      )}
 
       <PrintReportModal title="Analiz Raporu" isOpen={printModalState.isOpen}
         onClose={() => setPrintModalState(prev => ({ ...prev, isOpen: false }))}

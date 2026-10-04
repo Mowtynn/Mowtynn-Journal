@@ -8,15 +8,15 @@ export const ValueTransition = React.memo(({
   children: React.ReactNode;
   modeKey: string | boolean;
 }) => (
-  <AnimatePresence mode="wait" initial={false}>
+  <AnimatePresence mode="popLayout" initial={false}>
     <motion.span
       key={String(modeKey)}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.18, ease: "easeInOut" }}
+      initial={{ opacity: 0, scale: 0.98 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.98 }}
+      transition={{ duration: 0.08, ease: "easeOut" }}
       className="inline-block"
-      style={{ backfaceVisibility: "hidden", transform: "translate3d(0,0,0)" }}
+      style={{ willChange: "transform, opacity", backfaceVisibility: "hidden", transform: "translate3d(0,0,0)" }}
     >
       {children}
     </motion.span>

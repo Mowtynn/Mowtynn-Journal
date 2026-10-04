@@ -600,7 +600,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
 
       {/* RIGHT PANE: Editor / Viewer */}
       <div className={`flex-1 flex flex-col bg-transparent overflow-hidden relative ${!isEditing && !activeEntry ? 'hidden md:flex items-center justify-center' : 'flex'}`}>
-        <AnimatePresence mode="wait">
+        <AnimatePresence>
           {!isEditing && !activeEntry ? (
             <motion.div 
               key="empty-state"

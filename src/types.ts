@@ -1,3 +1,5 @@
+export type AccountCategory = 'ALL' | 'DEMO' | 'FUNDED';
+
 export interface Trade {
   id: string;
   asset: string;            // e.g., BTC/USDT, ETH/USDT, AAPL
@@ -8,7 +10,8 @@ export interface Trade {
   notes: string;            // Analysis notes, setup descriptions
   screenshot: string | null; // Base64 data URI of compressed screenshot
   createdAt: number;        // Timestamp of entry
-  platform?: string;        // Trading platform (e.g., Binance, Bybit, Metatrader)
+  platform?: string;        // Trading platform (e.g., Binance, Bybit, Metatrader, Demo, Challenge, Funded)
+  accountCategory?: 'DEMO' | 'FUNDED'; // Account category: Demo/Challenge vs Funded/Live
   timeframe?: string;       // Execution timeframe (e.g., 1m, 5m, 1h)
   htfTimeframe?: string;    // Higher Timeframe (HTF)
   session?: string;         // Trading session (e.g., London, New York)

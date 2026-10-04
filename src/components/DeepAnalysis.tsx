@@ -510,16 +510,20 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
       };
     });
 
-    equityCurve.forEach((pt, idx) => {
-      const startIdx = Math.max(0, idx - 9);
-      const subset = equityCurve.slice(startIdx, idx + 1);
-      
-      const sum = subset.reduce((acc, curr) => acc + curr.cumulativePnl, 0);
-      pt.sma10 = sum / subset.length;
-
-      const sumReal = subset.reduce((acc, curr) => acc + curr.cumulativeRealPnl, 0);
-      pt.realSma10 = sumReal / subset.length;
-    });
+    let runningSmaSum = 0;
+    let runningRealSmaSum = 0;
+    for (let idx = 0; idx < equityCurve.length; idx++) {
+      const pt = equityCurve[idx];
+      runningSmaSum += pt.cumulativePnl;
+      runningRealSmaSum += pt.cumulativeRealPnl;
+      if (idx >= 10) {
+        runningSmaSum -= equityCurve[idx - 10].cumulativePnl;
+        runningRealSmaSum -= equityCurve[idx - 10].cumulativeRealPnl;
+      }
+      const count = Math.min(idx + 1, 10);
+      pt.sma10 = runningSmaSum / count;
+      pt.realSma10 = runningRealSmaSum / count;
+    }
 
     closedTrades.forEach((t) => {
       totalR += t.rr || 0;
