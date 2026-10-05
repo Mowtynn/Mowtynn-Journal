@@ -11,13 +11,17 @@ import {
   Filter,
   Download,
   FileText,
+  FileSpreadsheet,
   Calendar,
   RotateCcw,
   ChevronDown,
   ChevronUp,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  Layers
 } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { exportTradesToExcel, exportTradesToCSV } from '../utils/exportTrades';
 import { PrintReportModal } from './PrintReportModal';
 import { TurkishDatePicker } from './TurkishDateTimePicker';
 
@@ -524,18 +528,81 @@ const TradeList = React.memo(function TradeList({
     };
   }, []);
 
-  // PDF & Printable report handlers
-  const handleDownloadWeekly = () => {
+  // Export format tab (Excel, CSV, PDF)
+  const [exportFormatTab, setExportFormatTab] = useState<'excel' | 'csv' | 'pdf'>('excel');
+
+  const getWeeklyTrades = useCallback(() => {
     const now = new Date();
     const day = now.getDay();
     const diff = now.getDate() - day + (day === 0 ? -6 : 1);
     const startOfWeek = new Date(now.setDate(diff));
     startOfWeek.setHours(0, 0, 0, 0);
-    const startOfWeekMs = startOfWeek.getTime();
-    
-    const weeklyTrades = trades.filter(t => t.createdAt >= startOfWeekMs);
-    
-    const sorted = [...weeklyTrades].sort((a, b) => b.createdAt - a.createdAt);
+    return trades.filter(t => t.createdAt >= startOfWeek.getTime()).sort((a, b) => b.createdAt - a.createdAt);
+  }, [trades]);
+
+  const getMonthlyTrades = useCallback(() => {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    startOfMonth.setHours(0, 0, 0, 0);
+    return trades.filter(t => t.createdAt >= startOfMonth.getTime()).sort((a, b) => b.createdAt - a.createdAt);
+  }, [trades]);
+
+  const handleExport = (format: 'excel' | 'csv', scope: 'filtered' | 'all' | 'weekly' | 'monthly' | 'custom') => {
+    try {
+      const dateStr = new Date().toISOString().slice(0, 10);
+      let targetList: Trade[] = [];
+      let scopeName = '';
+
+      if (scope === 'filtered') {
+        targetList = filteredTrades;
+        scopeName = 'Filtrelenmis';
+      } else if (scope === 'all') {
+        targetList = trades;
+        scopeName = 'Tum_Islemler';
+      } else if (scope === 'weekly') {
+        targetList = getWeeklyTrades();
+        scopeName = 'Bu_Hafta';
+      } else if (scope === 'monthly') {
+        targetList = getMonthlyTrades();
+        scopeName = 'Bu_Ay';
+      } else if (scope === 'custom') {
+        const count = parseInt(customLastCount) || 7;
+        const sorted = [...trades].sort((a, b) => b.createdAt - a.createdAt);
+        targetList = sorted.slice(0, count);
+        scopeName = `Son_${count}_Islem`;
+      }
+
+      if (targetList.length === 0) {
+        toast.error('Dışa aktarılacak işlem bulunamadı.');
+        return;
+      }
+
+      const filename = `Islem_Gecmisi_${scopeName}_${dateStr}_[${targetList.length}_islem]`;
+
+      if (format === 'excel') {
+        exportTradesToExcel(targetList, filename, {
+          currency,
+          title: `İşlem Geçmişi (${scopeName.replace(/_/g, ' ')})`,
+          definitionTitles: definitionTitles as any
+        });
+        toast.success(`Excel tablosu (.xlsx) başarıyla indirildi (${targetList.length} işlem).`);
+      } else {
+        exportTradesToCSV(targetList, filename, {
+          currency,
+          title: `İşlem Geçmişi (${scopeName.replace(/_/g, ' ')})`,
+          definitionTitles: definitionTitles as any
+        });
+        toast.success(`CSV dosyası (.csv) başarıyla indirildi (${targetList.length} işlem).`);
+      }
+      setIsExportOpen(false);
+    } catch (e: any) {
+      toast.error(e?.message || 'Dışa aktarma sırasında bir hata oluştu.');
+    }
+  };
+
+  // PDF & Printable report handlers
+  const handleDownloadWeekly = () => {
+    const sorted = getWeeklyTrades();
     setPrintModalState({
       isOpen: true,
       trades: sorted,
@@ -546,14 +613,7 @@ const TradeList = React.memo(function TradeList({
   };
 
   const handleDownloadMonthly = () => {
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    startOfMonth.setHours(0, 0, 0, 0);
-    const startOfMonthMs = startOfMonth.getTime();
-    
-    const monthlyTrades = trades.filter(t => t.createdAt >= startOfMonthMs);
-    
-    const sorted = [...monthlyTrades].sort((a, b) => b.createdAt - a.createdAt);
+    const sorted = getMonthlyTrades();
     setPrintModalState({
       isOpen: true,
       trades: sorted,
@@ -868,77 +928,289 @@ const TradeList = React.memo(function TradeList({
               {isExportOpen && (
                 <motion.div
                   key="export-options-dropdown"
-                  initial={{ opacity: 0, y: 4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 4 }}
+                  initial={{ opacity: 0, y: 4, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 4, scale: 0.98 }}
                   transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
-                  className="absolute right-0 mt-2 min-w-[260px] bg-zinc-900 border border-zinc-700/80 rounded-2xl shadow-xl z-50 py-2 overflow-hidden"
+                  className="absolute right-0 mt-2 w-[310px] bg-zinc-900 border border-zinc-700/80 rounded-2xl shadow-2xl z-50 p-2 overflow-hidden"
                 >
-                  <div className="px-3 py-1 text-[9px] font-black tracking-widest text-zinc-500 uppercase border-b border-zinc-800 mb-1">
-                    PDF RAPOR SECENEKLERI
+                  {/* Format Selector Tabs */}
+                  <div className="flex items-center gap-1 p-1 bg-zinc-950 rounded-xl border border-zinc-800/80 mb-2">
+                    <button
+                      type="button"
+                      onClick={() => setExportFormatTab('excel')}
+                      className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer border ${
+                        exportFormatTab === 'excel'
+                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-xs'
+                          : 'text-zinc-400 hover:text-zinc-200 border-transparent hover:bg-zinc-800/40'
+                      }`}
+                    >
+                      <FileSpreadsheet size={12} className={exportFormatTab === 'excel' ? 'text-emerald-400' : 'text-zinc-500'} />
+                      <span>EXCEL</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setExportFormatTab('csv')}
+                      className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer border ${
+                        exportFormatTab === 'csv'
+                          ? 'bg-blue-500/20 text-blue-300 border-blue-500/40 shadow-xs'
+                          : 'text-zinc-400 hover:text-zinc-200 border-transparent hover:bg-zinc-800/40'
+                      }`}
+                    >
+                      <FileText size={12} className={exportFormatTab === 'csv' ? 'text-blue-400' : 'text-zinc-500'} />
+                      <span>CSV</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setExportFormatTab('pdf')}
+                      className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer border ${
+                        exportFormatTab === 'pdf'
+                          ? 'bg-purple-500/20 text-purple-300 border-purple-500/40 shadow-xs'
+                          : 'text-zinc-400 hover:text-zinc-200 border-transparent hover:bg-zinc-800/40'
+                      }`}
+                    >
+                      <Download size={12} className={exportFormatTab === 'pdf' ? 'text-purple-400' : 'text-zinc-500'} />
+                      <span>PDF</span>
+                    </button>
                   </div>
-                  
-                  <button
-                    onClick={handleDownloadWeekly}
-                    className="w-full px-3 py-2 text-left text-xs text-zinc-200 hover:bg-zinc-800 hover:text-blue-400 font-medium transition-colors flex items-center gap-2 cursor-pointer"
-                  >
-                    <Calendar size={11} className="text-blue-400" />
-                    <span>Bu Hafta Raporu İndir</span>
-                  </button>
-                  
-                  <button
-                    onClick={handleDownloadMonthly}
-                    className="w-full px-3 py-2 text-left text-xs text-zinc-200 hover:bg-zinc-800 hover:text-indigo-400 font-medium transition-colors flex items-center gap-2 cursor-pointer"
-                  >
-                    <Calendar size={11} className="text-indigo-400" />
-                    <span>Bu Ay Raporu İndir</span>
-                  </button>
-                  
-                  <div className="border-t border-zinc-800 my-1"></div>
-                  
-                  <button
-                    onClick={handleDownloadFiltered}
-                    className="w-full px-3 py-2 text-left text-xs text-zinc-200 hover:bg-zinc-800 hover:text-emerald-400 font-medium transition-colors flex items-center gap-2 cursor-pointer"
-                  >
-                    <FileText size={11} className="text-emerald-400" />
-                    <span>Filtrelenmiş Rapor İndir ({filteredTrades.length})</span>
-                  </button>
 
-                  <div className="border-t border-zinc-800 my-1"></div>
+                  <div className="px-2 py-1 text-[9px] font-black tracking-widest text-zinc-500 uppercase border-b border-zinc-800/60 mb-1 flex items-center justify-between">
+                    <span>
+                      {exportFormatTab === 'excel' ? 'EXCEL (.XLSX) DIŞA AKTAR' : exportFormatTab === 'csv' ? 'CSV (EXCEL UYUMLU) İNDİR' : 'PDF ANALİZ RAPORU'}
+                    </span>
+                    <span className="text-zinc-500 font-sans text-[9px] font-normal">
+                      {exportFormatTab === 'excel' ? 'Tüm Sütunlar + Özet' : exportFormatTab === 'csv' ? 'UTF-8 BOM Semicolon' : 'Görsel Rapor'}
+                    </span>
+                  </div>
 
-                  <div className="px-3 py-2">
-                    <div className="flex items-center gap-1.5 bg-zinc-950 border border-zinc-700/80 rounded-xl px-2 py-1 text-xs text-zinc-200">
-                      <span className="text-zinc-400 text-[10px] font-medium whitespace-nowrap">Son</span>
-                      <input
-                        type="number"
-                        min="1"
-                        max={trades.length || 100}
-                        value={customLastCount}
-                        onChange={(e) => setCustomLastCount(e.target.value)}
-                        onClick={(e) => e.stopPropagation()}
-                        className="w-10 bg-zinc-900 border border-zinc-700 text-center text-blue-400 font-bold rounded-lg py-0.5 text-xs focus:outline-none focus:border-blue-500"
-                      />
-                      <span className="text-zinc-400 text-[10px] font-medium whitespace-nowrap">işlem raporu</span>
+                  {exportFormatTab === 'excel' && (
+                    <div className="space-y-0.5">
                       <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const count = parseInt(customLastCount) || 7;
-                          const sorted = [...trades].sort((a, b) => b.createdAt - a.createdAt);
-                          const selectedTrades = sorted.slice(0, count);
-                          setPrintModalState({
-                            isOpen: true,
-                            trades: selectedTrades,
-                            title: `Son ${count} İşlem Raporu`,
-                            dateRangeText: `Son ${count} İşlem`
-                          });
-                          setIsExportOpen(false);
-                        }}
-                        className="ml-auto shrink-0 whitespace-nowrap px-3 py-1 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 border border-blue-500/30 rounded-xl text-[10px] font-sans font-bold uppercase tracking-wider transition-colors duration-200 cursor-pointer"
+                        type="button"
+                        onClick={() => handleExport('excel', 'filtered')}
+                        className="w-full px-2.5 py-2 text-left text-xs text-zinc-200 hover:bg-zinc-800/80 hover:text-emerald-300 font-medium rounded-xl transition-colors flex items-center justify-between cursor-pointer group"
                       >
-                        İndir
+                        <div className="flex items-center gap-2">
+                          <FileSpreadsheet size={13} className="text-emerald-400" />
+                          <span>Filtrelenmiş İşlemler</span>
+                        </div>
+                        <span className="text-[10px] font-bold font-sans px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                          {filteredTrades.length} İşlem
+                        </span>
                       </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleExport('excel', 'all')}
+                        className="w-full px-2.5 py-2 text-left text-xs text-zinc-200 hover:bg-zinc-800/80 hover:text-emerald-300 font-medium rounded-xl transition-colors flex items-center justify-between cursor-pointer group"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Layers size={13} className="text-zinc-400 group-hover:text-emerald-400 transition-colors" />
+                          <span>Tüm İşlem Geçmişi</span>
+                        </div>
+                        <span className="text-[10px] font-bold font-sans px-2 py-0.5 rounded-lg bg-zinc-800 text-zinc-300 border border-zinc-700">
+                          {trades.length} İşlem
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleExport('excel', 'weekly')}
+                        className="w-full px-2.5 py-2 text-left text-xs text-zinc-200 hover:bg-zinc-800/80 hover:text-emerald-300 font-medium rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
+                      >
+                        <Calendar size={13} className="text-blue-400" />
+                        <span>Bu Haftanın İşlemleri</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleExport('excel', 'monthly')}
+                        className="w-full px-2.5 py-2 text-left text-xs text-zinc-200 hover:bg-zinc-800/80 hover:text-emerald-300 font-medium rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
+                      >
+                        <Calendar size={13} className="text-indigo-400" />
+                        <span>Bu Ayın İşlemleri</span>
+                      </button>
+
+                      <div className="border-t border-zinc-800/80 my-1"></div>
+
+                      <div className="p-1">
+                        <div className="flex items-center gap-1.5 bg-zinc-950 border border-zinc-800 rounded-xl px-2 py-1 text-xs text-zinc-200">
+                          <span className="text-zinc-400 text-[10px] font-medium whitespace-nowrap">Son</span>
+                          <input
+                            type="number"
+                            min="1"
+                            max={trades.length || 100}
+                            value={customLastCount}
+                            onChange={(e) => setCustomLastCount(e.target.value)}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-10 bg-zinc-900 border border-zinc-700 text-center text-emerald-400 font-bold rounded-lg py-0.5 text-xs focus:outline-none focus:border-emerald-500"
+                          />
+                          <span className="text-zinc-400 text-[10px] font-medium whitespace-nowrap">işlem (.xlsx)</span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleExport('excel', 'custom');
+                            }}
+                            className="ml-auto shrink-0 whitespace-nowrap px-3 py-1 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 rounded-xl text-[10px] font-sans font-bold uppercase tracking-wider transition-colors duration-200 cursor-pointer"
+                          >
+                            İndir
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  )}
+
+                  {exportFormatTab === 'csv' && (
+                    <div className="space-y-0.5">
+                      <button
+                        type="button"
+                        onClick={() => handleExport('csv', 'filtered')}
+                        className="w-full px-2.5 py-2 text-left text-xs text-zinc-200 hover:bg-zinc-800/80 hover:text-blue-300 font-medium rounded-xl transition-colors flex items-center justify-between cursor-pointer group"
+                      >
+                        <div className="flex items-center gap-2">
+                          <FileText size={13} className="text-blue-400" />
+                          <span>Filtrelenmiş İşlemler</span>
+                        </div>
+                        <span className="text-[10px] font-bold font-sans px-2 py-0.5 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                          {filteredTrades.length} İşlem
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleExport('csv', 'all')}
+                        className="w-full px-2.5 py-2 text-left text-xs text-zinc-200 hover:bg-zinc-800/80 hover:text-blue-300 font-medium rounded-xl transition-colors flex items-center justify-between cursor-pointer group"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Layers size={13} className="text-zinc-400 group-hover:text-blue-400 transition-colors" />
+                          <span>Tüm İşlem Geçmişi</span>
+                        </div>
+                        <span className="text-[10px] font-bold font-sans px-2 py-0.5 rounded-lg bg-zinc-800 text-zinc-300 border border-zinc-700">
+                          {trades.length} İşlem
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleExport('csv', 'weekly')}
+                        className="w-full px-2.5 py-2 text-left text-xs text-zinc-200 hover:bg-zinc-800/80 hover:text-blue-300 font-medium rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
+                      >
+                        <Calendar size={13} className="text-blue-400" />
+                        <span>Bu Haftanın İşlemleri</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleExport('csv', 'monthly')}
+                        className="w-full px-2.5 py-2 text-left text-xs text-zinc-200 hover:bg-zinc-800/80 hover:text-blue-300 font-medium rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
+                      >
+                        <Calendar size={13} className="text-indigo-400" />
+                        <span>Bu Ayın İşlemleri</span>
+                      </button>
+
+                      <div className="border-t border-zinc-800/80 my-1"></div>
+
+                      <div className="p-1">
+                        <div className="flex items-center gap-1.5 bg-zinc-950 border border-zinc-800 rounded-xl px-2 py-1 text-xs text-zinc-200">
+                          <span className="text-zinc-400 text-[10px] font-medium whitespace-nowrap">Son</span>
+                          <input
+                            type="number"
+                            min="1"
+                            max={trades.length || 100}
+                            value={customLastCount}
+                            onChange={(e) => setCustomLastCount(e.target.value)}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-10 bg-zinc-900 border border-zinc-700 text-center text-blue-400 font-bold rounded-lg py-0.5 text-xs focus:outline-none focus:border-blue-500"
+                          />
+                          <span className="text-zinc-400 text-[10px] font-medium whitespace-nowrap">işlem (.csv)</span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleExport('csv', 'custom');
+                            }}
+                            className="ml-auto shrink-0 whitespace-nowrap px-3 py-1 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 border border-blue-500/30 rounded-xl text-[10px] font-sans font-bold uppercase tracking-wider transition-colors duration-200 cursor-pointer"
+                          >
+                            İndir
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {exportFormatTab === 'pdf' && (
+                    <div className="space-y-0.5">
+                      <button
+                        type="button"
+                        onClick={handleDownloadFiltered}
+                        className="w-full px-2.5 py-2 text-left text-xs text-zinc-200 hover:bg-zinc-800/80 hover:text-purple-300 font-medium rounded-xl transition-colors flex items-center justify-between cursor-pointer group"
+                      >
+                        <div className="flex items-center gap-2">
+                          <FileText size={13} className="text-purple-400" />
+                          <span>Filtrelenmiş Rapor</span>
+                        </div>
+                        <span className="text-[10px] font-bold font-sans px-2 py-0.5 rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                          {filteredTrades.length} İşlem
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleDownloadWeekly}
+                        className="w-full px-2.5 py-2 text-left text-xs text-zinc-200 hover:bg-zinc-800/80 hover:text-purple-300 font-medium rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
+                      >
+                        <Calendar size={13} className="text-blue-400" />
+                        <span>Bu Hafta Raporu İndir</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleDownloadMonthly}
+                        className="w-full px-2.5 py-2 text-left text-xs text-zinc-200 hover:bg-zinc-800/80 hover:text-purple-300 font-medium rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
+                      >
+                        <Calendar size={13} className="text-indigo-400" />
+                        <span>Bu Ay Raporu İndir</span>
+                      </button>
+
+                      <div className="border-t border-zinc-800/80 my-1"></div>
+
+                      <div className="p-1">
+                        <div className="flex items-center gap-1.5 bg-zinc-950 border border-zinc-800 rounded-xl px-2 py-1 text-xs text-zinc-200">
+                          <span className="text-zinc-400 text-[10px] font-medium whitespace-nowrap">Son</span>
+                          <input
+                            type="number"
+                            min="1"
+                            max={trades.length || 100}
+                            value={customLastCount}
+                            onChange={(e) => setCustomLastCount(e.target.value)}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-10 bg-zinc-900 border border-zinc-700 text-center text-purple-400 font-bold rounded-lg py-0.5 text-xs focus:outline-none focus:border-purple-500"
+                          />
+                          <span className="text-zinc-400 text-[10px] font-medium whitespace-nowrap">işlem raporu</span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const count = parseInt(customLastCount) || 7;
+                              const sorted = [...trades].sort((a, b) => b.createdAt - a.createdAt);
+                              const selectedTrades = sorted.slice(0, count);
+                              setPrintModalState({
+                                isOpen: true,
+                                trades: selectedTrades,
+                                title: `Son ${count} İşlem Raporu`,
+                                dateRangeText: `Son ${count} İşlem`
+                              });
+                              setIsExportOpen(false);
+                            }}
+                            className="ml-auto shrink-0 whitespace-nowrap px-3 py-1 bg-purple-500/15 hover:bg-purple-500/25 text-purple-400 border border-purple-500/30 rounded-xl text-[10px] font-sans font-bold uppercase tracking-wider transition-colors duration-200 cursor-pointer"
+                          >
+                            İndir
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>

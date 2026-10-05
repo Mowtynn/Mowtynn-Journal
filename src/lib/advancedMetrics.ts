@@ -2,6 +2,8 @@ import { Trade } from '../types';
 
 import { calculateProfitFactor, toRR } from './statMath';
 
+const DAYS_EN_TO_TR: Record<number, string> = { 1: 'Pzt', 2: 'Sal', 3: 'Çar', 4: 'Per', 5: 'Cum', 6: 'Cmt', 0: 'Paz' };
+
 export const calculateAdvancedMetrics = (closedTrades: Trade[]) => {
   if (closedTrades.length === 0) return null;
 
@@ -101,8 +103,7 @@ export const calculateAdvancedMetrics = (closedTrades: Trade[]) => {
     }
     
     // Weekly Bias (Day of week + direction)
-    const daysEnToTr: Record<number, string> = { 1: 'Pzt', 2: 'Sal', 3: 'Çar', 4: 'Per', 5: 'Cum', 6: 'Cmt', 0: 'Paz' };
-    const trDay = daysEnToTr[d.getUTCDay()];
+    const trDay = DAYS_EN_TO_TR[d.getUTCDay()];
     if (trDay && t.type) {
       if (!weeklyBias[trDay]) weeklyBias[trDay] = {};
       if (!weeklyBias[trDay][t.type]) weeklyBias[trDay][t.type] = { count: 0, wins: 0, pnl: 0 };

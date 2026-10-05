@@ -59,13 +59,17 @@ const MemoizedEquityChart = React.memo(function MemoizedEquityChart({
   
 
     const chartData = useMemo(() => {
-      const values = (chartEquityCurve || []).map((d: any) => isRrMode ? d.cumulativePnl : d.cumulativeRealPnl);
-      const allValues = [0, ...values];
-      const maxVal = Math.max(...allValues);
-      const minVal = Math.min(...allValues);
+      const values = (chartEquityCurve || []).map((d: any) => isRrMode ? (d.cumulativePnl ?? 0) : (d.cumulativeRealPnl ?? 0));
+      let maxVal = 0;
+      let minVal = 0;
+      for (let i = 0; i < values.length; i++) {
+        const v = values[i];
+        if (v > maxVal) maxVal = v;
+        if (v < minVal) minVal = v;
+      }
       const range = (maxVal - minVal) || 1;
       const width = 600, height = 180, padding = 20;
-      const curveLen = allValues.length > 1 ? allValues.length - 1 : 1;
+      const curveLen = values.length > 0 ? values.length : 1;
 
       const pts = [
         { x: 20, y: height - padding - ((0 - minVal) / range) * (height - 2*padding) },

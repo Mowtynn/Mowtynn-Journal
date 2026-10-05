@@ -19,7 +19,11 @@ import {
   Star,
   Search,
   X,
-  Clock
+  Clock,
+  Download,
+  FileSpreadsheet,
+  FileText,
+  Layers
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { JournalEntry, Trade } from '../types';
@@ -28,6 +32,7 @@ import { TurkishDatePicker } from './TurkishDateTimePicker';
 import { VoiceToJournalButton } from './VoiceToJournalButton';
 import { useMetricMode } from '../context/MetricContext';
 import { caseInsensitiveMatch } from '../constants/constants';
+import { exportJournalsToExcel, exportJournalsToCSV } from '../utils/exportTrades';
 
 interface JournalViewProps {
   entries: JournalEntry[];
@@ -79,8 +84,25 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
   const [searchTerm, setSearchTerm] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const [showOnlyFavorites, setShowOnlyFavorites] = useState(false);
+  const [isExportOpen, setIsExportOpen] = useState(false);
+  const [exportFormatTab, setExportFormatTab] = useState<'excel' | 'csv'>('excel');
   const [weekOffset, setWeekOffset] = useState(0);
   const [entryToDelete, setEntryToDelete] = useState<JournalEntry | null>(null);
+  const exportRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (exportRef.current && !exportRef.current.contains(event.target as Node)) {
+        setIsExportOpen(false);
+      }
+    };
+    if (isExportOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isExportOpen]);
 
   React.useEffect(() => {
     if (activeEntry) {
@@ -336,7 +358,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
       {/* LEFT SIDEBAR: Entry List */}
       <div className={`w-full md:w-80 lg:w-96 border-r border-zinc-800/80 flex flex-col shrink-0 ${isEditing && 'hidden md:flex'}`}>
         {/* Top bar */}
-        <div className="px-4 py-3 shrink-0 border-b border-zinc-800/80 flex items-center justify-between">
+        <div className="px-4 py-3 shrink-0 border-b border-zinc-800/80 flex items-center justify-between relative z-30">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
               <CalendarIcon size={16} />
@@ -355,6 +377,138 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
           </div>
           
           <div className="flex items-center gap-1 relative">
+            {/* EXPORT DROP-DOWN FOR JOURNALS */}
+            <div className="relative" ref={exportRef}>
+              <button
+                type="button"
+                onClick={() => setIsExportOpen(!isExportOpen)}
+                className={`w-7.5 h-7.5 rounded-lg flex items-center justify-center transition-all cursor-pointer border ${
+                  isExportOpen
+                    ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
+                    : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
+                }`}
+                title="Günlükleri Dışa Aktar (Excel / CSV)"
+              >
+                <Download size={13} />
+              </button>
+
+              <AnimatePresence>
+                {isExportOpen && (
+                  <motion.div
+                    key="journal-export-dropdown"
+                    initial={{ opacity: 0, y: 4, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 4, scale: 0.98 }}
+                    transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                    className="absolute top-[calc(100%+8px)] left-0 sm:left-auto sm:right-0 z-50 w-[270px] bg-zinc-900 border border-zinc-700/80 rounded-2xl shadow-2xl p-2 overflow-hidden"
+                  >
+                    {/* Format Tabs */}
+                    <div className="flex items-center gap-1 p-1 bg-zinc-950 rounded-xl border border-zinc-800/80 mb-2">
+                      <button
+                        type="button"
+                        onClick={() => setExportFormatTab('excel')}
+                        className={`flex-1 py-1 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer border ${
+                          exportFormatTab === 'excel'
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-xs'
+                            : 'text-zinc-400 hover:text-zinc-200 border-transparent hover:bg-zinc-800/40'
+                        }`}
+                      >
+                        <FileSpreadsheet size={11} className={exportFormatTab === 'excel' ? 'text-emerald-400' : 'text-zinc-500'} />
+                        <span>EXCEL</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setExportFormatTab('csv')}
+                        className={`flex-1 py-1 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer border ${
+                          exportFormatTab === 'csv'
+                            ? 'bg-blue-500/20 text-blue-300 border-blue-500/40 shadow-xs'
+                            : 'text-zinc-400 hover:text-zinc-200 border-transparent hover:bg-zinc-800/40'
+                        }`}
+                      >
+                        <FileText size={11} className={exportFormatTab === 'csv' ? 'text-blue-400' : 'text-zinc-500'} />
+                        <span>CSV</span>
+                      </button>
+                    </div>
+
+                    <div className="px-2 py-1 text-[9px] font-black tracking-widest text-zinc-500 uppercase border-b border-zinc-800/60 mb-1 flex items-center justify-between">
+                      <span>{exportFormatTab === 'excel' ? 'EXCEL (.XLSX) DIŞA AKTAR' : 'CSV (.CSV) İNDİR'}</span>
+                      <span className="text-zinc-500 font-sans text-[9px] font-normal">
+                        {exportFormatTab === 'excel' ? 'Tüm Detaylar' : 'UTF-8 BOM'}
+                      </span>
+                    </div>
+
+                    <div className="space-y-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          try {
+                            const dateStr = new Date().toISOString().slice(0, 10);
+                            const targetList = filteredEntries;
+                            if (targetList.length === 0) {
+                              toast.error('Dışa aktarılacak günlük bulunamadı.');
+                              return;
+                            }
+                            if (exportFormatTab === 'excel') {
+                              exportJournalsToExcel(targetList, `Gunluk_Kayitlari_Filtrelenmis_${dateStr}_[${targetList.length}_gunluk]`);
+                              toast.success(`Excel tablosu (.xlsx) indirildi (${targetList.length} günlük).`);
+                            } else {
+                              exportJournalsToCSV(targetList, `Gunluk_Kayitlari_Filtrelenmis_${dateStr}_[${targetList.length}_gunluk]`);
+                              toast.success(`CSV dosyası (.csv) indirildi (${targetList.length} günlük).`);
+                            }
+                            setIsExportOpen(false);
+                          } catch (e: any) {
+                            toast.error(e?.message || 'Hata oluştu.');
+                          }
+                        }}
+                        className="w-full px-2.5 py-1.5 text-left text-xs text-zinc-200 hover:bg-zinc-800/80 hover:text-emerald-300 font-medium rounded-xl transition-colors flex items-center justify-between cursor-pointer group"
+                      >
+                        <div className="flex items-center gap-2">
+                          <FileSpreadsheet size={12} className={exportFormatTab === 'excel' ? 'text-emerald-400' : 'text-blue-400'} />
+                          <span>Filtrelenmiş Günlükler</span>
+                        </div>
+                        <span className="text-[10px] font-bold font-sans px-2 py-0.5 rounded-lg bg-zinc-800 text-zinc-300 border border-zinc-700">
+                          {filteredEntries.length} Günlük
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          try {
+                            const dateStr = new Date().toISOString().slice(0, 10);
+                            const targetList = entries;
+                            if (targetList.length === 0) {
+                              toast.error('Dışa aktarılacak günlük bulunamadı.');
+                              return;
+                            }
+                            if (exportFormatTab === 'excel') {
+                              exportJournalsToExcel(targetList, `Gunluk_Kayitlari_Tum_${dateStr}_[${targetList.length}_gunluk]`);
+                              toast.success(`Excel tablosu (.xlsx) indirildi (${targetList.length} günlük).`);
+                            } else {
+                              exportJournalsToCSV(targetList, `Gunluk_Kayitlari_Tum_${dateStr}_[${targetList.length}_gunluk]`);
+                              toast.success(`CSV dosyası (.csv) indirildi (${targetList.length} günlük).`);
+                            }
+                            setIsExportOpen(false);
+                          } catch (e: any) {
+                            toast.error(e?.message || 'Hata oluştu.');
+                          }
+                        }}
+                        className="w-full px-2.5 py-1.5 text-left text-xs text-zinc-200 hover:bg-zinc-800/80 hover:text-emerald-300 font-medium rounded-xl transition-colors flex items-center justify-between cursor-pointer group"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Layers size={12} className="text-zinc-400 group-hover:text-emerald-400 transition-colors" />
+                          <span>Tüm Günlük Kayıtları</span>
+                        </div>
+                        <span className="text-[10px] font-bold font-sans px-2 py-0.5 rounded-lg bg-zinc-800 text-zinc-300 border border-zinc-700">
+                          {entries.length} Günlük
+                        </span>
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
             <button
               onClick={() => setShowSearch(!showSearch)}
               className={`w-7.5 h-7.5 rounded-lg flex items-center justify-center transition-all cursor-pointer border ${

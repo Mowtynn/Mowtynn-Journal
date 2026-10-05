@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
-import { Calendar as CalendarIcon, Download, X } from "lucide-react";
+import { Calendar as CalendarIcon, Download, X, FileSpreadsheet, FileText } from "lucide-react";
+import toast from "react-hot-toast";
 import { Trade, DefinitionTitles } from "../types";
 import { useMetricMode } from "../context/MetricContext";
 import { PrintReportModal } from "./PrintReportModal";
 import TradeDetailModal from "./TradeDetailModal";
 import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
+import { exportTradesToExcel, exportTradesToCSV } from "../utils/exportTrades";
 
 export interface TradeHistoryModalProps {
   isOpen: boolean;
@@ -34,6 +36,23 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
   const { isRrMode } = useMetricMode();
   const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+  const [isExportOpen, setIsExportOpen] = useState(false);
+  const [exportFormatTab, setExportFormatTab] = useState<'excel' | 'csv' | 'pdf'>('excel');
+  const exportRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (exportRef.current && !exportRef.current.contains(event.target as Node)) {
+        setIsExportOpen(false);
+      }
+    };
+    if (isExportOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isExportOpen]);
 
   // Preserve displayed state so that content remains intact during exit animation when props are cleared
   const [displayedTrades, setDisplayedTrades] = useState<Trade[]>(trades);
@@ -146,14 +165,155 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                     </h2>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 relative" ref={exportRef}>
                   <button
                     type="button"
-                    onClick={() => setIsPrintModalOpen(true)}
-                    className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/25 rounded-xl transition-colors duration-200 ease-out cursor-pointer group shadow-xs shrink-0"
+                    onClick={() => setIsExportOpen(!isExportOpen)}
+                    className={`w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl border transition-colors duration-200 ease-out cursor-pointer group shadow-xs shrink-0 ${
+                      isExportOpen
+                        ? 'text-emerald-300 bg-emerald-500/20 border-emerald-500/40'
+                        : 'text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 border-blue-500/25'
+                    }`}
                   >
                     <Download size={18} className="transition-colors" />
                   </button>
+
+                  <AnimatePresence>
+                    {isExportOpen && (
+                      <motion.div
+                        key="modal-export-dropdown"
+                        initial={{ opacity: 0, y: 4, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 4, scale: 0.98 }}
+                        transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                        className="absolute right-0 top-11 w-[290px] bg-zinc-900 border border-zinc-700/80 rounded-2xl shadow-2xl z-50 p-2 overflow-hidden"
+                      >
+                        {/* Format Tabs */}
+                        <div className="flex items-center gap-1 p-1 bg-zinc-950 rounded-xl border border-zinc-800/80 mb-2">
+                          <button
+                            type="button"
+                            onClick={() => setExportFormatTab('excel')}
+                            className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer border ${
+                              exportFormatTab === 'excel'
+                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-xs'
+                                : 'text-zinc-400 hover:text-zinc-200 border-transparent hover:bg-zinc-800/40'
+                            }`}
+                          >
+                            <FileSpreadsheet size={12} className={exportFormatTab === 'excel' ? 'text-emerald-400' : 'text-zinc-500'} />
+                            <span>EXCEL</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setExportFormatTab('csv')}
+                            className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer border ${
+                              exportFormatTab === 'csv'
+                                ? 'bg-blue-500/20 text-blue-300 border-blue-500/40 shadow-xs'
+                                : 'text-zinc-400 hover:text-zinc-200 border-transparent hover:bg-zinc-800/40'
+                            }`}
+                          >
+                            <FileText size={12} className={exportFormatTab === 'csv' ? 'text-blue-400' : 'text-zinc-500'} />
+                            <span>CSV</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setExportFormatTab('pdf')}
+                            className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer border ${
+                              exportFormatTab === 'pdf'
+                                ? 'bg-purple-500/20 text-purple-300 border-purple-500/40 shadow-xs'
+                                : 'text-zinc-400 hover:text-zinc-200 border-transparent hover:bg-zinc-800/40'
+                            }`}
+                          >
+                            <Download size={12} className={exportFormatTab === 'pdf' ? 'text-purple-400' : 'text-zinc-500'} />
+                            <span>PDF</span>
+                          </button>
+                        </div>
+
+                        {exportFormatTab === 'excel' && (
+                          <div className="space-y-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                try {
+                                  const dateStr = new Date().toISOString().slice(0, 10);
+                                  exportTradesToExcel(sortedTrades, `Islem_Gecmisi_${(activeTitle || 'Rapor').replace(/\s+/g, '_')}_${dateStr}`, {
+                                    currency,
+                                    title: `${activeTitle} İşlem Geçmişi`,
+                                    definitionTitles: definitionTitles as any
+                                  });
+                                  toast.success(`Excel tablosu (.xlsx) indirildi (${sortedTrades.length} işlem).`);
+                                  setIsExportOpen(false);
+                                } catch (e: any) {
+                                  toast.error(e?.message || 'Hata oluştu.');
+                                }
+                              }}
+                              className="w-full px-2.5 py-2 text-left text-xs text-zinc-200 hover:bg-zinc-800/80 hover:text-emerald-300 font-medium rounded-xl transition-colors flex items-center justify-between cursor-pointer group"
+                            >
+                              <div className="flex items-center gap-2">
+                                <FileSpreadsheet size={13} className="text-emerald-400" />
+                                <span>Bu Listedeki İşlemleri İndir</span>
+                              </div>
+                              <span className="text-[10px] font-bold font-sans px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                {sortedTrades.length} İşlem
+                              </span>
+                            </button>
+                          </div>
+                        )}
+
+                        {exportFormatTab === 'csv' && (
+                          <div className="space-y-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                try {
+                                  const dateStr = new Date().toISOString().slice(0, 10);
+                                  exportTradesToCSV(sortedTrades, `Islem_Gecmisi_${(activeTitle || 'Rapor').replace(/\s+/g, '_')}_${dateStr}`, {
+                                    currency,
+                                    title: `${activeTitle} İşlem Geçmişi`,
+                                    definitionTitles: definitionTitles as any
+                                  });
+                                  toast.success(`CSV dosyası (.csv) indirildi (${sortedTrades.length} işlem).`);
+                                  setIsExportOpen(false);
+                                } catch (e: any) {
+                                  toast.error(e?.message || 'Hata oluştu.');
+                                }
+                              }}
+                              className="w-full px-2.5 py-2 text-left text-xs text-zinc-200 hover:bg-zinc-800/80 hover:text-blue-300 font-medium rounded-xl transition-colors flex items-center justify-between cursor-pointer group"
+                            >
+                              <div className="flex items-center gap-2">
+                                <FileText size={13} className="text-blue-400" />
+                                <span>Bu Listedeki İşlemleri İndir</span>
+                              </div>
+                              <span className="text-[10px] font-bold font-sans px-2 py-0.5 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                                {sortedTrades.length} İşlem
+                              </span>
+                            </button>
+                          </div>
+                        )}
+
+                        {exportFormatTab === 'pdf' && (
+                          <div className="space-y-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsPrintModalOpen(true);
+                                setIsExportOpen(false);
+                              }}
+                              className="w-full px-2.5 py-2 text-left text-xs text-zinc-200 hover:bg-zinc-800/80 hover:text-purple-300 font-medium rounded-xl transition-colors flex items-center justify-between cursor-pointer group"
+                            >
+                              <div className="flex items-center gap-2">
+                                <Download size={13} className="text-purple-400" />
+                                <span>PDF Rapor Önizleme & Yazdır</span>
+                              </div>
+                              <span className="text-[10px] font-bold font-sans px-2 py-0.5 rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                                {sortedTrades.length} İşlem
+                              </span>
+                            </button>
+                          </div>
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
                   <button
                     type="button"
                     onClick={onClose}

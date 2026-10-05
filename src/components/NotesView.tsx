@@ -11,12 +11,16 @@ import {
   Save, 
   Pin, 
   X, 
-  Search
+  Search,
+  Download,
+  FileSpreadsheet,
+  Layers
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Note } from '../types';
 import { VoiceToNoteButton } from './VoiceToNoteButton';
 import { caseInsensitiveMatch } from '../constants/constants';
+import { exportNotesToExcel, exportNotesToCSV } from '../utils/exportTrades';
 
 interface NotesViewProps {
   notes: Note[];
@@ -32,6 +36,23 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState<'ALL' | 'PINNED'>('ALL');
   const [noteToDelete, setNoteToDelete] = useState<Note | null>(null);
+  const [isExportOpen, setIsExportOpen] = useState(false);
+  const [exportFormatTab, setExportFormatTab] = useState<'excel' | 'csv'>('excel');
+  const exportRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (exportRef.current && !exportRef.current.contains(event.target as Node)) {
+        setIsExportOpen(false);
+      }
+    };
+    if (isExportOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isExportOpen]);
 
   React.useEffect(() => {
     if (activeNote) {
@@ -310,7 +331,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
             className="w-full space-y-4"
           >
             {/* Header bar */}
-            <div className="bg-zinc-950/60 border border-zinc-800/80  rounded-2xl p-4 sm:p-5 relative overflow-hidden shadow-sm">
+            <div className="bg-zinc-950/60 border border-zinc-800/80 rounded-2xl p-4 sm:p-5 relative z-20 shadow-sm">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
@@ -393,6 +414,173 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                         <X size={12} />
                       </button>
                     )}
+                  </div>
+
+                  {/* EXPORT DROP-DOWN FOR NOTES */}
+                  <div className="relative" ref={exportRef}>
+                    <button
+                      type="button"
+                      onClick={() => setIsExportOpen(!isExportOpen)}
+                      className={`h-8 w-8 rounded-xl border flex items-center justify-center transition-all cursor-pointer ${
+                        isExportOpen
+                          ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
+                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
+                      }`}
+                      title="Notları Dışa Aktar (Excel / CSV)"
+                    >
+                      <Download size={13} />
+                    </button>
+
+                    <AnimatePresence>
+                      {isExportOpen && (
+                        <motion.div
+                          key="notes-export-dropdown"
+                          initial={{ opacity: 0, y: 4, scale: 0.98 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 4, scale: 0.98 }}
+                          transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                          className="absolute top-10 right-0 z-50 w-[270px] bg-zinc-900 border border-zinc-700/80 rounded-2xl shadow-2xl p-2 overflow-hidden"
+                        >
+                          {/* Format Tabs */}
+                          <div className="flex items-center gap-1 p-1 bg-zinc-950 rounded-xl border border-zinc-800/80 mb-2">
+                            <button
+                              type="button"
+                              onClick={() => setExportFormatTab('excel')}
+                              className={`flex-1 py-1 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer border ${
+                                exportFormatTab === 'excel'
+                                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-xs'
+                                  : 'text-zinc-400 hover:text-zinc-200 border-transparent hover:bg-zinc-800/40'
+                              }`}
+                            >
+                              <FileSpreadsheet size={11} className={exportFormatTab === 'excel' ? 'text-emerald-400' : 'text-zinc-500'} />
+                              <span>EXCEL</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setExportFormatTab('csv')}
+                              className={`flex-1 py-1 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer border ${
+                                exportFormatTab === 'csv'
+                                  ? 'bg-blue-500/20 text-blue-300 border-blue-500/40 shadow-xs'
+                                  : 'text-zinc-400 hover:text-zinc-200 border-transparent hover:bg-zinc-800/40'
+                              }`}
+                            >
+                              <FileText size={11} className={exportFormatTab === 'csv' ? 'text-blue-400' : 'text-zinc-500'} />
+                              <span>CSV</span>
+                            </button>
+                          </div>
+
+                          <div className="px-2 py-1 text-[9px] font-black tracking-widest text-zinc-500 uppercase border-b border-zinc-800/60 mb-1 flex items-center justify-between">
+                            <span>{exportFormatTab === 'excel' ? 'EXCEL (.XLSX) DIŞA AKTAR' : 'CSV (.CSV) İNDİR'}</span>
+                            <span className="text-zinc-500 font-sans text-[9px] font-normal">
+                              {exportFormatTab === 'excel' ? 'Tüm Detaylar' : 'UTF-8 BOM'}
+                            </span>
+                          </div>
+
+                          <div className="space-y-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                try {
+                                  const dateStr = new Date().toISOString().slice(0, 10);
+                                  const targetList = filteredNotes;
+                                  if (targetList.length === 0) {
+                                    toast.error('Dışa aktarılacak not bulunamadı.');
+                                    return;
+                                  }
+                                  if (exportFormatTab === 'excel') {
+                                    exportNotesToExcel(targetList, `Notlar_Filtrelenmis_${dateStr}_[${targetList.length}_not]`);
+                                    toast.success(`Excel tablosu (.xlsx) indirildi (${targetList.length} not).`);
+                                  } else {
+                                    exportNotesToCSV(targetList, `Notlar_Filtrelenmis_${dateStr}_[${targetList.length}_not]`);
+                                    toast.success(`CSV dosyası (.csv) indirildi (${targetList.length} not).`);
+                                  }
+                                  setIsExportOpen(false);
+                                } catch (e: any) {
+                                  toast.error(e?.message || 'Hata oluştu.');
+                                }
+                              }}
+                              className="w-full px-2.5 py-1.5 text-left text-xs text-zinc-200 hover:bg-zinc-800/80 hover:text-emerald-300 font-medium rounded-xl transition-colors flex items-center justify-between cursor-pointer group"
+                            >
+                              <div className="flex items-center gap-2">
+                                <FileSpreadsheet size={12} className={exportFormatTab === 'excel' ? 'text-emerald-400' : 'text-blue-400'} />
+                                <span>Filtrelenmiş Notlar</span>
+                              </div>
+                              <span className="text-[10px] font-bold font-sans px-2 py-0.5 rounded-lg bg-zinc-800 text-zinc-300 border border-zinc-700">
+                                {filteredNotes.length} Not
+                              </span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                try {
+                                  const dateStr = new Date().toISOString().slice(0, 10);
+                                  const targetList = notes;
+                                  if (targetList.length === 0) {
+                                    toast.error('Dışa aktarılacak not bulunamadı.');
+                                    return;
+                                  }
+                                  if (exportFormatTab === 'excel') {
+                                    exportNotesToExcel(targetList, `Notlar_Tum_${dateStr}_[${targetList.length}_not]`);
+                                    toast.success(`Excel tablosu (.xlsx) indirildi (${targetList.length} not).`);
+                                  } else {
+                                    exportNotesToCSV(targetList, `Notlar_Tum_${dateStr}_[${targetList.length}_not]`);
+                                    toast.success(`CSV dosyası (.csv) indirildi (${targetList.length} not).`);
+                                  }
+                                  setIsExportOpen(false);
+                                } catch (e: any) {
+                                  toast.error(e?.message || 'Hata oluştu.');
+                                }
+                              }}
+                              className="w-full px-2.5 py-1.5 text-left text-xs text-zinc-200 hover:bg-zinc-800/80 hover:text-emerald-300 font-medium rounded-xl transition-colors flex items-center justify-between cursor-pointer group"
+                            >
+                              <div className="flex items-center gap-2">
+                                <Layers size={12} className="text-zinc-400 group-hover:text-emerald-400 transition-colors" />
+                                <span>Tüm Notlarım</span>
+                              </div>
+                              <span className="text-[10px] font-bold font-sans px-2 py-0.5 rounded-lg bg-zinc-800 text-zinc-300 border border-zinc-700">
+                                {notes.length} Not
+                              </span>
+                            </button>
+
+                            {pinnedCount > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  try {
+                                    const dateStr = new Date().toISOString().slice(0, 10);
+                                    const targetList = notes.filter(n => n.isPinned);
+                                    if (targetList.length === 0) {
+                                      toast.error('Sabitlenmiş not bulunamadı.');
+                                      return;
+                                    }
+                                    if (exportFormatTab === 'excel') {
+                                      exportNotesToExcel(targetList, `Notlar_Sabitlenenler_${dateStr}_[${targetList.length}_not]`);
+                                      toast.success(`Excel tablosu (.xlsx) indirildi (${targetList.length} sabitli not).`);
+                                    } else {
+                                      exportNotesToCSV(targetList, `Notlar_Sabitlenenler_${dateStr}_[${targetList.length}_not]`);
+                                      toast.success(`CSV dosyası (.csv) indirildi (${targetList.length} sabitli not).`);
+                                    }
+                                    setIsExportOpen(false);
+                                  } catch (e: any) {
+                                    toast.error(e?.message || 'Hata oluştu.');
+                                  }
+                                }}
+                                className="w-full px-2.5 py-1.5 text-left text-xs text-zinc-200 hover:bg-zinc-800/80 hover:text-blue-300 font-medium rounded-xl transition-colors flex items-center justify-between cursor-pointer group"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <Pin size={12} className="text-blue-400 fill-current" />
+                                  <span>Sadece Sabitlenenler</span>
+                                </div>
+                                <span className="text-[10px] font-bold font-sans px-2 py-0.5 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                                  {pinnedCount} Not
+                                </span>
+                              </button>
+                            )}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
 
                   <VoiceToNoteButton onParsed={handleVoiceParsed} />
