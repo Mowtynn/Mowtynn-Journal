@@ -7,8 +7,7 @@ import {
   DEFAULT_TREND_TYPES, 
   DEFAULT_DEFINITION_TITLES, 
   cleanDefinitionTitleString,
-  getTradeAccountCategory,
-  savePlatformCategory
+  getTradeAccountCategory
 } from "../constants/constants";
 import { VoiceToTradeButton } from "./VoiceToTradeButton";
 import { TurkishDateTimePicker } from "./TurkishDateTimePicker";
@@ -79,7 +78,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
   entryModels = DEFAULT_ENTRY_MODELS,
   trendTypes = DEFAULT_TREND_TYPES,
   definitionTitles = DEFAULT_DEFINITION_TITLES,
-  persistPlatforms,
+  persistPlatforms: _persistPlatforms,
 }: AddTradeFormProps) {
   useBodyScrollLock(true);
 
@@ -111,22 +110,6 @@ const AddTradeForm = React.memo(function AddTradeForm({
     return platforms.filter(p => getTradeAccountCategory({ platform: p }) === 'DEMO');
   }, [platforms]);
 
-  const [newPlatformInput, setNewPlatformInput] = useState("");
-  const [newPlatformCategoryInput, setNewPlatformCategoryInput] = useState<PlatformCategory>('FUNDED');
-
-  const handleQuickAddPlatform = () => {
-    const trimmed = newPlatformInput.trim();
-    if (!trimmed) return;
-    savePlatformCategory(trimmed, newPlatformCategoryInput);
-    if (persistPlatforms && !platforms.includes(trimmed)) {
-      persistPlatforms([...platforms, trimmed]);
-    }
-    setSelectedPlatform(trimmed);
-    setSelectedAccountCategory(newPlatformCategoryInput);
-    setNewPlatformInput("");
-    setIsPlatformDropdownOpen(false);
-    toast.success(`Platform eklendi: ${trimmed.toUpperCase()} (${newPlatformCategoryInput})`);
-  };
   const [selectedTimeframe, setSelectedTimeframe] = useState("");
   const [selectedHtfTimeframe, setSelectedHtfTimeframe] = useState("");
   const [selectedSession, setSelectedSession] = useState("");
@@ -761,91 +744,10 @@ const AddTradeForm = React.memo(function AddTradeForm({
                           (platformTabFilter === 'FUNDED' && fundedPlatformList.length === 0) ||
                           (platformTabFilter === 'CHALLENGE' && challengePlatformList.length === 0) ||
                           (platformTabFilter === 'DEMO' && demoPlatformList.length === 0)) && (
-                          <div className="px-4 py-6 text-center text-xs text-zinc-500 font-sans font-bold">
-                            Tanımlanmış platform bulunamadı
+                          <div className="px-4 py-8 text-center text-xs text-zinc-500 font-sans font-bold">
+                            Kayıtlı platform bulunamadı
                           </div>
                         )}
-                      </div>
-
-                      {/* Hızlı Yeni Platform Ekle */}
-                      <div className="p-2 bg-zinc-950 border-t border-zinc-800 flex flex-col gap-1.5 shrink-0">
-                        <div className="flex items-center justify-between text-[10px] text-zinc-400 font-sans font-bold uppercase">
-                          <span>Yeni Platform Ekle</span>
-                          <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-lg p-0.5">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setNewPlatformCategoryInput('FUNDED');
-                              }}
-                              className={`px-2 py-0.5 text-[9px] font-bold rounded uppercase cursor-pointer flex items-center gap-1 ${
-                                newPlatformCategoryInput === 'FUNDED'
-                                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                                  : 'text-zinc-500 hover:text-emerald-400'
-                              }`}
-                            >
-                              <Trophy size={9} />
-                              Funded
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setNewPlatformCategoryInput('CHALLENGE');
-                              }}
-                              className={`px-2 py-0.5 text-[9px] font-bold rounded uppercase cursor-pointer flex items-center gap-1 ${
-                                newPlatformCategoryInput === 'CHALLENGE'
-                                  ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40'
-                                  : 'text-zinc-500 hover:text-blue-400'
-                              }`}
-                            >
-                              <Target size={9} />
-                              Challenge
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setNewPlatformCategoryInput('DEMO');
-                              }}
-                              className={`px-2 py-0.5 text-[9px] font-bold rounded uppercase cursor-pointer flex items-center gap-1 ${
-                                newPlatformCategoryInput === 'DEMO'
-                                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                                  : 'text-zinc-500 hover:text-amber-400'
-                              }`}
-                            >
-                              <Shield size={9} />
-                              Demo
-                            </button>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <input
-                            type="text"
-                            placeholder="Platform adı (örn: Topstep)..."
-                            value={newPlatformInput}
-                            onChange={(e) => setNewPlatformInput(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                handleQuickAddPlatform();
-                              }
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                            className="flex-1 bg-zinc-900 border border-zinc-700/80 rounded-lg px-2 py-1 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500 font-sans uppercase"
-                          />
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleQuickAddPlatform();
-                            }}
-                            disabled={!newPlatformInput.trim()}
-                            className="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white rounded-lg text-xs font-bold font-sans cursor-pointer shrink-0 transition-colors"
-                          >
-                            Ekle
-                          </button>
-                        </div>
                       </div>
                     </div>
                   )}

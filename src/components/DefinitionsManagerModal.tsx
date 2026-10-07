@@ -21,6 +21,7 @@ interface DefinitionsManagerModalProps {
   isOpen: boolean;
   onClose: () => void;
   trades?: Trade[];
+  onDeleteTradesByPlatform?: (platformName: string) => void;
   platforms: string[];
   timeframes: string[];
   htfTimeframes: string[];
@@ -51,6 +52,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
   isOpen,
   onClose,
   trades = [],
+  onDeleteTradesByPlatform,
   platforms,
   timeframes,
   htfTimeframes,
@@ -90,7 +92,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
   // Compute trade usage counts per active category
   const usageCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    if (!trades || trades.length === 0) return counts;
+    if (!isOpen || !trades || trades.length === 0) return counts;
 
     trades.forEach(t => {
       if (t.platform) counts[`platforms:${t.platform}`] = (counts[`platforms:${t.platform}`] || 0) + 1;
@@ -740,38 +742,84 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                       <Trash2 size={18} />
                     </div>
                     <div className="text-center space-y-2">
-                      <h4 className="text-xs font-bold font-sans tracking-wide text-zinc-100 uppercase">Tanımı Sil</h4>
+                      <h4 className="text-xs font-bold font-sans tracking-wide text-zinc-100 uppercase">
+                        {activeTab === 'platforms' && deleteConfirmItem.count > 0 ? 'Platformu ve İşlemleri Sil' : 'Tanımı Sil'}
+                      </h4>
                       <p className="text-xs text-zinc-400 font-sans leading-relaxed">
-                        <span className="font-sans font-bold text-zinc-200">"{deleteConfirmItem.item}"</span> tanımını silmek istediğinize emin misiniz? Bu işlem geri alınamaz.
+                        <span className="font-sans font-bold text-zinc-200">"{deleteConfirmItem.item}"</span> {activeTab === 'platforms' ? 'platformunu' : 'tanımını'} silmek istediğinize emin misiniz?
                       </p>
                       {deleteConfirmItem.count > 0 && (
-                        <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-400 text-[10px] font-sans leading-normal text-left flex items-start gap-1.5">
-                          <span>⚠️</span>
-                          <span>Bu tanım <span className="font-bold underline">{deleteConfirmItem.count} adet işlemde</span> aktif olarak kullanılmaktadır!</span>
+                        <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-300 text-[11px] font-sans leading-relaxed text-left flex items-start gap-2">
+                          <AlertCircle size={15} className="text-amber-400 shrink-0 mt-0.5" />
+                          <div>
+                            Bu platforma ait <strong className="text-amber-200 underline">{deleteConfirmItem.count} adet işlem kaydı</strong> bulunmaktadır. Platformu silerken bu işlemleri de silmek istiyor musunuz?
+                          </div>
                         </div>
                       )}
                     </div>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setDeleteConfirmItem(null)}
-                        className="flex-1 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-sans text-xs font-bold transition-colors cursor-pointer border border-zinc-700/60"
-                      >
-                        Vazgeç
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const updated = activeList.filter(item => item !== deleteConfirmItem.item);
-                          currentPersist(updated);
-                          toast.success(`"${deleteConfirmItem.item}" silindi.`);
-                          setDeleteConfirmItem(null);
-                        }}
-                        className="flex-1 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 border border-rose-500/30 font-sans text-xs font-bold transition-colors cursor-pointer"
-                      >
-                        Evet, Sil
-                      </button>
-                    </div>
+
+                    {activeTab === 'platforms' && deleteConfirmItem.count > 0 ? (
+                      <div className="flex flex-col gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = activeList.filter(item => item !== deleteConfirmItem.item);
+                            currentPersist(updated);
+                            if (onDeleteTradesByPlatform) {
+                              onDeleteTradesByPlatform(deleteConfirmItem.item);
+                            }
+                            toast.success(`"${deleteConfirmItem.item}" platformu ve ona ait ${deleteConfirmItem.count} işlem silindi.`);
+                            setDeleteConfirmItem(null);
+                          }}
+                          className="w-full py-2.5 px-3 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 font-sans text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 shadow-xs"
+                        >
+                          <Trash2 size={13} className="text-rose-400" />
+                          <span>Platformu ve {deleteConfirmItem.count} İşlemi Sil</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = activeList.filter(item => item !== deleteConfirmItem.item);
+                            currentPersist(updated);
+                            toast.success(`"${deleteConfirmItem.item}" platform tanımı silindi (işlemler korundu).`);
+                            setDeleteConfirmItem(null);
+                          }}
+                          className="w-full py-2.5 px-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 font-sans text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 shadow-xs"
+                        >
+                          <Shield size={13} className="text-amber-400" />
+                          <span>Sadece Platformu Sil (İşlemleri Koru)</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeleteConfirmItem(null)}
+                          className="w-full py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 font-sans text-xs font-medium transition-colors cursor-pointer border border-zinc-800"
+                        >
+                          Vazgeç
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setDeleteConfirmItem(null)}
+                          className="flex-1 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-sans text-xs font-bold transition-colors cursor-pointer border border-zinc-700/60"
+                        >
+                          Vazgeç
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = activeList.filter(item => item !== deleteConfirmItem.item);
+                            currentPersist(updated);
+                            toast.success(`"${deleteConfirmItem.item}" silindi.`);
+                            setDeleteConfirmItem(null);
+                          }}
+                          className="flex-1 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 border border-rose-500/30 font-sans text-xs font-bold transition-colors cursor-pointer"
+                        >
+                          Evet, Sil
+                        </button>
+                      </div>
+                    )}
                   </motion.div>
                 </motion.div>
               )}

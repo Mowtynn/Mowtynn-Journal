@@ -123,15 +123,22 @@ export default defineConfig(() => {
       registerType: 'autoUpdate',
       includeAssets: ['tj-icon-v5-64.png', 'tj-icon-v5.ico', 'tj-icon-v5.svg', 'tj-icon-v5-180.png'],
       workbox: {
-        maximumFileSizeToCacheInBytes: 5000000
+        maximumFileSizeToCacheInBytes: 5000000,
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+      },
+      devOptions: {
+        enabled: true,
       },
       manifest: {
-        name: 'Trading Journal App',
-        short_name: 'Trading Journal',
-        description: 'Advanced Trading Journal Application',
-        theme_color: '#121214',
-        background_color: '#121214',
+        id: '/',
+        name: 'Trading Journal by Mowtynn',
+        short_name: 'TradingJournal',
+        description: 'Gelişmiş İşlem Takip, Analiz ve Psikoloji Günlüğü',
+        theme_color: '#0A0A0A',
+        background_color: '#0A0A0A',
         display: 'standalone',
+        start_url: '/',
+        scope: '/',
         icons: [
           {
             src: '/tj-icon-v5-64.png',

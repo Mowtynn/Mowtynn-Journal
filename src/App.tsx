@@ -29,6 +29,7 @@ import { CertificatesView } from "./components/CertificatesView";
 import { SectionErrorBoundary } from "./components/SectionErrorBoundary";
 import EconomicCalendar from "./components/EconomicCalendar";
 import { AccountSwitcher } from "./components/AccountSwitcher";
+import { PWAInstallButton } from "./components/PWAInstallButton";
 import { useMetricMode } from "./context/MetricContext";
 import { useLocalStorageState } from "./hooks/useLocalStorageState";
 import { useAppStore } from "./store/useAppStore";
@@ -1367,6 +1368,51 @@ export default function App() {
     },
     [user, trades]
   );
+
+  // Delete all trades for a specific platform
+  const handleDeleteTradesByPlatform = useCallback(
+    async (platformName: string) => {
+      const targetPlat = platformName.trim().toLowerCase();
+      let removedTrades: Trade[] = [];
+
+      setTrades((prevTrades) => {
+        removedTrades = prevTrades.filter(
+          (t) => (t.platform || '').trim().toLowerCase() === targetPlat
+        );
+        const updated = prevTrades.filter(
+          (t) => (t.platform || '').trim().toLowerCase() !== targetPlat
+        );
+        if (!user) {
+          try {
+            localStorage.setItem("trading_journal_db", JSON.stringify(updated));
+          } catch (err) {
+            console.error(err);
+          }
+        }
+        return updated;
+      });
+
+      if (user && removedTrades.length > 0) {
+        removedTrades.forEach((t) => {
+          deleteDoc(doc(db, "trades", t.id)).catch((err) => {
+            console.error("Failed to delete platform trade from cloud", err);
+          });
+        });
+      }
+
+      setDetailedTrade((prev) =>
+        prev && (prev.platform || '').trim().toLowerCase() === targetPlat ? null : prev
+      );
+      setEditingTrade((prev) => {
+        if (prev && (prev.platform || '').trim().toLowerCase() === targetPlat) {
+          setIsFormOpen(false);
+          return null;
+        }
+        return prev;
+      });
+    },
+    [user, setTrades]
+  );
   // Set Notes
 
   const handleSaveNote = useCallback(
@@ -2172,6 +2218,9 @@ export default function App() {
           </div>
 
           <div className="flex items-center justify-end shrink-0 select-none gap-2 z-10">
+            {/* PWA Install Button (Compact) */}
+            <PWAInstallButton className="hidden sm:flex" />
+
             {/* Account Switcher (TÜMÜ / DEMO / FUNDED) */}
             <AccountSwitcher
               activeCategory={activeAccountCategory}
@@ -2332,7 +2381,11 @@ export default function App() {
                         </div>
                         <span>Tanımlamaları Yönet</span>
                       </button>
-                      
+
+                      {/* PWA Install Entry in Settings */}
+                      <div className="pt-1 border-t border-zinc-800/80">
+                        <PWAInstallButton variant="full" className="w-full justify-center h-7.5" />
+                      </div>
                     </motion.div>
                 )}
               </AnimatePresence>
@@ -2822,33 +2875,36 @@ export default function App() {
         </div>
       </main>
 
-      <DefinitionsManagerModal
-        isOpen={isPlatformMenuOpen}
-        onClose={() => setIsPlatformMenuOpen(false)}
-        trades={filteredGlobalTrades}
-        platforms={platforms}
-        timeframes={timeframes}
-        htfTimeframes={htfTimeframes}
-        confirmations={confirmations}
-        concepts={concepts}
-        sessions={sessions}
-        assets={assets}
-        planFidelities={planFidelities}
-        entryModels={entryModels}
-        trendTypes={trendTypes}
-        definitionTitles={definitionTitles}
-        persistPlatforms={persistPlatforms}
-        persistTimeframes={persistTimeframes}
-        persistHtfTimeframes={persistHtfTimeframes}
-        persistConfirmations={persistConfirmations}
-        persistConcepts={persistConcepts}
-        persistSessions={persistSessions}
-        persistAssets={persistAssets}
-        persistPlanFidelities={persistPlanFidelities}
-        persistEntryModels={persistEntryModels}
-        persistTrendTypes={persistTrendTypes}
-        persistDefinitionTitles={persistDefinitionTitles}
-      />
+      {isPlatformMenuOpen && (
+        <DefinitionsManagerModal
+          isOpen={isPlatformMenuOpen}
+          onClose={() => setIsPlatformMenuOpen(false)}
+          trades={trades}
+          onDeleteTradesByPlatform={handleDeleteTradesByPlatform}
+          platforms={platforms}
+          timeframes={timeframes}
+          htfTimeframes={htfTimeframes}
+          confirmations={confirmations}
+          concepts={concepts}
+          sessions={sessions}
+          assets={assets}
+          planFidelities={planFidelities}
+          entryModels={entryModels}
+          trendTypes={trendTypes}
+          definitionTitles={definitionTitles}
+          persistPlatforms={persistPlatforms}
+          persistTimeframes={persistTimeframes}
+          persistHtfTimeframes={persistHtfTimeframes}
+          persistConfirmations={persistConfirmations}
+          persistConcepts={persistConcepts}
+          persistSessions={persistSessions}
+          persistAssets={persistAssets}
+          persistPlanFidelities={persistPlanFidelities}
+          persistEntryModels={persistEntryModels}
+          persistTrendTypes={persistTrendTypes}
+          persistDefinitionTitles={persistDefinitionTitles}
+        />
+      )}
 
       {/* OVERLAY MODALS WRAPPER */}
         {/* OVERLAY MODAL: TRANSACTION FORM (ADD OR EDIT) */}
@@ -2914,37 +2970,41 @@ export default function App() {
 
 
         {/* AUTH MODAL */}
-        <AuthModal
-          isOpen={isAuthModalOpen}
-          onClose={() => setIsAuthModalOpen(false)}
-        />
+        {isAuthModalOpen && (
+          <AuthModal
+            isOpen={isAuthModalOpen}
+            onClose={() => setIsAuthModalOpen(false)}
+          />
+        )}
 
         {/* AI CO-PILOT MODAL */}
-        <AICoPilotModal
-          isOpen={isCopilotOpen}
-          onClose={() => setIsCopilotOpen(false)}
-          allTrades={trades}
-          trades={filteredGlobalTrades}
-          stats={calculatedStats}
-          currency={currency}
-          isRrMode={isRrMode}
-          definitionTitles={definitionTitles}
-          definitions={{
-            platforms,
-            assets,
-            concepts,
-            sessions,
-            timeframes,
-            htfTimeframes,
-            confirmations,
-            entryModels,
-            trendTypes,
-            planFidelities,
-          }}
-          journals={journals}
-          certificates={certificates}
-          notes={notes}
-        />
+        {isCopilotOpen && (
+          <AICoPilotModal
+            isOpen={isCopilotOpen}
+            onClose={() => setIsCopilotOpen(false)}
+            allTrades={trades}
+            trades={filteredGlobalTrades}
+            stats={calculatedStats}
+            currency={currency}
+            isRrMode={isRrMode}
+            definitionTitles={definitionTitles}
+            definitions={{
+              platforms,
+              assets,
+              concepts,
+              sessions,
+              timeframes,
+              htfTimeframes,
+              confirmations,
+              entryModels,
+              trendTypes,
+              planFidelities,
+            }}
+            journals={journals}
+            certificates={certificates}
+            notes={notes}
+          />
+        )}
 
       {/* FLOATING AI CO-PILOT QUICK ACCESS BUTTON */}
       <div className="fixed bottom-5 right-5 z-30">

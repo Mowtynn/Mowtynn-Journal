@@ -185,7 +185,7 @@ html {
   
   /* ----- MODALS ----- */
   .modal-overlay { 
-    @apply fixed inset-0 z-[2500] flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-sm overflow-y-auto font-sans; 
+    @apply fixed inset-0 z-[2500] flex items-center justify-center p-4 sm:p-6 bg-zinc-950/85 overflow-y-auto font-sans; 
   }
   .modal-content { 
     @apply bg-bg-modal border border-border-card rounded-2xl shadow-modal w-full flex flex-col my-auto relative overflow-hidden font-sans; 
@@ -364,3 +364,16 @@ input[type="number"] {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-border-card); 
 }
+
+/* Mobile Safe-Area & PWA Standalone Enhancements */
+@supports (padding-top: env(safe-area-inset-top)) {
+  header {
+    padding-top: max(0.5rem, env(safe-area-inset-top));
+  }
+}
+
+.modal-mobile-fit {
+  max-height: 92vh;
+  max-height: 92dvh;
+}
+

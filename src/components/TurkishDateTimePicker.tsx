@@ -358,7 +358,7 @@ export const TurkishDateTimePicker = React.memo(function TurkishDateTimePicker({
             width: `${popupPos.width}px`,
             zIndex: 99999,
           }}
-          className="bg-zinc-900/98 border border-zinc-700/80 rounded-2xl p-3.5 shadow-2xl shadow-black/90 animate-in fade-in duration-100 select-none backdrop-blur-md"
+          className="bg-zinc-900 border border-zinc-700/80 rounded-2xl p-3.5 shadow-2xl shadow-black/90 animate-in fade-in duration-100 select-none"
         >
           {/* Quick Preset Buttons */}
           <div className="flex items-center gap-1.5 mb-3 pb-2.5 border-b border-zinc-800/80">
@@ -882,7 +882,7 @@ export const TurkishDatePicker = React.memo(function TurkishDatePicker({
             width: `${popupPos.width}px`,
             zIndex: 99999,
           }}
-          className="bg-zinc-900/98 border border-zinc-700/80 rounded-2xl p-3.5 shadow-2xl shadow-black/90 animate-in fade-in duration-100 select-none backdrop-blur-md"
+          className="bg-zinc-900 border border-zinc-700/80 rounded-2xl p-3.5 shadow-2xl shadow-black/90 animate-in fade-in duration-100 select-none"
         >
           {/* Quick Preset Buttons */}
           {showPresets && (

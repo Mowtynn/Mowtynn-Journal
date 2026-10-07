@@ -129,7 +129,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
           onClick={onClose}
         >
         {isGenerating && (
-          <div className="fixed inset-0 bg-zinc-950/90 z-[3600] flex flex-col items-center justify-center text-zinc-100 font-medium no-print backdrop-blur-sm">
+          <div className="fixed inset-0 bg-zinc-950/95 z-[3600] flex flex-col items-center justify-center text-zinc-100 font-medium no-print">
             <div className="p-5 bg-zinc-900 text-white rounded-3xl flex flex-col items-center gap-4 shadow-2xl max-w-sm text-center border border-white/10">
               <RefreshCw size={32} className="animate-spin text-blue-400" />
               <div>
@@ -219,7 +219,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                 {/* Grid Metric Cards Dashboard Block */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
                   {/* Total Trades Card */}
-                  <div className="border border-blue-500/20 bg-gradient-to-b from-blue-500/10 to-zinc-900/50 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-1.5 shadow-lg relative overflow-hidden backdrop-blur-sm">
+                  <div className="border border-blue-500/20 bg-gradient-to-b from-blue-500/10 to-zinc-900/50 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-1.5 shadow-lg relative overflow-hidden">
                     <span className="text-[10px] font-bold tracking-wider text-blue-400/90 font-sans uppercase">TOPLAM İŞLEM</span>
                     <span className="text-3xl font-black drop-shadow-sm text-blue-400 font-sans tracking-tight">{totalTrades}</span>
                     <div className="text-[11px] text-zinc-400 font-medium mt-1">
@@ -227,7 +227,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                     </div>
                   </div>
                   {/* Win Rate Card */}
-                  <div className="border border-emerald-500/20 bg-gradient-to-b from-emerald-500/10 to-zinc-900/50 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-1.5 shadow-lg relative overflow-hidden backdrop-blur-sm">
+                  <div className="border border-emerald-500/20 bg-gradient-to-b from-emerald-500/10 to-zinc-900/50 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-1.5 shadow-lg relative overflow-hidden">
                     <span className="text-[10px] font-bold tracking-wider text-emerald-400/90 font-sans uppercase">KAZANMA ORANI</span>
                     <span className={`text-3xl font-black drop-shadow-sm font-sans tracking-tight ${winRate >= 50 ? 'text-emerald-400' : 'text-rose-400'}`}>{winRate.toFixed(1)}%</span>
                     <div className="text-[11px] text-zinc-400 font-medium mt-1">
@@ -235,13 +235,13 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                     </div>
                   </div>
                   {/* Net Profit Card */}
-                  <div className="border border-purple-500/20 bg-gradient-to-b from-purple-500/10 to-zinc-900/50 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-1.5 shadow-lg relative overflow-hidden backdrop-blur-sm">
+                  <div className="border border-purple-500/20 bg-gradient-to-b from-purple-500/10 to-zinc-900/50 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-1.5 shadow-lg relative overflow-hidden">
                     <span className="text-[10px] font-bold tracking-wider text-purple-400/90 font-sans uppercase">NET KÂR / ZARAR</span>
                     <span className={`text-3xl font-black drop-shadow-sm font-sans tracking-tight ${totalPnl >= 0 ? 'text-purple-400' : 'text-rose-400'}`}>{totalPnl >= 0 ? '+' : ''}{totalPnl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {currency}</span>
                     <span className="text-[11px] text-zinc-400 font-medium mt-1">Toplam Kazanç</span>
                   </div>
                   {/* Net R multiple Card */}
-                  <div className="border border-amber-500/20 bg-gradient-to-b from-amber-500/10 to-zinc-900/50 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-1.5 shadow-lg relative overflow-hidden backdrop-blur-sm">
+                  <div className="border border-amber-500/20 bg-gradient-to-b from-amber-500/10 to-zinc-900/50 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-1.5 shadow-lg relative overflow-hidden">
                     <span className="text-[10px] font-bold tracking-wider text-amber-400/90 font-sans uppercase">NET R KAZANIMI</span>
                     <span className={`text-3xl font-black drop-shadow-sm font-sans tracking-tight ${totalR >= 0 ? 'text-amber-400' : 'text-rose-400'}`}>
                       {totalR >= 0 ? '+' : ''}
