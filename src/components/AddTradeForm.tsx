@@ -60,6 +60,8 @@ interface AddTradeFormProps {
   persistPlatforms?: (platforms: string[]) => void;
 }
 
+const ENTRY_HOURS = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, "0")}:00`);
+
 const AddTradeForm = React.memo(function AddTradeForm({
   onSave,
   editingTrade,
@@ -81,10 +83,6 @@ const AddTradeForm = React.memo(function AddTradeForm({
   persistPlatforms: _persistPlatforms,
 }: AddTradeFormProps) {
   useBodyScrollLock(true);
-
-  const effectiveLiquiditySweeps = useMemo(() => {
-    return liquiditySweeps || concepts || [];
-  }, [liquiditySweeps, concepts]);
 
   const [asset, setAsset] = useState("");
   const [type, setType] = useState<"LONG" | "SHORT">("LONG");
@@ -113,6 +111,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
   const [selectedTimeframe, setSelectedTimeframe] = useState("");
   const [selectedHtfTimeframe, setSelectedHtfTimeframe] = useState("");
   const [selectedSession, setSelectedSession] = useState("");
+  const [selectedEntryTime, setSelectedEntryTime] = useState("");
   const [selectedLiquiditySweeps, setSelectedLiquiditySweeps] = useState<string[]>([]);
   const [selectedConfirmations, setSelectedConfirmations] = useState<string[]>([]);
   const [selectedEntries, setSelectedEntries] = useState<string[]>([]);
@@ -236,6 +235,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
       setSelectedTimeframe(editingTrade.timeframe || "");
       setSelectedHtfTimeframe(editingTrade.htfTimeframe || "");
       setSelectedSession(editingTrade.session || "");
+      setSelectedEntryTime(editingTrade.entryTime || "");
       let initialSweeps: string[] = [];
       if (Array.isArray(editingTrade.liquiditySweeps) && editingTrade.liquiditySweeps.length > 0) {
         initialSweeps = editingTrade.liquiditySweeps;
@@ -315,6 +315,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
     setSelectedTimeframe("");
     setSelectedHtfTimeframe("");
     setSelectedSession("");
+    setSelectedEntryTime("");
     setSelectedLiquiditySweeps([]);
     setSelectedConfirmations([]);
     setSelectedEntries([]);
@@ -336,6 +337,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
     if (data.timeframe) setSelectedTimeframe(data.timeframe);
     if (data.htfTimeframe) setSelectedHtfTimeframe(data.htfTimeframe);
     if (data.session) setSelectedSession(data.session);
+    if (data.entryTime) setSelectedEntryTime(data.entryTime);
     if (data.liquiditySweeps && Array.isArray(data.liquiditySweeps)) {
       setSelectedLiquiditySweeps(data.liquiditySweeps);
     } else if (data.liquiditySweep || data.concept) {
@@ -436,6 +438,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
       timeframe: selectedTimeframe || undefined,
       htfTimeframe: selectedHtfTimeframe || undefined,
       session: selectedSession || undefined,
+      entryTime: selectedEntryTime || undefined,
       liquiditySweep: selectedLiquiditySweeps.length > 0 ? selectedLiquiditySweeps.join(", ") : undefined,
       liquiditySweeps: selectedLiquiditySweeps.length > 0 ? selectedLiquiditySweeps : undefined,
       concept: selectedLiquiditySweeps.length > 0 ? selectedLiquiditySweeps.join(", ") : undefined,
@@ -1011,44 +1014,11 @@ const AddTradeForm = React.memo(function AddTradeForm({
               </div>
 
               {/* 3 SATIRLI TEKNİK MATRİS:
-                  1. Satır: LIQUIDITY SWEEP yanında SESSION
+                  1. Satır: SESSION yanında ENTRY TIME
                   2. Satır: TIMEFRAME yanında PD ARRAY
                   3. Satır: ENTRY TIMEFRAME yanında ENTRY MODEL */}
               <div className="grid grid-cols-2 gap-x-4 gap-y-3 pt-1 border-t border-zinc-800/60">
-                {/* 1. SATIR SOL: LIQUIDITY SWEEP */}
-                <div className="flex flex-col">
-                  <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1.5 flex items-center gap-1.5 font-sans">
-                    <Target size={12} className="text-amber-400 shrink-0" />
-                    {(cleanDefinitionTitleString(definitionTitles.liquiditySweeps || definitionTitles.concepts) || "LIQUIDITY SWEEP").toUpperCase()}
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {effectiveLiquiditySweeps.map((c, idx) => {
-                      const isActive = selectedLiquiditySweeps.includes(c);
-                      return (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() =>
-                            setSelectedLiquiditySweeps(
-                              isActive
-                                ? selectedLiquiditySweeps.filter((x) => x !== c)
-                                : [...selectedLiquiditySweeps, c]
-                            )
-                          }
-                          className={`px-3 py-1.5 text-xs rounded-xl transition-all font-sans font-bold tracking-wide cursor-pointer border uppercase ${
-                            isActive
-                              ? "bg-amber-500/20 text-amber-300 border-amber-500/60 shadow-xs"
-                              : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
-                          }`}
-                        >
-                          {c}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* 1. SATIR SAĞ: SESSION */}
+                {/* 1. SATIR SOL: SESSION */}
                 <div className="flex flex-col">
                   <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1.5 flex items-center gap-1.5 font-sans">
                     <Clock size={12} className="text-purple-400 shrink-0" />
@@ -1069,6 +1039,44 @@ const AddTradeForm = React.memo(function AddTradeForm({
                         {sess}
                       </button>
                     ))}
+                  </div>
+                </div>
+
+                {/* 1. SATIR SAĞ: ENTRY TIME */}
+                <div className="flex flex-col">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide flex items-center gap-1.5 font-sans">
+                      <Clock size={12} className="text-amber-400 shrink-0" />
+                      ENTRY TIME
+                    </span>
+                    {selectedEntryTime && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedEntryTime("")}
+                        className="text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer"
+                      >
+                        Temizle
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5 max-h-24 overflow-y-auto custom-scrollbar p-0.5">
+                    {ENTRY_HOURS.map((time) => {
+                      const isSelected = selectedEntryTime === time;
+                      return (
+                        <button
+                          key={time}
+                          type="button"
+                          onClick={() => setSelectedEntryTime(isSelected ? "" : time)}
+                          className={`px-2.5 py-1 text-xs rounded-xl transition-all font-sans font-bold tracking-wider cursor-pointer border tabular-nums ${
+                            isSelected
+                              ? "bg-amber-500/20 text-amber-300 border-amber-500/60 shadow-xs"
+                              : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
+                          }`}
+                        >
+                          {time}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -1201,7 +1209,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                   <span className="text-xs font-bold text-zinc-200 uppercase tracking-wider font-sans">Analiz & Notlar</span>
                 </div>
                 <VoiceToTradeButton
-                  options={{ platforms, sessions, concepts, confirmations, timeframes, htfTimeframes, planFidelities, entryModels, trendTypes }}
+                  options={{ platforms, sessions, concepts: concepts || liquiditySweeps, confirmations, timeframes, htfTimeframes, planFidelities, entryModels, trendTypes }}
                   onParsed={handleVoiceParsed}
                 />
               </div>

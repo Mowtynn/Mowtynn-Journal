@@ -144,7 +144,7 @@ export const DEFAULT_DEFINITION_TITLES: DefinitionTitles = {
   liquiditySweeps: "Liquidity Sweep",
   concepts: "Liquidity Sweep",
   confirmations: "PD ARRAY",
-  timeframes: "Entry Timeframe",
+  timeframes: "Entry Time",
   htfTimeframes: "Timeframe",
   sessions: "Session",
   planFidelities: "Setup Kalitesi",
@@ -227,8 +227,8 @@ export const sanitizeDefinitionTitles = (raw: Partial<DefinitionTitles> = {}): D
     result.confirmations = "PD ARRAY";
   }
 
-  if (!result.timeframes || result.timeframes === "ETF" || /giriş zamanı/i.test(result.timeframes)) {
-    result.timeframes = "Entry Timeframe";
+  if (!result.timeframes || result.timeframes === "ETF" || result.timeframes === "Entry Timeframe" || /giriş zamanı/i.test(result.timeframes)) {
+    result.timeframes = "Entry Time";
   }
 
   if (!result.entryModels || /giriş model/i.test(result.entryModels)) {

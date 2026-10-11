@@ -18,6 +18,7 @@ export interface Trade {
   timeframe?: string;       // Execution timeframe (e.g., 1m, 5m, 1h)
   htfTimeframe?: string;    // Higher Timeframe (HTF)
   session?: string;         // Trading session (e.g., London, New York)
+  entryTime?: string;       // Giriş saati (Entry Time e.g. "02:00", "03:00")
   liquiditySweep?: string;  // Liquidity Sweep türü (e.g. PDH / PDL, Asia High/Low, Session High/Low)
   liquiditySweeps?: string[]; // Birden fazla Liquidity Sweep seçeneği
   concept?: string;         // legacy fallback
@@ -78,6 +79,7 @@ export interface TradeFilter {
   timeframe?: string;
   htfTimeframe?: string;
   session?: string;
+  entryTime?: string;
   confirmation?: string;
   liquiditySweep?: string;
   liquiditySweeps?: string[];

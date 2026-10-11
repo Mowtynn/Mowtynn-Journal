@@ -367,16 +367,26 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                             } 
                             icon={<Monitor size={14} className="text-zinc-400"/>} 
                           />
-                          {/* 2. LIQUIDITY SWEEP */}
-                          <ContextRow 
-                            label={(cleanDefinitionTitleString(definitionTitles.liquiditySweeps || definitionTitles.concepts) || "LIQUIDITY SWEEP").toUpperCase()} 
-                            value={
-                              currentTrade.liquiditySweeps && currentTrade.liquiditySweeps.length > 0
-                                ? currentTrade.liquiditySweeps.join(", ")
-                                : (currentTrade.liquiditySweep || currentTrade.concept)
-                            } 
-                            icon={<Target size={14} className="text-amber-400"/>} 
-                          />
+                          {/* 2. ENTRY TIME */}
+                          {currentTrade.entryTime && (
+                            <ContextRow 
+                              label="ENTRY TIME" 
+                              value={currentTrade.entryTime} 
+                              icon={<Clock size={14} className="text-amber-400"/>} 
+                            />
+                          )}
+                          {/* 2b. LIQUIDITY SWEEP (Eski/Mevcut işlemler için) */}
+                          {(Boolean(currentTrade.liquiditySweeps && currentTrade.liquiditySweeps.length > 0) || Boolean(currentTrade.liquiditySweep || currentTrade.concept)) && (
+                            <ContextRow 
+                              label={(cleanDefinitionTitleString(definitionTitles.liquiditySweeps || definitionTitles.concepts) || "LIQUIDITY SWEEP").toUpperCase()} 
+                              value={
+                                currentTrade.liquiditySweeps && currentTrade.liquiditySweeps.length > 0
+                                  ? currentTrade.liquiditySweeps.join(", ")
+                                  : (currentTrade.liquiditySweep || currentTrade.concept)
+                              } 
+                              icon={<Target size={14} className="text-amber-400"/>} 
+                            />
+                          )}
                           {/* 3. SESSION */}
                           <ContextRow 
                             label={(cleanDefinitionTitleString(definitionTitles.sessions) || "SESSION").toUpperCase()} 
