@@ -477,7 +477,9 @@ const TradeList = React.memo(function TradeList({
            !!filter.concept ||
            !!filter.planFidelity ||
            !!filter.entry ||
-           !!filter.trend;
+           !!filter.trend ||
+           filter.minAsiaRangePips !== undefined ||
+           filter.maxAsiaRangePips !== undefined;
   }, [filter]);
 
   const handleResetFilters = () => {
@@ -489,6 +491,8 @@ const TradeList = React.memo(function TradeList({
       sortBy: filter.sortBy,
       startDate: '',
       endDate: '',
+      minAsiaRangePips: undefined,
+      maxAsiaRangePips: undefined,
       timeframe: undefined,
       htfTimeframe: undefined,
       session: undefined,
@@ -812,8 +816,20 @@ const TradeList = React.memo(function TradeList({
           (trade.entry && trade.entry.split(',').map(s => s.trim()).some(em => caseInsensitiveEquals(em, deferredFilter.entry)));
         if (!matchesEntry) return false;
 
-        const matchesTrend = !deferredFilter.trend || caseInsensitiveEquals(trade.trend, deferredFilter.trend);
+         const matchesTrend = !deferredFilter.trend || caseInsensitiveEquals(trade.trend, deferredFilter.trend);
         if (!matchesTrend) return false;
+
+        if (deferredFilter.minAsiaRangePips !== undefined) {
+          if (trade.asiaRangePips === undefined || trade.asiaRangePips === null || trade.asiaRangePips < deferredFilter.minAsiaRangePips) {
+            return false;
+          }
+        }
+
+        if (deferredFilter.maxAsiaRangePips !== undefined) {
+          if (trade.asiaRangePips === undefined || trade.asiaRangePips === null || trade.asiaRangePips > deferredFilter.maxAsiaRangePips) {
+            return false;
+          }
+        }
 
         return true;
       })
@@ -1463,6 +1479,48 @@ const TradeList = React.memo(function TradeList({
                       onChange={(val) => handleFilterChange({ ...filter, endDate: val || undefined })}
                       placeholder="Bitiş"
                       className="w-full min-w-0"
+                    />
+                  </div>
+                </div>
+
+                {/* Asia Range (Pip) Aralığı */}
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-zinc-400">Asia Range (Pip)</span>
+                    {(filter.minAsiaRangePips !== undefined || filter.maxAsiaRangePips !== undefined) && (
+                      <button
+                        type="button"
+                        onClick={() => handleFilterChange({ ...filter, minAsiaRangePips: undefined, maxAsiaRangePips: undefined })}
+                        className="text-[9px] text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer"
+                      >
+                        Temizle
+                      </button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 w-full">
+                    <input
+                      type="number"
+                      step="any"
+                      min="0"
+                      placeholder="En Az (Min)"
+                      value={filter.minAsiaRangePips ?? ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        handleFilterChange({ ...filter, minAsiaRangePips: val !== '' ? parseFloat(val) : undefined });
+                      }}
+                      className="w-full h-8.5 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 rounded-xl px-2.5 text-xs text-zinc-100 placeholder-zinc-500 font-sans shadow-inner transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
+                    />
+                    <input
+                      type="number"
+                      step="any"
+                      min="0"
+                      placeholder="En Çok (Maks)"
+                      value={filter.maxAsiaRangePips ?? ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        handleFilterChange({ ...filter, maxAsiaRangePips: val !== '' ? parseFloat(val) : undefined });
+                      }}
+                      className="w-full h-8.5 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 rounded-xl px-2.5 text-xs text-zinc-100 placeholder-zinc-500 font-sans shadow-inner transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
                     />
                   </div>
                 </div>

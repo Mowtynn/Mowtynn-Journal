@@ -49,6 +49,10 @@ interface GlobalFilterModalProps {
   setGlobalSelectedTrendTypes?: (v: string[]) => void;
   globalDateLimit: string;
   setGlobalDateLimit: (v: string) => void;
+  globalMinAsiaRangePips?: number;
+  setGlobalMinAsiaRangePips?: (v?: number) => void;
+  globalMaxAsiaRangePips?: number;
+  setGlobalMaxAsiaRangePips?: (v?: number) => void;
 }
 
 
@@ -336,7 +340,9 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
   globalSelectedTypes, setGlobalSelectedTypes,
   globalSelectedEntryModels = [], setGlobalSelectedEntryModels,
   globalSelectedTrendTypes = [], setGlobalSelectedTrendTypes,
-  globalDateLimit, setGlobalDateLimit
+  globalDateLimit, setGlobalDateLimit,
+  globalMinAsiaRangePips, setGlobalMinAsiaRangePips,
+  globalMaxAsiaRangePips, setGlobalMaxAsiaRangePips
 }) => {
   useBodyScrollLock(isOpen);
 
@@ -444,6 +450,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
       entryTf: true,
       htfTf: true,
       session: true,
+      asiaRange: true,
     });
   };
 
@@ -465,6 +472,8 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
     setGlobalSelectedEntryModels?.([]);
     setGlobalSelectedTrendTypes?.([]);
     setGlobalDateLimit("6m");
+    setGlobalMinAsiaRangePips?.(undefined);
+    setGlobalMaxAsiaRangePips?.(undefined);
   };
 
   useEffect(() => {
@@ -494,7 +503,8 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
     globalSelectedTypes.length + 
     (globalSelectedEntryModels?.length || 0) + 
     (globalSelectedTrendTypes?.length || 0) + 
-    (globalDateLimit !== "6m" ? 1 : 0);
+    (globalDateLimit !== "6m" ? 1 : 0) +
+    (globalMinAsiaRangePips !== undefined || globalMaxAsiaRangePips !== undefined ? 1 : 0);
 
   const dateOptions = [
     { value: '1w', label: '1 Hafta' },
@@ -669,6 +679,69 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                   onChange={setGlobalSelectedSessions}
                   activeColor="amber"
                 />
+              </FilterAccordionRow>
+
+              {/* 4b. ASIA RANGE (PİP) */}
+              <FilterAccordionRow title="Asia Range (Pip)" 
+                icon={<Activity size={14} className="text-amber-400" />}
+                summaryText={
+                  (globalMinAsiaRangePips !== undefined || globalMaxAsiaRangePips !== undefined)
+                    ? `${globalMinAsiaRangePips ?? '0'} - ${globalMaxAsiaRangePips ?? '∞'} Pip`
+                    : 'Tümü'
+                }
+                badgeCount={(globalMinAsiaRangePips !== undefined || globalMaxAsiaRangePips !== undefined) ? 1 : 0}
+                isOpen={!!openSections.asiaRange}
+                onToggle={() => toggleSection('asiaRange')}
+              >
+                <div className="bg-zinc-950/60 p-3 rounded-xl border border-zinc-800/80 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-zinc-400 font-sans font-bold uppercase tracking-wider">Aralık (En Az - En Çok)</span>
+                    {(globalMinAsiaRangePips !== undefined || globalMaxAsiaRangePips !== undefined) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setGlobalMinAsiaRangePips?.(undefined);
+                          setGlobalMaxAsiaRangePips?.(undefined);
+                        }}
+                        className="text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer"
+                      >
+                        Temizle
+                      </button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="text-[10px] text-zinc-400 uppercase font-bold tracking-wider mb-1 block">En Az (Min Pip)</label>
+                      <input
+                        type="number"
+                        step="any"
+                        min="0"
+                        placeholder="Min Pip"
+                        value={globalMinAsiaRangePips ?? ''}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setGlobalMinAsiaRangePips?.(val !== '' ? parseFloat(val) : undefined);
+                        }}
+                        className="w-full h-8.5 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-amber-500 rounded-lg px-2.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none shadow-inner"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-zinc-400 uppercase font-bold tracking-wider mb-1 block">En Çok (Maks Pip)</label>
+                      <input
+                        type="number"
+                        step="any"
+                        min="0"
+                        placeholder="Maks Pip"
+                        value={globalMaxAsiaRangePips ?? ''}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setGlobalMaxAsiaRangePips?.(val !== '' ? parseFloat(val) : undefined);
+                        }}
+                        className="w-full h-8.5 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-amber-500 rounded-lg px-2.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none shadow-inner"
+                      />
+                    </div>
+                  </div>
+                </div>
               </FilterAccordionRow>
 
               {/* 5. TIMEFRAME */}

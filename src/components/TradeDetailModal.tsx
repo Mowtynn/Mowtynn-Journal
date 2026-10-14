@@ -300,26 +300,8 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                         <span className={`text-2xl font-bold ${pnlColorClass}`}>{pnlFormatted}</span>
                       </div>
                       <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-xl p-4 flex flex-col justify-center">
-                        <div className="flex items-center justify-between mb-1.5">
-                          <span className="heading-3">RISK : REWARD</span>
-                          {(currentTrade.stopPips !== undefined || currentTrade.tpPips !== undefined) && (
-                            <span className="text-[10px] font-mono text-zinc-400">
-                              {currentTrade.stopPips ?? '-'}p / {currentTrade.tpPips ?? '-'}p
-                            </span>
-                          )}
-                        </div>
+                        <span className="heading-3 mb-1.5">RISK : REWARD</span>
                         <span className={`text-2xl font-bold ${rrColorClass}`}>{rrFormatted}</span>
-                        {(currentTrade.stopPips !== undefined || currentTrade.tpPips !== undefined) && (
-                          <div className="flex items-center gap-2 mt-1 text-[10px] font-mono text-zinc-400">
-                            {currentTrade.stopPips !== undefined && (
-                              <span className="text-rose-400 font-medium">Stop: {currentTrade.stopPips}p</span>
-                            )}
-                            {currentTrade.stopPips !== undefined && currentTrade.tpPips !== undefined && <span>•</span>}
-                            {currentTrade.tpPips !== undefined && (
-                              <span className="text-emerald-400 font-medium">TP: {currentTrade.tpPips}p</span>
-                            )}
-                          </div>
-                        )}
                       </div>
                     </div>
                   </section>
@@ -393,6 +375,14 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                             value={currentTrade.session} 
                             icon={<Clock size={14} className="text-purple-400"/>} 
                           />
+                          {/* 3b. ASIA RANGE (PİP) */}
+                          {currentTrade.asiaRangePips !== undefined && currentTrade.asiaRangePips !== null && (
+                            <ContextRow 
+                              label="ASIA RANGE (PİP)" 
+                              value={`${currentTrade.asiaRangePips} Pip`} 
+                              icon={<Activity size={14} className="text-amber-400"/>} 
+                            />
+                          )}
                           {/* 4. TIMEFRAME */}
                           <ContextRow 
                             label={(cleanDefinitionTitleString(definitionTitles.htfTimeframes) || "TIMEFRAME").toUpperCase()} 

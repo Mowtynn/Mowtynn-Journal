@@ -132,6 +132,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
 
   const [stopPips, setStopPips] = useState<number | "">("");
   const [tpPips, setTpPips] = useState<number | "">("");
+  const [asiaRangePips, setAsiaRangePips] = useState<number | "">("");
   const [rrValue, setRrValue] = useState<number | "">("");
   const [tradeStatus, setTradeStatus] = useState<"WIN" | "LOSS" | "BREAKEVEN">("WIN");
   const [manualPnl, setManualPnl] = useState<number | "">("");
@@ -175,6 +176,19 @@ const AddTradeForm = React.memo(function AddTradeForm({
     }
   };
 
+  const handleAsiaRangePipsChange = (val: string) => {
+    if (val === "") {
+      setAsiaRangePips("");
+      return;
+    }
+    const num = parseFloat(val);
+    if (isNaN(num)) {
+      setAsiaRangePips("");
+      return;
+    }
+    setAsiaRangePips(num);
+  };
+
   const [notes, setNotes] = useState("");
   const [screenshot, setScreenshot] = useState<string | null>(null);
   const [previewError, setPreviewError] = useState(false);
@@ -213,6 +227,12 @@ const AddTradeForm = React.memo(function AddTradeForm({
         setTpPips(editingTrade.tpPips);
       } else {
         setTpPips("");
+      }
+
+      if (editingTrade.asiaRangePips !== undefined && editingTrade.asiaRangePips !== null) {
+        setAsiaRangePips(editingTrade.asiaRangePips);
+      } else {
+        setAsiaRangePips("");
       }
 
       if (editingTrade.rr !== undefined && editingTrade.rr !== null) {
@@ -435,6 +455,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
       pnl: numericPnl,
       stopPips: stopPips !== "" && typeof stopPips === 'number' ? stopPips : undefined,
       tpPips: tpPips !== "" && typeof tpPips === 'number' ? tpPips : undefined,
+      asiaRangePips: asiaRangePips !== "" && typeof asiaRangePips === 'number' ? asiaRangePips : undefined,
       timeframe: selectedTimeframe || undefined,
       htfTimeframe: selectedHtfTimeframe || undefined,
       session: selectedSession || undefined,
@@ -815,43 +836,62 @@ const AddTradeForm = React.memo(function AddTradeForm({
                 </div>
               </div>
 
-              {/* PİP HESAPLAYICI (STOP PİP & TP PİP) */}
-              <div className="grid grid-cols-2 gap-2.5 bg-zinc-950/40 p-2.5 rounded-xl border border-zinc-800/70">
-                {/* STOP PİP */}
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-[10px] sm:text-[11px] font-bold text-rose-400 uppercase tracking-wide font-sans flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-                      STOP (PİP)
-                    </label>
+              {/* PİP HESAPLAYICI & DEĞERLERİ */}
+              <div className="bg-zinc-950/40 p-2.5 rounded-xl border border-zinc-800/70 space-y-2.5">
+                <div className="grid grid-cols-2 gap-2.5">
+                  {/* STOP PİP */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-[10px] sm:text-[11px] font-bold text-rose-400 uppercase tracking-wide font-sans flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                        STOP (PİP)
+                      </label>
+                    </div>
+                    <input
+                      type="number"
+                      step="any"
+                      min="0"
+                      placeholder="örn: 10"
+                      value={stopPips}
+                      onChange={(e) => handleStopPipsChange(e.target.value)}
+                      className="w-full h-9 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-rose-500 focus:ring-1 focus:ring-rose-500/30 rounded-xl px-3 text-xs sm:text-sm text-zinc-100 focus:outline-none placeholder-zinc-500 font-sans shadow-inner transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
+                    />
                   </div>
-                  <input
-                    type="number"
-                    step="any"
-                    min="0"
-                    placeholder="örn: 10"
-                    value={stopPips}
-                    onChange={(e) => handleStopPipsChange(e.target.value)}
-                    className="w-full h-9 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-rose-500 focus:ring-1 focus:ring-rose-500/30 rounded-xl px-3 text-xs sm:text-sm text-zinc-100 focus:outline-none placeholder-zinc-500 font-sans shadow-inner transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
-                  />
+
+                  {/* TP PİP */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-[10px] sm:text-[11px] font-bold text-emerald-400 uppercase tracking-wide font-sans flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                        TP (PİP)
+                      </label>
+                    </div>
+                    <input
+                      type="number"
+                      step="any"
+                      min="0"
+                      placeholder="örn: 30"
+                      value={tpPips}
+                      onChange={(e) => handleTpPipsChange(e.target.value)}
+                      className="w-full h-9 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 rounded-xl px-3 text-xs sm:text-sm text-zinc-100 focus:outline-none placeholder-zinc-500 font-sans shadow-inner transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
+                    />
+                  </div>
                 </div>
 
-                {/* TP PİP */}
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-[10px] sm:text-[11px] font-bold text-emerald-400 uppercase tracking-wide font-sans flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                      TP (PİP)
-                    </label>
-                  </div>
+                {/* ASIA RANGE (PİP) */}
+                <div className="pt-2 border-t border-zinc-800/60">
+                  <label className="text-[10px] sm:text-[11px] font-bold text-amber-400 uppercase tracking-wide font-sans flex items-center gap-1 mb-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                    ASIA RANGE (PİP)
+                  </label>
                   <input
                     type="number"
                     step="any"
                     min="0"
-                    placeholder="örn: 30"
-                    value={tpPips}
-                    onChange={(e) => handleTpPipsChange(e.target.value)}
-                    className="w-full h-9 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 rounded-xl px-3 text-xs sm:text-sm text-zinc-100 focus:outline-none placeholder-zinc-500 font-sans shadow-inner transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
+                    placeholder="örn: 18.5"
+                    value={asiaRangePips}
+                    onChange={(e) => handleAsiaRangePipsChange(e.target.value)}
+                    className="w-full h-9 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 rounded-xl px-3 text-xs sm:text-sm text-zinc-100 focus:outline-none placeholder-zinc-500 font-sans shadow-inner transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
                   />
                 </div>
               </div>

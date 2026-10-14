@@ -368,6 +368,10 @@ export default function App() {
     setGlobalSelectedTrendTypes,
     globalDateLimit,
     setGlobalDateLimit,
+    globalMinAsiaRangePips,
+    setGlobalMinAsiaRangePips,
+    globalMaxAsiaRangePips,
+    setGlobalMaxAsiaRangePips,
     setIsQuantMode,
   } = useAppStore();
 
@@ -2094,9 +2098,19 @@ export default function App() {
       if (trendSet && (!t.trend || !trendSet.has(normalizeSearchString(t.trend)))) {
         return false;
       }
+      if (globalMinAsiaRangePips !== undefined) {
+        if (t.asiaRangePips === undefined || t.asiaRangePips === null || t.asiaRangePips < globalMinAsiaRangePips) {
+          return false;
+        }
+      }
+      if (globalMaxAsiaRangePips !== undefined) {
+        if (t.asiaRangePips === undefined || t.asiaRangePips === null || t.asiaRangePips > globalMaxAsiaRangePips) {
+          return false;
+        }
+      }
       return true;
     });
-  }, [trades, activeAccountCategory, categoryVersion, globalSelectedConfirmations, globalSelectedConcepts, globalSelectedPlanFidelity, globalSelectedPlatforms, globalDateLimit, globalSelectedAssets, globalSelectedSessions, globalSelectedTimeframes, globalSelectedHtfTimeframes, globalSelectedStatuses, globalSelectedTypes, globalSelectedEntryModels, globalSelectedTrendTypes]);
+  }, [trades, activeAccountCategory, categoryVersion, globalSelectedConfirmations, globalSelectedConcepts, globalSelectedPlanFidelity, globalSelectedPlatforms, globalDateLimit, globalSelectedAssets, globalSelectedSessions, globalSelectedTimeframes, globalSelectedHtfTimeframes, globalSelectedStatuses, globalSelectedTypes, globalSelectedEntryModels, globalSelectedTrendTypes, globalMinAsiaRangePips, globalMaxAsiaRangePips]);
 
   // Calculate comprehensive statistics (moved outside)
 
@@ -2119,7 +2133,8 @@ export default function App() {
       globalSelectedTypes.length +
       globalSelectedEntryModels.length +
       globalSelectedTrendTypes.length +
-      (globalDateLimit !== "6m" ? 1 : 0),
+      (globalDateLimit !== "6m" ? 1 : 0) +
+      (globalMinAsiaRangePips !== undefined || globalMaxAsiaRangePips !== undefined ? 1 : 0),
     [
       globalSelectedConfirmations,
       globalSelectedConcepts,
@@ -2134,6 +2149,8 @@ export default function App() {
       globalSelectedEntryModels,
       globalSelectedTrendTypes,
       globalDateLimit,
+      globalMinAsiaRangePips,
+      globalMaxAsiaRangePips,
     ],
   );
 
@@ -2846,6 +2863,10 @@ export default function App() {
               setGlobalSelectedTrendTypes={setGlobalSelectedTrendTypes}
               globalDateLimit={globalDateLimit}
               setGlobalDateLimit={setGlobalDateLimit}
+              globalMinAsiaRangePips={globalMinAsiaRangePips}
+              setGlobalMinAsiaRangePips={setGlobalMinAsiaRangePips}
+              globalMaxAsiaRangePips={globalMaxAsiaRangePips}
+              setGlobalMaxAsiaRangePips={setGlobalMaxAsiaRangePips}
             />
 
             {/* RECOVERY BACKUP RESCUE MOD - FOOTNOTE */}

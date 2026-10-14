@@ -203,6 +203,10 @@ const BackupRescue = React.memo(function BackupRescue({
               confirmations: Array.isArray(item.confirmations) ? item.confirmations.filter((c: any) => typeof c === 'string') : undefined,
               entry: typeof item.entry === 'string' ? item.entry : undefined,
               entryModels: Array.isArray(item.entryModels) ? item.entryModels.filter((em: any) => typeof em === 'string') : (typeof item.entry === 'string' && item.entry ? [item.entry] : undefined),
+              stopPips: typeof item.stopPips === 'number' && !isNaN(item.stopPips) ? item.stopPips : undefined,
+              tpPips: typeof item.tpPips === 'number' && !isNaN(item.tpPips) ? item.tpPips : undefined,
+              asiaRangePips: typeof item.asiaRangePips === 'number' && !isNaN(item.asiaRangePips) ? item.asiaRangePips : undefined,
+              entryTime: typeof item.entryTime === 'string' ? item.entryTime : undefined,
               trend: typeof item.trend === 'string' ? item.trend : undefined,
             });
           }

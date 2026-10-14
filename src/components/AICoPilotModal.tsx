@@ -1026,6 +1026,8 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
             rr: t.rr,
             stopPips: t.stopPips,
             tpPips: t.tpPips,
+            asiaRangePips: t.asiaRangePips,
+            entryTime: t.entryTime,
             platform: t.platform,
             accountCategory: t.accountCategory,
             session: t.session,

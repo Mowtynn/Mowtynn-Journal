@@ -10,6 +10,7 @@ export interface Trade {
   status: 'WIN' | 'LOSS' | 'BREAKEVEN'; // Trade result code
   stopPips?: number;        // Stop Loss in pips / ticks / points
   tpPips?: number;          // Take Profit in pips / ticks / points
+  asiaRangePips?: number;   // Asia Range in pips (optional)
   notes: string;            // Analysis notes, setup descriptions
   screenshot: string | null; // Base64 data URI of compressed screenshot
   createdAt: number;        // Timestamp of entry
@@ -88,6 +89,8 @@ export interface TradeFilter {
   entry?: string;
   trend?: string;
   sortBy: 'dateDes' | 'dateAsc' | 'pnlDes' | 'pnlAsc' | 'assetAsc' | 'assetDes' | 'typeAsc' | 'typeDes' | 'rrAsc' | 'rrDes' | 'platformAsc' | 'platformDes';
+  minAsiaRangePips?: number;
+  maxAsiaRangePips?: number;
   startDate?: string;
   endDate?: string;
 }

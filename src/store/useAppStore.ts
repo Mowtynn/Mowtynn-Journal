@@ -15,6 +15,8 @@ interface AppState {
   globalSelectedEntryModels: string[];
   globalSelectedTrendTypes: string[];
   globalDateLimit: string;
+  globalMinAsiaRangePips?: number;
+  globalMaxAsiaRangePips?: number;
   isQuantMode: boolean;
   setGlobalSelectedConfirmations: (val: string[]) => void;
   setGlobalSelectedConcepts: (val: string[]) => void;
@@ -29,6 +31,8 @@ interface AppState {
   setGlobalSelectedEntryModels: (val: string[]) => void;
   setGlobalSelectedTrendTypes: (val: string[]) => void;
   setGlobalDateLimit: (val: string) => void;
+  setGlobalMinAsiaRangePips: (val?: number) => void;
+  setGlobalMaxAsiaRangePips: (val?: number) => void;
   setIsQuantMode: (val: boolean) => void;
 }
 
@@ -48,6 +52,8 @@ export const useAppStore = create<AppState>()(
       globalSelectedEntryModels: [],
       globalSelectedTrendTypes: [],
       globalDateLimit: "6m",
+      globalMinAsiaRangePips: undefined,
+      globalMaxAsiaRangePips: undefined,
       isQuantMode: false,
       
       setGlobalSelectedConfirmations: (val) => set({ globalSelectedConfirmations: val }),
@@ -63,6 +69,8 @@ export const useAppStore = create<AppState>()(
       setGlobalSelectedEntryModels: (val) => set({ globalSelectedEntryModels: val }),
       setGlobalSelectedTrendTypes: (val) => set({ globalSelectedTrendTypes: val }),
       setGlobalDateLimit: (val) => set({ globalDateLimit: val }),
+      setGlobalMinAsiaRangePips: (val) => set({ globalMinAsiaRangePips: val }),
+      setGlobalMaxAsiaRangePips: (val) => set({ globalMaxAsiaRangePips: val }),
       setIsQuantMode: (val) => set({ isQuantMode: val }),
     }),
     {
