@@ -2028,29 +2028,108 @@ export default function App() {
   const filteredGlobalTrades = useMemo(() => {
     const minTime = getMinTimestamp(globalDateLimit);
 
-    const confirmationSet = globalSelectedConfirmations.length > 0 ? new Set(globalSelectedConfirmations.map(normalizeSearchString)) : null;
-    const conceptSet = globalSelectedConcepts.length > 0 ? new Set(globalSelectedConcepts.map(normalizeSearchString)) : null;
-    const planFidelitySet = globalSelectedPlanFidelity.length > 0 ? new Set(globalSelectedPlanFidelity.map(normalizeSearchString)) : null;
-    const platformSet = globalSelectedPlatforms.length > 0 ? new Set(globalSelectedPlatforms.map(normalizeSearchString)) : null;
-    const assetSet = globalSelectedAssets.length > 0 ? new Set(globalSelectedAssets.map(normalizeSearchString)) : null;
-    const sessionSet = globalSelectedSessions.length > 0 ? new Set(globalSelectedSessions.map(normalizeSearchString)) : null;
-    const timeframeSet = globalSelectedTimeframes.length > 0 ? new Set(globalSelectedTimeframes.map(normalizeSearchString)) : null;
-    const htfTimeframeSet = globalSelectedHtfTimeframes.length > 0 ? new Set(globalSelectedHtfTimeframes.map(normalizeSearchString)) : null;
-    const statusSet = globalSelectedStatuses.length > 0 ? new Set(globalSelectedStatuses.map(normalizeSearchString)) : null;
-    const typeSet = globalSelectedTypes.length > 0 ? new Set(globalSelectedTypes.map(normalizeSearchString)) : null;
-    const entrySet = globalSelectedEntryModels.length > 0 ? new Set(globalSelectedEntryModels.map(normalizeSearchString)) : null;
-    const trendSet = globalSelectedTrendTypes.length > 0 ? new Set(globalSelectedTrendTypes.map(normalizeSearchString)) : null;
+    const hasConfirmations = globalSelectedConfirmations.length > 0;
+    const hasConcepts = globalSelectedConcepts.length > 0;
+    const hasPlanFidelity = globalSelectedPlanFidelity.length > 0;
+    const hasPlatforms = globalSelectedPlatforms.length > 0;
+    const hasAssets = globalSelectedAssets.length > 0;
+    const hasSessions = globalSelectedSessions.length > 0;
+    const hasTimeframes = globalSelectedTimeframes.length > 0;
+    const hasHtfTimeframes = globalSelectedHtfTimeframes.length > 0;
+    const hasStatuses = globalSelectedStatuses.length > 0;
+    const hasTypes = globalSelectedTypes.length > 0;
+    const hasEntryModels = globalSelectedEntryModels.length > 0;
+    const hasTrendTypes = globalSelectedTrendTypes.length > 0;
+    const hasMinAsia = globalMinAsiaRangePips !== undefined;
+    const hasMaxAsia = globalMaxAsiaRangePips !== undefined;
+    const hasCategory = activeAccountCategory !== 'ALL';
+    const hasMinTime = minTime > 0;
+
+    const hasAnyFilter =
+      hasConfirmations ||
+      hasConcepts ||
+      hasPlanFidelity ||
+      hasPlatforms ||
+      hasAssets ||
+      hasSessions ||
+      hasTimeframes ||
+      hasHtfTimeframes ||
+      hasStatuses ||
+      hasTypes ||
+      hasEntryModels ||
+      hasTrendTypes ||
+      hasMinAsia ||
+      hasMaxAsia ||
+      hasCategory ||
+      hasMinTime;
+
+    if (!hasAnyFilter) {
+      return trades;
+    }
+
+    const confirmationSet = hasConfirmations ? new Set(globalSelectedConfirmations.map(normalizeSearchString)) : null;
+    const conceptSet = hasConcepts ? new Set(globalSelectedConcepts.map(normalizeSearchString)) : null;
+    const planFidelitySet = hasPlanFidelity ? new Set(globalSelectedPlanFidelity.map(normalizeSearchString)) : null;
+    const platformSet = hasPlatforms ? new Set(globalSelectedPlatforms.map(normalizeSearchString)) : null;
+    const assetSet = hasAssets ? new Set(globalSelectedAssets.map(normalizeSearchString)) : null;
+    const sessionSet = hasSessions ? new Set(globalSelectedSessions.map(normalizeSearchString)) : null;
+    const timeframeSet = hasTimeframes ? new Set(globalSelectedTimeframes.map(normalizeSearchString)) : null;
+    const htfTimeframeSet = hasHtfTimeframes ? new Set(globalSelectedHtfTimeframes.map(normalizeSearchString)) : null;
+    const statusSet = hasStatuses ? new Set(globalSelectedStatuses.map(normalizeSearchString)) : null;
+    const typeSet = hasTypes ? new Set(globalSelectedTypes.map(normalizeSearchString)) : null;
+    const entrySet = hasEntryModels ? new Set(globalSelectedEntryModels.map(normalizeSearchString)) : null;
+    const trendSet = hasTrendTypes ? new Set(globalSelectedTrendTypes.map(normalizeSearchString)) : null;
 
     const customCategories = getStoredPlatformCategories();
 
     return trades.filter((t: Trade) => {
-      if (activeAccountCategory !== 'ALL') {
+      // 1. Numeric and temporal checks first (fastest)
+      if (hasMinTime && (!t.createdAt || t.createdAt < minTime)) {
+        return false;
+      }
+      if (hasMinAsia) {
+        if (t.asiaRangePips === undefined || t.asiaRangePips === null || t.asiaRangePips < globalMinAsiaRangePips!) {
+          return false;
+        }
+      }
+      if (hasMaxAsia) {
+        if (t.asiaRangePips === undefined || t.asiaRangePips === null || t.asiaRangePips > globalMaxAsiaRangePips!) {
+          return false;
+        }
+      }
+      if (hasCategory) {
         const cat = getTradeAccountCategory(t, customCategories);
         if (cat !== activeAccountCategory) {
           return false;
         }
       }
-      if (minTime > 0 && (!t.createdAt || t.createdAt < minTime)) {
+      // 2. Simple enum string checks
+      if (statusSet && (!t.status || !statusSet.has(normalizeSearchString(t.status)))) {
+        return false;
+      }
+      if (typeSet && (!t.type || !typeSet.has(normalizeSearchString(t.type)))) {
+        return false;
+      }
+      // 3. String & array lookups
+      if (assetSet && (!t.asset || !assetSet.has(normalizeSearchString(t.asset)))) {
+        return false;
+      }
+      if (platformSet && (!t.platform || !platformSet.has(normalizeSearchString(t.platform)))) {
+        return false;
+      }
+      if (sessionSet && (!t.session || !sessionSet.has(normalizeSearchString(t.session)))) {
+        return false;
+      }
+      if (timeframeSet && (!t.timeframe || !timeframeSet.has(normalizeSearchString(t.timeframe)))) {
+        return false;
+      }
+      if (htfTimeframeSet && (!t.htfTimeframe || !htfTimeframeSet.has(normalizeSearchString(t.htfTimeframe)))) {
+        return false;
+      }
+      if (planFidelitySet && (!t.planFidelity || !planFidelitySet.has(normalizeSearchString(t.planFidelity)))) {
+        return false;
+      }
+      if (trendSet && (!t.trend || !trendSet.has(normalizeSearchString(t.trend)))) {
         return false;
       }
       if (confirmationSet && (!t.confirmations || !t.confirmations.some(tc => confirmationSet.has(normalizeSearchString(tc))))) {
@@ -2066,47 +2145,10 @@ export default function App() {
           return false;
         }
       }
-      if (planFidelitySet && (!t.planFidelity || !planFidelitySet.has(normalizeSearchString(t.planFidelity)))) {
-        return false;
-      }
-      if (platformSet && (!t.platform || !platformSet.has(normalizeSearchString(t.platform)))) {
-        return false;
-      }
-      if (assetSet && (!t.asset || !assetSet.has(normalizeSearchString(t.asset)))) {
-        return false;
-      }
-      if (sessionSet && (!t.session || !sessionSet.has(normalizeSearchString(t.session)))) {
-        return false;
-      }
-      if (timeframeSet && (!t.timeframe || !timeframeSet.has(normalizeSearchString(t.timeframe)))) {
-        return false;
-      }
-      if (htfTimeframeSet && (!t.htfTimeframe || !htfTimeframeSet.has(normalizeSearchString(t.htfTimeframe)))) {
-        return false;
-      }
-      if (statusSet && (!t.status || !statusSet.has(normalizeSearchString(t.status)))) {
-        return false;
-      }
-      if (typeSet && (!t.type || !typeSet.has(normalizeSearchString(t.type)))) {
-        return false;
-      }
       if (entrySet) {
         const matchEm = t.entryModels && Array.isArray(t.entryModels) && t.entryModels.some(em => entrySet.has(normalizeSearchString(em)));
         const matchEntryStr = t.entry && t.entry.split(',').some(splitEm => entrySet.has(normalizeSearchString(splitEm.trim())));
         if (!matchEm && !matchEntryStr) return false;
-      }
-      if (trendSet && (!t.trend || !trendSet.has(normalizeSearchString(t.trend)))) {
-        return false;
-      }
-      if (globalMinAsiaRangePips !== undefined) {
-        if (t.asiaRangePips === undefined || t.asiaRangePips === null || t.asiaRangePips < globalMinAsiaRangePips) {
-          return false;
-        }
-      }
-      if (globalMaxAsiaRangePips !== undefined) {
-        if (t.asiaRangePips === undefined || t.asiaRangePips === null || t.asiaRangePips > globalMaxAsiaRangePips) {
-          return false;
-        }
       }
       return true;
     });
@@ -2153,6 +2195,36 @@ export default function App() {
       globalMaxAsiaRangePips,
     ],
   );
+
+  const backupSettings = useMemo(() => ({
+    platforms,
+    timeframes,
+    htfTimeframes,
+    confirmations,
+    concepts,
+    sessions,
+    assets,
+    planFidelities,
+    entryModels,
+    trendTypes,
+    definitionTitles,
+    currency,
+    isRrMode,
+  }), [
+    platforms,
+    timeframes,
+    htfTimeframes,
+    confirmations,
+    concepts,
+    sessions,
+    assets,
+    planFidelities,
+    entryModels,
+    trendTypes,
+    definitionTitles,
+    currency,
+    isRrMode,
+  ]);
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans antialiased selection:bg-blue-400/30 selection:text-white">
@@ -2875,7 +2947,7 @@ export default function App() {
               notes={notes}
               journals={journals}
               certificates={certificates}
-              settings={{ platforms, timeframes, htfTimeframes, confirmations, concepts, sessions, assets, planFidelities, entryModels, trendTypes, definitionTitles, currency, isRrMode }}
+              settings={backupSettings}
               onImportTrades={handleImportTrades}
               onClearAll={handleClearAll}
             />

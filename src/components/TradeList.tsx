@@ -254,6 +254,7 @@ const CustomComboBox = React.memo(function CustomComboBox({ value, onChange, opt
 
 const tradeRowDateFormatter = new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' });
 const tradeRowTimeFormatter = new Intl.DateTimeFormat('tr-TR', { hour: '2-digit', minute: '2-digit', hour12: false });
+const TR_COLLATOR = new Intl.Collator('tr', { sensitivity: 'base' });
 
 const MemoizedTradeRow = React.memo(function MemoizedTradeRow({ 
   trade, 
@@ -758,7 +759,6 @@ const TradeList = React.memo(function TradeList({
   const filteredTrades = useMemo(() => {
     const startTime = deferredFilter.startDate ? new Date(deferredFilter.startDate).setHours(0, 0, 0, 0) : null;
     const endTime = deferredFilter.endDate ? new Date(deferredFilter.endDate).setHours(23, 59, 59, 999) : null;
-    const collator = new Intl.Collator('tr', { sensitivity: 'base' });
 
     return trades
       .filter(trade => {
@@ -844,34 +844,36 @@ const TradeList = React.memo(function TradeList({
           case 'pnlAsc':
             return (a.pnl || 0) - (b.pnl || 0);
           case 'assetAsc':
-            return collator.compare(a.asset, b.asset);
+            return TR_COLLATOR.compare(a.asset, b.asset);
           case 'assetDes':
-            return collator.compare(b.asset, a.asset);
+            return TR_COLLATOR.compare(b.asset, a.asset);
           case 'typeAsc':
-            return collator.compare(a.type, b.type);
+            return TR_COLLATOR.compare(a.type, b.type);
           case 'typeDes':
-            return collator.compare(b.type, a.type);
+            return TR_COLLATOR.compare(b.type, a.type);
           case 'rrAsc':
             return (a.rr || 0) - (b.rr || 0);
           case 'rrDes':
             return (b.rr || 0) - (a.rr || 0);
           case 'platformAsc':
-            return collator.compare(a.platform || '', b.platform || '');
+            return TR_COLLATOR.compare(a.platform || '', b.platform || '');
           case 'platformDes':
-            return collator.compare(b.platform || '', a.platform || '');
+            return TR_COLLATOR.compare(b.platform || '', a.platform || '');
           default:
             return b.createdAt - a.createdAt;
         }
       });
   }, [trades, deferredFilter]);
 
-  // Reset to page 1 when filter changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [filteredTrades.length]);
-
   const maxPage = Math.max(1, Math.ceil(filteredTrades.length / itemsPerPage));
   const effectivePage = Math.min(Math.max(1, currentPage), maxPage);
+
+  // Clamp current page when total items change
+  useEffect(() => {
+    if (currentPage > maxPage) {
+      setCurrentPage(maxPage);
+    }
+  }, [currentPage, maxPage]);
 
   const paginatedTrades = useMemo(() => {
     const start = (effectivePage - 1) * itemsPerPage;
@@ -880,6 +882,7 @@ const TradeList = React.memo(function TradeList({
 
   const handleFilterChange = useCallback((newFilter: TradeFilter) => {
     setFilter(newFilter);
+    setCurrentPage(1);
   }, []);
 
   return (

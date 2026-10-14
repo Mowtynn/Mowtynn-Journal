@@ -94,7 +94,10 @@ const BackupRescue = React.memo(function BackupRescue({
     };
   }, [showClearConfirm]);
 
-  const { usedBytes } = getLocalStorageUsage();
+  const { usedBytes } = React.useMemo(
+    () => getLocalStorageUsage(),
+    [trades.length, notes.length, journals.length, certificates.length]
+  );
 
   const handleExport = () => {
     try {

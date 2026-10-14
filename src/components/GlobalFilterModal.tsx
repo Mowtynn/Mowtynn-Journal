@@ -348,18 +348,21 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
 
   // Dynamic extraction of unique options from both definitions and actual trade data
   const dynamicPlatforms = React.useMemo(() => {
+    if (!isOpen) return platforms || [];
     const set = new Set(platforms || []);
     trades.forEach(t => { if (t.platform) set.add(t.platform); });
     return Array.from(set);
-  }, [platforms, trades]);
+  }, [isOpen, platforms, trades]);
 
   const dynamicAssets = React.useMemo(() => {
+    if (!isOpen) return assets || [];
     const set = new Set(assets || []);
     trades.forEach(t => { if (t.asset) set.add(t.asset); });
     return Array.from(set);
-  }, [assets, trades]);
+  }, [isOpen, assets, trades]);
 
   const dynamicConcepts = React.useMemo(() => {
+    if (!isOpen) return concepts || [];
     const set = new Set(concepts || []);
     trades.forEach(t => { 
       if (Array.isArray(t.liquiditySweeps)) {
@@ -371,9 +374,10 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
       }
     });
     return Array.from(set);
-  }, [concepts, trades]);
+  }, [isOpen, concepts, trades]);
 
   const dynamicConfirmations = React.useMemo(() => {
+    if (!isOpen) return confirmations || [];
     const set = new Set(confirmations || []);
     trades.forEach(t => {
       if (t.confirmations && Array.isArray(t.confirmations)) {
@@ -381,33 +385,38 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
       }
     });
     return Array.from(set);
-  }, [confirmations, trades]);
+  }, [isOpen, confirmations, trades]);
 
   const dynamicSessions = React.useMemo(() => {
+    if (!isOpen) return sessions || [];
     const set = new Set(sessions || []);
     trades.forEach(t => { if (t.session) set.add(t.session); });
     return Array.from(set);
-  }, [sessions, trades]);
+  }, [isOpen, sessions, trades]);
 
   const dynamicTimeframes = React.useMemo(() => {
+    if (!isOpen) return timeframes || [];
     const set = new Set(timeframes || []);
     trades.forEach(t => { if (t.timeframe) set.add(t.timeframe); });
     return Array.from(set);
-  }, [timeframes, trades]);
+  }, [isOpen, timeframes, trades]);
 
   const dynamicHtfTimeframes = React.useMemo(() => {
+    if (!isOpen) return htfTimeframes || [];
     const set = new Set(htfTimeframes || []);
     trades.forEach(t => { if (t.htfTimeframe) set.add(t.htfTimeframe); });
     return Array.from(set);
-  }, [htfTimeframes, trades]);
+  }, [isOpen, htfTimeframes, trades]);
 
   const dynamicPlanFidelities = React.useMemo(() => {
+    if (!isOpen) return planFidelities || [];
     const set = new Set(planFidelities || []);
     trades.forEach(t => { if (t.planFidelity) set.add(t.planFidelity); });
     return Array.from(set);
-  }, [planFidelities, trades]);
+  }, [isOpen, planFidelities, trades]);
 
   const dynamicEntryModels = React.useMemo(() => {
+    if (!isOpen) return entryModels || [];
     const set = new Set(entryModels || []);
     trades.forEach(t => {
       if (t.entryModels && Array.isArray(t.entryModels)) {
@@ -417,13 +426,14 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
       }
     });
     return Array.from(set);
-  }, [entryModels, trades]);
+  }, [isOpen, entryModels, trades]);
 
   const dynamicTrendTypes = React.useMemo(() => {
+    if (!isOpen) return trendTypes || [];
     const set = new Set(trendTypes || []);
     trades.forEach(t => { if (t.trend) set.add(t.trend); });
     return Array.from(set);
-  }, [trendTypes, trades]);
+  }, [isOpen, trendTypes, trades]);
 
   // Keep track of which accordion categories are expanded
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});

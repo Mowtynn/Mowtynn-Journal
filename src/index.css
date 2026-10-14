@@ -306,6 +306,19 @@ button, a, input, select, textarea, [role="button"] {
 /* High-Refresh 144Hz/240Hz Rendering Optimizations */
 html {
   scroll-behavior: smooth;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+/* Modal, popup and dialog GPU composite layer promotion */
+dialog, .modal-mobile-fit, [role="dialog"], #global-filter-popup, #trades-history-section {
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 @keyframes tabEnter {
