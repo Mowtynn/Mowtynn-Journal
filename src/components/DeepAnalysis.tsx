@@ -1708,6 +1708,8 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
         </motion.div>
       </div>
 
+
+
       <AdvancedMetricsDashboard trades={deferredTrades} currency={currency} onMetricClick={handleMetricClick} onEdit={onEdit} sessions={sessions} />
       
       <MetricDetailModal 

@@ -7,6 +7,7 @@ import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
 import Markdown from "react-markdown";
 import { authFetch } from "../lib/api";
 import { getSiteToken } from "./PasswordGate";
+import { calculateStrategyAnalytics } from "../lib/strategyAnalytics";
 import {
   Sparkles, Bot, Send, RefreshCw, X, TrendingUp, TrendingDown, ShieldAlert, Brain, Zap, Target, BarChart3, Clock, CheckCircle2, ShieldCheck, AlertTriangle, Lightbulb, Copy, Check, ChevronRight, ChevronLeft, User, Activity, Flame, Image as ImageIcon, Volume2, Award, Lock, Layers, Compass, Eye, Pin, Bookmark, ArrowLeft, Edit2, Trash2, Crosshair, LineChart } from 'lucide-react';
 
@@ -988,6 +989,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
         byTrend: formatHelper(byTrend),
         byDirection: formatHelper(byType),
         byTimeframe: formatHelper(byTimeframe),
+        strategyAnalytics: calculateStrategyAnalytics(effectiveTrades),
       };
     })();
 
@@ -1027,6 +1029,8 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
             stopPips: t.stopPips,
             tpPips: t.tpPips,
             asiaRangePips: t.asiaRangePips,
+            maePips: t.maePips,
+            mfePips: t.mfePips,
             entryTime: t.entryTime,
             platform: t.platform,
             accountCategory: t.accountCategory,
@@ -1958,6 +1962,14 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                 desc: "Üst üste 2+ stop alınan dönemlerdeki ortak seans, haber veya likidite sweep faktörlerini tespit eder.",
                 icon: AlertTriangle,
                 iconColor: "text-red-500",
+              },
+              {
+                id: "strategy_optimizer",
+                title: "🎯 Strateji & MAE/MFE/Pip Optimizasyonu",
+                prompt: "Girdiğim tüm işlem verilerini (özellikle Pip değerleri, MAE drawdown, MFE masada kalan kâr, Asia Range boyutu, Likidite Süpürmeleri ve Giriş Modelleri) incele.\n\nLütfen şu 5 ana başlıkta stratejimi geliştirmeme yarayacak somut bir optimizasyon raporu hazırla:\n1. Stop Loss ve MAE Optimizasyonu: Stop mesafem çok mu geniş? Ortalama ne kadar gereksiz güvenlik marjı (cushion) bırakıyorum? Stopu daraltarak R/R oranımı nasıl artırabilirim?\n2. Take Profit ve MFE Analizi: Masada ortalama kaç pip kâr bırakıyorum? Yüksek MFE görüp BE/Zarar kapanan işlemlerimde neyi düzeltmeliyim?\n3. Asia Range Volatilite Filtresi: Dar vs Geniş Asia günlerinde başarı oranım nasıl değişiyor, hangi günlerde işlem açmamalıyım?\n4. En Güçlü Setup Formülü: Hangi parite, seans, likidite süpürmesi ve model kombinasyonu bana en yüksek R'ı kazandırıyor?\n5. Stratejiden Çıkarılması Gereken En Büyük Sızıntı: Nerede para kaybediyorum (Hangi trend yapısı, hangi saat)?",
+                desc: "MAE, MFE, Asia Range, Likidite ve Giriş Modellerinizi tarayarak stratejinizi doğrudan kârlı hale getirecek optimizasyon yol haritası sunar.",
+                icon: Compass,
+                iconColor: "text-indigo-400",
               },
               {
                 id: "only_a_plus_simulation",

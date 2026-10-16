@@ -17,6 +17,10 @@ interface AppState {
   globalDateLimit: string;
   globalMinAsiaRangePips?: number;
   globalMaxAsiaRangePips?: number;
+  globalMinMaePips?: number;
+  globalMaxMaePips?: number;
+  globalMinMfePips?: number;
+  globalMaxMfePips?: number;
   isQuantMode: boolean;
   setGlobalSelectedConfirmations: (val: string[]) => void;
   setGlobalSelectedConcepts: (val: string[]) => void;
@@ -33,6 +37,10 @@ interface AppState {
   setGlobalDateLimit: (val: string) => void;
   setGlobalMinAsiaRangePips: (val?: number) => void;
   setGlobalMaxAsiaRangePips: (val?: number) => void;
+  setGlobalMinMaePips: (val?: number) => void;
+  setGlobalMaxMaePips: (val?: number) => void;
+  setGlobalMinMfePips: (val?: number) => void;
+  setGlobalMaxMfePips: (val?: number) => void;
   setIsQuantMode: (val: boolean) => void;
 }
 
@@ -54,6 +62,10 @@ export const useAppStore = create<AppState>()(
       globalDateLimit: "6m",
       globalMinAsiaRangePips: undefined,
       globalMaxAsiaRangePips: undefined,
+      globalMinMaePips: undefined,
+      globalMaxMaePips: undefined,
+      globalMinMfePips: undefined,
+      globalMaxMfePips: undefined,
       isQuantMode: false,
       
       setGlobalSelectedConfirmations: (val) => set({ globalSelectedConfirmations: val }),
@@ -71,6 +83,10 @@ export const useAppStore = create<AppState>()(
       setGlobalDateLimit: (val) => set({ globalDateLimit: val }),
       setGlobalMinAsiaRangePips: (val) => set({ globalMinAsiaRangePips: val }),
       setGlobalMaxAsiaRangePips: (val) => set({ globalMaxAsiaRangePips: val }),
+      setGlobalMinMaePips: (val) => set({ globalMinMaePips: val }),
+      setGlobalMaxMaePips: (val) => set({ globalMaxMaePips: val }),
+      setGlobalMinMfePips: (val) => set({ globalMinMfePips: val }),
+      setGlobalMaxMfePips: (val) => set({ globalMaxMfePips: val }),
       setIsQuantMode: (val) => set({ isQuantMode: val }),
     }),
     {

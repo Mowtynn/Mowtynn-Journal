@@ -372,6 +372,14 @@ export default function App() {
     setGlobalMinAsiaRangePips,
     globalMaxAsiaRangePips,
     setGlobalMaxAsiaRangePips,
+    globalMinMaePips,
+    setGlobalMinMaePips,
+    globalMaxMaePips,
+    setGlobalMaxMaePips,
+    globalMinMfePips,
+    setGlobalMinMfePips,
+    globalMaxMfePips,
+    setGlobalMaxMfePips,
     setIsQuantMode,
   } = useAppStore();
 
@@ -646,6 +654,32 @@ export default function App() {
     }
   }, [user]);
 
+  // Synchronize custom inputs revision
+  useEffect(() => {
+    try {
+      const DEFINITIONS_REVISION = "2026_10_inputs_v3";
+      const currentRev = localStorage.getItem("trading_definitions_revision");
+      if (currentRev !== DEFINITIONS_REVISION) {
+        localStorage.setItem("trading_definitions_revision", DEFINITIONS_REVISION);
+        setTimeframes(DEFAULT_TIMEFRAMES);
+        localStorage.setItem("trading_timeframes_list", JSON.stringify(DEFAULT_TIMEFRAMES));
+        setHtfTimeframes(DEFAULT_HTF_TIMEFRAMES);
+        localStorage.setItem("trading_htf_timeframes_list", JSON.stringify(DEFAULT_HTF_TIMEFRAMES));
+        setConfirmations(DEFAULT_CONFIRMATIONS);
+        localStorage.setItem("trading_confirmations_list", JSON.stringify(DEFAULT_CONFIRMATIONS));
+        setSessions(DEFAULT_SESSIONS);
+        localStorage.setItem("trading_sessions_list", JSON.stringify(DEFAULT_SESSIONS));
+        setPlanFidelities(DEFAULT_PLAN_FIDELITIES);
+        localStorage.setItem("trading_plan_fidelities_list", JSON.stringify(DEFAULT_PLAN_FIDELITIES));
+        setEntryModels(DEFAULT_ENTRY_MODELS);
+        localStorage.setItem("trading_entry_models_list", JSON.stringify(DEFAULT_ENTRY_MODELS));
+        setDefinitionTitles(prev => sanitizeDefinitionTitles({ ...prev, timeframes: "Entry Timeframe" }));
+        localStorage.setItem("trading_definition_titles", JSON.stringify(sanitizeDefinitionTitles({ ...DEFAULT_DEFINITION_TITLES, timeframes: "Entry Timeframe" })));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
 
   // Settings menu state
   // Locked to USD per request
@@ -2042,6 +2076,10 @@ export default function App() {
     const hasTrendTypes = globalSelectedTrendTypes.length > 0;
     const hasMinAsia = globalMinAsiaRangePips !== undefined;
     const hasMaxAsia = globalMaxAsiaRangePips !== undefined;
+    const hasMinMae = globalMinMaePips !== undefined;
+    const hasMaxMae = globalMaxMaePips !== undefined;
+    const hasMinMfe = globalMinMfePips !== undefined;
+    const hasMaxMfe = globalMaxMfePips !== undefined;
     const hasCategory = activeAccountCategory !== 'ALL';
     const hasMinTime = minTime > 0;
 
@@ -2060,6 +2098,10 @@ export default function App() {
       hasTrendTypes ||
       hasMinAsia ||
       hasMaxAsia ||
+      hasMinMae ||
+      hasMaxMae ||
+      hasMinMfe ||
+      hasMaxMfe ||
       hasCategory ||
       hasMinTime;
 
@@ -2094,6 +2136,26 @@ export default function App() {
       }
       if (hasMaxAsia) {
         if (t.asiaRangePips === undefined || t.asiaRangePips === null || t.asiaRangePips > globalMaxAsiaRangePips!) {
+          return false;
+        }
+      }
+      if (hasMinMae) {
+        if (t.maePips === undefined || t.maePips === null || t.maePips < globalMinMaePips!) {
+          return false;
+        }
+      }
+      if (hasMaxMae) {
+        if (t.maePips === undefined || t.maePips === null || t.maePips > globalMaxMaePips!) {
+          return false;
+        }
+      }
+      if (hasMinMfe) {
+        if (t.mfePips === undefined || t.mfePips === null || t.mfePips < globalMinMfePips!) {
+          return false;
+        }
+      }
+      if (hasMaxMfe) {
+        if (t.mfePips === undefined || t.mfePips === null || t.mfePips > globalMaxMfePips!) {
           return false;
         }
       }
@@ -2152,7 +2214,7 @@ export default function App() {
       }
       return true;
     });
-  }, [trades, activeAccountCategory, categoryVersion, globalSelectedConfirmations, globalSelectedConcepts, globalSelectedPlanFidelity, globalSelectedPlatforms, globalDateLimit, globalSelectedAssets, globalSelectedSessions, globalSelectedTimeframes, globalSelectedHtfTimeframes, globalSelectedStatuses, globalSelectedTypes, globalSelectedEntryModels, globalSelectedTrendTypes, globalMinAsiaRangePips, globalMaxAsiaRangePips]);
+  }, [trades, activeAccountCategory, categoryVersion, globalSelectedConfirmations, globalSelectedConcepts, globalSelectedPlanFidelity, globalSelectedPlatforms, globalDateLimit, globalSelectedAssets, globalSelectedSessions, globalSelectedTimeframes, globalSelectedHtfTimeframes, globalSelectedStatuses, globalSelectedTypes, globalSelectedEntryModels, globalSelectedTrendTypes, globalMinAsiaRangePips, globalMaxAsiaRangePips, globalMinMaePips, globalMaxMaePips, globalMinMfePips, globalMaxMfePips]);
 
   // Calculate comprehensive statistics (moved outside)
 
@@ -2176,7 +2238,9 @@ export default function App() {
       globalSelectedEntryModels.length +
       globalSelectedTrendTypes.length +
       (globalDateLimit !== "6m" ? 1 : 0) +
-      (globalMinAsiaRangePips !== undefined || globalMaxAsiaRangePips !== undefined ? 1 : 0),
+      (globalMinAsiaRangePips !== undefined || globalMaxAsiaRangePips !== undefined ? 1 : 0) +
+      (globalMinMaePips !== undefined || globalMaxMaePips !== undefined ? 1 : 0) +
+      (globalMinMfePips !== undefined || globalMaxMfePips !== undefined ? 1 : 0),
     [
       globalSelectedConfirmations,
       globalSelectedConcepts,
@@ -2193,6 +2257,10 @@ export default function App() {
       globalDateLimit,
       globalMinAsiaRangePips,
       globalMaxAsiaRangePips,
+      globalMinMaePips,
+      globalMaxMaePips,
+      globalMinMfePips,
+      globalMaxMfePips,
     ],
   );
 
@@ -2939,6 +3007,14 @@ export default function App() {
               setGlobalMinAsiaRangePips={setGlobalMinAsiaRangePips}
               globalMaxAsiaRangePips={globalMaxAsiaRangePips}
               setGlobalMaxAsiaRangePips={setGlobalMaxAsiaRangePips}
+              globalMinMaePips={globalMinMaePips}
+              setGlobalMinMaePips={setGlobalMinMaePips}
+              globalMaxMaePips={globalMaxMaePips}
+              setGlobalMaxMaePips={setGlobalMaxMaePips}
+              globalMinMfePips={globalMinMfePips}
+              setGlobalMinMfePips={setGlobalMinMfePips}
+              globalMaxMfePips={globalMaxMfePips}
+              setGlobalMaxMfePips={setGlobalMaxMfePips}
             />
 
             {/* RECOVERY BACKUP RESCUE MOD - FOOTNOTE */}

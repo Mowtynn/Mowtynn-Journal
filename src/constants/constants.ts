@@ -107,9 +107,17 @@ export function getTradeAccountCategory(
   }
   return 'FUNDED';
 }
-export const DEFAULT_TIMEFRAMES = ["1m", "5m", "15m", "1h", "4h", "1D"];
-export const DEFAULT_HTF_TIMEFRAMES = ["15m", "1h", "4h", "1D", "1W", "1M"];
-export const DEFAULT_CONFIRMATIONS = ["FVG", "Orderblock", "Likidite Alımı", "BOS", "CHoCH"];
+export const DEFAULT_TIMEFRAMES = ["3M", "5M", "15M"];
+export const DEFAULT_HTF_TIMEFRAMES = ["1H", "4H", "D", "W", "M"];
+export const DEFAULT_CONFIRMATIONS = ["FVG", "OB"];
+export const DEFAULT_ENTRY_HOURS = [
+  "00:00-01:00",
+  "01:00-02:00",
+  "02:00-03:00",
+  "03:00-04:00",
+  "04:00-05:00",
+  "08:00-09:00"
+];
 export const DEFAULT_LIQUIDITY_SWEEPS = [
   "PDH / PDL",
   "PWH / PWL",
@@ -121,17 +129,14 @@ export const DEFAULT_LIQUIDITY_SWEEPS = [
   "Trendline Liquidity"
 ];
 export const DEFAULT_CONCEPTS = DEFAULT_LIQUIDITY_SWEEPS;
-export const DEFAULT_SESSIONS = ["London", "New York", "Tokyo", "Sydney", "Asian", "Overlap"];
+export const DEFAULT_SESSIONS = ["London", "NY AM"];
 export const DEFAULT_ASSETS = ["BTC/USDT", "ETH/USDT", "EUR/USD", "XAU/USD", "NQ100"];
-export const DEFAULT_PLAN_FIDELITIES = ["Tam", "Kısmen", "FOMO"];
+export const DEFAULT_PLAN_FIDELITIES = ["A+", "A", "B-C"];
 export const DEFAULT_ENTRY_MODELS = [
-  "IFVG",
+  "Breaker",
+  "Mitigation",
   "FVG",
-  "Orderblock",
-  "Liquidity Sweep",
-  "Breaker Block",
-  "CE (%50 FVG)",
-  "BPR"
+  "IFVG"
 ];
 export const DEFAULT_TREND_TYPES = [
   "Continuation",
@@ -144,7 +149,7 @@ export const DEFAULT_DEFINITION_TITLES: DefinitionTitles = {
   liquiditySweeps: "Liquidity Sweep",
   concepts: "Liquidity Sweep",
   confirmations: "PD ARRAY",
-  timeframes: "Entry Time",
+  timeframes: "Entry Timeframe",
   htfTimeframes: "Timeframe",
   sessions: "Session",
   planFidelities: "Setup Kalitesi",
@@ -227,8 +232,8 @@ export const sanitizeDefinitionTitles = (raw: Partial<DefinitionTitles> = {}): D
     result.confirmations = "PD ARRAY";
   }
 
-  if (!result.timeframes || result.timeframes === "ETF" || result.timeframes === "Entry Timeframe" || /giriş zamanı/i.test(result.timeframes)) {
-    result.timeframes = "Entry Time";
+  if (!result.timeframes || result.timeframes === "ETF" || result.timeframes === "Entry Time" || /giriş zamanı/i.test(result.timeframes) || /işlem zaman dilimi/i.test(result.timeframes)) {
+    result.timeframes = "Entry Timeframe";
   }
 
   if (!result.entryModels || /giriş model/i.test(result.entryModels)) {

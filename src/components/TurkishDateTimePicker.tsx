@@ -331,7 +331,7 @@ export const TurkishDateTimePicker = React.memo(function TurkishDateTimePicker({
       <button
         type="button"
         onClick={handleToggle}
-        className="w-full h-9.5 bg-zinc-950/80 hover:bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 rounded-xl px-3 text-xs text-zinc-100 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-all font-sans font-bold flex items-center justify-between gap-3 cursor-pointer shadow-inner group"
+        className="w-full h-8 sm:h-8.5 bg-zinc-950/80 hover:bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 rounded-lg sm:rounded-xl px-2.5 text-xs text-zinc-100 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-all font-sans font-bold flex items-center justify-between gap-2 cursor-pointer shadow-inner group"
       >
         <span className="tracking-wide truncate">{displayFormatted}</span>
         

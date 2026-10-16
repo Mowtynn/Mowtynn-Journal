@@ -10,6 +10,7 @@ import { calculateAdvancedMetrics } from '../lib/advancedMetrics';
 import TradeDetailModal from './TradeDetailModal';
 import { PrintReportModal } from './PrintReportModal';
 import { TradeHistoryModal } from './TradeHistoryModal';
+import { StrategyOptimizerHub } from './StrategyOptimizerHub';
 
 
 const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, sessions = [] }: { trades: Trade[], currency: string, onMetricClick?: (id: string, val: string | number) => void, onEdit?: (trade: Trade) => void, sessions?: string[] }) => {
@@ -1357,6 +1358,11 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
           </div>
         )}
       </motion.div>
+
+      {/* Strateji & Edge Geliştirme Laboratuvarı */}
+      <div className="w-full my-3">
+        <StrategyOptimizerHub trades={trades} currency={currency} />
+      </div>
 
       <motion.div variants={itemVariants} className="bg-zinc-900/70 border border-zinc-700/50  rounded-xl transition-all duration-300 p-4 sm:p-5 shadow-sm transition-colors duration-200 mb-2 relative overflow-visible mt-1 flex flex-col justify-between">
         {/* Header & Filter Controls */}

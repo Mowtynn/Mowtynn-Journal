@@ -11,6 +11,8 @@ export interface Trade {
   stopPips?: number;        // Stop Loss in pips / ticks / points
   tpPips?: number;          // Take Profit in pips / ticks / points
   asiaRangePips?: number;   // Asia Range in pips (optional)
+  maePips?: number;         // MAE (Maximum Adverse Excursion) in pips
+  mfePips?: number;         // MFE (Maximum Favorable Excursion) in pips
   notes: string;            // Analysis notes, setup descriptions
   screenshot: string | null; // Base64 data URI of compressed screenshot
   createdAt: number;        // Timestamp of entry
@@ -28,6 +30,8 @@ export interface Trade {
   entry?: string;           // Giriş Modeli (Entry Model e.g. IFVG, FVG, Orderblock)
   entryModels?: string[];   // Birden fazla Giriş Modeli (Multiple Entry Models)
   trend?: string;           // Trend Yapısı (Trend Type e.g. Continuation, Reversal)
+  dxy?: string;             // DXY bias / correlation (e.g. Bullish, Bearish, Neutral)
+  premiumDiscount?: string; // Premium / Discount zone (e.g. Premium, Discount, Equilibrium / OTE)
 }
 
 export interface JournalEntry {
@@ -88,9 +92,15 @@ export interface TradeFilter {
   planFidelity?: string;
   entry?: string;
   trend?: string;
+  dxy?: string;
+  premiumDiscount?: string;
   sortBy: 'dateDes' | 'dateAsc' | 'pnlDes' | 'pnlAsc' | 'assetAsc' | 'assetDes' | 'typeAsc' | 'typeDes' | 'rrAsc' | 'rrDes' | 'platformAsc' | 'platformDes';
   minAsiaRangePips?: number;
   maxAsiaRangePips?: number;
+  minMaePips?: number;
+  maxMaePips?: number;
+  minMfePips?: number;
+  maxMfePips?: number;
   startDate?: string;
   endDate?: string;
 }

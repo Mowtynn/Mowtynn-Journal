@@ -62,6 +62,8 @@ export const prepareTradeExportRows = (trades: Trade[], options?: ExportOptions)
       [`Net Kâr / Zarar (${currencySymbol})`]: Number(t.pnl) || 0,
       'Stop Mesafesi (Pip)': t.stopPips !== undefined && t.stopPips !== null ? Number(t.stopPips) : '-',
       'TP Mesafesi (Pip)': t.tpPips !== undefined && t.tpPips !== null ? Number(t.tpPips) : '-',
+      'MAE (Pip)': t.maePips !== undefined && t.maePips !== null ? Number(t.maePips) : '-',
+      'MFE (Pip)': t.mfePips !== undefined && t.mfePips !== null ? Number(t.mfePips) : '-',
       'Asia Range (Pip)': t.asiaRangePips !== undefined && t.asiaRangePips !== null ? Number(t.asiaRangePips) : '-',
       'Platform': t.platform || '-',
       'Hesap Türü': t.accountCategory || (t.platform ? t.platform.toUpperCase() : '-'),

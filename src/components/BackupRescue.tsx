@@ -209,6 +209,8 @@ const BackupRescue = React.memo(function BackupRescue({
               stopPips: typeof item.stopPips === 'number' && !isNaN(item.stopPips) ? item.stopPips : undefined,
               tpPips: typeof item.tpPips === 'number' && !isNaN(item.tpPips) ? item.tpPips : undefined,
               asiaRangePips: typeof item.asiaRangePips === 'number' && !isNaN(item.asiaRangePips) ? item.asiaRangePips : undefined,
+              maePips: typeof item.maePips === 'number' && !isNaN(item.maePips) ? item.maePips : undefined,
+              mfePips: typeof item.mfePips === 'number' && !isNaN(item.mfePips) ? item.mfePips : undefined,
               entryTime: typeof item.entryTime === 'string' ? item.entryTime : undefined,
               trend: typeof item.trend === 'string' ? item.trend : undefined,
             });

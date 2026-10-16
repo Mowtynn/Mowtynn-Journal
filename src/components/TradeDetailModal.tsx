@@ -383,6 +383,22 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                               icon={<Activity size={14} className="text-amber-400"/>} 
                             />
                           )}
+                          {/* 3c. MAE (PİP) */}
+                          {currentTrade.maePips !== undefined && currentTrade.maePips !== null && (
+                            <ContextRow 
+                              label="MAE (PİP)" 
+                              value={`${currentTrade.maePips} Pip`} 
+                              icon={<TrendingDown size={14} className="text-orange-400"/>} 
+                            />
+                          )}
+                          {/* 3d. MFE (PİP) */}
+                          {currentTrade.mfePips !== undefined && currentTrade.mfePips !== null && (
+                            <ContextRow 
+                              label="MFE (PİP)" 
+                              value={`${currentTrade.mfePips} Pip`} 
+                              icon={<TrendingUp size={14} className="text-cyan-400"/>} 
+                            />
+                          )}
                           {/* 4. TIMEFRAME */}
                           <ContextRow 
                             label={(cleanDefinitionTitleString(definitionTitles.htfTimeframes) || "TIMEFRAME").toUpperCase()} 

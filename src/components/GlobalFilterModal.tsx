@@ -53,6 +53,14 @@ interface GlobalFilterModalProps {
   setGlobalMinAsiaRangePips?: (v?: number) => void;
   globalMaxAsiaRangePips?: number;
   setGlobalMaxAsiaRangePips?: (v?: number) => void;
+  globalMinMaePips?: number;
+  setGlobalMinMaePips?: (v?: number) => void;
+  globalMaxMaePips?: number;
+  setGlobalMaxMaePips?: (v?: number) => void;
+  globalMinMfePips?: number;
+  setGlobalMinMfePips?: (v?: number) => void;
+  globalMaxMfePips?: number;
+  setGlobalMaxMfePips?: (v?: number) => void;
 }
 
 
@@ -342,7 +350,11 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
   globalSelectedTrendTypes = [], setGlobalSelectedTrendTypes,
   globalDateLimit, setGlobalDateLimit,
   globalMinAsiaRangePips, setGlobalMinAsiaRangePips,
-  globalMaxAsiaRangePips, setGlobalMaxAsiaRangePips
+  globalMaxAsiaRangePips, setGlobalMaxAsiaRangePips,
+  globalMinMaePips, setGlobalMinMaePips,
+  globalMaxMaePips, setGlobalMaxMaePips,
+  globalMinMfePips, setGlobalMinMfePips,
+  globalMaxMfePips, setGlobalMaxMfePips
 }) => {
   useBodyScrollLock(isOpen);
 
@@ -484,6 +496,10 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
     setGlobalDateLimit("6m");
     setGlobalMinAsiaRangePips?.(undefined);
     setGlobalMaxAsiaRangePips?.(undefined);
+    setGlobalMinMaePips?.(undefined);
+    setGlobalMaxMaePips?.(undefined);
+    setGlobalMinMfePips?.(undefined);
+    setGlobalMaxMfePips?.(undefined);
   };
 
   useEffect(() => {
@@ -514,7 +530,9 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
     (globalSelectedEntryModels?.length || 0) + 
     (globalSelectedTrendTypes?.length || 0) + 
     (globalDateLimit !== "6m" ? 1 : 0) +
-    (globalMinAsiaRangePips !== undefined || globalMaxAsiaRangePips !== undefined ? 1 : 0);
+    (globalMinAsiaRangePips !== undefined || globalMaxAsiaRangePips !== undefined ? 1 : 0) +
+    (globalMinMaePips !== undefined || globalMaxMaePips !== undefined ? 1 : 0) +
+    (globalMinMfePips !== undefined || globalMaxMfePips !== undefined ? 1 : 0);
 
   const dateOptions = [
     { value: '1w', label: '1 Hafta' },
@@ -748,6 +766,132 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                           setGlobalMaxAsiaRangePips?.(val !== '' ? parseFloat(val) : undefined);
                         }}
                         className="w-full h-8.5 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-amber-500 rounded-lg px-2.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none shadow-inner"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </FilterAccordionRow>
+
+              {/* 4c. MAE (DRAWDOWN PİP) */}
+              <FilterAccordionRow title="MAE (Maks. Aleyhte Pip)" 
+                icon={<Activity size={14} className="text-rose-400" />}
+                summaryText={
+                  (globalMinMaePips !== undefined || globalMaxMaePips !== undefined)
+                    ? `${globalMinMaePips ?? '0'} - ${globalMaxMaePips ?? '∞'} Pip`
+                    : 'Tümü'
+                }
+                badgeCount={(globalMinMaePips !== undefined || globalMaxMaePips !== undefined) ? 1 : 0}
+                isOpen={!!openSections.mae}
+                onToggle={() => toggleSection('mae')}
+              >
+                <div className="bg-zinc-950/60 p-3 rounded-xl border border-zinc-800/80 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-zinc-400 font-sans font-bold uppercase tracking-wider">Aralık (En Az - En Çok Drawdown)</span>
+                    {(globalMinMaePips !== undefined || globalMaxMaePips !== undefined) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setGlobalMinMaePips?.(undefined);
+                          setGlobalMaxMaePips?.(undefined);
+                        }}
+                        className="text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer"
+                      >
+                        Temizle
+                      </button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="text-[10px] text-zinc-400 uppercase font-bold tracking-wider mb-1 block">En Az (Min Pip)</label>
+                      <input
+                        type="number"
+                        step="any"
+                        min="0"
+                        placeholder="Min Pip"
+                        value={globalMinMaePips ?? ''}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setGlobalMinMaePips?.(val !== '' ? parseFloat(val) : undefined);
+                        }}
+                        className="w-full h-8.5 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-rose-500 rounded-lg px-2.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none shadow-inner"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-zinc-400 uppercase font-bold tracking-wider mb-1 block">En Çok (Maks Pip)</label>
+                      <input
+                        type="number"
+                        step="any"
+                        min="0"
+                        placeholder="Maks Pip"
+                        value={globalMaxMaePips ?? ''}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setGlobalMaxMaePips?.(val !== '' ? parseFloat(val) : undefined);
+                        }}
+                        className="w-full h-8.5 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-rose-500 rounded-lg px-2.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none shadow-inner"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </FilterAccordionRow>
+
+              {/* 4d. MFE (LEHTE PİP) */}
+              <FilterAccordionRow title="MFE (Maks. Lehte Pip)" 
+                icon={<Activity size={14} className="text-cyan-400" />}
+                summaryText={
+                  (globalMinMfePips !== undefined || globalMaxMfePips !== undefined)
+                    ? `${globalMinMfePips ?? '0'} - ${globalMaxMfePips ?? '∞'} Pip`
+                    : 'Tümü'
+                }
+                badgeCount={(globalMinMfePips !== undefined || globalMaxMfePips !== undefined) ? 1 : 0}
+                isOpen={!!openSections.mfe}
+                onToggle={() => toggleSection('mfe')}
+              >
+                <div className="bg-zinc-950/60 p-3 rounded-xl border border-zinc-800/80 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-zinc-400 font-sans font-bold uppercase tracking-wider">Aralık (En Az - En Çok Tepe)</span>
+                    {(globalMinMfePips !== undefined || globalMaxMfePips !== undefined) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setGlobalMinMfePips?.(undefined);
+                          setGlobalMaxMfePips?.(undefined);
+                        }}
+                        className="text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer"
+                      >
+                        Temizle
+                      </button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="text-[10px] text-zinc-400 uppercase font-bold tracking-wider mb-1 block">En Az (Min Pip)</label>
+                      <input
+                        type="number"
+                        step="any"
+                        min="0"
+                        placeholder="Min Pip"
+                        value={globalMinMfePips ?? ''}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setGlobalMinMfePips?.(val !== '' ? parseFloat(val) : undefined);
+                        }}
+                        className="w-full h-8.5 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-cyan-500 rounded-lg px-2.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none shadow-inner"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-zinc-400 uppercase font-bold tracking-wider mb-1 block">En Çok (Maks Pip)</label>
+                      <input
+                        type="number"
+                        step="any"
+                        min="0"
+                        placeholder="Maks Pip"
+                        value={globalMaxMfePips ?? ''}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setGlobalMaxMfePips?.(val !== '' ? parseFloat(val) : undefined);
+                        }}
+                        className="w-full h-8.5 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-cyan-500 rounded-lg px-2.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none shadow-inner"
                       />
                     </div>
                   </div>

@@ -429,6 +429,11 @@ ${JSON.stringify(definitionsData || {}, null, 2)}
 - Trend Yapısı Bazında: ${JSON.stringify(breakdownMetrics?.byTrend || {})}
 - İşlem Yönü (Direction / LONG-SHORT) Bazında: ${JSON.stringify(breakdownMetrics?.byDirection || {})}
 - Zaman Dilimi (Timeframe) Bazında: ${JSON.stringify(breakdownMetrics?.byTimeframe || {})}
+- Likidite Süpürmeleri (Liquidity Sweeps) ve Çoklu Havuz: ${JSON.stringify(breakdownMetrics?.strategyAnalytics?.liquiditySweepStats || {})}
+- MAE (Drawdown Pip) & Stop Optimizasyonu: ${JSON.stringify(breakdownMetrics?.strategyAnalytics?.maeStats || {})}
+- MFE (Max Favorable Move) & Masada Kalan Kâr: ${JSON.stringify(breakdownMetrics?.strategyAnalytics?.mfeStats || {})}
+- Asia Range Pip Volatilite Matrisi: ${JSON.stringify(breakdownMetrics?.strategyAnalytics?.asiaRangeStats || {})}
+- Altın Formül & Aksiyon İpuçları: ${JSON.stringify(breakdownMetrics?.strategyAnalytics?.actionableInsights || {})}
 
 [TÜM İŞLEMLERİN DETAYLI LİSTESİ (${tradesData?.length || 0} Adet İşlem - Notları ve Parametreleri ile)]
 ${JSON.stringify(tradesData || [], null, 2)}
