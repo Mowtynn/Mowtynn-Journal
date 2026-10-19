@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import toast from "react-hot-toast";
-import { Trade, DefinitionTitles, PlatformCategory, ExitReason } from "../types";
+import { Trade, DefinitionTitles, PlatformCategory } from "../types";
 import { 
   DEFAULT_PLAN_FIDELITIES, 
   DEFAULT_ENTRY_MODELS, 
@@ -137,7 +137,6 @@ const AddTradeForm = React.memo(function AddTradeForm({
   const [stopPips, setStopPips] = useState<number | "">("");
   const [tpPips, setTpPips] = useState<number | "">("");
   const [asiaRangePips, setAsiaRangePips] = useState<number | "">("");
-  const [exitReason, setExitReason] = useState<ExitReason | "">("");
   const [maePips, setMaePips] = useState<number | "">("");
   const [mfePips, setMfePips] = useState<number | "">("");
   const [rrValue, setRrValue] = useState<number | "">("");
@@ -328,7 +327,6 @@ const AddTradeForm = React.memo(function AddTradeForm({
       setPlanFidelity(editingTrade.planFidelity || null);
       setDxy(editingTrade.dxy || "");
       setPremiumDiscount(editingTrade.premiumDiscount || "");
-      setExitReason(editingTrade.exitReason || "");
       const d = new Date(editingTrade.createdAt || Date.now());
       d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
       setTradeDate(d.toISOString().slice(0, 16));
@@ -394,7 +392,6 @@ const AddTradeForm = React.memo(function AddTradeForm({
     setPlanFidelity(null);
     setDxy("");
     setPremiumDiscount("");
-    setExitReason("");
     const d = new Date();
     d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
     setTradeDate(d.toISOString().slice(0, 16));
@@ -527,7 +524,6 @@ const AddTradeForm = React.memo(function AddTradeForm({
       dxy: dxy || undefined,
       premiumDiscount: premiumDiscount || undefined,
       htfBias: editingTrade?.htfBias,
-      exitReason: exitReason || undefined,
       spreadPips: editingTrade?.spreadPips,
       notes: safeNotes || undefined,
       screenshot: screenshot || undefined,
@@ -537,7 +533,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
   };
 
   return (
-    <div className="flex flex-col bg-[#0a0a0c] overflow-hidden rounded-2xl">
+    <div className="trade-form-root flex flex-col bg-[#0a0a0c] overflow-hidden rounded-2xl">
       
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-3 sm:py-3.5 border-b border-zinc-800/80 bg-zinc-950/80 shrink-0 select-none">
@@ -562,10 +558,10 @@ const AddTradeForm = React.memo(function AddTradeForm({
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col">
-        <div className="p-3.5 sm:p-4 lg:p-5 flex flex-col lg:grid lg:grid-cols-12 gap-3.5 sm:gap-4 overflow-y-auto max-h-[calc(92vh-115px)]">
+        <div className="p-3.5 sm:p-4 lg:p-5 flex flex-col lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)_minmax(0,3fr)] gap-3.5 sm:gap-4 overflow-y-auto max-h-[calc(92vh-115px)]">
           
           {/* 1. SÜTUN: TEMEL & FİNANS (4 / 12) */}
-          <div className="lg:col-span-4 flex flex-col gap-3 sm:gap-3.5 min-w-0">
+          <div className="flex flex-col gap-3 sm:gap-3.5 min-w-0">
 
             {/* KART 1: TEMEL BİLGİLER */}
             <div className="bg-zinc-900/50 border border-zinc-800/80 rounded-2xl p-3 sm:p-3.5 flex flex-col gap-2.5 shadow-sm">
@@ -627,6 +623,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                   <div className="grid grid-cols-2 gap-1 h-8 sm:h-8.5 bg-zinc-950/80 border border-zinc-700/70 rounded-lg sm:rounded-xl p-0.5 shadow-inner">
                     <button
                       type="button"
+                      data-selected={type === "LONG"}
                       onClick={() => setType("LONG")}
                       className={`h-full rounded-md sm:rounded-lg text-xs font-sans font-bold uppercase transition-ui flex items-center justify-center cursor-pointer ${
                         type === "LONG" ? "toggle-item-win font-bold shadow-xs" : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 font-bold"
@@ -636,6 +633,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                     </button>
                     <button
                       type="button"
+                      data-selected={type === "SHORT"}
                       onClick={() => setType("SHORT")}
                       className={`h-full rounded-md sm:rounded-lg text-xs font-sans font-bold uppercase transition-ui flex items-center justify-center cursor-pointer ${
                         type === "SHORT" ? "toggle-item-loss font-bold shadow-xs" : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 font-bold"
@@ -683,6 +681,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                       <div className="p-1.5 bg-zinc-950/80 border-b border-zinc-800 flex items-center gap-1">
                         <button
                           type="button"
+                          data-selected={platformTabFilter === 'ALL'}
                           onClick={(e) => {
                             e.stopPropagation();
                             setPlatformTabFilter('ALL');
@@ -695,6 +694,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                         </button>
                         <button
                           type="button"
+                          data-selected={platformTabFilter === 'FUNDED'}
                           onClick={(e) => {
                             e.stopPropagation();
                             setPlatformTabFilter('FUNDED');
@@ -708,6 +708,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                         </button>
                         <button
                           type="button"
+                          data-selected={platformTabFilter === 'CHALLENGE'}
                           onClick={(e) => {
                             e.stopPropagation();
                             setPlatformTabFilter('CHALLENGE');
@@ -721,6 +722,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                         </button>
                         <button
                           type="button"
+                          data-selected={platformTabFilter === 'DEMO'}
                           onClick={(e) => {
                             e.stopPropagation();
                             setPlatformTabFilter('DEMO');
@@ -858,7 +860,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
               {/* DURUM: WIN / LOSS / BREAKEVEN */}
               <div>
                 <label className="text-[10px] sm:text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 block font-sans">İŞLEM DURUMU</label>
-                <div className="grid grid-cols-3 gap-1 h-8 sm:h-8.5 bg-zinc-950/80 border border-zinc-700/70 rounded-lg sm:rounded-xl p-0.5 shadow-inner">
+                <div className="grid grid-cols-3 gap-1.5 h-10 sm:h-11 w-full bg-zinc-950/80 border border-zinc-700/70 rounded-xl p-1 shadow-inner">
                   {(["WIN", "LOSS", "BREAKEVEN"] as const).map((sVal) => {
                     const colors: Record<string, string> = {
                       WIN: "toggle-item-win font-bold shadow-xs",
@@ -869,6 +871,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                       <button
                         key={sVal}
                         type="button"
+                        data-selected={tradeStatus === sVal}
                         onClick={() => {
                           setTradeStatus(sVal);
                           if (sVal === "BREAKEVEN") {
@@ -884,7 +887,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                             }
                           }
                         }}
-                        className={`h-full text-xs font-bold font-sans rounded-md sm:rounded-lg border uppercase transition-ui cursor-pointer ${
+                        className={`h-full min-w-0 px-4 sm:px-6 text-[13px] font-bold font-sans rounded-lg border uppercase transition-ui cursor-pointer ${
                           tradeStatus === sVal
                             ? colors[sVal]
                             : "bg-transparent text-zinc-400 border-transparent hover:text-zinc-200 hover:bg-zinc-900"
@@ -989,22 +992,6 @@ const AddTradeForm = React.memo(function AddTradeForm({
                     className="w-full h-8 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 rounded-lg sm:rounded-xl px-2.5 text-xs text-zinc-100 focus:outline-none placeholder-zinc-500 font-sans shadow-inner transition-ui [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
                   />
                 </div>
-
-                {/* 4. SATIR: ASIA MODEL VERİSİ (ÇIKIŞ NEDENİ) — hepsi opsiyonel, edge analizi için */}
-                <div className="pt-1.5 border-t border-zinc-800/60 flex flex-col gap-2">
-                  <div>
-                    <label className="text-[10px] sm:text-[11px] font-bold text-zinc-400 uppercase tracking-wide font-sans mb-1 block">
-                      ÇIKIŞ NEDENİ
-                    </label>
-                    <div className="flex flex-wrap gap-1.5">
-                      <button type="button" onClick={() => setExitReason(exitReason === "TP" ? "" : "TP")} className={`h-7 px-2 rounded-lg border text-[11px] font-bold font-sans transition-colors cursor-pointer ${exitReason === "TP" ? "bg-zinc-700 text-zinc-100 border-zinc-500" : "bg-zinc-900 text-zinc-500 border-zinc-800 hover:text-zinc-300"}`}>Hedef</button>
-                      <button type="button" onClick={() => setExitReason(exitReason === "SL" ? "" : "SL")} className={`h-7 px-2 rounded-lg border text-[11px] font-bold font-sans transition-colors cursor-pointer ${exitReason === "SL" ? "bg-zinc-700 text-zinc-100 border-zinc-500" : "bg-zinc-900 text-zinc-500 border-zinc-800 hover:text-zinc-300"}`}>Stop</button>
-                      <button type="button" onClick={() => setExitReason(exitReason === "BE" ? "" : "BE")} className={`h-7 px-2 rounded-lg border text-[11px] font-bold font-sans transition-colors cursor-pointer ${exitReason === "BE" ? "bg-zinc-700 text-zinc-100 border-zinc-500" : "bg-zinc-900 text-zinc-500 border-zinc-800 hover:text-zinc-300"}`}>BE</button>
-                      <button type="button" onClick={() => setExitReason(exitReason === "MANUAL" ? "" : "MANUAL")} className={`h-7 px-2 rounded-lg border text-[11px] font-bold font-sans transition-colors cursor-pointer ${exitReason === "MANUAL" ? "bg-zinc-700 text-zinc-100 border-zinc-500" : "bg-zinc-900 text-zinc-500 border-zinc-800 hover:text-zinc-300"}`}>Manuel</button>
-                      <button type="button" onClick={() => setExitReason(exitReason === "TIME" ? "" : "TIME")} className={`h-7 px-2 rounded-lg border text-[11px] font-bold font-sans transition-colors cursor-pointer ${exitReason === "TIME" ? "bg-zinc-700 text-zinc-100 border-zinc-500" : "bg-zinc-900 text-zinc-500 border-zinc-800 hover:text-zinc-300"}`}>Zaman/Hafta sonu</button>
-                    </div>
-                  </div>
-                </div>
               </div>
 
               {/* R:R ORANI & PNL */}
@@ -1092,7 +1079,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
           </div>
 
           {/* 2. SÜTUN: TEKNİK STRATEJİ & KURGU (5 / 12) */}
-          <div className="lg:col-span-5 flex flex-col min-w-0">
+          <div className="flex flex-col min-w-0">
             <div className="bg-zinc-900/50 border border-zinc-800/80 rounded-2xl p-3 sm:p-3.5 flex flex-col gap-2.5 shadow-sm h-full">
               
               {/* 1. SETUP KALİTESİ */}
@@ -1101,7 +1088,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                   <ShieldCheck size={13} className="text-blue-400" />
                   {(cleanDefinitionTitleString(definitionTitles.planFidelities) || "SETUP KALİTESİ").toUpperCase()}
                 </label>
-                <div className="w-full grid grid-flow-col auto-cols-fr bg-zinc-950/80 border border-zinc-800/90 rounded-lg sm:rounded-xl p-0.5 gap-1 h-8 sm:h-8.5 shadow-inner">
+                <div className="w-full grid grid-flow-col auto-cols-fr bg-zinc-950/80 border border-zinc-800/90 rounded-xl p-1 gap-1.5 h-10 sm:h-11 shadow-inner">
                   {planFidelities.map((item) => {
                     const isSelected = planFidelity === item;
                     const lower = item.toLowerCase();
@@ -1117,8 +1104,9 @@ const AddTradeForm = React.memo(function AddTradeForm({
                       <button
                         key={item}
                         type="button"
+                        data-selected={isSelected}
                         onClick={() => setPlanFidelity(isSelected ? null : item)}
-                        className={`min-w-0 h-full flex items-center justify-center px-2 rounded-md sm:rounded-lg text-xs font-sans font-bold tracking-wide uppercase transition-ui duration-150 select-none border cursor-pointer ${
+                        className={`min-w-0 h-full flex items-center justify-center px-4 sm:px-6 rounded-lg text-[13px] font-sans font-bold tracking-wide uppercase transition-ui duration-150 select-none border cursor-pointer ${
                           isSelected ? activeStyle : "border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
                         }`}
                       >
@@ -1135,7 +1123,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                   <TrendingUp size={13} className="text-emerald-400" />
                   {(cleanDefinitionTitleString(definitionTitles.trendTypes) || "TREND").toUpperCase()}
                 </label>
-                <div className="w-full grid grid-flow-col auto-cols-fr bg-zinc-950/80 border border-zinc-800/90 rounded-lg sm:rounded-xl p-0.5 gap-1 h-8 sm:h-8.5 shadow-inner">
+                <div className="w-full grid grid-flow-col auto-cols-fr bg-zinc-950/80 border border-zinc-800/90 rounded-xl p-1 gap-1.5 h-10 sm:h-11 shadow-inner">
                   {(trendTypes.length > 0 ? trendTypes : ["Continuation", "Reversal"]).map((tr, idx) => {
                     const isSelected = selectedTrend === tr;
                     const lower = tr.toLowerCase();
@@ -1150,8 +1138,9 @@ const AddTradeForm = React.memo(function AddTradeForm({
                       <button
                         key={tr}
                         type="button"
+                        data-selected={isSelected}
                         onClick={() => setSelectedTrend(isSelected ? "" : tr)}
-                        className={`min-w-0 h-full flex items-center justify-center px-3 rounded-lg text-xs font-sans font-bold tracking-wide uppercase transition-ui duration-150 select-none border cursor-pointer ${
+                        className={`min-w-0 h-full flex items-center justify-center px-4 sm:px-6 rounded-lg text-[13px] font-sans font-bold tracking-wide uppercase transition-ui duration-150 select-none border cursor-pointer ${
                           isSelected
                             ? activeStyle
                             : "border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
@@ -1180,6 +1169,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                       <button
                         key={idx}
                         type="button"
+                        data-selected={sess === selectedSession}
                         onClick={() => setSelectedSession(sess === selectedSession ? "" : sess)}
                         className={`px-3 py-1.5 text-xs rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
                           sess === selectedSession
@@ -1208,6 +1198,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                         <button
                           key={time}
                           type="button"
+                          data-selected={isSelected}
                           onClick={() => setSelectedEntryTime(isSelected ? "" : time)}
                           className={`px-2.5 py-1 text-xs rounded-xl transition-ui font-sans font-bold tracking-wider cursor-pointer border tabular-nums ${
                             isSelected
@@ -1233,6 +1224,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                       <button
                         key={idx}
                         type="button"
+                        data-selected={tf === selectedHtfTimeframe}
                         onClick={() => setSelectedHtfTimeframe(tf === selectedHtfTimeframe ? "" : tf)}
                         className={`px-3 py-1.5 text-xs rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
                           tf === selectedHtfTimeframe
@@ -1259,6 +1251,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                         <button
                           key={idx}
                           type="button"
+                          data-selected={isActive}
                           onClick={() =>
                             setSelectedConfirmations(
                               isActive
@@ -1290,6 +1283,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                       <button
                         key={idx}
                         type="button"
+                        data-selected={tf === selectedTimeframe}
                         onClick={() => setSelectedTimeframe(tf === selectedTimeframe ? "" : tf)}
                         className={`px-3 py-1.5 text-xs rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
                           tf === selectedTimeframe
@@ -1316,6 +1310,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                         <button
                           key={idx}
                           type="button"
+                          data-selected={isActive}
                           onClick={() =>
                             setSelectedEntries(
                               isActive
@@ -1349,6 +1344,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                         <button
                           key={dx}
                           type="button"
+                          data-selected={isSelected}
                           onClick={() => setDxy(isSelected ? "" : dx)}
                           className={`px-3 py-1.5 text-xs rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
                             isSelected
@@ -1376,6 +1372,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                         <button
                           key={zone}
                           type="button"
+                          data-selected={isSelected}
                           onClick={() => setPremiumDiscount(isSelected ? "" : zone)}
                           className={`px-2.5 py-1 text-xs rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
                             isSelected
@@ -1395,7 +1392,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
           </div>
 
           {/* 3. SÜTUN: ANALİZ, NOTLAR & SES (3 / 12) */}
-          <div className="lg:col-span-3 flex flex-col min-w-0">
+          <div className="flex flex-col min-w-0">
             <div className="bg-zinc-900/50 border border-zinc-800/80 rounded-2xl p-3 sm:p-3.5 flex flex-col gap-2.5 shadow-sm h-full">
               
               {/* BAŞLIK & VOICE-TO-TRADE */}

@@ -41,16 +41,16 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
   const exportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: PointerEvent) => {
       if (exportRef.current && !exportRef.current.contains(event.target as Node)) {
         setIsExportOpen(false);
       }
     };
     if (isExportOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('pointerdown', handleClickOutside);
     }
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('pointerdown', handleClickOutside);
     };
   }, [isExportOpen]);
 
@@ -151,7 +151,7 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
               onClick={e => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="bg-zinc-950/60 border-b border-zinc-800/80 px-3 py-3 sm:px-6 sm:py-4 flex items-center justify-between gap-2 sticky top-0 z-10 shrink-0 flex-wrap sm:flex-nowrap">
+              <div className="bg-zinc-950/60 border-b border-zinc-800/80 px-3 py-3 sm:px-6 sm:py-4 flex items-center justify-between gap-2 relative z-30 shrink-0 flex-wrap sm:flex-nowrap">
                 <div className="flex items-center flex-wrap gap-1.5 sm:gap-3 flex-1 min-w-0">
                   <div className="bg-blue-500/10 border border-blue-500/20 px-2 sm:px-3 py-1.5 rounded-xl flex items-center justify-center shrink-0">
                     <span className="text-[10px] sm:text-sm font-black text-blue-400 font-sans tracking-widest uppercase flex items-center justify-center leading-none">
@@ -186,7 +186,7 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 4, scale: 0.98 }}
                         transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
-                        className="absolute right-0 top-11 w-[290px] bg-zinc-900 border border-zinc-700/80 rounded-2xl shadow-2xl z-50 p-2 overflow-hidden"
+                        className="absolute right-0 top-[calc(100%+8px)] w-[290px] max-w-[calc(100vw-2rem)] bg-zinc-900 border border-zinc-700/80 rounded-2xl shadow-2xl z-[60] p-2 overflow-hidden"
                       >
                         {/* Format Tabs */}
                         <div className="flex items-center gap-1 p-1 bg-zinc-950 rounded-xl border border-zinc-800/80 mb-2">
@@ -325,7 +325,7 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
               </div>
 
               {/* Sub-Header Stats Bar */}
-              <div className="flex flex-wrap items-center justify-between gap-1.5 px-3 py-2 sm:px-4 bg-zinc-950/60 border-b border-zinc-800/80 shrink-0 select-none w-full">
+              <div className="flex flex-wrap items-center justify-between gap-1.5 px-3 py-2 sm:px-4 bg-zinc-950/60 border-b border-zinc-800/80 shrink-0 select-none w-full relative z-0">
                 <div className="flex flex-wrap items-center gap-1.5">
                   <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800/80 rounded-lg px-2 py-1 shrink-0">
                     <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest font-sans leading-none">Toplam:</span>
@@ -367,7 +367,7 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
 
               {/* Trades Table */}
               <div className="overflow-x-auto overflow-y-auto flex-1 min-h-0 px-2 sm:px-4 pb-2 sm:pb-4 pt-3 bg-zinc-950/60">
-                <table className="w-full text-left border-separate sm:border-spacing-x-0 sm:border-spacing-y-1 text-[10px] sm:text-xs font-sans whitespace-nowrap sm:table-fixed sm:min-w-[700px] block sm:table">
+                <table className="trade-table w-full text-left border-separate sm:border-spacing-x-0 sm:border-spacing-y-1 text-[10px] sm:text-xs font-sans whitespace-nowrap sm:table-fixed sm:min-w-[700px] block sm:table">
                   <thead className="sticky top-0 z-20 hidden sm:table-header-group">
                     <tr className="text-[9px] text-zinc-400 uppercase tracking-widest border-b border-zinc-800/80">
                       <th className="py-2 px-3 font-sans select-none w-[20%] min-w-[120px] text-center">Parite</th>

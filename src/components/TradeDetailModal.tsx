@@ -383,14 +383,6 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                               icon={<Activity size={14} className="text-amber-400"/>} 
                             />
                           )}
-                          {/* 3b-2. ASIA MODEL VERİSİ: ÇIKIŞ */}
-                          {currentTrade.exitReason && (
-                            <ContextRow 
-                              label="ÇIKIŞ NEDENİ" 
-                              value={{ TP: 'Hedef', SL: 'Stop', BE: 'Başabaş', MANUAL: 'Manuel', TIME: 'Zaman / Hafta sonu' }[currentTrade.exitReason]} 
-                              icon={<Target size={14} className="text-zinc-400"/>} 
-                            />
-                          )}
                           {/* 3c. MAE (PİP) */}
                           {currentTrade.maePips !== undefined && currentTrade.maePips !== null && (
                             <ContextRow 

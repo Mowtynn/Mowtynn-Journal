@@ -89,7 +89,6 @@ export const prepareTradeExportRows = (trades: Trade[], options?: ExportOptions)
       'DXY': t.dxy || '-',
       'Premium / Discount': t.premiumDiscount || '-',
       'Süpürülen Asia Tarafı': getSweepSide(t) === 'HIGH' ? 'High' : 'Low',
-      'Çıkış Nedeni': t.exitReason || '-',
       'Potansiyel R (MFE/Stop)': hasNum(t.mfePips) && stopOk ? Number(((t.mfePips as number) / (t.stopPips as number)).toFixed(2)) : '-',
       'Hedef Tamamlama (MFE/TP %)': hasNum(t.mfePips) && hasNum(t.tpPips) && t.tpPips > 0 ? Math.round(((t.mfePips as number) / t.tpPips) * 100) : '-',
       'Analiz & Psikoloji Notları': t.notes ? t.notes.replace(/\r?\n/g, ' ') : '-',

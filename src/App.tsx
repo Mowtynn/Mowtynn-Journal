@@ -1142,6 +1142,7 @@ export default function App() {
         } as Trade;
         delete (initialTrade as any).entryDate;
       }
+      delete (initialTrade as any).exitReason; // alan projeden kaldırıldı; eski kayıtlardan da düşer
 
       const existingTrade = trades.find((t) => t.id === finalTradeId);
 
@@ -1190,9 +1191,11 @@ export default function App() {
           Object.assign(finalTradeToCloud, existingTrade, processedTradeData);
         }
         delete (finalTradeToCloud as any).entryDate;
+        delete (finalTradeToCloud as any).exitReason;
 
         setDoc(doc(db, "trades", finalTradeId), cleanForFirestore(finalTradeToCloud)).catch((err) => {
           console.error("Failed to save to cloud:", err);
+          toast.error("İşlem buluta kaydedilemedi, değişiklik geri alındı.");
           setTrades((current) => {
             if (isNew) {
               return current.filter(t => t.id !== finalTradeId);
@@ -1393,12 +1396,13 @@ export default function App() {
   // Delete single trade
   const handleDeleteTrade = useCallback(
     async (id: string) => {
-      let deletedTrade: Trade | undefined;
+      // Silinecek kayıt, setState güncelleyicisinin içinden DEĞİL, mevcut listeden okunur:
+      // güncelleyici gecikmeli çalışabildiğinden önceki sürümde bulut silme çağrısı hiç yapılmıyordu
+      // ve silinen işlem bir sonraki senkronizasyonda geri geliyordu.
+      const deletedTrade = trades.find((t) => t.id === id);
 
       setTrades((prevTrades) => {
-        deletedTrade = prevTrades.find((t) => t.id === id);
         const updated = prevTrades.filter((t) => t.id !== id);
-        
         if (!user) {
           try {
             localStorage.setItem("trading_journal_db", JSON.stringify(updated));
@@ -1408,12 +1412,18 @@ export default function App() {
         }
         return updated;
       });
-      if (user && deletedTrade) {
-        // Sync to cloud (optimistic fire-and-forget)
+
+      if (user) {
         deleteDoc(doc(db, "trades", id)).catch((err) => {
-           console.error("Failed to delete from cloud", err);
-           // Rollback if cloud fails
-           setTrades(current => [...current, deletedTrade!].sort((a,b) => b.createdAt - a.createdAt));
+          console.error("Failed to delete from cloud", err);
+          toast.error("İşlem buluttan silinemedi, geri yüklendi.");
+          if (deletedTrade) {
+            setTrades((current) =>
+              current.some((t) => t.id === id)
+                ? current
+                : [...current, deletedTrade].sort((a, b) => b.createdAt - a.createdAt)
+            );
+          }
         });
       }
 
@@ -1435,12 +1445,12 @@ export default function App() {
   const handleDeleteTradesByPlatform = useCallback(
     async (platformName: string) => {
       const targetPlat = platformName.trim().toLowerCase();
-      let removedTrades: Trade[] = [];
+      // Güncelleyicinin dışında, mevcut listeden hesaplanır (aynı gecikmeli-güncelleyici hatası).
+      const removedTrades = trades.filter(
+        (t) => (t.platform || '').trim().toLowerCase() === targetPlat
+      );
 
       setTrades((prevTrades) => {
-        removedTrades = prevTrades.filter(
-          (t) => (t.platform || '').trim().toLowerCase() === targetPlat
-        );
         const updated = prevTrades.filter(
           (t) => (t.platform || '').trim().toLowerCase() !== targetPlat
         );
@@ -1458,6 +1468,11 @@ export default function App() {
         removedTrades.forEach((t) => {
           deleteDoc(doc(db, "trades", t.id)).catch((err) => {
             console.error("Failed to delete platform trade from cloud", err);
+            setTrades((current) =>
+              current.some((x) => x.id === t.id)
+                ? current
+                : [...current, t].sort((a, b) => b.createdAt - a.createdAt)
+            );
           });
         });
       }
@@ -1473,7 +1488,7 @@ export default function App() {
         return prev;
       });
     },
-    [user, setTrades]
+    [user, trades]
   );
   // Set Notes
 
@@ -2369,12 +2384,12 @@ export default function App() {
       />
       {/* 1. MODERN COMPACT NAVBAR */}
       <header className="border-b border-border-subtle bg-bg-base  sticky top-0 z-40 transition-colors duration-200">
-        <div className="max-w-6xl mx-auto px-4 py-2 sm:py-2.5 flex flex-row items-center justify-between sm:justify-center gap-3 sm:gap-8 relative">
+        <div className="max-w-6xl mx-auto px-3 sm:px-4 py-1.5 sm:py-2 flex flex-row items-center justify-between gap-2 relative">
           
           <div className="flex items-center gap-3 z-10">
             {/* Brand */}
             <div 
-              className="flex items-center gap-2.5 cursor-pointer group select-none transition-transform duration-300 ease-out active:scale-[0.98]"
+              className="flex items-center gap-2 cursor-pointer group select-none transition-transform duration-300 ease-out active:scale-[0.98]"
               onClick={() => {
                 if (currentTab === "dashboard") {
                   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -2388,7 +2403,7 @@ export default function App() {
                 TJ
               </div>
               <div className="flex items-baseline gap-2">
-                <h1 className="page-title">
+                <h1 className="page-title !text-sm !tracking-wide">
                   TRADING JOURNAL
                 </h1>
                 <span className="text-[11px] font-medium tracking-normal text-zinc-400 italic">
@@ -2398,7 +2413,7 @@ export default function App() {
             </div>
           </div>
 
-          <div className="flex items-center justify-end shrink-0 select-none gap-2 z-10">
+          <div className="flex items-center justify-end shrink-0 select-none gap-1.5 ml-auto z-10">
             {/* PWA Install Button (Compact) */}
             <PWAInstallButton className="hidden sm:flex" />
 
@@ -2781,7 +2796,7 @@ export default function App() {
             id="navigation-tabs"
             role="tablist"
             aria-label="Ana bölümler"
-            className="flex items-center gap-1.5 overflow-x-auto whitespace-nowrap no-scrollbar bg-zinc-900/90 border border-zinc-800/80 p-1.5 rounded-2xl shadow-sm"
+            className="flex items-center gap-1 w-fit max-w-full overflow-x-auto whitespace-nowrap no-scrollbar bg-zinc-900/90 border border-zinc-800/80 p-1 rounded-2xl shadow-sm"
             onKeyDown={(e) => {
               if (e.key !== "ArrowRight" && e.key !== "ArrowLeft" && e.key !== "Home" && e.key !== "End") return;
               const tabsEls = Array.from(e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
@@ -2813,7 +2828,7 @@ export default function App() {
                   aria-selected={isActive}
                   tabIndex={isActive ? 0 : -1}
                   onClick={() => handleTabChange(tab.id as any)}
-                  className={`relative px-3.5 py-2 text-xs font-bold tracking-wide rounded-xl transition-ui duration-150 flex items-center gap-2 cursor-pointer select-none shrink-0 ${
+                  className={`relative px-3 py-1.5 text-xs font-bold tracking-wide rounded-xl transition-ui duration-150 flex items-center gap-2 cursor-pointer select-none shrink-0 ${
                     isActive
                       ? "text-blue-400"
                       : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"

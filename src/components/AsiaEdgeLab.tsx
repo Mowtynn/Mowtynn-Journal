@@ -15,14 +15,6 @@ interface AsiaEdgeLabProps {
   trades: Trade[];
 }
 
-const EXIT_LABELS: Record<string, string> = {
-  TP: 'Hedef (karşı Asia ucu)',
-  SL: 'Stop',
-  BE: 'Başabaş',
-  MANUAL: 'Manuel kapanış',
-  TIME: 'Zaman / hafta sonu kapanışı',
-};
-
 const signed = (v: number, digits = 2) => `${v >= 0 ? '+' : ''}${v.toFixed(digits)}`;
 const tone = (v: number) => (v > 0 ? 'text-emerald-400' : v < 0 ? 'text-rose-400' : 'text-zinc-300');
 
@@ -340,7 +332,7 @@ export const AsiaEdgeLab = React.memo(function AsiaEdgeLab({ trades }: AsiaEdgeL
             </Card>
           </div>
 
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             <Card title="Hedefe Ulaşma Dağılımı" hint="MFE / TP mesafesi: fiyat karşı Asia ucuna giden yolun ne kadarını katetti?">
               {r.targetReach ? (
                 <div className="space-y-1.5">
@@ -362,10 +354,6 @@ export const AsiaEdgeLab = React.memo(function AsiaEdgeLab({ trades }: AsiaEdgeL
               ) : (
                 <Empty text="TP ve MFE girilmiş işlem yok." />
               )}
-            </Card>
-
-            <Card title="Çıkış Nedeni">
-              <GroupTable rows={r.exitReasons.map((x) => ({ label: EXIT_LABELS[x.key] || x.key, stats: x.stats }))} minSample={1} empty="Çıkış nedeni girilmemiş." />
             </Card>
           </div>
 

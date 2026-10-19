@@ -86,3 +86,21 @@ Ağ kapalı olduğu için `npm install` / `npm run build` bu ortamda çalıştı
 - vite.config.ts: xlsx/jspdf/html2canvas/html-to-image ve react-markdown ailesi ayrı `vendor-export` / `vendor-markdown` parçalarına ayrıldı (hepsi statik import; paralel indirilir, uygulama kodu değişince önbellekten gelir). `reportCompressedSize` kapatıldı (build hızlanır).
 - index.html: ilk boyamada beyaz parlama olmaması için koyu arka plan, kullanılmayan `s3.tradingview.com` preconnect'i silindi.
 - Derleme bu ortamda yine çalıştırılamadı; ilk build'de parça çıktısına bakın.
+
+## 9. tur: tablo hizası, animasyon, işlem formu, navigasyon, senkron
+**Ana panel işlem geçmişi:** satır ve sütunlar tam ortalandı (`.trade-table`: tüm hücreler yatay + dikey ortalı, eşit dikey boşluk; son sütundaki 6 px'lik kayma giderildi). Satırlardaki `contain: layout` (`cv-auto`) kaldırıldı. Boş durum hücresi 7 yerine 8 sütunu kapsıyor.
+
+**Animasyon hataları:**
+- İşlem listesi sayfa değiştirirken `AnimatePresence` (sync) eski ve yeni `<tbody>`'yi aynı anda DOM'da tutuyordu (satırlar çift görünüp zıplıyordu) -> düz `<tbody key=sayfa>` + kısa CSS belirme.
+- Tablo sarmalayıcısındaki `transform-gpu` kaldırıldı (bulanık yazı, yapışkan başlık ve katman sorunları).
+- Sayfalama metni/butonları kırpılmış sayfa (`effectivePage`) ile çalışıyor.
+
+**İşlem ekleme:** "Çıkış nedeni" projeden tamamen kaldırıldı (form, tip, detay penceresi, Asia Edge Lab kartı, dışa aktarma sütunu, AI Co-Pilot verisi, eksik veri listesi). Eski kayıtlardaki alan bir sonraki düzenlemede buluttan da silinir. Tüm form butonlarına ortak seçme/geçiş animasyonu: renk-kenar-gölge geçişi, basınca küçülme, seçilince tek seferlik "pop + halka" (`data-selected`). İşlem durumu, Setup kalitesi ve Trend yapısı grupları büyütüldü (daha yüksek, geniş dolgu, sütun oranı 5/6/3).
+
+**Navigasyon:** üst çubukta logo solda, butonlar sağda (masaüstünde de); çubuk daha ince/dar. Sekme şeridi içeriğine göre daralır.
+
+**Detaylı Analiz > işlem geçmişi indirme menüsü:** tablonun yapışkan başlığı (z-20) başlık çubuğunun (z-10) üstüne biniyor, menü altta kalıp tıklanamıyordu -> başlık z-30, menü z-60.
+
+**Senkron:** `handleDeleteTrade` ve `handleDeleteTradesByPlatform` silinecek kaydı `setTrades` güncelleyicisinin içinde yakalıyordu; güncelleyici gecikmeli çalışınca `deleteDoc` hiç çağrılmıyor ve silinen işlem bulutta kalıp geri geliyordu. Artık mevcut listeden okunuyor; bulut hatasında kullanıcı bilgilendirilip kayıt geri yükleniyor. İşlem kaydetme bulutta başarısız olursa da uyarı gösteriliyor.
+
+**Doğrulama:** ağ kapalı, `npm install` / `npm run build` çalıştırılamadı. `tsc` ile sözdizimi + kullanılmayan/tanımsız isim taraması yapıldı: yeni hata yok. Yayından önce: `npm install && npm run lint && npm run build`.

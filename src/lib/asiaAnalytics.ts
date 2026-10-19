@@ -370,7 +370,6 @@ export function computeCoverage(trades: Trade[]): CoverageRow[] {
     { field: 'maePips', label: 'MAE (pip)', unlocks: 'Stop daraltma simülatörü', ok: (t) => hasNum(t.maePips) },
     { field: 'mfePips', label: 'MFE (pip)', unlocks: 'TP simülatörü, hedef tamamlama dağılımı', ok: (t) => hasNum(t.mfePips) },
     { field: 'asiaRangePips', label: 'Asia range (pip)', unlocks: 'Range büyüklüğü edge analizi (parite bazlı)', ok: (t) => hasNum(t.asiaRangePips) && t.asiaRangePips > 0 },
-    { field: 'exitReason', label: 'Çıkış nedeni', unlocks: 'Gerçek hedef/stop dağılımı', ok: (t) => !!t.exitReason },
     { field: 'htfTimeframe', label: 'PD array zaman dilimi', unlocks: '1H / 4H / D kıyası', ok: (t) => !!t.htfTimeframe },
     { field: 'confirmations', label: 'PD array türü', unlocks: 'FVG / OB / seviye kıyası', ok: (t) => Array.isArray(t.confirmations) && t.confirmations.length > 0 },
     { field: 'liquiditySweeps', label: 'Likidite seviyesi', unlocks: 'PDH/PDL, PWH/PWL, PMH/PML kıyası', ok: (t) => (Array.isArray(t.liquiditySweeps) && t.liquiditySweeps.length > 0) || !!t.liquiditySweep },
@@ -410,7 +409,6 @@ export interface AsiaLabResult {
   levels: GroupRow[];
   entryModels: GroupRow[];
   rangeSize: Array<{ key: RangeBucket; label: string; stats: EdgeStats }>;
-  exitReasons: GroupRow[];
   targetReach: { usable: number; buckets: Array<{ label: string; count: number; pct: number }>; reachedPct: number } | null;
   tpSim: { rows: SimRow[]; usable: number };
   stopSim: { rows: SimRow[]; usable: number };
@@ -488,8 +486,6 @@ export function analyzeAsia(allTrades: Trade[], opts: AsiaLabOptions): AsiaLabRe
   const rangeSize = (['NARROW', 'NORMAL', 'WIDE'] as RangeBucket[])
     .map((key) => ({ key, label: RANGE_BUCKET_LABELS[key], stats: computeEdge(trades.filter((t) => bucketMap.get(t.id) === key)) }))
     .filter((r) => r.stats.n > 0);
-
-  const exitReasons = groupTrades(trades, (t) => (t.exitReason ? t.exitReason : null));
 
   // Target reach distribution: how far into the TP distance did price travel?
   let targetReach: AsiaLabResult['targetReach'] = null;
@@ -569,7 +565,6 @@ export function analyzeAsia(allTrades: Trade[], opts: AsiaLabOptions): AsiaLabRe
     levels,
     entryModels,
     rangeSize,
-    exitReasons,
     targetReach,
     tpSim,
     stopSim,

@@ -304,7 +304,7 @@ const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
   return (
     <tr 
       onClick={() => onViewDetails(trade)}
-      className="group select-none relative flex flex-wrap sm:table-row bg-zinc-900 mb-2 sm:mb-0 rounded-xl sm:rounded-none border border-zinc-800/80 sm:border-none p-2 sm:p-0 align-middle cursor-pointer hover:bg-zinc-800/50 transition-colors duration-100 cv-auto"
+      className="group select-none relative flex flex-wrap sm:table-row bg-zinc-900 mb-2 sm:mb-0 rounded-xl sm:rounded-none border border-zinc-800/80 sm:border-none p-2 sm:p-0 align-middle cursor-pointer hover:bg-zinc-800/50 transition-colors duration-100"
     >
       <td className="w-1/2 min-w-[130px] flex justify-start items-center sm:table-cell order-1 py-1 px-0 sm:px-3 text-zinc-400 font-sans sm:bg-transparent sm:rounded-l-xl sm:border-y sm:border-l sm:border-zinc-800/80 align-middle sm:w-[18%] group-hover:text-zinc-100">
         <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-center sm:w-full gap-0.5 sm:gap-1.5">
@@ -1551,9 +1551,9 @@ const TradeList = React.memo(function TradeList({
       ) : (
         <>
           <div 
-            className="relative z-0 overflow-x-auto w-full rounded-xl transform-gpu"
+            className="relative z-0 overflow-x-auto w-full rounded-xl"
           >
-            <table className="w-full text-left border-separate sm:border-spacing-x-0 sm:border-spacing-y-1 text-[10px] sm:text-xs font-sans whitespace-nowrap sm:table-fixed sm:min-w-[750px] block sm:table">
+            <table className="trade-table w-full text-left border-separate sm:border-spacing-x-0 sm:border-spacing-y-1 text-[10px] sm:text-xs font-sans whitespace-nowrap sm:table-fixed sm:min-w-[750px] block sm:table">
               <thead className="sticky top-0 z-20 hidden sm:table-header-group">
                 <tr className="text-[9px] text-zinc-400 uppercase tracking-widest border-b border-zinc-800/80">
                   <th 
@@ -1628,15 +1628,7 @@ const TradeList = React.memo(function TradeList({
                   <th className="py-2 px-3 text-center font-sans select-none w-[8%] min-w-[60px]">İşlem</th>
                 </tr>
               </thead>
-              <AnimatePresence initial={false}>
-                <motion.tbody
-                  key={currentPage}
-                  initial={{ opacity: 0.8 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0.8 }}
-                  transition={{ duration: 0.1, ease: [0.16, 1, 0.3, 1] }}
-                  className="block sm:table-row-group"
-                >
+              <tbody key={effectivePage} className="trade-tbody-fade block sm:table-row-group">
                 {paginatedTrades.map((trade, idx) => (
                   <MemoizedTradeRow 
                     key={trade.id ? `${trade.id}` : `trade-fallback-${idx}`}
@@ -1649,7 +1641,7 @@ const TradeList = React.memo(function TradeList({
                 ))}
                 {paginatedTrades.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-xs font-bold font-sans text-zinc-500 bg-zinc-950/60 border border-zinc-800/80 rounded-xl">
+                    <td colSpan={8} className="py-12 text-center text-xs font-bold font-sans text-zinc-500 bg-zinc-950/60 border border-zinc-800/80 rounded-xl">
                       <div className="flex flex-col items-center gap-2">
                         <Search size={32} className="opacity-20" />
                         <p className="uppercase tracking-wider">Sonuç bulunamadı</p>
@@ -1658,26 +1650,25 @@ const TradeList = React.memo(function TradeList({
                     </td>
                   </tr>
                 )}
-                </motion.tbody>
-              </AnimatePresence>
+              </tbody>
             </table>
           </div>
           {filteredTrades.length > itemsPerPage && (
             <div className="flex items-center justify-between border-t border-zinc-800/80 pt-4 mt-2">
               <span className="text-[10px] text-zinc-500 font-sans">
-                {((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, filteredTrades.length)} / {filteredTrades.length} gösteriliyor
+                {((effectivePage - 1) * itemsPerPage) + 1}-{Math.min(effectivePage * itemsPerPage, filteredTrades.length)} / {filteredTrades.length} gösteriliyor
               </span>
               <div className="flex gap-2">
                 <button
-                  disabled={currentPage === 1}
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={effectivePage === 1}
+                  onClick={() => setCurrentPage(Math.max(1, effectivePage - 1))}
                   className="px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-[10px] font-bold text-zinc-400 hover:text-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Önceki
                 </button>
                 <button
-                  disabled={currentPage * itemsPerPage >= filteredTrades.length}
-                  onClick={() => setCurrentPage(p => p + 1)}
+                  disabled={effectivePage * itemsPerPage >= filteredTrades.length}
+                  onClick={() => setCurrentPage(effectivePage + 1)}
                   className="px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-[10px] font-bold text-zinc-400 hover:text-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Sonraki

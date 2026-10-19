@@ -1048,7 +1048,6 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
             setupQuality: t.planFidelity,
             dxy: t.dxy,
             premiumDiscount: t.premiumDiscount,
-            exitReason: t.exitReason,
             nyEntryHour: getTradeHourBucket(t),
             nyWeekday: WEEKDAY_NAMES_TR[getTradeNyWeekday(t)],
             notes: t.notes || "",

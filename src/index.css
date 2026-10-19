@@ -335,7 +335,7 @@ body {
    yükseklik sıçraması ve geç çizim olmaz. Yalnızca düzen izolasyonu kaldı. */
 .cv-auto,
 .cv-card {
-  contain: layout style;
+  contain: none;
 }
 
 /* Kaydırma çubuğu gizli yatay şeritler (sekme çubuğu) */
@@ -473,3 +473,69 @@ body { font-variant-numeric: tabular-nums; }
   select,
   input:not([type="checkbox"]):not([type="radio"]):not([type="range"]) { min-height: 40px; }
 }
+
+/* ==========================================================================
+   İŞLEM EKLEME EKRANI: seçme + geçiş animasyonu (tüm butonlar)
+   - Renk/kenar/gölge geçişleri yumuşak (160–220 ms), basınca küçülür, bırakınca yaylanır.
+   - Seçili hale gelen butonlar (data-selected="true") bir kez "pop" + halka animasyonu oynatır.
+   - Yalnızca scale/translate (bağımsız özellikler) + renk geçer; motion'ın transform'u ile çakışmaz.
+   ========================================================================== */
+.trade-form-root button:not(:disabled) {
+  transition-property: color, background-color, border-color, box-shadow, opacity, scale, translate;
+  transition-duration: 200ms;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: center;
+}
+@media (hover: hover) {
+  .trade-form-root button[data-selected]:not(:disabled):hover { translate: 0 -1px; }
+}
+.trade-form-root button:not(:disabled):active {
+  scale: 0.94;
+  translate: 0 0;
+  transition-duration: 80ms;
+}
+.trade-form-root button[data-selected="true"] {
+  animation: optSelect 360ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes optSelect {
+  0%   { scale: 0.9;   box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 38%, transparent); }
+  55%  { scale: 1.05;  box-shadow: 0 0 0 5px color-mix(in srgb, currentColor 12%, transparent); }
+  100% { scale: 1;     box-shadow: 0 0 0 8px transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .trade-form-root button[data-selected="true"] { animation: none; }
+}
+
+/* ==========================================================================
+   İŞLEM GEÇMİŞİ TABLOLARI: satır + sütun tam ortalama (masaüstü)
+   Tailwind yardımcı sınıfları katmanlıdır; bu kurallar katmansız olduğundan onları ezer.
+   ========================================================================== */
+@media (min-width: 640px) {
+  .trade-table th,
+  .trade-table td {
+    text-align: center;
+    vertical-align: middle;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+  .trade-table td > div,
+  .trade-table th > div {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-inline: auto;
+    width: 100%;
+    min-height: 20px;
+  }
+  .trade-table td > div > span,
+  .trade-table td > div > div {
+    margin-inline: auto;
+  }
+  .trade-table tbody tr { height: 40px; }
+}
+
+/* Sayfa değişiminde liste yumuşakça belirir (AnimatePresence yerine: eski ve yeni gövde üst üste binmesin) */
+.trade-tbody-fade { animation: tradeTbodyIn 140ms var(--ease-out-expo) backwards; }
+@keyframes tradeTbodyIn { from { opacity: 0.6; } to { opacity: 1; } }
