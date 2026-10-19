@@ -192,7 +192,7 @@ export const CertificatesView = React.memo(function CertificatesView({ certifica
           <button
             type="button"
             onClick={() => setIsModalOpen(true)}
-            className="w-full h-full min-h-[100px] bg-blue-500/5 hover:bg-blue-500/10 border border-blue-500/20 hover:border-blue-500/40 border-dashed rounded-2xl flex flex-col items-center justify-center text-blue-400 transition-all duration-200 ease-out group cursor-pointer"
+            className="w-full h-full min-h-[100px] bg-blue-500/5 hover:bg-blue-500/10 border border-blue-500/20 hover:border-blue-500/40 border-dashed rounded-2xl flex flex-col items-center justify-center text-blue-400 transition-ui duration-200 ease-out group cursor-pointer"
           >
             <Plus size={24} className="mb-2 transition-colors" />
             <span className="font-bold tracking-wide">Yeni Ekle</span>
@@ -308,7 +308,7 @@ export const CertificatesView = React.memo(function CertificatesView({ certifica
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.15, ease: "easeOut" }}
+              transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
               className="will-change-[opacity] fixed inset-0 z-[1500] overflow-y-auto bg-zinc-950/80 p-4 sm:p-5 flex items-center justify-center"
               onClick={() => setIsModalOpen(false)}
             >
@@ -317,7 +317,7 @@ export const CertificatesView = React.memo(function CertificatesView({ certifica
                 initial={{ opacity: 0, scale: 0.98, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.98, y: 10 }}
-                transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                 style={{ willChange: "transform, opacity" }}
                 onClick={(e) => e.stopPropagation()}
                 className="bg-zinc-900 border border-zinc-700/50 rounded-2xl p-5 w-full max-w-lg h-[580px] max-h-[88vh] min-h-[460px] shadow-2xl my-auto flex flex-col"
@@ -352,7 +352,7 @@ export const CertificatesView = React.memo(function CertificatesView({ certifica
                 <button
                   type="button"
                   onClick={() => setActiveType('PHASE')}
-                  className={`flex-1 py-1.5 text-xs font-sans font-bold tracking-wider uppercase rounded-lg transition-all duration-150 cursor-pointer flex items-center justify-center gap-1.5 ${
+                  className={`flex-1 py-1.5 text-xs font-sans font-bold tracking-wider uppercase rounded-lg transition-ui duration-150 cursor-pointer flex items-center justify-center gap-1.5 ${
                     activeType === 'PHASE'
                       ? 'toggle-item-brand border border-blue-500/30 shadow-xs'
                       : 'text-zinc-400 hover:text-zinc-200 border border-transparent'
@@ -364,7 +364,7 @@ export const CertificatesView = React.memo(function CertificatesView({ certifica
                 <button
                   type="button"
                   onClick={() => setActiveType('PAYOUT')}
-                  className={`flex-1 py-1.5 text-xs font-sans font-bold tracking-wider uppercase rounded-lg transition-all duration-150 cursor-pointer flex items-center justify-center gap-1.5 ${
+                  className={`flex-1 py-1.5 text-xs font-sans font-bold tracking-wider uppercase rounded-lg transition-ui duration-150 cursor-pointer flex items-center justify-center gap-1.5 ${
                     activeType === 'PAYOUT'
                       ? 'toggle-item-win border border-emerald-500/30 shadow-xs'
                       : 'text-zinc-400 hover:text-zinc-200 border border-transparent'
@@ -426,7 +426,7 @@ export const CertificatesView = React.memo(function CertificatesView({ certifica
                   </label>
                   <div 
                     onClick={() => fileInputRef.current?.click()}
-                    className={`w-full border border-dashed rounded-xl flex flex-col items-center justify-center p-4 cursor-pointer transition-all duration-200 ${
+                    className={`w-full border border-dashed rounded-xl flex flex-col items-center justify-center p-4 cursor-pointer transition-ui duration-200 ${
                       image 
                         ? 'border-blue-500/40 bg-blue-500/5' 
                         : 'border-zinc-700/60 hover:border-zinc-500 bg-zinc-950/40 hover:bg-zinc-950/60'
@@ -468,7 +468,7 @@ export const CertificatesView = React.memo(function CertificatesView({ certifica
                   type="button"
                   onClick={handleSave}
                   disabled={!title || (activeType === 'PAYOUT' && !amount)}
-                  className="w-full bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/40 font-sans text-xs font-bold uppercase tracking-wider py-2.5 px-4 rounded-xl transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-xs"
+                  className="w-full bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/40 font-sans text-xs font-bold uppercase tracking-wider py-2.5 px-4 rounded-xl transition-ui duration-150 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-xs"
                 >
                   Kaydet
                 </button>
@@ -488,7 +488,7 @@ export const CertificatesView = React.memo(function CertificatesView({ certifica
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.15, ease: "easeOut" }}
+              transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
               
               onClick={() => setSelectedImage(null)}
                className="will-change-[opacity] fixed inset-0 z-[4500] flex items-center justify-center p-4 bg-zinc-950/80"
@@ -508,7 +508,7 @@ export const CertificatesView = React.memo(function CertificatesView({ certifica
                 initial={{ opacity: 0, scale: 0.98, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.98, y: 10 }}
-                transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                 style={{ willChange: "transform, opacity" }}
                 src={selectedImage}
                 alt="Sertifika"
@@ -530,7 +530,7 @@ export const CertificatesView = React.memo(function CertificatesView({ certifica
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.15, ease: "easeOut" }}
+              transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
               className="will-change-[opacity] fixed inset-0 bg-zinc-950/80 flex items-center justify-center p-4 z-[4500]"
               onClick={() => setCertToDelete(null)}
             >
@@ -539,7 +539,7 @@ export const CertificatesView = React.memo(function CertificatesView({ certifica
                 initial={{ opacity: 0, scale: 0.98, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.98, y: 10 }}
-                transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                 style={{ willChange: "transform, opacity" }}
                 className="bg-zinc-900 border border-zinc-700/50 rounded-2xl p-5 max-w-md w-full shadow-2xl overflow-hidden relative"
                 onClick={(e) => e.stopPropagation()}
@@ -592,7 +592,7 @@ function CertificateCard({ cert, onDelete, onImageClick }: { cert: Certificate, 
   const isPayout = cert.type === 'PAYOUT';
 
   return (
-    <div className="bg-zinc-950/60 border border-zinc-800/80 rounded-2xl overflow-hidden group hover:border-zinc-700/80 transition-all duration-200 ease-out relative flex flex-col h-[205px] shadow-sm hover:shadow-md">
+    <div className="bg-zinc-950/60 border border-zinc-800/80 rounded-2xl overflow-hidden group hover:border-zinc-700/80 transition-ui duration-200 ease-out relative flex flex-col h-[205px] shadow-sm hover:shadow-md">
       {/* Tip Etiketi (Sol Üst Rozet) */}
       <div className="absolute top-2.5 left-2.5 z-20 pointer-events-none">
         <span className={`inline-flex items-center gap-1 text-[9px] font-bold px-2.5 py-0.5 rounded-lg uppercase tracking-wider  border ${
@@ -609,7 +609,7 @@ function CertificateCard({ cert, onDelete, onImageClick }: { cert: Certificate, 
       <button 
         type="button"
         onClick={onDelete}
-        className="absolute top-2.5 right-2.5 bg-zinc-950/80 hover:bg-red-500/20  text-zinc-400 hover:text-red-400 p-1.5 rounded-xl opacity-0 group-hover:opacity-100 transition-all z-20 cursor-pointer border border-white/10 hover:border-red-500/30 shadow-md"
+        className="absolute top-2.5 right-2.5 bg-zinc-950/80 hover:bg-red-500/20  text-zinc-400 hover:text-red-400 p-1.5 rounded-xl opacity-0 group-hover:opacity-100 transition-ui z-20 cursor-pointer border border-white/10 hover:border-red-500/30 shadow-md"
       >
         <Trash2 size={13} />
       </button>

@@ -112,7 +112,7 @@ export const AccountSwitcher: React.FC<AccountSwitcherProps> = React.memo(({
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         title={`Hesap Türü: ${currentOption.label} (${currentOption.count} İşlem)`}
-        className={`flex items-center gap-1.5 h-6 px-2 rounded-lg border transition-all duration-150 cursor-pointer shadow-xs ${
+        className={`flex items-center gap-1.5 h-6 px-2 rounded-lg border transition-ui duration-150 cursor-pointer shadow-xs ${
           isOpen
             ? 'bg-zinc-800 border-zinc-600 text-zinc-100 shadow-sm ring-1 ring-zinc-600/40'
             : currentOption.id === 'FUNDED'
@@ -164,7 +164,7 @@ export const AccountSwitcher: React.FC<AccountSwitcherProps> = React.memo(({
                     key={opt.id}
                     type="button"
                     onClick={() => handleSelect(opt.id)}
-                    className={`w-full px-2 py-1.5 text-left rounded-lg transition-all flex items-center justify-between cursor-pointer border ${
+                    className={`w-full px-2 py-1.5 text-left rounded-lg transition-ui flex items-center justify-between cursor-pointer border ${
                       isSelected
                         ? `${opt.activeBgClass} ${opt.activeBorderClass} shadow-xs`
                         : 'border-transparent hover:bg-zinc-800/80'

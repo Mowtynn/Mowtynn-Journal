@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode, useMemo, startTransition } from 'react';
+import { createContext, useContext, useState, ReactNode, useMemo } from 'react';
 
 type MetricMode = 'rr' | 'pnl';
 
@@ -15,15 +15,11 @@ export function MetricProvider({ children }: { children: ReactNode }) {
   const [mode, setModeState] = useState<MetricMode>('rr');
 
   const setMode = (newMode: MetricMode) => {
-    startTransition(() => {
-      setModeState(newMode);
-    });
+    setModeState(newMode);
   };
 
   const toggleMode = () => {
-    startTransition(() => {
-      setModeState(prev => prev === 'rr' ? 'pnl' : 'rr');
-    });
+    setModeState(prev => prev === 'rr' ? 'pnl' : 'rr');
   };
 
   const isRrMode = mode === 'rr';

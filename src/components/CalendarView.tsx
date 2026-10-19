@@ -164,11 +164,11 @@ export const CalendarView = React.memo(({ trades, currency, onEdit }: { trades: 
         <div 
            key={`day-${day}`} 
            onClick={() => stat ? setSelectedDateStr(dateStr) : null}
-           className={`border rounded-xl p-1.5 sm:p-2 min-h-[64px] sm:min-h-[76px] flex flex-col justify-between transition-all duration-200 ease-out group relative ${cardStyle}`}
+           className={`border rounded-xl p-1.5 sm:p-2 min-h-[64px] sm:min-h-[76px] flex flex-col justify-between transition-ui duration-200 ease-out group relative ${cardStyle}`}
         >
           {/* Top Row: Day Number & Trade Count */}
           <div className="flex items-start justify-between">
-            <span className={`font-sans text-[10px] sm:text-xs leading-none transition-all ${
+            <span className={`font-sans text-[10px] sm:text-xs leading-none transition-ui ${
               isToday 
                 ? 'toggle-item-brand border border-blue-500/40 font-black px-1.5 py-0.5 rounded-lg shadow-xs' 
                 : stat ? 'text-zinc-300 font-bold' : 'text-zinc-600 font-medium'

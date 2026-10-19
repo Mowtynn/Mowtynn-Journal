@@ -742,7 +742,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
 
   if (!metrics || !customMetrics || trades.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center p-12 text-center bg-zinc-900/70 border border-zinc-700/50  rounded-xl transition-all duration-300 shadow-sm mt-4">
+      <div className="flex flex-col items-center justify-center p-12 text-center bg-zinc-900/70 border border-zinc-700/50  rounded-xl transition-ui duration-300 shadow-sm mt-4">
         <Target size={32} className="text-zinc-600 mb-4 opacity-50" />
         <h3 className="text-sm font-bold text-zinc-300 font-sans mb-2">Henüz Yeterli Veri Yok</h3>
         <p className="text-xs text-zinc-500 max-w-sm">Gelişmiş metriklerin hesaplanabilmesi için sisteme tamamlanmış (WIN/LOSS) işlemler eklemelisiniz.</p>
@@ -766,7 +766,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
   );
 
   return (
-    <div className="mt-4 mb-4 flex flex-col bg-zinc-900/70 border border-zinc-700/50  rounded-xl transition-all duration-300 shadow-sm overflow-hidden divide-y divide-zinc-800/80 w-full">
+    <div className="mt-4 mb-4 flex flex-col bg-zinc-900/70 border border-zinc-700/50  rounded-xl transition-ui duration-300 shadow-sm overflow-hidden divide-y divide-zinc-800/80 w-full">
       
       {/* SEKSIYON BAŞLIĞI */}
       
@@ -1258,8 +1258,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                 initial={{ opacity: 0.8 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0.8 }}
-                transition={{ duration: 0.08, ease: "easeOut" }}
-                style={{ willChange: "opacity" }}
+                transition={{ duration: 0.1, ease: [0.16, 1, 0.3, 1] }}
                 className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 flex-1 content-start min-h-[385px]"
               >
                 {processedAssets.slice((assetsPage - 1) * 9, assetsPage * 9).map((ar) => {
@@ -1271,14 +1270,14 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                     <button
                       key={ar.asset}
                       onClick={() => setSelectedAsset(isSelected ? null : ar.asset)}
-                      className={`text-left p-2.5 rounded-lg border transition-all duration-300 cursor-pointer flex flex-col justify-between relative overflow-hidden group ${
+                      className={`text-left p-2.5 rounded-lg border transition-ui duration-300 cursor-pointer flex flex-col justify-between relative overflow-hidden group ${
                         isSelected 
                           ? (isProfit ? 'bg-emerald-500/10 border-emerald-500/40' : 'bg-rose-500/10 border-rose-500/40')
                           : 'bg-zinc-950 border-zinc-800 hover:border-zinc-700/80'
                       }`}
                     >
                       {/* Decorative background flare depending on the profitability */}
-                      <div className={`absolute -top-10 -right-10 w-28 h-28 rounded-full opacity-[0.05] group-hover:opacity-[0.16] group-hover:scale-105 ${isProfit ? 'bg-emerald-500' : 'bg-rose-500'} transition-all duration-300`} />
+                      <div className={`absolute -top-10 -right-10 w-28 h-28 rounded-full opacity-[0.05] group-hover:opacity-[0.16] group-hover:scale-105 ${isProfit ? 'bg-emerald-500' : 'bg-rose-500'} transition-ui duration-300`} />
                       
                       <div className="w-full">
                         <div className="flex justify-between items-center z-10 mb-1">
@@ -1366,7 +1365,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
         <StrategyOptimizerHub trades={trades} currency={currency} />
       </motion.div>
 
-      <motion.div variants={itemVariants} className="bg-zinc-900/70 border border-zinc-700/50  rounded-xl transition-all duration-300 p-4 sm:p-5 shadow-sm transition-colors duration-200 mb-2 relative overflow-visible mt-1 flex flex-col justify-between">
+      <motion.div variants={itemVariants} className="bg-zinc-900/70 border border-zinc-700/50  rounded-xl transition-ui duration-300 p-4 sm:p-5 shadow-sm transition-colors duration-200 mb-2 relative overflow-visible mt-1 flex flex-col justify-between">
         {/* Header & Filter Controls */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3 relative z-30 w-full border-b border-zinc-800 pb-3.5">
           <div className="flex items-center gap-2.5">
@@ -1407,7 +1406,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
             {/* Filter Toggle Button */}
             <button
               onClick={() => setIsDetailedFilterOpen(!isDetailedFilterOpen)}
-              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-lg border transition-all duration-300 ${
+              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-lg border transition-ui duration-300 ${
                 isDetailedFilterOpen || detailedFilter !== 'all' || detailedSearch
                   ? 'bg-blue-500/15 border-blue-500/30 text-blue-300 shadow-xs' 
                   : 'bg-zinc-950 border-zinc-800 text-zinc-300 hover:bg-transparent hover:text-zinc-100'
@@ -1475,7 +1474,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                         }
                         setDetailedPage(1);
                       }}
-                      className={`px-2 py-0.5 text-[10px] font-bold rounded-lg border transition-all cursor-pointer ${
+                      className={`px-2 py-0.5 text-[10px] font-bold rounded-lg border transition-ui cursor-pointer ${
                         detailedSearch.toLowerCase() === 'silver bullet'
                           ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-xs'
                           : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-200 hover:border-zinc-700'
@@ -1493,7 +1492,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                         }
                         setDetailedPage(1);
                       }}
-                      className={`px-2 py-0.5 text-[10px] font-bold rounded-lg border transition-all cursor-pointer ${
+                      className={`px-2 py-0.5 text-[10px] font-bold rounded-lg border transition-ui cursor-pointer ${
                         detailedSearch.toLowerCase() === 'fvg'
                           ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-xs'
                           : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-200 hover:border-zinc-700'
@@ -1511,7 +1510,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                         }
                         setDetailedPage(1);
                       }}
-                      className={`px-2 py-0.5 text-[10px] font-bold rounded-lg border transition-all cursor-pointer ${
+                      className={`px-2 py-0.5 text-[10px] font-bold rounded-lg border transition-ui cursor-pointer ${
                         detailedSearch.toLowerCase() === 'ifvg'
                           ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-xs'
                           : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-200 hover:border-zinc-700'
@@ -1529,19 +1528,19 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                     <div className="grid grid-cols-3 gap-1 bg-zinc-950 p-1 rounded-lg border border-zinc-800">
                       <button 
                         onClick={() => { setDetailedFilter('all'); setDetailedPage(1); }} 
-                        className={`text-xs py-1 rounded-lg transition-all font-medium text-center ${detailedFilter === 'all' ? 'bg-zinc-800 text-white font-semibold shadow-xs' : 'text-zinc-400 hover:text-zinc-200'}`}
+                        className={`text-xs py-1 rounded-lg transition-ui font-medium text-center ${detailedFilter === 'all' ? 'bg-zinc-800 text-white font-semibold shadow-xs' : 'text-zinc-400 hover:text-zinc-200'}`}
                       >
                         Tümü
                       </button>
                       <button 
                         onClick={() => { setDetailedFilter('mükemmel'); setDetailedPage(1); }} 
-                        className={`text-xs py-1 rounded-lg transition-all font-medium text-center ${detailedFilter === 'mükemmel' ? 'bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30' : 'text-zinc-400 hover:text-emerald-400'}`}
+                        className={`text-xs py-1 rounded-lg transition-ui font-medium text-center ${detailedFilter === 'mükemmel' ? 'bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30' : 'text-zinc-400 hover:text-emerald-400'}`}
                       >
                         ≥ %60 WR
                       </button>
                       <button 
                         onClick={() => { setDetailedFilter('riskli'); setDetailedPage(1); }} 
-                        className={`text-xs py-1 rounded-lg transition-all font-medium text-center ${detailedFilter === 'riskli' ? 'bg-rose-500/20 text-rose-300 font-semibold border border-rose-500/30' : 'text-zinc-400 hover:text-rose-400'}`}
+                        className={`text-xs py-1 rounded-lg transition-ui font-medium text-center ${detailedFilter === 'riskli' ? 'bg-rose-500/20 text-rose-300 font-semibold border border-rose-500/30' : 'text-zinc-400 hover:text-rose-400'}`}
                       >
                         &lt; %45 WR
                       </button>
@@ -1556,19 +1555,19 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                     <div className="grid grid-cols-3 gap-1 bg-zinc-950 p-1 rounded-lg border border-zinc-800">
                       <button 
                         onClick={() => { setDetailedSort('pnl'); setDetailedPage(1); }} 
-                        className={`text-xs py-1 rounded-lg transition-all font-medium text-center ${detailedSort === 'pnl' ? 'bg-zinc-800 text-white font-semibold shadow-xs' : 'text-zinc-400 hover:text-zinc-200'}`}
+                        className={`text-xs py-1 rounded-lg transition-ui font-medium text-center ${detailedSort === 'pnl' ? 'bg-zinc-800 text-white font-semibold shadow-xs' : 'text-zinc-400 hover:text-zinc-200'}`}
                       >
                         Net PnL
                       </button>
                       <button 
                         onClick={() => { setDetailedSort('rr'); setDetailedPage(1); }} 
-                        className={`text-xs py-1 rounded-lg transition-all font-medium text-center ${detailedSort === 'rr' ? 'bg-zinc-800 text-white font-semibold shadow-xs' : 'text-zinc-400 hover:text-zinc-200'}`}
+                        className={`text-xs py-1 rounded-lg transition-ui font-medium text-center ${detailedSort === 'rr' ? 'bg-zinc-800 text-white font-semibold shadow-xs' : 'text-zinc-400 hover:text-zinc-200'}`}
                       >
                         Net R:R
                       </button>
                       <button 
                         onClick={() => { setDetailedSort('winrate'); setDetailedPage(1); }} 
-                        className={`text-xs py-1 rounded-lg transition-all font-medium text-center ${detailedSort === 'winrate' ? 'bg-zinc-800 text-white font-semibold shadow-xs' : 'text-zinc-400 hover:text-zinc-200'}`}
+                        className={`text-xs py-1 rounded-lg transition-ui font-medium text-center ${detailedSort === 'winrate' ? 'bg-zinc-800 text-white font-semibold shadow-xs' : 'text-zinc-400 hover:text-zinc-200'}`}
                       >
                         Kazanma %
                       </button>
@@ -1614,7 +1613,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                   initial={{ opacity: 0.8 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0.8 }}
-                  transition={{ duration: 0.08, ease: "easeOut" }}
+                  transition={{ duration: 0.1, ease: [0.16, 1, 0.3, 1] }}
                   style={{ willChange: "opacity" }}
                   className="bg-transparent"
                 >
@@ -1639,10 +1638,10 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                         {/* Parent Asset Row */}
                         <tr 
                           onClick={() => setExpandedAssets(prev => ({ ...prev, [parent.asset]: !prev[parent.asset] }))}
-                          className="hover:bg-zinc-800/30 transition-all duration-200 group cursor-pointer select-none outline-none focus:outline-none focus:ring-0 active:outline-none"
+                          className="hover:bg-zinc-800/30 transition-ui duration-200 group cursor-pointer select-none outline-none focus:outline-none focus:ring-0 active:outline-none"
                         >
                           {/* Asset Name + Expand Toggle */}
-                          <td className="py-3 px-3 rounded-l-xl bg-zinc-900/90 group-hover:bg-zinc-800/40 border-y border-l border-zinc-800/80 group-hover:border-zinc-700/60 transition-all duration-200">
+                          <td className="py-3 px-3 rounded-l-xl bg-zinc-900/90 group-hover:bg-zinc-800/40 border-y border-l border-zinc-800/80 group-hover:border-zinc-700/60 transition-ui duration-200">
                             <div className="flex items-center gap-2.5">
                               <button
                                 type="button"
@@ -1650,7 +1649,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                                   e.stopPropagation();
                                   setExpandedAssets(prev => ({ ...prev, [parent.asset]: !prev[parent.asset] }));
                                 }}
-                                className="w-5.5 h-5.5 rounded-lg flex items-center justify-center text-zinc-400 group-hover:text-zinc-300 group-hover:bg-zinc-800 transition-all focus:outline-none focus:ring-0 outline-none select-none"
+                                className="w-5.5 h-5.5 rounded-lg flex items-center justify-center text-zinc-400 group-hover:text-zinc-300 group-hover:bg-zinc-800 transition-ui focus:outline-none focus:ring-0 outline-none select-none"
                               >
                                 <ChevronRight 
                                   size={13} 
@@ -1659,7 +1658,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                               </button>
                               
                               <div className="flex items-center gap-2">
-                                <span className="font-sans font-black text-xs text-zinc-100 bg-zinc-950 px-2.5 py-1 rounded-lg border border-zinc-800 group-hover:border-blue-500/20 group-hover:bg-blue-500/10 group-hover:text-blue-300 transition-all duration-200">
+                                <span className="font-sans font-black text-xs text-zinc-100 bg-zinc-950 px-2.5 py-1 rounded-lg border border-zinc-800 group-hover:border-blue-500/20 group-hover:bg-blue-500/10 group-hover:text-blue-300 transition-ui duration-200">
                                   {parent.asset}
                                 </span>
                                 <span className="text-[10px] text-zinc-400 group-hover:text-zinc-300 font-medium transition-colors">
@@ -1670,7 +1669,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                           </td>
 
                           {/* Parite satırı: Sadece Session, HTF ve PD Array */}
-                          <td className="py-3 px-3 bg-zinc-900/90 group-hover:bg-zinc-800/40 border-y border-zinc-800/80 group-hover:border-zinc-700/60 transition-all duration-200">
+                          <td className="py-3 px-3 bg-zinc-900/90 group-hover:bg-zinc-800/40 border-y border-zinc-800/80 group-hover:border-zinc-700/60 transition-ui duration-200">
                             <div className="flex items-center gap-1.5 flex-wrap">
                               {parentSessions.length > 0 || parentHtfTfs.length > 0 || parentConfs.length > 0 ? (
                                 <>
@@ -1707,7 +1706,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                           </td>
 
                           {/* Performance: Net PnL & R */}
-                          <td className="py-3 px-3 text-center bg-zinc-900/90 group-hover:bg-zinc-800/40 border-y border-zinc-800/80 group-hover:border-zinc-700/60 transition-all duration-200">
+                          <td className="py-3 px-3 text-center bg-zinc-900/90 group-hover:bg-zinc-800/40 border-y border-zinc-800/80 group-hover:border-zinc-700/60 transition-ui duration-200">
                             <div className="inline-flex flex-col items-center">
                               <span className={`text-xs font-bold font-sans ${isProfit ? 'text-emerald-400' : 'text-rose-400'}`}>
                                 {isProfit ? '+' : ''}{(parent?.pnl || 0).toLocaleString()} {currency}
@@ -1719,7 +1718,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                           </td>
 
                           {/* Win Rate */}
-                          <td className="py-3 px-3 text-center bg-zinc-900/90 group-hover:bg-zinc-800/40 border-y border-zinc-800/80 group-hover:border-zinc-700/60 transition-all duration-200">
+                          <td className="py-3 px-3 text-center bg-zinc-900/90 group-hover:bg-zinc-800/40 border-y border-zinc-800/80 group-hover:border-zinc-700/60 transition-ui duration-200">
                             <span className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full border ${
                                 parent.winRate >= 60 
                                   ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/25' 
@@ -1732,7 +1731,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                           </td>
 
                           {/* Total Distribution */}
-                          <td className="py-3 px-3 text-right rounded-r-xl bg-zinc-900/90 group-hover:bg-zinc-800/40 border-y border-r border-zinc-800/80 group-hover:border-zinc-700/60 transition-all duration-200">
+                          <td className="py-3 px-3 text-right rounded-r-xl bg-zinc-900/90 group-hover:bg-zinc-800/40 border-y border-r border-zinc-800/80 group-hover:border-zinc-700/60 transition-ui duration-200">
                             <button
                               type="button"
                               onClick={(e) => {
@@ -1765,10 +1764,10 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                                 transition={{ duration: 0.12 }}
                                 key={`${parent.asset}-child-${cIdx}`}
                                 onClick={() => setSelectedAsset(parent.asset)}
-                                className="transition-all duration-150 cursor-pointer select-none outline-none focus:outline-none focus:ring-0 active:outline-none group/child"
+                                className="transition-ui duration-150 cursor-pointer select-none outline-none focus:outline-none focus:ring-0 active:outline-none group/child"
                               >
                                 {/* Tree Connector & Sub-indicator */}
-                                <td className="py-2.5 px-3 text-left rounded-l-xl bg-zinc-950/70 group-hover/child:bg-zinc-850/30 border-y border-l border-zinc-800/50 group-hover/child:border-zinc-800 transition-all duration-200">
+                                <td className="py-2.5 px-3 text-left rounded-l-xl bg-zinc-950/70 group-hover/child:bg-zinc-850/30 border-y border-l border-zinc-800/50 group-hover/child:border-zinc-800 transition-ui duration-200">
                                   <div className="flex items-center pl-6 text-zinc-500 text-xs gap-2 select-none">
                                     <span className="text-zinc-600 group-hover/child:text-zinc-400 font-bold transition-colors">↳</span>
                                     <span className="text-xs text-zinc-400 group-hover/child:text-zinc-300 font-bold transition-colors">
@@ -1778,7 +1777,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                                 </td>
 
                                 {/* Clean Dimension Badges Ordered for Silver Bullet & ICT Analysis */}
-                                <td className="py-2.5 px-3 bg-zinc-950/70 group-hover/child:bg-zinc-850/30 border-y border-zinc-800/50 group-hover/child:border-zinc-800 transition-all duration-200">
+                                <td className="py-2.5 px-3 bg-zinc-950/70 group-hover/child:bg-zinc-850/30 border-y border-zinc-800/50 group-hover/child:border-zinc-800 transition-ui duration-200">
                                   <div className="flex items-center gap-1.5 flex-wrap">
                                     {hasAnyDimension ? (
                                       <>
@@ -1881,7 +1880,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                                 </td>
 
                                 {/* Performance: Net PnL & R */}
-                                <td className="py-2 px-3 text-center bg-zinc-950/70 group-hover/child:bg-zinc-850/30 border-y border-zinc-800/50 group-hover/child:border-zinc-800 transition-all duration-200">
+                                <td className="py-2 px-3 text-center bg-zinc-950/70 group-hover/child:bg-zinc-850/30 border-y border-zinc-800/50 group-hover/child:border-zinc-800 transition-ui duration-200">
                                   <div className="inline-flex flex-col items-center">
                                     <span className={`text-xs font-bold font-sans ${childIsProfit ? 'text-emerald-400' : 'text-rose-400'}`}>
                                       {childIsProfit ? '+' : ''}{(child?.pnl || 0).toLocaleString()} {currency}
@@ -1893,7 +1892,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                                 </td>
 
                                 {/* Win Rate */}
-                                <td className="py-2 px-3 text-center bg-zinc-950/70 group-hover/child:bg-zinc-850/30 border-y border-zinc-800/50 group-hover/child:border-zinc-800 transition-all duration-200">
+                                <td className="py-2 px-3 text-center bg-zinc-950/70 group-hover/child:bg-zinc-850/30 border-y border-zinc-800/50 group-hover/child:border-zinc-800 transition-ui duration-200">
                                   <span className={`inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full border ${
                                     child.winRate >= 60 
                                       ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' 
@@ -1906,7 +1905,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                                 </td>
 
                                 {/* Trade Breakdown */}
-                                <td className="py-2 px-3 text-right rounded-r-xl bg-zinc-950/70 group-hover/child:bg-zinc-850/30 border-y border-r border-zinc-800/50 group-hover/child:border-zinc-800 transition-all duration-200">
+                                <td className="py-2 px-3 text-right rounded-r-xl bg-zinc-950/70 group-hover/child:bg-zinc-850/30 border-y border-r border-zinc-800/50 group-hover/child:border-zinc-800 transition-ui duration-200">
                                   <div className="text-[10px] font-sans text-zinc-400 group-hover/child:text-zinc-300">
                                     {child.total} İşlem <span className="text-zinc-500 group-hover/child:text-zinc-500">({child.wins}W / {child.total - child.wins}L)</span>
                                   </div>
@@ -2055,7 +2054,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.15, ease: "easeOut" }}
+              transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
               className="will-change-[opacity] fixed inset-0 z-[1500] flex items-center justify-center p-4 bg-zinc-950/80 "
               onClick={() => setIsDeadZoneModalOpen(false)}
             >
@@ -2064,7 +2063,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                 initial={{ opacity: 0, scale: 0.98, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.98, y: 10 }}
-                transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                 style={{ willChange: "transform, opacity" }}
                 className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-4xl h-[82vh] sm:h-[640px] max-h-[90vh] min-h-[460px] flex flex-col shadow-2xl overflow-hidden "
                 onClick={e => e.stopPropagation()}
@@ -2168,7 +2167,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                           if (!cell || cell.count === 0) return <span className="text-zinc-700">-</span>;
                           const wr = cell.count > 0 ? (cell.wins / cell.count) * 100 : 0;
                           return (
-                            <div className="flex flex-col gap-0.5 items-center justify-center py-1.5 px-2 bg-zinc-900/60 border border-zinc-800/80 rounded-xl transition-all hover:border-zinc-700/60 shadow-xs">
+                            <div className="flex flex-col gap-0.5 items-center justify-center py-1.5 px-2 bg-zinc-900/60 border border-zinc-800/80 rounded-xl transition-ui hover:border-zinc-700/60 shadow-xs">
                               <span className={`font-black text-xs ${cell.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                                 {cell.pnl >= 0 ? '+' : ''}{Math.round(cell?.pnl || 0).toLocaleString()} {currency}
                               </span>
@@ -2250,7 +2249,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.15, ease: "easeOut" }}
+              transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
               className="will-change-[opacity] fixed inset-0 z-[1500] flex items-center justify-center p-4 bg-zinc-950/80 "
               onClick={() => setIsOptimalFreqModalOpen(false)}
             >
@@ -2259,7 +2258,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                 initial={{ opacity: 0, scale: 0.98, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.98, y: 10 }}
-                transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                 style={{ willChange: "transform, opacity" }}
                 className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-2xl h-[82vh] sm:h-[640px] max-h-[90vh] min-h-[460px] flex flex-col shadow-2xl overflow-hidden "
                 onClick={e => e.stopPropagation()}

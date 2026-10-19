@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useDeferredValue, startTransition } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { ValueTransition } from "./ValueTransition";
 import { calculateProfitFactor, calculateExpectancy, calculateSortinoRatio, calculateKellyCriterion, calculateRecoveryFactor, toRR } from "../lib/statMath";
@@ -341,31 +341,6 @@ const MemoizedEquityChart = React.memo(function MemoizedEquityChart({
 });
 
 
-/**
- * Ağır panel (AdvancedMetricsDashboard) hazır olana kadar gösterilen hafif iskelet.
- * Yükseklik sabit tutulur, böylece içerik geldiğinde sayfa zıplamaz.
- */
-const HeavyPanelSkeleton = React.memo(function HeavyPanelSkeleton() {
-  return (
-    <div className="space-y-3 mt-3" aria-busy="true" aria-label="Analiz paneli yükleniyor" style={{ minHeight: 720 }}>
-      {[0, 1, 2].map((i) => (
-        <div
-          key={i}
-          className="rounded-2xl border border-zinc-800/60 bg-zinc-900/40 p-4 animate-pulse"
-          style={{ height: i === 0 ? 220 : 240 }}
-        >
-          <div className="h-3 w-40 rounded bg-zinc-800/80 mb-4" />
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {[0, 1, 2, 3].map((j) => (
-              <div key={j} className="h-14 rounded-xl bg-zinc-800/50" />
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-});
-
 const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
   trades,
   onEdit,
@@ -375,24 +350,6 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
   planFidelities = [],
 }: DeepAnalysisProps) {
   const { isRrMode } = useMetricMode();
-  const deferredTrades = useDeferredValue(trades);
-
-  // Aşamalı yükleme: üst metrikler anında çizilir, ağır panel ilk boyamadan sonra
-  // (kesintiye uğrayabilir bir geçişle) bağlanır. Ana thread bloklanmaz.
-  const [heavyReady, setHeavyReady] = useState(false);
-  useEffect(() => {
-    if (heavyReady) return;
-    let raf2 = 0;
-    const raf1 = requestAnimationFrame(() => {
-      raf2 = requestAnimationFrame(() => {
-        startTransition(() => setHeavyReady(true));
-      });
-    });
-    return () => {
-      cancelAnimationFrame(raf1);
-      if (raf2) cancelAnimationFrame(raf2);
-    };
-  }, [heavyReady]);
 
   const [selectedMetric, setSelectedMetric] = useState<MetricDetail | null>(null);
   const [equityFilter, setEquityFilter] = useState<'trade' | 'daily' | 'weekly' | 'monthly'>('daily');
@@ -1169,7 +1126,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
         {/* Kümülatif Kazanç Oranı */}
         <motion.div 
           variants={itemVariants} 
-          className="bg-transparent p-3.5 sm:p-4 hover:bg-zinc-800/20 transition-all duration-200 ease-out flex items-center justify-between cursor-pointer group" 
+          className="bg-transparent p-3.5 sm:p-4 hover:bg-zinc-800/20 transition-ui duration-200 ease-out flex items-center justify-between cursor-pointer group" 
           onClick={() => handleMetricClick("cumulativeR", isRrMode ? `${metrics.totalR > 0 ? "+" : ""}${metrics.totalR.toFixed(1)} R` : `${metrics.totalClosedCashPnl > 0 ? "+" : ""}${(metrics?.totalClosedCashPnl || 0).toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} ${currency}`)}
         >
           <div className="space-y-1 flex-1 min-w-0">
@@ -1223,7 +1180,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
         </motion.div>
 
         {/* LONG VS SHORT PERFORMANSI */}
-        <motion.div variants={itemVariants} className="bg-transparent p-3.5 sm:p-4 transition-all duration-200 ease-out flex flex-col justify-center">
+        <motion.div variants={itemVariants} className="bg-transparent p-3.5 sm:p-4 transition-ui duration-200 ease-out flex flex-col justify-center">
           <div className="flex items-center justify-between mb-2">
             <p className="text-[10px] font-bold uppercase text-zinc-400 tracking-wider font-sans flex items-center gap-1.5">
               <span className="p-1 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-400">
@@ -1234,7 +1191,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
           </div>
           <div className="grid grid-cols-2 gap-2 font-sans text-[10px]">
             <div 
-              className="bg-zinc-950/60 border border-emerald-500/20 hover:border-emerald-500/40 p-2 rounded-xl cursor-pointer hover:bg-emerald-950/10 transition-all"
+              className="bg-zinc-950/60 border border-emerald-500/20 hover:border-emerald-500/40 p-2 rounded-xl cursor-pointer hover:bg-emerald-950/10 transition-ui"
               onClick={() => handleMetricClick("longPerformance", `%${metrics.longStats.winRate.toFixed(1)} WR`)}
             >
               <div className="flex items-center justify-between mb-0.5">
@@ -1244,7 +1201,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
               <span className="text-xs font-bold text-emerald-400 block font-sans">%{metrics.longStats.winRate.toFixed(1)} WR</span>
             </div>
             <div 
-              className="bg-zinc-950/60 border border-rose-500/20 hover:border-rose-500/40 p-2 rounded-xl cursor-pointer hover:bg-rose-950/10 transition-all"
+              className="bg-zinc-950/60 border border-rose-500/20 hover:border-rose-500/40 p-2 rounded-xl cursor-pointer hover:bg-rose-950/10 transition-ui"
               onClick={() => handleMetricClick("shortPerformance", `%${metrics.shortStats.winRate.toFixed(1)} WR`)}
             >
               <div className="flex items-center justify-between mb-0.5">
@@ -1259,7 +1216,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
         {/* İŞLEM SONUÇ DAĞILIMI */}
         <motion.div 
           variants={itemVariants} 
-          className="bg-transparent p-3.5 sm:p-4 hover:bg-zinc-800/20 transition-all duration-200 ease-out flex flex-col justify-center cursor-pointer group" 
+          className="bg-transparent p-3.5 sm:p-4 hover:bg-zinc-800/20 transition-ui duration-200 ease-out flex flex-col justify-center cursor-pointer group" 
           onClick={() => handleMetricClick("winRate", `%${(metrics.statusAnalysis.total ? (metrics.statusAnalysis.win / metrics.statusAnalysis.total) * 100 : 0).toFixed(1)}`)}
         >
           <div className="flex items-center justify-between mb-2">
@@ -1281,7 +1238,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
               </div>
               <div className="w-full bg-zinc-800/80 h-1.5 rounded-full overflow-hidden">
                 <div
-                  className="bg-emerald-500 h-full rounded-full transition-all duration-300"
+                  className="bg-emerald-500 h-full rounded-full transition-[width] duration-300"
                   style={{
                     width: `${metrics.statusAnalysis.total ? (metrics.statusAnalysis.win / metrics.statusAnalysis.total) * 100 : 0}%`,
                   }}
@@ -1295,7 +1252,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
               </div>
               <div className="w-full bg-zinc-800/80 h-1.5 rounded-full overflow-hidden">
                 <div
-                  className="bg-rose-500 h-full rounded-full transition-all duration-300"
+                  className="bg-rose-500 h-full rounded-full transition-[width] duration-300"
                   style={{
                     width: `${metrics.statusAnalysis.total ? (metrics.statusAnalysis.loss / metrics.statusAnalysis.total) * 100 : 0}%`,
                   }}
@@ -1309,7 +1266,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
               </div>
               <div className="w-full bg-zinc-800/80 h-1.5 rounded-full overflow-hidden">
                 <div
-                  className="bg-zinc-400 h-full rounded-full transition-all duration-300"
+                  className="bg-zinc-400 h-full rounded-full transition-[width] duration-300"
                   style={{
                     width: `${metrics.statusAnalysis.total ? (metrics.statusAnalysis.breakeven / metrics.statusAnalysis.total) * 100 : 0}%`,
                   }}
@@ -1320,7 +1277,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
         </motion.div>
 
         {/* SETUP KALİTESİ İSTATİSTİKLERİ */}
-        <motion.div variants={itemVariants} className="bg-transparent p-3.5 sm:p-4 transition-all duration-200 ease-out flex flex-col justify-center relative">
+        <motion.div variants={itemVariants} className="bg-transparent p-3.5 sm:p-4 transition-ui duration-200 ease-out flex flex-col justify-center relative">
           <div className="flex items-center justify-between mb-2">
             <p className="text-[10px] font-bold uppercase text-zinc-400 tracking-wider font-sans flex items-center gap-1.5">
               <span className="p-1 rounded-md bg-purple-500/10 border border-purple-500/20 text-purple-400">
@@ -1341,7 +1298,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
               return (
                 <div 
                   key={opt.name}
-                  className={`flex-1 min-w-0 bg-zinc-950/60 border ${opt.theme.border} hover:bg-zinc-900/80 p-2 rounded-xl flex flex-col justify-between cursor-pointer transition-all duration-200 group relative overflow-hidden`}
+                  className={`flex-1 min-w-0 bg-zinc-950/60 border ${opt.theme.border} hover:bg-zinc-900/80 p-2 rounded-xl flex flex-col justify-between cursor-pointer transition-ui duration-200 group relative overflow-hidden`}
                   onClick={() => {
                     handleMetricClick(
                       `planFidelity_${opt.name}`,
@@ -1384,7 +1341,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
 
                   <div className="w-full bg-zinc-800/80 h-1.5 rounded-full overflow-hidden">
                     <div
-                      className={`${opt.theme.bar} h-full rounded-full transition-all duration-300`}
+                      className={`${opt.theme.bar} h-full rounded-full transition-[width] duration-300`}
                       style={{
                         width: `${hasTrades ? Math.min(100, Math.max(0, opt.winRate)) : 0}%`,
                       }}
@@ -1412,7 +1369,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
             </div>
             <div className="grid grid-cols-2 gap-3 items-stretch w-full h-full">
               <div 
-                className="bg-zinc-950/60 border border-emerald-500/20 hover:border-emerald-500/40 rounded-2xl p-3.5 cursor-pointer hover:bg-emerald-950/10 transition-all duration-200 flex flex-col justify-between" 
+                className="bg-zinc-950/60 border border-emerald-500/20 hover:border-emerald-500/40 rounded-2xl p-3.5 cursor-pointer hover:bg-emerald-950/10 transition-ui duration-200 flex flex-col justify-between" 
                 onClick={() => handleMetricClick("averageWin", isRrMode ? "+" + metrics.avgWinRR.toFixed(2) + " R" : "+" + (metrics?.avgWinAmount || 0).toLocaleString() + " " + currency)}
               >
                 <div className="flex items-center justify-between mb-1">
@@ -1438,7 +1395,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
               </div>
               
               <div 
-                className="bg-zinc-950/60 border border-rose-500/20 hover:border-rose-500/40 rounded-2xl p-3.5 cursor-pointer hover:bg-rose-950/10 transition-all duration-200 flex flex-col justify-between" 
+                className="bg-zinc-950/60 border border-rose-500/20 hover:border-rose-500/40 rounded-2xl p-3.5 cursor-pointer hover:bg-rose-950/10 transition-ui duration-200 flex flex-col justify-between" 
                 onClick={() => handleMetricClick("averageLoss", isRrMode ? "-" + metrics.avgLossRR.toFixed(2) + " R" : "-" + (metrics?.avgLossAmount || 0).toLocaleString() + " " + currency)}
               >
                 <div className="flex items-center justify-between mb-1">
@@ -1477,7 +1434,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
             </div>
             <div className="grid grid-cols-2 gap-3 items-stretch w-full h-full">
               <div 
-                className="bg-zinc-950/60 border border-zinc-800/80 rounded-2xl p-3.5 flex flex-col justify-between cursor-pointer hover:bg-amber-950/10 hover:border-amber-500/30 transition-all duration-200 ease-out group shadow-xs" 
+                className="bg-zinc-950/60 border border-zinc-800/80 rounded-2xl p-3.5 flex flex-col justify-between cursor-pointer hover:bg-amber-950/10 hover:border-amber-500/30 transition-ui duration-200 ease-out group shadow-xs" 
                 onClick={() => handleMetricClick("sqn", (isRrMode ? metrics.sqn : (metrics.realSqn ?? metrics.sqn))?.toFixed(2) || "0.00")}
               >
                 <div className="flex items-center justify-between mb-1">
@@ -1510,7 +1467,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
               </div>
 
               <div 
-                className="bg-zinc-950/60 border border-zinc-800/80 rounded-2xl p-3.5 flex flex-col justify-between cursor-pointer hover:bg-indigo-950/10 hover:border-indigo-500/30 transition-all duration-200 ease-out group shadow-xs" 
+                className="bg-zinc-950/60 border border-zinc-800/80 rounded-2xl p-3.5 flex flex-col justify-between cursor-pointer hover:bg-indigo-950/10 hover:border-indigo-500/30 transition-ui duration-200 ease-out group shadow-xs" 
                 onClick={() => handleMetricClick("expectancy", isRrMode ? (metrics.expectancy > 0 ? "+" : "") + metrics.expectancy.toFixed(2) + " R" : (metrics.expectancyCash > 0 ? "+" : "") + metrics.expectancyCash.toLocaleString() + " " + currency)}
               >
                 <div className="flex items-center justify-between mb-1">
@@ -1562,7 +1519,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); setIsEquityFilterOpen(!isEquityFilterOpen); }}
-                  className={`flex items-center justify-center w-6 h-6 rounded-lg border transition-all duration-150 ${
+                  className={`flex items-center justify-center w-6 h-6 rounded-lg border transition-ui duration-150 ${
                     isEquityFilterOpen 
                       ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' 
                       : 'bg-zinc-950 border-zinc-800/80 text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200'
@@ -1591,7 +1548,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
                           key={opt.id}
                           type="button"
                           onClick={(e) => { e.stopPropagation(); setEquityFilter(opt.id as any); }}
-                          className={`px-2 py-0.5 text-[9px] font-bold font-sans tracking-wider uppercase rounded-lg transition-all duration-150 ${
+                          className={`px-2 py-0.5 text-[9px] font-bold font-sans tracking-wider uppercase rounded-lg transition-ui duration-150 ${
                             equityFilter === opt.id 
                               ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' 
                               : 'text-zinc-400 hover:text-zinc-200 border border-transparent'
@@ -1679,7 +1636,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
           ) : (
             <div className="grid grid-cols-2 gap-3">
               <div 
-                className="bg-zinc-950/60 border border-emerald-500/20 hover:border-emerald-500/40 p-3.5 rounded-2xl cursor-pointer hover:bg-emerald-950/10 transition-all duration-200"
+                className="bg-zinc-950/60 border border-emerald-500/20 hover:border-emerald-500/40 p-3.5 rounded-2xl cursor-pointer hover:bg-emerald-950/10 transition-ui duration-200"
                 onClick={(e) => { e.stopPropagation(); handleMetricClick("profitableDays", metrics.greenDays + " Gün"); }}
               >
                 <div className="flex items-center justify-between mb-1">
@@ -1691,7 +1648,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
                 </span>
               </div>
               <div 
-                className="bg-zinc-950/60 border border-rose-500/20 hover:border-rose-500/40 p-3.5 rounded-2xl cursor-pointer hover:bg-rose-950/10 transition-all duration-200"
+                className="bg-zinc-950/60 border border-rose-500/20 hover:border-rose-500/40 p-3.5 rounded-2xl cursor-pointer hover:bg-rose-950/10 transition-ui duration-200"
                 onClick={(e) => { e.stopPropagation(); handleMetricClick("profitableDays", metrics.redDays + " Gün"); }}
               >
                 <div className="flex items-center justify-between mb-1">
@@ -1718,7 +1675,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div 
-              className="bg-zinc-950/60 border border-emerald-500/20 hover:border-emerald-500/40 p-3.5 rounded-2xl cursor-pointer hover:bg-emerald-950/10 transition-all duration-200"
+              className="bg-zinc-950/60 border border-emerald-500/20 hover:border-emerald-500/40 p-3.5 rounded-2xl cursor-pointer hover:bg-emerald-950/10 transition-ui duration-200"
               onClick={(e) => { e.stopPropagation(); handleMetricClick("largestWin", isRrMode ? ("+" + (metrics.bestTrade ? (metrics.bestTrade.rr || 0).toFixed(1) : "0") + " R") : ("+" + (metrics.bestTrade?.pnl || 0).toLocaleString() + " " + currency)); }}
             >
               <div className="flex items-center justify-between mb-1">
@@ -1733,7 +1690,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
               </span>
             </div>
             <div 
-              className="bg-zinc-950/60 border border-rose-500/20 hover:border-rose-500/40 p-3.5 rounded-2xl cursor-pointer hover:bg-rose-950/10 transition-all duration-200"
+              className="bg-zinc-950/60 border border-rose-500/20 hover:border-rose-500/40 p-3.5 rounded-2xl cursor-pointer hover:bg-rose-950/10 transition-ui duration-200"
               onClick={(e) => { e.stopPropagation(); handleMetricClick("largestLoss", isRrMode ? ("-" + (metrics.worstTrade ? Math.abs(metrics.worstTrade.rr || 0).toFixed(1) : "0") + " R") : ("-" + Math.abs(metrics.worstTrade?.pnl || 0).toLocaleString() + " " + currency)); }}
             >
               <div className="flex items-center justify-between mb-1">
@@ -1753,11 +1710,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
 
 
 
-      {heavyReady ? (
-        <AdvancedMetricsDashboard trades={deferredTrades} currency={currency} onMetricClick={handleMetricClick} onEdit={onEdit} sessions={sessions} />
-      ) : (
-        <HeavyPanelSkeleton />
-      )}
+      <AdvancedMetricsDashboard trades={trades} currency={currency} onMetricClick={handleMetricClick} onEdit={onEdit} sessions={sessions} />
       
       <MetricDetailModal 
         isOpen={!!selectedMetric} 

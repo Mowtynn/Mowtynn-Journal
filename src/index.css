@@ -11,6 +11,11 @@ html {
   --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   
+  /* Hareket sistemi: tüm Tailwind geçişleri (transition, transition-colors …) varsayılan olarak bunu kullanır */
+  --default-transition-duration: 160ms;
+  --default-transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
   --color-white: #C5CBD6;
   
   /* Overridden Default Tailwind Colors for TradingView Palette (OLED softened) */
@@ -135,6 +140,15 @@ html {
   --shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
   --shadow-modal: 0 20px 40px -8px rgba(0, 0, 0, 0.7);
   --shadow-glow: 0 0 8px rgba(65, 117, 204, 0.18);
+}
+
+/* transition-all'ın yerine: yalnızca compositor/boyama özellikleri geçiş yapar.
+   width/height/margin gibi layout özellikleri canlandırılmaz (akıcılık + düşük CPU). */
+@utility transition-ui {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, box-shadow, opacity, transform, translate, scale, rotate, filter;
+  /* --tw-ease / --tw-duration: ease-* ve duration-* sınıfları sıralamadan bağımsız olarak bunu ezebilsin */
+  transition-timing-function: var(--tw-ease, var(--default-transition-timing-function));
+  transition-duration: var(--tw-duration, var(--default-transition-duration));
 }
 
 @layer components {
@@ -265,11 +279,17 @@ code {
 }
 
 html {
+  scroll-padding-top: 72px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
+  text-rendering: auto;
+  font-kerning: normal;
+  font-optical-sizing: auto;
   letter-spacing: normal;
 }
+
+/* Başlıklarda dengeli satır kırılması */
+h1, h2, h3, .heading-1, .page-title { text-wrap: balance; }
 
 body {
   background-color: var(--color-bg-base);
@@ -294,59 +314,40 @@ button, a, input, select, textarea, [role="button"] {
   touch-action: manipulation;
 }
 
-/* GPU Hardware Acceleration & Smooth Transitions */
-.gpu-layer,
-.hardware-accelerated {
-  will-change: transform, opacity;
-  transform: translate3d(0, 0, 0);
-  backface-visibility: hidden;
-}
-
-/* High-Refresh 144Hz/240Hz Rendering Optimizations */
-html {
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+/* Not: kalıcı will-change / translate3d katman zorlaması kaldırıldı (bellek + bulanık yazı + fixed çocuklar için
+   yeni containing block yaratıyordu). Animasyon sırasında motion/tarayıcı katmanı kendisi yükseltir. */
 
 body {
   overflow-x: hidden;
 }
 
-/* Modal, popup and dialog GPU composite layer promotion */
-dialog, .modal-mobile-fit, [role="dialog"], #global-filter-popup, #trades-history-section {
-  transform: translateZ(0);
-  backface-visibility: hidden;
-}
-
-@keyframes tabEnter {
-  from {
-    opacity: 0.88;
-    transform: translateY(2px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.tab-content-active {
-  animation: tabEnter 0.1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  will-change: opacity, transform;
+/* Sekme panelleri bellekte kalır, yalnızca gizlenir. Gösterilince giriş animasyonu yeniden başlar.
+   `backwards`: animasyon bitince transform kalmaz (fixed çocuklar için yeni containing block oluşmaz). */
+.tab-pane[hidden] { display: none !important; }
+.tab-pane { animation: tabPaneIn 200ms var(--ease-out-expo) backwards; }
+@keyframes tabPaneIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
 }
 
 /* Not: `tr` kaldırıldı — tablo satırlarında content-visibility sütun genişliklerini zıplatıyordu */
-.cv-auto {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 48px;
+/* Ekran dışı içerik atlanmaz (geç render yok): content-visibility kaldırıldı, kaydırma sırasında
+   yükseklik sıçraması ve geç çizim olmaz. Yalnızca düzen izolasyonu kaldı. */
+.cv-auto,
+.cv-card {
   contain: layout style;
 }
 
-.cv-card {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 120px;
-  contain: layout style;
-}
+/* Kaydırma çubuğu gizli yatay şeritler (sekme çubuğu) */
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* Sekme çubuğundaki odak halkası aktif göstergenin içinde kalsın */
+[role="tab"]:focus-visible { outline: 2px solid rgba(96, 165, 250, 0.7); outline-offset: -2px; }
+
+/* Kartlarda yumuşak, katman zorlamayan vurgu */
+.card-base { transition: border-color 160ms var(--ease-out-expo), box-shadow 160ms var(--ease-out-expo); }
+.card-base:hover { border-color: color-mix(in srgb, var(--color-border-card) 70%, #60a5fa 30%); }
 
 svg {
   shape-rendering: geometricPrecision;
@@ -386,9 +387,10 @@ input[type="number"] {
   --ring: rgba(98, 141, 214, 0.65);
 }
 
-html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
 @media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
@@ -401,8 +403,8 @@ html { scroll-behavior: smooth; }
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
 }
-*:hover,
-*:focus-within {
+:where(.overflow-auto, .overflow-y-auto, .overflow-x-auto, .overflow-scroll, .overflow-y-scroll, .overflow-x-scroll, .custom-scrollbar, .modal-overlay, textarea, select):hover,
+:where(.overflow-auto, .overflow-y-auto, .overflow-x-auto, .overflow-scroll, .overflow-y-scroll, .overflow-x-scroll, .custom-scrollbar, .modal-overlay, textarea, select):focus-within {
   scrollbar-color: var(--sb-thumb) transparent;
 }
 html { scrollbar-color: var(--sb-thumb) transparent; }
@@ -417,7 +419,8 @@ html { scrollbar-color: var(--sb-thumb) transparent; }
   background-clip: padding-box;
   transition: background-color 0.2s ease;
 }
-*:hover::-webkit-scrollbar-thumb,
+:where(.overflow-auto, .overflow-y-auto, .overflow-x-auto, .overflow-scroll, .overflow-y-scroll, .overflow-x-scroll, .custom-scrollbar, .modal-overlay, textarea, select):hover::-webkit-scrollbar-thumb,
+:where(.overflow-auto, .overflow-y-auto, .overflow-x-auto, .overflow-scroll, .overflow-y-scroll, .overflow-x-scroll, .custom-scrollbar, .modal-overlay, textarea, select):focus-within::-webkit-scrollbar-thumb,
 html::-webkit-scrollbar-thumb { background-color: var(--sb-thumb); }
 ::-webkit-scrollbar-thumb:hover { background-color: var(--sb-thumb-hover); }
 
@@ -453,14 +456,15 @@ body { font-variant-numeric: tabular-nums; }
 /* Smoother, more modern surfaces.
    @layer base: Tailwind utility sınıfları (transition-all, duration-300 …) bu varsayılanları ezebilsin.
    `transform` bilerek listede YOK: motion (framer) transform'u kare kare kendisi sürüyor;
-   CSS transition'ı araya girerse animasyon gecikmeli/yaylanmış hissettirir. */
+   CSS transition'ı araya girerse animasyon gecikmeli/yaylanmış hissettirir.
+   Basılma efekti için bağımsız `scale` özelliği kullanılır (transform ile çakışmaz). */
 @layer base {
   button, [role="button"], select, input, textarea {
-    transition-property: color, background-color, border-color, box-shadow, opacity;
+    transition-property: color, background-color, border-color, box-shadow, opacity, scale;
     transition-duration: 150ms;
     transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
   }
-  button:not(:disabled):active { transform: scale(0.98); }
+  button:not(:disabled):active { scale: 0.98; }
   button:disabled { cursor: not-allowed; }
 }
 

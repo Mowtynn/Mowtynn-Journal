@@ -348,7 +348,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
     <motion.div 
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, ease: 'easeOut' }}
+      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
       className="bg-zinc-900/70 border border-zinc-700/50 rounded-2xl p-4 sm:p-5 shadow-sm space-y-4"
     >
       
@@ -412,7 +412,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
               whileHover={{ y: -1 }}
               whileTap={{ scale: 0.97 }}
               onClick={() => setActiveSubTab(tab.id)}
-              className={`px-3 py-1.5 rounded-lg font-bold text-[11px] font-sans transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 select-none border ${
+              className={`px-3 py-1.5 rounded-lg font-bold text-[11px] font-sans transition-ui whitespace-nowrap cursor-pointer flex items-center gap-1.5 select-none border ${
                 isActive
                   ? `${tab.activeColor} shadow-xs`
                   : 'border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
@@ -432,7 +432,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
           initial={{ opacity: 0, y: 10, scale: 0.997 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -8, scale: 0.997 }}
-          transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
           className="space-y-4"
         >
 

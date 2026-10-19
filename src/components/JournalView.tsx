@@ -354,7 +354,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.15, ease: "easeOut" }}
+      transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
       className="flex flex-col md:flex-row h-[calc(100vh-170px)] min-h-[640px] bg-zinc-950/60 border border-zinc-800/80  rounded-2xl overflow-hidden text-zinc-200 shadow-sm relative"
     >
       {/* LEFT SIDEBAR: Entry List */}
@@ -384,7 +384,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
               <button
                 type="button"
                 onClick={() => setIsExportOpen(!isExportOpen)}
-                className={`w-7.5 h-7.5 rounded-lg flex items-center justify-center transition-all cursor-pointer border ${
+                className={`w-7.5 h-7.5 rounded-lg flex items-center justify-center transition-ui cursor-pointer border ${
                   isExportOpen
                     ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
                     : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
@@ -409,7 +409,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
                       <button
                         type="button"
                         onClick={() => setExportFormatTab('excel')}
-                        className={`flex-1 py-1 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer border ${
+                        className={`flex-1 py-1 text-[10px] font-bold rounded-lg transition-ui flex items-center justify-center gap-1.5 cursor-pointer border ${
                           exportFormatTab === 'excel'
                             ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-xs'
                             : 'text-zinc-400 hover:text-zinc-200 border-transparent hover:bg-zinc-800/40'
@@ -421,7 +421,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
                       <button
                         type="button"
                         onClick={() => setExportFormatTab('csv')}
-                        className={`flex-1 py-1 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer border ${
+                        className={`flex-1 py-1 text-[10px] font-bold rounded-lg transition-ui flex items-center justify-center gap-1.5 cursor-pointer border ${
                           exportFormatTab === 'csv'
                             ? 'bg-blue-500/20 text-blue-300 border-blue-500/40 shadow-xs'
                             : 'text-zinc-400 hover:text-zinc-200 border-transparent hover:bg-zinc-800/40'
@@ -513,7 +513,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
 
             <button
               onClick={() => setShowSearch(!showSearch)}
-              className={`w-7.5 h-7.5 rounded-lg flex items-center justify-center transition-all cursor-pointer border ${
+              className={`w-7.5 h-7.5 rounded-lg flex items-center justify-center transition-ui cursor-pointer border ${
                 showSearch || searchDate 
                   ? 'bg-blue-500/15 border-blue-500/30 text-blue-400' 
                   : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
@@ -542,7 +542,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
 
             <button
               onClick={() => setShowOnlyFavorites(prev => !prev)}
-              className={`w-7.5 h-7.5 rounded-lg flex items-center justify-center transition-all cursor-pointer border ${
+              className={`w-7.5 h-7.5 rounded-lg flex items-center justify-center transition-ui cursor-pointer border ${
                 showOnlyFavorites 
                   ? 'bg-amber-500/20 border-amber-500/40 text-amber-400' 
                   : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
@@ -553,7 +553,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
 
             <button
               onClick={handleCreateNew}
-              className="w-7.5 h-7.5 rounded-lg bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 border border-blue-500/30 flex items-center justify-center transition-all cursor-pointer shadow-xs"
+              className="w-7.5 h-7.5 rounded-lg bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 border border-blue-500/30 flex items-center justify-center transition-ui cursor-pointer shadow-xs"
             >
               <Plus size={15} />
             </button>
@@ -643,7 +643,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
                       setIsEditing(false);
                     }
                   }}
-                  className={`flex flex-col items-center py-1 rounded-lg transition-all border ${
+                  className={`flex flex-col items-center py-1 rounded-lg transition-ui border ${
                     entryForDay 
                       ? 'cursor-pointer hover:bg-zinc-800/60' 
                       : 'cursor-default opacity-60'
@@ -714,7 +714,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
                             }, { silent: true });
                             toast.success(nextFav ? "Günlük favorilere eklendi." : "Günlük favorilerden çıkarıldı.");
                           }}
-                          className={`p-1 rounded-md transition-all cursor-pointer ${
+                          className={`p-1 rounded-md transition-ui cursor-pointer ${
                             entry.isFavorite
                               ? 'text-amber-400 bg-amber-500/10 border border-amber-500/20'
                               : 'text-zinc-600 hover:text-amber-400 opacity-0 group-hover:opacity-100'
@@ -729,7 +729,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
                             e.stopPropagation();
                             setEntryToDelete(entry);
                           }}
-                          className="p-1 text-zinc-600 hover:text-rose-400 hover:bg-rose-500/10 rounded-md opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
+                          className="p-1 text-zinc-600 hover:text-rose-400 hover:bg-rose-500/10 rounded-md opacity-0 group-hover:opacity-100 transition-ui cursor-pointer"
                         >
                           <Trash2 size={11} />
                         </button>
@@ -809,7 +809,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
                   <button
                     type="button"
                     onClick={() => setEditIsFavorite(prev => !prev)}
-                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-sans font-bold tracking-wider uppercase border transition-all cursor-pointer ${
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-sans font-bold tracking-wider uppercase border transition-ui cursor-pointer ${
                       editIsFavorite
                         ? 'bg-amber-500/15 border-amber-500/30 text-amber-400'
                         : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
@@ -841,7 +841,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
                   <button
                     onClick={handleSave}
                     disabled={!editTitle.trim()}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 rounded-lg text-xs font-bold font-sans tracking-wider uppercase transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-xs border border-blue-500/30"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 rounded-lg text-xs font-bold font-sans tracking-wider uppercase transition-ui disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-xs border border-blue-500/30"
                   >
                     <Save size={13} /> Kaydet
                   </button>
@@ -879,7 +879,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
                             key={mood}
                             type="button"
                             onClick={() => setEditMood(mood)}
-                            className={`h-9 rounded-xl flex items-center justify-center border transition-all cursor-pointer ${
+                            className={`h-9 rounded-xl flex items-center justify-center border transition-ui cursor-pointer ${
                               isSelected
                                 ? 'bg-zinc-800 border-zinc-500 text-zinc-100 shadow-xs'
                                 : 'bg-zinc-950/80 border-zinc-800/80 text-zinc-500 hover:text-zinc-200 hover:border-zinc-700 hover:bg-zinc-900/80'
@@ -1019,7 +1019,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.15, ease: "easeOut" }}
+              transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
               className="will-change-[opacity] fixed inset-0 z-[4500] bg-zinc-950/80 flex items-center justify-center p-4"
               onClick={() => setEntryToDelete(null)}
             >
@@ -1028,7 +1028,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
                 initial={{ opacity: 0, scale: 0.98, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.98, y: 10 }}
-                transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                 style={{ willChange: "transform, opacity" }}
                 onClick={(e) => e.stopPropagation()}
                 className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 max-w-sm w-full shadow-2xl overflow-hidden relative select-none"
@@ -1049,7 +1049,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
                   <button
                     type="button"
                     onClick={() => setEntryToDelete(null)}
-                    className="flex-1 py-2 px-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-sans text-xs font-bold uppercase rounded-xl transition-all cursor-pointer"
+                    className="flex-1 py-2 px-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-sans text-xs font-bold uppercase rounded-xl transition-ui cursor-pointer"
                   >
                     Vazgeç
                   </button>
@@ -1065,7 +1065,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
                         setEntryToDelete(null);
                       }
                     }}
-                    className="flex-1 py-2 px-3 bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 border border-rose-500/30 font-sans text-xs font-bold uppercase rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                    className="flex-1 py-2 px-3 bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 border border-rose-500/30 font-sans text-xs font-bold uppercase rounded-xl transition-ui cursor-pointer flex items-center justify-center gap-1.5"
                   >
                     <Trash2 size={13} />
                     <span>Sil</span>

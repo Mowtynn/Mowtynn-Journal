@@ -13,6 +13,7 @@ import {
   Activity, Layers, Monitor, ShieldCheck, AlertCircle,
   Download, Loader2, Trophy, TrendingDown, Minus, Zap, TrendingUp
 } from "lucide-react";
+import * as htmlToImage from "html-to-image";
 
 interface TradeDetailModalProps {
   trade: Trade | null;
@@ -85,7 +86,6 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
       // Wait a moment for DOM to update with isExporting classes and base64 image
       // Ultimate Optimization: Use double requestAnimationFrame to wait for the exact moment the browser paints the new layout, 0ms idle time.
       await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-      const htmlToImage = await import("html-to-image");
       const dataUrl = await htmlToImage.toPng(contentRef.current, {
         backgroundColor: "#0a0a0c",
         pixelRatio: 2,
@@ -191,7 +191,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
+            transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
             
             onClick={onClose}
              className="will-change-[opacity] modal-overlay"
@@ -202,7 +202,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
               initial={{ opacity: 0, scale: 0.98, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.98, y: 10 }}
-              transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
               style={{ 
                 willChange: "transform, opacity", 
                 ...(isExporting ? { margin: 0, padding: 0, boxShadow: 'none', borderRadius: 0, border: 'none', transform: 'none' } : {}) 
@@ -590,7 +590,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
+            transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
             className="will-change-[opacity] fixed inset-0 z-[4500] bg-zinc-950/85 flex items-center justify-center p-4"
             onClick={() => setShowDeleteConfirm(false)}
           >
@@ -599,7 +599,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
               initial={{ opacity: 0, scale: 0.98, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.98, y: 10 }}
-              transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
               style={{ willChange: "transform, opacity" }}
               onClick={(e) => e.stopPropagation()}
               className="bg-zinc-900 border border-zinc-700/80 rounded-2xl p-5 max-w-sm w-full shadow-2xl relative"

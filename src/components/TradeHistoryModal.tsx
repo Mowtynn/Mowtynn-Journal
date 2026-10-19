@@ -135,7 +135,7 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
+            transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
             style={{ willChange: "opacity" }}
             className="fixed inset-0 z-[1500] flex items-center justify-center p-4 bg-zinc-950/80"
             onClick={onClose}
@@ -193,7 +193,7 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                           <button
                             type="button"
                             onClick={() => setExportFormatTab('excel')}
-                            className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer border ${
+                            className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-ui flex items-center justify-center gap-1.5 cursor-pointer border ${
                               exportFormatTab === 'excel'
                                 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-xs'
                                 : 'text-zinc-400 hover:text-zinc-200 border-transparent hover:bg-zinc-800/40'
@@ -205,7 +205,7 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                           <button
                             type="button"
                             onClick={() => setExportFormatTab('csv')}
-                            className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer border ${
+                            className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-ui flex items-center justify-center gap-1.5 cursor-pointer border ${
                               exportFormatTab === 'csv'
                                 ? 'bg-blue-500/20 text-blue-300 border-blue-500/40 shadow-xs'
                                 : 'text-zinc-400 hover:text-zinc-200 border-transparent hover:bg-zinc-800/40'
@@ -217,7 +217,7 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                           <button
                             type="button"
                             onClick={() => setExportFormatTab('pdf')}
-                            className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer border ${
+                            className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-ui flex items-center justify-center gap-1.5 cursor-pointer border ${
                               exportFormatTab === 'pdf'
                                 ? 'bg-purple-500/20 text-purple-300 border-purple-500/40 shadow-xs'
                                 : 'text-zinc-400 hover:text-zinc-200 border-transparent hover:bg-zinc-800/40'

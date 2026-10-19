@@ -38,7 +38,7 @@ export const MicrophonePermissionModal: React.FC<MicrophonePermissionModalProps>
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.15, ease: "easeOut" }}
+          transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
           className="will-change-[opacity] fixed inset-0 z-[4500] flex items-center justify-center p-4 bg-zinc-950/80"
           onClick={onClose}
         >
@@ -47,7 +47,7 @@ export const MicrophonePermissionModal: React.FC<MicrophonePermissionModalProps>
             initial={{ opacity: 0, scale: 0.98, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.98, y: 10 }}
-            transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
             style={{ willChange: "transform, opacity" }}
             className="relative w-full max-w-md bg-zinc-900 border border-zinc-700/50 rounded-2xl shadow-2xl overflow-hidden p-5 text-zinc-100"
             onClick={(e) => e.stopPropagation()}

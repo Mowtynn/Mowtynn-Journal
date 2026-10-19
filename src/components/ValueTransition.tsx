@@ -14,9 +14,8 @@ export const ValueTransition = React.memo(({
       initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.98 }}
-      transition={{ duration: 0.08, ease: "easeOut" }}
+      transition={{ duration: 0.1, ease: [0.16, 1, 0.3, 1] }}
       className="inline-block"
-      style={{ willChange: "transform, opacity", backfaceVisibility: "hidden", transform: "translate3d(0,0,0)" }}
     >
       {children}
     </motion.span>

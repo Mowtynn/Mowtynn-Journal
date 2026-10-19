@@ -186,14 +186,14 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
+            transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
             className="w-full flex flex-col space-y-4"
           >
             <div className="bg-zinc-950/60 border border-zinc-800/80  rounded-2xl p-4 sm:p-5 relative overflow-hidden shadow-sm">
               <div className="flex items-center gap-3">
                 <button 
                   onClick={() => setIsEditing(false)}
-                  className="p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all cursor-pointer shrink-0"
+                  className="p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-ui cursor-pointer shrink-0"
                 >
                   <ArrowLeft size={16} />
                 </button>
@@ -218,7 +218,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                         e.stopPropagation();
                         setNoteToDelete(activeNote);
                       }}
-                      className="p-2 text-rose-400 bg-rose-500/10 rounded-xl hover:bg-rose-500/20 border border-rose-500/20 transition-all cursor-pointer"
+                      className="p-2 text-rose-400 bg-rose-500/10 rounded-xl hover:bg-rose-500/20 border border-rose-500/20 transition-ui cursor-pointer"
                     >
                       <Trash2 size={15} />
                     </button>
@@ -226,7 +226,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                   <button 
                     onClick={executeSave}
                     disabled={!editTitle.trim() && !editContent.trim()}
-                    className="flex items-center gap-2 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 px-4 py-2 rounded-xl text-xs font-bold font-sans uppercase tracking-wider transition-all cursor-pointer shadow-xs border border-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-2 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 px-4 py-2 rounded-xl text-xs font-bold font-sans uppercase tracking-wider transition-ui cursor-pointer shadow-xs border border-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Save size={14} />
                     Kaydet
@@ -235,7 +235,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
               </div>
             </div>
 
-            <div className="relative rounded-2xl border border-zinc-800/80 bg-zinc-950/60 overflow-hidden focus-within:border-zinc-700 transition-all flex flex-col min-h-[460px] shadow-sm">
+            <div className="relative rounded-2xl border border-zinc-800/80 bg-zinc-950/60 overflow-hidden focus-within:border-zinc-700 transition-ui flex flex-col min-h-[460px] shadow-sm">
               <textarea
                 placeholder="Konsept detayları, grafik analizleri, kurallar veya strateji notlarını buraya yazabilirsin..."
                 className="w-full flex-1 bg-transparent text-zinc-200 p-5 outline-none resize-none placeholder:text-zinc-600 leading-relaxed font-sans text-sm min-h-[380px]"
@@ -255,7 +255,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
+            transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
             className="w-full flex flex-col space-y-4"
           >
             <div className="bg-zinc-950/60 border border-zinc-800/80  rounded-2xl p-4 sm:p-5 relative overflow-hidden shadow-sm">
@@ -263,7 +263,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                 <div className="flex items-center gap-3 min-w-0">
                   <button 
                     onClick={() => setActiveNote(null)}
-                    className="p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all cursor-pointer shrink-0"
+                    className="p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-ui cursor-pointer shrink-0"
                   >
                     <ArrowLeft size={16} />
                   </button>
@@ -289,7 +289,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                 <div className="flex items-center gap-2 shrink-0">
                   <button 
                     onClick={(e) => handleTogglePin(activeNote, e)}
-                    className={`p-2 rounded-xl transition-all cursor-pointer border ${
+                    className={`p-2 rounded-xl transition-ui cursor-pointer border ${
                       activeNote.isPinned 
                         ? 'text-blue-400 bg-blue-500/15 border-blue-500/30' 
                         : 'text-zinc-400 hover:text-zinc-200 bg-zinc-900 border-zinc-800 hover:bg-zinc-800'
@@ -301,13 +301,13 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                     onClick={() => {
                       setNoteToDelete(activeNote);
                     }}
-                    className="p-2 text-rose-400 bg-rose-500/10 rounded-xl hover:bg-rose-500/20 border border-rose-500/20 transition-all cursor-pointer"
+                    className="p-2 text-rose-400 bg-rose-500/10 rounded-xl hover:bg-rose-500/20 border border-rose-500/20 transition-ui cursor-pointer"
                   >
                     <Trash2 size={15} />
                   </button>
                   <button 
                     onClick={() => setIsEditing(true)}
-                    className="flex items-center gap-2 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 px-4 py-2 rounded-xl text-xs font-bold font-sans uppercase tracking-wider transition-all cursor-pointer shadow-xs border border-blue-500/30"
+                    className="flex items-center gap-2 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 px-4 py-2 rounded-xl text-xs font-bold font-sans uppercase tracking-wider transition-ui cursor-pointer shadow-xs border border-blue-500/30"
                   >
                     <Edit3 size={14} />
                     Düzenle
@@ -329,7 +329,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
+            transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
             className="w-full space-y-4"
           >
             {/* Header bar */}
@@ -423,7 +423,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                     <button
                       type="button"
                       onClick={() => setIsExportOpen(!isExportOpen)}
-                      className={`h-8 w-8 rounded-xl border flex items-center justify-center transition-all cursor-pointer ${
+                      className={`h-8 w-8 rounded-xl border flex items-center justify-center transition-ui cursor-pointer ${
                         isExportOpen
                           ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
                           : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
@@ -448,7 +448,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                             <button
                               type="button"
                               onClick={() => setExportFormatTab('excel')}
-                              className={`flex-1 py-1 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer border ${
+                              className={`flex-1 py-1 text-[10px] font-bold rounded-lg transition-ui flex items-center justify-center gap-1.5 cursor-pointer border ${
                                 exportFormatTab === 'excel'
                                   ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-xs'
                                   : 'text-zinc-400 hover:text-zinc-200 border-transparent hover:bg-zinc-800/40'
@@ -460,7 +460,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                             <button
                               type="button"
                               onClick={() => setExportFormatTab('csv')}
-                              className={`flex-1 py-1 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer border ${
+                              className={`flex-1 py-1 text-[10px] font-bold rounded-lg transition-ui flex items-center justify-center gap-1.5 cursor-pointer border ${
                                 exportFormatTab === 'csv'
                                   ? 'bg-blue-500/20 text-blue-300 border-blue-500/40 shadow-xs'
                                   : 'text-zinc-400 hover:text-zinc-200 border-transparent hover:bg-zinc-800/40'
@@ -589,7 +589,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
 
                   <button 
                     onClick={handleAddNew}
-                    className="bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 px-3.5 py-1.5 h-8 rounded-xl text-xs font-bold font-sans uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer shadow-xs border border-blue-500/30 shrink-0"
+                    className="bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 px-3.5 py-1.5 h-8 rounded-xl text-xs font-bold font-sans uppercase tracking-wider flex items-center gap-1.5 transition-ui cursor-pointer shadow-xs border border-blue-500/30 shrink-0"
                   >
                     <Plus size={14} />
                     Yeni Not
@@ -609,7 +609,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                 </p>
                 <button 
                   onClick={handleAddNew}
-                  className="bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 px-4 py-2 rounded-xl border border-blue-500/30 text-xs font-bold font-sans uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
+                  className="bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 px-4 py-2 rounded-xl border border-blue-500/30 text-xs font-bold font-sans uppercase tracking-wider flex items-center gap-1.5 transition-ui cursor-pointer shadow-xs"
                 >
                   <Plus size={14} />
                   İlk Notu Yaz
@@ -629,7 +629,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                       note.isPinned 
                         ? 'border-blue-500/30 bg-blue-500/[0.02]' 
                         : 'border-zinc-800/80'
-                    } hover:border-zinc-700 hover:bg-zinc-900/60 hover:-translate-y-0.5 rounded-2xl p-4.5 cursor-pointer overflow-hidden flex flex-col transition-all duration-150 ease-out shadow-xs min-h-[160px]`}
+                    } hover:border-zinc-700 hover:bg-zinc-900/60 hover:-translate-y-0.5 rounded-2xl p-4.5 cursor-pointer overflow-hidden flex flex-col transition-ui duration-150 ease-out shadow-xs min-h-[160px]`}
                   >
                     <div className="flex justify-between items-start mb-2 w-full min-w-0 pr-14">
                       <h3 className="text-sm font-bold text-zinc-100 tracking-tight font-sans break-words w-full line-clamp-2">
@@ -639,7 +639,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                       <div className="absolute top-3.5 right-3.5 flex items-center gap-1 bg-zinc-900 p-0.5 rounded-lg border border-zinc-800">
                         <button 
                           onClick={(e) => handleTogglePin(note, e)}
-                          className={`p-1.5 rounded-md transition-all cursor-pointer ${
+                          className={`p-1.5 rounded-md transition-ui cursor-pointer ${
                             note.isPinned 
                               ? 'text-blue-400 bg-blue-500/15' 
                               : 'text-zinc-500 hover:text-blue-400 hover:bg-zinc-800'
@@ -653,7 +653,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                             e.stopPropagation();
                             setNoteToDelete(note);
                           }}
-                          className="p-1.5 text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-md transition-all cursor-pointer"
+                          className="p-1.5 text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-md transition-ui cursor-pointer"
                         >
                           <Trash2 size={12} />
                         </button>
@@ -670,7 +670,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                         {formatDateStr(note.updatedAt)}
                       </span>
                       
-                      <span className="opacity-0 group-hover:opacity-100 transition-all text-blue-400 font-bold flex items-center gap-0.5 font-sans">
+                      <span className="opacity-0 group-hover:opacity-100 transition-ui text-blue-400 font-bold flex items-center gap-0.5 font-sans">
                         Oku →
                       </span>
                     </div>
@@ -691,7 +691,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.15, ease: "easeOut" }}
+              transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
               className="will-change-[opacity] fixed inset-0 z-[4500] bg-zinc-950/80 flex items-center justify-center p-4"
               onClick={() => setNoteToDelete(null)}
             >
@@ -700,7 +700,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                 initial={{ opacity: 0, scale: 0.98, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.98, y: 10 }}
-                transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                 style={{ willChange: "transform, opacity" }}
                 onClick={(e) => e.stopPropagation()}
                 className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 max-w-sm w-full shadow-2xl overflow-hidden relative select-none"
@@ -721,7 +721,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                   <button
                     type="button"
                     onClick={() => setNoteToDelete(null)}
-                    className="flex-1 py-2 px-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-sans text-xs font-bold uppercase rounded-xl transition-all cursor-pointer"
+                    className="flex-1 py-2 px-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-sans text-xs font-bold uppercase rounded-xl transition-ui cursor-pointer"
                   >
                     Vazgeç
                   </button>
@@ -733,7 +733,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                         setNoteToDelete(null);
                       }
                     }}
-                    className="flex-1 py-2 px-3 bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 border border-rose-500/30 font-sans text-xs font-bold uppercase rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                    className="flex-1 py-2 px-3 bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 border border-rose-500/30 font-sans text-xs font-bold uppercase rounded-xl transition-ui cursor-pointer flex items-center justify-center gap-1.5"
                   >
                     <Trash2 size={13} />
                     <span>Sil</span>

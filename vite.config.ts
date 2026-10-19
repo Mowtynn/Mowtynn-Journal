@@ -49,29 +49,6 @@ function marketTickerPlugin(): Plugin {
     }
   };
 
-  const handleCalendar = async (req: any, res: any) => {
-    try {
-      const tvResponse = await fetch('https://economic-calendar.tradingview.com/events?from=' + new Date().toISOString() + '&to=' + new Date(Date.now() + 86400000).toISOString(), {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
-        }
-      });
-
-      if (tvResponse.ok) {
-        const tvData = await tvResponse.json();
-        res.setHeader('Content-Type', 'application/json');
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        return res.end(JSON.stringify({ success: true, data: Array.isArray(tvData) ? tvData : (tvData.result || []) }));
-      }
-
-      throw new Error('Failed to fetch calendar');
-    } catch (error: any) {
-      res.statusCode = 500;
-      res.setHeader('Content-Type', 'application/json');
-      res.end(JSON.stringify({ error: error?.message || 'Failed to fetch economic calendar' }));
-    }
-  };
-
   const handleSymbols = async (req: any, res: any) => {
     try {
       const tvResponse = await fetch('https://scanner.tradingview.com/global/scan', {
@@ -107,12 +84,10 @@ function marketTickerPlugin(): Plugin {
     configureServer(server) {
       server.middlewares.use('/api/market-ticker', handleTicker);
       server.middlewares.use('/api/market-symbols', handleSymbols);
-      server.middlewares.use('/api/economic-calendar', handleCalendar);
     },
     configurePreviewServer(server) {
       server.middlewares.use('/api/market-ticker', handleTicker);
       server.middlewares.use('/api/market-symbols', handleSymbols);
-      server.middlewares.use('/api/economic-calendar', handleCalendar);
     }
   };
 }
@@ -192,34 +167,23 @@ export default defineConfig(() => {
       target: 'es2022',
       minify: 'esbuild',
       cssCodeSplit: true,
+      reportCompressedSize: false,
       sourcemap: false,
       chunkSizeWarningLimit: 1200,
       rollupOptions: {
         output: {
           manualChunks(id) {
-            if (id.includes('node_modules')) {
-              if (id.includes('react') || id.includes('react-dom') || id.includes('scheduler')) {
-                return 'vendor-react';
-              }
-              if (id.includes('motion')) {
-                return 'vendor-motion';
-              }
-              if (id.includes('firebase')) {
-                return 'vendor-firebase';
-              }
-              if (id.includes('recharts') || id.includes('d3-')) {
-                return 'vendor-charts';
-              }
-              if (id.includes('lucide-react')) {
-                return 'vendor-icons';
-              }
-              if (id.includes('html2canvas')) {
-                return 'vendor-canvas';
-              }
-              if (id.includes('react-markdown')) {
-                return 'vendor-markdown';
-              }
-            }
+            if (!id.includes('node_modules')) return;
+            // Not: önceki `id.includes('react')` kontrolü lucide-react, react-markdown, react-virtuoso,
+            // react-hot-toast gibi paketleri de vendor-react içine çekiyordu. Artık yalnızca çekirdek paketler.
+            if (/node_modules\/(react|react-dom|scheduler)\//.test(id)) return 'vendor-react';
+            if (/node_modules\/(motion|framer-motion|motion-dom|motion-utils)\//.test(id)) return 'vendor-motion';
+            if (/node_modules\/(firebase|@firebase)\//.test(id)) return 'vendor-firebase';
+            if (/node_modules\/(recharts|d3-[^/]+)\//.test(id)) return 'vendor-charts';
+            if (/node_modules\/lucide-react\//.test(id)) return 'vendor-icons';
+            // Hepsi statik import; ayrı parçalar paralel indirilir ve uygulama kodu değişince önbellekten gelir.
+            if (/node_modules\/(xlsx|jspdf|html2canvas|html-to-image|canvg|fflate|dompurify|svg-pathdata|rgbcolor|stackblur-canvas)\//.test(id)) return 'vendor-export';
+            if (/node_modules\/(react-markdown|remark-[^/]+|rehype-[^/]+|unified|mdast-[^/]+|hast-[^/]+|micromark[^/]*|unist-[^/]+|vfile[^/]*|property-information|space-separated-tokens|comma-separated-tokens|decode-named-character-reference|character-entities[^/]*|trim-lines|trough|bail|is-plain-obj|devlop|html-url-attributes|estree-util-[^/]+|ccount|zwitch|longest-streak|markdown-table)\//.test(id)) return 'vendor-markdown';
           }
         }
       }

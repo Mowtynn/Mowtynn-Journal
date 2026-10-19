@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { AuditReportModal } from "./AuditReportModal";
 import { Trade } from '../types';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
+import * as htmlToImage from "html-to-image";
 
 
 
@@ -82,7 +83,6 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
       // Wait a moment for DOM to update with isGenerating classes and base64 images
       // Ultimate Optimization: Use double requestAnimationFrame to wait for the exact moment the browser paints the new layout, 0ms idle time.
       await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-      const htmlToImage = await import("html-to-image");
       const dataUrl = await htmlToImage.toPng(reportRef.current, {
         backgroundColor: "#09090b",
         pixelRatio: 2,
@@ -124,7 +124,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.15, ease: "easeOut" }}
+          transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
           className="will-change-[opacity] fixed inset-0 z-[3500] overflow-y-auto bg-zinc-950/80 no-print flex flex-col justify-start items-center p-4 md:p-8"
           onClick={onClose}
         >

@@ -139,7 +139,7 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.15, ease: "easeOut" }}
+          transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
           className="will-change-[opacity] fixed inset-0 z-[1500] flex items-center justify-center p-5 bg-zinc-950/80 overflow-y-auto"
           onClick={onClose}
         >
@@ -148,7 +148,7 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
           initial={{ opacity: 0, scale: 0.98, y: 10 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.98, y: 10 }}
-          transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
           style={{ willChange: "transform, opacity" }}
           className="relative w-full max-w-4xl h-[620px] max-h-[90vh] min-h-0 sm:min-h-[480px] bg-zinc-900 border border-zinc-700/50 rounded-2xl shadow-2xl overflow-hidden flex flex-col my-auto"
           onClick={e => e.stopPropagation()}
@@ -174,7 +174,7 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
                   <button
                     key={f.id}
                     onClick={() => setTimeFilter(f.id as any)}
-                    className={`px-2.5 py-1 rounded-lg text-[10px] font-sans font-bold transition-all duration-150 ${
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-sans font-bold transition-ui duration-150 ${
                       timeFilter === f.id 
                         ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' 
                         : 'text-zinc-400 hover:text-zinc-200 border border-transparent'
@@ -247,7 +247,7 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
                               className="relative group cursor-crosshair flex-1 hover:z-50"
                             >
                               <div 
-                                className={`w-full h-10 rounded-xl border transition-all duration-200 flex items-center justify-center overflow-hidden relative ${
+                                className={`w-full h-10 rounded-xl border transition-ui duration-200 flex items-center justify-center overflow-hidden relative ${
                                   getCellColor(cell?.pnl || 0, cell?.count || 0)
                                 } ${isWorst ? 'ring-1 ring-rose-500/50' : ''}`}
                               >

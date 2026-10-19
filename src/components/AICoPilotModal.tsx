@@ -1147,7 +1147,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.15, ease: "easeOut" }}
+          transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
           onClick={onClose}
           className="will-change-[opacity] fixed inset-0 z-[1500] flex items-center justify-center p-2 sm:p-4 bg-zinc-950/80"
         >
@@ -1156,7 +1156,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
             initial={{ opacity: 0, scale: 0.98, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.98, y: 10 }}
-            transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
             style={{ willChange: "transform, opacity" }}
             onClick={(e) => e.stopPropagation()}
             id="ai-copilot-popup"
@@ -1217,7 +1217,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveTab(tab.id as any)}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all duration-150 flex items-center gap-1.5 cursor-pointer select-none shrink-0 border ${
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-ui duration-150 flex items-center gap-1.5 cursor-pointer select-none shrink-0 border ${
                     isActive
                       ? "bg-blue-500/15 text-blue-400 border-blue-500/30 shadow-xs"
                       : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60 border-transparent"
@@ -1264,7 +1264,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                       <button
                         key={p.id}
                         onClick={() => setSelectedPersona(p.id as any)}
-                        className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-[10px] font-sans font-bold border transition-all duration-200 cursor-pointer whitespace-nowrap shrink-0 uppercase tracking-wider ${
+                        className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-[10px] font-sans font-bold border transition-ui duration-200 cursor-pointer whitespace-nowrap shrink-0 uppercase tracking-wider ${
                           isSelected
                             ? "bg-blue-500/15 text-blue-300 border-blue-500/40 shadow-xs"
                             : "bg-zinc-900/80 border-zinc-700/50 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/80"
@@ -1481,7 +1481,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                       key={idx}
                       onClick={() => handleSendMessage(item.prompt)}
                       disabled={isLoading}
-                      className="px-2.5 py-1 rounded-xl text-[10px] font-sans bg-zinc-900/80 hover:bg-blue-500/10 hover:text-blue-300 hover:border-blue-500/30 text-zinc-300 border border-zinc-700/50 transition-all duration-200 cursor-pointer whitespace-nowrap disabled:opacity-50"
+                      className="px-2.5 py-1 rounded-xl text-[10px] font-sans bg-zinc-900/80 hover:bg-blue-500/10 hover:text-blue-300 hover:border-blue-500/30 text-zinc-300 border border-zinc-700/50 transition-ui duration-200 cursor-pointer whitespace-nowrap disabled:opacity-50"
                     >
                       {item.label}
                     </button>
@@ -1500,7 +1500,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                   />
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 cursor-pointer border ${
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center transition-ui duration-200 cursor-pointer border ${
                       attachedImage
                         ? "bg-purple-500/15 text-purple-300 border-purple-500/30"
                         : "bg-zinc-900 hover:bg-zinc-800 text-zinc-400 border-zinc-700/50"
@@ -2020,7 +2020,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
               {
                 id: "silent_killer",
                 title: "Haber Saati & Likidite Analizi",
-                prompt: "Yüksek etkili haber saatlerine denk gelen hatalarım neler? Ekonomik takvim verileriyle işlem saatlerini üst üste bindirerek, CPI, NFP veya FOMC gibi kritik haberlerden hemen önce/sonra açılan dürtüsel işlemleri analiz et.",
+                prompt: "Yüksek etkili haber saatlerine denk gelen hatalarım neler? İşlem saatlerimi CPI, NFP veya FOMC gibi kritik haberlerin tipik yayın saatleriyle (New York saatiyle 08:30, 10:00, 14:00) karşılaştırarak, haberden hemen önce/sonra açılan dürtüsel işlemleri analiz et.",
                 desc: "Kritik haber saatlerindeki dürtüsel işlemleri analiz eder, gereksiz spread ve stop kayıplarını ortaya çıkarır.",
                 icon: Flame,
                 iconColor: "text-red-400",
@@ -2348,7 +2348,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  transition={{ duration: 0.15, ease: "easeOut" }}
+                  transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
                   className="flex flex-col min-h-full space-y-4"
                 >
                   <div className="flex items-center justify-between border-b border-zinc-700/50 pb-3">
@@ -2419,7 +2419,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                                   e.stopPropagation();
                                   setSavedNotes(prev => prev.filter(n => n.id !== note.id));
                                 }}
-                                className="opacity-0 group-hover:opacity-100 text-zinc-500 hover:text-rose-400 p-1 rounded-lg hover:bg-rose-500/10 transition-all ml-1 shrink-0"
+                                className="opacity-0 group-hover:opacity-100 text-zinc-500 hover:text-rose-400 p-1 rounded-lg hover:bg-rose-500/10 transition-ui ml-1 shrink-0"
                               >
                                 <Trash2 size={12} />
                               </button>
@@ -2447,7 +2447,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        transition={{ duration: 0.15, ease: "easeOut" }}
+                        transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
                         className="flex flex-col min-h-full space-y-4"
                       >
                         <div className="flex items-center justify-between border-b border-zinc-700/50 pb-3 shrink-0">

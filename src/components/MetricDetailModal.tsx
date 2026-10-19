@@ -79,7 +79,7 @@ export function MetricDetailModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.15, ease: "easeOut" }}
+          transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
           
           onClick={onClose}
            className="will-change-[opacity] fixed inset-0 bg-zinc-950/80 z-[1500] flex items-center justify-center p-4"
@@ -89,7 +89,7 @@ export function MetricDetailModal({
             initial={{ opacity: 0, scale: 0.98, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.98, y: 10 }}
-            transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
             style={{ willChange: "transform, opacity" }}
             onClick={(e) => e.stopPropagation()}
             id="metric-detail-popup"

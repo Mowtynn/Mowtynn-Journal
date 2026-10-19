@@ -144,7 +144,7 @@ export function JournalCalendar({ entries, selectedDate, onSelectDate }: Journal
         <button
           type="button"
           onClick={handleClear}
-          className={`flex-1 py-1 px-1.5 rounded-lg text-[10px] font-medium border transition-all cursor-pointer text-center ${
+          className={`flex-1 py-1 px-1.5 rounded-lg text-[10px] font-medium border transition-ui cursor-pointer text-center ${
             !selectedDate
               ? 'bg-blue-500/20 text-blue-300 border-blue-500/40 font-bold'
               : 'bg-zinc-950/80 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border-zinc-700/40 hover:border-zinc-600'
@@ -155,14 +155,14 @@ export function JournalCalendar({ entries, selectedDate, onSelectDate }: Journal
         <button
           type="button"
           onClick={handleSetToday}
-          className="flex-1 py-1 px-1.5 rounded-lg bg-zinc-950/80 hover:bg-zinc-800 text-[10px] font-medium text-zinc-300 hover:text-zinc-100 border border-zinc-700/40 hover:border-zinc-600 transition-all cursor-pointer text-center"
+          className="flex-1 py-1 px-1.5 rounded-lg bg-zinc-950/80 hover:bg-zinc-800 text-[10px] font-medium text-zinc-300 hover:text-zinc-100 border border-zinc-700/40 hover:border-zinc-600 transition-ui cursor-pointer text-center"
         >
           Bugün
         </button>
         <button
           type="button"
           onClick={handleSetYesterday}
-          className="flex-1 py-1 px-1.5 rounded-lg bg-zinc-950/80 hover:bg-zinc-800 text-[10px] font-medium text-zinc-300 hover:text-zinc-100 border border-zinc-700/40 hover:border-zinc-600 transition-all cursor-pointer text-center"
+          className="flex-1 py-1 px-1.5 rounded-lg bg-zinc-950/80 hover:bg-zinc-800 text-[10px] font-medium text-zinc-300 hover:text-zinc-100 border border-zinc-700/40 hover:border-zinc-600 transition-ui cursor-pointer text-center"
         >
           Dün
         </button>
@@ -228,7 +228,7 @@ export function JournalCalendar({ entries, selectedDate, onSelectDate }: Journal
                   handleSelectDay(item.dateStr);
                 }
               }}
-              className={`h-7 text-[10px] font-sans rounded-lg transition-all flex flex-col items-center justify-center relative cursor-pointer ${
+              className={`h-7 text-[10px] font-sans rounded-lg transition-ui flex flex-col items-center justify-center relative cursor-pointer ${
                 isSelected
                   ? 'bg-blue-500/25 text-blue-300 border border-blue-500/40 font-bold shadow-xs'
                   : entry

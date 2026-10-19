@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Trade, TradeStats, Note, JournalEntry, Certificate, DefinitionTitles, AccountCategory } from "./types";
 import {
@@ -26,8 +26,12 @@ import DeepAnalysis from "./components/DeepAnalysis";
 import NotesView from "./components/NotesView";
 import JournalView from "./components/JournalView";
 import { CertificatesView } from "./components/CertificatesView";
+import AddTradeForm from "./components/AddTradeForm";
+import { GlobalFilterModal } from "./components/GlobalFilterModal";
+import { AuthModal } from "./components/AuthModal";
+import AICoPilotModal from "./components/AICoPilotModal";
+import DefinitionsManagerModal from "./components/DefinitionsManagerModal";
 import { SectionErrorBoundary } from "./components/SectionErrorBoundary";
-import EconomicCalendar from "./components/EconomicCalendar";
 import { AccountSwitcher } from "./components/AccountSwitcher";
 import { PWAInstallButton } from "./components/PWAInstallButton";
 import { useMetricMode } from "./context/MetricContext";
@@ -35,17 +39,11 @@ import { useLocalStorageState } from "./hooks/useLocalStorageState";
 import { useAppStore } from "./store/useAppStore";
 import { Toaster, toast } from "react-hot-toast";
 
-import AddTradeForm from "./components/AddTradeForm";
 import TradeDetailModal from "./components/TradeDetailModal";
 import BackupRescue from "./components/BackupRescue";
-import { GlobalFilterModal } from "./components/GlobalFilterModal";
-import { AuthModal } from "./components/AuthModal";
-import AICoPilotModal from "./components/AICoPilotModal";
-import DefinitionsManagerModal from "./components/DefinitionsManagerModal";
 
 
 import {
-  Globe,
   Plus,
   LayoutDashboard,
   BarChart3,
@@ -81,6 +79,19 @@ import {
 import { onAuthStateChanged, User, updateProfile } from "firebase/auth";
 import { uploadImageToStorage } from "./lib/storage";
 import { calculateProfitFactor, calculateExpectancy, toRR } from "./lib/statMath";
+
+// Sekme panelleri: açılışta kurulur ve bellekte kalır; yalnızca gizlenir/gösterilir (giriş animasyonu CSS'te: .tab-pane).
+// Gizliyken alt ağaç dondurulur: son aktif render'ın elemanı yeniden kullanıldığından React gizli sekmeyi
+// Firestore anlık güncellemelerinde / modal açılışında yeniden render etmez. Sekme açılınca güncel veriyle çizilir.
+const TabPane = ({ active, className = "", children }: { active: boolean; className?: string; children: ReactNode }) => {
+  const frozen = useRef<ReactNode>(children);
+  if (active) frozen.current = children;
+  return (
+    <div hidden={!active} className={`tab-pane ${className}`}>
+      {frozen.current}
+    </div>
+  );
+};
 
 // Utility to recursively clean undefined, NaN, and invalid values before saving to Firestore
 const cleanForFirestore = <T extends Record<string, any>>(obj: T): T => {
@@ -281,7 +292,6 @@ export default function App() {
   const [currentTab, setCurrentTab] = useState<
     | "dashboard"
     | "deep-analysis"
-    | "economic-calendar"
     | "journal"
     | "notes"
     | "certificates"
@@ -2315,44 +2325,44 @@ export default function App() {
         containerStyle={{ zIndex: 999999 }}
         toastOptions={{ 
           style: {
-            background: '#09090b',
-            color: '#f4f4f5',
-            border: '1px solid rgba(63, 63, 70, 0.4)',
-            borderRadius: '14px',
+            background: '#131720',
+            color: '#C5CBD6',
+            border: '1px solid #2A2F3A',
+            borderRadius: '12px',
             fontSize: '13px',
             fontFamily: '"Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif',
             fontWeight: 500,
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.8), 0 10px 10px -5px rgba(0, 0, 0, 0.8)',
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.6)',
             padding: '12px 18px',
             maxWidth: '380px',
           },
           success: {
             style: {
               borderLeft: '4px solid #2FA376',
-              background: '#09090b',
+              background: '#131720',
               color: '#c5cbd6',
             },
             iconTheme: {
               primary: '#2FA376',
-              secondary: '#09090b',
+              secondary: '#131720',
             }
           },
           error: {
             style: {
               borderLeft: '4px solid #D65A5A',
-              background: '#09090b',
+              background: '#131720',
               color: '#c5cbd6',
             },
             iconTheme: {
               primary: '#D65A5A',
-              secondary: '#09090b',
+              secondary: '#131720',
             }
           },
           loading: {
             style: {
               borderLeft: '4px solid #3b82f6',
-              background: '#09090b',
-              color: '#f4f4f5',
+              background: '#131720',
+              color: '#C5CBD6',
             },
           }
         }} 
@@ -2374,7 +2384,7 @@ export default function App() {
                 }
               }}
             >
-              <div className="h-7 w-7 rounded-lg bg-blue-500/10 border border-blue-500/25 flex items-center justify-center font-bold text-blue-400 text-xs select-none transition-all duration-300 ease-out group-hover:bg-blue-500/15 group-hover:scale-105">
+              <div className="h-7 w-7 rounded-lg bg-blue-500/10 border border-blue-500/25 flex items-center justify-center font-bold text-blue-400 text-xs select-none transition-ui duration-300 ease-out group-hover:bg-blue-500/15 group-hover:scale-105">
                 TJ
               </div>
               <div className="flex items-baseline gap-2">
@@ -2441,7 +2451,7 @@ export default function App() {
                 type="button"
                 id="header-settings-button"
                 onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-                className={`relative w-7 h-7 rounded-lg border transition-all duration-150 flex items-center justify-center cursor-pointer shadow-xs ${
+                className={`relative w-7 h-7 rounded-lg border transition-ui duration-150 flex items-center justify-center cursor-pointer shadow-xs ${
                   isSettingsOpen
                     ? "bg-zinc-800 border-zinc-600 text-blue-400 ring-1 ring-blue-500/30"
                     : "bg-zinc-900 hover:bg-zinc-800 border-zinc-700/50 hover:border-zinc-600 text-zinc-300"
@@ -2463,7 +2473,7 @@ export default function App() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 0.15, ease: "easeOut" }}
+                    transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
                     style={{ willChange: "opacity" }}
                     className="absolute right-0 top-full mt-2 w-72 max-w-[calc(100vw-24px)] bg-zinc-900 border border-zinc-700/60 rounded-2xl shadow-2xl p-2.5 z-50 flex flex-col gap-1.5 text-xs"
                   >
@@ -2481,7 +2491,7 @@ export default function App() {
                         <div className="flex flex-wrap gap-1.5 pt-0.5">
                           <button
                             onClick={() => setGlobalSelectedPlatforms([])}
-                            className={`px-2.5 py-1 text-[10px] font-bold font-sans rounded-xl border transition-all cursor-pointer ${
+                            className={`px-2.5 py-1 text-[10px] font-bold font-sans rounded-xl border transition-ui cursor-pointer ${
                               globalSelectedPlatforms.length === 0
                                 ? "bg-blue-500/20 border-blue-500/40 text-blue-400 shadow-xs"
                                 : "bg-zinc-950/60 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700 hover:bg-zinc-800"
@@ -2501,7 +2511,7 @@ export default function App() {
                                     setGlobalSelectedPlatforms([p]);
                                   }
                                 }}
-                                className={`px-2.5 py-1 text-[10px] font-bold font-sans rounded-xl border transition-all cursor-pointer ${
+                                className={`px-2.5 py-1 text-[10px] font-bold font-sans rounded-xl border transition-ui cursor-pointer ${
                                   isSelected
                                     ? "bg-blue-500/20 border-blue-500/40 text-blue-400 shadow-xs"
                                     : "bg-zinc-950/60 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700 hover:bg-zinc-800"
@@ -2567,7 +2577,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
-                className={`relative w-7 h-7 rounded-lg border transition-all duration-150 flex items-center justify-center cursor-pointer shadow-xs overflow-hidden shrink-0 ${
+                className={`relative w-7 h-7 rounded-lg border transition-ui duration-150 flex items-center justify-center cursor-pointer shadow-xs overflow-hidden shrink-0 ${
                   isProfileOpen
                     ? "bg-zinc-800 border-zinc-600 ring-1 ring-blue-500/30 text-blue-400"
                     : "bg-zinc-900 hover:bg-zinc-800 border-zinc-700/50 hover:border-zinc-600 text-zinc-300"
@@ -2599,7 +2609,7 @@ export default function App() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 0.15, ease: "easeOut" }}
+                    transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
                     style={{ willChange: "opacity" }}
                     className="absolute right-0 top-full mt-2 w-72 max-w-[calc(100vw-24px)] bg-zinc-900 border border-zinc-700/60 rounded-2xl shadow-2xl p-2.5 z-50 flex flex-col gap-1.5 text-xs"
                   >
@@ -2769,12 +2779,26 @@ export default function App() {
         <div className="max-w-6xl mx-auto px-4 pt-3 mb-1">
           <div
             id="navigation-tabs"
-            className="flex items-center gap-1.5 overflow-x-auto whitespace-nowrap custom-scrollbar bg-zinc-900 border border-zinc-800/80 p-1.5 rounded-2xl shadow-sm"
+            role="tablist"
+            aria-label="Ana bölümler"
+            className="flex items-center gap-1.5 overflow-x-auto whitespace-nowrap no-scrollbar bg-zinc-900/90 border border-zinc-800/80 p-1.5 rounded-2xl shadow-sm"
+            onKeyDown={(e) => {
+              if (e.key !== "ArrowRight" && e.key !== "ArrowLeft" && e.key !== "Home" && e.key !== "End") return;
+              const tabsEls = Array.from(e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
+              const idx = tabsEls.findIndex((el) => el === document.activeElement);
+              if (idx < 0) return;
+              e.preventDefault();
+              const next =
+                e.key === "Home" ? 0 :
+                e.key === "End" ? tabsEls.length - 1 :
+                (idx + (e.key === "ArrowRight" ? 1 : -1) + tabsEls.length) % tabsEls.length;
+              tabsEls[next].focus();
+              tabsEls[next].click();
+            }}
           >
             {[
               { id: "dashboard", label: "ANA PANEL", icon: LayoutDashboard },
               { id: "deep-analysis", label: "DETAYLI ANALİZ", icon: BarChart3 },
-              { id: "economic-calendar", label: "EKONOMİK TAKVİM", icon: Globe },
               { id: "notes", label: "NOTLAR", icon: FileText },
               { id: "journal", label: "GÜNLÜK", icon: Book },
               { id: "certificates", label: "SERTİFİKALAR", icon: Award },
@@ -2785,8 +2809,11 @@ export default function App() {
                 <button
                   key={tab.id}
                   type="button"
+                  role="tab"
+                  aria-selected={isActive}
+                  tabIndex={isActive ? 0 : -1}
                   onClick={() => handleTabChange(tab.id as any)}
-                  className={`relative px-3.5 py-2 text-xs font-bold tracking-wide rounded-xl transition-all duration-150 flex items-center gap-2 cursor-pointer select-none shrink-0 ${
+                  className={`relative px-3.5 py-2 text-xs font-bold tracking-wide rounded-xl transition-ui duration-150 flex items-center gap-2 cursor-pointer select-none shrink-0 ${
                     isActive
                       ? "text-blue-400"
                       : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
@@ -2823,17 +2850,8 @@ export default function App() {
             </div>
           ) : (
             <div className="relative">
-              <AnimatePresence mode="wait" initial={false}>
-                {currentTab === "dashboard" ? (
-                  <motion.div
-                    key="dashboard"
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -5 }}
-                    transition={{ duration: 0.14, ease: [0.16, 1, 0.3, 1] }}
-                    style={{ willChange: "transform, opacity", transform: "translate3d(0,0,0)" }}
-                    className="flex flex-col gap-3.5"
-                  >
+                  <TabPane active={currentTab === "dashboard"}
+                    className="flex flex-col gap-3.5">
                     {/* STATS BENTO ROW */}
                     <SectionErrorBoundary sectionName="İstatistik Panosu">
                       <StatsDashboard stats={calculatedStats} currency={currency} />
@@ -2845,7 +2863,7 @@ export default function App() {
                         setEditingTrade(null);
                         setIsFormOpen(true);
                       }}
-                      className="relative overflow-hidden bg-zinc-900/50 hover:bg-zinc-900/80 border border-zinc-800/80 hover:border-blue-500/40 rounded-2xl p-4 sm:p-4.5 flex flex-col sm:flex-row items-center justify-between gap-3 cursor-pointer transition-all duration-200 ease-out select-none group shadow-sm hover:shadow-lg hover:shadow-blue-500/5"
+                      className="relative overflow-hidden bg-zinc-900/50 hover:bg-zinc-900/80 border border-zinc-800/80 hover:border-blue-500/40 rounded-2xl p-4 sm:p-4.5 flex flex-col sm:flex-row items-center justify-between gap-3 cursor-pointer transition-ui duration-200 ease-out select-none group shadow-sm hover:shadow-lg hover:shadow-blue-500/5"
                     >
                       <div className="flex items-center gap-3">
                         <div className="h-10 w-10 rounded-xl bg-blue-500/10 border border-blue-500/20 group-hover:bg-blue-500/20 group-hover:border-blue-500/40 flex items-center justify-center text-blue-400 transition-colors duration-200 ease-out shrink-0 shadow-xs">
@@ -2859,7 +2877,7 @@ export default function App() {
                       </div>
                       <button
                         type="button"
-                        className="w-full sm:w-auto h-10 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 font-bold text-xs px-5 rounded-xl transition-all duration-200 ease-out flex items-center justify-center gap-2 shadow-xs border border-blue-500/30 tracking-wide cursor-pointer font-sans"
+                        className="w-full sm:w-auto h-10 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 font-bold text-xs px-5 rounded-xl transition-ui duration-200 ease-out flex items-center justify-center gap-2 shadow-xs border border-blue-500/30 tracking-wide cursor-pointer font-sans"
                       >
                         <Plus size={15} />
                         {"İşlem Ekle"}
@@ -2882,16 +2900,8 @@ export default function App() {
                         />
                       </SectionErrorBoundary>
                     </div>
-                  </motion.div>
-                ) : currentTab === "deep-analysis" ? (
-                  <motion.div
-                    key="deep-analysis"
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -5 }}
-                    transition={{ duration: 0.14, ease: [0.16, 1, 0.3, 1] }}
-                    style={{ willChange: "transform, opacity", transform: "translate3d(0,0,0)" }}
-                  >
+                  </TabPane>
+                  <TabPane active={currentTab === "deep-analysis"}>
                     <SectionErrorBoundary sectionName="Derin Analiz">
                       <DeepAnalysis
                         trades={filteredGlobalTrades}
@@ -2906,16 +2916,8 @@ export default function App() {
                         trendTypes={trendTypes}
                       />
                     </SectionErrorBoundary>
-                  </motion.div>
-                ) : currentTab === "journal" ? (
-                  <motion.div
-                    key="journal"
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -5 }}
-                    transition={{ duration: 0.14, ease: [0.16, 1, 0.3, 1] }}
-                    style={{ willChange: "transform, opacity", transform: "translate3d(0,0,0)" }}
-                  >
+                  </TabPane>
+                  <TabPane active={currentTab === "journal"}>
                     <SectionErrorBoundary sectionName="Günlükler">
                       <JournalView
                         entries={journals}
@@ -2925,16 +2927,8 @@ export default function App() {
                         onDeleteEntry={handleDeleteJournal}
                       />
                     </SectionErrorBoundary>
-                  </motion.div>
-                ) : currentTab === "certificates" ? (
-                  <motion.div
-                    key="certificates"
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -5 }}
-                    transition={{ duration: 0.14, ease: [0.16, 1, 0.3, 1] }}
-                    style={{ willChange: "transform, opacity", transform: "translate3d(0,0,0)" }}
-                  >
+                  </TabPane>
+                  <TabPane active={currentTab === "certificates"}>
                     <SectionErrorBoundary sectionName="Sertifikalar">
                       <CertificatesView
                         certificates={certificates}
@@ -2942,16 +2936,8 @@ export default function App() {
                         onDeleteCertificate={handleDeleteCertificate}
                       />
                     </SectionErrorBoundary>
-                  </motion.div>
-                ) : currentTab === "notes" ? (
-                  <motion.div
-                    key="notes"
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -5 }}
-                    transition={{ duration: 0.14, ease: [0.16, 1, 0.3, 1] }}
-                    style={{ willChange: "transform, opacity", transform: "translate3d(0,0,0)" }}
-                  >
+                  </TabPane>
+                  <TabPane active={currentTab === "notes"}>
                     <SectionErrorBoundary sectionName="Notlar">
                       <NotesView
                         notes={notes}
@@ -2959,22 +2945,7 @@ export default function App() {
                         onDeleteNote={handleDeleteNote}
                       />
                     </SectionErrorBoundary>
-                  </motion.div>
-                ) : currentTab === "economic-calendar" ? (
-                  <motion.div
-                    key="economic-calendar"
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -5 }}
-                    transition={{ duration: 0.14, ease: [0.16, 1, 0.3, 1] }}
-                    style={{ willChange: "transform, opacity", transform: "translate3d(0,0,0)" }}
-                  >
-                    <SectionErrorBoundary sectionName="Ekonomik Takvim">
-                      <EconomicCalendar />
-                    </SectionErrorBoundary>
-                  </motion.div>
-                ) : null}
-              </AnimatePresence>
+                  </TabPane>
             </div>
           )}
           
@@ -3049,7 +3020,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setIsPlatformMenuOpen(true)}
-                className="px-4 py-2 border border-zinc-800 hover:border-zinc-700 bg-zinc-900 hover:bg-zinc-800 rounded-xl text-xs font-bold tracking-wider uppercase font-sans transition-colors duration-155 flex items-center gap-2 cursor-pointer text-zinc-400 hover:text-zinc-100 shadow-sm hover:shadow-md"
+                className="px-4 py-2 border border-zinc-800 hover:border-zinc-700 bg-zinc-900 hover:bg-zinc-800 rounded-xl text-xs font-bold tracking-wider uppercase font-sans transition-colors duration-150 flex items-center gap-2 cursor-pointer text-zinc-400 hover:text-zinc-100 shadow-sm hover:shadow-md"
               >
                 <SlidersHorizontal size={14} className="text-blue-400" />
                 <span>Tanımlamaları Yönet</span>
@@ -3100,7 +3071,7 @@ export default function App() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.15, ease: "easeOut" }}
+                transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
                 style={{ willChange: "opacity" }}
                 onClick={handleCancelEdit}
                 className="fixed inset-0 z-[1500] overflow-hidden bg-zinc-950/80 flex items-center justify-center p-2 sm:p-4 cursor-pointer"
@@ -3110,7 +3081,7 @@ export default function App() {
                   initial={{ opacity: 0, scale: 0.98, y: 10 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.98, y: 10 }}
-                  transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                  transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                   style={{ willChange: "transform, opacity" }}
                   onClick={(e) => e.stopPropagation()}
                   className="w-full max-w-6xl xl:max-w-7xl 2xl:max-w-[1440px] h-auto max-h-[92vh] overflow-hidden bg-[#0a0a0c] border border-zinc-800/80 rounded-2xl relative shadow-2xl flex flex-col cursor-default my-auto"

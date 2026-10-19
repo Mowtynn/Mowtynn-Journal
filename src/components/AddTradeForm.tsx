@@ -594,7 +594,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                         setIsAssetDropdownOpen(true);
                       }}
                       onFocus={() => setIsAssetDropdownOpen(true)}
-                      className="w-full h-8 sm:h-8.5 pl-7.5 pr-2.5 bg-zinc-950/80 border border-zinc-700/70 hover:border-zinc-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 rounded-lg sm:rounded-xl text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none transition-all uppercase shadow-inner font-sans font-bold"
+                      className="w-full h-8 sm:h-8.5 pl-7.5 pr-2.5 bg-zinc-950/80 border border-zinc-700/70 hover:border-zinc-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 rounded-lg sm:rounded-xl text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none transition-ui uppercase shadow-inner font-sans font-bold"
                     />
                   </div>
                   {isAssetDropdownOpen && (
@@ -628,7 +628,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                     <button
                       type="button"
                       onClick={() => setType("LONG")}
-                      className={`h-full rounded-md sm:rounded-lg text-xs font-sans font-bold uppercase transition-all flex items-center justify-center cursor-pointer ${
+                      className={`h-full rounded-md sm:rounded-lg text-xs font-sans font-bold uppercase transition-ui flex items-center justify-center cursor-pointer ${
                         type === "LONG" ? "toggle-item-win font-bold shadow-xs" : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 font-bold"
                       }`}
                     >
@@ -637,7 +637,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                     <button
                       type="button"
                       onClick={() => setType("SHORT")}
-                      className={`h-full rounded-md sm:rounded-lg text-xs font-sans font-bold uppercase transition-all flex items-center justify-center cursor-pointer ${
+                      className={`h-full rounded-md sm:rounded-lg text-xs font-sans font-bold uppercase transition-ui flex items-center justify-center cursor-pointer ${
                         type === "SHORT" ? "toggle-item-loss font-bold shadow-xs" : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 font-bold"
                       }`}
                     >
@@ -656,7 +656,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                   </label>
                   <div
                     onClick={() => setIsPlatformDropdownOpen(!isPlatformDropdownOpen)}
-                    className="w-full h-8 sm:h-8.5 bg-zinc-950/80 border border-zinc-700/70 hover:border-zinc-500 rounded-lg sm:rounded-xl px-2.5 text-xs text-white flex items-center justify-between cursor-pointer transition-all shadow-inner font-sans uppercase select-none"
+                    className="w-full h-8 sm:h-8.5 bg-zinc-950/80 border border-zinc-700/70 hover:border-zinc-500 rounded-lg sm:rounded-xl px-2.5 text-xs text-white flex items-center justify-between cursor-pointer transition-ui shadow-inner font-sans uppercase select-none"
                   >
                     <div className="flex items-center gap-1.5 truncate">
                       <Monitor size={13} className="text-zinc-400 shrink-0" />
@@ -884,7 +884,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                             }
                           }
                         }}
-                        className={`h-full text-xs font-bold font-sans rounded-md sm:rounded-lg border uppercase transition-all cursor-pointer ${
+                        className={`h-full text-xs font-bold font-sans rounded-md sm:rounded-lg border uppercase transition-ui cursor-pointer ${
                           tradeStatus === sVal
                             ? colors[sVal]
                             : "bg-transparent text-zinc-400 border-transparent hover:text-zinc-200 hover:bg-zinc-900"
@@ -914,7 +914,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                       placeholder="örn: 10"
                       value={stopPips}
                       onChange={(e) => handleStopPipsChange(e.target.value)}
-                      className="w-full h-8 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-rose-500 focus:ring-1 focus:ring-rose-500/30 rounded-lg sm:rounded-xl px-2.5 text-xs text-zinc-100 focus:outline-none placeholder-zinc-500 font-sans shadow-inner transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
+                      className="w-full h-8 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-rose-500 focus:ring-1 focus:ring-rose-500/30 rounded-lg sm:rounded-xl px-2.5 text-xs text-zinc-100 focus:outline-none placeholder-zinc-500 font-sans shadow-inner transition-ui [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
                     />
                   </div>
 
@@ -931,7 +931,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                       placeholder="örn: 30"
                       value={tpPips}
                       onChange={(e) => handleTpPipsChange(e.target.value)}
-                      className="w-full h-8 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 rounded-lg sm:rounded-xl px-2.5 text-xs text-zinc-100 focus:outline-none placeholder-zinc-500 font-sans shadow-inner transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
+                      className="w-full h-8 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 rounded-lg sm:rounded-xl px-2.5 text-xs text-zinc-100 focus:outline-none placeholder-zinc-500 font-sans shadow-inner transition-ui [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
                     />
                   </div>
                 </div>
@@ -951,7 +951,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                       placeholder="örn: 4.5"
                       value={maePips}
                       onChange={(e) => handleMaePipsChange(e.target.value)}
-                      className="w-full h-8 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-orange-500 focus:ring-1 focus:ring-orange-500/30 rounded-lg sm:rounded-xl px-2.5 text-xs text-zinc-100 focus:outline-none placeholder-zinc-500 font-sans shadow-inner transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
+                      className="w-full h-8 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-orange-500 focus:ring-1 focus:ring-orange-500/30 rounded-lg sm:rounded-xl px-2.5 text-xs text-zinc-100 focus:outline-none placeholder-zinc-500 font-sans shadow-inner transition-ui [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
                     />
                   </div>
 
@@ -968,7 +968,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                       placeholder="örn: 28"
                       value={mfePips}
                       onChange={(e) => handleMfePipsChange(e.target.value)}
-                      className="w-full h-8 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/30 rounded-lg sm:rounded-xl px-2.5 text-xs text-zinc-100 focus:outline-none placeholder-zinc-500 font-sans shadow-inner transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
+                      className="w-full h-8 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/30 rounded-lg sm:rounded-xl px-2.5 text-xs text-zinc-100 focus:outline-none placeholder-zinc-500 font-sans shadow-inner transition-ui [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
                     />
                   </div>
                 </div>
@@ -986,7 +986,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                     placeholder="örn: 18.5"
                     value={asiaRangePips}
                     onChange={(e) => handleAsiaRangePipsChange(e.target.value)}
-                    className="w-full h-8 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 rounded-lg sm:rounded-xl px-2.5 text-xs text-zinc-100 focus:outline-none placeholder-zinc-500 font-sans shadow-inner transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
+                    className="w-full h-8 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 rounded-lg sm:rounded-xl px-2.5 text-xs text-zinc-100 focus:outline-none placeholder-zinc-500 font-sans shadow-inner transition-ui [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
                   />
                 </div>
 
@@ -1031,7 +1031,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                         const val = e.target.value;
                         setRrValue(val !== "" ? Math.abs(Number(val)) : "");
                       }}
-                      className={`w-full h-8 sm:h-8.5 bg-zinc-950/80 border border-zinc-700/70 hover:border-zinc-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 rounded-lg sm:rounded-xl ${tradeStatus === "LOSS" ? "pl-5.5 pr-2.5" : "px-2.5"} text-xs text-zinc-100 focus:outline-none placeholder-zinc-500 font-sans shadow-inner disabled:opacity-50 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold`}
+                      className={`w-full h-8 sm:h-8.5 bg-zinc-950/80 border border-zinc-700/70 hover:border-zinc-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 rounded-lg sm:rounded-xl ${tradeStatus === "LOSS" ? "pl-5.5 pr-2.5" : "px-2.5"} text-xs text-zinc-100 focus:outline-none placeholder-zinc-500 font-sans shadow-inner disabled:opacity-50 transition-ui [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold`}
                     />
                   </div>
                 </div>
@@ -1049,7 +1049,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                     value={tradeStatus === "BREAKEVEN" ? "0" : manualPnl}
                     disabled={tradeStatus === "BREAKEVEN"}
                     onChange={(e) => setManualPnl(e.target.value !== "" ? Number(e.target.value) : "")}
-                    className="w-full h-8 sm:h-8.5 bg-zinc-950/80 border border-zinc-700/70 hover:border-zinc-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 rounded-lg sm:rounded-xl px-2.5 text-xs text-zinc-100 focus:outline-none placeholder-zinc-500 font-sans shadow-inner disabled:opacity-50 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
+                    className="w-full h-8 sm:h-8.5 bg-zinc-950/80 border border-zinc-700/70 hover:border-zinc-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 rounded-lg sm:rounded-xl px-2.5 text-xs text-zinc-100 focus:outline-none placeholder-zinc-500 font-sans shadow-inner disabled:opacity-50 transition-ui [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
                   />
                 </div>
               </div>
@@ -1074,7 +1074,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                   value={screenshot || ""}
                   onChange={(e) => setScreenshot(e.target.value)}
                   placeholder="https://... TradingView veya grafik linki"
-                  className="flex-1 h-8 sm:h-8.5 bg-zinc-950/80 border border-zinc-700/70 hover:border-zinc-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 rounded-lg sm:rounded-xl px-2.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none transition-all font-sans font-medium shadow-inner"
+                  className="flex-1 h-8 sm:h-8.5 bg-zinc-950/80 border border-zinc-700/70 hover:border-zinc-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 rounded-lg sm:rounded-xl px-2.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none transition-ui font-sans font-medium shadow-inner"
                 />
                 {screenshot && (
                   <button
@@ -1118,7 +1118,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                         key={item}
                         type="button"
                         onClick={() => setPlanFidelity(isSelected ? null : item)}
-                        className={`min-w-0 h-full flex items-center justify-center px-2 rounded-md sm:rounded-lg text-xs font-sans font-bold tracking-wide uppercase transition-all duration-150 select-none border cursor-pointer ${
+                        className={`min-w-0 h-full flex items-center justify-center px-2 rounded-md sm:rounded-lg text-xs font-sans font-bold tracking-wide uppercase transition-ui duration-150 select-none border cursor-pointer ${
                           isSelected ? activeStyle : "border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
                         }`}
                       >
@@ -1151,7 +1151,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                         key={tr}
                         type="button"
                         onClick={() => setSelectedTrend(isSelected ? "" : tr)}
-                        className={`min-w-0 h-full flex items-center justify-center px-3 rounded-lg text-xs font-sans font-bold tracking-wide uppercase transition-all duration-150 select-none border cursor-pointer ${
+                        className={`min-w-0 h-full flex items-center justify-center px-3 rounded-lg text-xs font-sans font-bold tracking-wide uppercase transition-ui duration-150 select-none border cursor-pointer ${
                           isSelected
                             ? activeStyle
                             : "border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
@@ -1181,7 +1181,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                         key={idx}
                         type="button"
                         onClick={() => setSelectedSession(sess === selectedSession ? "" : sess)}
-                        className={`px-3 py-1.5 text-xs rounded-xl transition-all font-sans font-bold tracking-wide cursor-pointer border uppercase ${
+                        className={`px-3 py-1.5 text-xs rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
                           sess === selectedSession
                             ? "bg-purple-500/20 text-purple-300 border-purple-500/60 shadow-xs"
                             : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
@@ -1209,7 +1209,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                           key={time}
                           type="button"
                           onClick={() => setSelectedEntryTime(isSelected ? "" : time)}
-                          className={`px-2.5 py-1 text-xs rounded-xl transition-all font-sans font-bold tracking-wider cursor-pointer border tabular-nums ${
+                          className={`px-2.5 py-1 text-xs rounded-xl transition-ui font-sans font-bold tracking-wider cursor-pointer border tabular-nums ${
                             isSelected
                               ? "bg-amber-500/20 text-amber-300 border-amber-500/60 shadow-xs"
                               : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
@@ -1234,7 +1234,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                         key={idx}
                         type="button"
                         onClick={() => setSelectedHtfTimeframe(tf === selectedHtfTimeframe ? "" : tf)}
-                        className={`px-3 py-1.5 text-xs rounded-xl transition-all font-sans font-bold tracking-wide cursor-pointer border uppercase ${
+                        className={`px-3 py-1.5 text-xs rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
                           tf === selectedHtfTimeframe
                             ? "bg-rose-500/20 text-rose-300 border-rose-500/60 shadow-xs"
                             : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
@@ -1266,7 +1266,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                                 : [...selectedConfirmations, c]
                             )
                           }
-                          className={`px-3 py-1.5 text-xs rounded-xl transition-all font-sans font-bold tracking-wide cursor-pointer border uppercase ${
+                          className={`px-3 py-1.5 text-xs rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
                             isActive
                               ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/60 shadow-xs"
                               : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
@@ -1291,7 +1291,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                         key={idx}
                         type="button"
                         onClick={() => setSelectedTimeframe(tf === selectedTimeframe ? "" : tf)}
-                        className={`px-3 py-1.5 text-xs rounded-xl transition-all font-sans font-bold tracking-wide cursor-pointer border uppercase ${
+                        className={`px-3 py-1.5 text-xs rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
                           tf === selectedTimeframe
                             ? "bg-blue-500/20 text-blue-300 border-blue-500/60 shadow-xs"
                             : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
@@ -1323,7 +1323,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                                 : [...selectedEntries, em]
                             )
                           }
-                          className={`px-3 py-1.5 text-xs rounded-xl transition-all font-sans font-bold tracking-wide cursor-pointer border uppercase ${
+                          className={`px-3 py-1.5 text-xs rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
                             isActive
                               ? "bg-amber-500/20 text-amber-300 border-amber-500/60 shadow-xs"
                               : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
@@ -1350,7 +1350,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                           key={dx}
                           type="button"
                           onClick={() => setDxy(isSelected ? "" : dx)}
-                          className={`px-3 py-1.5 text-xs rounded-xl transition-all font-sans font-bold tracking-wide cursor-pointer border uppercase ${
+                          className={`px-3 py-1.5 text-xs rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
                             isSelected
                               ? "bg-purple-500/20 text-purple-300 border-purple-500/60 shadow-xs"
                               : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
@@ -1377,7 +1377,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                           key={zone}
                           type="button"
                           onClick={() => setPremiumDiscount(isSelected ? "" : zone)}
-                          className={`px-2.5 py-1 text-xs rounded-xl transition-all font-sans font-bold tracking-wide cursor-pointer border uppercase ${
+                          className={`px-2.5 py-1 text-xs rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
                             isSelected
                               ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/60 shadow-xs"
                               : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
@@ -1416,7 +1416,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                   placeholder="Setup kurgusu, destek/direnç, psikolojik etkenler veya FOMO notlarınız..."
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  className="w-full flex-1 min-h-[110px] sm:min-h-[125px] bg-zinc-950/80 border border-zinc-700/70 hover:border-zinc-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 rounded-lg sm:rounded-xl p-2.5 sm:p-3 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none transition-all resize-none leading-relaxed font-sans font-medium shadow-inner"
+                  className="w-full flex-1 min-h-[110px] sm:min-h-[125px] bg-zinc-950/80 border border-zinc-700/70 hover:border-zinc-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 rounded-lg sm:rounded-xl p-2.5 sm:p-3 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none transition-ui resize-none leading-relaxed font-sans font-medium shadow-inner"
                 />
               </div>
 
@@ -1464,13 +1464,13 @@ const AddTradeForm = React.memo(function AddTradeForm({
             <button
               type="button"
               onClick={onCancelEdit}
-              className="bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/70 hover:border-zinc-500 text-zinc-300 hover:text-white px-5 h-10 text-xs font-bold tracking-wider rounded-xl uppercase transition-all cursor-pointer font-sans"
+              className="bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/70 hover:border-zinc-500 text-zinc-300 hover:text-white px-5 h-10 text-xs font-bold tracking-wider rounded-xl uppercase transition-ui cursor-pointer font-sans"
             >
               İptal
             </button>
             <button
               type="submit"
-              className={`px-7 h-10 text-xs font-black font-sans tracking-wider rounded-xl uppercase transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-lg ${
+              className={`px-7 h-10 text-xs font-black font-sans tracking-wider rounded-xl uppercase transition-ui flex items-center justify-center gap-1.5 cursor-pointer shadow-lg ${
                 editingTrade
                   ? "bg-amber-500 hover:bg-amber-400 text-zinc-950 shadow-amber-500/20 active:scale-[0.98]"
                   : "bg-blue-600 hover:bg-blue-500 text-white shadow-blue-500/25 active:scale-[0.98]"

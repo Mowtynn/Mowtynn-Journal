@@ -331,7 +331,7 @@ export const TurkishDateTimePicker = React.memo(function TurkishDateTimePicker({
       <button
         type="button"
         onClick={handleToggle}
-        className="w-full h-8 sm:h-8.5 bg-zinc-950/80 hover:bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 rounded-lg sm:rounded-xl px-2.5 text-xs text-zinc-100 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-all font-sans font-bold flex items-center justify-between gap-2 cursor-pointer shadow-inner group"
+        className="w-full h-8 sm:h-8.5 bg-zinc-950/80 hover:bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 rounded-lg sm:rounded-xl px-2.5 text-xs text-zinc-100 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-ui font-sans font-bold flex items-center justify-between gap-2 cursor-pointer shadow-inner group"
       >
         <span className="tracking-wide truncate">{displayFormatted}</span>
         
@@ -365,21 +365,21 @@ export const TurkishDateTimePicker = React.memo(function TurkishDateTimePicker({
             <button
               type="button"
               onClick={handleSetNow}
-              className="flex-1 py-1 px-1.5 rounded-lg bg-zinc-950/80 hover:bg-zinc-800 text-[10px] font-medium text-blue-400 hover:text-blue-300 border border-zinc-700/40 hover:border-blue-500/30 transition-all cursor-pointer text-center"
+              className="flex-1 py-1 px-1.5 rounded-lg bg-zinc-950/80 hover:bg-zinc-800 text-[10px] font-medium text-blue-400 hover:text-blue-300 border border-zinc-700/40 hover:border-blue-500/30 transition-ui cursor-pointer text-center"
             >
               Şimdi
             </button>
             <button
               type="button"
               onClick={handleSetToday}
-              className="flex-1 py-1 px-1.5 rounded-lg bg-zinc-950/80 hover:bg-zinc-800 text-[10px] font-medium text-zinc-300 hover:text-zinc-100 border border-zinc-700/40 hover:border-zinc-600 transition-all cursor-pointer text-center"
+              className="flex-1 py-1 px-1.5 rounded-lg bg-zinc-950/80 hover:bg-zinc-800 text-[10px] font-medium text-zinc-300 hover:text-zinc-100 border border-zinc-700/40 hover:border-zinc-600 transition-ui cursor-pointer text-center"
             >
               Bugün
             </button>
             <button
               type="button"
               onClick={handleSetYesterday}
-              className="flex-1 py-1 px-1.5 rounded-lg bg-zinc-950/80 hover:bg-zinc-800 text-[10px] font-medium text-zinc-300 hover:text-zinc-100 border border-zinc-700/40 hover:border-zinc-600 transition-all cursor-pointer text-center"
+              className="flex-1 py-1 px-1.5 rounded-lg bg-zinc-950/80 hover:bg-zinc-800 text-[10px] font-medium text-zinc-300 hover:text-zinc-100 border border-zinc-700/40 hover:border-zinc-600 transition-ui cursor-pointer text-center"
             >
               Dün
             </button>
@@ -441,7 +441,7 @@ export const TurkishDateTimePicker = React.memo(function TurkishDateTimePicker({
                       updateDateTime(newDate);
                     }
                   }}
-                  className={`h-6.5 text-[10px] font-sans rounded-lg transition-all flex items-center justify-center relative cursor-pointer ${
+                  className={`h-6.5 text-[10px] font-sans rounded-lg transition-ui flex items-center justify-center relative cursor-pointer ${
                     selected
                       ? 'bg-blue-500/25 text-blue-300 border border-blue-500/40 font-bold shadow-xs'
                       : !item.isCurrentMonth
@@ -474,7 +474,7 @@ export const TurkishDateTimePicker = React.memo(function TurkishDateTimePicker({
                     e.stopPropagation();
                     setActiveDropdown(activeDropdown === 'hour' ? 'none' : 'hour');
                   }}
-                  className={`h-7 px-2.5 bg-zinc-950 hover:bg-zinc-900 border rounded-lg text-xs font-sans font-bold flex items-center gap-1.5 cursor-pointer transition-all shadow-xs ${
+                  className={`h-7 px-2.5 bg-zinc-950 hover:bg-zinc-900 border rounded-lg text-xs font-sans font-bold flex items-center gap-1.5 cursor-pointer transition-ui shadow-xs ${
                     activeDropdown === 'hour'
                       ? 'border-blue-500/60 text-blue-300 ring-1 ring-blue-500/30 bg-zinc-900'
                       : 'border-zinc-700/60 hover:border-zinc-500 text-zinc-100'
@@ -503,7 +503,7 @@ export const TurkishDateTimePicker = React.memo(function TurkishDateTimePicker({
                           type="button"
                           data-selected={isCurrent}
                           onClick={() => handleHourSelect(h)}
-                          className={`w-full py-1 text-center text-xs font-sans font-medium rounded-lg transition-all cursor-pointer flex items-center justify-center ${
+                          className={`w-full py-1 text-center text-xs font-sans font-medium rounded-lg transition-ui cursor-pointer flex items-center justify-center ${
                             isCurrent
                               ? 'bg-blue-500/25 text-blue-300 font-bold border border-blue-500/40 shadow-xs'
                               : 'text-zinc-300 hover:text-white hover:bg-zinc-800'
@@ -527,7 +527,7 @@ export const TurkishDateTimePicker = React.memo(function TurkishDateTimePicker({
                     e.stopPropagation();
                     setActiveDropdown(activeDropdown === 'minute' ? 'none' : 'minute');
                   }}
-                  className={`h-7 px-2.5 bg-zinc-950 hover:bg-zinc-900 border rounded-lg text-xs font-sans font-bold flex items-center gap-1.5 cursor-pointer transition-all shadow-xs ${
+                  className={`h-7 px-2.5 bg-zinc-950 hover:bg-zinc-900 border rounded-lg text-xs font-sans font-bold flex items-center gap-1.5 cursor-pointer transition-ui shadow-xs ${
                     activeDropdown === 'minute'
                       ? 'border-blue-500/60 text-blue-300 ring-1 ring-blue-500/30 bg-zinc-900'
                       : 'border-zinc-700/60 hover:border-zinc-500 text-zinc-100'
@@ -556,7 +556,7 @@ export const TurkishDateTimePicker = React.memo(function TurkishDateTimePicker({
                           type="button"
                           data-selected={isCurrent}
                           onClick={() => handleMinuteSelect(m)}
-                          className={`w-full py-1 text-center text-xs font-sans font-medium rounded-lg transition-all cursor-pointer flex items-center justify-center ${
+                          className={`w-full py-1 text-center text-xs font-sans font-medium rounded-lg transition-ui cursor-pointer flex items-center justify-center ${
                             isCurrent
                               ? 'bg-blue-500/25 text-blue-300 font-bold border border-blue-500/40 shadow-xs'
                               : 'text-zinc-300 hover:text-white hover:bg-zinc-800'
@@ -890,14 +890,14 @@ export const TurkishDatePicker = React.memo(function TurkishDatePicker({
               <button
                 type="button"
                 onClick={handleSetToday}
-                className="flex-1 py-1 px-1.5 rounded-lg bg-zinc-950/80 hover:bg-zinc-800 text-[10px] font-medium text-zinc-300 hover:text-zinc-100 border border-zinc-700/40 hover:border-zinc-600 transition-all cursor-pointer text-center"
+                className="flex-1 py-1 px-1.5 rounded-lg bg-zinc-950/80 hover:bg-zinc-800 text-[10px] font-medium text-zinc-300 hover:text-zinc-100 border border-zinc-700/40 hover:border-zinc-600 transition-ui cursor-pointer text-center"
               >
                 Bugün
               </button>
               <button
                 type="button"
                 onClick={handleSetYesterday}
-                className="flex-1 py-1 px-1.5 rounded-lg bg-zinc-950/80 hover:bg-zinc-800 text-[10px] font-medium text-zinc-300 hover:text-zinc-100 border border-zinc-700/40 hover:border-zinc-600 transition-all cursor-pointer text-center"
+                className="flex-1 py-1 px-1.5 rounded-lg bg-zinc-950/80 hover:bg-zinc-800 text-[10px] font-medium text-zinc-300 hover:text-zinc-100 border border-zinc-700/40 hover:border-zinc-600 transition-ui cursor-pointer text-center"
               >
                 Dün
               </button>
@@ -959,7 +959,7 @@ export const TurkishDatePicker = React.memo(function TurkishDatePicker({
                       setIsOpen(false);
                     }
                   }}
-                  className={`h-6.5 text-[10px] font-sans rounded-lg transition-all flex items-center justify-center relative cursor-pointer ${
+                  className={`h-6.5 text-[10px] font-sans rounded-lg transition-ui flex items-center justify-center relative cursor-pointer ${
                     selected
                       ? 'bg-blue-500/25 text-blue-300 border border-blue-500/40 font-bold shadow-xs'
                       : !item.isCurrentMonth

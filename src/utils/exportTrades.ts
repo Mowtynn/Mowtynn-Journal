@@ -102,7 +102,7 @@ export const exportTradesToExcel = (
   trades: Trade[],
   filename: string,
   options?: ExportOptions
-) => {
+): void => {
   if (!trades || trades.length === 0) {
     throw new Error('Dışa aktarılacak işlem bulunamadı.');
   }
@@ -235,7 +235,7 @@ export const prepareJournalExportRows = (journals: JournalEntry[]) => {
 export const exportJournalsToExcel = (
   journals: JournalEntry[],
   filename: string
-) => {
+): void => {
   if (!journals || journals.length === 0) {
     throw new Error('Dışa aktarılacak günlük kaydı bulunamadı.');
   }
@@ -351,7 +351,7 @@ export const prepareNoteExportRows = (notes: Note[]) => {
 export const exportNotesToExcel = (
   notes: Note[],
   filename: string
-) => {
+): void => {
   if (!notes || notes.length === 0) {
     throw new Error('Dışa aktarılacak not bulunamadı.');
   }

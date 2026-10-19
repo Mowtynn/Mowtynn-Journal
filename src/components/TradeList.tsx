@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef, useDeferredValue, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Trade, TradeFilter, DefinitionTitles } from '../types';
@@ -37,7 +37,7 @@ function TableSortBadge({ sortState }: { sortState: 'asc' | 'des' | null }) {
   }
 
   return (
-    <span className="inline-flex items-center justify-center w-4 h-4 rounded-md bg-blue-500/15 border border-blue-500/30 text-blue-400 shadow-glow-sm shrink-0 transition-all duration-150">
+    <span className="inline-flex items-center justify-center w-4 h-4 rounded-md bg-blue-500/15 border border-blue-500/30 text-blue-400 shadow-glow-sm shrink-0 transition-ui duration-150">
       {sortState === 'asc' ? (
         <ArrowUp size={9} strokeWidth={2.5} />
       ) : (
@@ -755,7 +755,7 @@ const TradeList = React.memo(function TradeList({
     ...uniqueHtfTimeframes.map(tf => ({ value: tf, label: tf }))
   ], [uniqueHtfTimeframes, definitionTitles]);
 
-  const deferredFilter = useDeferredValue(filter);
+  const deferredFilter = filter;
 
   // Apply filters & sorting
   const filteredTrades = useMemo(() => {
@@ -920,7 +920,7 @@ const TradeList = React.memo(function TradeList({
 
           <button
             onClick={() => setIsFilterOpen(!isFilterOpen)}
-            className={`flex items-center justify-center w-9 sm:w-8 h-9 sm:h-8 rounded-xl border transition-all duration-200 ${
+            className={`flex items-center justify-center w-9 sm:w-8 h-9 sm:h-8 rounded-xl border transition-ui duration-200 ${
               isFilterOpen 
                 ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' 
                 : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800/80 hover:text-zinc-200'
@@ -936,7 +936,7 @@ const TradeList = React.memo(function TradeList({
           <div className="relative" ref={exportRef}>
             <button
               onClick={() => setIsExportOpen(!isExportOpen)}
-              className={`flex items-center justify-center w-9 sm:w-8 h-9 sm:h-8 rounded-xl border transition-all duration-200 shrink-0 cursor-pointer ${
+              className={`flex items-center justify-center w-9 sm:w-8 h-9 sm:h-8 rounded-xl border transition-ui duration-200 shrink-0 cursor-pointer ${
                 isExportOpen
                   ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
                   : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800/80 hover:text-zinc-200'
@@ -960,7 +960,7 @@ const TradeList = React.memo(function TradeList({
                     <button
                       type="button"
                       onClick={() => setExportFormatTab('excel')}
-                      className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer border ${
+                      className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-ui flex items-center justify-center gap-1.5 cursor-pointer border ${
                         exportFormatTab === 'excel'
                           ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-xs'
                           : 'text-zinc-400 hover:text-zinc-200 border-transparent hover:bg-zinc-800/40'
@@ -972,7 +972,7 @@ const TradeList = React.memo(function TradeList({
                     <button
                       type="button"
                       onClick={() => setExportFormatTab('csv')}
-                      className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer border ${
+                      className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-ui flex items-center justify-center gap-1.5 cursor-pointer border ${
                         exportFormatTab === 'csv'
                           ? 'bg-blue-500/20 text-blue-300 border-blue-500/40 shadow-xs'
                           : 'text-zinc-400 hover:text-zinc-200 border-transparent hover:bg-zinc-800/40'
@@ -984,7 +984,7 @@ const TradeList = React.memo(function TradeList({
                     <button
                       type="button"
                       onClick={() => setExportFormatTab('pdf')}
-                      className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer border ${
+                      className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-ui flex items-center justify-center gap-1.5 cursor-pointer border ${
                         exportFormatTab === 'pdf'
                           ? 'bg-purple-500/20 text-purple-300 border-purple-500/40 shadow-xs'
                           : 'text-zinc-400 hover:text-zinc-200 border-transparent hover:bg-zinc-800/40'
@@ -1513,7 +1513,7 @@ const TradeList = React.memo(function TradeList({
                         const val = e.target.value;
                         handleFilterChange({ ...filter, minAsiaRangePips: val !== '' ? parseFloat(val) : undefined });
                       }}
-                      className="w-full h-8.5 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 rounded-xl px-2.5 text-xs text-zinc-100 placeholder-zinc-500 font-sans shadow-inner transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
+                      className="w-full h-8.5 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 rounded-xl px-2.5 text-xs text-zinc-100 placeholder-zinc-500 font-sans shadow-inner transition-ui [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
                     />
                     <input
                       type="number"
@@ -1525,7 +1525,7 @@ const TradeList = React.memo(function TradeList({
                         const val = e.target.value;
                         handleFilterChange({ ...filter, maxAsiaRangePips: val !== '' ? parseFloat(val) : undefined });
                       }}
-                      className="w-full h-8.5 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 rounded-xl px-2.5 text-xs text-zinc-100 placeholder-zinc-500 font-sans shadow-inner transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
+                      className="w-full h-8.5 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 rounded-xl px-2.5 text-xs text-zinc-100 placeholder-zinc-500 font-sans shadow-inner transition-ui [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
                     />
                   </div>
                 </div>
@@ -1634,8 +1634,7 @@ const TradeList = React.memo(function TradeList({
                   initial={{ opacity: 0.8 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0.8 }}
-                  transition={{ duration: 0.08, ease: "easeOut" }}
-                  style={{ willChange: "opacity" }}
+                  transition={{ duration: 0.1, ease: [0.16, 1, 0.3, 1] }}
                   className="block sm:table-row-group"
                 >
                 {paginatedTrades.map((trade, idx) => (
@@ -1698,7 +1697,7 @@ const TradeList = React.memo(function TradeList({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.15, ease: "easeOut" }}
+              transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
               className="will-change-[opacity] fixed inset-0 z-[4500] bg-zinc-950/80 flex items-center justify-center p-4"
               onClick={() => setTradeToDelete(null)}
             >
@@ -1707,7 +1706,7 @@ const TradeList = React.memo(function TradeList({
                 initial={{ opacity: 0, scale: 0.98, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.98, y: 10 }}
-                transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                 style={{ willChange: "transform, opacity" }}
                 onClick={(e) => e.stopPropagation()}
                 className="bg-zinc-900 border border-zinc-700/50 rounded-2xl p-5 max-w-md w-full shadow-2xl overflow-hidden relative"

@@ -316,7 +316,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.15, ease: "easeOut" }}
+          transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
           className="will-change-[opacity] fixed inset-0 z-[2500] flex items-center justify-center p-3 sm:p-5 bg-zinc-950/80  overflow-y-auto"
           onClick={onClose}
         >
@@ -325,7 +325,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
             initial={{ opacity: 0, scale: 0.98, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.98, y: 10 }}
-            transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
             style={{ willChange: "transform, opacity" }}
             className="relative w-full max-w-4xl h-[620px] max-h-[90vh] min-h-[480px] bg-zinc-900 border border-zinc-700/50 rounded-2xl shadow-2xl overflow-hidden flex flex-col my-auto"
             onClick={e => e.stopPropagation()}
@@ -393,7 +393,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                         setNewItemText('');
                         setEditingIndex(null);
                       }}
-                      className={`relative px-3 py-2 text-xs font-semibold rounded-xl transition-all duration-150 flex items-center justify-between gap-2 cursor-pointer select-none shrink-0 text-left ${
+                      className={`relative px-3 py-2 text-xs font-semibold rounded-xl transition-ui duration-150 flex items-center justify-between gap-2 cursor-pointer select-none shrink-0 text-left ${
                         isActive
                           ? 'text-blue-400 font-bold'
                           : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60'
@@ -472,7 +472,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                             setCustomTitleInput(currentTabObj.label);
                             setIsEditingTitle(true);
                           }}
-                          className="px-2 py-0.5 text-zinc-400 hover:text-blue-300 bg-zinc-800/80 hover:bg-blue-500/10 border border-zinc-700/60 hover:border-blue-500/30 rounded-lg transition-all flex items-center gap-1 text-[11px] font-sans cursor-pointer"
+                          className="px-2 py-0.5 text-zinc-400 hover:text-blue-300 bg-zinc-800/80 hover:bg-blue-500/10 border border-zinc-700/60 hover:border-blue-500/30 rounded-lg transition-ui flex items-center gap-1 text-[11px] font-sans cursor-pointer"
                         >
                           <Edit2 size={10} className="text-blue-400" />
                           <span>Başlığı Değiştir</span>
@@ -605,7 +605,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                           onDragEnter={(e) => handleDragEnter(e, originalIndex)}
                           onDragEnd={handleDragEnd}
                           onDragOver={(e) => e.preventDefault()}
-                          className={`flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl border transition-all duration-150 group ${
+                          className={`flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl border transition-ui duration-150 group ${
                             draggedItemIndex === originalIndex
                               ? 'bg-zinc-800/80 border-blue-500/50 opacity-50 scale-[0.98]'
                               : 'bg-zinc-950/40 border-zinc-800/80 hover:border-zinc-700/80'
@@ -724,7 +724,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  transition={{ duration: 0.15, ease: "easeOut" }}
+                  transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
                   className="will-change-[opacity] absolute inset-0 z-[10000] bg-zinc-950/85 flex items-center justify-center p-4"
                   onClick={() => setDeleteConfirmItem(null)}
                 >
@@ -733,7 +733,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                     initial={{ opacity: 0, scale: 0.98, y: 10 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.98, y: 10 }}
-                    transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                    transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                     style={{ willChange: "transform, opacity" }}
                     className="bg-zinc-900 border border-zinc-700/60 rounded-2xl p-5 max-w-sm w-full shadow-2xl space-y-4"
                     onClick={(e) => e.stopPropagation()}
@@ -771,7 +771,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                             toast.success(`"${deleteConfirmItem.item}" platformu ve ona ait ${deleteConfirmItem.count} işlem silindi.`);
                             setDeleteConfirmItem(null);
                           }}
-                          className="w-full py-2.5 px-3 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 font-sans text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 shadow-xs"
+                          className="w-full py-2.5 px-3 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 font-sans text-xs font-bold transition-ui cursor-pointer flex items-center justify-center gap-2 shadow-xs"
                         >
                           <Trash2 size={13} className="text-rose-400" />
                           <span>Platformu ve {deleteConfirmItem.count} İşlemi Sil</span>
@@ -784,7 +784,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                             toast.success(`"${deleteConfirmItem.item}" platform tanımı silindi (işlemler korundu).`);
                             setDeleteConfirmItem(null);
                           }}
-                          className="w-full py-2.5 px-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 font-sans text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 shadow-xs"
+                          className="w-full py-2.5 px-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 font-sans text-xs font-bold transition-ui cursor-pointer flex items-center justify-center gap-2 shadow-xs"
                         >
                           <Shield size={13} className="text-amber-400" />
                           <span>Sadece Platformu Sil (İşlemleri Koru)</span>
@@ -833,7 +833,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  transition={{ duration: 0.15, ease: "easeOut" }}
+                  transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
                   className="will-change-[opacity] absolute inset-0 z-[10000] bg-zinc-950/85 flex items-center justify-center p-4"
                   onClick={() => setShowResetConfirm(false)}
                 >
@@ -842,7 +842,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                     initial={{ opacity: 0, scale: 0.98, y: 10 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.98, y: 10 }}
-                    transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                    transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                     style={{ willChange: "transform, opacity" }}
                     className="bg-zinc-900 border border-zinc-700/60 rounded-2xl p-5 max-w-sm w-full shadow-2xl space-y-4"
                     onClick={(e) => e.stopPropagation()}

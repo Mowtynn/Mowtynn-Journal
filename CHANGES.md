@@ -33,7 +33,7 @@ Ağ kapalıydı; tam build çalıştırılmadı. Önce: `npm install && npm run 
 - CSS: buton/input varsayılan geçişleri `@layer base` içine alındı (Tailwind sınıfları ezilmiyor) ve `transform` geçişi kaldırıldı (motion animasyonlarıyla çakışıp gecikme yaratıyordu); tablo satırlarındaki `content-visibility` kaldırıldı (sütun genişliği zıplaması).
 - Firebase kuralları (firestore.rules, storage.rules, indexes) değiştirilmedi.
 
-## Doğrulama notu
+## Doğrulama notu (5. tur)
 Ağ kapalı olduğu için `npm install` / `npm run build` bu ortamda çalıştırılamadı. TypeScript ile sözdizimi ve tanımsız isim taraması yapıldı (yeni hata yok). Yayından önce: `npm install && npm run lint && npm run build`.
 
 ## 4. tur: site genelinde hata ve anormallik taraması
@@ -42,3 +42,47 @@ Ağ kapalı olduğu için `npm install` / `npm run build` bu ortamda çalıştı
 - index.html: `viewport-fit=cover` (çentikli telefonlarda safe-area boşlukları çalışsın).
 - Erişilebilirlik: Strateji Laboratuvarı'nda tüm kontrollerin klavye odak çerçevesini kapatan sınıflar kaldırıldı; `target="_blank"` bağlantısına `rel="noopener noreferrer"` eklendi.
 - Firebase kuralları yine değiştirilmedi.
+
+## 5. tur: Ekonomik Takvim kaldırıldı + akıcılık ve arayüz
+**Kaldırılan:** Ekonomik Takvim sekmesi tamamen silindi — `EconomicCalendar.tsx`, App.tsx'teki sekme/tip/render dalı, `vite.config.ts` içindeki `/api/economic-calendar` ucu, `index.html`'deki `tradingview-widget.com` preconnect'i ve AI Co-Pilot'ta artık olmayan özelliğe yapılan atıf.
+
+**Geç yükleme yok:** Projede `React.lazy`, `Suspense`, dinamik `import()` veya arka plan ön yüklemesi yok. Tüm kod ve kütüphaneler (xlsx, jspdf, html2canvas, html-to-image dahil) statik import'tur; font CSS'i de normal (bloklayan) stylesheet olarak yüklenir.
+
+**Akıcılık:**
+- Sekmeler keep-alive: bir sekme ilk ziyarette kurulur, sonra bellekte kalır ve yalnızca gizlenir/gösterilir. Sekme geçişi ağır ekranı (Detaylı Analiz vb.) yeniden kurmaz. Giriş animasyonu CSS'tedir (`.tab-pane`, 200 ms, bitince transform kalmaz).
+- vite.config.ts `manualChunks`: `id.includes('react')` kontrolü lucide-react, react-markdown, react-virtuoso, react-hot-toast gibi paketleri de `vendor-react` içine çekiyordu; yalnızca çekirdek paketlerle sınırlandı.
+- Hareket sistemi: Tailwind geçişleri varsayılan 160 ms ve `cubic-bezier(0.16, 1, 0.3, 1)`. Motion süreleri 0.1 / 0.15 / 0.2 s, `easeOut` yerine aynı eğri.
+- 177 `transition-all`, yeni `transition-ui` sınıfına çevrildi (yalnızca renk, gölge, opaklık, transform; width/height/margin canlandırılmaz). 4 ilerleme çubuğu `transition-[width]`. `duration-*` / `ease-*` yine ezebilir.
+- Kalıcı `will-change` / `translate3d` / `backface-visibility` katman zorlamaları kaldırıldı (sekme sarmalayıcıları, 40 yerde kullanılan `ValueTransition`, dialog seçicileri, `.gpu-layer`). Pencerelerin giriş/çıkış animasyonlarındaki geçici `willChange` korundu.
+- Buton basılma efekti bağımsız `scale` özelliğiyle yumuşak geçer (motion ile çakışmaz).
+- Kaydırma çubuğu: her elemanda `:hover/:focus-within` yerine yalnızca kaydırılabilir alanlarda. Yumuşak kaydırma yalnızca "hareketi azalt" tercihi yoksa.
+
+**Arayüz:**
+- Yazı: `text-rendering: auto`, kerning/optik boyut açık, başlıklarda `text-wrap: balance`; tekrar eden font blokları birleştirildi.
+- Toast bildirimleri tema renklerine hizalandı (kart rengi, kart kenarlığı, ana metin rengi, daha yumuşak gölge).
+- Sekme çubuğuna `tablist`/`tab`/`aria-selected` rolleri eklendi (ekran okuyucu ve klavye).
+- `MotionConfig reducedMotion="user"`: işletim sisteminde "hareketi azalt" açıksa motion animasyonları da yumuşar.
+- Kullanılmayan `tabEnter` keyframe'i silindi.
+
+**Firebase:** `firestore.rules`, `storage.rules`, `firestore.indexes.json`, `firebase.json`, `.firebaserc` ve config dosyaları bayt bayt aynı (karşılaştırıldı).
+
+**Doğrulama notu:** Ağ kapalı olduğundan `npm install` / `npm run build` bu ortamda çalıştırılamadı. Tüm `src` + `server.ts` + `vite.config.ts` için TypeScript sözdizimi taraması ve tanımsız-isim karşılaştırması yapıldı. Yayından önce: `npm install && npm run lint && npm run build`, ardından `/api/health` 200 dönmeli.
+
+## 6. tur: sıfır geç yükleme / sıfır gecikmeli render
+- Sekmeler artık açılışta hep birlikte kurulur (`visitedTabs` kaldırıldı); sekme geçişi yalnızca göster/gizle.
+- Detaylı Analiz: ağır panel iki kare bekletilmeden ilk çizimde gelir; `HeavyPanelSkeleton`, `useDeferredValue`, `startTransition` silindi.
+- İşlem listesi filtreleri ve metrik modu (R/PnL) geçişi anında uygulanır (ertelenmiş değer yok).
+- `content-visibility: auto` (`.cv-auto`, `.cv-card`) kaldırıldı; ekran dışı içerik geç çizilmez.
+- Kullanılmayan `TabPanel.tsx` silindi.
+- Arayüz: sekme çubuğunda ok tuşları / Home / End ile gezinme, yatay çubuk gizli, belirgin odak halkası; kartlarda yumuşak kenarlık vurgusu.
+- Doğrulama: ağdan npm paketleri indirilemedi (kayıt sunucusu erişimi reddetti), bu yüzden derleme çalıştırılamadı; yalnızca TypeScript sözdizimi taraması yapıldı. Yayından önce: `npm install && npm run lint && npm run build`.
+
+## 7. tur: gizli sekmeleri dondurma
+- `TabPane`: gizli sekmenin alt ağacı son aktif render'da dondurulur; Firestore güncellemeleri ve modal açılışları sırasında gizli 4 sekme boşuna yeniden render edilmez. Sekme açıldığında güncel veriyle çizilir. Animasyonlara dokunulmadı.
+- `scroll-padding-top`: yapışkan üst çubuğun altında kalan öğeler için.
+- Not: bu tur da derleme çalıştırılamadı (npm kayıt sunucusu erişimi reddedildi).
+
+## 8. tur: yükleme paralelliği
+- vite.config.ts: xlsx/jspdf/html2canvas/html-to-image ve react-markdown ailesi ayrı `vendor-export` / `vendor-markdown` parçalarına ayrıldı (hepsi statik import; paralel indirilir, uygulama kodu değişince önbellekten gelir). `reportCompressedSize` kapatıldı (build hızlanır).
+- index.html: ilk boyamada beyaz parlama olmaması için koyu arka plan, kullanılmayan `s3.tradingview.com` preconnect'i silindi.
+- Derleme bu ortamda yine çalıştırılamadı; ilk build'de parça çıktısına bakın.

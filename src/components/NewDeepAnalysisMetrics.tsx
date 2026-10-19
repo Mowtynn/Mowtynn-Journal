@@ -19,7 +19,7 @@ export const NewDeepAnalysisMetrics = React.memo(({ metrics, currency, isRrMode,
          {/* Maksimum Tarihsel Düşüş (Max DD) */}
          <motion.div 
            variants={itemVariants} 
-           className="bg-zinc-950/60 border border-zinc-800/80 rounded-2xl p-3.5 hover:bg-rose-950/10 hover:border-rose-500/30 transition-all duration-200 ease-out flex flex-col justify-between cursor-pointer group shadow-xs"
+           className="bg-zinc-950/60 border border-zinc-800/80 rounded-2xl p-3.5 hover:bg-rose-950/10 hover:border-rose-500/30 transition-ui duration-200 ease-out flex flex-col justify-between cursor-pointer group shadow-xs"
            onClick={() => onMetricClick && onMetricClick("maxDrawdown", isRrMode ? `-${(currentMaxDrawdown || 0).toLocaleString("en-US", {minimumFractionDigits: 1})} R` : `-${(currentMaxDrawdown || 0).toLocaleString("en-US", {minimumFractionDigits: 1})} ${currency}`)}
          >
            <div className="flex items-center justify-between mb-2">
@@ -41,7 +41,7 @@ export const NewDeepAnalysisMetrics = React.memo(({ metrics, currency, isRrMode,
          {/* Toparlanma Faktörü (Recovery Factor) */}
          <motion.div 
            variants={itemVariants} 
-           className="bg-zinc-950/60 border border-zinc-800/80 rounded-2xl p-3.5 hover:bg-blue-950/10 hover:border-blue-500/30 transition-all duration-200 ease-out flex flex-col justify-between cursor-pointer group shadow-xs"
+           className="bg-zinc-950/60 border border-zinc-800/80 rounded-2xl p-3.5 hover:bg-blue-950/10 hover:border-blue-500/30 transition-ui duration-200 ease-out flex flex-col justify-between cursor-pointer group shadow-xs"
            onClick={() => onMetricClick && onMetricClick("recoveryFactor", currentRecoveryFactor?.toFixed(2) || "0.00")}
          >
            <div className="flex items-center justify-between mb-2">
@@ -62,7 +62,7 @@ export const NewDeepAnalysisMetrics = React.memo(({ metrics, currency, isRrMode,
          {/* Brüt Kârlılık (Profit Factor) */}
          <motion.div 
            variants={itemVariants} 
-           className="bg-zinc-950/60 border border-zinc-800/80 rounded-2xl p-3.5 hover:bg-emerald-950/10 hover:border-emerald-500/30 transition-all duration-200 ease-out flex flex-col justify-between cursor-pointer group shadow-xs"
+           className="bg-zinc-950/60 border border-zinc-800/80 rounded-2xl p-3.5 hover:bg-emerald-950/10 hover:border-emerald-500/30 transition-ui duration-200 ease-out flex flex-col justify-between cursor-pointer group shadow-xs"
            onClick={() => onMetricClick && onMetricClick("pureProfitFactor", currentProfitFactor === Infinity ? "Sonsuz" : currentProfitFactor?.toFixed(2) || "0.00")}
          >
            <div className="flex items-center justify-between mb-2">
@@ -85,7 +85,7 @@ export const NewDeepAnalysisMetrics = React.memo(({ metrics, currency, isRrMode,
          {/* Kümülatif SMA(10) Bilgisi */}
          <motion.div 
            variants={itemVariants} 
-           className="bg-zinc-950/60 border border-zinc-800/80 rounded-2xl p-3.5 hover:bg-indigo-950/10 hover:border-indigo-500/30 transition-all duration-200 ease-out flex flex-col justify-between cursor-pointer group shadow-xs"
+           className="bg-zinc-950/60 border border-zinc-800/80 rounded-2xl p-3.5 hover:bg-indigo-950/10 hover:border-indigo-500/30 transition-ui duration-200 ease-out flex flex-col justify-between cursor-pointer group shadow-xs"
            onClick={() => onMetricClick && onMetricClick("sma10", isRrMode ? `${metrics.equityCurve?.[metrics.equityCurve.length - 1]?.sma10?.toFixed(1) || '0.0'} R` : `${metrics.equityCurve?.[metrics.equityCurve.length - 1]?.realSma10?.toLocaleString("en-US", {minimumFractionDigits: 1}) || '0.0'} ${currency}`)}
          >
            <div className="flex items-center justify-between mb-2">
@@ -118,7 +118,7 @@ export const NewDeepAnalysisMetrics = React.memo(({ metrics, currency, isRrMode,
          {/* Drawdown Toparlanma Süresi */}
          <motion.div 
            variants={itemVariants} 
-           className="bg-zinc-950/60 border border-zinc-800/80 rounded-2xl p-3.5 hover:bg-blue-950/10 hover:border-blue-500/30 transition-all duration-200 ease-out flex items-center justify-between cursor-pointer group shadow-xs"
+           className="bg-zinc-950/60 border border-zinc-800/80 rounded-2xl p-3.5 hover:bg-blue-950/10 hover:border-blue-500/30 transition-ui duration-200 ease-out flex items-center justify-between cursor-pointer group shadow-xs"
            onClick={() => onMetricClick && onMetricClick("avgRecoveryTrades", metrics.avgRecoveryTrades?.toFixed(1) || "0")}
          >
            <div className="flex items-center gap-2.5">
@@ -140,7 +140,7 @@ export const NewDeepAnalysisMetrics = React.memo(({ metrics, currency, isRrMode,
          {/* Sistem Yaşlanması / Faz */}
          <motion.div 
            variants={itemVariants} 
-           className="bg-zinc-950/60 border border-zinc-800/80 rounded-2xl p-3.5 hover:bg-emerald-950/10 hover:border-emerald-500/30 transition-all duration-200 ease-out flex items-center justify-between cursor-pointer group shadow-xs"
+           className="bg-zinc-950/60 border border-zinc-800/80 rounded-2xl p-3.5 hover:bg-emerald-950/10 hover:border-emerald-500/30 transition-ui duration-200 ease-out flex items-center justify-between cursor-pointer group shadow-xs"
            onClick={() => onMetricClick && onMetricClick("efficiencyLevel", (metrics.last10GrossLoss ? metrics.last10GrossProfit / metrics.last10GrossLoss : 0).toFixed(2))}
          >
            <div className="flex items-center gap-2.5">
