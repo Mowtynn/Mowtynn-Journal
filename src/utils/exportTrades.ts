@@ -1,6 +1,6 @@
 import * as XLSX from 'xlsx';
 import { Trade, JournalEntry, Note } from '../types';
-import { getBiasAlignment, getNyParts, getSweepSide, getTradeHourBucket, WEEKDAY_NAMES_TR } from '../lib/tradingTime';
+import { getNyParts, getSweepSide, getTradeHourBucket, WEEKDAY_NAMES_TR } from '../lib/tradingTime';
 import { DATASET_LABELS, getTradeDataset } from '../lib/asiaAnalytics';
 
 export interface ExportOptions {
@@ -55,7 +55,6 @@ export const prepareTradeExportRows = (trades: Trade[], options?: ExportOptions)
     const ny = getNyParts(t.createdAt);
     const hasNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
     const stopOk = hasNum(t.stopPips) && t.stopPips > 0;
-    const biasMap = { ALIGNED: 'Uyumlu', COUNTER: 'Ters', NEUTRAL: 'Nötr', UNKNOWN: '-' } as const;
 
     return {
       'Sıra': index + 1,
@@ -89,11 +88,7 @@ export const prepareTradeExportRows = (trades: Trade[], options?: ExportOptions)
       'Veri Seti': DATASET_LABELS[getTradeDataset(t)],
       'DXY': t.dxy || '-',
       'Premium / Discount': t.premiumDiscount || '-',
-      '1H/4H Bias': t.htfBias || '-',
-      'Bias Uyumu': biasMap[getBiasAlignment(t)],
       'Süpürülen Asia Tarafı': getSweepSide(t) === 'HIGH' ? 'High' : 'Low',
-      'Spread (Pip)': hasNum(t.spreadPips) ? t.spreadPips : '-',
-      'Spread Maliyeti (R)': hasNum(t.spreadPips) && stopOk ? Number(((t.spreadPips as number) / (t.stopPips as number)).toFixed(3)) : '-',
       'Çıkış Nedeni': t.exitReason || '-',
       'Potansiyel R (MFE/Stop)': hasNum(t.mfePips) && stopOk ? Number(((t.mfePips as number) / (t.stopPips as number)).toFixed(2)) : '-',
       'Hedef Tamamlama (MFE/TP %)': hasNum(t.mfePips) && hasNum(t.tpPips) && t.tpPips > 0 ? Math.round(((t.mfePips as number) / t.tpPips) * 100) : '-',

@@ -2755,6 +2755,7 @@ export default function App() {
               <a
                 href={indexErrorUrl}
                 target="_blank"
+                rel="noopener noreferrer"
                 referrerPolicy="no-referrer"
                 className="bg-amber-500 hover:bg-amber-400 text-zinc-900 font-bold px-3 py-1.5 rounded-xl text-[10px] transition-colors duration-200 ease-out whitespace-nowrap"
               >

@@ -33,6 +33,7 @@ import { VoiceToJournalButton } from './VoiceToJournalButton';
 import { useMetricMode } from '../context/MetricContext';
 import { caseInsensitiveMatch } from '../constants/constants';
 import { exportJournalsToExcel, exportJournalsToCSV } from '../utils/exportTrades';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 interface JournalViewProps {
   entries: JournalEntry[];
@@ -88,6 +89,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
   const [exportFormatTab, setExportFormatTab] = useState<'excel' | 'csv'>('excel');
   const [weekOffset, setWeekOffset] = useState(0);
   const [entryToDelete, setEntryToDelete] = useState<JournalEntry | null>(null);
+  useBodyScrollLock(!!entryToDelete);
   const exportRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {

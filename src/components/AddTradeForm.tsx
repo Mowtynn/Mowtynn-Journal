@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import toast from "react-hot-toast";
-import { Trade, DefinitionTitles, PlatformCategory, HtfBias, ExitReason } from "../types";
+import { Trade, DefinitionTitles, PlatformCategory, ExitReason } from "../types";
 import { 
   DEFAULT_PLAN_FIDELITIES, 
   DEFAULT_ENTRY_MODELS, 
@@ -137,9 +137,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
   const [stopPips, setStopPips] = useState<number | "">("");
   const [tpPips, setTpPips] = useState<number | "">("");
   const [asiaRangePips, setAsiaRangePips] = useState<number | "">("");
-  const [htfBias, setHtfBias] = useState<HtfBias | "">("");
   const [exitReason, setExitReason] = useState<ExitReason | "">("");
-  const [spreadPips, setSpreadPips] = useState<number | "">("");
   const [maePips, setMaePips] = useState<number | "">("");
   const [mfePips, setMfePips] = useState<number | "">("");
   const [rrValue, setRrValue] = useState<number | "">("");
@@ -330,9 +328,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
       setPlanFidelity(editingTrade.planFidelity || null);
       setDxy(editingTrade.dxy || "");
       setPremiumDiscount(editingTrade.premiumDiscount || "");
-      setHtfBias(editingTrade.htfBias || "");
       setExitReason(editingTrade.exitReason || "");
-      setSpreadPips(typeof editingTrade.spreadPips === "number" ? editingTrade.spreadPips : "");
       const d = new Date(editingTrade.createdAt || Date.now());
       d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
       setTradeDate(d.toISOString().slice(0, 16));
@@ -398,9 +394,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
     setPlanFidelity(null);
     setDxy("");
     setPremiumDiscount("");
-    setHtfBias("");
     setExitReason("");
-    setSpreadPips("");
     const d = new Date();
     d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
     setTradeDate(d.toISOString().slice(0, 16));
@@ -532,9 +526,9 @@ const AddTradeForm = React.memo(function AddTradeForm({
       planFidelity: planFidelity || undefined,
       dxy: dxy || undefined,
       premiumDiscount: premiumDiscount || undefined,
-      htfBias: htfBias || undefined,
+      htfBias: editingTrade?.htfBias,
       exitReason: exitReason || undefined,
-      spreadPips: spreadPips !== "" && typeof spreadPips === "number" ? spreadPips : undefined,
+      spreadPips: editingTrade?.spreadPips,
       notes: safeNotes || undefined,
       screenshot: screenshot || undefined,
       platform: selectedPlatform || undefined,
@@ -996,18 +990,8 @@ const AddTradeForm = React.memo(function AddTradeForm({
                   />
                 </div>
 
-                {/* 4. SATIR: ASIA MODEL VERİSİ (BIAS / ÇIKIŞ / SPREAD) — hepsi opsiyonel, edge analizi için */}
+                {/* 4. SATIR: ASIA MODEL VERİSİ (ÇIKIŞ NEDENİ) — hepsi opsiyonel, edge analizi için */}
                 <div className="pt-1.5 border-t border-zinc-800/60 flex flex-col gap-2">
-                  <div>
-                    <label className="text-[10px] sm:text-[11px] font-bold text-zinc-400 uppercase tracking-wide font-sans mb-1 block">
-                      1H / 4H BIAS
-                    </label>
-                    <div className="flex flex-wrap gap-1.5">
-                      <button type="button" onClick={() => setHtfBias(htfBias === "BULLISH" ? "" : "BULLISH")} className={`h-7 px-2 rounded-lg border text-[11px] font-bold font-sans transition-colors cursor-pointer ${htfBias === "BULLISH" ? "bg-zinc-700 text-zinc-100 border-zinc-500" : "bg-zinc-900 text-zinc-500 border-zinc-800 hover:text-zinc-300"}`}>Bullish</button>
-                      <button type="button" onClick={() => setHtfBias(htfBias === "BEARISH" ? "" : "BEARISH")} className={`h-7 px-2 rounded-lg border text-[11px] font-bold font-sans transition-colors cursor-pointer ${htfBias === "BEARISH" ? "bg-zinc-700 text-zinc-100 border-zinc-500" : "bg-zinc-900 text-zinc-500 border-zinc-800 hover:text-zinc-300"}`}>Bearish</button>
-                      <button type="button" onClick={() => setHtfBias(htfBias === "NEUTRAL" ? "" : "NEUTRAL")} className={`h-7 px-2 rounded-lg border text-[11px] font-bold font-sans transition-colors cursor-pointer ${htfBias === "NEUTRAL" ? "bg-zinc-700 text-zinc-100 border-zinc-500" : "bg-zinc-900 text-zinc-500 border-zinc-800 hover:text-zinc-300"}`}>Nötr</button>
-                    </div>
-                  </div>
                   <div>
                     <label className="text-[10px] sm:text-[11px] font-bold text-zinc-400 uppercase tracking-wide font-sans mb-1 block">
                       ÇIKIŞ NEDENİ
@@ -1019,24 +1003,6 @@ const AddTradeForm = React.memo(function AddTradeForm({
                       <button type="button" onClick={() => setExitReason(exitReason === "MANUAL" ? "" : "MANUAL")} className={`h-7 px-2 rounded-lg border text-[11px] font-bold font-sans transition-colors cursor-pointer ${exitReason === "MANUAL" ? "bg-zinc-700 text-zinc-100 border-zinc-500" : "bg-zinc-900 text-zinc-500 border-zinc-800 hover:text-zinc-300"}`}>Manuel</button>
                       <button type="button" onClick={() => setExitReason(exitReason === "TIME" ? "" : "TIME")} className={`h-7 px-2 rounded-lg border text-[11px] font-bold font-sans transition-colors cursor-pointer ${exitReason === "TIME" ? "bg-zinc-700 text-zinc-100 border-zinc-500" : "bg-zinc-900 text-zinc-500 border-zinc-800 hover:text-zinc-300"}`}>Zaman/Hafta sonu</button>
                     </div>
-                  </div>
-                  <div>
-                    <label className="text-[10px] sm:text-[11px] font-bold text-zinc-400 uppercase tracking-wide font-sans mb-1 block">
-                      SPREAD (PİP)
-                    </label>
-                    <input
-                      type="number"
-                      step="any"
-                      min="0"
-                      placeholder="örn: 0.6"
-                      value={spreadPips}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        const num = Number(val);
-                        setSpreadPips(val === "" || isNaN(num) || num < 0 ? "" : num);
-                      }}
-                      className="w-full h-8 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-zinc-400 rounded-lg sm:rounded-xl px-2.5 text-xs text-zinc-100 focus:outline-none placeholder-zinc-500 font-sans shadow-inner transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
-                    />
                   </div>
                 </div>
               </div>

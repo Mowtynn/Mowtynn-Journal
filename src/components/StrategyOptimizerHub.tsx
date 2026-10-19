@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Target, 
@@ -21,11 +21,103 @@ import {
   Brain,
   Dices,
   ShieldAlert,
-  Flame
+  Flame,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { Trade } from '../types';
 import { calculateStrategyAnalytics, StrategyAnalyticsResult } from '../lib/strategyAnalytics';
 import { AsiaEdgeLab } from './AsiaEdgeLab';
+
+/**
+ * Sekme şeridi: kullanıcı kaydırmaz, sağ/sol butonlarla kayar.
+ * Aktif sekme seçilince otomatik görünür alana getirilir.
+ */
+const TabStrip = React.memo(function TabStrip({
+  activeKey,
+  children,
+}: {
+  activeKey: string;
+  children: React.ReactNode;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [canLeft, setCanLeft] = useState(false);
+  const [canRight, setCanRight] = useState(false);
+
+  const update = useCallback(() => {
+    const el = ref.current;
+    if (!el) return;
+    setCanLeft(el.scrollLeft > 2);
+    setCanRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 2);
+  }, []);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    update();
+    el.addEventListener('scroll', update, { passive: true });
+    let ro: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      ro = new ResizeObserver(update);
+      ro.observe(el);
+    }
+    return () => {
+      el.removeEventListener('scroll', update);
+      ro?.disconnect();
+    };
+  }, [update]);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const active = el.querySelector<HTMLElement>('[data-active="true"]');
+    if (!active) return;
+    const pad = 44; // yan butonların altında kalmasın
+    const left = active.offsetLeft - pad;
+    const right = active.offsetLeft + active.offsetWidth - el.clientWidth + pad;
+    if (left < el.scrollLeft) el.scrollTo({ left: Math.max(0, left), behavior: 'smooth' });
+    else if (right > el.scrollLeft) el.scrollTo({ left: right, behavior: 'smooth' });
+  }, [activeKey]);
+
+  const slide = (dir: -1 | 1) => {
+    const el = ref.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * Math.max(160, el.clientWidth * 0.6), behavior: 'smooth' });
+  };
+
+  const arrowCls =
+    'absolute top-1/2 -translate-y-1/2 z-10 h-7 w-7 flex items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900/95 text-zinc-300 hover:text-white hover:bg-zinc-800 shadow-md transition-opacity duration-150 cursor-pointer select-none';
+
+  return (
+    <div className="relative bg-zinc-950 rounded-xl border border-zinc-800">
+      <div
+        ref={ref}
+        className="relative flex items-center p-1.5 gap-1 text-xs overflow-x-hidden overscroll-x-none"
+        style={{ scrollbarWidth: 'none', touchAction: 'pan-y' }}
+      >
+        {children}
+      </div>
+      <button
+        type="button"
+        aria-label="Sekmeleri sola kaydır"
+        onClick={() => slide(-1)}
+        tabIndex={canLeft ? 0 : -1}
+        className={`${arrowCls} left-1 ${canLeft ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+      >
+        <ChevronLeft size={15} />
+      </button>
+      <button
+        type="button"
+        aria-label="Sekmeleri sağa kaydır"
+        onClick={() => slide(1)}
+        tabIndex={canRight ? 0 : -1}
+        className={`${arrowCls} right-1 ${canRight ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+      >
+        <ChevronRight size={15} />
+      </button>
+    </div>
+  );
+});
 
 interface StrategyOptimizerHubProps {
   trades: Trade[];
@@ -257,7 +349,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: 'easeOut' }}
-      className="bg-zinc-900/70 border border-zinc-700/50 rounded-2xl p-4 sm:p-5 shadow-sm space-y-4 [&_*]:outline-none [&_*]:focus:outline-none [&_*]:focus-visible:outline-none [&_*]:ring-0 [&_*]:focus:ring-0 [&_button]:outline-none [&_button]:focus:outline-none [&_button]:focus-visible:outline-none [&_button]:ring-0 [&_select]:outline-none [&_select]:focus:outline-none [&_select]:focus-visible:outline-none [&_select]:ring-0"
+      className="bg-zinc-900/70 border border-zinc-700/50 rounded-2xl p-4 sm:p-5 shadow-sm space-y-4"
     >
       
       {/* 1. Header Banner & Health Score */}
@@ -287,7 +379,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
         </div>
 
         {/* Quick KPI Strip */}
-        <div className="flex items-center gap-3 overflow-x-auto custom-scrollbar pb-1 lg:pb-0">
+        <div className="flex items-center flex-wrap gap-2 sm:gap-3">
           <div className="bg-zinc-950/70 border border-zinc-800 px-3 py-1.5 rounded-xl text-center shrink-0">
             <span className="text-[9px] uppercase tracking-wider text-zinc-500 block font-sans font-bold">Kazanma Oranı</span>
             <span className="text-xs font-black font-sans text-zinc-100">%{overallScore.winRate}</span>
@@ -308,7 +400,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
       </div>
 
       {/* 2. SubTab Navigation Bar */}
-      <div className="flex items-center bg-zinc-950 p-1.5 rounded-xl border border-zinc-800 text-xs overflow-x-auto custom-scrollbar gap-1">
+      <TabStrip activeKey={activeSubTab}>
         {SUBTABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeSubTab === tab.id;
@@ -316,10 +408,11 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
             <motion.button
               key={tab.id}
               type="button"
+              data-active={isActive ? 'true' : 'false'}
               whileHover={{ y: -1 }}
               whileTap={{ scale: 0.97 }}
               onClick={() => setActiveSubTab(tab.id)}
-              className={`px-3 py-1.5 rounded-lg font-bold text-[11px] font-sans transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0 select-none border ${
+              className={`px-3 py-1.5 rounded-lg font-bold text-[11px] font-sans transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 select-none border ${
                 isActive
                   ? `${tab.activeColor} shadow-xs`
                   : 'border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
@@ -330,7 +423,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
             </motion.button>
           );
         })}
-      </div>
+      </TabStrip>
 
       {/* 3. Animated SubTab Content */}
       <AnimatePresence mode="wait">

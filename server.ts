@@ -116,6 +116,9 @@ async function startServer() {
     return errMsg;
   };
   const app = express();
+  // Render/Heroku gibi proxy arkasında gerçek istemci IP'si (rate limit için şart)
+  app.set("trust proxy", 1);
+  app.disable("x-powered-by");
   
   app.use(compression({
     threshold: 1024, // only compress responses above 1KB
@@ -132,7 +135,9 @@ async function startServer() {
   // `node dist/server.cjs` must never start the Vite dev server, even when NODE_ENV is not set by the host
   const isProduction = process.env.NODE_ENV === "production" || (process.argv[1] || "").endsWith("server.cjs");
 
-  app.use(express.json({ limit: "10mb" }));
+  // /api/voice-to-* rotaları kendi (50 MB) parser'ını kullanır; global 10 MB sınırı onları 413 ile kesiyordu
+  const defaultJson = express.json({ limit: "10mb" });
+  app.use((req, res, next) => (req.path.startsWith("/api/voice-to-") ? next() : defaultJson(req, res, next)));
 
   // Extract all configured Gemini API keys (supports GEMINI_API_KEY, GEMINI_API_KEY_1..10, GEMINI_API_KEYS)
   const getGeminiKeys = (): string[] => {
@@ -964,15 +969,45 @@ JSON Şeması (SADECE GEÇERLİ JSON DÖN):
     }));
     
 
-app.get("*", (_req, res) => {
+  // Var olmayan API ve dosya istekleri HTML yerine gerçek 404 döndürsün
+    app.use("/api", (_req, res) => {
+      res.status(404).json({ error: "Bulunamadı" });
+    });
+    app.get("*", (req, res) => {
+      if (path.extname(req.path)) {
+        return res.status(404).type("text/plain").send("Not found");
+      }
       res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
 
+  // Son çare hata yakalayıcı: yığın izi sızdırmadan JSON döner (bozuk JSON, 413 vb.)
+  app.use((err: any, _req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (res.headersSent) return next(err);
+    const status = Number(err?.status || err?.statusCode) || 500;
+    const message =
+      status === 413 ? "İstek çok büyük." :
+      status === 400 ? "Geçersiz istek." :
+      "Sunucu hatası.";
+    if (status >= 500) console.error("Unhandled server error:", err);
+    res.status(status).json({ error: message });
+  });
+
   httpServer.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);
   });
+
+  // Render yeniden başlatırken açık bağlantıları düzgünce kapat
+  const shutdown = () => {
+    httpServer.close(() => process.exit(0));
+    setTimeout(() => process.exit(0), 8000).unref();
+  };
+  process.on("SIGTERM", shutdown);
+  process.on("SIGINT", shutdown);
 }
 
-startServer();
+startServer().catch((err) => {
+  console.error("Sunucu başlatılamadı:", err);
+  process.exit(1);
+});

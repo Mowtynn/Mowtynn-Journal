@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useDeferredValue } from "react";
+import React, { useState, useMemo, useEffect, useDeferredValue, startTransition } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { ValueTransition } from "./ValueTransition";
 import { calculateProfitFactor, calculateExpectancy, calculateSortinoRatio, calculateKellyCriterion, calculateRecoveryFactor, toRR } from "../lib/statMath";
@@ -341,6 +341,31 @@ const MemoizedEquityChart = React.memo(function MemoizedEquityChart({
 });
 
 
+/**
+ * Ağır panel (AdvancedMetricsDashboard) hazır olana kadar gösterilen hafif iskelet.
+ * Yükseklik sabit tutulur, böylece içerik geldiğinde sayfa zıplamaz.
+ */
+const HeavyPanelSkeleton = React.memo(function HeavyPanelSkeleton() {
+  return (
+    <div className="space-y-3 mt-3" aria-busy="true" aria-label="Analiz paneli yükleniyor" style={{ minHeight: 720 }}>
+      {[0, 1, 2].map((i) => (
+        <div
+          key={i}
+          className="rounded-2xl border border-zinc-800/60 bg-zinc-900/40 p-4 animate-pulse"
+          style={{ height: i === 0 ? 220 : 240 }}
+        >
+          <div className="h-3 w-40 rounded bg-zinc-800/80 mb-4" />
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[0, 1, 2, 3].map((j) => (
+              <div key={j} className="h-14 rounded-xl bg-zinc-800/50" />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+});
+
 const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
   trades,
   onEdit,
@@ -351,6 +376,24 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
 }: DeepAnalysisProps) {
   const { isRrMode } = useMetricMode();
   const deferredTrades = useDeferredValue(trades);
+
+  // Aşamalı yükleme: üst metrikler anında çizilir, ağır panel ilk boyamadan sonra
+  // (kesintiye uğrayabilir bir geçişle) bağlanır. Ana thread bloklanmaz.
+  const [heavyReady, setHeavyReady] = useState(false);
+  useEffect(() => {
+    if (heavyReady) return;
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => {
+        startTransition(() => setHeavyReady(true));
+      });
+    });
+    return () => {
+      cancelAnimationFrame(raf1);
+      if (raf2) cancelAnimationFrame(raf2);
+    };
+  }, [heavyReady]);
+
   const [selectedMetric, setSelectedMetric] = useState<MetricDetail | null>(null);
   const [equityFilter, setEquityFilter] = useState<'trade' | 'daily' | 'weekly' | 'monthly'>('daily');
   const [isEquityFilterOpen, setIsEquityFilterOpen] = useState(false);
@@ -1710,7 +1753,11 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
 
 
 
-      <AdvancedMetricsDashboard trades={deferredTrades} currency={currency} onMetricClick={handleMetricClick} onEdit={onEdit} sessions={sessions} />
+      {heavyReady ? (
+        <AdvancedMetricsDashboard trades={deferredTrades} currency={currency} onMetricClick={handleMetricClick} onEdit={onEdit} sessions={sessions} />
+      ) : (
+        <HeavyPanelSkeleton />
+      )}
       
       <MetricDetailModal 
         isOpen={!!selectedMetric} 

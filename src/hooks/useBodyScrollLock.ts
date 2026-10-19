@@ -1,10 +1,16 @@
 import { useEffect } from 'react';
 
 let activeModalCount = 0;
+let prevHtmlOverflow = '';
+let prevBodyOverflow = '';
+let prevBodyPaddingRight = '';
 
 /**
- * Custom hook to lock body scrolling when a modal or overlay window is open.
- * Uses a reference counter to support multiple/nested active modals seamlessly.
+ * Modal / overlay açıkken arka plan kaydırmasını kilitler.
+ * - Sayaç sayesinde iç içe modallar sorunsuz çalışır.
+ * - Kaydırma çubuğu kaybolunca sayfanın genişleyip içeriğin kaymasını (arka planın
+ *   "sıkışma/zıplama" hissi) engeller: `scrollbar-gutter: stable` (index.css) yoksa,
+ *   çubuk genişliği kadar padding-right ile telafi edilir.
  */
 export function useBodyScrollLock(isOpen: boolean = true) {
   useEffect(() => {
@@ -12,15 +18,32 @@ export function useBodyScrollLock(isOpen: boolean = true) {
 
     activeModalCount++;
     if (activeModalCount === 1) {
-      document.documentElement.style.overflow = 'hidden';
-      document.body.style.overflow = 'hidden';
+      const html = document.documentElement;
+      const body = document.body;
+
+      prevHtmlOverflow = html.style.overflow;
+      prevBodyOverflow = body.style.overflow;
+      prevBodyPaddingRight = body.style.paddingRight;
+
+      const supportsGutter =
+        typeof CSS !== 'undefined' && typeof CSS.supports === 'function' && CSS.supports('scrollbar-gutter: stable');
+      const scrollbarWidth = window.innerWidth - html.clientWidth;
+
+      if (!supportsGutter && scrollbarWidth > 0) {
+        const current = parseFloat(getComputedStyle(body).paddingRight) || 0;
+        body.style.paddingRight = `${current + scrollbarWidth}px`;
+      }
+
+      html.style.overflow = 'hidden';
+      body.style.overflow = 'hidden';
     }
 
     return () => {
       activeModalCount = Math.max(0, activeModalCount - 1);
       if (activeModalCount === 0) {
-        document.documentElement.style.overflow = '';
-        document.body.style.overflow = '';
+        document.documentElement.style.overflow = prevHtmlOverflow;
+        document.body.style.overflow = prevBodyOverflow;
+        document.body.style.paddingRight = prevBodyPaddingRight;
       }
     };
   }, [isOpen]);

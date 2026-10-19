@@ -2,8 +2,9 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+/* Modal açılınca kaydırma çubuğu kaybolsa da sayfa genişliği değişmesin */
 html {
-  scrollbar-gutter: auto;
+  scrollbar-gutter: stable;
 }
 
 @theme {
@@ -183,7 +184,7 @@ html {
   
   /* ----- MODALS ----- */
   .modal-overlay { 
-    @apply fixed inset-0 z-[2500] flex items-center justify-center p-4 sm:p-6 bg-zinc-950/85 overflow-y-auto font-sans; 
+    @apply fixed inset-0 z-[2500] flex items-center justify-center p-4 sm:p-6 bg-zinc-950/85 overflow-y-auto overscroll-contain font-sans; 
   }
   .modal-content { 
     @apply bg-bg-modal border border-border-card rounded-2xl shadow-modal w-full flex flex-col my-auto relative overflow-hidden font-sans; 
@@ -334,7 +335,8 @@ dialog, .modal-mobile-fit, [role="dialog"], #global-filter-popup, #trades-histor
   will-change: opacity, transform;
 }
 
-tr, .cv-auto {
+/* Not: `tr` kaldırıldı — tablo satırlarında content-visibility sütun genişliklerini zıplatıyordu */
+.cv-auto {
   content-visibility: auto;
   contain-intrinsic-size: auto 48px;
   contain: layout style;
@@ -448,14 +450,19 @@ body { font-variant-numeric: tabular-nums; }
 .text-\[10px\] { font-size: 11.5px; }
 .text-\[11px\] { font-size: 12px; }
 
-/* Smoother, more modern surfaces */
-button, [role="button"], select, input, textarea {
-  transition-property: color, background-color, border-color, box-shadow, opacity, transform;
-  transition-duration: 150ms;
-  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+/* Smoother, more modern surfaces.
+   @layer base: Tailwind utility sınıfları (transition-all, duration-300 …) bu varsayılanları ezebilsin.
+   `transform` bilerek listede YOK: motion (framer) transform'u kare kare kendisi sürüyor;
+   CSS transition'ı araya girerse animasyon gecikmeli/yaylanmış hissettirir. */
+@layer base {
+  button, [role="button"], select, input, textarea {
+    transition-property: color, background-color, border-color, box-shadow, opacity;
+    transition-duration: 150ms;
+    transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  button:not(:disabled):active { transform: scale(0.98); }
+  button:disabled { cursor: not-allowed; }
 }
-button:not(:disabled):active { transform: scale(0.98); }
-button:disabled { cursor: not-allowed; }
 
 /* Touch devices: larger hit areas for form controls */
 @media (pointer: coarse) {

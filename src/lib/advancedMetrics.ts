@@ -4,7 +4,19 @@ import { calculateProfitFactor, toRR } from './statMath';
 
 const DAYS_EN_TO_TR: Record<number, string> = { 1: 'Pzt', 2: 'Sal', 3: 'Çar', 4: 'Per', 5: 'Cum', 6: 'Cmt', 0: 'Paz' };
 
+type AdvancedMetricsResult = NonNullable<ReturnType<typeof computeAdvancedMetrics>>;
+const advancedMetricsCache = new WeakMap<Trade[], AdvancedMetricsResult | null>();
+
+/** Aynı işlem dizisi için sonucu önbellekler (sekme değişince yeniden hesaplanmaz). */
 export const calculateAdvancedMetrics = (closedTrades: Trade[]) => {
+  const hit = advancedMetricsCache.get(closedTrades);
+  if (hit !== undefined) return hit;
+  const result = computeAdvancedMetrics(closedTrades);
+  advancedMetricsCache.set(closedTrades, result);
+  return result;
+};
+
+const computeAdvancedMetrics = (closedTrades: Trade[]) => {
   if (closedTrades.length === 0) return null;
 
   // Global variables we will accumulate (Calculated entirely on R-multiples!)

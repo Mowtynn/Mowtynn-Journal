@@ -125,9 +125,15 @@ export default defineConfig(() => {
       workbox: {
         maximumFileSizeToCacheInBytes: 5000000,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+        // /api istekleri asla index.html ile cevaplanmasın (SPA fallback bunları yutuyordu)
+        navigateFallbackDenylist: [/^\/api\//],
+        // Yeni sürüm yayınlanınca eski önbellek temizlensin ve yeni SW hemen devralsın
+        cleanupOutdatedCaches: true,
+        skipWaiting: true,
+        clientsClaim: true,
       },
       devOptions: {
-        enabled: true,
+        enabled: false,
       },
       manifest: {
         id: '/',

@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Plus, Trash2, Award, DollarSign, Calendar, Upload, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { Certificate } from '../types';
 import { TurkishDatePicker } from './TurkishDateTimePicker';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 interface CertificatesViewProps {
   certificates: Certificate[];
@@ -31,6 +32,7 @@ export const CertificatesView = React.memo(function CertificatesView({ certifica
   const [activeType, setActiveType] = useState<'PHASE' | 'PAYOUT'>('PHASE');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [certToDelete, setCertToDelete] = useState<Certificate | null>(null);
+  useBodyScrollLock(isModalOpen || !!selectedImage || !!certToDelete);
   
   const [title, setTitle] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);

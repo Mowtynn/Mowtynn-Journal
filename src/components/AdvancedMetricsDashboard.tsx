@@ -11,6 +11,7 @@ import TradeDetailModal from './TradeDetailModal';
 import { PrintReportModal } from './PrintReportModal';
 import { TradeHistoryModal } from './TradeHistoryModal';
 import { StrategyOptimizerHub } from './StrategyOptimizerHub';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 
 const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, sessions = [] }: { trades: Trade[], currency: string, onMetricClick?: (id: string, val: string | number) => void, onEdit?: (trade: Trade) => void, sessions?: string[] }) => {
@@ -57,6 +58,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
   const [isHeatmapOpen, setIsHeatmapOpen] = React.useState(false);
   const [isDeadZoneModalOpen, setIsDeadZoneModalOpen] = React.useState(false);
   const [isOptimalFreqModalOpen, setIsOptimalFreqModalOpen] = React.useState(false);
+  useBodyScrollLock(isDeadZoneModalOpen || isOptimalFreqModalOpen);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

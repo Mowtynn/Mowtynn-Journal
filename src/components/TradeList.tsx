@@ -24,6 +24,7 @@ import toast from 'react-hot-toast';
 import { exportTradesToExcel, exportTradesToCSV } from '../utils/exportTrades';
 import { PrintReportModal } from './PrintReportModal';
 import { TurkishDatePicker } from './TurkishDateTimePicker';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 function TableSortBadge({ sortState }: { sortState: 'asc' | 'des' | null }) {
   if (!sortState) {
@@ -464,6 +465,7 @@ const TradeList = React.memo(function TradeList({
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [customLastCount, setCustomLastCount] = useState<string>('5');
   const [tradeToDelete, setTradeToDelete] = useState<Trade | null>(null);
+  useBodyScrollLock(!!tradeToDelete);
 
   const isFilteringActive = useMemo(() => {
     return filter.status !== 'ALL' ||

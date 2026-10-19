@@ -10,18 +10,10 @@ import {
   listPairs,
   SimRow,
 } from '../lib/asiaAnalytics';
-import { BiasAlignment } from '../lib/tradingTime';
 
 interface AsiaEdgeLabProps {
   trades: Trade[];
 }
-
-const BIAS_LABELS: Record<BiasAlignment, string> = {
-  ALIGNED: 'Bias ile uyumlu',
-  COUNTER: 'Bias’a ters',
-  NEUTRAL: 'Bias nötr',
-  UNKNOWN: 'Bias girilmemiş',
-};
 
 const EXIT_LABELS: Record<string, string> = {
   TP: 'Hedef (karşı Asia ucu)',
@@ -271,19 +263,8 @@ export const AsiaEdgeLab = React.memo(function AsiaEdgeLab({ trades }: AsiaEdgeL
           </Card>
 
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-            <Card title="Parite Bazında Edge & Spread" hint="Spread maliyeti = ortalama spread / stop (R cinsinden). Yüksek maliyetli paritede aynı beklenti daha az değerlidir.">
+            <Card title="Parite Bazında Edge">
               <GroupTable rows={pairRows} minSample={minSample} empty="Parite verisi yok." />
-              {r.pairs.some((p) => p.avgSpreadPips !== null) && (
-                <div className="flex flex-wrap gap-2 pt-1">
-                  {r.pairs.map((p) =>
-                    p.avgSpreadPips === null ? null : (
-                      <span key={p.key} className="text-[10px] font-sans text-zinc-400 bg-zinc-900 border border-zinc-800 rounded px-2 py-1">
-                        {p.key}: {p.avgSpreadPips} pip{p.spreadCostR !== null ? ` · ${p.spreadCostR} R/işlem` : ''}
-                      </span>
-                    ),
-                  )}
-                </div>
-              )}
             </Card>
 
             <Card title="Giriş Saati (NY)" hint="Hesaplanan saat, işlemin tarihinden New York’a çevrilir; elle seçtiğin giriş saati varsa o kullanılır.">
@@ -330,14 +311,6 @@ export const AsiaEdgeLab = React.memo(function AsiaEdgeLab({ trades }: AsiaEdgeL
           </Card>
 
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-            <Card title="1H/4H Bias Uyumu" hint="Bias’ı kaydet ama girişe karar verdirme: önce bu tablo bias’ın gerçekten fark yaratıp yaratmadığını göstersin.">
-              <GroupTable
-                rows={r.bias.map((b) => ({ label: BIAS_LABELS[b.key], stats: b.stats }))}
-                minSample={minSample}
-                empty="Bias girilmiş işlem yok. İşlem formundaki 'Bias' alanını doldur."
-              />
-            </Card>
-
             <Card title="Süpürülen Taraf (Asia High / Low)">
               <GroupTable rows={toRows(r.sweepSide)} minSample={minSample} empty="Veri yok." />
             </Card>

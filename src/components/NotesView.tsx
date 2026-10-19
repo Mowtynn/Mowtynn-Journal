@@ -21,6 +21,7 @@ import { Note } from '../types';
 import { VoiceToNoteButton } from './VoiceToNoteButton';
 import { caseInsensitiveMatch } from '../constants/constants';
 import { exportNotesToExcel, exportNotesToCSV } from '../utils/exportTrades';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 interface NotesViewProps {
   notes: Note[];
@@ -36,6 +37,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState<'ALL' | 'PINNED'>('ALL');
   const [noteToDelete, setNoteToDelete] = useState<Note | null>(null);
+  useBodyScrollLock(!!noteToDelete);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [exportFormatTab, setExportFormatTab] = useState<'excel' | 'csv'>('excel');
   const exportRef = React.useRef<HTMLDivElement>(null);

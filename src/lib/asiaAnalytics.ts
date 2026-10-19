@@ -2,8 +2,6 @@ import { Trade } from '../types';
 import { getTradeAccountCategory } from '../constants/constants';
 import { calculateProfitFactor, toRR } from './statMath';
 import {
-  BiasAlignment,
-  getBiasAlignment,
   getSweepSide,
   getTradeHourBucket,
   getTradeNyWeekday,
@@ -367,13 +365,11 @@ export interface CoverageRow {
 export function computeCoverage(trades: Trade[]): CoverageRow[] {
   const n = trades.length;
   const defs: Array<{ field: string; label: string; unlocks: string; ok: (t: Trade) => boolean }> = [
-    { field: 'stopPips', label: 'Stop (pip)', unlocks: 'TP & stop simülatörü, spread maliyeti (R)', ok: (t) => hasNum(t.stopPips) && t.stopPips > 0 },
+    { field: 'stopPips', label: 'Stop (pip)', unlocks: 'TP & stop simülatörü', ok: (t) => hasNum(t.stopPips) && t.stopPips > 0 },
     { field: 'tpPips', label: 'TP mesafesi (pip)', unlocks: 'Hedefe ulaşma oranı, karşı Asia ucu simülasyonu', ok: (t) => hasNum(t.tpPips) && t.tpPips > 0 },
     { field: 'maePips', label: 'MAE (pip)', unlocks: 'Stop daraltma simülatörü', ok: (t) => hasNum(t.maePips) },
     { field: 'mfePips', label: 'MFE (pip)', unlocks: 'TP simülatörü, hedef tamamlama dağılımı', ok: (t) => hasNum(t.mfePips) },
     { field: 'asiaRangePips', label: 'Asia range (pip)', unlocks: 'Range büyüklüğü edge analizi (parite bazlı)', ok: (t) => hasNum(t.asiaRangePips) && t.asiaRangePips > 0 },
-    { field: 'htfBias', label: '1H/4H bias', unlocks: 'Bias uyumu etkisi', ok: (t) => !!t.htfBias },
-    { field: 'spreadPips', label: 'Spread (pip)', unlocks: 'Parite bazlı spread maliyeti', ok: (t) => hasNum(t.spreadPips) },
     { field: 'exitReason', label: 'Çıkış nedeni', unlocks: 'Gerçek hedef/stop dağılımı', ok: (t) => !!t.exitReason },
     { field: 'htfTimeframe', label: 'PD array zaman dilimi', unlocks: '1H / 4H / D kıyası', ok: (t) => !!t.htfTimeframe },
     { field: 'confirmations', label: 'PD array türü', unlocks: 'FVG / OB / seviye kıyası', ok: (t) => Array.isArray(t.confirmations) && t.confirmations.length > 0 },
@@ -404,11 +400,10 @@ export interface ComboRow {
 export interface AsiaLabResult {
   trades: Trade[];
   overall: EdgeStats;
-  pairs: Array<GroupRow & { avgSpreadPips: number | null; spreadCostR: number | null }>;
+  pairs: GroupRow[];
   hours: GroupRow[];
   weekdays: Array<{ day: string; stats: EdgeStats }>;
   hourPair: { hours: string[]; pairs: string[]; cells: Record<string, HourPairCell> };
-  bias: Array<{ key: BiasAlignment; stats: EdgeStats }>;
   sweepSide: GroupRow[];
   pdTimeframe: GroupRow[];
   pdType: GroupRow[];
@@ -450,16 +445,7 @@ export function analyzeAsia(allTrades: Trade[], opts: AsiaLabOptions): AsiaLabRe
 
   const overall = computeEdge(trades);
 
-  const pairRows = groupTrades(trades, (t) => normalizePair(t.asset)).map((g) => {
-    const list = trades.filter((t) => normalizePair(t.asset) === g.key);
-    const spreads = list.filter((t) => hasNum(t.spreadPips)).map((t) => t.spreadPips as number);
-    const avgSpread = spreads.length ? round(spreads.reduce((s, v) => s + v, 0) / spreads.length, 2) : null;
-    const costs = list
-      .filter((t) => hasNum(t.spreadPips) && hasNum(t.stopPips) && t.stopPips > 0)
-      .map((t) => (t.spreadPips as number) / (t.stopPips as number));
-    const spreadCostR = costs.length ? round(costs.reduce((s, v) => s + v, 0) / costs.length, 3) : null;
-    return { ...g, avgSpreadPips: avgSpread, spreadCostR };
-  });
+  const pairRows = groupTrades(trades, (t) => normalizePair(t.asset));
 
   const hours = groupTrades(trades, (t) => getTradeHourBucket(t)).sort((a, b) => a.key.localeCompare(b.key));
 
@@ -481,11 +467,6 @@ export function analyzeAsia(allTrades: Trade[], opts: AsiaLabOptions): AsiaLabRe
       }
     });
   });
-
-  const biasOrder: BiasAlignment[] = ['ALIGNED', 'COUNTER', 'NEUTRAL', 'UNKNOWN'];
-  const bias = biasOrder
-    .map((key) => ({ key, stats: computeEdge(trades.filter((t) => getBiasAlignment(t) === key)) }))
-    .filter((b) => b.stats.n > 0);
 
   const sweepSide = groupTrades(trades, (t) => (getSweepSide(t) === 'HIGH' ? 'Asia High süpürüldü → SHORT' : 'Asia Low süpürüldü → LONG'));
 
@@ -551,7 +532,6 @@ export function analyzeAsia(allTrades: Trade[], opts: AsiaLabOptions): AsiaLabRe
   const dims: Array<{ name: string; get: (t: Trade) => string | null }> = [
     { name: 'Parite', get: (t) => normalizePair(t.asset) },
     { name: 'Saat', get: (t) => getTradeHourBucket(t) },
-    { name: 'Bias', get: (t) => (getBiasAlignment(t) === 'UNKNOWN' ? null : getBiasAlignment(t)) },
     { name: 'PD TF', get: (t) => t.htfTimeframe || null },
     { name: 'Yön', get: (t) => (getSweepSide(t) === 'HIGH' ? 'High→Short' : 'Low→Long') },
     { name: 'Gün', get: (t) => WEEKDAY_NAMES_TR[getTradeNyWeekday(t)] },
@@ -583,7 +563,6 @@ export function analyzeAsia(allTrades: Trade[], opts: AsiaLabOptions): AsiaLabRe
     hours,
     weekdays,
     hourPair: { hours: hourKeys, pairs: pairKeys, cells },
-    bias,
     sweepSide,
     pdTimeframe,
     pdType,

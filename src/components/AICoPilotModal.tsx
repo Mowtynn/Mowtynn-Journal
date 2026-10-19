@@ -8,7 +8,7 @@ import Markdown from "react-markdown";
 import { authFetch } from "../lib/api";
 import { getSiteToken } from "./PasswordGate";
 import { calculateStrategyAnalytics } from "../lib/strategyAnalytics";
-import { getTradeHourBucket, getTradeNyWeekday, getBiasAlignment, WEEKDAY_NAMES_TR } from "../lib/tradingTime";
+import { getTradeHourBucket, getTradeNyWeekday, WEEKDAY_NAMES_TR } from "../lib/tradingTime";
 import {
   Sparkles, Bot, Send, RefreshCw, X, TrendingUp, TrendingDown, ShieldAlert, Brain, Zap, Target, BarChart3, Clock, CheckCircle2, ShieldCheck, AlertTriangle, Lightbulb, Copy, Check, ChevronRight, ChevronLeft, User, Activity, Flame, Image as ImageIcon, Volume2, Award, Lock, Layers, Compass, Eye, Pin, Bookmark, ArrowLeft, Edit2, Trash2, Crosshair, LineChart } from 'lucide-react';
 
@@ -1048,9 +1048,6 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
             setupQuality: t.planFidelity,
             dxy: t.dxy,
             premiumDiscount: t.premiumDiscount,
-            htfBias: t.htfBias,
-            biasAlignment: getBiasAlignment(t),
-            spreadPips: t.spreadPips,
             exitReason: t.exitReason,
             nyEntryHour: getTradeHourBucket(t),
             nyWeekday: WEEKDAY_NAMES_TR[getTradeNyWeekday(t)],
