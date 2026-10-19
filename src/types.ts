@@ -32,7 +32,13 @@ export interface Trade {
   trend?: string;           // Trend Yapısı (Trend Type e.g. Continuation, Reversal)
   dxy?: string;             // DXY bias / correlation (e.g. Bullish, Bearish, Neutral)
   premiumDiscount?: string; // Premium / Discount zone (e.g. Premium, Discount, Equilibrium / OTE)
+  htfBias?: HtfBias;        // 1H (max 4H) bias at entry time — alignment with direction is derived, not stored
+  spreadPips?: number;      // Spread paid on this trade, in pips (cost per pair / broker analysis)
+  exitReason?: ExitReason;  // How the trade ended: target (opposite Asia side), stop, manual, etc.
 }
+
+export type HtfBias = 'BULLISH' | 'BEARISH' | 'NEUTRAL';
+export type ExitReason = 'TP' | 'SL' | 'BE' | 'MANUAL' | 'TIME';
 
 export interface JournalEntry {
   id: string;

@@ -11,7 +11,7 @@ import {
   X, Edit3, Trash2, Calendar, Clock, Target, 
   Maximize2, ExternalLink, Image as ImageIcon, FileText, 
   Activity, Layers, Monitor, ShieldCheck, AlertCircle,
-  Download, Loader2, Trophy, TrendingDown, Minus, Zap, TrendingUp
+  Download, Loader2, Trophy, TrendingDown, Minus, Zap, TrendingUp, Compass
 } from "lucide-react";
 
 interface TradeDetailModalProps {
@@ -381,6 +381,28 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                               label="ASIA RANGE (PİP)" 
                               value={`${currentTrade.asiaRangePips} Pip`} 
                               icon={<Activity size={14} className="text-amber-400"/>} 
+                            />
+                          )}
+                          {/* 3b-2. ASIA MODEL VERİSİ: BIAS / SPREAD / ÇIKIŞ */}
+                          {currentTrade.htfBias && (
+                            <ContextRow 
+                              label="1H/4H BIAS" 
+                              value={`${currentTrade.htfBias === 'BULLISH' ? 'Bullish' : currentTrade.htfBias === 'BEARISH' ? 'Bearish' : 'Nötr'}`} 
+                              icon={<Compass size={14} className="text-zinc-400"/>} 
+                            />
+                          )}
+                          {typeof currentTrade.spreadPips === 'number' && (
+                            <ContextRow 
+                              label="SPREAD (PİP)" 
+                              value={`${currentTrade.spreadPips} Pip`} 
+                              icon={<Activity size={14} className="text-zinc-400"/>} 
+                            />
+                          )}
+                          {currentTrade.exitReason && (
+                            <ContextRow 
+                              label="ÇIKIŞ NEDENİ" 
+                              value={{ TP: 'Hedef', SL: 'Stop', BE: 'Başabaş', MANUAL: 'Manuel', TIME: 'Zaman / Hafta sonu' }[currentTrade.exitReason]} 
+                              icon={<Target size={14} className="text-zinc-400"/>} 
                             />
                           )}
                           {/* 3c. MAE (PİP) */}

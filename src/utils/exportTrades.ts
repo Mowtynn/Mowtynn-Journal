@@ -1,5 +1,7 @@
 import * as XLSX from 'xlsx';
 import { Trade, JournalEntry, Note } from '../types';
+import { getBiasAlignment, getNyParts, getSweepSide, getTradeHourBucket, WEEKDAY_NAMES_TR } from '../lib/tradingTime';
+import { DATASET_LABELS, getTradeDataset } from '../lib/asiaAnalytics';
 
 export interface ExportOptions {
   currency?: string;
@@ -50,6 +52,11 @@ export const prepareTradeExportRows = (trades: Trade[], options?: ExportOptions)
       ? t.entryModels.join(', ')
       : (t.entry || '-');
 
+    const ny = getNyParts(t.createdAt);
+    const hasNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
+    const stopOk = hasNum(t.stopPips) && t.stopPips > 0;
+    const biasMap = { ALIGNED: 'Uyumlu', COUNTER: 'Ters', NEUTRAL: 'Nötr', UNKNOWN: '-' } as const;
+
     return {
       'Sıra': index + 1,
       'İşlem ID': t.id,
@@ -75,6 +82,21 @@ export const prepareTradeExportRows = (trades: Trade[], options?: ExportOptions)
       'Giriş Modeli (Entry Model)': entryModels,
       'Trend Yapısı (Trend)': t.trend || '-',
       'Setup Kalitesi (Plan Fidelity)': t.planFidelity || '-',
+      'Tarih (NY)': ny ? ny.date : '-',
+      'Saat (NY)': ny ? `${String(ny.hour).padStart(2, '0')}:${String(ny.minute).padStart(2, '0')}` : '-',
+      'Gün (NY)': ny ? WEEKDAY_NAMES_TR[ny.weekday] : '-',
+      'Giriş Saati (NY, saatlik)': getTradeHourBucket(t),
+      'Veri Seti': DATASET_LABELS[getTradeDataset(t)],
+      'DXY': t.dxy || '-',
+      'Premium / Discount': t.premiumDiscount || '-',
+      '1H/4H Bias': t.htfBias || '-',
+      'Bias Uyumu': biasMap[getBiasAlignment(t)],
+      'Süpürülen Asia Tarafı': getSweepSide(t) === 'HIGH' ? 'High' : 'Low',
+      'Spread (Pip)': hasNum(t.spreadPips) ? t.spreadPips : '-',
+      'Spread Maliyeti (R)': hasNum(t.spreadPips) && stopOk ? Number(((t.spreadPips as number) / (t.stopPips as number)).toFixed(3)) : '-',
+      'Çıkış Nedeni': t.exitReason || '-',
+      'Potansiyel R (MFE/Stop)': hasNum(t.mfePips) && stopOk ? Number(((t.mfePips as number) / (t.stopPips as number)).toFixed(2)) : '-',
+      'Hedef Tamamlama (MFE/TP %)': hasNum(t.mfePips) && hasNum(t.tpPips) && t.tpPips > 0 ? Math.round(((t.mfePips as number) / t.tpPips) * 100) : '-',
       'Analiz & Psikoloji Notları': t.notes ? t.notes.replace(/\r?\n/g, ' ') : '-',
       'Ekran Görüntüsü': t.screenshot ? 'Mevcut' : 'Yok',
     };
@@ -121,6 +143,9 @@ export const exportTradesToExcel = (
     ? Number((trades.filter(t => t.status === 'WIN').reduce((acc, t) => acc + (Number(t.pnl) || 0), 0) / Math.abs(trades.filter(t => t.status === 'LOSS').reduce((acc, t) => acc + (Number(t.pnl) || 0), 0) || 1)).toFixed(2))
     : (wins > 0 ? 'Sonsuz' : 0);
 
+  const rWin = trades.reduce((acc, t) => acc + Math.max(0, Number(t.rr) || 0), 0);
+  const rLoss = Math.abs(trades.reduce((acc, t) => acc + Math.min(0, Number(t.rr) || 0), 0));
+
   const summaryRows = [
     { 'Metrik': 'Rapor Başlığı', 'Değer': options?.title || 'İşlem Geçmişi Raporu' },
     { 'Metrik': 'Dışa Aktarma Tarihi', 'Değer': new Date().toLocaleString('tr-TR') },
@@ -131,7 +156,9 @@ export const exportTradesToExcel = (
     { 'Metrik': 'Kazanma Oranı (Win Rate)', 'Değer': `%${winRate}` },
     { 'Metrik': `Toplam Net Kâr / Zarar (${options?.currency || '$'})`, 'Değer': totalPnl },
     { 'Metrik': 'Toplam Net R', 'Değer': `${totalR} R` },
-    { 'Metrik': 'Kâr Faktörü (Profit Factor)', 'Değer': profitFactor },
+    { 'Metrik': 'Kâr Faktörü (Profit Factor, PnL bazlı)', 'Değer': profitFactor },
+    { 'Metrik': 'Beklenti (R / işlem)', 'Değer': totalTrades > 0 ? Number((totalR / totalTrades).toFixed(3)) : 0 },
+    { 'Metrik': 'Kâr Faktörü (R bazlı)', 'Değer': rLoss > 0 ? Number((rWin / rLoss).toFixed(2)) : (rWin > 0 ? 'Sonsuz' : 0) },
   ];
 
   const summaryWorksheet = XLSX.utils.json_to_sheet(summaryRows);

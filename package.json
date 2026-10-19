@@ -1,5 +1,5 @@
 {
-  "name": "react-example",
+  "name": "trading-journal",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -20,15 +20,14 @@
     "@types/react-window": "^1.8.8",
     "@vitejs/plugin-react": "^5.0.4",
     "autoprefixer": "^10.4.21",
-    "canvas": "^3.2.3",
     "compression": "^1.8.1",
     "esbuild": "^0.25.0",
     "express": "^4.21.2",
     "express-rate-limit": "^8.6.1",
     "firebase": "^12.15.0",
-    "glob": "^13.0.6",
     "helmet": "^8.3.0",
     "html-to-image": "^1.11.13",
+    "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
@@ -49,5 +48,8 @@
   },
   "devDependencies": {
     "ts-prune": "^0.10.3"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

@@ -834,9 +834,14 @@ export default function App() {
         collection(db, "trades"),
         where("userId", "==", user.uid)
       );
+      // Local-only trades (created before login) are uploaded exactly once, on the first snapshot that comes from the
+      // server. After that the cloud is the source of truth; otherwise a stale device re-uploads trades that were
+      // deleted elsewhere and they "come back from the dead".
+      let tradesInitialSyncDone = false;
       unsubscribeTrades = onSnapshot(
         qTrades,
         (querySnapshot) => {
+          const fromCache = querySnapshot.metadata.fromCache;
           const cloudTrades: Trade[] = [];
           querySnapshot.forEach((docSnap) => {
             const data = docSnap.data();
@@ -846,15 +851,24 @@ export default function App() {
 
           setTrades((prevLocal) => {
             if (isClearingRef.current) return [];
+            if (tradesInitialSyncDone) {
+              try {
+                localStorage.setItem("trading_journal_db", JSON.stringify(cloudTrades));
+              } catch (err) {}
+              return cloudTrades;
+            }
             const cloudIds = new Set(cloudTrades.map((t) => t.id));
             const unsyncedLocal = prevLocal.filter((t) => !cloudIds.has(t.id));
 
-            unsyncedLocal.forEach((trade) => {
-              setDoc(doc(db, "trades", trade.id), cleanForFirestore({
-                ...trade,
-                userId: user.uid,
-              })).catch((e) => console.error("Sync local trade to cloud error:", e));
-            });
+            if (!fromCache) {
+              tradesInitialSyncDone = true;
+              unsyncedLocal.forEach((trade) => {
+                setDoc(doc(db, "trades", trade.id), cleanForFirestore({
+                  ...trade,
+                  userId: user.uid,
+                })).catch((e) => console.error("Sync local trade to cloud error:", e));
+              });
+            }
 
             const merged = [...cloudTrades, ...unsyncedLocal].sort((a, b) => b.createdAt - a.createdAt);
             try {

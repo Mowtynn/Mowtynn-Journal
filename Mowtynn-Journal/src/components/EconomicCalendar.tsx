@@ -1,0 +1,61 @@
+import { memo } from 'react';
+import { Calendar } from 'lucide-react';
+import { motion } from 'motion/react';
+
+const widgetConfig = {
+  colorTheme: "dark",
+  isTransparent: true,
+  width: "100%",
+  height: "100%",
+  locale: "tr",
+  importanceFilter: "0,1",
+  currencyFilter: "USD,EUR,GBP,JPY,AUD,CAD,CHF,NZD,TRY"
+};
+
+const widgetUrl = `https://www.tradingview-widget.com/embed-widget/events/?locale=tr#${encodeURIComponent(JSON.stringify(widgetConfig))}`;
+
+const EconomicCalendar = memo(function EconomicCalendar() {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.15, ease: "easeOut" }}
+      className="w-full h-[calc(100vh-180px)] min-h-[620px] bg-zinc-950/60 border border-zinc-800/80 rounded-2xl p-4 sm:p-5 overflow-hidden flex flex-col relative shadow-sm"
+    >
+      {/* Header bar */}
+      <div className="flex items-center justify-between pb-3.5 mb-2 border-b border-zinc-800/80">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
+            <Calendar size={18} />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-bold uppercase tracking-wide text-zinc-100">
+                Ekonomik Takvim
+              </h2>
+              <span className="px-2.5 py-0.5 rounded-lg text-[9px] font-sans font-bold toggle-item-brand border border-blue-500/20 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+                CANLI VERİ
+              </span>
+            </div>
+            <p className="text-[11px] text-zinc-400 mt-0.5 font-sans">
+              Küresel piyasa duyuruları, faiz kararları ve ekonomik veriler.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="w-full h-full flex-grow relative bg-zinc-950 rounded-2xl overflow-hidden border border-zinc-800">
+        <iframe
+          src={widgetUrl}
+          className="w-full h-full border-0"
+          title="TradingView Ekonomik Takvim"
+          sandbox="allow-scripts allow-same-origin allow-popups"
+        />
+      </div>
+    </motion.div>
+  );
+});
+
+export default EconomicCalendar;

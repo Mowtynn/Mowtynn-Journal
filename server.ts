@@ -7,6 +7,85 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import crypto from "crypto";
+import dns from "node:dns/promises";
+import net from "node:net";
+
+// ---------------------------------------------------------------------------
+// SSRF protection for the image proxy / TradingView resolver
+// ---------------------------------------------------------------------------
+const isPrivateAddress = (ip: string): boolean => {
+  if (net.isIPv4(ip)) {
+    const [a, b] = ip.split(".").map(Number);
+    return (
+      a === 0 || a === 10 || a === 127 ||
+      (a === 100 && b >= 64 && b <= 127) ||
+      (a === 169 && b === 254) ||
+      (a === 172 && b >= 16 && b <= 31) ||
+      (a === 192 && b === 168) ||
+      a >= 224
+    );
+  }
+  if (net.isIPv6(ip)) {
+    const l = ip.toLowerCase();
+    if (l === "::1" || l === "::") return true;
+    if (l.startsWith("fc") || l.startsWith("fd") || l.startsWith("fe8") || l.startsWith("fe9") || l.startsWith("fea") || l.startsWith("feb")) return true;
+    const mapped = l.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/);
+    if (mapped) return isPrivateAddress(mapped[1]);
+    return false;
+  }
+  return true;
+};
+
+const assertPublicHttpUrl = async (raw: string): Promise<URL> => {
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    throw new Error("Geçersiz URL");
+  }
+  if (url.protocol !== "https:" && url.protocol !== "http:") throw new Error("Yalnızca http(s) desteklenir");
+  if (url.username || url.password) throw new Error("Kimlik bilgili URL desteklenmez");
+  const host = url.hostname.replace(/^\[|\]$/g, "");
+  if (net.isIP(host)) {
+    if (isPrivateAddress(host)) throw new Error("Özel ağ adresine erişim engellendi");
+    return url;
+  }
+  const records = await dns.lookup(host, { all: true });
+  if (records.length === 0 || records.some((r) => isPrivateAddress(r.address))) {
+    throw new Error("Özel ağ adresine erişim engellendi");
+  }
+  return url;
+};
+
+// fetch that re-validates every redirect hop instead of blindly following it
+const safeFetch = async (raw: string, init: RequestInit, maxRedirects = 3): Promise<Response> => {
+  let current = raw;
+  for (let i = 0; i <= maxRedirects; i++) {
+    const url = await assertPublicHttpUrl(current);
+    const res = await fetch(url.toString(), { ...init, redirect: "manual", signal: AbortSignal.timeout(10000) });
+    if (res.status >= 300 && res.status < 400 && res.headers.get("location")) {
+      current = new URL(res.headers.get("location") as string, url).toString();
+      continue;
+    }
+    return res;
+  }
+  throw new Error("Çok fazla yönlendirme");
+};
+
+const isTradingViewShareUrl = (raw: string): boolean => {
+  try {
+    const u = new URL(raw);
+    return (u.hostname === "tradingview.com" || u.hostname.endsWith(".tradingview.com")) && u.pathname.startsWith("/x/");
+  } catch {
+    return false;
+  }
+};
+
+const safeEqual = (a: string, b: string): boolean => {
+  const ha = crypto.createHash("sha256").update(a).digest();
+  const hb = crypto.createHash("sha256").update(b).digest();
+  return crypto.timingSafeEqual(ha, hb);
+};
 
 async function startServer() {
   const handleGeminiError = (err: any) => {
@@ -49,7 +128,9 @@ async function startServer() {
   }));
   
   const httpServer = http.createServer(app);
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT) || 3000;
+  // `node dist/server.cjs` must never start the Vite dev server, even when NODE_ENV is not set by the host
+  const isProduction = process.env.NODE_ENV === "production" || (process.argv[1] || "").endsWith("server.cjs");
 
   app.use(express.json({ limit: "10mb" }));
 
@@ -155,7 +236,7 @@ async function startServer() {
       (req.query.site_token as string) ||
       (req.query.token as string);
 
-    if (!headerToken || headerToken !== expectedToken) {
+    if (!headerToken || typeof headerToken !== 'string' || !safeEqual(headerToken, expectedToken)) {
       return res.status(401).json({ error: "Erişim Engellendi: Geçerli site erişim jetonu gereklidir." });
     }
     next();
@@ -177,7 +258,7 @@ async function startServer() {
          return res.status(500).json({ success: false, error: "Sistem parolası yapılandırılmamış. Lütfen ayarlardan SITE_PASSWORD değişkenini ekleyin." });
       }
       
-      if (password === sitePassword) {
+      if (typeof password === 'string' && safeEqual(password, sitePassword)) {
         // Return a dynamic token based on the current site password
         const dynamicToken = crypto.createHash('sha256').update(sitePassword).digest('hex');
         res.json({ 
@@ -193,7 +274,7 @@ async function startServer() {
   });
 
   // Token Verification Endpoint (for dynamic session invalidation)
-  app.post("/api/verify-token", express.json(), (req, res) => {
+  app.post("/api/verify-token", passwordRateLimiter, express.json(), (req, res) => {
     try {
       const { token } = req.body;
       const sitePassword = process.env.SITE_PASSWORD;
@@ -204,7 +285,7 @@ async function startServer() {
       
       const expectedToken = crypto.createHash('sha256').update(sitePassword).digest('hex');
       
-      if (token === expectedToken) {
+      if (typeof token === 'string' && safeEqual(token, expectedToken)) {
         res.json({ success: true });
       } else {
         res.json({ success: false });
@@ -775,11 +856,11 @@ JSON Şeması (SADECE GEÇERLİ JSON DÖN):
   app.get("/api/resolve-tv", async (req, res) => {
     const urlParam = typeof req.query.url === 'string' ? req.query.url : '';
     try {
-      if (!urlParam || !urlParam.includes('tradingview.com/x/')) {
+      if (!urlParam || !isTradingViewShareUrl(urlParam)) {
         return res.json({ url: urlParam });
       }
       
-      const htmlRes = await fetch(urlParam, {
+      const htmlRes = await safeFetch(urlParam, {
         headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }
       });
       if (htmlRes.ok) {
@@ -805,8 +886,8 @@ JSON Şeması (SADECE GEÇERLİ JSON DÖN):
       let targetUrl = urlParam;
       
       // If it's a TradingView HTML share link, fetch the HTML and extract the real image URL
-      if (targetUrl.includes('tradingview.com/x/')) {
-        const htmlRes = await fetch(targetUrl, {
+      if (isTradingViewShareUrl(targetUrl)) {
+        const htmlRes = await safeFetch(targetUrl, {
           headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
         });
         if (htmlRes.ok) {
@@ -819,7 +900,7 @@ JSON Şeması (SADECE GEÇERLİ JSON DÖN):
       }
 
       // Fetch the actual image using a generic User-Agent
-      const response = await fetch(targetUrl, {
+      const response = await safeFetch(targetUrl, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
           'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
@@ -832,10 +913,21 @@ JSON Şeması (SADECE GEÇERLİ JSON DÖN):
         throw new Error(`Failed to fetch image: ${response.statusText}`);
       }
       
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.toLowerCase().startsWith('image/') || contentType.toLowerCase().includes('svg')) {
+        return res.status(415).send('Only image content can be proxied');
+      }
+      const declaredLength = Number(response.headers.get('content-length') || 0);
+      if (declaredLength > 15 * 1024 * 1024) {
+        return res.status(413).send('Image too large');
+      }
+
       const arrayBuffer = await response.arrayBuffer();
+      if (arrayBuffer.byteLength > 15 * 1024 * 1024) {
+        return res.status(413).send('Image too large');
+      }
       const buffer = Buffer.from(arrayBuffer);
-      
-      const contentType = response.headers.get('content-type') || 'image/png';
+
       res.set('Content-Type', contentType);
       res.set('Cache-Control', 'public, max-age=31536000');
       res.set('Access-Control-Allow-Origin', '*');
@@ -848,7 +940,7 @@ JSON Şeması (SADECE GEÇERLİ JSON DÖN):
   });
 
 
-  if (process.env.NODE_ENV !== "production") {
+  if (!isProduction) {
     const vite = await createViteServer({
       server: { middlewareMode: true, hmr: { server: httpServer, clientPort: 443 } },
       appType: "spa",
@@ -857,12 +949,16 @@ JSON Şeması (SADECE GEÇERLİ JSON DÖN):
   } else {
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath, {
-      maxAge: "1y",
       etag: true,
-      immutable: true,
       setHeaders: (res, filePath) => {
-        if (filePath.endsWith(".html") || filePath.endsWith("sw.js") || filePath.endsWith("manifest.webmanifest")) {
+        const normalized = filePath.split(path.sep).join("/");
+        if (normalized.includes("/dist/assets/")) {
+          // Vite fingerprints these files, so they can be cached forever
+          res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        } else if (filePath.endsWith(".html") || filePath.endsWith("sw.js") || filePath.endsWith("manifest.webmanifest")) {
           res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+        } else {
+          res.setHeader("Cache-Control", "public, max-age=3600");
         }
       }
     }));
