@@ -1,3 +1,4 @@
+import { EASE, SPRING } from '../lib/motion';
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -43,6 +44,19 @@ function TableSortBadge({ sortState }: { sortState: 'asc' | 'des' | null }) {
       ) : (
         <ArrowDown size={9} strokeWidth={2.5} />
       )}
+    </span>
+  );
+}
+
+/* Sütun başlığı: sıralama oku akış dışında (absolute) durur; böylece yazı, altındaki satır
+   içerikleriyle birebir aynı eksende (hücrenin tam ortasında) kalır. */
+function HeaderLabel({ children, sortState }: { children: React.ReactNode; sortState: 'asc' | 'des' | null }) {
+  return (
+    <span className="relative inline-flex items-center justify-center pl-[0.1em]">
+      <span>{children}</span>
+      <span className="absolute left-full top-1/2 -translate-y-1/2 ml-1.5 flex items-center">
+        <TableSortBadge sortState={sortState} />
+      </span>
     </span>
   );
 }
@@ -105,7 +119,7 @@ const CustomSelect = React.memo(function CustomSelect({ value, onChange, options
             initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 4 }}
-            transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.15, ease: EASE }}
             className="absolute z-50 mt-1 w-full max-h-56 overflow-y-auto bg-zinc-950 border border-zinc-800 rounded-xl shadow-md py-1 custom-scrollbar"
           >
             {options.map((option) => (
@@ -211,7 +225,7 @@ const CustomComboBox = React.memo(function CustomComboBox({ value, onChange, opt
             initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 4 }}
-            transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.15, ease: EASE }}
             className="absolute z-50 mt-1 w-full max-h-56 overflow-y-auto bg-zinc-950 border border-zinc-800 rounded-xl shadow-md py-1 custom-scrollbar"
           >
             {filteredOptions.length === 0 ? (
@@ -308,9 +322,7 @@ const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
     >
       <td className="w-1/2 min-w-[130px] flex justify-start items-center sm:table-cell order-1 py-1 px-0 sm:px-3 text-zinc-400 font-sans sm:bg-transparent sm:rounded-l-xl sm:border-y sm:border-l sm:border-zinc-800/80 align-middle sm:w-[18%] group-hover:text-zinc-100">
         <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-center sm:w-full gap-0.5 sm:gap-1.5">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="sm:hidden text-white font-bold text-xs uppercase">{trade.asset}</span>
-          </div>
+          <span className="sm:hidden text-white font-bold text-xs uppercase">{trade.asset}</span>
           <span className="text-[10px] sm:text-[10px] flex items-center gap-1.5">
             <span className="text-zinc-400 font-medium">{formattedDateOnly}</span>
             <span className="text-zinc-600 font-bold">•</span>
@@ -952,7 +964,7 @@ const TradeList = React.memo(function TradeList({
                   initial={{ opacity: 0, y: 4, scale: 0.98 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 4, scale: 0.98 }}
-                  transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                  transition={{ duration: 0.15, ease: EASE }}
                   className="absolute right-0 mt-2 w-[310px] bg-zinc-900 border border-zinc-700/80 rounded-2xl shadow-2xl z-50 p-2 overflow-hidden"
                 >
                   {/* Format Selector Tabs */}
@@ -1300,7 +1312,7 @@ const TradeList = React.memo(function TradeList({
                                 ? 'bg-amber-500/15 border-amber-500/20 shadow-amber-500/5'
                                 : 'bg-zinc-800 border-zinc-700/50'
                             }`}
-                            transition={{ type: "spring", stiffness: 450, damping: 35 }}
+                            transition={SPRING.indicator}
                           />
                         )}
                         <span className="relative z-10">{st === 'ALL' ? 'TÜMÜ' : st === 'BREAKEVEN' ? 'BE' : st}</span>
@@ -1338,7 +1350,7 @@ const TradeList = React.memo(function TradeList({
                                 ? 'bg-rose-500/15 border-rose-500/20'
                                 : 'bg-zinc-800 border-zinc-700/50'
                             }`}
-                            transition={{ type: "spring", stiffness: 450, damping: 35 }}
+                            transition={SPRING.indicator}
                           />
                         )}
                         <span className="relative z-10">{dir === 'ALL' ? 'TÜMÜ' : dir}</span>
@@ -1563,8 +1575,7 @@ const TradeList = React.memo(function TradeList({
                     onClick={() => handleFilterChange({...filter, sortBy: filter.sortBy === 'dateDes' ? 'dateAsc' : 'dateDes'})}
                   >
                     <div className="flex items-center justify-center gap-1.5">
-                      <span>Tarih</span>
-                      <TableSortBadge sortState={filter.sortBy === 'dateAsc' ? 'asc' : filter.sortBy === 'dateDes' ? 'des' : null} />
+                      <HeaderLabel sortState={filter.sortBy === 'dateAsc' ? 'asc' : filter.sortBy === 'dateDes' ? 'des' : null}>Tarih</HeaderLabel>
                     </div>
                   </th>
                   <th 
@@ -1574,8 +1585,7 @@ const TradeList = React.memo(function TradeList({
                     onClick={() => handleFilterChange({...filter, sortBy: filter.sortBy === 'assetAsc' ? 'assetDes' : 'assetAsc'})}
                   >
                     <div className="flex items-center justify-center gap-1.5">
-                      <span>{definitionTitles.assets || "Parite"}</span>
-                      <TableSortBadge sortState={filter.sortBy === 'assetAsc' ? 'asc' : filter.sortBy === 'assetDes' ? 'des' : null} />
+                      <HeaderLabel sortState={filter.sortBy === 'assetAsc' ? 'asc' : filter.sortBy === 'assetDes' ? 'des' : null}>{definitionTitles.assets || "Parite"}</HeaderLabel>
                     </div>
                   </th>
                   <th 
@@ -1585,8 +1595,7 @@ const TradeList = React.memo(function TradeList({
                     onClick={() => handleFilterChange({...filter, sortBy: filter.sortBy === 'typeAsc' ? 'typeDes' : 'typeAsc'})}
                   >
                     <div className="flex items-center justify-center gap-1.5">
-                      <span>Yön</span>
-                      <TableSortBadge sortState={filter.sortBy === 'typeAsc' ? 'asc' : filter.sortBy === 'typeDes' ? 'des' : null} />
+                      <HeaderLabel sortState={filter.sortBy === 'typeAsc' ? 'asc' : filter.sortBy === 'typeDes' ? 'des' : null}>Yön</HeaderLabel>
                     </div>
                   </th>
                   <th 
@@ -1596,8 +1605,7 @@ const TradeList = React.memo(function TradeList({
                     onClick={() => handleFilterChange({...filter, sortBy: filter.sortBy === 'rrDes' ? 'rrAsc' : 'rrDes'})}
                   >
                     <div className="flex items-center justify-center gap-1.5">
-                      <span>RR</span>
-                      <TableSortBadge sortState={filter.sortBy === 'rrAsc' ? 'asc' : filter.sortBy === 'rrDes' ? 'des' : null} />
+                      <HeaderLabel sortState={filter.sortBy === 'rrAsc' ? 'asc' : filter.sortBy === 'rrDes' ? 'des' : null}>RR</HeaderLabel>
                     </div>
                   </th>
                   <th className={`py-2 px-2 text-center font-sans select-none min-w-[75px] ${'w-[12%]'}`}>Sonuç</th>
@@ -1608,8 +1616,7 @@ const TradeList = React.memo(function TradeList({
                     onClick={() => handleFilterChange({...filter, sortBy: filter.sortBy === 'pnlDes' ? 'pnlAsc' : 'pnlDes'})}
                   >
                     <div className="flex items-center justify-center gap-1.5 w-full">
-                      <span>Kâr/Zarar</span>
-                      <TableSortBadge sortState={filter.sortBy === 'pnlAsc' ? 'asc' : filter.sortBy === 'pnlDes' ? 'des' : null} />
+                      <HeaderLabel sortState={filter.sortBy === 'pnlAsc' ? 'asc' : filter.sortBy === 'pnlDes' ? 'des' : null}>Kâr/Zarar</HeaderLabel>
                     </div>
                   </th>
                   {true && (
@@ -1620,9 +1627,8 @@ const TradeList = React.memo(function TradeList({
                       onClick={() => handleFilterChange({...filter, sortBy: filter.sortBy === 'platformDes' ? 'platformAsc' : 'platformDes'})}
                     >
                       <div className="flex items-center justify-center gap-1.5">
-                        <span>{definitionTitles.platforms || "Platform"}</span>
-                        <TableSortBadge sortState={filter.sortBy === 'platformAsc' ? 'asc' : filter.sortBy === 'platformDes' ? 'des' : null} />
-                      </div>
+                        <HeaderLabel sortState={filter.sortBy === 'platformAsc' ? 'asc' : filter.sortBy === 'platformDes' ? 'des' : null}>{definitionTitles.platforms || "Platform"}</HeaderLabel>
+                    </div>
                     </th>
                   )}
                   <th className="py-2 px-3 text-center font-sans select-none w-[8%] min-w-[60px]">İşlem</th>
@@ -1688,7 +1694,7 @@ const TradeList = React.memo(function TradeList({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.15, ease: EASE }}
               className="will-change-[opacity] fixed inset-0 z-[4500] bg-zinc-950/80 flex items-center justify-center p-4"
               onClick={() => setTradeToDelete(null)}
             >
@@ -1697,7 +1703,7 @@ const TradeList = React.memo(function TradeList({
                 initial={{ opacity: 0, scale: 0.96, y: 16 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.96, y: 16 }}
-                transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                transition={{ duration: 0.2, ease: EASE }}
                 style={{ willChange: "transform, opacity" }}
                 onClick={(e) => e.stopPropagation()}
                 className="bg-zinc-900 border border-zinc-700/50 rounded-2xl p-5 max-w-md w-full shadow-2xl overflow-hidden relative"

@@ -1,3 +1,4 @@
+import { EASE, SPRING } from './lib/motion';
 import { useState, useEffect, useMemo, useCallback, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Trade, TradeStats, Note, JournalEntry, Certificate, DefinitionTitles, AccountCategory } from "./types";
@@ -275,6 +276,17 @@ export default function App() {
   const [notes, setNotes] = useLocalStorageState<Note[]>("trading_journal_notes", []);
   const [journals, setJournals] = useLocalStorageState<JournalEntry[]>("trading_journal_journals", []);
   const [certificates, setCertificates] = useLocalStorageState<Certificate[]>("trading_journal_certificates", []);
+
+  // Callback'ler listeye bağımlı olmasın: her zaman güncel listeyi ref'ten okurlar. Böylece kaydet/sil
+  // fonksiyonlarının kimliği veri değişince değişmez ve alt ekranlar gereksiz yere yeniden çizilmez.
+  const notesRef = useRef(notes);
+  notesRef.current = notes;
+  const journalsRef = useRef(journals);
+  journalsRef.current = journals;
+  const certificatesRef = useRef(certificates);
+  certificatesRef.current = certificates;
+  // Buluta yazımı süren kayıtlar: bu sürede gelen bir snapshot, henüz buluta ulaşmamış yeni kaydı listeden silmesin
+  const pendingWriteIdsRef = useRef<Set<string>>(new Set());
   const [user, setUser] = useState<User | null>(null);
   const [, setIsAuthInitializing] = useState(false);
   const [indexErrorUrl] = useState<string | null>(null);
@@ -862,10 +874,13 @@ export default function App() {
           setTrades((prevLocal) => {
             if (isClearingRef.current) return [];
             if (tradesInitialSyncDone) {
+              const cloudIdSet = new Set(cloudTrades.map((t) => t.id));
+              const stillSaving = prevLocal.filter((t) => !cloudIdSet.has(t.id) && pendingWriteIdsRef.current.has(t.id));
+              const next = stillSaving.length ? [...cloudTrades, ...stillSaving].sort((a, b) => b.createdAt - a.createdAt) : cloudTrades;
               try {
-                localStorage.setItem("trading_journal_db", JSON.stringify(cloudTrades));
+                localStorage.setItem("trading_journal_db", JSON.stringify(next));
               } catch (err) {}
-              return cloudTrades;
+              return next;
             }
             const cloudIds = new Set(cloudTrades.map((t) => t.id));
             const unsyncedLocal = prevLocal.filter((t) => !cloudIds.has(t.id));
@@ -894,126 +909,55 @@ export default function App() {
         }
       );
 
-      // --- NOTES ---
-      const qNotes = query(
-        collection(db, "notes"),
-        where("userId", "==", user.uid)
-      );
-      unsubscribeNotes = onSnapshot(
-        qNotes,
-        (querySnapshot) => {
-          const cloudNotes: Note[] = [];
-          querySnapshot.forEach((docSnap) => {
-            const data = docSnap.data();
-            cloudNotes.push({ ...data, id: docSnap.id } as Note);
-          });
-          cloudNotes.sort((a, b) => b.updatedAt - a.updatedAt);
-
-          setNotes((prevLocal) => {
-            if (isClearingRef.current) return [];
-            const cloudIds = new Set(cloudNotes.map((n) => n.id));
-            const unsyncedLocal = prevLocal.filter((n) => !cloudIds.has(n.id));
-
-            unsyncedLocal.forEach((note) => {
-              setDoc(doc(db, "notes", note.id), cleanForFirestore({
-                ...note,
-                userId: user.uid,
-              })).catch((e) => console.error("Sync local note to cloud error:", e));
-            });
-
-            const merged = [...cloudNotes, ...unsyncedLocal].sort((a, b) => b.updatedAt - a.updatedAt);
-            try {
-              localStorage.setItem("trading_journal_notes", JSON.stringify(merged));
-            } catch (err) {}
-            return merged;
-          });
-        },
-        (err) => console.error("Firestore read notes error:", err)
-      );
-
-      // --- JOURNALS ---
-      const qJournals = query(
-        collection(db, "journals"),
-        where("userId", "==", user.uid)
-      );
-      unsubscribeJournals = onSnapshot(
-        qJournals,
-        (querySnapshot) => {
-          const cloudJournals: JournalEntry[] = [];
-          querySnapshot.forEach((docSnap) => {
-            const data = docSnap.data();
-            cloudJournals.push({ ...data, id: docSnap.id } as JournalEntry);
-          });
-          cloudJournals.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-
-          setJournals((prevLocal) => {
-            if (isClearingRef.current) return [];
-            const cloudIds = new Set(cloudJournals.map((j) => j.id));
-            const unsyncedLocal = prevLocal.filter((j) => !cloudIds.has(j.id));
-
-            unsyncedLocal.forEach((journal) => {
-              setDoc(doc(db, "journals", journal.id), cleanForFirestore({
-                ...journal,
-                userId: user.uid,
-              })).catch((e) => console.error("Sync local journal to cloud error:", e));
-            });
-
-            const merged = [...cloudJournals, ...unsyncedLocal].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-            try {
-              localStorage.setItem("trading_journal_journals", JSON.stringify(merged));
-            } catch (err) {}
-            return merged;
-          });
-        },
-        (err) => console.error("Firestore read journals error:", err)
-      );
-      
-      // --- CERTIFICATES ---
-      const qCertificates = query(
-        collection(db, "certificates"),
-        where("userId", "==", user.uid)
-      );
-      unsubscribeCertificates = onSnapshot(
-        qCertificates,
-        (querySnapshot) => {
-          const cloudCertificates: Certificate[] = [];
-          querySnapshot.forEach((docSnap) => {
-            const data = docSnap.data();
-            cloudCertificates.push({ ...data, id: docSnap.id } as Certificate);
-          });
-          cloudCertificates.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-          
-          setCertificates((prevLocal) => {
+      // --- NOTES / JOURNALS / CERTIFICATES ---
+      // Üçü de aynı kuralla senkronlanır: yerelde olup bulutta olmayan kayıtlar yalnızca ilk sunucu
+      // snapshot'ında yüklenir; sonrasında bulut tek doğru kaynaktır. (Eskiden her snapshot'ta yeniden
+      // yüklendiği için başka cihazda silinen not/günlük/sertifika geri geliyordu.)
+      const watchCollection = <T extends { id: string }>(
+        colName: string,
+        getLocal: () => T[],
+        setLocal: (next: T[]) => void,
+        sortFn: (a: T, b: T) => number,
+        onError?: () => void,
+      ) => {
+        let initialSyncDone = false;
+        return onSnapshot(
+          query(collection(db, colName), where("userId", "==", user.uid)),
+          (snap) => {
+            const cloud: T[] = [];
+            snap.forEach((d) => cloud.push({ ...d.data(), id: d.id } as unknown as T));
             if (isClearingRef.current) {
-              return [];
+              setLocal([]);
+              return;
             }
-            const cloudIds = new Set(cloudCertificates.map((c) => c.id));
-            const unsyncedLocal = prevLocal.filter((c) => !cloudIds.has(c.id));
-
-            unsyncedLocal.forEach((cert) => {
-              setDoc(doc(db, "certificates", cert.id), cleanForFirestore({
-                ...cert,
-                userId: user.uid,
-              })).catch((e) => console.error("Sync local certificate to cloud error:", e));
-            });
-
-            const merged = [...cloudCertificates, ...unsyncedLocal].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-            try {
-              localStorage.setItem("trading_journal_certificates", JSON.stringify(merged));
-            } catch (err) {}
-            return merged;
-          });
-        },
-        (err) => {
-          console.error("Firestore read certificates error:", err);
-          try {
-            const local = localStorage.getItem("trading_journal_certificates");
-            if (local) {
-              setCertificates(JSON.parse(local));
+            const cloudIds = new Set(cloud.map((x) => x.id));
+            const local = getLocal();
+            let extra: T[];
+            if (!initialSyncDone) {
+              extra = local.filter((x) => !cloudIds.has(x.id));
+              if (!snap.metadata.fromCache) {
+                initialSyncDone = true;
+                extra.forEach((item) => {
+                  setDoc(doc(db, colName, item.id), cleanForFirestore({ ...(item as any), userId: user.uid }))
+                    .catch((e) => console.error(`Sync local ${colName} to cloud error:`, e));
+                });
+              }
+            } else {
+              extra = local.filter((x) => !cloudIds.has(x.id) && pendingWriteIdsRef.current.has(x.id));
             }
-          } catch (e) {}
-        }
-      );
+            setLocal([...cloud, ...extra].sort(sortFn));
+          },
+          (err) => {
+            console.error(`Firestore read ${colName} error:`, err);
+            onError?.();
+          },
+        );
+      };
+      const byDateDesc = (a: { date: string }, b: { date: string }) => new Date(b.date).getTime() - new Date(a.date).getTime();
+
+      unsubscribeNotes = watchCollection<Note>("notes", () => notesRef.current, setNotes, (a, b) => b.updatedAt - a.updatedAt);
+      unsubscribeJournals = watchCollection<JournalEntry>("journals", () => journalsRef.current, setJournals, byDateDesc);
+      unsubscribeCertificates = watchCollection<Certificate>("certificates", () => certificatesRef.current, setCertificates, byDateDesc);
     } else {
       setIsLoading(false);
     }
@@ -1146,6 +1090,8 @@ export default function App() {
 
       const existingTrade = trades.find((t) => t.id === finalTradeId);
 
+      if (user) pendingWriteIdsRef.current.add(finalTradeId);
+
       // Optimistic update
       setTrades((prevTrades) => {
         let updatedTrades: Trade[];
@@ -1203,7 +1149,7 @@ export default function App() {
               return current.map(t => t.id === finalTradeId ? (existingTrade as Trade) : t);
             }
           });
-        });
+        }).finally(() => pendingWriteIdsRef.current.delete(finalTradeId));
 
       }
 
@@ -1500,7 +1446,9 @@ export default function App() {
       const isNew = !noteData.id;
       const finalNoteId = noteData.id || `note-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
       const finalNote = { ...noteData, id: finalNoteId };
-      const existingNote = notes.find((n) => n.id === finalNoteId);
+      const existingNote = notesRef.current.find((n) => n.id === finalNoteId);
+
+      if (user) pendingWriteIdsRef.current.add(finalNoteId);
 
       setNotes((prevNotes) => {
         let updatedList: Note[];
@@ -1514,17 +1462,6 @@ export default function App() {
             .sort((a, b) => b.updatedAt - a.updatedAt);
         }
 
-        if (!user) {
-          try {
-            localStorage.setItem(
-              "trading_journal_notes",
-              JSON.stringify(updatedList),
-            );
-          } catch (err) {
-            console.error("Local storage quota exceeded:", err);
-            toast.error("Tarayıcı hafızası dolu! Not yerel olarak kaydedilemedi.");
-          }
-        }
         return updatedList;
       });
 
@@ -1542,33 +1479,21 @@ export default function App() {
                 return current.map(n => n.id === finalNoteId ? (existingNote as Note) : n);
              }
           });
-        });
+        }).finally(() => pendingWriteIdsRef.current.delete(finalNoteId));
 
       }
       if (!options?.silent) {
         toast.success(isNew ? "Not başarıyla kaydedildi." : "Not başarıyla güncellendi.");
       }
     },
-    [user, notes]
+    [user]
   );
   const handleDeleteNote = useCallback(
     async (id: string) => {
-      const deletedNote = notes.find((n) => n.id === id);
+      const deletedNote = notesRef.current.find((n) => n.id === id);
       
       setNotes((prev) => {
-        const updated = prev.filter((n) => n.id !== id);
-        
-        if (!user) {
-          try {
-            localStorage.setItem(
-              "trading_journal_notes",
-              JSON.stringify(updated),
-            );
-          } catch(err) {
-            console.error(err);
-          }
-        }
-        return updated;
+        return prev.filter((n) => n.id !== id);
       });
       if (user && deletedNote) {
         deleteDoc(doc(db, "notes", id)).catch((err) => {
@@ -1578,7 +1503,7 @@ export default function App() {
       }
       toast.success("Not başarıyla silindi.");
     },
-    [user, notes],
+    [user],
   );
 
   // Handle Journal Save
@@ -1598,24 +1523,13 @@ export default function App() {
         updatedAt: now,
       };
 
-      const existingEntry = journals.find((j) => j.id === finalEntry.id);
+      const existingEntry = journalsRef.current.find((j) => j.id === finalEntry.id);
+      if (user) pendingWriteIdsRef.current.add(finalEntry.id);
 
       setJournals((prev) => {
         const updatedList = isNew
           ? [finalEntry, ...prev]
           : prev.map((j) => (j.id === finalEntry.id ? finalEntry : j));
-        
-        if (!user) {
-          try {
-            localStorage.setItem(
-              "trading_journal_journals",
-              JSON.stringify(updatedList),
-            );
-          } catch(err) {
-            console.error("Local storage quota exceeded:", err);
-            toast.error("Tarayıcı hafızası dolu! Günlük yerel olarak kaydedilemedi.");
-          }
-        }
         return updatedList;
   
       });
@@ -1633,34 +1547,22 @@ export default function App() {
              }
        
           });
-        });
+        }).finally(() => pendingWriteIdsRef.current.delete(finalEntry.id));
       }
       if (!options?.silent) {
         toast.success(isNew ? "Günlük kaydı başarıyla eklendi." : "Günlük kaydı başarıyla güncellendi.");
       }
     },
-    [user, journals],
+    [user],
   );
 
   // Handle Journal Delete
   const handleDeleteJournal = useCallback(
     async (id: string) => {
-      const deletedJournal = journals.find((j) => j.id === id);
+      const deletedJournal = journalsRef.current.find((j) => j.id === id);
 
       setJournals((prev) => {
-        const updated = prev.filter((j) => j.id !== id);
-        
-        if (!user) {
-          try {
-            localStorage.setItem(
-              "trading_journal_journals",
-              JSON.stringify(updated),
-            );
-          } catch(err) {
-            console.error(err);
-          }
-        }
-        return updated;
+        return prev.filter((j) => j.id !== id);
       });
       if (user && deletedJournal) {
         deleteDoc(doc(db, "journals", id)).catch((err) => {
@@ -1670,60 +1572,51 @@ export default function App() {
       }
       toast.success("Günlük kaydı başarıyla silindi.");
     },
-    [user, journals],
+    [user],
   );
 
   const handleSaveCertificate = useCallback(
     async (certData: Certificate | Omit<Certificate, 'id' | 'createdAt'>) => {
       const isNew = !('id' in certData) || !certData.id;
       const finalCertId = isNew ? `cert-${Date.now()}-${Math.random().toString(36).slice(2, 6)}` : (certData as Certificate).id;
-      
+      const byDateDesc = (a: Certificate, b: Certificate) => new Date(b.date).getTime() - new Date(a.date).getTime();
+
       const initialCert = {
         ...certData,
         id: finalCertId,
         createdAt: isNew ? Date.now() : (certData as Certificate).createdAt,
       } as Certificate;
 
-      // Optimistic update
-      setCertificates((prev) => {
-        let updatedList: Certificate[];
-        if (isNew) {
-          updatedList = [initialCert, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        } else {
-          updatedList = prev.map((c) => (c.id === finalCertId ? initialCert : c)).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        }
+      if (user) pendingWriteIdsRef.current.add(finalCertId);
 
-        try {
-          localStorage.setItem("trading_journal_certificates", JSON.stringify(updatedList));
-        } catch (err) {
-          console.error("Local storage quota exceeded:", err);
-        }
-        return updatedList;
-      });
+      // Anında (iyimser) güncelleme; yerel depolamaya yazmayı useLocalStorageState üstlenir
+      setCertificates((prev) =>
+        (isNew ? [initialCert, ...prev] : prev.map((c) => (c.id === finalCertId ? initialCert : c))).sort(byDateDesc)
+      );
 
       let processedCert = { ...initialCert };
+      let uploaded = false;
       if (user && processedCert.image && processedCert.image.startsWith('data:image')) {
         try {
-          const downloadUrl = await uploadImageToStorage(user.uid, processedCert.image, 'certificates');
-          processedCert.image = downloadUrl;
+          processedCert.image = await uploadImageToStorage(user.uid, processedCert.image, 'certificates');
+          uploaded = true;
         } catch (error) {
           console.warn("Storage upload fallback to embedded image:", error);
           if (processedCert.image.length > 700000) {
             processedCert.image = null;
           }
         }
+        // Yükleme sürerken kayıt silindiyse buluta geri yazılmasın (silinen sertifika geri gelmesin)
+        if (!certificatesRef.current.some((c) => c.id === finalCertId)) {
+          pendingWriteIdsRef.current.delete(finalCertId);
+          return;
+        }
       }
 
-      // Ensure local state and local storage have the updated processedCert (with cloud URL)
-      setCertificates((prev) => {
-        const updated = prev.map((c) => (c.id === finalCertId ? processedCert : c)).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        try {
-          localStorage.setItem("trading_journal_certificates", JSON.stringify(updated));
-        } catch (err) {
-          console.error("Local storage quota exceeded:", err);
-        }
-        return updated;
-      });
+      // Bulut adresi geldiyse yerel kopyayı da güncelle
+      if (uploaded || processedCert.image !== initialCert.image) {
+        setCertificates((prev) => prev.map((c) => (c.id === finalCertId ? processedCert : c)).sort(byDateDesc));
+      }
 
       if (user) {
         setDoc(doc(db, "certificates", finalCertId), cleanForFirestore({
@@ -1733,7 +1626,8 @@ export default function App() {
           .catch((err) => {
             console.error("Failed to save certificate to cloud:", err);
             toast.error("Bulut kaydında gecikme oluştu, verileriniz yerel olarak korundu.");
-          });
+          })
+          .finally(() => pendingWriteIdsRef.current.delete(finalCertId));
       }
       toast.success("Sertifika başarıyla kaydedildi.");
     },
@@ -1742,16 +1636,11 @@ export default function App() {
 
   const handleDeleteCertificate = useCallback(
     async (id: string) => {
-      const deletedCert = certificates.find((c) => c.id === id);
-      
-      setCertificates((prev) => {
-        const updated = prev.filter((c) => c.id !== id);
-        try {
-          localStorage.setItem("trading_journal_certificates", JSON.stringify(updated));
-        } catch(err) {}
-        return updated;
-      });
-      
+      const deletedCert = certificatesRef.current.find((c) => c.id === id);
+      pendingWriteIdsRef.current.delete(id);
+
+      setCertificates((prev) => prev.filter((c) => c.id !== id));
+
       if (user) {
         deleteDoc(doc(db, "certificates", id)).catch((err) => {
           console.error("Failed to delete certificate from cloud", err);
@@ -1763,7 +1652,7 @@ export default function App() {
       }
       toast.success("Sertifika başarıyla silindi.");
     },
-    [user, certificates],
+    [user],
   );
 
   // Import all app data from JSON Backup
@@ -2437,7 +2326,7 @@ export default function App() {
                   <motion.div
                     layoutId="metricToggleIndicator"
                     className="absolute inset-0 bg-blue-500/15 border border-blue-500/30 rounded-md shadow-xs"
-                    transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                    transition={SPRING.indicator}
                   />
                 )}
                 <span className="relative z-10">R</span>
@@ -2453,7 +2342,7 @@ export default function App() {
                   <motion.div
                     layoutId="metricToggleIndicator"
                     className="absolute inset-0 bg-emerald-500/15 border border-emerald-500/30 rounded-md shadow-xs"
-                    transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                    transition={SPRING.indicator}
                   />
                 )}
                 <span className="relative z-10">$</span>
@@ -2488,7 +2377,7 @@ export default function App() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                    transition={{ duration: 0.15, ease: EASE }}
                     style={{ willChange: "opacity" }}
                     className="absolute right-0 top-full mt-2 w-72 max-w-[calc(100vw-24px)] bg-zinc-900 border border-zinc-700/60 rounded-2xl shadow-2xl p-2.5 z-50 flex flex-col gap-1.5 text-xs"
                   >
@@ -2600,7 +2489,7 @@ export default function App() {
               >
                 {user ? (
                   user.photoURL ? (
-                    <img
+                    <img decoding="async"
                       src={user.photoURL}
                       alt="Profil"
                       referrerPolicy="no-referrer"
@@ -2624,7 +2513,7 @@ export default function App() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                    transition={{ duration: 0.15, ease: EASE }}
                     style={{ willChange: "opacity" }}
                     className="absolute right-0 top-full mt-2 w-72 max-w-[calc(100vw-24px)] bg-zinc-900 border border-zinc-700/60 rounded-2xl shadow-2xl p-2.5 z-50 flex flex-col gap-1.5 text-xs"
                   >
@@ -2838,7 +2727,7 @@ export default function App() {
                     <motion.div
                       layoutId="activeNavTabIndicator"
                       className="absolute inset-0 bg-blue-500/15 rounded-xl border border-blue-500/30 shadow-xs"
-                      transition={{ type: "spring", stiffness: 450, damping: 35 }}
+                      transition={SPRING.indicator}
                     />
                   )}
                   <span className="relative z-10 flex items-center gap-2">
@@ -2936,7 +2825,7 @@ export default function App() {
                     <SectionErrorBoundary sectionName="Günlükler">
                       <JournalView
                         entries={journals}
-                        trades={trades}
+                        trades={filteredGlobalTrades}
                         currency={currency}
                         onSaveEntry={handleSaveJournal}
                         onDeleteEntry={handleDeleteJournal}
@@ -3086,7 +2975,7 @@ export default function App() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                transition={{ duration: 0.15, ease: EASE }}
                 style={{ willChange: "opacity" }}
                 onClick={handleCancelEdit}
                 className="fixed inset-0 z-[1500] overflow-hidden bg-zinc-950/80 flex items-center justify-center p-2 sm:p-4 cursor-pointer"
@@ -3096,7 +2985,7 @@ export default function App() {
                   initial={{ opacity: 0, scale: 0.96, y: 16 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.96, y: 16 }}
-                  transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                  transition={{ duration: 0.2, ease: EASE }}
                   style={{ willChange: "transform, opacity" }}
                   onClick={(e) => e.stopPropagation()}
                   className="w-full max-w-6xl xl:max-w-7xl 2xl:max-w-[1440px] h-auto max-h-[92vh] overflow-hidden bg-[#0a0a0c] border border-zinc-800/80 rounded-2xl relative shadow-2xl flex flex-col cursor-default my-auto"

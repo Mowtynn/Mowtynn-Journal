@@ -1,10 +1,12 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { EASE, SPRING } from '../lib/motion';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Plus, Trash2, Award, DollarSign, Calendar, Upload, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { Certificate } from '../types';
 import { TurkishDatePicker } from './TurkishDateTimePicker';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
+import { ValueTransition } from './ValueTransition';
 
 interface CertificatesViewProps {
   certificates: Certificate[];
@@ -31,6 +33,8 @@ export const CertificatesView = React.memo(function CertificatesView({ certifica
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeType, setActiveType] = useState<'PHASE' | 'PAYOUT'>('PHASE');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  // Önizleme, tıklanan küçük resmin bulunduğu yerden büyüyerek açılır
+  const [previewOrigin, setPreviewOrigin] = useState({ x: 0, y: 0, s: 0.5 });
   const [certToDelete, setCertToDelete] = useState<Certificate | null>(null);
   useBodyScrollLock(isModalOpen || !!selectedImage || !!certToDelete);
   
@@ -43,6 +47,17 @@ export const CertificatesView = React.memo(function CertificatesView({ certifica
 
   const phases = useMemo(() => certificates.filter(c => c.type === 'PHASE').sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()), [certificates]);
   const payouts = useMemo(() => certificates.filter(c => c.type === 'PAYOUT').sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()), [certificates]);
+
+  const openPreview = useCallback((url: string, rect: DOMRect) => {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    setPreviewOrigin({
+      x: rect.left + rect.width / 2 - vw / 2,
+      y: rect.top + rect.height / 2 - vh / 2,
+      s: Math.max(0.25, Math.min(0.7, rect.width / (vw * 0.6))),
+    });
+    setSelectedImage(url);
+  }, []);
 
   const [phasesPage, setPhasesPage] = useState(1);
   const [payoutsPage, setPayoutsPage] = useState(1);
@@ -78,6 +93,21 @@ export const CertificatesView = React.memo(function CertificatesView({ certifica
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [isModalOpen, selectedImage, certToDelete]);
+
+  // Yeni eklenen kayıt hangi sayfaya düştüyse o sayfaya geç; animasyon görünür olsun
+  const seenIdsRef = useRef<Set<string> | null>(null);
+  useEffect(() => {
+    const ids = new Set(certificates.map(c => c.id));
+    const seen = seenIdsRef.current;
+    seenIdsRef.current = ids;
+    if (!seen) return;
+    const added = certificates.find(c => !seen.has(c.id) && Date.now() - c.createdAt < 5000);
+    if (!added) return;
+    const isPayout = added.type === 'PAYOUT';
+    const idx = (isPayout ? payouts : phases).findIndex(c => c.id === added.id);
+    if (idx < 0) return;
+    (isPayout ? setPayoutsPage : setPhasesPage)(Math.floor(idx / ITEMS_PER_PAGE) + 1);
+  }, [certificates, phases, payouts]);
 
   const paginatedPhases = useMemo(() => phases.slice((phasesPage - 1) * ITEMS_PER_PAGE, phasesPage * ITEMS_PER_PAGE), [phases, phasesPage]);
   const paginatedPayouts = useMemo(() => payouts.slice((payoutsPage - 1) * ITEMS_PER_PAGE, payoutsPage * ITEMS_PER_PAGE), [payouts, payoutsPage]);
@@ -171,7 +201,7 @@ export const CertificatesView = React.memo(function CertificatesView({ certifica
             </div>
             <div>
               <p className="heading-2r">Geçilen Fonlar</p>
-              <h3 className="text-2xl font-black text-white">{phases.length}</h3>
+              <h3 className="text-2xl font-black text-white"><ValueTransition modeKey={phases.length}>{phases.length}</ValueTransition></h3>
             </div>
           </div>
         </div>
@@ -183,20 +213,23 @@ export const CertificatesView = React.memo(function CertificatesView({ certifica
             </div>
             <div>
               <p className="heading-2r">Toplam Payout</p>
-              <h3 className="text-2xl font-black text-white">${totalPayouts.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
+              <h3 className="text-2xl font-black text-white"><ValueTransition modeKey={totalPayouts}>${totalPayouts.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</ValueTransition></h3>
             </div>
           </div>
         </div>
 
         <div className="flex items-center justify-center">
-          <button
+          <motion.button
             type="button"
             onClick={() => setIsModalOpen(true)}
-            className="w-full h-full min-h-[100px] bg-blue-500/5 hover:bg-blue-500/10 border border-blue-500/20 hover:border-blue-500/40 border-dashed rounded-2xl flex flex-col items-center justify-center text-blue-400 transition-ui duration-200 ease-out group cursor-pointer"
+            whileHover={{ y: -2 }}
+            whileTap={{ scale: 0.96 }}
+            transition={SPRING.press}
+            className="w-full h-full min-h-[100px] bg-blue-500/5 hover:bg-blue-500/10 border border-blue-500/20 hover:border-blue-500/40 border-dashed rounded-2xl flex flex-col items-center justify-center text-blue-400 transition-colors duration-200 ease-out group cursor-pointer"
           >
-            <Plus size={24} className="mb-2 transition-colors" />
+            <Plus size={24} className="mb-2 transition-transform duration-300 ease-out group-hover:rotate-90 group-active:scale-90" />
             <span className="font-bold tracking-wide">Yeni Ekle</span>
-          </button>
+          </motion.button>
         </div>
       </div>
 
@@ -212,8 +245,8 @@ export const CertificatesView = React.memo(function CertificatesView({ certifica
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-4 flex-1 min-h-[450px] content-start">
-              {paginatedPhases.map(cert => (
-                <CertificateCard key={cert.id} cert={cert} onDelete={() => setCertToDelete(cert)} onImageClick={setSelectedImage} />
+              {paginatedPhases.map((cert, i) => (
+                <CertificateCard key={cert.id} cert={cert} index={i} onDelete={setCertToDelete} onImageClick={openPreview} />
               ))}
             </div>
           )}
@@ -261,8 +294,8 @@ export const CertificatesView = React.memo(function CertificatesView({ certifica
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-4 flex-1 min-h-[450px] content-start">
-              {paginatedPayouts.map(cert => (
-                <CertificateCard key={cert.id} cert={cert} onDelete={() => setCertToDelete(cert)} onImageClick={setSelectedImage} />
+              {paginatedPayouts.map((cert, i) => (
+                <CertificateCard key={cert.id} cert={cert} index={i} onDelete={setCertToDelete} onImageClick={openPreview} />
               ))}
             </div>
           )}
@@ -308,7 +341,7 @@ export const CertificatesView = React.memo(function CertificatesView({ certifica
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.15, ease: EASE }}
               className="will-change-[opacity] fixed inset-0 z-[1500] overflow-y-auto bg-zinc-950/80 p-4 sm:p-5 flex items-center justify-center"
               onClick={() => setIsModalOpen(false)}
             >
@@ -317,7 +350,7 @@ export const CertificatesView = React.memo(function CertificatesView({ certifica
                 initial={{ opacity: 0, scale: 0.96, y: 16 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.96, y: 16 }}
-                transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                transition={{ duration: 0.2, ease: EASE }}
                 style={{ willChange: "transform, opacity" }}
                 onClick={(e) => e.stopPropagation()}
                 className="bg-zinc-900 border border-zinc-700/50 rounded-2xl p-5 w-full max-w-lg h-[580px] max-h-[88vh] min-h-[460px] shadow-2xl my-auto flex flex-col"
@@ -434,7 +467,7 @@ export const CertificatesView = React.memo(function CertificatesView({ certifica
                   >
                     {image ? (
                       <div className="relative w-full group">
-                        <img src={image} alt="Preview" className="w-full h-36 object-cover rounded-lg border border-zinc-700/40" />
+                        <img decoding="async" src={image} alt="Preview" className="w-full h-36 object-cover rounded-lg border border-zinc-700/40" />
                         <button 
                           type="button"
                           onClick={(e) => { e.stopPropagation(); setImage(null); }}
@@ -464,14 +497,16 @@ export const CertificatesView = React.memo(function CertificatesView({ certifica
               </div>
 
               <div className="pt-3.5 mt-3 border-t border-zinc-700/40 shrink-0">
-                <button
+                <motion.button
                   type="button"
                   onClick={handleSave}
                   disabled={!title || (activeType === 'PAYOUT' && !amount)}
-                  className="w-full bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/40 font-sans text-xs font-bold uppercase tracking-wider py-2.5 px-4 rounded-xl transition-ui duration-150 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-xs"
+                  whileTap={{ scale: 0.97 }}
+                  transition={SPRING.press}
+                  className="w-full bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/40 font-sans text-xs font-bold uppercase tracking-wider py-2.5 px-4 rounded-xl transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-xs"
                 >
                   Kaydet
-                </button>
+                </motion.button>
               </div>
             </motion.div>
           </motion.div>
@@ -488,7 +523,7 @@ export const CertificatesView = React.memo(function CertificatesView({ certifica
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.15, ease: EASE }}
               
               onClick={() => setSelectedImage(null)}
                className="will-change-[opacity] fixed inset-0 z-[4500] flex items-center justify-center p-4 bg-zinc-950/80"
@@ -503,12 +538,12 @@ export const CertificatesView = React.memo(function CertificatesView({ certifica
               >
                 <X size={20} />
               </button>
-              <motion.img
+              <motion.img decoding="async"
                 key="cert-image-preview-img"
-                initial={{ opacity: 0, scale: 0.96, y: 16 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.96, y: 16 }}
-                transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                initial={{ opacity: 0, scale: previewOrigin.s, x: previewOrigin.x, y: previewOrigin.y }}
+                animate={{ opacity: 1, scale: 1, x: 0, y: 0 }}
+                exit={{ opacity: 0, scale: 0.92 }}
+                transition={{ duration: 0.3, ease: EASE }}
                 style={{ willChange: "transform, opacity" }}
                 src={selectedImage}
                 alt="Sertifika"
@@ -530,7 +565,7 @@ export const CertificatesView = React.memo(function CertificatesView({ certifica
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.15, ease: EASE }}
               className="will-change-[opacity] fixed inset-0 bg-zinc-950/80 flex items-center justify-center p-4 z-[4500]"
               onClick={() => setCertToDelete(null)}
             >
@@ -539,7 +574,7 @@ export const CertificatesView = React.memo(function CertificatesView({ certifica
                 initial={{ opacity: 0, scale: 0.96, y: 16 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.96, y: 16 }}
-                transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                transition={{ duration: 0.2, ease: EASE }}
                 style={{ willChange: "transform, opacity" }}
                 className="bg-zinc-900 border border-zinc-700/50 rounded-2xl p-5 max-w-md w-full shadow-2xl overflow-hidden relative"
                 onClick={(e) => e.stopPropagation()}
@@ -588,76 +623,124 @@ export const CertificatesView = React.memo(function CertificatesView({ certifica
   );
 });
 
-function CertificateCard({ cert, onDelete, onImageClick }: { cert: Certificate, onDelete: () => void, onImageClick: (url: string) => void }) {
+interface CertificateCardProps {
+  cert: Certificate;
+  index: number;
+  onDelete: (cert: Certificate) => void;
+  onImageClick: (url: string, rect: DOMRect) => void;
+}
+
+const CertificateCard = React.memo(function CertificateCard({ cert, index, onDelete, onImageClick }: CertificateCardProps) {
   const isPayout = cert.type === 'PAYOUT';
+  // Az önce eklenen kayıt: daha belirgin giriş + kısa süreli halka vurgusu (yalnızca ilk kurulumda hesaplanır)
+  const [isFresh] = useState(() => Date.now() - cert.createdAt < 3500);
+  const [ripple, setRipple] = useState<{ x: number; y: number; id: number } | null>(null);
+
+  const handleImageClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setRipple({ x: e.clientX - rect.left, y: e.clientY - rect.top, id: Date.now() });
+    if (cert.image) onImageClick(cert.image, rect);
+  };
 
   return (
-    <div className="bg-zinc-950/60 border border-zinc-800/80 rounded-2xl overflow-hidden group hover:border-zinc-700/80 transition-ui duration-200 ease-out relative flex flex-col h-[205px] shadow-sm hover:shadow-md">
-      {/* Tip Etiketi (Sol Üst Rozet) */}
-      <div className="absolute top-2.5 left-2.5 z-20 pointer-events-none">
-        <span className={`inline-flex items-center gap-1 text-[9px] font-bold px-2.5 py-0.5 rounded-lg uppercase tracking-wider  border ${
-          isPayout 
-            ? 'bg-emerald-950/80 text-emerald-400 border-emerald-500/30 shadow-sm shadow-emerald-950/50' 
-            : 'bg-blue-950/80 text-blue-400 border-blue-500/30 shadow-sm shadow-blue-950/50'
-        }`}>
-          {isPayout ? <DollarSign size={10} className="stroke-[2.5]" /> : <Award size={10} className="stroke-[2.5]" />}
-          {isPayout ? 'Payout' : 'Fon'}
-        </span>
-      </div>
-
-      {/* Sil Butonu (Sağ Üst) */}
-      <button 
-        type="button"
-        onClick={onDelete}
-        className="absolute top-2.5 right-2.5 bg-zinc-950/80 hover:bg-red-500/20  text-zinc-400 hover:text-red-400 p-1.5 rounded-xl opacity-0 group-hover:opacity-100 transition-ui z-20 cursor-pointer border border-white/10 hover:border-red-500/30 shadow-md"
-      >
-        <Trash2 size={13} />
-      </button>
-
-      {/* Görsel Alanı */}
-      <div 
-        className="w-full h-32 shrink-0 overflow-hidden relative cursor-pointer bg-zinc-950/80 flex items-center justify-center border-b border-zinc-800/80"
-        onClick={() => cert.image && onImageClick(cert.image)}
-      >
-        {cert.image ? (
-          <>
-            <img src={cert.image} alt={cert.title} className="w-full h-full object-cover group-hover:opacity-90 transition-opacity duration-200 ease-out" />
-            <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-zinc-950/90 via-zinc-950/40 to-transparent pointer-events-none"></div>
-          </>
-        ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center text-zinc-600 bg-zinc-950/60">
-            {isPayout ? (
-              <DollarSign size={28} className="opacity-25 text-emerald-400" />
-            ) : (
-              <Award size={28} className="opacity-25 text-blue-400" />
-            )}
-            <span className="text-[9px] uppercase font-sans tracking-widest text-zinc-600 mt-1">Görsel Yok</span>
-          </div>
-        )}
-      </div>
-      
-      {/* Alt Bilgi Paneli */}
-      <div className="p-3 px-3.5 flex-1 flex flex-col justify-center gap-1 bg-transparent">
-        <div className="flex justify-between items-baseline gap-2">
-          <h3 className="text-sm font-bold text-white truncate max-w-[65%]">
-            {cert.title}
-          </h3>
-          {isPayout && cert.amount !== undefined && cert.amount !== null && (
-            <div className="flex items-baseline gap-0.5 shrink-0">
-              <span className="font-bold text-emerald-400 font-sans tracking-tight text-xs sm:text-xs">
-                ${cert.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </span>
-            </div>
-          )}
-        </div>
-
-        <div className="flex justify-between items-center text-zinc-400">
-          <span className="text-[10px] flex items-center gap-1.5 font-sans text-zinc-400">
-            <Calendar size={11} className="text-zinc-500" />
-            {formatDate(cert.date)}
+    <motion.div
+      initial={isFresh ? { opacity: 0, scale: 0.88, y: 22 } : { opacity: 0, y: 10 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      transition={
+        isFresh
+          ? SPRING.enter
+          : { duration: 0.25, ease: EASE, delay: Math.min(index, 7) * 0.035 }
+      }
+      whileHover={{ y: -3 }}
+      className="relative"
+    >
+      {isFresh && <span aria-hidden className={`cert-fresh-ring ${isPayout ? 'cert-fresh-ring--payout' : 'cert-fresh-ring--phase'}`} />}
+      <div className="bg-zinc-950/60 border border-zinc-800/80 rounded-2xl overflow-hidden group hover:border-zinc-700/80 transition-colors duration-200 ease-out relative flex flex-col h-[205px] shadow-sm hover:shadow-md">
+        {/* Tip Etiketi (Sol Üst Rozet) */}
+        <div className="absolute top-2.5 left-2.5 z-20 pointer-events-none">
+          <span className={`inline-flex items-center gap-1 text-[9px] font-bold px-2.5 py-0.5 rounded-lg uppercase tracking-wider  border ${
+            isPayout
+              ? 'bg-emerald-950/80 text-emerald-400 border-emerald-500/30 shadow-sm shadow-emerald-950/50'
+              : 'bg-blue-950/80 text-blue-400 border-blue-500/30 shadow-sm shadow-blue-950/50'
+          }`}>
+            {isPayout ? <DollarSign size={10} className="stroke-[2.5]" /> : <Award size={10} className="stroke-[2.5]" />}
+            {isPayout ? 'Payout' : 'Fon'}
           </span>
         </div>
+
+        {/* Sil Butonu (Sağ Üst) */}
+        <motion.button
+          type="button"
+          onClick={() => onDelete(cert)}
+          whileTap={{ scale: 0.82 }}
+          transition={SPRING.press}
+          className="absolute top-2.5 right-2.5 bg-zinc-950/80 hover:bg-red-500/20  text-zinc-400 hover:text-red-400 p-1.5 rounded-xl opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-[opacity,color,background-color,border-color] duration-150 z-20 cursor-pointer border border-white/10 hover:border-red-500/30 shadow-md"
+        >
+          <Trash2 size={13} />
+        </motion.button>
+
+        {/* Görsel Alanı */}
+        <motion.div
+          className="w-full h-32 shrink-0 overflow-hidden relative cursor-pointer bg-zinc-950/80 flex items-center justify-center border-b border-zinc-800/80"
+          onClick={handleImageClick}
+          whileTap={{ scale: 0.985 }}
+          transition={SPRING.press}
+        >
+          {cert.image ? (
+            <>
+              <img decoding="async"
+                src={cert.image}
+                alt={cert.title}
+                decoding="async"
+                draggable={false}
+                className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
+              />
+              <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-zinc-950/90 via-zinc-950/40 to-transparent pointer-events-none"></div>
+            </>
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center text-zinc-600 bg-zinc-950/60">
+              {isPayout ? (
+                <DollarSign size={28} className="opacity-25 text-emerald-400" />
+              ) : (
+                <Award size={28} className="opacity-25 text-blue-400" />
+              )}
+              <span className="text-[9px] uppercase font-sans tracking-widest text-zinc-600 mt-1">Görsel Yok</span>
+            </div>
+          )}
+          {ripple && (
+            <span
+              key={ripple.id}
+              aria-hidden
+              onAnimationEnd={() => setRipple(null)}
+              className={`cert-ripple ${isPayout ? 'cert-ripple--payout' : 'cert-ripple--phase'}`}
+              style={{ left: ripple.x, top: ripple.y }}
+            />
+          )}
+        </motion.div>
+
+        {/* Alt Bilgi Paneli */}
+        <div className="p-3 px-3.5 flex-1 flex flex-col justify-center gap-1 bg-transparent">
+          <div className="flex justify-between items-baseline gap-2">
+            <h3 className="text-sm font-bold text-white truncate max-w-[65%]">
+              {cert.title}
+            </h3>
+            {isPayout && cert.amount !== undefined && cert.amount !== null && (
+              <div className="flex items-baseline gap-0.5 shrink-0">
+                <span className="font-bold text-emerald-400 font-sans tracking-tight text-xs sm:text-xs">
+                  ${cert.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-between items-center text-zinc-400">
+            <span className="text-[10px] flex items-center gap-1.5 font-sans text-zinc-400">
+              <Calendar size={11} className="text-zinc-500" />
+              {formatDate(cert.date)}
+            </span>
+          </div>
+        </div>
       </div>
-    </div>
+    </motion.div>
   );
-}
+});

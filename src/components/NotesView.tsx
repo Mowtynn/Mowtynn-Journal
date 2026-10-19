@@ -1,3 +1,4 @@
+import { EASE, SPRING } from '../lib/motion';
 import React, { useState, memo, useMemo, useRef, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -30,11 +31,11 @@ interface NotesViewProps {
 }
 
 // Not ekranları (liste / okuma / düzenleme) arası geçiş: eski ekran önce yumuşakça çıkar, yenisi hafif yükselerek girer.
-const NOTE_EASE = [0.16, 1, 0.3, 1] as const;
+const NOTE_EASE = EASE;
 const noteViewMotion = {
   initial: { opacity: 0, y: 14, scale: 0.985 },
-  animate: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.28, ease: NOTE_EASE } },
-  exit: { opacity: 0, y: -8, scale: 0.99, transition: { duration: 0.16, ease: NOTE_EASE } },
+  animate: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.25, ease: NOTE_EASE } },
+  exit: { opacity: 0, y: -8, scale: 0.99, transition: { duration: 0.15, ease: NOTE_EASE } },
 };
 
 const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: NotesViewProps) {
@@ -382,7 +383,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                         aria-hidden
                         initial={false}
                         animate={{ left: filterIndicator.left, width: filterIndicator.width }}
-                        transition={{ type: "spring", stiffness: 450, damping: 35 }}
+                        transition={SPRING.indicator}
                         className={`absolute top-0.5 bottom-0.5 rounded-lg shadow-xs border pointer-events-none ${
                           activeFilter === 'ALL' ? 'bg-zinc-800 border-transparent' : 'bg-blue-500/20 border-blue-500/30'
                         }`}
@@ -460,7 +461,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                           initial={{ opacity: 0, y: 4, scale: 0.98 }}
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           exit={{ opacity: 0, y: 4, scale: 0.98 }}
-                          transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                          transition={{ duration: 0.15, ease: EASE }}
                           className="absolute top-10 right-0 z-50 w-[270px] bg-zinc-900 border border-zinc-700/80 rounded-2xl shadow-2xl p-2 overflow-hidden"
                         >
                           {/* Format Tabs */}
@@ -646,7 +647,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                     key={note.id}
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.26, ease: NOTE_EASE, delay: Math.min(noteIdx, 8) * 0.03 }}
+                    transition={{ duration: 0.25, ease: NOTE_EASE, delay: Math.min(noteIdx, 8) * 0.03 }}
                     onClick={() => handleOpenNote(note)}
                     className={`group relative bg-zinc-950/60 border ${
                       note.isPinned 
@@ -714,7 +715,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.15, ease: EASE }}
               className="will-change-[opacity] fixed inset-0 z-[4500] bg-zinc-950/80 flex items-center justify-center p-4"
               onClick={() => setNoteToDelete(null)}
             >
@@ -723,7 +724,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                 initial={{ opacity: 0, scale: 0.96, y: 16 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.96, y: 16 }}
-                transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                transition={{ duration: 0.2, ease: EASE }}
                 style={{ willChange: "transform, opacity" }}
                 onClick={(e) => e.stopPropagation()}
                 className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 max-w-sm w-full shadow-2xl overflow-hidden relative select-none"

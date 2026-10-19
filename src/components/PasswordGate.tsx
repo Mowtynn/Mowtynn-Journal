@@ -1,3 +1,4 @@
+import { EASE } from '../lib/motion';
 import React, { useState, useEffect } from 'react';
 import { Lock, ArrowRight, ShieldCheck, AlertCircle, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -189,7 +190,7 @@ export function PasswordGate({ children }: PasswordGateProps) {
         initial={{ opacity: 0, scale: 0.96, y: 16 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.96, y: 16 }}
-          transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.2, ease: EASE }}
           style={{ willChange: "transform, opacity" }}
         className="w-full max-w-sm relative z-10"
       >

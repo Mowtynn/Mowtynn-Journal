@@ -1,3 +1,4 @@
+import { EASE } from '../lib/motion';
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -203,7 +204,7 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
           initial={{ opacity: 0, scale: 0.96, y: 16 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.96, y: 16 }}
-          transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.2, ease: EASE }}
           style={{ willChange: "transform, opacity" }}
           className="fixed inset-0 z-[1500] bg-zinc-950 flex flex-col overflow-hidden"
         >

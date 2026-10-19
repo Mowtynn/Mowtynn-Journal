@@ -104,3 +104,24 @@ Ağ kapalı olduğu için `npm install` / `npm run build` bu ortamda çalıştı
 **Senkron:** `handleDeleteTrade` ve `handleDeleteTradesByPlatform` silinecek kaydı `setTrades` güncelleyicisinin içinde yakalıyordu; güncelleyici gecikmeli çalışınca `deleteDoc` hiç çağrılmıyor ve silinen işlem bulutta kalıp geri geliyordu. Artık mevcut listeden okunuyor; bulut hatasında kullanıcı bilgilendirilip kayıt geri yükleniyor. İşlem kaydetme bulutta başarısız olursa da uyarı gösteriliyor.
 
 **Doğrulama:** ağ kapalı, `npm install` / `npm run build` çalıştırılamadı. `tsc` ile sözdizimi + kullanılmayan/tanımsız isim taraması yapıldı: yeni hata yok. Yayından önce: `npm install && npm run lint && npm run build`.
+
+## 6. tur: tablo hizası, sertifika animasyonları, akıcılık
+- TradeList: sütun başlıklarındaki sıralama oku artık akış dışında (absolute) duruyor; başlık yazısı hücrenin tam ortasında. Tarih hücresinde masaüstünde görünmeyen boş kutu (auto-margin yüzünden içeriği sağa itiyordu) kaldırıldı. Tarih, Parite, Yön, RR, Sonuç, Kâr/Zarar, Platform ve İşlem içerikleri başlıklarla aynı eksende.
+- CertificatesView: yeni eklenen kayıt yay (spring) animasyonuyla girer + 2 kez genişleyip sönen renkli halka (Fon: mavi, Payout: yeşil); kayıt hangi sayfaya düştüyse o sayfa otomatik açılır; sayfa değişince kartlar kademeli girer.
+- Tıklama animasyonları: Yeni Ekle / Kaydet / Sil butonlarında basma geri bildirimi, görsel alanında tıklanan noktadan dalga efekti, önizleme tıklanan küçük resmin konumundan büyüyerek açılır, sayı kartları değişince yumuşak geçiş yapar.
+- Akıcılık: sertifika kartları React.memo + sabit callback'ler; animasyonlar yalnızca transform/opacity. Tüm <img> etiketlerine decoding="async" (base64 ekran görüntüleri ana iş parçacığını bloklamaz). lazy/Suspense kullanılmıyor.
+- Firebase kuralları değiştirilmedi. Ağ kapalı olduğundan build çalıştırılamadı; yayından önce: `npm install && npm run lint && npm run build`.
+
+## 7. tur: veri senkronu ve tek hareket sistemi
+**Veri**
+- Başka cihazda silinen not / günlük / sertifika, bu cihazın snapshot'ında yeniden buluta yazılıp geri geliyordu (işlemlerde bu daha önce düzeltilmişti). Üçü de artık işlemlerle aynı kuralı kullanıyor: yerel kayıtlar yalnızca ilk sunucu snapshot'ında yüklenir, sonrasında bulut tek doğru kaynak. Tek ortak `watchCollection` yardımcısı kullanılıyor (setState içindeki yan etkili setDoc çağrıları kalktı).
+- Kaydı buluta yazılırken (görsel yükleme dahil) gelen bir snapshot yeni kaydı listeden silip tekrar getirmesin diye "yazımı süren kayıtlar" korunuyor (işlem, not, günlük, sertifika).
+- Sertifika görseli yüklenirken kayıt silinirse artık buluta geri yazılmıyor.
+- Kaydet/sil fonksiyonları listelere bağımlı olmaktan çıktı (ref ile güncel listeyi okuyor); kimlikleri sabit, Notlar/Günlük/Sertifikalar ekranları veri değişince gereksiz yeniden çizilmiyor.
+- localStorage yazımı tek noktaya indi (useLocalStorageState). Sekme gizlenirken/kapanırken bekleyen yazma anında tamamlanır; tekrarlı JSON.stringify ve setState içindeki yan etkiler kaldırıldı. Hafıza dolarsa tek tip uyarı gösterilir.
+- Günlük ekranındaki "Günün İşlemleri" artık Dashboard ve İşlem Listesi ile aynı işlem kümesini (aktif hesap + genel filtreler) kullanıyor; eskiden tüm işlemleri gösterip sayılar uyuşmuyordu. W/L sayacında BE artık "L" sayılmıyor.
+
+**Hareket**
+- `src/lib/motion.ts`: tek EASE eğrisi, süre ve spring ayarları. 26 dosyadaki dağınık eğri/yay/süre değerleri buraya bağlandı (0.16/0.26/0.28/0.34 gibi yakın süreler standartlara çekildi, easeInOut/easeOut → EASE).
+- index.css: Tailwind `ease-out` sınıfı da aynı eğriyi kullanıyor (CSS ve motion artık aynı hissi veriyor).
+- Firebase kuralları değiştirilmedi. Ağ kapalı olduğundan build çalıştırılamadı: `npm install && npm run lint && npm run build`.

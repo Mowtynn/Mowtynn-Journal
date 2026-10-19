@@ -15,6 +15,8 @@ html {
   --default-transition-duration: 160ms;
   --default-transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  /* `ease-out` sınıfları (projede ~100 yerde) Tailwind'in varsayılan eğrisi yerine aynı eğriyi kullansın */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 
   --color-white: #C5CBD6;
   
@@ -532,3 +534,41 @@ body { font-variant-numeric: tabular-nums; }
 /* Sayfa değişiminde liste yumuşakça belirir (AnimatePresence yerine: eski ve yeni gövde üst üste binmesin) */
 .trade-tbody-fade { animation: tradeTbodyIn 140ms var(--ease-out-expo) backwards; }
 @keyframes tradeTbodyIn { from { opacity: 0.6; } to { opacity: 1; } }
+
+/* ==========================================================================
+   SERTİFİKALAR: ekleme vurgusu + tıklama dalgası
+   Yalnızca transform/opacity canlandırılır (compositor'da çalışır, ana iş parçacığını yormaz).
+   ========================================================================== */
+.cert-fresh-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 1rem;
+  pointer-events: none;
+  z-index: 30;
+  border: 2px solid var(--cert-ring, rgba(96, 165, 250, 0.9));
+  animation: certFreshRing 1100ms var(--ease-out-expo) 2 both;
+}
+.cert-fresh-ring--phase  { --cert-ring: rgba(96, 165, 250, 0.9); }
+.cert-fresh-ring--payout { --cert-ring: rgba(52, 211, 153, 0.9); }
+@keyframes certFreshRing {
+  0%   { opacity: 0.9; transform: scale(1); }
+  100% { opacity: 0;   transform: scale(1.07); }
+}
+
+.cert-ripple {
+  position: absolute;
+  width: 220px;
+  height: 220px;
+  margin: -110px 0 0 -110px;
+  border-radius: 9999px;
+  pointer-events: none;
+  z-index: 10;
+  background: radial-gradient(circle, var(--cert-ripple, rgba(96, 165, 250, 0.42)) 0%, transparent 70%);
+  animation: certRipple 520ms var(--ease-out-expo) both;
+}
+.cert-ripple--phase  { --cert-ripple: rgba(96, 165, 250, 0.42); }
+.cert-ripple--payout { --cert-ripple: rgba(52, 211, 153, 0.42); }
+@keyframes certRipple {
+  from { opacity: 1; transform: scale(0.1); }
+  to   { opacity: 0; transform: scale(1.4); }
+}

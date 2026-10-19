@@ -1,3 +1,4 @@
+import { EASE } from '../lib/motion';
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -69,7 +70,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.15, ease: EASE }}
           
           onClick={onClose}
            className="will-change-[opacity] fixed inset-0 z-[1500] flex items-center justify-center p-4 bg-zinc-950/80 "
@@ -79,7 +80,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             initial={{ opacity: 0, scale: 0.96, y: 16 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 16 }}
-            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.2, ease: EASE }}
             style={{ willChange: "transform, opacity" }}
             onClick={(e) => e.stopPropagation()}
             className="relative w-full max-w-sm bg-zinc-900 border border-zinc-700/50 rounded-2xl shadow-2xl p-5 overflow-hidden text-center"

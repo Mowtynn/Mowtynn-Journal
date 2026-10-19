@@ -1,3 +1,4 @@
+import { EASE } from '../lib/motion';
 import React, { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { ValueTransition } from "./ValueTransition";
@@ -189,7 +190,7 @@ const MemoizedEquityChart = React.memo(function MemoizedEquityChart({
                 initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -4 }}
-                transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                transition={{ duration: 0.15, ease: EASE }}
                 style={{
                   left: `${(hoveredPt.x / 600) * 100}%`,
                   top: `${(hoveredPt.y / 180) * 100}%`
@@ -1089,7 +1090,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
     show: { 
       opacity: 1, 
       y: 0,
-      transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] as any }
+      transition: { duration: 0.3, ease: EASE as any }
     }
   };
 
@@ -1535,7 +1536,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
                       initial={{ opacity: 0, y: "-50%" }}
                       animate={{ opacity: 1, y: "-50%" }}
                       exit={{ opacity: 0, y: "-50%" }}
-                      transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                      transition={{ duration: 0.15, ease: EASE }}
                       className="absolute left-full ml-2 top-1/2 flex items-center bg-zinc-950 border border-zinc-800/80 rounded-lg p-0.5 z-30 shadow-xl"
                     >
                       {[

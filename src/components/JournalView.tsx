@@ -1,3 +1,4 @@
+import { EASE } from '../lib/motion';
 import React, { useState, memo, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -44,11 +45,11 @@ interface JournalViewProps {
 }
 
 // Günlük sağ panel geçişi: kayıt sağdan kayarak açılır, kapanırken hafifçe sola çekilip solar.
-const JOURNAL_EASE = [0.16, 1, 0.3, 1] as const;
+const JOURNAL_EASE = EASE;
 const journalPaneMotion = {
   initial: { opacity: 0, x: 28, scale: 0.99 },
   animate: { opacity: 1, x: 0, scale: 1, transition: { duration: 0.3, ease: JOURNAL_EASE } },
-  exit: { opacity: 0, x: -16, scale: 0.995, transition: { duration: 0.16, ease: JOURNAL_EASE } },
+  exit: { opacity: 0, x: -16, scale: 0.995, transition: { duration: 0.15, ease: JOURNAL_EASE } },
 };
 const journalEmptyMotion = {
   initial: { opacity: 0, y: 8 },
@@ -173,7 +174,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
           </div>
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-sans font-bold text-zinc-400 bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded-lg">
-              {winCount}W / {dayTrades.length - winCount}L
+              {winCount}W / {dayTrades.filter(t => t.status === 'LOSS').length}L
             </span>
             <span className={`text-[10px] font-sans font-bold px-2 py-0.5 rounded-lg border ${
               totalPnL > 0 
@@ -367,7 +368,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: 0.15, ease: EASE }}
       className="flex flex-col md:flex-row h-[calc(100vh-170px)] min-h-[640px] bg-zinc-950/60 border border-zinc-800/80  rounded-2xl overflow-hidden text-zinc-200 shadow-sm relative"
     >
       {/* LEFT SIDEBAR: Entry List */}
@@ -414,7 +415,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
                     initial={{ opacity: 0, y: 4, scale: 0.98 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 4, scale: 0.98 }}
-                    transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                    transition={{ duration: 0.15, ease: EASE }}
                     className="absolute top-[calc(100%+8px)] left-0 sm:left-auto sm:right-0 z-50 w-[270px] bg-zinc-900 border border-zinc-700/80 rounded-2xl shadow-2xl p-2 overflow-hidden"
                   >
                     {/* Format Tabs */}
@@ -541,7 +542,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
                   initial={{ opacity: 0, y: -4 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -4 }}
-                  transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                  transition={{ duration: 0.15, ease: EASE }}
                   className="absolute top-[calc(100%+8px)] right-0 z-50 flex flex-col gap-2 shadow-2xl"
                 >
                   <JournalCalendar 
@@ -1032,7 +1033,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.15, ease: EASE }}
               className="will-change-[opacity] fixed inset-0 z-[4500] bg-zinc-950/80 flex items-center justify-center p-4"
               onClick={() => setEntryToDelete(null)}
             >
@@ -1041,7 +1042,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
                 initial={{ opacity: 0, scale: 0.96, y: 16 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.96, y: 16 }}
-                transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                transition={{ duration: 0.2, ease: EASE }}
                 style={{ willChange: "transform, opacity" }}
                 onClick={(e) => e.stopPropagation()}
                 className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 max-w-sm w-full shadow-2xl overflow-hidden relative select-none"

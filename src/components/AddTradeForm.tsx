@@ -1,3 +1,4 @@
+import { SPRING } from '../lib/motion';
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import toast from "react-hot-toast";
 import { motion } from "motion/react";
@@ -1436,7 +1437,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                   {previewError ? (
                     <p className="text-xs text-rose-400 font-sans font-bold text-center px-3">Görsel yüklenemedi (URL geçersiz)</p>
                   ) : (
-                    <img
+                    <img decoding="async"
                       src={screenshot}
                       alt="Grafik Önizleme"
                       className="object-cover h-full w-full opacity-90 group-hover:opacity-100 transition-opacity"
@@ -1496,7 +1497,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
 });
 
 /* Seçili butonun arkasındaki, butonlar arasında kayan vurgu (layoutId ile) */
-const SLIDE_SPRING = { type: "spring", stiffness: 420, damping: 34 } as const;
+const SLIDE_SPRING = SPRING.indicator;
 function SlideBg({ id, className, rounded = "rounded-lg" }: { id: string; className: string; rounded?: string }) {
   return (
     <motion.span

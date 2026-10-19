@@ -1,3 +1,4 @@
+import { EASE, SPRING } from '../lib/motion';
 import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -316,7 +317,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.15, ease: EASE }}
           className="will-change-[opacity] fixed inset-0 z-[2500] flex items-center justify-center p-3 sm:p-5 bg-zinc-950/80  overflow-y-auto"
           onClick={onClose}
         >
@@ -325,7 +326,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
             initial={{ opacity: 0, scale: 0.96, y: 16 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 16 }}
-            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.2, ease: EASE }}
             style={{ willChange: "transform, opacity" }}
             className="relative w-full max-w-4xl h-[620px] max-h-[90vh] min-h-[480px] bg-zinc-900 border border-zinc-700/50 rounded-2xl shadow-2xl overflow-hidden flex flex-col my-auto"
             onClick={e => e.stopPropagation()}
@@ -403,7 +404,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                         <motion.div
                           layoutId="activeDefTabIndicator"
                           className="absolute inset-0 bg-blue-500/15 rounded-xl border border-blue-500/30 shadow-xs"
-                          transition={{ type: 'spring', stiffness: 450, damping: 35 }}
+                          transition={SPRING.indicator}
                         />
                       )}
                       <span className="relative z-10 flex items-center gap-2">
@@ -724,7 +725,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                  transition={{ duration: 0.15, ease: EASE }}
                   className="will-change-[opacity] absolute inset-0 z-[10000] bg-zinc-950/85 flex items-center justify-center p-4"
                   onClick={() => setDeleteConfirmItem(null)}
                 >
@@ -733,7 +734,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                     initial={{ opacity: 0, scale: 0.96, y: 16 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.96, y: 16 }}
-                    transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                    transition={{ duration: 0.2, ease: EASE }}
                     style={{ willChange: "transform, opacity" }}
                     className="bg-zinc-900 border border-zinc-700/60 rounded-2xl p-5 max-w-sm w-full shadow-2xl space-y-4"
                     onClick={(e) => e.stopPropagation()}
@@ -833,7 +834,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                  transition={{ duration: 0.15, ease: EASE }}
                   className="will-change-[opacity] absolute inset-0 z-[10000] bg-zinc-950/85 flex items-center justify-center p-4"
                   onClick={() => setShowResetConfirm(false)}
                 >
@@ -842,7 +843,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                     initial={{ opacity: 0, scale: 0.96, y: 16 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.96, y: 16 }}
-                    transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                    transition={{ duration: 0.2, ease: EASE }}
                     style={{ willChange: "transform, opacity" }}
                     className="bg-zinc-900 border border-zinc-700/60 rounded-2xl p-5 max-w-sm w-full shadow-2xl space-y-4"
                     onClick={(e) => e.stopPropagation()}

@@ -1,3 +1,4 @@
+import { EASE } from '../lib/motion';
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -348,7 +349,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
     <motion.div 
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: 0.25, ease: EASE }}
       className="bg-zinc-900/70 border border-zinc-700/50 rounded-2xl p-4 sm:p-5 shadow-sm space-y-4"
     >
       
@@ -432,7 +433,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
           initial={{ opacity: 0, y: 10, scale: 0.997 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -8, scale: 0.997 }}
-          transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.2, ease: EASE }}
           className="space-y-4"
         >
 

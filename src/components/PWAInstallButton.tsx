@@ -1,3 +1,4 @@
+import { EASE } from '../lib/motion';
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Download, Smartphone, Share, PlusSquare, X, CheckCircle2 } from 'lucide-react';
@@ -66,7 +67,7 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
                 initial={{ opacity: 0, scale: 0.96, y: 16 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.96, y: 16 }}
-                transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                transition={{ duration: 0.2, ease: EASE }}
                 className="w-full max-w-sm rounded-2xl bg-zinc-900 border border-zinc-700/80 p-5 shadow-2xl space-y-4"
                 onClick={(e) => e.stopPropagation()}
               >

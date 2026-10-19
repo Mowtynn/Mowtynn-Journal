@@ -1,3 +1,4 @@
+import { EASE } from '../lib/motion';
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
@@ -1146,7 +1147,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.15, ease: EASE }}
           onClick={onClose}
           className="will-change-[opacity] fixed inset-0 z-[1500] flex items-center justify-center p-2 sm:p-4 bg-zinc-950/80"
         >
@@ -1155,7 +1156,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
             initial={{ opacity: 0, scale: 0.96, y: 16 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 16 }}
-            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.2, ease: EASE }}
             style={{ willChange: "transform, opacity" }}
             onClick={(e) => e.stopPropagation()}
             id="ai-copilot-popup"
@@ -1325,7 +1326,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                       {/* Optional Attached Screenshot */}
                       {msg.imageUrl && (
                         <div className="mb-2 max-w-[180px] sm:max-w-[200px] rounded-xl overflow-hidden border border-zinc-700/50 shadow-sm">
-                          <img
+                          <img decoding="async"
                             src={msg.imageUrl}
                             alt="Grafik Ekran Görüntüsü"
                             className="w-full max-h-24 sm:max-h-28 object-cover bg-zinc-950/80 cursor-zoom-in hover:opacity-90 transition-opacity"
@@ -1432,7 +1433,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                 {/* Attached Image Thumbnail Bar */}
                 {attachedImage && (
                   <div className="flex items-center gap-2 bg-zinc-900/80 border border-zinc-700/50 p-2 rounded-xl">
-                    <img src={attachedImage} alt="Ekran Görüntüsü Önizleme" className="w-10 h-10 object-cover rounded-lg border border-zinc-700/50" />
+                    <img decoding="async" src={attachedImage} alt="Ekran Görüntüsü Önizleme" className="w-10 h-10 object-cover rounded-lg border border-zinc-700/50" />
                     <div className="flex-1 text-xs text-zinc-300 font-sans truncate">
                       🖼️ Grafik Ekran Görüntüsü Yüklendi (Gemini Vision Hazır)
                     </div>
@@ -2347,7 +2348,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                  transition={{ duration: 0.15, ease: EASE }}
                   className="flex flex-col min-h-full space-y-4"
                 >
                   <div className="flex items-center justify-between border-b border-zinc-700/50 pb-3">
@@ -2446,7 +2447,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                        transition={{ duration: 0.15, ease: EASE }}
                         className="flex flex-col min-h-full space-y-4"
                       >
                         <div className="flex items-center justify-between border-b border-zinc-700/50 pb-3 shrink-0">

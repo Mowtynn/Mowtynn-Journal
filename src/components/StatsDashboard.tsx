@@ -1,3 +1,4 @@
+import { EASE } from '../lib/motion';
 import React from 'react';
 import { motion } from 'motion/react';
 import { TradeStats } from '../types';
@@ -49,7 +50,7 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, currency }: S
     show: { 
       opacity: 1, 
       y: 0,
-      transition: { duration: 0.12, ease: "easeOut" as any }
+      transition: { duration: 0.12, ease: EASE }
     }
   };
 

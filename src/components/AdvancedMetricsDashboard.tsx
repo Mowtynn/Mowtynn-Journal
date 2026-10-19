@@ -1,3 +1,4 @@
+import { EASE } from '../lib/motion';
 import React, { useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -731,7 +732,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
 
   const itemVariants = {
     hidden: { opacity: 0 },
-    show: { opacity: 1, transition: { duration: 0.15, ease: "easeInOut" as any } }
+    show: { opacity: 1, transition: { duration: 0.15, ease: EASE } }
   };
 
   const getPFColor = (pf: number) => {
@@ -892,7 +893,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
-                      transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                      transition={{ duration: 0.15, ease: EASE }}
                       className="overflow-hidden whitespace-nowrap "
                     >
                       <div className="flex gap-1">
@@ -956,7 +957,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                               initial={{ scaleX: 0 }}
                               animate={{ scaleX: barWidth / 100 }}
                               style={{ transformOrigin: "left", width: "100%" }}
-                              transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                              transition={{ duration: 0.15, ease: EASE }}
                               className={`h-full rounded-full ${isProfit ? 'bg-gradient-to-r from-emerald-500/20 to-emerald-500' : 'bg-gradient-to-r from-rose-500/20 to-rose-500'}`}
                             />
                           </div>
@@ -1095,7 +1096,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
-                      transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                      transition={{ duration: 0.15, ease: EASE }}
                       className="overflow-hidden whitespace-nowrap "
                     >
                       <div className="flex gap-1">
@@ -1160,7 +1161,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                               initial={{ scaleX: 0 }}
                               animate={{ scaleX: barWidth / 100 }}
                               style={{ transformOrigin: "left", width: "100%" }}
-                              transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                              transition={{ duration: 0.15, ease: EASE }}
                               className={`h-full rounded-full ${isProfit ? 'bg-gradient-to-r from-emerald-500/20 to-emerald-500' : 'bg-gradient-to-r from-rose-500/20 to-rose-500'}`}
                             />
                           </div>
@@ -1201,7 +1202,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                  transition={{ duration: 0.15, ease: EASE }}
                   className="absolute right-9 top-[50%] -translate-y-[50%] z-30 bg-zinc-800/90 border border-zinc-700/50 text-zinc-100 rounded-lg p-1  whitespace-nowrap select-none flex items-center gap-1.5"
                 >
                   <input
@@ -1258,7 +1259,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                 initial={{ opacity: 0.8 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0.8 }}
-                transition={{ duration: 0.1, ease: [0.16, 1, 0.3, 1] }}
+                transition={{ duration: 0.1, ease: EASE }}
                 className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 flex-1 content-start min-h-[385px]"
               >
                 {processedAssets.slice((assetsPage - 1) * 9, assetsPage * 9).map((ar) => {
@@ -1427,7 +1428,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                  transition={{ duration: 0.15, ease: EASE }}
                   className="absolute right-0 top-full mt-2 z-50 bg-zinc-950 border border-zinc-800/90 text-zinc-100 rounded-xl p-3.5 shadow-2xl w-72 sm:w-80 select-none space-y-3"
                 >
                   <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
@@ -1613,7 +1614,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                   initial={{ opacity: 0.8 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0.8 }}
-                  transition={{ duration: 0.1, ease: [0.16, 1, 0.3, 1] }}
+                  transition={{ duration: 0.1, ease: EASE }}
                   style={{ willChange: "opacity" }}
                   className="bg-transparent"
                 >
@@ -2054,7 +2055,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.15, ease: EASE }}
               className="will-change-[opacity] fixed inset-0 z-[1500] flex items-center justify-center p-4 bg-zinc-950/80 "
               onClick={() => setIsDeadZoneModalOpen(false)}
             >
@@ -2063,7 +2064,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                 initial={{ opacity: 0, scale: 0.96, y: 16 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.96, y: 16 }}
-                transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                transition={{ duration: 0.2, ease: EASE }}
                 style={{ willChange: "transform, opacity" }}
                 className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-4xl h-[82vh] sm:h-[640px] max-h-[90vh] min-h-[460px] flex flex-col shadow-2xl overflow-hidden "
                 onClick={e => e.stopPropagation()}
@@ -2249,7 +2250,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.15, ease: EASE }}
               className="will-change-[opacity] fixed inset-0 z-[1500] flex items-center justify-center p-4 bg-zinc-950/80 "
               onClick={() => setIsOptimalFreqModalOpen(false)}
             >
@@ -2258,7 +2259,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                 initial={{ opacity: 0, scale: 0.96, y: 16 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.96, y: 16 }}
-                transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                transition={{ duration: 0.2, ease: EASE }}
                 style={{ willChange: "transform, opacity" }}
                 className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-2xl h-[82vh] sm:h-[640px] max-h-[90vh] min-h-[460px] flex flex-col shadow-2xl overflow-hidden "
                 onClick={e => e.stopPropagation()}

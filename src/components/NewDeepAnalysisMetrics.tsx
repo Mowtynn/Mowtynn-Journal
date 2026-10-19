@@ -1,3 +1,4 @@
+import { EASE } from '../lib/motion';
 import React from 'react';
 import { motion } from 'motion/react';
 import { Activity, Target, ArrowDownRight, RefreshCw, TrendingUp, Layers } from 'lucide-react';
@@ -6,7 +7,7 @@ import { ValueTransition } from './ValueTransition';
 export const NewDeepAnalysisMetrics = React.memo(({ metrics, currency, isRrMode, onMetricClick }: { metrics: any; currency: string; isRrMode?: boolean; onMetricClick?: (id: string, val: string | number) => void }) => {
   const itemVariants = {
     hidden: { opacity: 0 },
-    show: { opacity: 1, transition: { duration: 0.15, ease: "easeInOut" as any } }
+    show: { opacity: 1, transition: { duration: 0.15, ease: EASE } }
   };
 
   const currentMaxDrawdown = isRrMode ? metrics.maxDrawdown : (metrics.maxRealDrawdown ?? metrics.maxDrawdown);
