@@ -325,25 +325,25 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
               </div>
 
               {/* Sub-Header Stats Bar */}
-              <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-zinc-900 border-b border-zinc-800/80 shrink-0 select-none w-full">
-                <div className="flex flex-wrap items-center gap-2">
-                  <div className="flex items-center gap-1.5 bg-zinc-950 border border-zinc-800/80 text-zinc-100 rounded-xl px-2.5 py-1.5 shrink-0">
-                    <span className="heading-2">TOPLAM:</span>
-                    <span className="text-xs font-black text-white font-sans">{totalCount}</span>
+              <div className="flex flex-wrap items-center justify-between gap-1.5 px-3 py-2 sm:px-4 bg-zinc-950/60 border-b border-zinc-800/80 shrink-0 select-none w-full">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800/80 rounded-lg px-2 py-1 shrink-0">
+                    <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest font-sans leading-none">Toplam:</span>
+                    <span className="text-[10px] font-black text-zinc-100 font-sans leading-none">{totalCount}</span>
                   </div>
-                  <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-2.5 py-1.5 shrink-0">
-                    <span className="text-xs font-bold text-emerald-400 uppercase tracking-widest font-sans">LONG:</span>
-                    <span className="text-xs font-black text-emerald-400 font-sans">{longTrades.length}</span>
-                    <span className="text-[10px] text-zinc-700 font-bold ml-1 uppercase">|</span>
-                    <span className="text-xs font-bold text-emerald-400 uppercase tracking-widest ml-1 font-sans">WR:</span>
-                    <span className="text-xs font-black text-emerald-400 font-sans">%{longWinRate.toFixed(1)}</span>
+                  <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800/80 rounded-lg px-2 py-1 shrink-0">
+                    <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest font-sans leading-none">Long:</span>
+                    <span className="text-[10px] font-black text-emerald-400 font-sans leading-none">{longTrades.length}</span>
+                    <span className="text-[9px] text-zinc-700 font-bold mx-0.5 leading-none">|</span>
+                    <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest font-sans leading-none">WR:</span>
+                    <span className="text-[10px] font-black text-emerald-400 font-sans leading-none">%{longWinRate.toFixed(1)}</span>
                   </div>
-                  <div className="flex items-center gap-1.5 bg-rose-500/10 border border-rose-500/20 rounded-xl px-2.5 py-1.5 shrink-0">
-                    <span className="text-xs font-bold text-rose-400 uppercase tracking-widest font-sans">SHORT:</span>
-                    <span className="text-xs font-black text-rose-400 font-sans">{shortTrades.length}</span>
-                    <span className="text-[10px] text-zinc-700 font-bold ml-1 uppercase">|</span>
-                    <span className="text-xs font-bold text-rose-400 uppercase tracking-widest ml-1 font-sans">WR:</span>
-                    <span className="text-xs font-black text-rose-400 font-sans">%{shortWinRate.toFixed(1)}</span>
+                  <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800/80 rounded-lg px-2 py-1 shrink-0">
+                    <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest font-sans leading-none">Short:</span>
+                    <span className="text-[10px] font-black text-rose-400 font-sans leading-none">{shortTrades.length}</span>
+                    <span className="text-[9px] text-zinc-700 font-bold mx-0.5 leading-none">|</span>
+                    <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest font-sans leading-none">WR:</span>
+                    <span className="text-[10px] font-black text-rose-400 font-sans leading-none">%{shortWinRate.toFixed(1)}</span>
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center justify-end gap-1.5 ml-auto">
@@ -351,17 +351,12 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                     const val = isRrMode ? vals.rr : vals.pnl;
                     if (val === 0) return null;
 
-                    const isProfit = val > 0;
-                    const isLoss = val < 0;
-
-                    const textColorClass = isProfit ? "text-emerald-400" : isLoss ? "text-rose-400" : "text-zinc-400";
-                    const bgClass = isProfit ? "bg-emerald-500/10 border-emerald-500/20" : isLoss ? "bg-rose-500/10 border-rose-500/20" : "bg-zinc-500/10 border-zinc-500/20";
-                    const labelClass = isProfit ? "text-emerald-400" : isLoss ? "text-rose-400" : "text-zinc-400";
+                    const valueColor = val > 0 ? "text-emerald-400" : "text-rose-400";
 
                     return (
-                      <div key={session} className={`flex items-center justify-center gap-1 shrink-0 px-2 py-0.5 rounded-lg border leading-none ${bgClass}`}>
-                        <span className={`heading-3 ${labelClass}`}>{session}:</span>
-                        <span className={`text-[9px] font-black font-sans leading-none ${textColorClass}`}>
+                      <div key={session} className="flex items-center justify-center gap-1 shrink-0 px-2 py-1 rounded-lg border border-zinc-800/80 bg-zinc-900 leading-none">
+                        <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest font-sans leading-none">{session}:</span>
+                        <span className={`text-[10px] font-black font-sans leading-none ${valueColor}`}>
                           {isRrMode ? `${val > 0 ? "+" : ""}${val.toFixed(1)}R` : `${val > 0 ? "+" : ""}${val.toLocaleString("tr-TR", { maximumFractionDigits: 0 })}`}
                         </span>
                       </div>
@@ -375,13 +370,13 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                 <table className="w-full text-left border-separate sm:border-spacing-x-0 sm:border-spacing-y-1 text-[10px] sm:text-xs font-sans whitespace-nowrap sm:table-fixed sm:min-w-[700px] block sm:table">
                   <thead className="sticky top-0 z-20 hidden sm:table-header-group">
                     <tr className="text-[9px] text-zinc-400 uppercase tracking-widest border-b border-zinc-800/80">
-                      <th className="py-2 px-3 font-sans select-none w-[20%] min-w-[120px] text-left">Parite</th>
+                      <th className="py-2 px-3 font-sans select-none w-[20%] min-w-[120px] text-center">Parite</th>
                       <th className="py-2 px-2 text-center font-sans select-none w-[11%] min-w-[65px]">Yön</th>
                       <th className="py-2 px-2 text-center font-sans select-none w-[11%] min-w-[65px]">RR</th>
                       <th className="py-2 px-2 text-center font-sans select-none w-[14%] min-w-[75px]">Session</th>
                       <th className="py-2 px-2 text-center font-sans select-none w-[14%] min-w-[75px]">Sonuç</th>
-                      <th className="py-2 px-3 text-right font-sans select-none w-[16%] min-w-[95px]">
-                        <div className="flex items-center justify-end w-full">Kâr/Zarar</div>
+                      <th className="py-2 px-3 text-center font-sans select-none w-[16%] min-w-[95px]">
+                        <div className="flex items-center justify-center w-full">Kâr/Zarar</div>
                       </th>
                       <th className="py-2 px-2 text-center font-sans select-none w-[14%] min-w-[80px]">Platform</th>
                     </tr>
@@ -403,10 +398,6 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                         pnlColor = pnlValue > 0 ? "text-emerald-400 font-bold" : (pnlValue < 0 ? "text-rose-400 font-bold" : "text-zinc-500 font-bold");
                       }
 
-                      const dateObj = new Date(t.createdAt);
-                      const formattedTime = dateObj.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit", hour12: false });
-                      const formattedDate = dateObj.toLocaleDateString("tr-TR", { day: "numeric", month: "short" });
-
                       return (
                         <tr
                           key={t.id ? `${t.id}-${idx}` : `trade-${idx}`}
@@ -414,11 +405,8 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                           className="group cursor-pointer select-none relative flex flex-wrap sm:table-row bg-zinc-800 sm:bg-transparent mb-2 sm:mb-0 rounded-xl sm:rounded-none border border-zinc-800/80 hover:border-blue-500/40 sm:border-none p-2 sm:p-0 align-middle"
                         >
                           <td className="w-1/2 sm:w-[20%] sm:min-w-[120px] flex justify-start items-center sm:table-cell order-1 py-1 px-0 sm:px-3 text-zinc-400 group-hover:text-zinc-100 font-sans sm:bg-zinc-900 group-hover:bg-blue-950/10 sm:rounded-l-xl sm:border-y sm:border-l sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 align-middle">
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-0.5 sm:gap-1.5">
-                              <span className="text-white font-bold text-xs sm:text-[10px]">{t.asset}</span>
-                              <span className="text-[10px] sm:text-[10px] text-zinc-500 sm:text-zinc-400 transition-colors">
-                                {formattedDate} • {formattedTime}
-                              </span>
+                            <div className="flex items-center sm:justify-center sm:w-full">
+                              <span className="text-white font-black text-sm sm:text-[13px] tracking-wide leading-none">{t.asset}</span>
                             </div>
                           </td>
                           <td className="w-1/2 sm:w-[11%] sm:min-w-[65px] flex justify-end sm:justify-center items-center sm:table-cell order-2 py-1 px-0 sm:px-2 text-center sm:bg-zinc-900 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 align-middle">
@@ -474,10 +462,10 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                               )}
                             </div>
                           </td>
-                          <td className={`w-full sm:w-[16%] sm:min-w-[95px] flex justify-between sm:justify-end items-center sm:table-cell order-5 py-1 px-0 sm:px-3 text-right ${pnlColor} sm:bg-zinc-900 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 max-sm:pt-3 max-sm:border-t max-sm:border-zinc-800/50 sm:py-1 align-middle`}>
+                          <td className={`w-full sm:w-[16%] sm:min-w-[95px] flex justify-between sm:justify-center items-center sm:table-cell order-5 py-1 px-0 sm:px-3 text-right sm:text-center ${pnlColor} sm:bg-zinc-900 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 max-sm:pt-3 max-sm:border-t max-sm:border-zinc-800/50 sm:py-1 align-middle`}>
                             <span className="sm:hidden text-[10px] font-bold text-zinc-500 uppercase tracking-widest text-left font-sans">Kâr/Zarar</span>
-                            <div className="flex flex-col sm:flex-row items-end sm:items-center gap-0.5 sm:gap-1.5 sm:w-full sm:justify-end sm:h-[20px]">
-                              <span className="text-sm sm:text-xs font-bold font-sans inline-flex items-center justify-end h-[20px] leading-none tracking-tight">{pnlText}</span>
+                            <div className="flex flex-col sm:flex-row items-end sm:items-center gap-0.5 sm:gap-1.5 sm:w-full sm:justify-center sm:h-[20px]">
+                              <span className="text-sm sm:text-xs font-bold font-sans inline-flex items-center justify-center h-[20px] leading-none tracking-tight">{pnlText}</span>
                             </div>
                           </td>
                           <td className="w-full sm:w-[14%] sm:min-w-[80px] flex justify-between sm:justify-center items-center sm:table-cell order-6 py-1 px-0 sm:px-2 text-center sm:bg-zinc-900 group-hover:bg-blue-950/10 sm:rounded-r-xl sm:border-y sm:border-r sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 sm:pt-1.5 pt-0 align-middle">

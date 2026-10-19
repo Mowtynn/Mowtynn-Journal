@@ -314,9 +314,9 @@ export const CertificatesView = React.memo(function CertificatesView({ certifica
             >
               <motion.div
                 key="cert-form-modal-content"
-                initial={{ opacity: 0, scale: 0.98, y: 10 }}
+                initial={{ opacity: 0, scale: 0.96, y: 16 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.98, y: 10 }}
+                exit={{ opacity: 0, scale: 0.96, y: 16 }}
                 transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                 style={{ willChange: "transform, opacity" }}
                 onClick={(e) => e.stopPropagation()}
@@ -505,9 +505,9 @@ export const CertificatesView = React.memo(function CertificatesView({ certifica
               </button>
               <motion.img
                 key="cert-image-preview-img"
-                initial={{ opacity: 0, scale: 0.98, y: 10 }}
+                initial={{ opacity: 0, scale: 0.96, y: 16 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.98, y: 10 }}
+                exit={{ opacity: 0, scale: 0.96, y: 16 }}
                 transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                 style={{ willChange: "transform, opacity" }}
                 src={selectedImage}
@@ -536,9 +536,9 @@ export const CertificatesView = React.memo(function CertificatesView({ certifica
             >
               <motion.div
                 key="cert-delete-confirm-content"
-                initial={{ opacity: 0, scale: 0.98, y: 10 }}
+                initial={{ opacity: 0, scale: 0.96, y: 16 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.98, y: 10 }}
+                exit={{ opacity: 0, scale: 0.96, y: 16 }}
                 transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                 style={{ willChange: "transform, opacity" }}
                 className="bg-zinc-900 border border-zinc-700/50 rounded-2xl p-5 max-w-md w-full shadow-2xl overflow-hidden relative"

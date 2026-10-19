@@ -307,7 +307,7 @@ const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
       className="group select-none relative flex flex-wrap sm:table-row bg-zinc-900 mb-2 sm:mb-0 rounded-xl sm:rounded-none border border-zinc-800/80 sm:border-none p-2 sm:p-0 align-middle cursor-pointer hover:bg-zinc-800/50 transition-colors duration-100 cv-auto"
     >
       <td className="w-1/2 min-w-[130px] flex justify-start items-center sm:table-cell order-1 py-1 px-0 sm:px-3 text-zinc-400 font-sans sm:bg-transparent sm:rounded-l-xl sm:border-y sm:border-l sm:border-zinc-800/80 align-middle sm:w-[18%] group-hover:text-zinc-100">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-0.5 sm:gap-1.5">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-center sm:w-full gap-0.5 sm:gap-1.5">
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="sm:hidden text-white font-bold text-xs uppercase">{trade.asset}</span>
           </div>
@@ -318,8 +318,8 @@ const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
           </span>
         </div>
       </td>
-      <td className="hidden sm:table-cell min-w-[90px] py-1 px-0 sm:px-3 sm:bg-transparent sm:border-y sm:border-zinc-800/80 text-left align-middle sm:w-[14%]">
-        <div className="flex flex-col gap-0.5">
+      <td className="hidden sm:table-cell min-w-[90px] py-1 px-0 sm:px-3 sm:bg-transparent sm:border-y sm:border-zinc-800/80 text-left sm:text-center align-middle sm:w-[14%]">
+        <div className="flex flex-col items-center gap-0.5">
           <span className="text-white font-bold text-[10px] uppercase">{trade.asset}</span>
         </div>
       </td>
@@ -369,10 +369,10 @@ const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
           )}
         </div>
       </td>
-      <td className={`w-full min-w-[95px] flex justify-between sm:justify-end items-center sm:table-cell order-5 py-1 px-0 sm:px-3 text-right ${pnlColor} sm:bg-transparent sm:border-y sm:border-zinc-800/80 mt-1.5 sm:mt-0 max-sm:pt-3 max-sm:border-t max-sm:border-zinc-800/50 sm:py-1 align-middle sm:w-[16%]`}>
+      <td className={`w-full min-w-[95px] flex justify-between sm:justify-center items-center sm:table-cell order-5 py-1 px-0 sm:px-3 text-right sm:text-center ${pnlColor} sm:bg-transparent sm:border-y sm:border-zinc-800/80 mt-1.5 sm:mt-0 max-sm:pt-3 max-sm:border-t max-sm:border-zinc-800/50 sm:py-1 align-middle sm:w-[16%]`}>
         <span className="sm:hidden heading-3 text-left font-sans">Kâr/Zarar</span>
-        <div className="flex flex-col sm:flex-row items-end sm:items-center gap-0.5 sm:gap-1.5 sm:w-full sm:justify-end sm:h-[20px]">
-          <span className="text-sm sm:text-xs font-bold font-sans inline-flex items-center justify-end h-[20px] leading-none tracking-tight">{pnlText}</span>
+        <div className="flex flex-col sm:flex-row items-end sm:items-center gap-0.5 sm:gap-1.5 sm:w-full sm:justify-center sm:h-[20px]">
+          <span className="text-sm sm:text-xs font-bold font-sans inline-flex items-center justify-center h-[20px] leading-none tracking-tight">{pnlText}</span>
         </div>
       </td>
       {true && (
@@ -388,7 +388,7 @@ const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
           </div>
         </td>
       )}
-      <td className="w-full sm:w-[8%] sm:min-w-[60px] flex justify-between sm:justify-end items-center sm:table-cell order-6 py-1 px-0 sm:px-3 text-right sm:bg-transparent sm:rounded-r-xl sm:border-y sm:border-r sm:border-zinc-800/80 mt-1.5 sm:mt-0 sm:pt-1.5 pt-0 align-middle">
+      <td className="w-full sm:w-[8%] sm:min-w-[60px] flex justify-between sm:justify-center items-center sm:table-cell order-6 py-1 px-0 sm:px-3 text-right sm:text-center sm:bg-transparent sm:rounded-r-xl sm:border-y sm:border-r sm:border-zinc-800/80 mt-1.5 sm:mt-0 sm:pt-1.5 pt-0 align-middle">
         {true && (
           <div className="sm:hidden">
             {trade.platform ? (
@@ -398,7 +398,7 @@ const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
             ) : null}
           </div>
         )}
-        <div className="flex items-center justify-end gap-1 w-full" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-end sm:justify-center gap-1 w-full" onClick={(e) => e.stopPropagation()}>
           <button
             type="button"
             onClick={(e) => {
@@ -1557,23 +1557,23 @@ const TradeList = React.memo(function TradeList({
               <thead className="sticky top-0 z-20 hidden sm:table-header-group">
                 <tr className="text-[9px] text-zinc-400 uppercase tracking-widest border-b border-zinc-800/80">
                   <th 
-                    className={`py-2 px-3 font-sans select-none min-w-[130px] cursor-pointer group/th transition-colors hover:text-zinc-200 text-left ${
+                    className={`py-2 px-3 font-sans select-none min-w-[130px] cursor-pointer group/th transition-colors hover:text-zinc-200 text-center ${
                       filter.sortBy === 'dateAsc' || filter.sortBy === 'dateDes' ? 'text-blue-400 font-bold' : 'text-zinc-400'
                     } ${'w-[18%]'}`}
                     onClick={() => handleFilterChange({...filter, sortBy: filter.sortBy === 'dateDes' ? 'dateAsc' : 'dateDes'})}
                   >
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center justify-center gap-1.5">
                       <span>Tarih</span>
                       <TableSortBadge sortState={filter.sortBy === 'dateAsc' ? 'asc' : filter.sortBy === 'dateDes' ? 'des' : null} />
                     </div>
                   </th>
                   <th 
-                    className={`py-2 px-3 font-sans select-none min-w-[90px] cursor-pointer group/th transition-colors hover:text-zinc-200 text-left ${
+                    className={`py-2 px-3 font-sans select-none min-w-[90px] cursor-pointer group/th transition-colors hover:text-zinc-200 text-center ${
                       filter.sortBy === 'assetAsc' || filter.sortBy === 'assetDes' ? 'text-blue-400 font-bold' : 'text-zinc-400'
                     } ${'w-[14%]'}`}
                     onClick={() => handleFilterChange({...filter, sortBy: filter.sortBy === 'assetAsc' ? 'assetDes' : 'assetAsc'})}
                   >
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center justify-center gap-1.5">
                       <span>{definitionTitles.assets || "Parite"}</span>
                       <TableSortBadge sortState={filter.sortBy === 'assetAsc' ? 'asc' : filter.sortBy === 'assetDes' ? 'des' : null} />
                     </div>
@@ -1602,12 +1602,12 @@ const TradeList = React.memo(function TradeList({
                   </th>
                   <th className={`py-2 px-2 text-center font-sans select-none min-w-[75px] ${'w-[12%]'}`}>Sonuç</th>
                   <th 
-                    className={`py-2 px-3 text-right font-sans select-none min-w-[95px] cursor-pointer group/th transition-colors hover:text-zinc-200 ${
+                    className={`py-2 px-3 text-center font-sans select-none min-w-[95px] cursor-pointer group/th transition-colors hover:text-zinc-200 ${
                       filter.sortBy === 'pnlAsc' || filter.sortBy === 'pnlDes' ? 'text-blue-400 font-bold' : 'text-zinc-400'
                     } ${'w-[16%]'}`}
                     onClick={() => handleFilterChange({...filter, sortBy: filter.sortBy === 'pnlDes' ? 'pnlAsc' : 'pnlDes'})}
                   >
-                    <div className="flex items-center justify-end gap-1.5 w-full">
+                    <div className="flex items-center justify-center gap-1.5 w-full">
                       <span>Kâr/Zarar</span>
                       <TableSortBadge sortState={filter.sortBy === 'pnlAsc' ? 'asc' : filter.sortBy === 'pnlDes' ? 'des' : null} />
                     </div>
@@ -1625,7 +1625,7 @@ const TradeList = React.memo(function TradeList({
                       </div>
                     </th>
                   )}
-                  <th className="py-2 px-3 text-right font-sans select-none w-[8%] min-w-[60px]">İşlem</th>
+                  <th className="py-2 px-3 text-center font-sans select-none w-[8%] min-w-[60px]">İşlem</th>
                 </tr>
               </thead>
               <AnimatePresence initial={false}>
@@ -1703,9 +1703,9 @@ const TradeList = React.memo(function TradeList({
             >
               <motion.div
                 key="trade-delete-modal-content"
-                initial={{ opacity: 0, scale: 0.98, y: 10 }}
+                initial={{ opacity: 0, scale: 0.96, y: 16 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.98, y: 10 }}
+                exit={{ opacity: 0, scale: 0.96, y: 16 }}
                 transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                 style={{ willChange: "transform, opacity" }}
                 onClick={(e) => e.stopPropagation()}

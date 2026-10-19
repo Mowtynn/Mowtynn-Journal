@@ -2369,7 +2369,7 @@ export default function App() {
       />
       {/* 1. MODERN COMPACT NAVBAR */}
       <header className="border-b border-border-subtle bg-bg-base  sticky top-0 z-40 transition-colors duration-200">
-        <div className="max-w-6xl mx-auto px-4 py-2 sm:py-2.5 flex flex-row items-center justify-between gap-3 relative">
+        <div className="max-w-6xl mx-auto px-4 py-2 sm:py-2.5 flex flex-row items-center justify-between sm:justify-center gap-3 sm:gap-8 relative">
           
           <div className="flex items-center gap-3 z-10">
             {/* Brand */}
@@ -3078,9 +3078,9 @@ export default function App() {
               >
                 <motion.div
                   key="add-trade-form-modal-content"
-                  initial={{ opacity: 0, scale: 0.98, y: 10 }}
+                  initial={{ opacity: 0, scale: 0.96, y: 16 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.98, y: 10 }}
+                  exit={{ opacity: 0, scale: 0.96, y: 16 }}
                   transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                   style={{ willChange: "transform, opacity" }}
                   onClick={(e) => e.stopPropagation()}

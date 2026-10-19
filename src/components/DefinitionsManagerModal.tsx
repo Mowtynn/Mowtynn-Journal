@@ -322,9 +322,9 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
         >
           <motion.div
             key="definitions-modal-content"
-            initial={{ opacity: 0, scale: 0.98, y: 10 }}
+            initial={{ opacity: 0, scale: 0.96, y: 16 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.98, y: 10 }}
+            exit={{ opacity: 0, scale: 0.96, y: 16 }}
             transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
             style={{ willChange: "transform, opacity" }}
             className="relative w-full max-w-4xl h-[620px] max-h-[90vh] min-h-[480px] bg-zinc-900 border border-zinc-700/50 rounded-2xl shadow-2xl overflow-hidden flex flex-col my-auto"
@@ -730,9 +730,9 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                 >
                   <motion.div
                     key="delete-confirm-content"
-                    initial={{ opacity: 0, scale: 0.98, y: 10 }}
+                    initial={{ opacity: 0, scale: 0.96, y: 16 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.98, y: 10 }}
+                    exit={{ opacity: 0, scale: 0.96, y: 16 }}
                     transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                     style={{ willChange: "transform, opacity" }}
                     className="bg-zinc-900 border border-zinc-700/60 rounded-2xl p-5 max-w-sm w-full shadow-2xl space-y-4"
@@ -839,9 +839,9 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                 >
                   <motion.div
                     key="reset-confirm-content"
-                    initial={{ opacity: 0, scale: 0.98, y: 10 }}
+                    initial={{ opacity: 0, scale: 0.96, y: 16 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.98, y: 10 }}
+                    exit={{ opacity: 0, scale: 0.96, y: 16 }}
                     transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                     style={{ willChange: "transform, opacity" }}
                     className="bg-zinc-900 border border-zinc-700/60 rounded-2xl p-5 max-w-sm w-full shadow-2xl space-y-4"

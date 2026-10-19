@@ -2060,9 +2060,9 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
             >
               <motion.div
                 key="dead-zone-modal-content"
-                initial={{ opacity: 0, scale: 0.98, y: 10 }}
+                initial={{ opacity: 0, scale: 0.96, y: 16 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.98, y: 10 }}
+                exit={{ opacity: 0, scale: 0.96, y: 16 }}
                 transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                 style={{ willChange: "transform, opacity" }}
                 className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-4xl h-[82vh] sm:h-[640px] max-h-[90vh] min-h-[460px] flex flex-col shadow-2xl overflow-hidden "
@@ -2255,9 +2255,9 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
             >
               <motion.div
                 key="optimal-freq-modal-content"
-                initial={{ opacity: 0, scale: 0.98, y: 10 }}
+                initial={{ opacity: 0, scale: 0.96, y: 16 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.98, y: 10 }}
+                exit={{ opacity: 0, scale: 0.96, y: 16 }}
                 transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                 style={{ willChange: "transform, opacity" }}
                 className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-2xl h-[82vh] sm:h-[640px] max-h-[90vh] min-h-[460px] flex flex-col shadow-2xl overflow-hidden "
