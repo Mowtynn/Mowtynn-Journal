@@ -1,4 +1,4 @@
-import React, { useState, memo, useMemo } from 'react';
+import React, { useState, memo, useMemo, useRef, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -29,6 +29,14 @@ interface NotesViewProps {
   onDeleteNote: (id: string) => void;
 }
 
+// Not ekranları (liste / okuma / düzenleme) arası geçiş: eski ekran önce yumuşakça çıkar, yenisi hafif yükselerek girer.
+const NOTE_EASE = [0.16, 1, 0.3, 1] as const;
+const noteViewMotion = {
+  initial: { opacity: 0, y: 14, scale: 0.985 },
+  animate: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.28, ease: NOTE_EASE } },
+  exit: { opacity: 0, y: -8, scale: 0.99, transition: { duration: 0.16, ease: NOTE_EASE } },
+};
+
 const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: NotesViewProps) {
   const [activeNote, setActiveNote] = useState<Note | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -41,6 +49,18 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [exportFormatTab, setExportFormatTab] = useState<'excel' | 'csv'>('excel');
   const exportRef = React.useRef<HTMLDivElement>(null);
+  const filterWrapRef = useRef<HTMLDivElement>(null);
+  const allBtnRef = useRef<HTMLButtonElement>(null);
+  const pinnedBtnRef = useRef<HTMLButtonElement>(null);
+  const [filterIndicator, setFilterIndicator] = useState<{ left: number; width: number } | null>(null);
+
+  // "Tümü / Sabitlenenler" göstergesi: layoutId yerine ölçülen konumla (ekran değişiminde alttan kayma hatası olmaz)
+  useLayoutEffect(() => {
+    const btn = activeFilter === 'ALL' ? allBtnRef.current : pinnedBtnRef.current;
+    if (!btn) return;
+    const left = btn.offsetLeft, width = btn.offsetWidth;
+    setFilterIndicator(prev => (prev && prev.left === left && prev.width === width ? prev : { left, width }));
+  });
 
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -178,15 +198,15 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
 
   return (
     <div className="w-full max-w-6xl mx-auto space-y-4">
-      <AnimatePresence>
+      <AnimatePresence mode="wait" initial={false}>
         {isEditing ? (
           // EDIT / CREATE MODE
           <motion.div 
             key="note-edit"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+            variants={noteViewMotion}
+            initial="initial"
+            animate="animate"
+            exit="exit"
             className="w-full flex flex-col space-y-4"
           >
             <div className="bg-zinc-950/60 border border-zinc-800/80  rounded-2xl p-4 sm:p-5 relative overflow-hidden shadow-sm">
@@ -252,10 +272,10 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
           // READ / DETAIL MODE
           <motion.div 
             key="note-read"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+            variants={noteViewMotion}
+            initial="initial"
+            animate="animate"
+            exit="exit"
             className="w-full flex flex-col space-y-4"
           >
             <div className="bg-zinc-950/60 border border-zinc-800/80  rounded-2xl p-4 sm:p-5 relative overflow-hidden shadow-sm">
@@ -326,10 +346,10 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
           // LIST / GRID MODE
           <motion.div 
             key="note-list"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+            variants={noteViewMotion}
+            initial="initial"
+            animate="animate"
+            exit="exit"
             className="w-full space-y-4"
           >
             {/* Header bar */}
@@ -356,8 +376,21 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                 
                 <div className="flex flex-wrap items-center gap-2.5">
                   {/* FILTER PILLS */}
-                  <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-xl p-0.5 relative">
+                  <div ref={filterWrapRef} className="flex items-center bg-zinc-900 border border-zinc-800 rounded-xl p-0.5 relative">
+                    {filterIndicator && (
+                      <motion.div
+                        aria-hidden
+                        initial={false}
+                        animate={{ left: filterIndicator.left, width: filterIndicator.width }}
+                        transition={{ type: "spring", stiffness: 450, damping: 35 }}
+                        className={`absolute top-0.5 bottom-0.5 rounded-lg shadow-xs border pointer-events-none ${
+                          activeFilter === 'ALL' ? 'bg-zinc-800 border-transparent' : 'bg-blue-500/20 border-blue-500/30'
+                        }`}
+                        style={{ transition: 'background-color 200ms, border-color 200ms' }}
+                      />
+                    )}
                     <button
+                      ref={allBtnRef}
                       type="button"
                       onClick={() => setActiveFilter('ALL')}
                       className={`relative px-3 py-1 text-[10px] font-sans font-bold uppercase rounded-lg transition-colors cursor-pointer select-none ${
@@ -366,16 +399,10 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                           : 'text-zinc-400 hover:text-zinc-200'
                       }`}
                     >
-                      {activeFilter === 'ALL' && (
-                        <motion.div
-                          layoutId="activeNotesFilterIndicator"
-                          className="absolute inset-0 bg-zinc-800 rounded-lg shadow-xs"
-                          transition={{ type: "spring", stiffness: 450, damping: 35 }}
-                        />
-                      )}
                       <span className="relative z-10">Tümü ({notes.length})</span>
                     </button>
                     <button
+                      ref={pinnedBtnRef}
                       type="button"
                       onClick={() => setActiveFilter('PINNED')}
                       className={`relative px-3 py-1 text-[10px] font-sans font-bold uppercase rounded-lg transition-colors cursor-pointer flex items-center gap-1 select-none ${
@@ -384,13 +411,6 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                           : 'text-zinc-400 hover:text-zinc-200'
                       }`}
                     >
-                      {activeFilter === 'PINNED' && (
-                        <motion.div
-                          layoutId="activeNotesFilterIndicator"
-                          className="absolute inset-0 bg-blue-500/20 border border-blue-500/30 rounded-lg shadow-xs"
-                          transition={{ type: "spring", stiffness: 450, damping: 35 }}
-                        />
-                      )}
                       <span className="relative z-10 flex items-center gap-1">
                         <Pin size={10} className={activeFilter === 'PINNED' ? 'fill-current' : ''} />
                         Sabitlenenler ({pinnedCount})
@@ -621,9 +641,12 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-                {filteredNotes.map((note) => (
-                  <div
+                {filteredNotes.map((note, noteIdx) => (
+                  <motion.div
                     key={note.id}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.26, ease: NOTE_EASE, delay: Math.min(noteIdx, 8) * 0.03 }}
                     onClick={() => handleOpenNote(note)}
                     className={`group relative bg-zinc-950/60 border ${
                       note.isPinned 
@@ -674,7 +697,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                         Oku →
                       </span>
                     </div>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             )}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import toast from "react-hot-toast";
+import { motion } from "motion/react";
 import { Trade, DefinitionTitles, PlatformCategory } from "../types";
 import { 
   DEFAULT_PLAN_FIDELITIES, 
@@ -625,21 +626,23 @@ const AddTradeForm = React.memo(function AddTradeForm({
                       type="button"
                       data-selected={type === "LONG"}
                       onClick={() => setType("LONG")}
-                      className={`h-full rounded-md sm:rounded-lg text-xs font-sans font-bold uppercase transition-ui flex items-center justify-center cursor-pointer ${
-                        type === "LONG" ? "toggle-item-win font-bold shadow-xs" : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 font-bold"
+                      className={`relative h-full rounded-md sm:rounded-lg text-xs font-sans font-bold uppercase transition-ui flex items-center justify-center cursor-pointer ${
+                        type === "LONG" ? "text-win font-bold" : "text-zinc-400 hover:text-zinc-200 font-bold"
                       }`}
                     >
-                      LONG
+                      {type === "LONG" && <SlideBg id="tradeTypeSlide" rounded="rounded-md sm:rounded-lg" className="bg-win-bg border-win-border shadow-xs" />}
+                      <span className="relative z-10">LONG</span>
                     </button>
                     <button
                       type="button"
                       data-selected={type === "SHORT"}
                       onClick={() => setType("SHORT")}
-                      className={`h-full rounded-md sm:rounded-lg text-xs font-sans font-bold uppercase transition-ui flex items-center justify-center cursor-pointer ${
-                        type === "SHORT" ? "toggle-item-loss font-bold shadow-xs" : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 font-bold"
+                      className={`relative h-full rounded-md sm:rounded-lg text-xs font-sans font-bold uppercase transition-ui flex items-center justify-center cursor-pointer ${
+                        type === "SHORT" ? "text-loss font-bold" : "text-zinc-400 hover:text-zinc-200 font-bold"
                       }`}
                     >
-                      SHORT
+                      {type === "SHORT" && <SlideBg id="tradeTypeSlide" rounded="rounded-md sm:rounded-lg" className="bg-loss-bg border-loss-border shadow-xs" />}
+                      <span className="relative z-10">SHORT</span>
                     </button>
                   </div>
                 </div>
@@ -686,11 +689,12 @@ const AddTradeForm = React.memo(function AddTradeForm({
                             e.stopPropagation();
                             setPlatformTabFilter('ALL');
                           }}
-                          className={`flex-1 py-1 text-[10px] font-bold rounded-lg uppercase transition-colors cursor-pointer text-center ${
-                            platformTabFilter === 'ALL' ? 'bg-zinc-800 text-white shadow-xs' : 'text-zinc-400 hover:text-zinc-200'
+                          className={`relative flex-1 py-1 text-[10px] font-bold rounded-lg uppercase transition-colors cursor-pointer text-center ${
+                            platformTabFilter === 'ALL' ? 'text-white' : 'text-zinc-400 hover:text-zinc-200'
                           }`}
                         >
-                          Tümü
+                          {platformTabFilter === 'ALL' && <SlideBg id="platformTabSlide" className="bg-zinc-800 border-transparent shadow-xs" />}
+                          <span className="relative z-10">Tümü</span>
                         </button>
                         <button
                           type="button"
@@ -699,12 +703,12 @@ const AddTradeForm = React.memo(function AddTradeForm({
                             e.stopPropagation();
                             setPlatformTabFilter('FUNDED');
                           }}
-                          className={`flex-1 py-1 text-[10px] font-bold rounded-lg uppercase transition-colors flex items-center justify-center gap-1 cursor-pointer ${
-                            platformTabFilter === 'FUNDED' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-xs' : 'text-zinc-400 hover:text-emerald-400'
+                          className={`relative flex-1 py-1 text-[10px] font-bold rounded-lg uppercase transition-colors flex items-center justify-center gap-1 cursor-pointer ${
+                            platformTabFilter === 'FUNDED' ? 'text-emerald-300' : 'text-zinc-400 hover:text-emerald-400'
                           }`}
                         >
-                          <Trophy size={10} />
-                          Funded
+                          {platformTabFilter === 'FUNDED' && <SlideBg id="platformTabSlide" className="bg-emerald-500/20 border-emerald-500/40 shadow-xs" />}
+                          <span className="relative z-10 flex items-center justify-center gap-1"><Trophy size={10} />Funded</span>
                         </button>
                         <button
                           type="button"
@@ -713,12 +717,12 @@ const AddTradeForm = React.memo(function AddTradeForm({
                             e.stopPropagation();
                             setPlatformTabFilter('CHALLENGE');
                           }}
-                          className={`flex-1 py-1 text-[10px] font-bold rounded-lg uppercase transition-colors flex items-center justify-center gap-1 cursor-pointer ${
-                            platformTabFilter === 'CHALLENGE' ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40 shadow-xs' : 'text-zinc-400 hover:text-blue-400'
+                          className={`relative flex-1 py-1 text-[10px] font-bold rounded-lg uppercase transition-colors flex items-center justify-center gap-1 cursor-pointer ${
+                            platformTabFilter === 'CHALLENGE' ? 'text-blue-300' : 'text-zinc-400 hover:text-blue-400'
                           }`}
                         >
-                          <Target size={10} />
-                          Challenge
+                          {platformTabFilter === 'CHALLENGE' && <SlideBg id="platformTabSlide" className="bg-blue-500/20 border-blue-500/40 shadow-xs" />}
+                          <span className="relative z-10 flex items-center justify-center gap-1"><Target size={10} />Challenge</span>
                         </button>
                         <button
                           type="button"
@@ -727,12 +731,12 @@ const AddTradeForm = React.memo(function AddTradeForm({
                             e.stopPropagation();
                             setPlatformTabFilter('DEMO');
                           }}
-                          className={`flex-1 py-1 text-[10px] font-bold rounded-lg uppercase transition-colors flex items-center justify-center gap-1 cursor-pointer ${
-                            platformTabFilter === 'DEMO' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-xs' : 'text-zinc-400 hover:text-amber-400'
+                          className={`relative flex-1 py-1 text-[10px] font-bold rounded-lg uppercase transition-colors flex items-center justify-center gap-1 cursor-pointer ${
+                            platformTabFilter === 'DEMO' ? 'text-amber-300' : 'text-zinc-400 hover:text-amber-400'
                           }`}
                         >
-                          <Shield size={10} />
-                          Demo
+                          {platformTabFilter === 'DEMO' && <SlideBg id="platformTabSlide" className="bg-amber-500/20 border-amber-500/40 shadow-xs" />}
+                          <span className="relative z-10 flex items-center justify-center gap-1"><Shield size={10} />Demo</span>
                         </button>
                       </div>
 
@@ -863,9 +867,14 @@ const AddTradeForm = React.memo(function AddTradeForm({
                 <div className="grid grid-cols-3 gap-1.5 h-10 sm:h-11 w-full bg-zinc-950/80 border border-zinc-700/70 rounded-xl p-1 shadow-inner">
                   {(["WIN", "LOSS", "BREAKEVEN"] as const).map((sVal) => {
                     const colors: Record<string, string> = {
-                      WIN: "toggle-item-win font-bold shadow-xs",
-                      LOSS: "toggle-item-loss font-bold shadow-xs",
-                      BREAKEVEN: "toggle-item-brand font-bold shadow-xs",
+                      WIN: "text-win font-bold",
+                      LOSS: "text-loss font-bold",
+                      BREAKEVEN: "text-brand font-bold",
+                    };
+                    const bgColors: Record<string, string> = {
+                      WIN: "bg-win-bg border-win-border shadow-xs",
+                      LOSS: "bg-loss-bg border-loss-border shadow-xs",
+                      BREAKEVEN: "bg-brand/10 border-brand/20 shadow-xs",
                     };
                     return (
                       <button
@@ -887,13 +896,14 @@ const AddTradeForm = React.memo(function AddTradeForm({
                             }
                           }
                         }}
-                        className={`h-full min-w-0 px-4 sm:px-6 text-[13px] font-bold font-sans rounded-lg border uppercase transition-ui cursor-pointer ${
+                        className={`relative h-full min-w-0 px-4 sm:px-6 text-[13px] font-bold font-sans rounded-lg border border-transparent uppercase transition-ui cursor-pointer ${
                           tradeStatus === sVal
                             ? colors[sVal]
-                            : "bg-transparent text-zinc-400 border-transparent hover:text-zinc-200 hover:bg-zinc-900"
+                            : "bg-transparent text-zinc-400 hover:text-zinc-200"
                         }`}
                       >
-                        {sVal}
+                        {tradeStatus === sVal && <SlideBg id="tradeStatusSlide" className={bgColors[sVal]} />}
+                        <span className="relative z-10">{sVal}</span>
                       </button>
                     );
                   })}
@@ -1171,13 +1181,14 @@ const AddTradeForm = React.memo(function AddTradeForm({
                         type="button"
                         data-selected={sess === selectedSession}
                         onClick={() => setSelectedSession(sess === selectedSession ? "" : sess)}
-                        className={`px-3 py-1.5 text-xs rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
+                        className={`relative px-3 py-1.5 text-xs rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
                           sess === selectedSession
-                            ? "bg-purple-500/20 text-purple-300 border-purple-500/60 shadow-xs"
+                            ? "text-purple-300 border-transparent"
                             : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
                         }`}
                       >
-                        {sess}
+                        {sess === selectedSession && <SlideBg id="sessionSlide" rounded="rounded-xl" className="bg-purple-500/20 border-purple-500/60 shadow-xs" />}
+                        <span className="relative z-10">{sess}</span>
                       </button>
                     ))}
                   </div>
@@ -1226,13 +1237,14 @@ const AddTradeForm = React.memo(function AddTradeForm({
                         type="button"
                         data-selected={tf === selectedHtfTimeframe}
                         onClick={() => setSelectedHtfTimeframe(tf === selectedHtfTimeframe ? "" : tf)}
-                        className={`px-3 py-1.5 text-xs rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
+                        className={`relative px-3 py-1.5 text-xs rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
                           tf === selectedHtfTimeframe
-                            ? "bg-rose-500/20 text-rose-300 border-rose-500/60 shadow-xs"
+                            ? "text-rose-300 border-transparent"
                             : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
                         }`}
                       >
-                        {tf}
+                        {tf === selectedHtfTimeframe && <SlideBg id="htfSlide" rounded="rounded-xl" className="bg-rose-500/20 border-rose-500/60 shadow-xs" />}
+                        <span className="relative z-10">{tf}</span>
                       </button>
                     ))}
                   </div>
@@ -1285,13 +1297,14 @@ const AddTradeForm = React.memo(function AddTradeForm({
                         type="button"
                         data-selected={tf === selectedTimeframe}
                         onClick={() => setSelectedTimeframe(tf === selectedTimeframe ? "" : tf)}
-                        className={`px-3 py-1.5 text-xs rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
+                        className={`relative px-3 py-1.5 text-xs rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
                           tf === selectedTimeframe
-                            ? "bg-blue-500/20 text-blue-300 border-blue-500/60 shadow-xs"
+                            ? "text-blue-300 border-transparent"
                             : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
                         }`}
                       >
-                        {tf}
+                        {tf === selectedTimeframe && <SlideBg id="ltfSlide" rounded="rounded-xl" className="bg-blue-500/20 border-blue-500/60 shadow-xs" />}
+                        <span className="relative z-10">{tf}</span>
                       </button>
                     ))}
                   </div>
@@ -1469,8 +1482,8 @@ const AddTradeForm = React.memo(function AddTradeForm({
               type="submit"
               className={`px-7 h-10 text-xs font-black font-sans tracking-wider rounded-xl uppercase transition-ui flex items-center justify-center gap-1.5 cursor-pointer shadow-lg ${
                 editingTrade
-                  ? "bg-amber-500 hover:bg-amber-400 text-zinc-950 shadow-amber-500/20 active:scale-[0.98]"
-                  : "bg-blue-600 hover:bg-blue-500 text-white shadow-blue-500/25 active:scale-[0.98]"
+                  ? "bg-amber-500 hover:bg-amber-400 text-zinc-950 shadow-amber-500/20"
+                  : "bg-blue-600 hover:bg-blue-500 text-white shadow-blue-500/25"
               }`}
             >
               {editingTrade ? "Değişiklikleri Kaydet" : <><Plus size={14} /> İşlemi Ekle</>}
@@ -1481,5 +1494,17 @@ const AddTradeForm = React.memo(function AddTradeForm({
     </div>
   );
 });
+
+/* Seçili butonun arkasındaki, butonlar arasında kayan vurgu (layoutId ile) */
+const SLIDE_SPRING = { type: "spring", stiffness: 420, damping: 34 } as const;
+function SlideBg({ id, className, rounded = "rounded-lg" }: { id: string; className: string; rounded?: string }) {
+  return (
+    <motion.span
+      layoutId={id}
+      transition={SLIDE_SPRING}
+      className={`absolute inset-0 border pointer-events-none ${rounded} ${className}`}
+    />
+  );
+}
 
 export default AddTradeForm;

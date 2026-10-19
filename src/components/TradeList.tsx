@@ -390,7 +390,7 @@ const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
       )}
       <td className="w-full sm:w-[8%] sm:min-w-[60px] flex justify-between sm:justify-center items-center sm:table-cell order-6 py-1 px-0 sm:px-3 text-right sm:text-center sm:bg-transparent sm:rounded-r-xl sm:border-y sm:border-r sm:border-zinc-800/80 mt-1.5 sm:mt-0 sm:pt-1.5 pt-0 align-middle">
         {true && (
-          <div className="sm:hidden">
+          <div className="sm:hidden trade-mobile-only">
             {trade.platform ? (
               <span className={`inline-flex items-center justify-center min-w-[46px] max-w-[120px] h-[20px] px-2.5 py-0 text-center text-[10px] font-bold rounded-full uppercase tracking-wider font-sans whitespace-nowrap truncate border ${categoryBadgeClass}`}>
                 {trade.platform}

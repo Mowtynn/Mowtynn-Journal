@@ -469,7 +469,7 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                             </div>
                           </td>
                           <td className="w-full sm:w-[14%] sm:min-w-[80px] flex justify-between sm:justify-center items-center sm:table-cell order-6 py-1 px-0 sm:px-2 text-center sm:bg-zinc-900 group-hover:bg-blue-950/10 sm:rounded-r-xl sm:border-y sm:border-r sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 sm:pt-1.5 pt-0 align-middle">
-                            <div className="sm:hidden">
+                            <div className="sm:hidden trade-mobile-only">
                               <span className="heading-3">Platform</span>
                             </div>
                             <div className="flex items-center justify-center w-full">

@@ -43,6 +43,19 @@ interface JournalViewProps {
   onDeleteEntry: (id: string) => void;
 }
 
+// Günlük sağ panel geçişi: kayıt sağdan kayarak açılır, kapanırken hafifçe sola çekilip solar.
+const JOURNAL_EASE = [0.16, 1, 0.3, 1] as const;
+const journalPaneMotion = {
+  initial: { opacity: 0, x: 28, scale: 0.99 },
+  animate: { opacity: 1, x: 0, scale: 1, transition: { duration: 0.3, ease: JOURNAL_EASE } },
+  exit: { opacity: 0, x: -16, scale: 0.995, transition: { duration: 0.16, ease: JOURNAL_EASE } },
+};
+const journalEmptyMotion = {
+  initial: { opacity: 0, y: 8 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.25, ease: JOURNAL_EASE } },
+  exit: { opacity: 0, y: -6, transition: { duration: 0.12, ease: JOURNAL_EASE } },
+};
+
 const moodIcons = {
   terrible: <Activity size={15} className="text-rose-400" />,
   bad: <Frown size={15} className="text-amber-400" />,
@@ -756,14 +769,14 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
 
       {/* RIGHT PANE: Editor / Viewer */}
       <div className={`flex-1 flex flex-col bg-transparent overflow-hidden relative ${!isEditing && !activeEntry ? 'hidden md:flex items-center justify-center' : 'flex'}`}>
-        <AnimatePresence>
+        <AnimatePresence mode="wait" initial={false}>
           {!isEditing && !activeEntry ? (
             <motion.div 
               key="empty-state"
-              initial={{ opacity: 0, y: 4 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
-              transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+              variants={journalEmptyMotion}
+              initial="initial"
+              animate="animate"
+              exit="exit"
               className="flex-1 flex items-center justify-center p-5 text-center select-none"
             >
               <div className="opacity-60 max-w-xs">
@@ -778,10 +791,10 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
             // EDITOR MODE
             <motion.div 
               key="editor-mode"
-              initial={{ opacity: 0, y: 4 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
-              transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+              variants={journalPaneMotion}
+              initial="initial"
+              animate="animate"
+              exit="exit"
               className="flex flex-col h-full w-full"
             >
               <div className="px-5 py-3 shrink-0 border-b border-zinc-800/80 flex items-center justify-between bg-zinc-950/30">
@@ -917,10 +930,10 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
             // VIEW MODE
             <motion.div 
               key={`view-mode-${activeEntry?.id}`}
-              initial={{ opacity: 0, y: 4 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
-              transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+              variants={journalPaneMotion}
+              initial="initial"
+              animate="animate"
+              exit="exit"
               className="flex flex-col h-full w-full"
             >
               <div className="px-5 py-3.5 shrink-0 border-b border-zinc-800/80 flex items-center justify-between bg-zinc-950/30">
