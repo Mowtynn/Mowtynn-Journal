@@ -126,8 +126,12 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
           className="fixed inset-0 modal-layer modal-dim z-[3500] overflow-y-auto  no-print flex flex-col justify-start items-center p-4 md:p-8"
           onClick={onClose}
         >
+        <AnimatePresence>
         {isGenerating && (
-          <div className="fixed inset-0 modal-layer bg-zinc-950/95 z-[3600] flex flex-col items-center justify-center text-zinc-100 font-medium no-print">
+          <motion.div
+            key="print-generating"
+            {...MODAL_BACKDROP}
+            className="fixed inset-0 modal-layer bg-zinc-950/95 z-[3600] flex flex-col items-center justify-center text-zinc-100 font-medium no-print">
             <div className="p-5 bg-zinc-900 text-white rounded-3xl flex flex-col items-center gap-4 shadow-2xl max-w-sm text-center border border-white/10">
               <RefreshCw size={32} className="animate-spin text-blue-400" />
               <div>
@@ -137,8 +141,9 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                 </p>
               </div>
             </div>
-          </div>
+          </motion.div>
         )}
+        </AnimatePresence>
         <motion.div
           key="print-report-modal-content"
           {...MODAL_PANEL}

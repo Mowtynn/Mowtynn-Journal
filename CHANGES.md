@@ -155,3 +155,16 @@ Ağ kapalı olduğu için `npm install` / `npm run build` bu ortamda çalıştı
 - Güvenlik: site jetonu artık süreli HMAC imzalı (eski sha256(parola) jetonu geçersiz, bir kez yeniden giriş gerekir); parola limiti yalnızca başarısız denemeleri sayar, jeton doğrulama ayrı limit; /api/resolve-tv ve /api/proxy-image jeton ister; ağ hatasında oturum düşmez. İsteğe bağlı TOKEN_SECRET.
 - trading_definitions_revision artık kullanıcı listelerini sıfırlamıyor.
 - Derleme bu ortamda çalıştırılamadı (ağ kapalı): `npm install && npm run lint && npm run build`.
+
+## 12. tur: form sadeleştirme ve akıcılık
+- İşlem formu: Strateji/Asia FVG altındaki çizgi kaldırıldı; buton, yazı ve boşluklar bir kademe küçültüldü (pencere içi kaydırma gerekmez). Asia Range FVG varsayılanı Var / Yok (eski varsayılanı değiştirmemiş kullanıcılar otomatik taşınır).
+- Performans: ana sayfa panelleri `useMemo` ile yalıtıldı; pencere aç/kapa artık dashboard, tablo ve grafikleri yeniden çizmez.
+- Performans: `useAfterPaint` ile filtre ve tanımlama pencerelerindeki ağır hesaplar açılış animasyonunun ilk karesinden sonraya ertelendi.
+
+## 13. tur: animasyon bütünlüğü ve senkron
+- Pencere taraması: 19 bileşendeki tüm pencereler AnimatePresence + MODAL_* ile açılıp kapanıyor. Eksik 3 yer tamamlandı: Rapor "görüntü hazırlanıyor" katmanı, Verileri Sıfırla onay kutusu, Ayarlar menüsü (ortak POPOVER hareketi).
+- Senkron: bulut ayar yankıları (kendi yazdığımız değişiklik) aynıysa state güncellenmez; kapatma fonksiyonları kararlı (useCallback), pencereler gereksiz yeniden çizilmez.
+
+## 14. tur: AI Co-Pilot çökmesi
+- AICoPilotModal: `inputPrompt` durumu, onu kullanan useEffect'ten SONRA tanımlıydı (TDZ). Pencere açılırken "Cannot access 'b' before initialization" hatası veriyordu. Tanım effect'ten önceye alındı.
+- Tüm proje için tanımlanmadan kullanım taraması yapıldı (hook bağımlılıkları, useMemo/useState gövdeleri): başka örnek bulunmadı.

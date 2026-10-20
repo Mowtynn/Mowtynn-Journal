@@ -175,7 +175,7 @@ export const DEFAULT_PREMIUM_DISCOUNTS = [
  * işlemde etiket değil boolean saklanır, böylece yeniden adlandırma geçmiş kayıtları bozmaz.
  */
 export const DEFAULT_STRATEGIES = ["Asia Range"];
-export const DEFAULT_ASIA_RANGE_FVGS = ["Bullish FVG", "Bearish FVG"];
+export const DEFAULT_ASIA_RANGE_FVGS = ["Var", "Yok"];
 
 /** Listesi olmayan form alanlarının başlıkları: Tanımlamalar > Form Başlıkları'ndan değiştirilir. */
 export const FORM_LABEL_KEYS = [

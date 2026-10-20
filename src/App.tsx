@@ -1,4 +1,4 @@
-import { EASE, SPRING, MODAL_BACKDROP, MODAL_PANEL } from './lib/motion';
+import { EASE, SPRING, MODAL_BACKDROP, MODAL_PANEL, POPOVER } from './lib/motion';
 import { useState, useEffect, useMemo, useCallback, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Trade, TradeStats, Note, JournalEntry, Certificate, DefinitionTitles, AccountCategory } from "./types";
@@ -817,14 +817,26 @@ export default function App() {
   const [asiaRangeFvgs, setAsiaRangeFvgs] = useState<string[]>(() => {
     try {
       const stored = localStorage.getItem("trading_asia_range_fvgs_list");
-      if (stored) return JSON.parse(stored);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        // Eski varsayılan (Bullish/Bearish FVG) kullanıcı değiştirmediyse yeni varsayılana (Var / Yok) taşınır
+        if (Array.isArray(parsed) && parsed.length === 2 && parsed[0] === "Bullish FVG" && parsed[1] === "Bearish FVG") {
+          localStorage.setItem("trading_asia_range_fvgs_list", JSON.stringify(DEFAULT_ASIA_RANGE_FVGS));
+          return DEFAULT_ASIA_RANGE_FVGS;
+        }
+        return parsed;
+      }
     } catch (e) {
       console.error(e);
     }
     return DEFAULT_ASIA_RANGE_FVGS;
   });
 
-  const persistAsiaRangeFvgs = useCallback((updated: string[], syncCloud = true) => {
+  const persistAsiaRangeFvgs = useCallback((incoming: string[], syncCloud = true) => {
+    // Eski varsayılan (Bullish/Bearish FVG) yeni varsayılana (Var / Yok) taşınır; bulutta kalan eski kopya geri yazmaz
+    const isOldDefault = incoming.length === 2 && incoming[0] === "Bullish FVG" && incoming[1] === "Bearish FVG";
+    const updated = isOldDefault ? DEFAULT_ASIA_RANGE_FVGS : incoming;
+    if (isOldDefault) syncCloud = true;
     setAsiaRangeFvgs(updated);
     try {
       localStorage.setItem("trading_asia_range_fvgs_list", JSON.stringify(updated));
@@ -997,22 +1009,30 @@ export default function App() {
           (docSnap) => {
             if (docSnap.exists()) {
               const data = docSnap.data();
-              if (data.platforms) persistPlatforms(data.platforms, false);
-              if (data.timeframes) persistTimeframes(data.timeframes, false);
-              if (data.htfTimeframes) persistHtfTimeframes(data.htfTimeframes, false);
-              if (data.confirmations) persistConfirmations(data.confirmations, false);
-              if (data.concepts) persistConcepts(data.concepts, false);
-              if (data.sessions) persistSessions(data.sessions, false);
-              if (data.assets) persistAssets(data.assets, false);
-              if (data.planFidelities) persistPlanFidelities(data.planFidelities, false);
-              if (data.entryModels) persistEntryModels(data.entryModels, false);
-              if (data.trendTypes) persistTrendTypes(data.trendTypes, false);
-              if (data.tpTargets) persistTpTargets(data.tpTargets, false);
-              if (data.premiumDiscounts) persistPremiumDiscounts(data.premiumDiscounts, false);
-              if (data.entryHours) persistEntryHours(data.entryHours, false);
-              if (data.newsDays) persistNewsDays(data.newsDays, false);
-              if (data.strategies) persistStrategies(data.strategies, false);
-              if (data.asiaRangeFvgs) persistAsiaRangeFvgs(data.asiaRangeFvgs, false);
+              // Kendi yazdığımız değişikliklerin yankısı aynı değeri getirir; aynıysa state güncellenmez (gereksiz çizim yok)
+              const applyList = (value: unknown, storageKey: string, apply: (l: string[], sync: boolean) => void) => {
+                if (!Array.isArray(value)) return;
+                try {
+                  if (localStorage.getItem(storageKey) === JSON.stringify(value)) return;
+                } catch (e) {}
+                apply(value as string[], false);
+              };
+              applyList(data.platforms, "trading_platforms_list", persistPlatforms);
+              applyList(data.timeframes, "trading_timeframes_list", persistTimeframes);
+              applyList(data.htfTimeframes, "trading_htf_timeframes_list", persistHtfTimeframes);
+              applyList(data.confirmations, "trading_confirmations_list", persistConfirmations);
+              applyList(data.concepts, "trading_concepts_list", persistConcepts);
+              applyList(data.sessions, "trading_sessions_list", persistSessions);
+              applyList(data.assets, "trading_assets_list", persistAssets);
+              applyList(data.planFidelities, "trading_plan_fidelities_list", persistPlanFidelities);
+              applyList(data.entryModels, "trading_entry_models_list", persistEntryModels);
+              applyList(data.trendTypes, "trading_trend_types_list", persistTrendTypes);
+              applyList(data.tpTargets, "trading_tp_targets_list", persistTpTargets);
+              applyList(data.premiumDiscounts, "trading_premium_discounts_list", persistPremiumDiscounts);
+              applyList(data.entryHours, "trading_entry_hours_list", persistEntryHours);
+              applyList(data.newsDays, "trading_news_days_list", persistNewsDays);
+              applyList(data.strategies, "trading_strategies_list", persistStrategies);
+              applyList(data.asiaRangeFvgs, "trading_asia_range_fvgs_list", persistAsiaRangeFvgs);
               if (data.definitionTitles) persistDefinitionTitles(data.definitionTitles, false);
               if (data.displayName) {
 
@@ -1488,6 +1508,12 @@ export default function App() {
     setEditingTrade(null);
     setIsFormOpen(false);
   }, []);
+
+  // Kararlı kapatma fonksiyonları: pencereler React.memo ile korunur, her App çiziminde yeniden çizilmez
+  const closeGlobalFilter = useCallback(() => setIsGlobalFilterModalOpen(false), []);
+  const closePlatformMenu = useCallback(() => setIsPlatformMenuOpen(false), []);
+  const closeAuthModal = useCallback(() => setIsAuthModalOpen(false), []);
+  const closeCopilot = useCallback(() => setIsCopilotOpen(false), []);
 
   const handleCloseTradeDetail = useCallback(() => {
     setDetailedTrade(null);
@@ -2584,6 +2610,109 @@ export default function App() {
     isRrMode,
   ]);
 
+  // Ana sayfa panelleri: modal aç/kapa (isFormOpen, filtre penceresi vb.) bu bloğu yeniden çizmez.
+  // Yalnızca aşağıdaki veriler değişince yeniden hesaplanır; pencereler bu yüzden takılmadan açılır.
+  const mainPanes = useMemo(() => (
+            <div className="relative">
+                  <TabPane active={currentTab === "dashboard"}
+                    className="flex flex-col gap-3.5">
+                    {/* STATS BENTO ROW */}
+                    <SectionErrorBoundary sectionName="İstatistik Panosu">
+                      <StatsDashboard stats={calculatedStats} currency={currency} />
+                    </SectionErrorBoundary>
+
+                    {/* 2. DYNAMIC ACTION TRIGGER (YOUTUBE PLUS BOX) */}
+                    <div
+                      onClick={() => {
+                        setEditingTrade(null);
+                        setIsFormOpen(true);
+                      }}
+                      className="relative overflow-hidden bg-zinc-900/50 hover:bg-zinc-900/80 border border-zinc-800/80 hover:border-blue-500/40 rounded-2xl p-4 sm:p-4.5 flex flex-col sm:flex-row items-center justify-between gap-3 cursor-pointer transition-ui duration-200 ease-out select-none group shadow-sm hover:shadow-lg hover:shadow-blue-500/5"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-xl bg-blue-500/10 border border-blue-500/20 group-hover:bg-blue-500/20 group-hover:border-blue-500/40 flex items-center justify-center text-blue-400 transition-colors duration-200 ease-out shrink-0 shadow-xs">
+                          <Plus size={20} />
+                        </div>
+                        <div className="text-center sm:text-left">
+                          <h3 className="text-sm font-bold text-zinc-100 tracking-tight group-hover:text-blue-300 transition-colors font-sans">
+                            {"Yeni Pozisyon Girişi Yap"}
+                          </h3>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        className="w-full sm:w-auto h-10 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 font-bold text-xs px-5 rounded-xl transition-ui duration-200 ease-out flex items-center justify-center gap-2 shadow-xs border border-blue-500/30 tracking-wide cursor-pointer font-sans"
+                      >
+                        <Plus size={15} />
+                        {"İşlem Ekle"}
+                      </button>
+                    </div>
+
+                    {/* WORKSPACE DOUBLE GRID - NOW SINGLE-COLUMN EXPANDED FOR UTMOST PRECISION */}
+                    <div className="w-full space-y-3">
+                      <SectionErrorBoundary sectionName="İşlem Listesi">
+                        <TradeList
+                          trades={filteredGlobalTrades}
+                          onEdit={handleStartEdit}
+                          onDelete={handleDeleteTrade}
+                          onViewDetails={setDetailedTrade}
+                          currency={currency}
+                          definitionTitles={definitionTitles}
+                          planFidelities={planFidelities}
+                          entryModels={entryModels}
+                          trendTypes={trendTypes}
+                        />
+                      </SectionErrorBoundary>
+                    </div>
+                  </TabPane>
+                  <TabPane active={currentTab === "deep-analysis"}>
+                    <SectionErrorBoundary sectionName="Derin Analiz">
+                      <DeepAnalysis
+                        trades={filteredGlobalTrades}
+                        onViewDetails={setDetailedTrade}
+                        onEdit={handleStartEdit}
+                        onDelete={handleDeleteTrade}
+                        currency={currency}
+                        sessions={sessions}
+                        definitionTitles={definitionTitles}
+                        planFidelities={planFidelities}
+                        entryModels={entryModels}
+                        trendTypes={trendTypes}
+                      />
+                    </SectionErrorBoundary>
+                  </TabPane>
+                  <TabPane active={currentTab === "journal"}>
+                    <SectionErrorBoundary sectionName="Günlükler">
+                      <JournalView
+                        entries={journals}
+                        trades={filteredGlobalTrades}
+                        currency={currency}
+                        onSaveEntry={handleSaveJournal}
+                        onDeleteEntry={handleDeleteJournal}
+                      />
+                    </SectionErrorBoundary>
+                  </TabPane>
+                  <TabPane active={currentTab === "certificates"}>
+                    <SectionErrorBoundary sectionName="Sertifikalar">
+                      <CertificatesView
+                        certificates={certificates}
+                        onSaveCertificate={handleSaveCertificate}
+                        onDeleteCertificate={handleDeleteCertificate}
+                      />
+                    </SectionErrorBoundary>
+                  </TabPane>
+                  <TabPane active={currentTab === "notes"}>
+                    <SectionErrorBoundary sectionName="Notlar">
+                      <NotesView
+                        notes={notes}
+                        onSaveNote={handleSaveNote}
+                        onDeleteNote={handleDeleteNote}
+                      />
+                    </SectionErrorBoundary>
+                  </TabPane>
+            </div>
+  ), [ calculatedStats, certificates, currency, currentTab, definitionTitles, entryModels, filteredGlobalTrades, handleDeleteCertificate, handleDeleteJournal, handleDeleteNote, handleDeleteTrade, handleSaveCertificate, handleSaveJournal, handleSaveNote, handleStartEdit, journals, notes, planFidelities, sessions, setDetailedTrade, setEditingTrade, setIsFormOpen, trades, trendTypes ]);
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans antialiased selection:bg-blue-400/30 selection:text-white">
       <Toaster 
@@ -2736,12 +2865,8 @@ export default function App() {
                 {isSettingsOpen && (
                   <motion.div 
                     key="settings-dropdown-panel"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.15, ease: EASE }}
-                    style={{ willChange: "opacity" }}
-                    className="absolute right-0 top-full mt-2 w-72 max-w-[calc(100vw-24px)] bg-zinc-900 border border-zinc-700/60 rounded-2xl shadow-2xl p-2.5 z-50 flex flex-col gap-1.5 text-xs"
+                    {...POPOVER}
+                    className="origin-top-right absolute right-0 top-full mt-2 w-72 max-w-[calc(100vw-24px)] bg-zinc-900 border border-zinc-700/60 rounded-2xl shadow-2xl p-2.5 z-50 flex flex-col gap-1.5 text-xs"
                   >
                       {/* Platform Selector in Settings */}
                       <div className="px-2.5 py-2 border-b border-zinc-700/40 bg-zinc-950/40 rounded-xl">
@@ -3115,109 +3240,12 @@ export default function App() {
               <div className="h-[380px] bg-zinc-900 rounded-2xl border border-zinc-800 animate-pulse w-full"></div>
             </div>
           ) : (
-            <div className="relative">
-                  <TabPane active={currentTab === "dashboard"}
-                    className="flex flex-col gap-3.5">
-                    {/* STATS BENTO ROW */}
-                    <SectionErrorBoundary sectionName="İstatistik Panosu">
-                      <StatsDashboard stats={calculatedStats} currency={currency} />
-                    </SectionErrorBoundary>
-
-                    {/* 2. DYNAMIC ACTION TRIGGER (YOUTUBE PLUS BOX) */}
-                    <div
-                      onClick={() => {
-                        setEditingTrade(null);
-                        setIsFormOpen(true);
-                      }}
-                      className="relative overflow-hidden bg-zinc-900/50 hover:bg-zinc-900/80 border border-zinc-800/80 hover:border-blue-500/40 rounded-2xl p-4 sm:p-4.5 flex flex-col sm:flex-row items-center justify-between gap-3 cursor-pointer transition-ui duration-200 ease-out select-none group shadow-sm hover:shadow-lg hover:shadow-blue-500/5"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-xl bg-blue-500/10 border border-blue-500/20 group-hover:bg-blue-500/20 group-hover:border-blue-500/40 flex items-center justify-center text-blue-400 transition-colors duration-200 ease-out shrink-0 shadow-xs">
-                          <Plus size={20} />
-                        </div>
-                        <div className="text-center sm:text-left">
-                          <h3 className="text-sm font-bold text-zinc-100 tracking-tight group-hover:text-blue-300 transition-colors font-sans">
-                            {"Yeni Pozisyon Girişi Yap"}
-                          </h3>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        className="w-full sm:w-auto h-10 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 font-bold text-xs px-5 rounded-xl transition-ui duration-200 ease-out flex items-center justify-center gap-2 shadow-xs border border-blue-500/30 tracking-wide cursor-pointer font-sans"
-                      >
-                        <Plus size={15} />
-                        {"İşlem Ekle"}
-                      </button>
-                    </div>
-
-                    {/* WORKSPACE DOUBLE GRID - NOW SINGLE-COLUMN EXPANDED FOR UTMOST PRECISION */}
-                    <div className="w-full space-y-3">
-                      <SectionErrorBoundary sectionName="İşlem Listesi">
-                        <TradeList
-                          trades={filteredGlobalTrades}
-                          onEdit={handleStartEdit}
-                          onDelete={handleDeleteTrade}
-                          onViewDetails={setDetailedTrade}
-                          currency={currency}
-                          definitionTitles={definitionTitles}
-                          planFidelities={planFidelities}
-                          entryModels={entryModels}
-                          trendTypes={trendTypes}
-                        />
-                      </SectionErrorBoundary>
-                    </div>
-                  </TabPane>
-                  <TabPane active={currentTab === "deep-analysis"}>
-                    <SectionErrorBoundary sectionName="Derin Analiz">
-                      <DeepAnalysis
-                        trades={filteredGlobalTrades}
-                        onViewDetails={setDetailedTrade}
-                        onEdit={handleStartEdit}
-                        onDelete={handleDeleteTrade}
-                        currency={currency}
-                        sessions={sessions}
-                        definitionTitles={definitionTitles}
-                        planFidelities={planFidelities}
-                        entryModels={entryModels}
-                        trendTypes={trendTypes}
-                      />
-                    </SectionErrorBoundary>
-                  </TabPane>
-                  <TabPane active={currentTab === "journal"}>
-                    <SectionErrorBoundary sectionName="Günlükler">
-                      <JournalView
-                        entries={journals}
-                        trades={filteredGlobalTrades}
-                        currency={currency}
-                        onSaveEntry={handleSaveJournal}
-                        onDeleteEntry={handleDeleteJournal}
-                      />
-                    </SectionErrorBoundary>
-                  </TabPane>
-                  <TabPane active={currentTab === "certificates"}>
-                    <SectionErrorBoundary sectionName="Sertifikalar">
-                      <CertificatesView
-                        certificates={certificates}
-                        onSaveCertificate={handleSaveCertificate}
-                        onDeleteCertificate={handleDeleteCertificate}
-                      />
-                    </SectionErrorBoundary>
-                  </TabPane>
-                  <TabPane active={currentTab === "notes"}>
-                    <SectionErrorBoundary sectionName="Notlar">
-                      <NotesView
-                        notes={notes}
-                        onSaveNote={handleSaveNote}
-                        onDeleteNote={handleDeleteNote}
-                      />
-                    </SectionErrorBoundary>
-                  </TabPane>
-            </div>
+          {mainPanes}
           )}
           
             <GlobalFilterModal
               isOpen={isGlobalFilterModalOpen}
-              onClose={() => setIsGlobalFilterModalOpen(false)}
+              onClose={closeGlobalFilter}
               platforms={platforms}
               timeframes={timeframes}
               htfTimeframes={htfTimeframes}
@@ -3299,7 +3327,7 @@ export default function App() {
       {platformMenuMounted && (
         <DefinitionsManagerModal
           isOpen={isPlatformMenuOpen}
-          onClose={() => setIsPlatformMenuOpen(false)}
+          onClose={closePlatformMenu}
           trades={trades}
           onDeleteTradesByPlatform={handleDeleteTradesByPlatform}
           platforms={platforms}
@@ -3355,7 +3383,7 @@ export default function App() {
                   key="add-trade-form-modal-content"
                   {...MODAL_PANEL}
                   onClick={(e) => e.stopPropagation()}
-                  className="w-full max-w-6xl xl:max-w-7xl 2xl:max-w-[1440px] h-auto max-h-[92vh] overflow-hidden bg-[#0a0a0c] border border-zinc-800/80 rounded-2xl relative shadow-2xl flex flex-col cursor-default my-auto"
+                  className="w-full max-w-6xl xl:max-w-7xl 2xl:max-w-[1440px] h-auto max-h-[96vh] overflow-hidden bg-[#0a0a0c] border border-zinc-800/80 rounded-2xl relative shadow-2xl flex flex-col cursor-default my-auto"
                 >
                   <AddTradeForm
                     onSave={handleSaveTradeAndClose}
@@ -3405,7 +3433,7 @@ export default function App() {
         {authModalMounted && (
           <AuthModal
             isOpen={isAuthModalOpen}
-            onClose={() => setIsAuthModalOpen(false)}
+            onClose={closeAuthModal}
           />
         )}
 
@@ -3413,7 +3441,7 @@ export default function App() {
         {copilotMounted && (
           <AICoPilotModal
             isOpen={isCopilotOpen}
-            onClose={() => setIsCopilotOpen(false)}
+            onClose={closeCopilot}
             allTrades={trades}
             trades={filteredGlobalTrades}
             stats={calculatedStats}

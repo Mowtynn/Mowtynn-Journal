@@ -17,6 +17,7 @@ import {
   caseInsensitiveMatch, caseInsensitiveEquals, savePlatformCategory, getTradeAccountCategory,
   getStoredPlatformCategories, replacePlatformCategories, normalizeNewsDays
 } from '../constants/constants';
+import { useAfterPaint } from '../hooks/useAfterPaint';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 interface DefinitionsManagerModalProps {
@@ -190,6 +191,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
   persistDefinitionTitles,
 }) => {
   useBodyScrollLock(isOpen);
+  const ready = useAfterPaint(isOpen); // kullanım sayıları açılış animasyonundan sonra hesaplanır
   const [activeTab, setActiveTab] = useState<TabType>('platforms');
   const [searchQuery, setSearchQuery] = useState('');
   const [newItemText, setNewItemText] = useState('');
@@ -206,7 +208,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
   const usageCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     const [newsYes, newsNo] = normalizeNewsDays(newsDays);
-    if (!isOpen || !trades || trades.length === 0) return counts;
+    if (!ready || !trades || trades.length === 0) return counts;
 
     trades.forEach(t => {
       if (t.platform) counts[`platforms:${t.platform}`] = (counts[`platforms:${t.platform}`] || 0) + 1;
@@ -256,7 +258,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
       }
     });
     return counts;
-  }, [trades, isOpen, newsDays]);
+  }, [trades, ready, newsDays]);
 
   const tabs: { id: TabType; label: string; icon: React.ComponentType<{ size?: number; className?: string }>; list: string[]; persist: (list: string[]) => void; defaultList: string[]; fixed?: boolean; special?: boolean }[] = [
     { id: 'platforms', label: definitionTitles.platforms || DEFAULT_DEFINITION_TITLES.platforms, icon: Monitor, list: platforms, persist: persistPlatforms, defaultList: DEFAULT_PLATFORMS },

@@ -581,7 +581,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
     <div className="trade-form-root flex flex-col bg-[#0a0a0c] overflow-hidden rounded-2xl">
       
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-3 sm:py-3.5 border-b border-zinc-800/80 bg-zinc-950/80 shrink-0 select-none">
+      <div className="flex items-center justify-between px-4 py-2 sm:py-2.5 border-b border-zinc-800/80 bg-zinc-950/80 shrink-0 select-none">
         <div className="flex items-center gap-3">
           <div className={`h-2.5 w-2.5 rounded-full ${editingTrade ? "bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]" : "bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]"}`} />
           <h2 className="heading-1 text-sm sm:text-base tracking-wider">
@@ -603,7 +603,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col">
-        <div className="p-3.5 sm:p-4 lg:p-5 flex flex-col lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)_minmax(0,3fr)] gap-3.5 sm:gap-4 overflow-y-auto max-h-[calc(92vh-115px)]">
+        <div className="p-3 sm:p-3 lg:p-4 flex flex-col lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)_minmax(0,3fr)] gap-3 overflow-y-auto max-h-[calc(96vh-84px)]">
           
           {/* 1. SÜTUN: TEMEL & FİNANS (4 / 12) */}
           <div className="flex flex-col gap-3 sm:gap-3.5 min-w-0">
@@ -943,7 +943,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
               {/* DURUM: WIN / LOSS / BREAKEVEN */}
               <div>
                 <label className="text-[10px] sm:text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 block font-sans">{L("tradeStatus")}</label>
-                <div className="grid grid-cols-3 gap-1.5 h-10 sm:h-11 w-full bg-zinc-950/80 border border-zinc-700/70 rounded-xl p-1 shadow-inner">
+                <div className="grid grid-cols-3 gap-1.5 h-9 sm:h-10 w-full bg-zinc-950/80 border border-zinc-700/70 rounded-xl p-1 shadow-inner">
                   {(["WIN", "LOSS", "BREAKEVEN"] as const).map((sVal) => {
                     const colors: Record<string, string> = {
                       WIN: "text-win font-bold",
@@ -975,7 +975,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                             }
                           }
                         }}
-                        className={`relative h-full min-w-0 px-4 sm:px-6 text-[13px] font-bold font-sans rounded-lg border border-transparent uppercase transition-ui cursor-pointer ${
+                        className={`relative h-full min-w-0 px-3 sm:px-4 text-xs font-bold font-sans rounded-lg border border-transparent uppercase transition-ui cursor-pointer ${
                           tradeStatus === sVal
                             ? colors[sVal]
                             : "bg-transparent text-zinc-400 hover:text-zinc-200"
@@ -1169,7 +1169,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
 
           {/* 2. SÜTUN: TEKNİK STRATEJİ & KURGU (5 / 12) */}
           <div className="flex flex-col min-w-0">
-            <div className="bg-zinc-900/50 border border-zinc-800/80 rounded-2xl p-3 sm:p-3.5 flex flex-col gap-2.5 shadow-sm h-full">
+            <div className="bg-zinc-900/50 border border-zinc-800/80 rounded-2xl p-3 sm:p-3.5 flex flex-col gap-2 shadow-sm h-full">
               
               {/* 1. SETUP KALİTESİ */}
               <div>
@@ -1177,7 +1177,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                   <ShieldCheck size={13} className="text-blue-400" />
                   {(cleanDefinitionTitleString(definitionTitles.planFidelities) || "SETUP KALİTESİ").toUpperCase()}
                 </label>
-                <div className="w-full grid grid-flow-col auto-cols-fr bg-zinc-950/80 border border-zinc-800/90 rounded-xl p-1 gap-1.5 h-10 sm:h-11 shadow-inner">
+                <div className="w-full grid grid-flow-col auto-cols-fr bg-zinc-950/80 border border-zinc-800/90 rounded-xl p-1 gap-1.5 h-9 sm:h-10 shadow-inner">
                   {planFidelities.map((item) => {
                     const isSelected = planFidelity === item;
                     const lower = item.toLowerCase();
@@ -1195,7 +1195,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                         type="button"
                         data-selected={isSelected}
                         onClick={() => setPlanFidelity(isSelected ? null : item)}
-                        className={`min-w-0 h-full flex items-center justify-center px-4 sm:px-6 rounded-lg text-[13px] font-sans font-bold tracking-wide uppercase transition-ui duration-150 select-none border cursor-pointer ${
+                        className={`min-w-0 h-full flex items-center justify-center px-3 sm:px-4 rounded-lg text-xs font-sans font-bold tracking-wide uppercase transition-ui duration-150 select-none border cursor-pointer ${
                           isSelected ? activeStyle : "border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
                         }`}
                       >
@@ -1212,7 +1212,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                   <TrendingUp size={13} className="text-emerald-400" />
                   {(cleanDefinitionTitleString(definitionTitles.trendTypes) || "TREND").toUpperCase()}
                 </label>
-                <div className="w-full grid grid-flow-col auto-cols-fr bg-zinc-950/80 border border-zinc-800/90 rounded-xl p-1 gap-1.5 h-10 sm:h-11 shadow-inner">
+                <div className="w-full grid grid-flow-col auto-cols-fr bg-zinc-950/80 border border-zinc-800/90 rounded-xl p-1 gap-1.5 h-9 sm:h-10 shadow-inner">
                   {(trendTypes.length > 0 ? trendTypes : ["Continuation", "Reversal"]).map((tr, idx) => {
                     const isSelected = selectedTrend === tr;
                     const lower = tr.toLowerCase();
@@ -1229,7 +1229,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                         type="button"
                         data-selected={isSelected}
                         onClick={() => setSelectedTrend(isSelected ? "" : tr)}
-                        className={`min-w-0 h-full flex items-center justify-center px-4 sm:px-6 rounded-lg text-[13px] font-sans font-bold tracking-wide uppercase transition-ui duration-150 select-none border cursor-pointer ${
+                        className={`min-w-0 h-full flex items-center justify-center px-3 sm:px-4 rounded-lg text-xs font-sans font-bold tracking-wide uppercase transition-ui duration-150 select-none border cursor-pointer ${
                           isSelected
                             ? activeStyle
                             : "border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
@@ -1248,7 +1248,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                   <Newspaper size={13} className="text-amber-400" />
                   {(cleanDefinitionTitleString(definitionTitles.newsDays) || "NEWS DAY/BANK HOLIDAY").toUpperCase()}
                 </label>
-                <div className="w-full grid grid-flow-col auto-cols-fr bg-zinc-950/80 border border-zinc-800/90 rounded-xl p-1 gap-1.5 h-10 sm:h-11 shadow-inner">
+                <div className="w-full grid grid-flow-col auto-cols-fr bg-zinc-950/80 border border-zinc-800/90 rounded-xl p-1 gap-1.5 h-9 sm:h-10 shadow-inner">
                   {([
                     { value: true, label: newsYesLabel, active: "bg-amber-500/20 text-amber-300 border-amber-500/40" },
                     { value: false, label: newsNoLabel, active: "bg-blue-500/20 text-blue-300 border-blue-500/40" },
@@ -1260,7 +1260,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                         type="button"
                         data-selected={isSelected}
                         onClick={() => setNewsDay(opt.value)}
-                        className={`min-w-0 h-full flex items-center justify-center px-4 sm:px-6 rounded-lg text-[13px] font-sans font-bold tracking-wide uppercase transition-ui duration-150 select-none border cursor-pointer ${
+                        className={`min-w-0 h-full flex items-center justify-center px-3 sm:px-4 rounded-lg text-xs font-sans font-bold tracking-wide uppercase transition-ui duration-150 select-none border cursor-pointer ${
                           isSelected
                             ? `${opt.active} font-bold shadow-xs`
                             : "border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
@@ -1274,9 +1274,9 @@ const AddTradeForm = React.memo(function AddTradeForm({
               </div>
 
               {/* 2c. STRATEJİ + ASIA RANGE FVG (Tanımlamalar'dan yönetilir) */}
-              <div className="grid grid-cols-2 gap-x-4 gap-y-3 pt-1 border-t border-zinc-800/60">
+              <div className="grid grid-cols-2 gap-x-3 gap-y-2 pt-1 border-t border-zinc-800/60">
                 <div className="flex flex-col">
-                  <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1.5 flex items-center gap-1.5 font-sans">
+                  <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
                     <Compass size={12} className="text-cyan-400 shrink-0" />
                     {L("strategies")}
                   </span>
@@ -1287,7 +1287,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                         type="button"
                         data-selected={st === selectedStrategy}
                         onClick={() => setSelectedStrategy(st === selectedStrategy ? "" : st)}
-                        className={`relative px-3 py-1.5 text-xs rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
+                        className={`relative px-2.5 py-1 text-[11px] rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
                           st === selectedStrategy
                             ? "text-cyan-300 border-transparent"
                             : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
@@ -1300,7 +1300,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                   </div>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1.5 flex items-center gap-1.5 font-sans">
+                  <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
                     <Layers size={12} className="text-orange-400 shrink-0" />
                     {L("asiaRangeFvgs")}
                   </span>
@@ -1311,7 +1311,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                         type="button"
                         data-selected={fv === selectedAsiaFvg}
                         onClick={() => setSelectedAsiaFvg(fv === selectedAsiaFvg ? "" : fv)}
-                        className={`relative px-3 py-1.5 text-xs rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
+                        className={`relative px-2.5 py-1 text-[11px] rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
                           fv === selectedAsiaFvg
                             ? "text-orange-300 border-transparent"
                             : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
@@ -1330,10 +1330,10 @@ const AddTradeForm = React.memo(function AddTradeForm({
                   2. Satır: TIMEFRAME yanında PD ARRAY
                   3. Satır: ENTRY TIMEFRAME yanında ENTRY MODEL
                   4. Satır: TP TARGET yanında PREMIUM / DISCOUNT */}
-              <div className="grid grid-cols-2 gap-x-4 gap-y-3 pt-1 border-t border-zinc-800/60">
+              <div className="grid grid-cols-2 gap-x-3 gap-y-2">
                 {/* 1. SATIR SOL: SESSION */}
                 <div className="flex flex-col">
-                  <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1.5 flex items-center gap-1.5 font-sans">
+                  <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
                     <Clock size={12} className="text-purple-400 shrink-0" />
                     {(cleanDefinitionTitleString(definitionTitles.sessions) || "SESSION").toUpperCase()}
                   </span>
@@ -1344,7 +1344,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                         type="button"
                         data-selected={sess === selectedSession}
                         onClick={() => setSelectedSession(sess === selectedSession ? "" : sess)}
-                        className={`relative px-3 py-1.5 text-xs rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
+                        className={`relative px-2.5 py-1 text-[11px] rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
                           sess === selectedSession
                             ? "text-purple-300 border-transparent"
                             : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
@@ -1374,7 +1374,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                           type="button"
                           data-selected={isSelected}
                           onClick={() => setSelectedEntryTime(isSelected ? "" : time)}
-                          className={`px-2.5 py-1 text-xs rounded-xl transition-ui font-sans font-bold tracking-wider cursor-pointer border tabular-nums ${
+                          className={`px-2 py-0.5 text-[11px] rounded-xl transition-ui font-sans font-bold tracking-wider cursor-pointer border tabular-nums ${
                             isSelected
                               ? "bg-amber-500/20 text-amber-300 border-amber-500/60 shadow-xs"
                               : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
@@ -1389,7 +1389,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
 
                 {/* 2. SATIR SOL: TIMEFRAME */}
                 <div className="flex flex-col">
-                  <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1.5 flex items-center gap-1.5 font-sans">
+                  <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
                     <Maximize2 size={12} className="text-rose-400 shrink-0" />
                     {(cleanDefinitionTitleString(definitionTitles.htfTimeframes) || "TIMEFRAME").toUpperCase()}
                   </span>
@@ -1400,7 +1400,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                         type="button"
                         data-selected={tf === selectedHtfTimeframe}
                         onClick={() => setSelectedHtfTimeframe(tf === selectedHtfTimeframe ? "" : tf)}
-                        className={`relative px-3 py-1.5 text-xs rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
+                        className={`relative px-2.5 py-1 text-[11px] rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
                           tf === selectedHtfTimeframe
                             ? "text-rose-300 border-transparent"
                             : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
@@ -1415,7 +1415,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
 
                 {/* 2. SATIR SAĞ: PD ARRAY */}
                 <div className="flex flex-col">
-                  <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1.5 flex items-center gap-1.5 font-sans">
+                  <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
                     <Layers size={12} className="text-emerald-400 shrink-0" />
                     {(cleanDefinitionTitleString(definitionTitles.confirmations) || "PD ARRAY").toUpperCase()}
                   </span>
@@ -1434,7 +1434,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                                 : [...selectedConfirmations, c]
                             )
                           }
-                          className={`px-3 py-1.5 text-xs rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
+                          className={`px-2.5 py-1 text-[11px] rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
                             isActive
                               ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/60 shadow-xs"
                               : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
@@ -1449,7 +1449,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
 
                 {/* 3. SATIR SOL: ENTRY TIMEFRAME */}
                 <div className="flex flex-col">
-                  <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1.5 flex items-center gap-1.5 font-sans">
+                  <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
                     <Target size={12} className="text-blue-400 shrink-0" />
                     {(cleanDefinitionTitleString(definitionTitles.timeframes) || "ENTRY TIMEFRAME").toUpperCase()}
                   </span>
@@ -1460,7 +1460,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                         type="button"
                         data-selected={tf === selectedTimeframe}
                         onClick={() => setSelectedTimeframe(tf === selectedTimeframe ? "" : tf)}
-                        className={`relative px-3 py-1.5 text-xs rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
+                        className={`relative px-2.5 py-1 text-[11px] rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
                           tf === selectedTimeframe
                             ? "text-blue-300 border-transparent"
                             : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
@@ -1475,7 +1475,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
 
                 {/* 3. SATIR SAĞ: ENTRY MODEL (Multi-select) */}
                 <div className="flex flex-col">
-                  <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1.5 flex items-center gap-1.5 font-sans">
+                  <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
                     <Zap size={12} className="text-amber-400 shrink-0" />
                     {(cleanDefinitionTitleString(definitionTitles.entryModels) || "ENTRY MODEL").toUpperCase()}
                   </span>
@@ -1494,7 +1494,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                                 : [...selectedEntries, em]
                             )
                           }
-                          className={`px-3 py-1.5 text-xs rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
+                          className={`px-2.5 py-1 text-[11px] rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
                             isActive
                               ? "bg-amber-500/20 text-amber-300 border-amber-500/60 shadow-xs"
                               : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
@@ -1509,7 +1509,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
 
                 {/* 4. SATIR SOL: TP TARGET (Multi-select) */}
                 <div className="flex flex-col">
-                  <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1.5 flex items-center gap-1.5 font-sans">
+                  <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
                     <Flag size={12} className="text-purple-400 shrink-0" />
                     {(cleanDefinitionTitleString(definitionTitles.tpTargets) || "TP TARGET").toUpperCase()}
                   </span>
@@ -1528,7 +1528,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                                 : [...selectedTpTargets, tp]
                             )
                           }
-                          className={`px-3 py-1.5 text-xs rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
+                          className={`px-2.5 py-1 text-[11px] rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
                             isActive
                               ? "bg-purple-500/20 text-purple-300 border-purple-500/60 shadow-xs"
                               : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
@@ -1543,7 +1543,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
 
                 {/* 4. SATIR SAĞ: PREMIUM / DISCOUNT */}
                 <div className="flex flex-col">
-                  <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1.5 flex items-center gap-1.5 font-sans">
+                  <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
                     <ShieldCheck size={12} className="text-emerald-400 shrink-0" />
                     {(cleanDefinitionTitleString(definitionTitles.premiumDiscounts) || "PREMIUM / DISCOUNT").toUpperCase()}
                   </span>
@@ -1556,7 +1556,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                           type="button"
                           data-selected={isSelected}
                           onClick={() => setPremiumDiscount(isSelected ? "" : zone)}
-                          className={`px-2.5 py-1 text-xs rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
+                          className={`px-2 py-0.5 text-[11px] rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
                             isSelected
                               ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/60 shadow-xs"
                               : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
@@ -1575,7 +1575,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
 
           {/* 3. SÜTUN: ANALİZ, NOTLAR & SES (3 / 12) */}
           <div className="flex flex-col min-w-0">
-            <div className="bg-zinc-900/50 border border-zinc-800/80 rounded-2xl p-3 sm:p-3.5 flex flex-col gap-2.5 shadow-sm h-full">
+            <div className="bg-zinc-900/50 border border-zinc-800/80 rounded-2xl p-3 sm:p-3.5 flex flex-col gap-2 shadow-sm h-full">
               
               {/* BAŞLIK & VOICE-TO-TRADE */}
               <div className="flex items-center justify-between shrink-0 pb-1 border-b border-zinc-800/60">
@@ -1638,7 +1638,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
         </div>
 
         {/* ALT AKSİYON BUTONLARI */}
-        <div className="px-5 py-3.5 border-t border-zinc-800/80 bg-zinc-950/90 flex items-center justify-end shrink-0">
+        <div className="px-4 py-2.5 border-t border-zinc-800/80 bg-zinc-950/90 flex items-center justify-end shrink-0">
           <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
             <button
               type="button"

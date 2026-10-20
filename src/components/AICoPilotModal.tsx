@@ -96,10 +96,10 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
     messages.forEach((m) => seenMsgIds.current.add(m.id));
   }, [messages]);
   const composerRef = useRef<HTMLTextAreaElement>(null);
+  const [inputPrompt, setInputPrompt] = useState("");
   useEffect(() => {
     if (!inputPrompt && composerRef.current) composerRef.current.style.height = "auto";
   }, [inputPrompt]);
-  const [inputPrompt, setInputPrompt] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [presetPage, setPresetPage] = useState(1);

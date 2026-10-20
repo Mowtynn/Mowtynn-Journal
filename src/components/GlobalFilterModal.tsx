@@ -1,5 +1,6 @@
 import { MODAL_BACKDROP, MODAL_PANEL } from '../lib/motion';
 import React, { useState, useEffect } from 'react';
+import { useAfterPaint } from '../hooks/useAfterPaint';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Filter, RotateCcw, Check, Calendar, Monitor, Activity, ArrowUpRight, Coins, Flame, ChevronRight, Eye, EyeOff, ChevronDown, Clock, Sparkles, X, Target, Zap, TrendingUp } from 'lucide-react';
@@ -358,24 +359,26 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
   globalMaxMfePips, setGlobalMaxMfePips
 }) => {
   useBodyScrollLock(isOpen);
+  // Seçenek listeleri (tüm işlemleri tarar) açılış animasyonu çizildikten sonra hesaplanır
+  const ready = useAfterPaint(isOpen);
 
   // Dynamic extraction of unique options from both definitions and actual trade data
   const dynamicPlatforms = React.useMemo(() => {
-    if (!isOpen) return platforms || [];
+    if (!ready) return platforms || [];
     const set = new Set(platforms || []);
     trades.forEach(t => { if (t.platform) set.add(t.platform); });
     return Array.from(set);
-  }, [isOpen, platforms, trades]);
+  }, [ready, platforms, trades]);
 
   const dynamicAssets = React.useMemo(() => {
-    if (!isOpen) return assets || [];
+    if (!ready) return assets || [];
     const set = new Set(assets || []);
     trades.forEach(t => { if (t.asset) set.add(t.asset); });
     return Array.from(set);
-  }, [isOpen, assets, trades]);
+  }, [ready, assets, trades]);
 
   const dynamicConcepts = React.useMemo(() => {
-    if (!isOpen) return concepts || [];
+    if (!ready) return concepts || [];
     const set = new Set(concepts || []);
     trades.forEach(t => { 
       if (Array.isArray(t.liquiditySweeps)) {
@@ -387,10 +390,10 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
       }
     });
     return Array.from(set);
-  }, [isOpen, concepts, trades]);
+  }, [ready, concepts, trades]);
 
   const dynamicConfirmations = React.useMemo(() => {
-    if (!isOpen) return confirmations || [];
+    if (!ready) return confirmations || [];
     const set = new Set(confirmations || []);
     trades.forEach(t => {
       if (t.confirmations && Array.isArray(t.confirmations)) {
@@ -398,38 +401,38 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
       }
     });
     return Array.from(set);
-  }, [isOpen, confirmations, trades]);
+  }, [ready, confirmations, trades]);
 
   const dynamicSessions = React.useMemo(() => {
-    if (!isOpen) return sessions || [];
+    if (!ready) return sessions || [];
     const set = new Set(sessions || []);
     trades.forEach(t => { if (t.session) set.add(t.session); });
     return Array.from(set);
-  }, [isOpen, sessions, trades]);
+  }, [ready, sessions, trades]);
 
   const dynamicTimeframes = React.useMemo(() => {
-    if (!isOpen) return timeframes || [];
+    if (!ready) return timeframes || [];
     const set = new Set(timeframes || []);
     trades.forEach(t => { if (t.timeframe) set.add(t.timeframe); });
     return Array.from(set);
-  }, [isOpen, timeframes, trades]);
+  }, [ready, timeframes, trades]);
 
   const dynamicHtfTimeframes = React.useMemo(() => {
-    if (!isOpen) return htfTimeframes || [];
+    if (!ready) return htfTimeframes || [];
     const set = new Set(htfTimeframes || []);
     trades.forEach(t => { if (t.htfTimeframe) set.add(t.htfTimeframe); });
     return Array.from(set);
-  }, [isOpen, htfTimeframes, trades]);
+  }, [ready, htfTimeframes, trades]);
 
   const dynamicPlanFidelities = React.useMemo(() => {
-    if (!isOpen) return planFidelities || [];
+    if (!ready) return planFidelities || [];
     const set = new Set(planFidelities || []);
     trades.forEach(t => { if (t.planFidelity) set.add(t.planFidelity); });
     return Array.from(set);
-  }, [isOpen, planFidelities, trades]);
+  }, [ready, planFidelities, trades]);
 
   const dynamicEntryModels = React.useMemo(() => {
-    if (!isOpen) return entryModels || [];
+    if (!ready) return entryModels || [];
     const set = new Set(entryModels || []);
     trades.forEach(t => {
       if (t.entryModels && Array.isArray(t.entryModels)) {
@@ -439,14 +442,14 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
       }
     });
     return Array.from(set);
-  }, [isOpen, entryModels, trades]);
+  }, [ready, entryModels, trades]);
 
   const dynamicTrendTypes = React.useMemo(() => {
-    if (!isOpen) return trendTypes || [];
+    if (!ready) return trendTypes || [];
     const set = new Set(trendTypes || []);
     trades.forEach(t => { if (t.trend) set.add(t.trend); });
     return Array.from(set);
-  }, [isOpen, trendTypes, trades]);
+  }, [ready, trendTypes, trades]);
 
   // Keep track of which accordion categories are expanded
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});

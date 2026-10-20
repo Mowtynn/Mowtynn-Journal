@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Download, Upload, Database, AlertTriangle, Cloud, X, CheckCircle2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { motion, AnimatePresence } from 'motion/react';
+import { PANE } from '../lib/motion';
 import { Trade, Note, Certificate, DefinitionTitles, HtfBias, PlatformCategory } from '../types';
 
 function getLocalStorageUsage() {
@@ -435,7 +437,9 @@ const BackupRescue = React.memo(function BackupRescue({
                 </p>
               </div>
 
+              <AnimatePresence mode="wait" initial={false}>
               {!showClearConfirm ? (
+                <motion.div key="wipe-start" {...PANE}>
                 <button
                   type="button"
                   onClick={() => setShowClearConfirm(true)}
@@ -443,8 +447,9 @@ const BackupRescue = React.memo(function BackupRescue({
                 >
                   Verileri Sıfırla
                 </button>
+                </motion.div>
               ) : (
-                <div className="bg-rose-950/40 border border-rose-500/30 p-3 rounded-xl mt-2 space-y-1.5">
+                <motion.div key="wipe-confirm" {...PANE} className="bg-rose-950/40 border border-rose-500/30 p-3 rounded-xl mt-2 space-y-1.5">
                   <span className="text-[9px] text-zinc-300 font-bold block font-sans">Onay için &apos;SIFIRLA&apos; yazın:</span>
                   <div className="flex gap-1.5">
                     <input
@@ -475,8 +480,9 @@ const BackupRescue = React.memo(function BackupRescue({
                       <X size={12} />
                     </button>
                   </div>
-                </div>
+                </motion.div>
               )}
+              </AnimatePresence>
             </>
           )}
         </div>
