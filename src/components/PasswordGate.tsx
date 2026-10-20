@@ -1,4 +1,4 @@
-import { EASE } from '../lib/motion';
+import { MODAL_PANEL } from '../lib/motion';
 import React, { useState, useEffect } from 'react';
 import { Lock, ArrowRight, ShieldCheck, AlertCircle, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -23,17 +23,30 @@ const tokenToVerify = isBrowser
   ? (localStorage.getItem(STORAGE_KEY) || sessionStorage.getItem(STORAGE_KEY)) 
   : null;
 
-let initialAuthPromise: Promise<boolean> | null = null;
+/**
+ * valid: sunucu onayladı · invalid: sunucu açıkça reddetti (süresi dolmuş / parola değişmiş) ·
+ * unknown: sunucuya ulaşılamadı (çevrimdışı, zaman aşımı, 5xx, 429). Bilinmeyen durumda geçerli jeton
+ * silinmez; aksi halde çevrimdışı açılan PWA ya da yoğun sunucu kullanıcıyı sistemden atıyordu.
+ */
+type TokenState = 'valid' | 'invalid' | 'unknown';
+let initialAuthPromise: Promise<TokenState> | null = null;
 
 if (tokenToVerify) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8000);
   initialAuthPromise = fetch('/api/verify-token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token: tokenToVerify })
+    body: JSON.stringify({ token: tokenToVerify }),
+    signal: controller.signal,
   })
-  .then(res => res.ok ? res.json() : { success: false })
-  .then(data => !!data.success)
-  .catch(() => false);
+    .then(async (res): Promise<TokenState> => {
+      if (!res.ok) return 'unknown';
+      const data = await res.json();
+      return data && data.success ? 'valid' : 'invalid';
+    })
+    .catch((): TokenState => 'unknown')
+    .finally(() => clearTimeout(timer));
 }
 
 export function PasswordGate({ children }: PasswordGateProps) {
@@ -42,6 +55,7 @@ export function PasswordGate({ children }: PasswordGateProps) {
   
   const [input, setInput] = useState('');
   const [error, setError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   
@@ -57,8 +71,8 @@ export function PasswordGate({ children }: PasswordGateProps) {
       sessionStorage.removeItem('tj_access_token_v2');
 
       if (initialAuthPromise) {
-        const isValid = await initialAuthPromise;
-        if (isValid) {
+        const state = await initialAuthPromise;
+        if (state === 'valid' || state === 'unknown') {
           setIsAuthenticated(true);
           setIsChecking(false);
           return;
@@ -127,12 +141,12 @@ export function PasswordGate({ children }: PasswordGateProps) {
       const response = await fetch('/api/verify-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: input })
+        body: JSON.stringify({ password: input, remember: rememberMe })
       });
       
-      const data = await response.json();
+      const data = await response.json().catch(() => ({} as any));
       
-      if (response.ok && data.success) {
+      if (response.ok && data.success && typeof data.token === 'string') {
         if (rememberMe) {
           localStorage.setItem(STORAGE_KEY, data.token);
           sessionStorage.removeItem(STORAGE_KEY);
@@ -145,7 +159,13 @@ export function PasswordGate({ children }: PasswordGateProps) {
         localStorage.removeItem(LOCKOUT_KEY);
         setIsAuthenticated(true);
         setError(false);
+      } else if (response.status !== 401) {
+        // 429 (sunucu limiti), 500 (SITE_PASSWORD tanımsız) vb.: parola yanlış değil, deneme hakkı düşmez
+        setErrorMessage(data.error || 'Sunucu şu an doğrulama yapamıyor. Lütfen tekrar deneyin.');
+        setError(true);
+        setTimeout(() => setError(false), 4000);
       } else {
+        setErrorMessage('');
         const newAttempts = attempts + 1;
         setAttempts(newAttempts);
         localStorage.setItem(ATTEMPTS_KEY, newAttempts.toString());
@@ -163,7 +183,9 @@ export function PasswordGate({ children }: PasswordGateProps) {
       }
     } catch (err) {
       console.error("Verification request failed.", err);
+      setErrorMessage('Sunucuya ulaşılamadı. Bağlantınızı kontrol edin.');
       setError(true);
+      setTimeout(() => setError(false), 4000);
     } finally {
       setIsProcessing(false);
     }
@@ -187,11 +209,7 @@ export function PasswordGate({ children }: PasswordGateProps) {
   return (
     <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center p-4 text-zinc-100 font-sans selection:bg-blue-500/30 relative overflow-hidden">
       <motion.div 
-        initial={{ opacity: 0, scale: 0.96, y: 16 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.96, y: 16 }}
-          transition={{ duration: 0.2, ease: EASE }}
-          style={{ willChange: "transform, opacity" }}
+        {...MODAL_PANEL}
         className="w-full max-w-sm relative z-10"
       >
         {/* Brand / Logo */}
@@ -234,7 +252,7 @@ export function PasswordGate({ children }: PasswordGateProps) {
                       animate={{ opacity: 1, y: 0 }}
                       className="absolute -bottom-5 left-1 text-[10px] text-rose-400 font-medium font-sans"
                     >
-                      Hatalı şifre. Kalan hak: {Math.max(0, MAX_ATTEMPTS - attempts)}
+                      {errorMessage || `Hatalı şifre. Kalan hak: ${Math.max(0, MAX_ATTEMPTS - attempts)}`}
                     </motion.p>
                   )}
                 </div>

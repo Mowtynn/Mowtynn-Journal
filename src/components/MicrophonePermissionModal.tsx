@@ -1,4 +1,4 @@
-import { EASE } from '../lib/motion';
+import { MODAL_BACKDROP, MODAL_PANEL } from '../lib/motion';
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -36,20 +36,13 @@ export const MicrophonePermissionModal: React.FC<MicrophonePermissionModalProps>
       {isOpen && (
         <motion.div
           key="mic-permission-modal-backdrop"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.15, ease: EASE }}
-          className="will-change-[opacity] fixed inset-0 z-[4500] flex items-center justify-center p-4 bg-zinc-950/80"
+          {...MODAL_BACKDROP}
+          className="fixed inset-0 modal-layer modal-dim z-[4500] flex items-center justify-center p-4 "
           onClick={onClose}
         >
           <motion.div 
             key="mic-permission-modal-content"
-            initial={{ opacity: 0, scale: 0.96, y: 16 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: 16 }}
-            transition={{ duration: 0.2, ease: EASE }}
-            style={{ willChange: "transform, opacity" }}
+            {...MODAL_PANEL}
             className="relative w-full max-w-md bg-zinc-900 border border-zinc-700/50 rounded-2xl shadow-2xl overflow-hidden p-5 text-zinc-100"
             onClick={(e) => e.stopPropagation()}
           >

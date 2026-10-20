@@ -1,4 +1,4 @@
-import { EASE } from '../lib/motion';
+import { EASE, MODAL_BACKDROP, MODAL_PANEL, PANE, SPRING } from '../lib/motion';
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
@@ -90,6 +90,15 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
     }
     return [];
   });
+  // Daha önce gösterilmiş mesajlar sekme değişince / yeniden çizimde tekrar animasyonlanmaz; yalnızca yeni gelenler girer
+  const seenMsgIds = useRef<Set<string>>(new Set(messages.map((m) => m.id)));
+  useEffect(() => {
+    messages.forEach((m) => seenMsgIds.current.add(m.id));
+  }, [messages]);
+  const composerRef = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    if (!inputPrompt && composerRef.current) composerRef.current.style.height = "auto";
+  }, [inputPrompt]);
   const [inputPrompt, setInputPrompt] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -437,38 +446,28 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
     };
   }, []);
 
-  // Auto scroll chat
+  // Sohbet kaydırması: sekme/ilk açılışta anında alta, yeni mesajda yumuşakça alta (tek kare, tek hareket)
+  const lastScrollTabRef = useRef<string | null>(null);
   useEffect(() => {
-    if (activeTab === "chat") {
-      const performScroll = (behavior: "auto" | "smooth" = "auto") => {
-        try {
-          if (chatContainerRef.current) {
-            chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-          }
-          chatEndRef.current?.scrollIntoView({ behavior });
-        } catch (e) {
-          console.error("Scroll error:", e);
-        }
-      };
-
-      // 1. Scroll immediately on state change
-      performScroll("auto");
-
-      // 2. Scroll after DOM update
-      const timer1 = setTimeout(() => performScroll("auto"), 50);
-
-      // 3. Scroll after CSS/rendering animation finishes
-      const timer2 = setTimeout(() => performScroll("smooth"), 200);
-
-      // 4. Fallback scroll for slower rendering devices or image loading
-      const timer3 = setTimeout(() => performScroll("smooth"), 450);
-
-      return () => {
-        clearTimeout(timer1);
-        clearTimeout(timer2);
-        clearTimeout(timer3);
-      };
+    if (activeTab !== "chat") {
+      lastScrollTabRef.current = null;
+      return;
     }
+    const el = chatContainerRef.current;
+    if (!el) return;
+    const instant = lastScrollTabRef.current !== "chat";
+    lastScrollTabRef.current = "chat";
+    const raf = requestAnimationFrame(() => {
+      el.scrollTo({ top: el.scrollHeight, behavior: instant ? "auto" : "smooth" });
+    });
+    // Görsel/markdown geç yüklenip yüksekliği büyütürse bir kez daha hizala
+    const t = window.setTimeout(() => {
+      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    }, 260);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.clearTimeout(t);
+    };
   }, [messages, isLoading, activeTab]);
 
   // Robust Text-to-Speech Helper with HTML5 Audio & SpeechSynthesis Fallback
@@ -1047,8 +1046,11 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
             entryModels: t.entryModels,
             trend: t.trend,
             setupQuality: t.planFidelity,
-            dxy: t.dxy,
+            tpTargets: t.tpTargets,
             premiumDiscount: t.premiumDiscount,
+            strategy: t.strategy,
+            asiaRangeFvg: t.asiaRangeFvg,
+            newsDay: typeof t.newsDay === 'boolean' ? (t.newsDay ? 'Var' : 'Yok') : undefined,
             nyEntryHour: getTradeHourBucket(t),
             nyWeekday: WEEKDAY_NAMES_TR[getTradeNyWeekday(t)],
             notes: t.notes || "",
@@ -1144,30 +1146,23 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
       {isOpen && (
         <motion.div
           key="ai-copilot-modal-backdrop"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.15, ease: EASE }}
+          {...MODAL_BACKDROP}
           onClick={onClose}
-          className="will-change-[opacity] fixed inset-0 z-[1500] flex items-center justify-center p-2 sm:p-4 bg-zinc-950/80"
+          className="fixed inset-0 modal-layer modal-dim z-[1500] flex items-center justify-center p-2 sm:p-4 "
         >
           <motion.div
             key="ai-copilot-modal-content"
-            initial={{ opacity: 0, scale: 0.96, y: 16 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: 16 }}
-            transition={{ duration: 0.2, ease: EASE }}
-            style={{ willChange: "transform, opacity" }}
+            {...MODAL_PANEL}
             onClick={(e) => e.stopPropagation()}
             id="ai-copilot-popup"
-            className="bg-zinc-900 border border-zinc-700/50 rounded-2xl w-full max-w-4xl h-[92vh] sm:h-[85vh] flex flex-col shadow-2xl overflow-hidden relative"
+            className="bg-bg-modal border border-border-card rounded-2xl w-full max-w-4xl h-[92vh] sm:h-[85vh] flex flex-col shadow-modal overflow-hidden relative"
           >
         {/* HEADER BAR */}
-        <div className="bg-zinc-900/60 border-b border-zinc-700/40 px-5 py-3.5 flex items-center justify-between shrink-0">
+        <div className="bg-bg-base border-b border-border-subtle px-5 py-3.5 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <div className="relative">
               <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/25 flex items-center justify-center text-blue-400 shadow-xs">
-                <Sparkles size={17} className="animate-pulse" />
+                <Sparkles size={17} />
               </div>
               <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 border-zinc-900 rounded-full" />
             </div>
@@ -1182,7 +1177,9 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                 </span>
               </div>
               <p className="text-[10px] text-zinc-400 font-sans mt-0.5">
-                Görsel Grafik Analizi, Sesli Mentörlük & Performans Raporlama
+                {allTrades && allTrades.length !== trades.length
+                  ? `Aktif filtreye uyan ${trades.length} / ${allTrades.length} işlem analiz ediliyor`
+                  : `${trades.length} işlem analiz ediliyor · Grafik, sesli mentörlük ve rapor`}
               </p>
             </div>
           </div>
@@ -1201,9 +1198,9 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
         </div>
 
         {/* TOP TABS & HEALTH STRIP */}
-        <div className="bg-zinc-900/40 border-b border-zinc-700/40 px-5 py-2.5 flex flex-wrap items-center justify-between gap-3 shrink-0">
+        <div className="bg-bg-base/60 border-b border-border-subtle px-5 py-2.5 flex flex-wrap items-center justify-between gap-3 shrink-0">
           {/* Tabs */}
-          <div className="flex items-center gap-1 overflow-x-auto hide-scrollbar bg-zinc-900 border border-zinc-700/50 p-1 rounded-xl shadow-xs">
+          <div role="tablist" className="flex items-center gap-1 overflow-x-auto no-scrollbar bg-bg-input border border-border-subtle p-1 rounded-xl">
             {[
               { id: "chat", name: "Canlı Chat & Görsel", icon: Bot },
               { id: "report", name: "Sağlık & Disiplin", icon: Activity },
@@ -1216,15 +1213,22 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                 <button
                   key={tab.id}
                   type="button"
+                  role="tab"
+                  aria-selected={isActive}
                   onClick={() => setActiveTab(tab.id as any)}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-ui duration-150 flex items-center gap-1.5 cursor-pointer select-none shrink-0 border ${
-                    isActive
-                      ? "bg-blue-500/15 text-blue-400 border-blue-500/30 shadow-xs"
-                      : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60 border-transparent"
+                  className={`relative px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors duration-150 flex items-center gap-1.5 cursor-pointer select-none shrink-0 border border-transparent ${
+                    isActive ? "text-blue-300" : "text-zinc-400 hover:text-zinc-200"
                   }`}
                 >
-                  <Icon size={13} className={isActive ? "text-blue-400" : "text-zinc-500"} />
-                  <span>{tab.name}</span>
+                  {isActive && (
+                    <motion.span
+                      layoutId="copilot-tab-indicator"
+                      transition={SPRING.indicator}
+                      className="absolute inset-0 rounded-lg bg-blue-500/15 border border-blue-500/30 shadow-xs"
+                    />
+                  )}
+                  <Icon size={13} className={`relative ${isActive ? "text-blue-400" : "text-zinc-500"}`} />
+                  <span className="relative">{tab.name}</span>
                 </button>
               );
             })}
@@ -1238,15 +1242,12 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
             {activeTab === "chat" && (
               <motion.div
                 key="chat"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.12, ease: "linear" }}
+                {...PANE}
                 className="w-full h-full flex-1 flex flex-col min-h-0 p-4 sm:p-5 justify-between gap-3 overflow-hidden"
               >
               
               {/* Mentör Karakter Seçici - Ultra Kompakt Tasarım */}
-              <div className="flex items-center justify-between overflow-x-auto pb-2 shrink-0 border-b border-zinc-700/50 hide-scrollbar gap-2">
+              <div className="flex items-center justify-between overflow-x-auto pb-2 shrink-0 border-b border-zinc-700/50 no-scrollbar gap-2">
                 <div className="flex items-center gap-1.5 shrink-0">
                   <span className="text-[10px] font-sans text-zinc-500 uppercase tracking-wider shrink-0 flex items-center gap-1 select-none mr-1 font-bold">
                     <Bot size={12} className="text-blue-400" /> Mentör:
@@ -1298,8 +1299,11 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
               {/* Message List */}
               <div ref={chatContainerRef} className="flex-1 overflow-y-auto space-y-3 pr-2 copilot-scrollbar">
                 {messages.map((msg) => (
-                  <div
+                  <motion.div
                     key={msg.id}
+                    initial={seenMsgIds.current.has(msg.id) ? false : { opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={SPRING.enter}
                     className={`flex items-start gap-3 ${
                       msg.role === "user" ? "flex-row-reverse" : "flex-row"
                     }`}
@@ -1410,19 +1414,25 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                         </div>
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
                 ))}
 
                 {isLoading && (
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-xl bg-zinc-900/70 border border-zinc-700/50  flex items-center justify-center shrink-0 text-blue-400">
-                      <Bot size={14} className="animate-spin" />
+                  <motion.div
+                    key="copilot-typing"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={SPRING.enter}
+                    className="flex items-start gap-3"
+                  >
+                    <div className="w-8 h-8 rounded-xl bg-bg-input border border-border-card flex items-center justify-center shrink-0 text-blue-400">
+                      <Bot size={14} />
                     </div>
-                    <div className="bg-zinc-900/70 border border-zinc-700/50  rounded-2xl p-3 text-xs text-zinc-400 flex items-center gap-2 font-sans">
-                      <Sparkles size={13} className="text-blue-400 animate-pulse" />
-                      <span>Analiz ediliyor...</span>
+                    <div className="bg-bg-card border border-border-card rounded-2xl px-4 py-3 text-xs text-zinc-400 flex items-center gap-2.5 font-sans">
+                      <span className="copilot-typing" aria-hidden="true"><i /><i /><i /></span>
+                      <span>Analiz ediliyor</span>
                     </div>
-                  </div>
+                  </motion.div>
                 )}
                 <div ref={chatEndRef} />
               </div>
@@ -1453,8 +1463,8 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                   </span>
                   {[
                     {
-                      label: "Silver Bullet",
-                      prompt: "Veritabanımdaki tüm işlemleri tarayarak Silver Bullet (ICT SB) kurulumlarımı, saat pencerelerimi (London/NY AM/NY PM), FVG/IFVG alanlarımı ve başarı oranlarımı analiz et. Silver Bullet stratejimi geliştirmem için somut tavsiyeler ve aksiyon adımları sun."
+                      label: "Asia Range",
+                      prompt: "Asia Range ile ilgili işlemlerimi (asiaRangePips değeri girilmiş olanlar ve Liquidity Sweep alanı Asia High/Low olanlar) analiz et.\n\n1) PERFORMANS ÖZETİ: Bu işlemlerin sayısı, win rate, toplam R, ortalama R, kâr faktörü ve beklentisi (expectancy). Asia range boyutuna göre (dar / orta / geniş) ayrı ayrı kıyasla; örneklem küçükse bunu açıkça belirt.\n2) GİRDİ ANALİZİ: İşlemlerde girdiğim verileri (Asia range pip, sweep türü ve yönü, giriş modeli, seans/saat, parite, setup kalitesi, MAE/MFE) birlikte incele; hangi kombinasyonlar kazandırıyor, hangileri kaybettiriyor?\n3) EDGE ARTIRMA ÖNERİLERİ: Veriye dayanarak en fazla 5 somut öneri ver (hangi range aralığını seçmeliyim/elemeliyim, hangi sweep ve giriş modeli eşleşmesine odaklanmalıyım, stop/hedef ayarı). Her öneri için hangi veriye dayandığını yaz."
                     },
                     {
                       label: "Günün Özeti",
@@ -1511,7 +1521,12 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
 
                   <textarea
                     value={inputPrompt}
-                    onChange={(e) => setInputPrompt(e.target.value)}
+                    ref={composerRef}
+                    onChange={(e) => {
+                      setInputPrompt(e.target.value);
+                      e.target.style.height = "auto";
+                      e.target.style.height = `${Math.min(e.target.scrollHeight, 96)}px`;
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && !e.shiftKey) {
                         e.preventDefault();
@@ -1541,10 +1556,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
             {activeTab === "report" && (
               <motion.div
                 key="report"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.12, ease: "linear" }}
+                {...PANE}
                 className="w-full h-full flex-1 overflow-y-auto p-5 space-y-5 min-h-0 copilot-scrollbar"
               >
               <div className="bg-zinc-900/70 border border-zinc-700/50  rounded-xl p-4">
@@ -1914,12 +1926,12 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
           {activeTab === "presets" && (() => {
             const presetItems = [
               {
-                id: "silver_bullet_analysis",
-                title: "Silver Bullet",
-                prompt: "Veritabanımdaki TÜM işlem verilerini (özellikle Concept alanı 'Silver Bullet' / 'ICT SB' olanlar, 03-04 / 10-11 / 14-15 saat pencerelerindeki işlemler, FVG/IFVG ve Liquidity Sweep ile açılmış tüm pozisyonlar) detaylıca tara ve Silver Bullet stratejimi geliştirmem için kapsamlı bir Mentörlük Raporu oluştur.\n\nLütfen aşağıdaki başlıklar altında verilerime dayalı somut bulguları ve geliştirme tavsiyelerini sun:\n\n### 1. Silver Bullet Genel Performans Karnesi\n- **Toplam SB / SB Tipi İşlem Sayısı**: [Verilerdeki sayı]\n- **Kazanma Oranı (Win Rate)**: [%]\n- **Ortalama R/R ve Net Katkı**: [R/R ve PnL]\n- **Beklenen Değer (Expected Value - EV)**: [Silver Bullet kurulumlarının ortalama kârlılığı]\n\n### 2. Saat Pencereleri & Seans Verimliliği (Silver Bullet Windows)\n- **London SB (03:00 - 04:00 NY / 10:00 - 11:00 TSI)**: [Verilerdeki kârlılık & Win Rate]\n- **NY AM SB (10:00 - 11:00 NY / 17:00 - 18:00 TSI)**: [Verilerdeki kârlılık & Win Rate]\n- **NY PM SB (02:00 - 03:00 NY / 21:00 - 22:00 TSI)**: [Verilerdeki kârlılık & Win Rate]\n*Hangi saat penceresinde \"Gold Edge\" yakaladığımı, hangi saat penceresinden uzak durmam gerektiğini belirt.*\n\n### 3. PD Array, Model & Zaman Dilimi Uyumu (Confluence Analysis)\n- **En Başarılı PD Array Elemanları**: [FVG, Inversion FVG, BSL/SSL Sweep, MSS vb.]\n- **En Başarılı HTF / Entry TF İkilisi**: [Örn: 15M HTF + 1M Entry TF]\n- **En Yüksek Başarıya Sahip Enstrümanlar**: [Örn: NASDAQ / NQ, EURUSD, BTC]\n\n### 4. Silver Bullet Zayıf Noktalar & Hata Örüntüleri\n- **Pencere Dışı Dürtüsel İşlemler**: Silver Bullet saat pencereleri dışında açılan sabırsız işlemler var mı?\n- **Disiplin & Setup Kalitesi (Plan Fidelity)**: A+ / Tam Sadakat ile FOMO/Kısmen kurallı SB işlemleri arasındaki finansal fark.\n- **Ters Trend / Yanlış Likidite Seçimi**: Stop olan Silver Bullet işlemlerindeki ortak hata kalıpları.\n\n### 5. Silver Bullet Stratejimi Katlama & Geliştirme Aksiyon Planı (Actionable Mentorship)\n- **Kural 1 (Filtreme)**: [Hangi durum gerçekleşmeden asla SB girilmemeli?]\n- **Kural 2 (Zamanlama & Seans)**: [Hangi saat penceresine odaklanılmalı?]\n- **Kural 3 (Risk & Hedef Yönetimi)**: [R/R ve Kar Alma (TP) optimizasyon önerisi]\n- **Kural 4 (Geliştirme Tavsiyesi)**: [Edge'imi 2 katına çıkaracak 1 somut aksiyon adımı]\n\nEğer veritabanında henüz spesifik \"Silver Bullet\" etiketli işlem sayısı az ise, 1M/5M zaman dilimleri, FVG/IFVG onayları ve NY/London seanslarındaki mevcut işlemlerimden çıkarım yaparak bu şablonu eksiksiz doldur.",
-                desc: "Silver Bullet (ICT SB) kurulumlarınızı, 1H/10-11/14-15 saat pencerelerinizi, FVG/IFVG alanlarınızı ve işlem verimliliğinizi derinlemesine analiz edip geliştirme tavsiyeleri sunar.",
-                icon: Zap,
-                iconColor: "text-amber-400",
+                id: "asia_range_analysis",
+                title: "Asia Range",
+                prompt: "Asia Range ile ilgili işlemlerimi (asiaRangePips değeri girilmiş olanlar ve Liquidity Sweep alanı Asia High/Low olanlar) analiz et.\n\n1) PERFORMANS ÖZETİ: Bu işlemlerin sayısı, win rate, toplam R, ortalama R, kâr faktörü ve beklentisi (expectancy). Asia range boyutuna göre (dar / orta / geniş) ayrı ayrı kıyasla; örneklem küçükse bunu açıkça belirt.\n2) GİRDİ ANALİZİ: İşlemlerde girdiğim verileri (Asia range pip, sweep türü ve yönü, giriş modeli, seans/saat, parite, setup kalitesi, MAE/MFE) birlikte incele; hangi kombinasyonlar kazandırıyor, hangileri kaybettiriyor?\n3) EDGE ARTIRMA ÖNERİLERİ: Veriye dayanarak en fazla 5 somut öneri ver (hangi range aralığını seçmeliyim/elemeliyim, hangi sweep ve giriş modeli eşleşmesine odaklanmalıyım, stop/hedef ayarı). Her öneri için hangi veriye dayandığını yaz.",
+                desc: "Asia Range işlemlerinizin performans özetini çıkarır, girdiğiniz verileri analiz ederek edge'inizi artıracak somut öneriler sunar.",
+                icon: Compass,
+                iconColor: "text-cyan-400",
               },
               {
                 id: "liquidity_sweep_entry_expectancy",
@@ -1994,6 +2006,14 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                 iconColor: "text-red-500",
               },
               {
+                id: "weekly_game_plan",
+                title: "Haftalık Oyun Planı",
+                prompt: "Son haftalardaki verilerime bakarak önümüzdeki hafta için somut bir oyun planı çıkar: hangi gün ve saat pencerelerine (New York saatiyle) odaklanmalıyım, hangi parite ve kurulumları elemeliyim, hangi risk limitini (günlük maksimum işlem / zarar) uygulamalıyım? Önerilerini veriye dayandır.",
+                desc: "Gün/saat (NY saati), parite ve kurulum verilerinden haftaya özel odak, eleme ve risk limiti planı oluşturur.",
+                icon: Clock,
+                iconColor: "text-emerald-400",
+              },
+              {
                 id: "general_performance",
                 title: "Genel Performans Raporu",
                 prompt: "Genel performansımı, win rate ve kâr faktörümü detaylıca analiz et.",
@@ -2021,7 +2041,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                 id: "silent_killer",
                 title: "Haber Saati & Likidite Analizi",
                 prompt: "Yüksek etkili haber saatlerine denk gelen hatalarım neler? İşlem saatlerimi CPI, NFP veya FOMC gibi kritik haberlerin tipik yayın saatleriyle (New York saatiyle 08:30, 10:00, 14:00) karşılaştırarak, haberden hemen önce/sonra açılan dürtüsel işlemleri analiz et.",
-                desc: "Kritik haber saatlerindeki dürtüsel işlemleri analiz eder, gereksiz spread ve stop kayıplarını ortaya çıkarır.",
+                desc: "Kritik haber saatlerindeki dürtüsel işlemleri analiz eder, gereksiz stop kayıplarını ortaya çıkarır.",
                 icon: Flame,
                 iconColor: "text-red-400",
               },
@@ -2253,10 +2273,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
             return (
               <motion.div
                 key="presets"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.12, ease: "linear" }}
+                {...PANE}
                 className="w-full h-full flex-1 overflow-y-auto p-5 space-y-4 min-h-0 flex flex-col copilot-scrollbar"
               >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-700/50 pb-3 shrink-0">
@@ -2293,10 +2310,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
                   <AnimatePresence mode="wait">
                     <motion.div
                       key={currentPage}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.12, ease: "linear" }}
+                      {...PANE}
                       className="w-full flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 auto-rows-fr content-start"
                     >
                       {currentPresets.map((preset) => {
@@ -2335,10 +2349,7 @@ export const AICoPilotModal: React.FC<AICoPilotModalProps> = ({
           {activeTab === "saved" && (
             <motion.div
               key="saved"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.12, ease: "linear" }}
+              {...PANE}
               className="w-full h-full flex-1 overflow-y-auto p-5 space-y-4 min-h-0 copilot-scrollbar"
             >
               <AnimatePresence mode="wait">

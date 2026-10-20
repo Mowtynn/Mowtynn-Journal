@@ -10,6 +10,7 @@ import {
   listPairs,
   SimRow,
 } from '../lib/asiaAnalytics';
+import { useNewsDayLabels } from '../hooks/useNewsDayLabels';
 
 interface AsiaEdgeLabProps {
   trades: Trade[];
@@ -157,7 +158,9 @@ export const AsiaEdgeLab = React.memo(function AsiaEdgeLab({ trades }: AsiaEdgeL
   const [minSample, setMinSample] = useState<number>(8);
 
   const pairs = useMemo(() => listPairs(trades), [trades]);
-  const r = useMemo(() => analyzeAsia(trades, { dataset, pair, minSample }), [trades, dataset, pair, minSample]);
+  const { version: newsVersion } = useNewsDayLabels();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const r = useMemo(() => analyzeAsia(trades, { dataset, pair, minSample }), [trades, dataset, pair, minSample, newsVersion]);
   const v = verdict(r.overall);
 
   const pairRows = r.pairs.map((p) => ({ label: p.key, stats: p.stats }));
@@ -321,6 +324,24 @@ export const AsiaEdgeLab = React.memo(function AsiaEdgeLab({ trades }: AsiaEdgeL
 
             <Card title="Giriş Modeli">
               <GroupTable rows={toRows(r.entryModels)} minSample={minSample} empty="Giriş modeli girilmemiş." />
+            </Card>
+
+            <Card title="Strateji">
+              <GroupTable rows={toRows(r.strategies)} minSample={minSample} empty="Strateji girilmemiş." />
+            </Card>
+
+            <Card title="Asia Range FVG">
+              <GroupTable rows={toRows(r.asiaRangeFvgs)} minSample={minSample} empty="Asia Range FVG girilmemiş." />
+            </Card>
+
+            <Card
+              title="News Day / Bank Holiday"
+              hint="Haber günü ile normal gün kıyası. Bilgisi girilmemiş eski işlemler dahil edilmez."
+            >
+              <GroupTable rows={toRows(r.newsDay.rows)} minSample={minSample} empty="News Day bilgisi girilmiş işlem yok." />
+              {r.newsDay.unknown > 0 && (
+                <p className="text-[10px] text-zinc-500 font-sans">{r.newsDay.unknown} işlemde bilgi yok; kıyasa katılmadı.</p>
+              )}
             </Card>
 
             <Card title="Asia Range Büyüklüğü (parite medyanına göre)" hint="Her parite kendi medyanıyla kıyaslanır; EURCAD ve EURUSD aynı pip eşiğiyle yargılanmaz.">

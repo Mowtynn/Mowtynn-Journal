@@ -1,4 +1,4 @@
-import { EASE, SPRING } from './lib/motion';
+import { EASE, SPRING, MODAL_BACKDROP, MODAL_PANEL } from './lib/motion';
 import { useState, useEffect, useMemo, useCallback, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Trade, TradeStats, Note, JournalEntry, Certificate, DefinitionTitles, AccountCategory } from "./types";
@@ -14,6 +14,15 @@ import {
   DEFAULT_PLAN_FIDELITIES,
   DEFAULT_ENTRY_MODELS,
   DEFAULT_TREND_TYPES,
+  DEFAULT_TP_TARGETS,
+  DEFAULT_PREMIUM_DISCOUNTS,
+  DEFAULT_ENTRY_HOURS,
+  DEFAULT_NEWS_DAYS,
+  DEFAULT_STRATEGIES,
+  DEFAULT_ASIA_RANGE_FVGS,
+  NEWS_DAYS_EVENT,
+  normalizeNewsDays,
+  replacePlatformCategories,
   DEFAULT_DEFINITION_TITLES,
   sanitizeDefinitionTitles,
   normalizeSearchString,
@@ -37,6 +46,7 @@ import { AccountSwitcher } from "./components/AccountSwitcher";
 import { PWAInstallButton } from "./components/PWAInstallButton";
 import { useMetricMode } from "./context/MetricContext";
 import { useLocalStorageState } from "./hooks/useLocalStorageState";
+import { useExitMount } from "./hooks/useExitMount";
 import { useAppStore } from "./store/useAppStore";
 import { Toaster, toast } from "react-hot-toast";
 
@@ -268,6 +278,48 @@ const getMinTimestamp = (limit: string): number => {
   }
 };
 
+// Yedekteki ayarları yalnızca bilinen alanlarla ve doğrulanmış biçimde alır (bozuk/yabancı alanlar buluta yazılmaz).
+const sanitizeImportedSettings = (raw: any) => {
+  if (!raw || typeof raw !== "object") return null;
+  const strList = (v: any): string[] | undefined => {
+    if (!Array.isArray(v)) return undefined;
+    const out: string[] = [];
+    v.forEach((x) => {
+      if (typeof x !== "string") return;
+      const t = x.trim();
+      if (t && !out.some((o) => o.toLowerCase() === t.toLowerCase())) out.push(t);
+    });
+    return out;
+  };
+  const out: Record<string, any> = {};
+  const listKeys = [
+    "platforms", "timeframes", "htfTimeframes", "confirmations", "sessions", "assets",
+    "planFidelities", "entryModels", "trendTypes", "tpTargets", "premiumDiscounts", "entryHours", "strategies", "asiaRangeFvgs",
+  ];
+  listKeys.forEach((k) => {
+    const v = strList(raw[k]);
+    if (v) out[k] = v;
+  });
+  const sweeps = strList(raw.liquiditySweeps) || strList(raw.concepts);
+  if (sweeps) {
+    out.concepts = sweeps;
+    out.liquiditySweeps = sweeps;
+  }
+  if (Array.isArray(raw.newsDays)) out.newsDays = normalizeNewsDays(raw.newsDays);
+  if (raw.definitionTitles && typeof raw.definitionTitles === "object") {
+    out.definitionTitles = sanitizeDefinitionTitles(raw.definitionTitles);
+  }
+  if (raw.platformCategories && typeof raw.platformCategories === "object") {
+    const cats: Record<string, string> = {};
+    Object.entries(raw.platformCategories).forEach(([k, v]) => {
+      if (v === "FUNDED" || v === "CHALLENGE" || v === "DEMO") cats[k.trim()] = v as string;
+    });
+    out.platformCategories = cats;
+  }
+  return Object.keys(out).length > 0 ? out : null;
+};
+
+
 export default function App() {
   const { isRrMode, setMode } = useMetricMode();
   const isClearingRef = useRef(false);
@@ -422,6 +474,27 @@ export default function App() {
     return DEFAULT_PLATFORMS;
   });
   const [isPlatformMenuOpen, setIsPlatformMenuOpen] = useState(false);
+  // Koşullu `{open && <Modal/>}` çıkış animasyonunu keser: kapanış animasyonu bitene kadar bağlı tut
+  const platformMenuMounted = useExitMount(isPlatformMenuOpen);
+  const authModalMounted = useExitMount(isAuthModalOpen);
+  const copilotMounted = useExitMount(isCopilotOpen);
+
+  // Üst navigasyon çubuğu yüksekliği: pencere katmanları bunun altından başlar, çubuk hep görünür kalır
+  const headerRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    const root = document.documentElement;
+    const sync = () => root.style.setProperty('--nav-h', `${Math.round(el.getBoundingClientRect().height)}px`);
+    sync();
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', sync);
+      return () => window.removeEventListener('resize', sync);
+    }
+    const ro = new ResizeObserver(sync);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const persistPlatforms = useCallback((updated: string[], syncCloud = true) => {
     setPlatforms(updated);
@@ -649,6 +722,146 @@ export default function App() {
     }
   }, [user]);
 
+  const [tpTargets, setTpTargets] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem("trading_tp_targets_list");
+      if (stored) return JSON.parse(stored);
+    } catch (e) {
+      console.error(e);
+    }
+    return DEFAULT_TP_TARGETS;
+  });
+
+  const persistTpTargets = useCallback((updated: string[], syncCloud = true) => {
+    setTpTargets(updated);
+    try {
+      localStorage.setItem("trading_tp_targets_list", JSON.stringify(updated));
+      if (syncCloud && user) {
+        setDoc(doc(db, "settings", user.uid), cleanForFirestore({ tpTargets: updated, userId: user.uid }), { merge: true })
+          .catch(err => console.error(err));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, [user]);
+
+  const [premiumDiscounts, setPremiumDiscounts] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem("trading_premium_discounts_list");
+      if (stored) return JSON.parse(stored);
+    } catch (e) {
+      console.error(e);
+    }
+    return DEFAULT_PREMIUM_DISCOUNTS;
+  });
+
+  const persistPremiumDiscounts = useCallback((updated: string[], syncCloud = true) => {
+    setPremiumDiscounts(updated);
+    try {
+      localStorage.setItem("trading_premium_discounts_list", JSON.stringify(updated));
+      if (syncCloud && user) {
+        setDoc(doc(db, "settings", user.uid), cleanForFirestore({ premiumDiscounts: updated, userId: user.uid }), { merge: true })
+          .catch(err => console.error(err));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, [user]);
+
+  const [entryHours, setEntryHours] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem("trading_entry_hours_list");
+      if (stored) return JSON.parse(stored);
+    } catch (e) {
+      console.error(e);
+    }
+    return DEFAULT_ENTRY_HOURS;
+  });
+
+  const persistEntryHours = useCallback((updated: string[], syncCloud = true) => {
+    setEntryHours(updated);
+    try {
+      localStorage.setItem("trading_entry_hours_list", JSON.stringify(updated));
+      if (syncCloud && user) {
+        setDoc(doc(db, "settings", user.uid), cleanForFirestore({ entryHours: updated, userId: user.uid }), { merge: true })
+          .catch(err => console.error(err));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, [user]);
+
+  const [strategies, setStrategies] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem("trading_strategies_list");
+      if (stored) return JSON.parse(stored);
+    } catch (e) {
+      console.error(e);
+    }
+    return DEFAULT_STRATEGIES;
+  });
+
+  const persistStrategies = useCallback((updated: string[], syncCloud = true) => {
+    setStrategies(updated);
+    try {
+      localStorage.setItem("trading_strategies_list", JSON.stringify(updated));
+      if (syncCloud && user) {
+        setDoc(doc(db, "settings", user.uid), cleanForFirestore({ strategies: updated, userId: user.uid }), { merge: true })
+          .catch(err => console.error(err));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, [user]);
+
+  const [asiaRangeFvgs, setAsiaRangeFvgs] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem("trading_asia_range_fvgs_list");
+      if (stored) return JSON.parse(stored);
+    } catch (e) {
+      console.error(e);
+    }
+    return DEFAULT_ASIA_RANGE_FVGS;
+  });
+
+  const persistAsiaRangeFvgs = useCallback((updated: string[], syncCloud = true) => {
+    setAsiaRangeFvgs(updated);
+    try {
+      localStorage.setItem("trading_asia_range_fvgs_list", JSON.stringify(updated));
+      if (syncCloud && user) {
+        setDoc(doc(db, "settings", user.uid), cleanForFirestore({ asiaRangeFvgs: updated, userId: user.uid }), { merge: true })
+          .catch(err => console.error(err));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, [user]);
+
+  const [newsDays, setNewsDays] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem("trading_news_days_list");
+      if (stored) return normalizeNewsDays(JSON.parse(stored));
+    } catch (e) {
+      console.error(e);
+    }
+    return DEFAULT_NEWS_DAYS;
+  });
+
+  const persistNewsDays = useCallback((updated: string[], syncCloud = true) => {
+    const normalized = normalizeNewsDays(updated);
+    setNewsDays(normalized);
+    try {
+      localStorage.setItem("trading_news_days_list", JSON.stringify(normalized));
+      window.dispatchEvent(new CustomEvent(NEWS_DAYS_EVENT));
+      if (syncCloud && user) {
+        setDoc(doc(db, "settings", user.uid), cleanForFirestore({ newsDays: normalized, userId: user.uid }), { merge: true })
+          .catch(err => console.error(err));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, [user]);
+
   const [definitionTitles, setDefinitionTitles] = useState<DefinitionTitles>(() => {
     try {
       const stored = localStorage.getItem("trading_definition_titles");
@@ -682,21 +895,13 @@ export default function App() {
       const DEFINITIONS_REVISION = "2026_10_inputs_v3";
       const currentRev = localStorage.getItem("trading_definitions_revision");
       if (currentRev !== DEFINITIONS_REVISION) {
+        // Eski sürümler burada kullanıcının listelerini varsayılana çeviriyordu (veri kaybı). Artık yalnızca sürüm işaretlenir
+        // ve başlık adı göçü yapılır; kullanıcının kendi tanımlamalarına dokunulmaz.
         localStorage.setItem("trading_definitions_revision", DEFINITIONS_REVISION);
-        setTimeframes(DEFAULT_TIMEFRAMES);
-        localStorage.setItem("trading_timeframes_list", JSON.stringify(DEFAULT_TIMEFRAMES));
-        setHtfTimeframes(DEFAULT_HTF_TIMEFRAMES);
-        localStorage.setItem("trading_htf_timeframes_list", JSON.stringify(DEFAULT_HTF_TIMEFRAMES));
-        setConfirmations(DEFAULT_CONFIRMATIONS);
-        localStorage.setItem("trading_confirmations_list", JSON.stringify(DEFAULT_CONFIRMATIONS));
-        setSessions(DEFAULT_SESSIONS);
-        localStorage.setItem("trading_sessions_list", JSON.stringify(DEFAULT_SESSIONS));
-        setPlanFidelities(DEFAULT_PLAN_FIDELITIES);
-        localStorage.setItem("trading_plan_fidelities_list", JSON.stringify(DEFAULT_PLAN_FIDELITIES));
-        setEntryModels(DEFAULT_ENTRY_MODELS);
-        localStorage.setItem("trading_entry_models_list", JSON.stringify(DEFAULT_ENTRY_MODELS));
         setDefinitionTitles(prev => sanitizeDefinitionTitles({ ...prev, timeframes: "Entry Timeframe" }));
-        localStorage.setItem("trading_definition_titles", JSON.stringify(sanitizeDefinitionTitles({ ...DEFAULT_DEFINITION_TITLES, timeframes: "Entry Timeframe" })));
+        const storedTitles = localStorage.getItem("trading_definition_titles");
+        const parsedTitles = storedTitles ? JSON.parse(storedTitles) : {};
+        localStorage.setItem("trading_definition_titles", JSON.stringify(sanitizeDefinitionTitles({ ...parsedTitles, timeframes: "Entry Timeframe" })));
       }
     } catch (e) {
       console.error(e);
@@ -802,6 +1007,12 @@ export default function App() {
               if (data.planFidelities) persistPlanFidelities(data.planFidelities, false);
               if (data.entryModels) persistEntryModels(data.entryModels, false);
               if (data.trendTypes) persistTrendTypes(data.trendTypes, false);
+              if (data.tpTargets) persistTpTargets(data.tpTargets, false);
+              if (data.premiumDiscounts) persistPremiumDiscounts(data.premiumDiscounts, false);
+              if (data.entryHours) persistEntryHours(data.entryHours, false);
+              if (data.newsDays) persistNewsDays(data.newsDays, false);
+              if (data.strategies) persistStrategies(data.strategies, false);
+              if (data.asiaRangeFvgs) persistAsiaRangeFvgs(data.asiaRangeFvgs, false);
               if (data.definitionTitles) persistDefinitionTitles(data.definitionTitles, false);
               if (data.displayName) {
 
@@ -1436,6 +1647,85 @@ export default function App() {
     },
     [user, trades]
   );
+  // Tanımlamalar'da bir öğe yeniden adlandırılınca, ona bağlı tüm işlemlerdeki değer de güncellenir
+  // (aksi halde eski kayıtlar eski adla kalır ve istatistik gruplaması ikiye bölünür).
+  const handleRenameDefinition = useCallback(
+    (category: string, from: string, to: string): number => {
+      const fromKey = from.trim().toLowerCase();
+      const same = (v?: string | null) => typeof v === "string" && v.trim().toLowerCase() === fromKey;
+      const mapStr = (v?: string) => (same(v) ? to : v);
+      const dedupe = (arr: string[]) => arr.filter((x, i) => arr.findIndex((y) => y.toLowerCase() === x.toLowerCase()) === i);
+      const mapArr = (v?: string[]) => (Array.isArray(v) ? dedupe(v.map((x) => (same(x) ? to : x))) : v);
+      const splitJoined = (v?: string) => (typeof v === "string" && v ? v.split(",").map((x) => x.trim()).filter(Boolean) : []);
+      const hasInArr = (v?: string[]) => Array.isArray(v) && v.some(same);
+
+      const patchFor = (t: Trade): Partial<Trade> | null => {
+        switch (category) {
+          case "platforms": return same(t.platform) ? { platform: to } : null;
+          case "assets": return same(t.asset) ? { asset: to } : null;
+          case "timeframes": return same(t.timeframe) ? { timeframe: to } : null;
+          case "htfTimeframes": return same(t.htfTimeframe) ? { htfTimeframe: to } : null;
+          case "sessions": return same(t.session) ? { session: to } : null;
+          case "planFidelities": return same(t.planFidelity) ? { planFidelity: to } : null;
+          case "trendTypes": return same(t.trend) ? { trend: to } : null;
+          case "entryHours": return same(t.entryTime) ? { entryTime: to } : null;
+          case "premiumDiscounts": return same(t.premiumDiscount) ? { premiumDiscount: to } : null;
+          case "strategies": return same(t.strategy) ? { strategy: to } : null;
+          case "asiaRangeFvgs": return same(t.asiaRangeFvg) ? { asiaRangeFvg: to } : null;
+          case "confirmations": return hasInArr(t.confirmations) ? { confirmations: mapArr(t.confirmations) } : null;
+          case "tpTargets": return hasInArr(t.tpTargets) ? { tpTargets: mapArr(t.tpTargets) } : null;
+          case "concepts": {
+            const base = Array.isArray(t.liquiditySweeps) && t.liquiditySweeps.length > 0
+              ? t.liquiditySweeps
+              : splitJoined(t.liquiditySweep || t.concept);
+            if (!base.some(same)) return null;
+            const next = mapArr(base) as string[];
+            return { liquiditySweeps: next, liquiditySweep: next.join(", "), concept: next.join(", ") };
+          }
+          case "entryModels": {
+            const base = Array.isArray(t.entryModels) && t.entryModels.length > 0 ? t.entryModels : splitJoined(t.entry);
+            if (!base.some(same)) return null;
+            const next = mapArr(base) as string[];
+            return { entryModels: next, entry: next.join(", ") };
+          }
+          default: return null;
+        }
+      };
+
+      const changed: Trade[] = [];
+      trades.forEach((t) => {
+        const patch = patchFor(t);
+        if (patch) changed.push({ ...t, ...patch });
+      });
+      if (changed.length === 0) return 0;
+
+      const byId = new Map(changed.map((t) => [t.id, t]));
+      setTrades((prev) => prev.map((t) => byId.get(t.id) || t));
+
+      if (user) {
+        changed.forEach((t) => pendingWriteIdsRef.current.add(t.id));
+        (async () => {
+          try {
+            for (let i = 0; i < changed.length; i += 400) {
+              const batch = writeBatch(db);
+              changed.slice(i, i + 400).forEach((t) => {
+                batch.set(doc(db, "trades", t.id), cleanForFirestore({ ...t, userId: user.uid }));
+              });
+              await batch.commit();
+            }
+          } catch (err) {
+            console.error("Failed to sync renamed definition to cloud:", err);
+            toast.error("Yeniden adlandırma buluta tam yazılamadı; bağlantı gelince bir işlemi düzenleyip tekrar deneyin.");
+          } finally {
+            changed.forEach((t) => pendingWriteIdsRef.current.delete(t.id));
+          }
+        })();
+      }
+      return changed.length;
+    },
+    [user, trades, setTrades]
+  );
+
   // Set Notes
 
   const handleSaveNote = useCallback(
@@ -1662,12 +1952,13 @@ export default function App() {
       importedNotes: Note[] = [],
       importedJournals: any[] = [],
       importedCertificates: Certificate[] = [],
-      importedSettings: any = null
-    ) => {
+      rawImportedSettings: any = null
+    ): Promise<boolean> => {
       try {
+        const importedSettings = sanitizeImportedSettings(rawImportedSettings);
         if (user) {
           // Prepare Firestore batch write operations in safe chunks of 400
-          type WriteOp = { ref: any; data: any; merge?: boolean };
+          type WriteOp = { ref: any; data: any };
           const writeOps: WriteOp[] = [];
 
           importedTrades.forEach((trade) => {
@@ -1698,97 +1989,89 @@ export default function App() {
             });
           });
 
-          // Commit items in chunks
-          const chunkSize = 400;
-          for (let i = 0; i < writeOps.length; i += chunkSize) {
-            const chunk = writeOps.slice(i, i + chunkSize);
-            const batch = writeBatch(db);
-            chunk.forEach((op) => {
-              batch.set(op.ref, op.data);
-            });
-            await batch.commit();
+          // Yazımı süren kayıtlar: bu sürede gelen snapshot, henüz buluta ulaşmamış kaydı silmesin
+          writeOps.forEach((op) => pendingWriteIdsRef.current.add(op.ref.id));
+          try {
+            const chunkSize = 400;
+            for (let i = 0; i < writeOps.length; i += chunkSize) {
+              const chunk = writeOps.slice(i, i + chunkSize);
+              const batch = writeBatch(db);
+              chunk.forEach((op) => {
+                batch.set(op.ref, op.data);
+              });
+              await batch.commit();
+            }
+          } finally {
+            writeOps.forEach((op) => pendingWriteIdsRef.current.delete(op.ref.id));
           }
 
           if (importedSettings) {
-            const docRef = doc(db, "settings", user.uid);
-            await setDoc(docRef, cleanForFirestore({ ...importedSettings, userId: user.uid }), { merge: true });
+            const { platformCategories: _pc, ...cloudSettings } = importedSettings;
+            await setDoc(doc(db, "settings", user.uid), cleanForFirestore({ ...cloudSettings, userId: user.uid }), { merge: true });
           }
         }
 
-        // Local State and Storage Update
+        // Local State and Storage Update (kayıtlar id'ye göre birleştirilir, aynı id'li kayıt yedekten gelenle değişir)
         if (importedTrades.length > 0) {
           setTrades((prev) => {
             const existingIds = new Set(importedTrades.map((t) => t.id));
-            const merged = [...importedTrades, ...prev.filter((t) => !existingIds.has(t.id))];
-            try {
-              localStorage.setItem("trading_journal_db", JSON.stringify(merged));
-            } catch (e) {
-              console.error(e);
-            }
-            return merged;
+            return [...importedTrades, ...prev.filter((t) => !existingIds.has(t.id))].sort((a, b) => b.createdAt - a.createdAt);
           });
         }
 
         if (importedNotes.length > 0) {
           setNotes((prev) => {
             const existingIds = new Set(importedNotes.map((n) => n.id));
-            const merged = [...importedNotes, ...prev.filter((n) => !existingIds.has(n.id))];
-            try {
-              localStorage.setItem("trading_journal_notes", JSON.stringify(merged));
-            } catch (e) {
-              console.error(e);
-            }
-            return merged;
+            return [...importedNotes, ...prev.filter((n) => !existingIds.has(n.id))];
           });
         }
 
         if (importedJournals.length > 0) {
           setJournals((prev) => {
             const existingIds = new Set(importedJournals.map((j) => j.id));
-            const merged = [...importedJournals, ...prev.filter((j) => !existingIds.has(j.id))];
-            try {
-              localStorage.setItem("trading_journal_journals", JSON.stringify(merged));
-            } catch (e) {
-              console.error(e);
-            }
-            return merged;
+            return [...importedJournals, ...prev.filter((j) => !existingIds.has(j.id))];
           });
         }
 
         if (importedCertificates.length > 0) {
           setCertificates((prev) => {
             const existingIds = new Set(importedCertificates.map((c) => c.id));
-            const merged = [...importedCertificates, ...prev.filter((c) => !existingIds.has(c.id))];
-            try {
-              localStorage.setItem("trading_journal_certificates", JSON.stringify(merged));
-            } catch (e) {
-              console.error(e);
-            }
-            return merged;
+            return [...importedCertificates, ...prev.filter((c) => !existingIds.has(c.id))];
           });
         }
 
         if (importedSettings) {
-          if (importedSettings.platforms) persistPlatforms(importedSettings.platforms, !!user);
-          if (importedSettings.timeframes) persistTimeframes(importedSettings.timeframes, !!user);
-          if (importedSettings.htfTimeframes) persistHtfTimeframes(importedSettings.htfTimeframes, !!user);
-          if (importedSettings.confirmations) persistConfirmations(importedSettings.confirmations, !!user);
-          if (importedSettings.concepts) persistConcepts(importedSettings.concepts, !!user);
-          if (importedSettings.sessions) persistSessions(importedSettings.sessions, !!user);
-          if (importedSettings.assets) persistAssets(importedSettings.assets, !!user);
-          if (importedSettings.planFidelities) persistPlanFidelities(importedSettings.planFidelities, !!user);
-          if (importedSettings.entryModels) persistEntryModels(importedSettings.entryModels, !!user);
-          if (importedSettings.trendTypes) persistTrendTypes(importedSettings.trendTypes, !!user);
-          if (importedSettings.definitionTitles) persistDefinitionTitles(importedSettings.definitionTitles, !!user);
+          const sync = !!user;
+          if (importedSettings.platforms) persistPlatforms(importedSettings.platforms, sync);
+          if (importedSettings.timeframes) persistTimeframes(importedSettings.timeframes, sync);
+          if (importedSettings.htfTimeframes) persistHtfTimeframes(importedSettings.htfTimeframes, sync);
+          if (importedSettings.confirmations) persistConfirmations(importedSettings.confirmations, sync);
+          if (importedSettings.concepts) persistConcepts(importedSettings.concepts, sync);
+          if (importedSettings.sessions) persistSessions(importedSettings.sessions, sync);
+          if (importedSettings.assets) persistAssets(importedSettings.assets, sync);
+          if (importedSettings.planFidelities) persistPlanFidelities(importedSettings.planFidelities, sync);
+          if (importedSettings.entryModels) persistEntryModels(importedSettings.entryModels, sync);
+          if (importedSettings.trendTypes) persistTrendTypes(importedSettings.trendTypes, sync);
+          if (importedSettings.tpTargets) persistTpTargets(importedSettings.tpTargets, sync);
+          if (importedSettings.premiumDiscounts) persistPremiumDiscounts(importedSettings.premiumDiscounts, sync);
+          if (importedSettings.entryHours) persistEntryHours(importedSettings.entryHours, sync);
+          if (importedSettings.newsDays) persistNewsDays(importedSettings.newsDays, sync);
+          if (importedSettings.strategies) persistStrategies(importedSettings.strategies, sync);
+          if (importedSettings.asiaRangeFvgs) persistAsiaRangeFvgs(importedSettings.asiaRangeFvgs, sync);
+          if (importedSettings.definitionTitles) persistDefinitionTitles(importedSettings.definitionTitles, sync);
+          if (importedSettings.platformCategories) {
+            replacePlatformCategories({ ...getStoredPlatformCategories(), ...importedSettings.platformCategories });
+          }
         }
 
-
         toast.success(
-          `Yedek başarıyla yüklendi: ${importedTrades.length} işlem, ${importedNotes.length} not, ${importedJournals.length} günlük, ${importedCertificates.length} sertifika.`
+          `Yedek başarıyla yüklendi: ${importedTrades.length} işlem, ${importedNotes.length} not, ${importedJournals.length} günlük, ${importedCertificates.length} sertifika${importedSettings ? " ve tanımlamalar" : ""}.`
         );
+        return true;
       } catch (err: any) {
         console.error("Import error in App.tsx:", err);
-        toast.error("Yedek verileri içe aktarılırken bir hata oluştu.");
+        toast.error("Yedek verileri içe aktarılırken bir hata oluştu. Hiçbir veri kaybolmadı; tekrar deneyin.");
+        return false;
       }
     },
     [
@@ -1803,6 +2086,13 @@ export default function App() {
       persistPlanFidelities,
       persistEntryModels,
       persistTrendTypes,
+      persistTpTargets,
+      persistPremiumDiscounts,
+      persistEntryHours,
+      persistNewsDays,
+      persistStrategies,
+      persistAsiaRangeFvgs,
+      persistDefinitionTitles,
       setTrades,
       setNotes,
       setJournals,
@@ -1811,7 +2101,7 @@ export default function App() {
   );
 
   // Clear all database & project data
-  const handleClearAll = useCallback(async () => {
+  const handleClearAll = useCallback(async (): Promise<boolean> => {
     isClearingRef.current = true;
     try {
       if (user) {
@@ -1829,6 +2119,7 @@ export default function App() {
           "journals",
           "certificates",
         ];
+        let cloudFailed = false;
 
         for (const colName of collectionsToClear) {
           try {
@@ -1853,8 +2144,15 @@ export default function App() {
               }
             }
           } catch (colErr) {
+            cloudFailed = true;
             console.error(`Error clearing cloud collection ${colName}:`, colErr);
           }
+        }
+
+        // Bulut temizliği tamamlanamadıysa yerel veriyi silme: aksi halde kayıtlar bir sonraki senkronda geri gelir
+        if (cloudFailed) {
+          toast.error("Bulut verileri tamamen silinemedi. Bağlantınızı kontrol edip tekrar deneyin; yerel veriler korundu.");
+          return false;
         }
 
         // Delete user settings documents in Firestore
@@ -1865,7 +2163,7 @@ export default function App() {
         }
       }
 
-      // 2. Clear all local storage keys
+      // 2. Clear all local storage keys (uygulamanın yazdığı tüm veri ve tanımlama anahtarları)
       const keysToRemove = [
         "trading_journal_db",
         "trading_journal_notes",
@@ -1876,8 +2174,23 @@ export default function App() {
         "trading_htf_timeframes_list",
         "trading_confirmations_list",
         "trading_concepts_list",
+        "trading_liquidity_sweeps_list",
         "trading_sessions_list",
         "trading_assets_list",
+        "trading_plan_fidelities_list",
+        "trading_entry_models_list",
+        "trading_trend_types_list",
+        "trading_tp_targets_list",
+        "trading_premium_discounts_list",
+        "trading_entry_hours_list",
+        "trading_news_days_list",
+        "trading_strategies_list",
+        "trading_asia_range_fvgs_list",
+        "trading_definition_titles",
+        "trading_definitions_revision",
+        "tj_platform_categories",
+        "tj_active_account_category",
+        "last_used_trade_platform",
         "trading_journal_filters",
         "ai_copilot_last_cleared",
         "ai_copilot_messages",
@@ -1917,6 +2230,10 @@ export default function App() {
       setJournals([]);
       setCertificates([]);
 
+      // Platform kategorileri (Funded / Challenge / Demo) önbelleği de sıfırlanır
+      replacePlatformCategories({});
+      setActiveAccountCategory('ALL');
+
       persistPlatforms(DEFAULT_PLATFORMS, !!user);
       persistTimeframes(DEFAULT_TIMEFRAMES, !!user);
       persistHtfTimeframes(DEFAULT_HTF_TIMEFRAMES, !!user);
@@ -1927,6 +2244,13 @@ export default function App() {
       persistPlanFidelities(DEFAULT_PLAN_FIDELITIES, !!user);
       persistEntryModels(DEFAULT_ENTRY_MODELS, !!user);
       persistTrendTypes(DEFAULT_TREND_TYPES, !!user);
+      persistTpTargets(DEFAULT_TP_TARGETS, !!user);
+      persistPremiumDiscounts(DEFAULT_PREMIUM_DISCOUNTS, !!user);
+      persistEntryHours(DEFAULT_ENTRY_HOURS, !!user);
+      persistNewsDays(DEFAULT_NEWS_DAYS, !!user);
+      persistStrategies(DEFAULT_STRATEGIES, !!user);
+      persistAsiaRangeFvgs(DEFAULT_ASIA_RANGE_FVGS, !!user);
+      persistDefinitionTitles(DEFAULT_DEFINITION_TITLES, !!user);
 
       setGlobalSelectedConfirmations([]);
       setGlobalSelectedConcepts([]);
@@ -1941,6 +2265,12 @@ export default function App() {
       setGlobalSelectedEntryModels([]);
       setGlobalSelectedTrendTypes([]);
       setGlobalDateLimit("6m");
+      setGlobalMinAsiaRangePips(undefined);
+      setGlobalMaxAsiaRangePips(undefined);
+      setGlobalMinMaePips(undefined);
+      setGlobalMaxMaePips(undefined);
+      setGlobalMinMfePips(undefined);
+      setGlobalMaxMfePips(undefined);
 
       setEditingTrade(null);
       setDetailedTrade(null);
@@ -1950,13 +2280,14 @@ export default function App() {
       setIsCopilotOpen(false);
 
       // 4. Dispatch global wipe event
-      window.dispatchEvent(new Event("storage"));
       window.dispatchEvent(new CustomEvent("trading-journal-wipe-all"));
 
       toast.success("Bütün veriler ve ayarlar başarıyla sıfırlandı.");
+      return true;
     } catch (err) {
       console.error("Sıfırlama hatası:", err);
       toast.error("Veriler sıfırlanırken bir hata oluştu.");
+      return false;
     } finally {
       isClearingRef.current = false;
     }
@@ -1971,7 +2302,15 @@ export default function App() {
     setGlobalSelectedHtfTimeframes,
     setGlobalSelectedStatuses,
     setGlobalSelectedTypes,
+    setGlobalSelectedEntryModels,
+    setGlobalSelectedTrendTypes,
     setGlobalDateLimit,
+    setGlobalMinAsiaRangePips,
+    setGlobalMaxAsiaRangePips,
+    setGlobalMinMaePips,
+    setGlobalMaxMaePips,
+    setGlobalMinMfePips,
+    setGlobalMaxMfePips,
     setTrades,
     setNotes,
     setJournals,
@@ -1984,6 +2323,15 @@ export default function App() {
     persistSessions,
     persistAssets,
     persistPlanFidelities,
+    persistEntryModels,
+    persistTrendTypes,
+    persistTpTargets,
+    persistPremiumDiscounts,
+    persistEntryHours,
+    persistNewsDays,
+    persistStrategies,
+    persistAsiaRangeFvgs,
+    persistDefinitionTitles,
     setGlobalSelectedPlanFidelity,
   ]);
 
@@ -2203,7 +2551,14 @@ export default function App() {
     planFidelities,
     entryModels,
     trendTypes,
+    tpTargets,
+    premiumDiscounts,
+    entryHours,
+    newsDays,
+    strategies,
+    asiaRangeFvgs,
     definitionTitles,
+    platformCategories: getStoredPlatformCategories(),
     currency,
     isRrMode,
   }), [
@@ -2217,7 +2572,14 @@ export default function App() {
     planFidelities,
     entryModels,
     trendTypes,
+    tpTargets,
+    premiumDiscounts,
+    entryHours,
+    newsDays,
+    strategies,
+    asiaRangeFvgs,
     definitionTitles,
+    categoryVersion,
     currency,
     isRrMode,
   ]);
@@ -2272,7 +2634,7 @@ export default function App() {
         }} 
       />
       {/* 1. MODERN COMPACT NAVBAR */}
-      <header className="border-b border-border-subtle bg-bg-base  sticky top-0 z-40 transition-colors duration-200">
+      <header ref={headerRef} className="border-b border-border-subtle bg-bg-base sticky top-0 z-40">
         <div className="max-w-6xl mx-auto px-3 sm:px-4 py-1.5 sm:py-2 flex flex-row items-center justify-between gap-2 relative">
           
           <div className="flex items-center gap-3 z-10">
@@ -2934,7 +3296,7 @@ export default function App() {
         </div>
       </main>
 
-      {isPlatformMenuOpen && (
+      {platformMenuMounted && (
         <DefinitionsManagerModal
           isOpen={isPlatformMenuOpen}
           onClose={() => setIsPlatformMenuOpen(false)}
@@ -2950,6 +3312,12 @@ export default function App() {
           planFidelities={planFidelities}
           entryModels={entryModels}
           trendTypes={trendTypes}
+          tpTargets={tpTargets}
+          premiumDiscounts={premiumDiscounts}
+          entryHours={entryHours}
+          newsDays={newsDays}
+          strategies={strategies}
+          asiaRangeFvgs={asiaRangeFvgs}
           definitionTitles={definitionTitles}
           persistPlatforms={persistPlatforms}
           persistTimeframes={persistTimeframes}
@@ -2961,6 +3329,13 @@ export default function App() {
           persistPlanFidelities={persistPlanFidelities}
           persistEntryModels={persistEntryModels}
           persistTrendTypes={persistTrendTypes}
+          persistTpTargets={persistTpTargets}
+          persistPremiumDiscounts={persistPremiumDiscounts}
+          persistEntryHours={persistEntryHours}
+          persistNewsDays={persistNewsDays}
+          persistStrategies={persistStrategies}
+          persistAsiaRangeFvgs={persistAsiaRangeFvgs}
+          onRenameDefinition={handleRenameDefinition}
           persistDefinitionTitles={persistDefinitionTitles}
         />
       )}
@@ -2972,21 +3347,13 @@ export default function App() {
             {isFormOpen && (
               <motion.div
                 key="add-trade-form-modal"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.15, ease: EASE }}
-                style={{ willChange: "opacity" }}
+                {...MODAL_BACKDROP}
                 onClick={handleCancelEdit}
-                className="fixed inset-0 z-[1500] overflow-hidden bg-zinc-950/80 flex items-center justify-center p-2 sm:p-4 cursor-pointer"
+                className="fixed inset-0 modal-layer modal-dim z-[1500] overflow-hidden  flex items-center justify-center p-2 sm:p-4 cursor-pointer"
               >
                 <motion.div
                   key="add-trade-form-modal-content"
-                  initial={{ opacity: 0, scale: 0.96, y: 16 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.96, y: 16 }}
-                  transition={{ duration: 0.2, ease: EASE }}
-                  style={{ willChange: "transform, opacity" }}
+                  {...MODAL_PANEL}
                   onClick={(e) => e.stopPropagation()}
                   className="w-full max-w-6xl xl:max-w-7xl 2xl:max-w-[1440px] h-auto max-h-[92vh] overflow-hidden bg-[#0a0a0c] border border-zinc-800/80 rounded-2xl relative shadow-2xl flex flex-col cursor-default my-auto"
                 >
@@ -3006,6 +3373,12 @@ export default function App() {
                     planFidelities={planFidelities}
                     entryModels={entryModels}
                     trendTypes={trendTypes}
+                    tpTargets={tpTargets}
+                    premiumDiscounts={premiumDiscounts}
+                    entryHours={entryHours}
+                    newsDays={newsDays}
+                    strategies={strategies}
+                    asiaRangeFvgs={asiaRangeFvgs}
                     definitionTitles={definitionTitles}
                     persistPlatforms={persistPlatforms}
                   />
@@ -3029,7 +3402,7 @@ export default function App() {
 
 
         {/* AUTH MODAL */}
-        {isAuthModalOpen && (
+        {authModalMounted && (
           <AuthModal
             isOpen={isAuthModalOpen}
             onClose={() => setIsAuthModalOpen(false)}
@@ -3037,7 +3410,7 @@ export default function App() {
         )}
 
         {/* AI CO-PILOT MODAL */}
-        {isCopilotOpen && (
+        {copilotMounted && (
           <AICoPilotModal
             isOpen={isCopilotOpen}
             onClose={() => setIsCopilotOpen(false)}
@@ -3066,19 +3439,31 @@ export default function App() {
         )}
 
       {/* FLOATING AI CO-PILOT QUICK ACCESS BUTTON */}
-      <div className="fixed bottom-5 right-5 z-30">
-        <button
-          type="button"
-          onClick={() => setIsCopilotOpen(true)}
-          className="group relative w-10 h-10 flex items-center justify-center bg-zinc-900 hover:bg-zinc-800 text-zinc-100 rounded-full shadow-lg hover:shadow-blue-500/10 transition-colors duration-200 cursor-pointer border border-zinc-700/60"
-        >
-          <div className="relative flex items-center justify-center">
-            <svg viewBox="0 0 24 24" className="w-[16px] h-[16px] text-zinc-100 fill-current" xmlns="http://www.w3.org/2000/svg">
+      <div className="fixed bottom-5 right-5 z-30 pointer-events-none">
+        <AnimatePresence>
+          {!isCopilotOpen && (
+            <motion.button
+              key="copilot-fab"
+              type="button"
+              aria-label="AI Co-Pilot'u aç"
+              onClick={() => setIsCopilotOpen(true)}
+              initial={{ opacity: 0, scale: 0.8, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0, transition: SPRING.enter }}
+              exit={{ opacity: 0, scale: 0.85, transition: { duration: 0.12, ease: EASE } }}
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.94 }}
+              className="pointer-events-auto group relative w-11 h-11 flex items-center justify-center bg-bg-card hover:bg-bg-card-hover text-zinc-100 rounded-full shadow-lg cursor-pointer border border-border-card hover:border-blue-500/40 transition-colors duration-200"
+            >
+              <span className="absolute inset-0 rounded-full bg-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+          <div className="relative flex items-center justify-center text-blue-400">
+            <svg viewBox="0 0 24 24" className="w-[16px] h-[16px] fill-current" xmlns="http://www.w3.org/2000/svg">
               <path d="M12 3c.13 4.56 2.44 6.87 7 7-4.56.13-6.87 2.44-7 7-.13-4.56-2.44-6.87-7-7 4.56-.13 6.87-2.44 7-7z" />
               <path d="M17.5 14c.07 2.28 1.22 3.43 3.5 3.5-2.28.07-3.43 1.22-3.5 3.5-.07-2.28-1.22-3.43-3.5-3.5 2.28-.07 3.43-1.22 3.5-3.5z" opacity="0.8" />
             </svg>
           </div>
-        </button>
+            </motion.button>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

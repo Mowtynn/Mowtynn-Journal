@@ -1,4 +1,4 @@
-import { EASE, SPRING } from '../lib/motion';
+import { EASE, SPRING, MODAL_BACKDROP, MODAL_PANEL } from '../lib/motion';
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -338,20 +338,13 @@ export const CertificatesView = React.memo(function CertificatesView({ certifica
           {isModalOpen && (
             <motion.div
               key="cert-form-modal-backdrop"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15, ease: EASE }}
-              className="will-change-[opacity] fixed inset-0 z-[1500] overflow-y-auto bg-zinc-950/80 p-4 sm:p-5 flex items-center justify-center"
+              {...MODAL_BACKDROP}
+              className="fixed inset-0 modal-layer modal-dim z-[1500] overflow-y-auto  p-4 sm:p-5 flex items-center justify-center"
               onClick={() => setIsModalOpen(false)}
             >
               <motion.div
                 key="cert-form-modal-content"
-                initial={{ opacity: 0, scale: 0.96, y: 16 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.96, y: 16 }}
-                transition={{ duration: 0.2, ease: EASE }}
-                style={{ willChange: "transform, opacity" }}
+                {...MODAL_PANEL}
                 onClick={(e) => e.stopPropagation()}
                 className="bg-zinc-900 border border-zinc-700/50 rounded-2xl p-5 w-full max-w-lg h-[580px] max-h-[88vh] min-h-[460px] shadow-2xl my-auto flex flex-col"
               >
@@ -520,13 +513,9 @@ export const CertificatesView = React.memo(function CertificatesView({ certifica
           {selectedImage && (
             <motion.div
               key="cert-image-preview-backdrop"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15, ease: EASE }}
-              
+              {...MODAL_BACKDROP}
               onClick={() => setSelectedImage(null)}
-               className="will-change-[opacity] fixed inset-0 z-[4500] flex items-center justify-center p-4 bg-zinc-950/80"
+               className="fixed inset-0 modal-layer modal-dim z-[4500] flex items-center justify-center p-4 "
             >
               <button
                 type="button"
@@ -562,20 +551,13 @@ export const CertificatesView = React.memo(function CertificatesView({ certifica
           {certToDelete && (
             <motion.div 
               key="cert-delete-confirm-backdrop"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15, ease: EASE }}
-              className="will-change-[opacity] fixed inset-0 bg-zinc-950/80 flex items-center justify-center p-4 z-[4500]"
+              {...MODAL_BACKDROP}
+              className="fixed inset-0 modal-layer modal-dim  flex items-center justify-center p-4 z-[4500]"
               onClick={() => setCertToDelete(null)}
             >
               <motion.div
                 key="cert-delete-confirm-content"
-                initial={{ opacity: 0, scale: 0.96, y: 16 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.96, y: 16 }}
-                transition={{ duration: 0.2, ease: EASE }}
-                style={{ willChange: "transform, opacity" }}
+                {...MODAL_PANEL}
                 className="bg-zinc-900 border border-zinc-700/50 rounded-2xl p-5 max-w-md w-full shadow-2xl overflow-hidden relative"
                 onClick={(e) => e.stopPropagation()}
               >
@@ -691,7 +673,6 @@ const CertificateCard = React.memo(function CertificateCard({ cert, index, onDel
               <img decoding="async"
                 src={cert.image}
                 alt={cert.title}
-                decoding="async"
                 draggable={false}
                 className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
               />

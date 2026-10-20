@@ -30,8 +30,11 @@ export interface Trade {
   entry?: string;           // Giriş Modeli (Entry Model e.g. IFVG, FVG, Orderblock)
   entryModels?: string[];   // Birden fazla Giriş Modeli (Multiple Entry Models)
   trend?: string;           // Trend Yapısı (Trend Type e.g. Continuation, Reversal)
-  dxy?: string;             // DXY bias / correlation (e.g. Bullish, Bearish, Neutral)
+  tpTargets?: string[];     // TP Target — hedeflenen likidite / seviye (e.g. PDH / PDL, Asia High / Low)
   premiumDiscount?: string; // Premium / Discount zone (e.g. Premium, Discount, Equilibrium / OTE)
+  strategy?: string;        // Strateji (Tanımlamalar'dan yönetilir)
+  asiaRangeFvg?: string;    // Asia Range FVG (Tanımlamalar'dan yönetilir)
+  newsDay?: boolean;        // News Day / Bank Holiday: true = Var, false = Yok. Eski kayıtlarda tanımsız (bilinmiyor)
   htfBias?: HtfBias;        // 1H (max 4H) bias at entry time — alignment with direction is derived, not stored
   spreadPips?: number;      // Spread paid on this trade, in pips (cost per pair / broker analysis)
 }
@@ -96,7 +99,6 @@ export interface TradeFilter {
   planFidelity?: string;
   entry?: string;
   trend?: string;
-  dxy?: string;
   premiumDiscount?: string;
   sortBy: 'dateDes' | 'dateAsc' | 'pnlDes' | 'pnlAsc' | 'assetAsc' | 'assetDes' | 'typeAsc' | 'typeDes' | 'rrAsc' | 'rrDes' | 'platformAsc' | 'platformDes';
   minAsiaRangePips?: number;
@@ -141,5 +143,26 @@ export interface DefinitionTitles {
   planFidelities: string;
   entryModels?: string;
   trendTypes?: string;
+  tpTargets?: string;
+  premiumDiscounts?: string;
+  entryHours?: string;
+  newsDays?: string;
+  strategies?: string;
+  asiaRangeFvgs?: string;
+  // Listesi olmayan form alanlarının başlıkları (Tanımlamalar > Form Başlıkları)
+  basicInfoCard?: string;
+  financialCard?: string;
+  direction?: string;
+  tradeDate?: string;
+  tradeStatus?: string;
+  stopPips?: string;
+  tpPips?: string;
+  maePips?: string;
+  mfePips?: string;
+  asiaRangePips?: string;
+  rr?: string;
+  pnl?: string;
+  chartLink?: string;
+  notesCard?: string;
 }
 

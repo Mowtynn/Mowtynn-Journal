@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx';
 import { Trade, JournalEntry, Note } from '../types';
 import { getNyParts, getSweepSide, getTradeHourBucket, WEEKDAY_NAMES_TR } from '../lib/tradingTime';
+import { getNewsDayLabels } from '../constants/constants';
 import { DATASET_LABELS, getTradeDataset } from '../lib/asiaAnalytics';
 
 export interface ExportOptions {
@@ -86,8 +87,11 @@ export const prepareTradeExportRows = (trades: Trade[], options?: ExportOptions)
       'Gün (NY)': ny ? WEEKDAY_NAMES_TR[ny.weekday] : '-',
       'Giriş Saati (NY, saatlik)': getTradeHourBucket(t),
       'Veri Seti': DATASET_LABELS[getTradeDataset(t)],
-      'DXY': t.dxy || '-',
+      'TP Target': Array.isArray(t.tpTargets) && t.tpTargets.length > 0 ? t.tpTargets.join(', ') : '-',
       'Premium / Discount': t.premiumDiscount || '-',
+      'Strateji': t.strategy || '-',
+      'Asia Range FVG': t.asiaRangeFvg || '-',
+      'News Day / Bank Holiday': typeof t.newsDay === 'boolean' ? (t.newsDay ? getNewsDayLabels().yes : getNewsDayLabels().no) : '-',
       'Süpürülen Asia Tarafı': getSweepSide(t) === 'HIGH' ? 'High' : 'Low',
       'Potansiyel R (MFE/Stop)': hasNum(t.mfePips) && stopOk ? Number(((t.mfePips as number) / (t.stopPips as number)).toFixed(2)) : '-',
       'Hedef Tamamlama (MFE/TP %)': hasNum(t.mfePips) && hasNum(t.tpPips) && t.tpPips > 0 ? Math.round(((t.mfePips as number) / t.tpPips) * 100) : '-',

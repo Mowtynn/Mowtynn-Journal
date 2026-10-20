@@ -1,4 +1,4 @@
-import { EASE } from '../lib/motion';
+import { MODAL_BACKDROP, MODAL_PANEL } from '../lib/motion';
 import React, { useMemo, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -137,20 +137,13 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
       {isOpen && (
         <motion.div
           key="heatmap-modal-backdrop"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.15, ease: EASE }}
-          className="will-change-[opacity] fixed inset-0 z-[1500] flex items-center justify-center p-5 bg-zinc-950/80 overflow-y-auto"
+          {...MODAL_BACKDROP}
+          className="fixed inset-0 modal-layer modal-dim z-[1500] flex items-center justify-center p-5  overflow-y-auto"
           onClick={onClose}
         >
         <motion.div
           key="heatmap-modal-content"
-          initial={{ opacity: 0, scale: 0.96, y: 16 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.96, y: 16 }}
-          transition={{ duration: 0.2, ease: EASE }}
-          style={{ willChange: "transform, opacity" }}
+          {...MODAL_PANEL}
           className="relative w-full max-w-4xl h-[620px] max-h-[90vh] min-h-0 sm:min-h-[480px] bg-zinc-900 border border-zinc-700/50 rounded-2xl shadow-2xl overflow-hidden flex flex-col my-auto"
           onClick={e => e.stopPropagation()}
         >

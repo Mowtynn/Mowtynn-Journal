@@ -1,4 +1,4 @@
-import { EASE } from '../lib/motion';
+import { POPOVER } from '../lib/motion';
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Shield, Trophy, Layers, Target, ChevronDown, Check } from 'lucide-react';
@@ -151,11 +151,8 @@ export const AccountSwitcher: React.FC<AccountSwitcherProps> = React.memo(({
         {isOpen && (
           <motion.div
             key="account-switcher-dropdown"
-            initial={{ opacity: 0, y: 3, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 3, scale: 0.98 }}
-            transition={{ duration: 0.12, ease: EASE }}
-            className="absolute right-0 top-[calc(100%+4px)] w-[175px] bg-zinc-900 border border-zinc-700/80 rounded-xl shadow-xl z-50 p-1 overflow-hidden"
+            {...POPOVER}
+            className="origin-top-right absolute right-0 top-[calc(100%+4px)] w-[175px] bg-zinc-900 border border-zinc-700/80 rounded-xl shadow-xl z-50 p-1 overflow-hidden"
           >
             <div className="space-y-0.5">
               {options.map((opt) => {

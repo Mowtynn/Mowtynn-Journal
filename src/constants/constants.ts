@@ -41,6 +41,19 @@ export function savePlatformCategory(platform: string, category: PlatformCategor
   } catch (e) {}
 }
 
+export function replacePlatformCategories(map: Record<string, PlatformCategory>): void {
+  try {
+    const clean: Record<string, PlatformCategory> = {};
+    Object.entries(map || {}).forEach(([k, v]) => {
+      if (v === 'FUNDED' || v === 'CHALLENGE' || v === 'DEMO') clean[k.trim()] = v;
+    });
+    cachedCategories = { ...clean };
+    if (Object.keys(clean).length === 0) localStorage.removeItem('tj_platform_categories');
+    else localStorage.setItem('tj_platform_categories', JSON.stringify(clean));
+    window.dispatchEvent(new CustomEvent('tj_platform_categories_updated'));
+  } catch (e) {}
+}
+
 export function isChallengePlatform(platform?: string, customCategories?: Record<string, PlatformCategory>): boolean {
   if (!platform) return false;
   const clean = platform.trim();
@@ -142,6 +155,57 @@ export const DEFAULT_TREND_TYPES = [
   "Continuation",
   "Reversal"
 ];
+export const DEFAULT_TP_TARGETS = [
+  "PDH / PDL",
+  "PWH / PWL",
+  "Asia High / Low",
+  "Session High / Low",
+  "EQH / EQL",
+  "HTF PD Array"
+];
+export const DEFAULT_PREMIUM_DISCOUNTS = [
+  "Premium",
+  "Discount",
+  "Equilibrium / OTE"
+];
+
+/**
+ * News Day / Bank Holiday: sabit iki durumlu alan. Liste her zaman tam 2 öğedir:
+ * [0] = "Var" (true), [1] = "Yok" (false, varsayılan). Tanımlamalar'dan yalnızca etiketleri yeniden adlandırılır;
+ * işlemde etiket değil boolean saklanır, böylece yeniden adlandırma geçmiş kayıtları bozmaz.
+ */
+export const DEFAULT_STRATEGIES = ["Asia Range"];
+export const DEFAULT_ASIA_RANGE_FVGS = ["Bullish FVG", "Bearish FVG"];
+
+/** Listesi olmayan form alanlarının başlıkları: Tanımlamalar > Form Başlıkları'ndan değiştirilir. */
+export const FORM_LABEL_KEYS = [
+  "basicInfoCard", "financialCard", "notesCard", "direction", "tradeDate", "tradeStatus",
+  "stopPips", "tpPips", "maePips", "mfePips", "asiaRangePips", "rr", "pnl", "chartLink",
+] as const;
+
+export const DEFAULT_NEWS_DAYS = ["Var", "Yok"];
+
+export const normalizeNewsDays = (list?: unknown): string[] => {
+  const arr = Array.isArray(list) ? list : [];
+  const yes = typeof arr[0] === "string" && arr[0].trim() ? arr[0].trim() : DEFAULT_NEWS_DAYS[0];
+  let no = typeof arr[1] === "string" && arr[1].trim() ? arr[1].trim() : DEFAULT_NEWS_DAYS[1];
+  if (no.toLowerCase() === yes.toLowerCase()) no = yes === DEFAULT_NEWS_DAYS[1] ? DEFAULT_NEWS_DAYS[0] : DEFAULT_NEWS_DAYS[1];
+  return [yes, no];
+};
+
+export const NEWS_DAYS_EVENT = "tj_news_days_updated";
+
+/** Analiz ekranları için güncel Var / Yok etiketleri (localStorage'dan okunur). */
+export function getNewsDayLabels(): { yes: string; no: string } {
+  try {
+    const raw = localStorage.getItem("trading_news_days_list");
+    if (raw) {
+      const [yes, no] = normalizeNewsDays(JSON.parse(raw));
+      return { yes, no };
+    }
+  } catch (e) {}
+  return { yes: DEFAULT_NEWS_DAYS[0], no: DEFAULT_NEWS_DAYS[1] };
+}
 
 export const DEFAULT_DEFINITION_TITLES: DefinitionTitles = {
   platforms: "Platform",
@@ -155,6 +219,26 @@ export const DEFAULT_DEFINITION_TITLES: DefinitionTitles = {
   planFidelities: "Setup Kalitesi",
   entryModels: "Entry Model",
   trendTypes: "Trend Yapısı",
+  tpTargets: "TP Target",
+  premiumDiscounts: "Premium / Discount",
+  entryHours: "Entry Time",
+  newsDays: "News Day/Bank Holiday",
+  strategies: "Strateji",
+  asiaRangeFvgs: "Asia Range FVG",
+  basicInfoCard: "Temel Bilgiler",
+  financialCard: "Finansal Sonuç",
+  notesCard: "Analiz & Notlar",
+  direction: "Yön",
+  tradeDate: "Tarih",
+  tradeStatus: "İşlem Durumu",
+  stopPips: "Stop Pip",
+  tpPips: "TP Pip",
+  maePips: "MAE Pip",
+  mfePips: "MFE Pip",
+  asiaRangePips: "Asia Range Pip",
+  rr: "R:R Oranı",
+  pnl: "PNL",
+  chartLink: "Grafik Linki",
 };
 
 export const cleanDefinitionTitleString = (str?: string): string => {
@@ -238,6 +322,10 @@ export const sanitizeDefinitionTitles = (raw: Partial<DefinitionTitles> = {}): D
 
   if (!result.entryModels || /giriş model/i.test(result.entryModels)) {
     result.entryModels = "Entry Model";
+  }
+
+  if (!result.newsDays) {
+    result.newsDays = DEFAULT_DEFINITION_TITLES.newsDays;
   }
 
   return result;

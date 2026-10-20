@@ -1,4 +1,4 @@
-import { EASE } from '../lib/motion';
+import { EASE, MODAL_BACKDROP, MODAL_PANEL, POPOVER } from '../lib/motion';
 import React, { useState, memo, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -412,11 +412,8 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
                 {isExportOpen && (
                   <motion.div
                     key="journal-export-dropdown"
-                    initial={{ opacity: 0, y: 4, scale: 0.98 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 4, scale: 0.98 }}
-                    transition={{ duration: 0.15, ease: EASE }}
-                    className="absolute top-[calc(100%+8px)] left-0 sm:left-auto sm:right-0 z-50 w-[270px] bg-zinc-900 border border-zinc-700/80 rounded-2xl shadow-2xl p-2 overflow-hidden"
+                    {...POPOVER}
+                    className="origin-top-right absolute top-[calc(100%+8px)] left-0 sm:left-auto sm:right-0 z-50 w-[270px] bg-zinc-900 border border-zinc-700/80 rounded-2xl shadow-2xl p-2 overflow-hidden"
                   >
                     {/* Format Tabs */}
                     <div className="flex items-center gap-1 p-1 bg-zinc-950 rounded-xl border border-zinc-800/80 mb-2">
@@ -539,11 +536,8 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
               {showSearch && (
                 <motion.div
                   key="journal-calendar-dropdown"
-                  initial={{ opacity: 0, y: -4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -4 }}
-                  transition={{ duration: 0.15, ease: EASE }}
-                  className="absolute top-[calc(100%+8px)] right-0 z-50 flex flex-col gap-2 shadow-2xl"
+                  {...POPOVER}
+                  className="absolute top-[calc(100%+8px)] right-0 z-50 origin-top-right flex flex-col gap-2 shadow-2xl"
                 >
                   <JournalCalendar 
                     entries={entries} 
@@ -1030,20 +1024,13 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
           {entryToDelete && (
             <motion.div
               key="journal-delete-modal-backdrop"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15, ease: EASE }}
-              className="will-change-[opacity] fixed inset-0 z-[4500] bg-zinc-950/80 flex items-center justify-center p-4"
+              {...MODAL_BACKDROP}
+              className="fixed inset-0 modal-layer modal-dim z-[4500]  flex items-center justify-center p-4"
               onClick={() => setEntryToDelete(null)}
             >
               <motion.div
                 key="journal-delete-modal-content"
-                initial={{ opacity: 0, scale: 0.96, y: 16 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.96, y: 16 }}
-                transition={{ duration: 0.2, ease: EASE }}
-                style={{ willChange: "transform, opacity" }}
+                {...MODAL_PANEL}
                 onClick={(e) => e.stopPropagation()}
                 className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 max-w-sm w-full shadow-2xl overflow-hidden relative select-none"
               >

@@ -1,6 +1,6 @@
 import { Trade } from '../types';
 import { calculateProfitFactor, toRR } from './statMath';
-import { getTradeAccountCategory } from '../constants/constants';
+import { getTradeAccountCategory, getNewsDayLabels } from '../constants/constants';
 import { getTradeHourBucket, getTradeNyWeekday } from './tradingTime';
 import { bucketAsiaRanges } from './asiaAnalytics';
 
@@ -136,11 +136,11 @@ export interface StrategyAnalyticsResult {
     profitFactor: number;
   }>;
 
-  // 9. DXY Bias & Correlation Analytics
-  dxyStats: {
+  // 9. TP Target Analytics
+  tpTargetStats: {
     hasData: boolean;
     ranking: Array<{
-      dxy: string;
+      target: string;
       total: number;
       wins: number;
       winRate: number;
@@ -148,9 +148,15 @@ export interface StrategyAnalyticsResult {
       avgR: number;
       profitFactor: number;
     }>;
-    dxyDirectionMatrix: Array<{
-      dxy: string;
-      direction: 'LONG' | 'SHORT';
+    insight: string;
+  };
+
+  // 10b. News Day / Bank Holiday Analytics (Var vs Yok)
+  newsDayStats: {
+    hasData: boolean;
+    ranking: Array<{
+      label: string;
+      isNews: boolean;
       total: number;
       wins: number;
       winRate: number;
@@ -158,6 +164,7 @@ export interface StrategyAnalyticsResult {
       avgR: number;
       profitFactor: number;
     }>;
+    unknownCount: number; // News Day bilgisi girilmemiş (eski) işlem sayısı — kıyasa dahil edilmez
     insight: string;
   };
 
@@ -421,8 +428,9 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
     trendStats: { hasData: false, ranking: [], reversalCostR: 0, continuationEdgeR: 0 },
     timeframeMatrix: [],
     hourlyStats: [],
-    dxyStats: { hasData: false, ranking: [], dxyDirectionMatrix: [], insight: 'DXY verisi bulunamadı.' },
+    tpTargetStats: { hasData: false, ranking: [], insight: 'TP Target verisi bulunamadı.' },
     premiumDiscountStats: { hasData: false, ranking: [], zoneDirectionMatrix: [], insight: 'Zone verisi bulunamadı.' },
+    newsDayStats: { hasData: false, ranking: [], unknownCount: 0, insight: 'News Day / Bank Holiday verisi bulunamadı.' },
     confirmationStats: { hasData: false, ranking: [], multiConfirmationWinRate: 0 },
     setupQualityStats: { ranking: [], onlyAPlusNetR: 0, onlyAPlusWinRate: 0, bCEliminationBoostR: 0 },
     sessionDirectionStats: [],
@@ -771,39 +779,15 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
     }))
     .sort((a, b) => a.hour.localeCompare(b.hour));
 
-  // 9. DXY Bias & Correlation Analytics
-  const dxyTrades = trades.filter(t => !!t.dxy);
-  const dxyRanking = buildRankings(t => [t.dxy || ''])
-    .map(r => ({ dxy: r.key, total: r.total, wins: r.wins, winRate: r.winRate, netR: r.netR, avgR: r.avgR, profitFactor: r.profitFactor }));
+  // 9. TP Target Analytics
+  const tpTargetTrades = trades.filter(t => Array.isArray(t.tpTargets) && t.tpTargets.length > 0);
+  const tpTargetRanking = buildRankings(t => (Array.isArray(t.tpTargets) ? t.tpTargets : []))
+    .map(r => ({ target: r.key, total: r.total, wins: r.wins, winRate: r.winRate, netR: r.netR, avgR: r.avgR, profitFactor: r.profitFactor }));
 
-  const dxyDirMap: Record<string, { dxy: string; direction: 'LONG' | 'SHORT'; total: number; wins: number; netR: number; posR: number; negR: number }> = {};
-  trades.forEach(t => {
-    if (!t.dxy) return;
-    const key = `${t.dxy}__${t.type}`;
-    if (!dxyDirMap[key]) dxyDirMap[key] = { dxy: t.dxy, direction: t.type, total: 0, wins: 0, netR: 0, posR: 0, negR: 0 };
-    const valR = t.rr || 0;
-    dxyDirMap[key].total++;
-    if (t.status === 'WIN') dxyDirMap[key].wins++;
-    dxyDirMap[key].netR += valR;
-    if (valR > 0) dxyDirMap[key].posR += valR;
-    if (valR < 0) dxyDirMap[key].negR += Math.abs(valR);
-  });
-
-  const dxyDirectionMatrix = Object.values(dxyDirMap).map(d => ({
-    dxy: d.dxy,
-    direction: d.direction,
-    total: d.total,
-    wins: d.wins,
-    winRate: Math.round((d.wins / d.total) * 1000) / 10,
-    netR: Math.round(d.netR * 100) / 100,
-    avgR: Math.round((d.netR / d.total) * 100) / 100,
-    profitFactor: Math.round(calculateProfitFactor(toRR(d.posR), toRR(d.negR)) * 100) / 100,
-  })).sort((a, b) => b.netR - a.netR);
-
-  let dxyInsight = 'DXY verisi girilerek korelasyon avantajınız burada açılacaktır.';
-  if (dxyRanking.length > 0) {
-    const topDxy = dxyRanking[0];
-    dxyInsight = `En yüksek kârlılık DXY "${topDxy.dxy}" biasında (+${topDxy.netR} R, %${topDxy.winRate} WR) yakalandı.`;
+  let tpTargetInsight = 'İşlem eklerken TP Target seçtiğinizde hangi hedefin size kazandırdığı burada görünecektir.';
+  if (tpTargetRanking.length > 0) {
+    const topTp = tpTargetRanking[0];
+    tpTargetInsight = `En yüksek kârlılık TP Target "${topTp.target}" hedefinde (${topTp.netR >= 0 ? '+' : ''}${topTp.netR} R, %${topTp.winRate} WR) yakalandı.`;
   }
 
   // 10. Premium / Discount Zone Analytics
@@ -839,6 +823,26 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
   const premiumShort = zoneDirectionMatrix.find(z => z.zone.toLowerCase().includes('premium') && z.direction === 'SHORT');
   if (discountLong || premiumShort) {
     zoneInsight = `ICT Kuralı Onaylandı: Discount Long (%${discountLong?.winRate || 0} WR) ve Premium Short (%${premiumShort?.winRate || 0} WR) optimum getiri sağlıyor.`;
+  }
+
+  // 10b. News Day / Bank Holiday (Var vs Yok). Bilgisi olmayan eski işlemler kıyasa katılmaz.
+  const newsLabels = getNewsDayLabels();
+  const newsKnownTrades = trades.filter(t => typeof t.newsDay === 'boolean');
+  const newsRankingRaw = buildRankings(t => (typeof t.newsDay === 'boolean' ? [t.newsDay ? newsLabels.yes : newsLabels.no] : []));
+  const newsRanking = [newsLabels.yes, newsLabels.no]
+    .map(label => newsRankingRaw.find(r => r.key === label))
+    .filter((r): r is NonNullable<typeof r> => !!r)
+    .map(r => ({ label: r.key, isNews: r.key === newsLabels.yes, total: r.total, wins: r.wins, winRate: r.winRate, netR: r.netR, avgR: r.avgR, profitFactor: r.profitFactor }));
+  const newsYesRow = newsRanking.find(r => r.isNews);
+  const newsNoRow = newsRanking.find(r => !r.isNews);
+  let newsInsight = 'İşlem eklerken News Day / Bank Holiday seçtiğinizde haber günlerinin performansı burada görünür.';
+  if (newsYesRow && newsNoRow) {
+    const diff = Math.round((newsYesRow.avgR - newsNoRow.avgR) * 100) / 100;
+    const small = Math.min(newsYesRow.total, newsNoRow.total) < 10;
+    newsInsight = `${newsLabels.yes}: işlem başına ${newsYesRow.avgR >= 0 ? '+' : ''}${newsYesRow.avgR} R (%${newsYesRow.winRate} WR, ${newsYesRow.total} işlem) — ${newsLabels.no}: ${newsNoRow.avgR >= 0 ? '+' : ''}${newsNoRow.avgR} R (%${newsNoRow.winRate} WR, ${newsNoRow.total} işlem). Fark ${diff >= 0 ? '+' : ''}${diff} R.${small ? ' Gruplardan biri 10 işlemden az; sonuç henüz güvenilir değil.' : ''}`;
+  } else if (newsYesRow || newsNoRow) {
+    const only = (newsYesRow || newsNoRow)!;
+    newsInsight = `Yalnızca "${only.label}" grubunda işlem var (${only.total}). Kıyas için diğer gruptan da işlem gerekir.`;
   }
 
   // 11. PD Array / Confirmations Performance
@@ -936,7 +940,6 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
     if (t.liquiditySweeps && t.liquiditySweeps.length > 0) score += t.liquiditySweeps.length;
     else if (t.liquiditySweep) score += 1;
     if (t.confirmations && t.confirmations.length > 0) score += t.confirmations.length;
-    if (t.dxy) score += 1;
     if (t.premiumDiscount) score += 1;
     if (t.trend && (t.trend.toLowerCase().includes('continuation') || t.trend.toLowerCase().includes('devam'))) score += 1;
     if (t.planFidelity && (t.planFidelity.toLowerCase() === 'a+' || t.planFidelity.toLowerCase() === 'tam')) score += 1;
@@ -1291,14 +1294,14 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
     });
   }
 
-  if (dxyDirectionMatrix.length > 0) {
-    const bestDxyDir = dxyDirectionMatrix[0];
-    if (bestDxyDir.total >= 2 && bestDxyDir.netR > 0) {
+  if (tpTargetRanking.length > 0) {
+    const bestTp = tpTargetRanking[0];
+    if (bestTp.total >= 2 && bestTp.netR > 0) {
       actionableInsights.push({
         type: 'positive',
-        title: 'DXY Korelasyon Kenarı',
-        description: `DXY ${bestDxyDir.dxy} iken açtığınız ${bestDxyDir.direction} işlemleri %${bestDxyDir.winRate} kazanma oranı ve +${bestDxyDir.netR} R getiri üretiyor!`,
-        metricTag: `+%${bestDxyDir.winRate} WR`,
+        title: 'TP Target Kenarı',
+        description: `"${bestTp.target}" hedefine yönelttiğiniz işlemler %${bestTp.winRate} kazanma oranı ve +${bestTp.netR} R getiri üretiyor!`,
+        metricTag: `+%${bestTp.winRate} WR`,
       });
     }
   }
@@ -1487,17 +1490,22 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
     },
     timeframeMatrix,
     hourlyStats,
-    dxyStats: {
-      hasData: dxyTrades.length > 0,
-      ranking: dxyRanking,
-      dxyDirectionMatrix,
-      insight: dxyInsight,
+    tpTargetStats: {
+      hasData: tpTargetTrades.length > 0,
+      ranking: tpTargetRanking,
+      insight: tpTargetInsight,
     },
     premiumDiscountStats: {
       hasData: zoneRanking.length > 0,
       ranking: zoneRanking,
       zoneDirectionMatrix,
       insight: zoneInsight,
+    },
+    newsDayStats: {
+      hasData: newsKnownTrades.length > 0,
+      ranking: newsRanking,
+      unknownCount: trades.length - newsKnownTrades.length,
+      insight: newsInsight,
     },
     confirmationStats: {
       hasData: confirmationRanking.length > 0,

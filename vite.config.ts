@@ -20,7 +20,7 @@ function marketTickerPlugin(): Plugin {
         }
       }
 
-      const symbols = bodyData.symbols || ['OANDA:XAUUSD', 'TVC:USOIL', 'TVC:DXY'];
+      const symbols = bodyData.symbols || ['OANDA:XAUUSD', 'TVC:USOIL'];
 
       const tvResponse = await fetch('https://scanner.tradingview.com/global/scan', {
         method: 'POST',

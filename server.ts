@@ -87,6 +87,32 @@ const safeEqual = (a: string, b: string): boolean => {
   return crypto.timingSafeEqual(ha, hb);
 };
 
+// Site erişim jetonu: "<bitiş_ms>.<HMAC>" biçiminde, süreli ve imzalı. Parola (veya TOKEN_SECRET) değişince eski jetonlar geçersiz olur.
+// Eski sürümdeki sha256(parola) jetonu hem süresizdi hem de çalınırsa parolayı çevrimdışı kırmaya yarıyordu.
+const TOKEN_TTL_SESSION_MS = 12 * 60 * 60 * 1000;
+const TOKEN_TTL_REMEMBER_MS = 30 * 24 * 60 * 60 * 1000;
+const tokenKey = (): Buffer | null => {
+  const base = process.env.TOKEN_SECRET || process.env.SITE_PASSWORD;
+  if (!base) return null;
+  return crypto.createHmac("sha256", "tj-site-token-v4").update(base).digest();
+};
+const signSiteToken = (ttlMs: number): { token: string; expiresAt: number } | null => {
+  const key = tokenKey();
+  if (!key) return null;
+  const expiresAt = Date.now() + ttlMs;
+  const sig = crypto.createHmac("sha256", key).update(String(expiresAt)).digest("hex");
+  return { token: `${expiresAt}.${sig}`, expiresAt };
+};
+const isValidSiteToken = (token: unknown): boolean => {
+  const key = tokenKey();
+  if (!key || typeof token !== "string" || token.length > 200) return false;
+  const parts = token.split(".");
+  if (parts.length !== 2 || !/^\d{10,16}$/.test(parts[0])) return false;
+  if (Number(parts[0]) < Date.now()) return false;
+  const expected = crypto.createHmac("sha256", key).update(parts[0]).digest("hex");
+  return safeEqual(parts[1], expected);
+};
+
 async function startServer() {
   const handleGeminiError = (err: any) => {
     let errMsg = "";
@@ -223,10 +249,21 @@ async function startServer() {
   // Password Verification Rate Limiter
   const passwordRateLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 10, // Max 10 attempts per IP
+    max: 10, // Aynı IP'den en fazla 10 BAŞARISIZ deneme
+    skipSuccessfulRequests: true, // doğru girişler hakkı tüketmez
     standardHeaders: true,
     legacyHeaders: false,
     message: { success: false, error: "Çok fazla başarısız deneme yapıldı. Güvenlik nedeniyle 15 dakika bekleyin." },
+  });
+
+  // Jeton doğrulama sayfa her yenilendiğinde çağrılır; parola limitinden ayrı ve daha geniştir
+  // (aksi halde 10 sayfa yenilemesi kullanıcıyı sistemden atıyordu).
+  const tokenRateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 300,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, error: "Çok fazla istek. Biraz bekleyin." },
   });
 
   // Strict Site Authentication Middleware for all sensitive APIs
@@ -235,13 +272,12 @@ async function startServer() {
     if (!sitePassword) {
       return res.status(500).json({ error: "Sistem parolası yapılandırılmamış (SITE_PASSWORD)." });
     }
-    const expectedToken = crypto.createHash('sha256').update(sitePassword).digest('hex');
     const headerToken = req.headers['x-site-token'] || 
       (typeof req.headers['authorization'] === 'string' ? req.headers['authorization'].replace(/^Bearer\s+/i, '') : '') ||
       (req.query.site_token as string) ||
       (req.query.token as string);
 
-    if (!headerToken || typeof headerToken !== 'string' || !safeEqual(headerToken, expectedToken)) {
+    if (!headerToken || typeof headerToken !== 'string' || !isValidSiteToken(headerToken)) {
       return res.status(401).json({ error: "Erişim Engellendi: Geçerli site erişim jetonu gereklidir." });
     }
     next();
@@ -253,9 +289,9 @@ async function startServer() {
   });
 
   // Password Verification Endpoint
-  app.post("/api/verify-password", passwordRateLimiter, express.json(), (req, res) => {
+  app.post("/api/verify-password", passwordRateLimiter, express.json({ limit: "10kb" }), (req, res) => {
     try {
-      const { password } = req.body;
+      const { password, remember } = req.body || {};
       
       const sitePassword = process.env.SITE_PASSWORD;
       
@@ -264,12 +300,9 @@ async function startServer() {
       }
       
       if (typeof password === 'string' && safeEqual(password, sitePassword)) {
-        // Return a dynamic token based on the current site password
-        const dynamicToken = crypto.createHash('sha256').update(sitePassword).digest('hex');
-        res.json({ 
-          success: true, 
-          token: dynamicToken
-        });
+        const signed = signSiteToken(remember === true ? TOKEN_TTL_REMEMBER_MS : TOKEN_TTL_SESSION_MS);
+        if (!signed) return res.status(500).json({ success: false, error: "Sistem parolası yapılandırılmamış." });
+        res.json({ success: true, token: signed.token, expiresAt: signed.expiresAt });
       } else {
         res.status(401).json({ success: false, error: "Invalid password" });
       }
@@ -279,18 +312,10 @@ async function startServer() {
   });
 
   // Token Verification Endpoint (for dynamic session invalidation)
-  app.post("/api/verify-token", passwordRateLimiter, express.json(), (req, res) => {
+  app.post("/api/verify-token", tokenRateLimiter, express.json({ limit: "10kb" }), (req, res) => {
     try {
-      const { token } = req.body;
-      const sitePassword = process.env.SITE_PASSWORD;
-      
-      if (!sitePassword) {
-         return res.json({ success: false });
-      }
-      
-      const expectedToken = crypto.createHash('sha256').update(sitePassword).digest('hex');
-      
-      if (typeof token === 'string' && safeEqual(token, expectedToken)) {
+      const { token } = req.body || {};
+      if (isValidSiteToken(token)) {
         res.json({ success: true });
       } else {
         res.json({ success: false });
@@ -858,7 +883,7 @@ JSON Şeması (SADECE GEÇERLİ JSON DÖN):
   // Smart Image Proxy: Bypasses CORS and handles TradingView HTML links
   
   // Helper route to resolve TradingView share links to direct image URLs
-  app.get("/api/resolve-tv", async (req, res) => {
+  app.get("/api/resolve-tv", requireSiteAuth, async (req, res) => {
     const urlParam = typeof req.query.url === 'string' ? req.query.url : '';
     try {
       if (!urlParam || !isTradingViewShareUrl(urlParam)) {
@@ -881,7 +906,7 @@ JSON Şeması (SADECE GEÇERLİ JSON DÖN):
     }
   });
 
-  app.get("/api/proxy-image", async (req, res) => {
+  app.get("/api/proxy-image", requireSiteAuth, async (req, res) => {
     try {
       const urlParam = req.query.url;
       if (!urlParam || typeof urlParam !== 'string') {

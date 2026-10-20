@@ -1,4 +1,4 @@
-import { EASE } from '../lib/motion';
+import { MODAL_BACKDROP, MODAL_PANEL } from '../lib/motion';
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Download, Smartphone, Share, PlusSquare, X, CheckCircle2 } from 'lucide-react';
@@ -56,18 +56,13 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
           {showIOSGuide && (
             <motion.div
               key="ios-pwa-modal-backdrop"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[100000] bg-zinc-950/85 backdrop-blur-sm flex items-center justify-center p-4 select-none"
+              {...MODAL_BACKDROP}
+              className="fixed inset-0 modal-layer modal-dim z-[100000]   flex items-center justify-center p-4 select-none"
               onClick={() => setShowIOSGuide(false)}
             >
               <motion.div
                 key="ios-pwa-modal-content"
-                initial={{ opacity: 0, scale: 0.96, y: 16 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.96, y: 16 }}
-                transition={{ duration: 0.2, ease: EASE }}
+                {...MODAL_PANEL}
                 className="w-full max-w-sm rounded-2xl bg-zinc-900 border border-zinc-700/80 p-5 shadow-2xl space-y-4"
                 onClick={(e) => e.stopPropagation()}
               >

@@ -1,4 +1,4 @@
-import { EASE } from '../lib/motion';
+import { MODAL_BACKDROP, MODAL_PANEL } from '../lib/motion';
 import React, { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -122,15 +122,12 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
       {isOpen && (
         <motion.div
           key="print-report-modal-backdrop"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.15, ease: EASE }}
-          className="will-change-[opacity] fixed inset-0 z-[3500] overflow-y-auto bg-zinc-950/80 no-print flex flex-col justify-start items-center p-4 md:p-8"
+          {...MODAL_BACKDROP}
+          className="fixed inset-0 modal-layer modal-dim z-[3500] overflow-y-auto  no-print flex flex-col justify-start items-center p-4 md:p-8"
           onClick={onClose}
         >
         {isGenerating && (
-          <div className="fixed inset-0 bg-zinc-950/95 z-[3600] flex flex-col items-center justify-center text-zinc-100 font-medium no-print">
+          <div className="fixed inset-0 modal-layer bg-zinc-950/95 z-[3600] flex flex-col items-center justify-center text-zinc-100 font-medium no-print">
             <div className="p-5 bg-zinc-900 text-white rounded-3xl flex flex-col items-center gap-4 shadow-2xl max-w-sm text-center border border-white/10">
               <RefreshCw size={32} className="animate-spin text-blue-400" />
               <div>
@@ -144,11 +141,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
         )}
         <motion.div
           key="print-report-modal-content"
-          initial={{ opacity: 0, scale: 0.96, y: 16 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.96, y: 16 }}
-          transition={{ duration: 0.2, ease: EASE }}
-          style={{ willChange: "transform, opacity" }}
+          {...MODAL_PANEL}
           className="w-full max-w-4xl rounded-2xl bg-zinc-900 border border-zinc-700/50 shadow-2xl flex flex-col relative overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >

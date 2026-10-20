@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { motion, AnimatePresence } from 'motion/react';
+import { POPOVER, POPOVER_UP } from '../lib/motion';
 import { Calendar as CalendarIcon, Clock, ChevronLeft, ChevronRight, ChevronDown, Check } from 'lucide-react';
 
 interface TurkishDateTimePickerProps {
@@ -342,8 +344,12 @@ export const TurkishDateTimePicker = React.memo(function TurkishDateTimePicker({
       </button>
 
       {/* Dropdown Popup Portal */}
-      {isOpen && popupPos && typeof document !== 'undefined' && createPortal(
-        <div 
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+        {isOpen && popupPos && (
+        <motion.div 
+          key="datetime-popup"
+          {...POPOVER}
           ref={popupRef}
           onClick={(e) => {
             e.stopPropagation();
@@ -357,8 +363,9 @@ export const TurkishDateTimePicker = React.memo(function TurkishDateTimePicker({
             left: `${popupPos.left}px`,
             width: `${popupPos.width}px`,
             zIndex: 99999,
+            transformOrigin: 'top center',
           }}
-          className="bg-zinc-900 border border-zinc-700/80 rounded-2xl p-3.5 shadow-2xl shadow-black/90 animate-in fade-in duration-100 select-none"
+          className="bg-zinc-900 border border-zinc-700/80 rounded-2xl p-3.5 shadow-2xl shadow-black/90 select-none"
         >
           {/* Quick Preset Buttons */}
           <div className="flex items-center gap-1.5 mb-3 pb-2.5 border-b border-zinc-800/80">
@@ -485,11 +492,14 @@ export const TurkishDateTimePicker = React.memo(function TurkishDateTimePicker({
                 </button>
 
                 {/* Custom Hour Scrollable Menu */}
+                <AnimatePresence>
                 {activeDropdown === 'hour' && (
-                  <div
+                  <motion.div
+                    key="hour-menu"
+                    {...POPOVER_UP}
                     ref={hourDropdownRef}
                     onClick={(e) => e.stopPropagation()}
-                    className="absolute bottom-full mb-1.5 left-0 w-20 max-h-40 overflow-y-auto bg-zinc-950 border border-zinc-700/90 rounded-xl p-1 shadow-2xl z-50 space-y-0.5"
+                    className="origin-bottom absolute bottom-full mb-1.5 left-0 w-20 max-h-40 overflow-y-auto bg-zinc-950 border border-zinc-700/90 rounded-xl p-1 shadow-2xl z-50 space-y-0.5"
                     style={{
                       scrollbarWidth: 'thin',
                       scrollbarColor: 'rgba(113, 113, 122, 0.45) rgba(24, 24, 27, 0.6)'
@@ -503,7 +513,7 @@ export const TurkishDateTimePicker = React.memo(function TurkishDateTimePicker({
                           type="button"
                           data-selected={isCurrent}
                           onClick={() => handleHourSelect(h)}
-                          className={`w-full py-1 text-center text-xs font-sans font-medium rounded-lg transition-ui cursor-pointer flex items-center justify-center ${
+                          className={`dd-option w-full py-1 text-center text-xs font-sans font-medium rounded-lg cursor-pointer flex items-center justify-center ${
                             isCurrent
                               ? 'bg-blue-500/25 text-blue-300 font-bold border border-blue-500/40 shadow-xs'
                               : 'text-zinc-300 hover:text-white hover:bg-zinc-800'
@@ -513,8 +523,9 @@ export const TurkishDateTimePicker = React.memo(function TurkishDateTimePicker({
                         </button>
                       );
                     })}
-                  </div>
+                  </motion.div>
                 )}
+                </AnimatePresence>
               </div>
 
               <span className="text-xs font-sans font-bold text-zinc-500 select-none">:</span>
@@ -538,11 +549,14 @@ export const TurkishDateTimePicker = React.memo(function TurkishDateTimePicker({
                 </button>
 
                 {/* Custom Minute Scrollable Menu */}
+                <AnimatePresence>
                 {activeDropdown === 'minute' && (
-                  <div
+                  <motion.div
+                    key="minute-menu"
+                    {...POPOVER_UP}
                     ref={minuteDropdownRef}
                     onClick={(e) => e.stopPropagation()}
-                    className="absolute bottom-full mb-1.5 left-0 w-20 max-h-40 overflow-y-auto bg-zinc-950 border border-zinc-700/90 rounded-xl p-1 shadow-2xl z-50 space-y-0.5"
+                    className="origin-bottom absolute bottom-full mb-1.5 left-0 w-20 max-h-40 overflow-y-auto bg-zinc-950 border border-zinc-700/90 rounded-xl p-1 shadow-2xl z-50 space-y-0.5"
                     style={{
                       scrollbarWidth: 'thin',
                       scrollbarColor: 'rgba(113, 113, 122, 0.45) rgba(24, 24, 27, 0.6)'
@@ -556,7 +570,7 @@ export const TurkishDateTimePicker = React.memo(function TurkishDateTimePicker({
                           type="button"
                           data-selected={isCurrent}
                           onClick={() => handleMinuteSelect(m)}
-                          className={`w-full py-1 text-center text-xs font-sans font-medium rounded-lg transition-ui cursor-pointer flex items-center justify-center ${
+                          className={`dd-option w-full py-1 text-center text-xs font-sans font-medium rounded-lg cursor-pointer flex items-center justify-center ${
                             isCurrent
                               ? 'bg-blue-500/25 text-blue-300 font-bold border border-blue-500/40 shadow-xs'
                               : 'text-zinc-300 hover:text-white hover:bg-zinc-800'
@@ -566,8 +580,9 @@ export const TurkishDateTimePicker = React.memo(function TurkishDateTimePicker({
                         </button>
                       );
                     })}
-                  </div>
+                  </motion.div>
                 )}
+                </AnimatePresence>
               </div>
 
               {/* Tamam / Kapat Butonu */}
@@ -584,7 +599,9 @@ export const TurkishDateTimePicker = React.memo(function TurkishDateTimePicker({
               </button>
             </div>
           </div>
-        </div>,
+        </motion.div>
+        )}
+        </AnimatePresence>,
         document.body
       )}
     </div>
@@ -871,8 +888,12 @@ export const TurkishDatePicker = React.memo(function TurkishDatePicker({
       </button>
 
       {/* Dropdown Popup Portal */}
-      {isOpen && popupPos && typeof document !== 'undefined' && createPortal(
-        <div 
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+        {isOpen && popupPos && (
+        <motion.div 
+          key="datetime-popup"
+          {...POPOVER}
           ref={popupRef}
           onClick={(e) => e.stopPropagation()}
           style={{
@@ -881,8 +902,9 @@ export const TurkishDatePicker = React.memo(function TurkishDatePicker({
             left: `${popupPos.left}px`,
             width: `${popupPos.width}px`,
             zIndex: 99999,
+            transformOrigin: 'top center',
           }}
-          className="bg-zinc-900 border border-zinc-700/80 rounded-2xl p-3.5 shadow-2xl shadow-black/90 animate-in fade-in duration-100 select-none"
+          className="bg-zinc-900 border border-zinc-700/80 rounded-2xl p-3.5 shadow-2xl shadow-black/90 select-none"
         >
           {/* Quick Preset Buttons */}
           {showPresets && (
@@ -975,7 +997,9 @@ export const TurkishDatePicker = React.memo(function TurkishDatePicker({
               );
             })}
           </div>
-        </div>,
+        </motion.div>
+        )}
+        </AnimatePresence>,
         document.body
       )}
     </div>

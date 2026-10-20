@@ -1,4 +1,4 @@
-import { EASE } from '../lib/motion';
+import { MODAL_PANEL } from '../lib/motion';
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -201,12 +201,8 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
       {isOpen && (
         <motion.div
           key="audit-report-modal"
-          initial={{ opacity: 0, scale: 0.96, y: 16 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.96, y: 16 }}
-          transition={{ duration: 0.2, ease: EASE }}
-          style={{ willChange: "transform, opacity" }}
-          className="fixed inset-0 z-[1500] bg-zinc-950 flex flex-col overflow-hidden"
+          {...MODAL_PANEL}
+          className="fixed inset-0 modal-layer z-[1500] bg-zinc-950 flex flex-col overflow-hidden"
         >
         {/* Toolbar */}
         <div className="modal-header">

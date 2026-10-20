@@ -1,4 +1,4 @@
-import { EASE, SPRING } from '../lib/motion';
+import { EASE, SPRING, MODAL_BACKDROP, MODAL_PANEL } from '../lib/motion';
 import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -7,14 +7,15 @@ import {
   SlidersHorizontal, X, Monitor, LineChart, Clock, ArrowUpRight, 
   Lightbulb, Target, Sun, Plus, Search, Edit2, Check, Trash2, 
   GripVertical, RotateCcw, Download, Upload, AlertCircle,
-  Crosshair, Zap, TrendingUp, Trophy, Shield
+  Crosshair, Zap, TrendingUp, Trophy, Shield, Flag, Layers, Timer, Newspaper, Compass, Type
 } from 'lucide-react';
 import { Trade, DefinitionTitles, PlatformCategory } from '../types';
 import { 
   DEFAULT_PLATFORMS, DEFAULT_TIMEFRAMES, DEFAULT_HTF_TIMEFRAMES, 
   DEFAULT_CONFIRMATIONS, DEFAULT_LIQUIDITY_SWEEPS, DEFAULT_SESSIONS, DEFAULT_ASSETS,
-  DEFAULT_PLAN_FIDELITIES, DEFAULT_ENTRY_MODELS, DEFAULT_TREND_TYPES, DEFAULT_DEFINITION_TITLES,
-  caseInsensitiveMatch, caseInsensitiveEquals, savePlatformCategory, getTradeAccountCategory
+  DEFAULT_PLAN_FIDELITIES, DEFAULT_ENTRY_MODELS, DEFAULT_TREND_TYPES, DEFAULT_TP_TARGETS, DEFAULT_PREMIUM_DISCOUNTS, DEFAULT_ENTRY_HOURS, DEFAULT_NEWS_DAYS, DEFAULT_STRATEGIES, DEFAULT_ASIA_RANGE_FVGS, FORM_LABEL_KEYS, DEFAULT_DEFINITION_TITLES,
+  caseInsensitiveMatch, caseInsensitiveEquals, savePlatformCategory, getTradeAccountCategory,
+  getStoredPlatformCategories, replacePlatformCategories, normalizeNewsDays
 } from '../constants/constants';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
@@ -33,6 +34,12 @@ interface DefinitionsManagerModalProps {
   planFidelities: string[];
   entryModels?: string[];
   trendTypes?: string[];
+  tpTargets?: string[];
+  premiumDiscounts?: string[];
+  entryHours?: string[];
+  newsDays?: string[];
+  strategies?: string[];
+  asiaRangeFvgs?: string[];
   definitionTitles?: DefinitionTitles;
   persistPlatforms: (list: string[]) => void;
   persistTimeframes: (list: string[]) => void;
@@ -44,10 +51,102 @@ interface DefinitionsManagerModalProps {
   persistPlanFidelities: (list: string[]) => void;
   persistEntryModels?: (list: string[]) => void;
   persistTrendTypes?: (list: string[]) => void;
+  persistTpTargets?: (list: string[]) => void;
+  persistPremiumDiscounts?: (list: string[]) => void;
+  persistEntryHours?: (list: string[]) => void;
+  persistNewsDays?: (list: string[]) => void;
+  persistStrategies?: (list: string[]) => void;
+  persistAsiaRangeFvgs?: (list: string[]) => void;
+  /** Bir öğe yeniden adlandırılınca işlemlerdeki değeri de günceller; güncellenen işlem sayısını döndürür. */
+  onRenameDefinition?: (category: string, from: string, to: string) => number;
   persistDefinitionTitles?: (updated: DefinitionTitles) => void;
 }
 
-type TabType = 'platforms' | 'assets' | 'timeframes' | 'htfTimeframes' | 'confirmations' | 'concepts' | 'sessions' | 'planFidelities' | 'trendTypes' | 'entryModels';
+type TabType = 'platforms' | 'assets' | 'timeframes' | 'htfTimeframes' | 'confirmations' | 'concepts' | 'sessions' | 'planFidelities' | 'trendTypes' | 'entryModels' | 'tpTargets' | 'premiumDiscounts' | 'entryHours' | 'newsDays' | 'strategies' | 'asiaRangeFvgs' | 'formLabels';
+
+/** Sekme kimliği -> DefinitionTitles anahtarı ('concepts' sekmesi 'liquiditySweeps' başlığını kullanır) */
+const titleKeyFor = (tab: TabType): keyof DefinitionTitles => (tab === 'concepts' ? 'liquiditySweeps' : tab);
+
+const FORM_LABEL_HINTS: Record<string, string> = {
+  basicInfoCard: 'Kart başlığı: Temel Bilgiler',
+  financialCard: 'Kart başlığı: Finansal Sonuç',
+  notesCard: 'Kart başlığı: Analiz & Notlar',
+  direction: 'LONG / SHORT seçimi',
+  tradeDate: 'Tarih ve saat seçici',
+  tradeStatus: 'WIN / LOSS / BREAKEVEN seçimi',
+  stopPips: 'Stop mesafesi',
+  tpPips: 'Take profit mesafesi',
+  maePips: 'Aleyhe maksimum sapma',
+  mfePips: 'Lehe maksimum sapma',
+  asiaRangePips: 'Asia range büyüklüğü',
+  rr: 'Risk / ödül oranı',
+  pnl: 'Kâr / zarar tutarı',
+  chartLink: 'Grafik bağlantısı alanı',
+};
+
+const FormLabelsPanel: React.FC<{
+  definitionTitles: DefinitionTitles;
+  persistDefinitionTitles?: (updated: DefinitionTitles) => void;
+}> = ({ definitionTitles, persistDefinitionTitles }) => {
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const current = (key: string) => (definitionTitles as any)[key] || (DEFAULT_DEFINITION_TITLES as any)[key] || '';
+
+  const save = (key: string) => {
+    const draft = drafts[key];
+    if (draft === undefined) return;
+    const val = draft.trim() || (DEFAULT_DEFINITION_TITLES as any)[key];
+    if (val !== current(key) && persistDefinitionTitles) {
+      persistDefinitionTitles({ ...DEFAULT_DEFINITION_TITLES, ...definitionTitles, [key]: val });
+      toast.success('Başlık güncellendi.');
+    }
+    setDrafts((d) => {
+      const { [key]: _omit, ...rest } = d;
+      return rest;
+    });
+  };
+
+  const resetAll = () => {
+    if (!persistDefinitionTitles) return;
+    const next: any = { ...DEFAULT_DEFINITION_TITLES, ...definitionTitles };
+    FORM_LABEL_KEYS.forEach((k) => { next[k] = (DEFAULT_DEFINITION_TITLES as any)[k]; });
+    persistDefinitionTitles(next);
+    setDrafts({});
+    toast.success('Form başlıkları varsayılana döndü.');
+  };
+
+  return (
+    <div className="flex flex-col min-h-0 flex-1">
+      <div className="flex items-center justify-between gap-2 bg-zinc-950/60 border border-zinc-800/80 rounded-xl px-3.5 py-2.5 mb-3.5">
+        <div className="min-w-0">
+          <span className="text-xs font-bold text-zinc-100 font-sans">Form Başlıkları</span>
+          <p className="text-[11px] text-zinc-500 font-sans mt-0.5">Listesi olmayan alanların işlem ekleme ekranındaki adları. Enter veya alandan çıkınca kaydedilir.</p>
+        </div>
+        <button type="button" onClick={resetAll} className="text-[10px] font-sans text-zinc-400 hover:text-rose-400 flex items-center gap-1 transition-colors cursor-pointer shrink-0">
+          <RotateCcw size={11} /> Varsayılanlara Sıfırla
+        </button>
+      </div>
+      <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar min-h-0">
+        {FORM_LABEL_KEYS.map((key) => (
+          <div key={key} className="flex items-center justify-between gap-3 px-3.5 py-2 rounded-xl border bg-zinc-950/40 border-zinc-800/80">
+            <span className="text-[11px] text-zinc-500 font-sans truncate">{FORM_LABEL_HINTS[key]}</span>
+            <input
+              type="text"
+              value={drafts[key] ?? current(key)}
+              onChange={(e) => setDrafts((d) => ({ ...d, [key]: e.target.value }))}
+              onBlur={() => save(key)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                if (e.key === 'Escape') setDrafts((d) => { const { [key]: _o, ...rest } = d; return rest; });
+              }}
+              maxLength={40}
+              className="w-48 bg-zinc-900 border border-zinc-700/60 focus:border-blue-500 rounded-lg px-2.5 py-1.5 text-xs text-zinc-100 font-sans font-bold focus:outline-none transition-colors"
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = ({
   isOpen,
@@ -64,6 +163,12 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
   planFidelities,
   entryModels = DEFAULT_ENTRY_MODELS,
   trendTypes = DEFAULT_TREND_TYPES,
+  tpTargets = DEFAULT_TP_TARGETS,
+  premiumDiscounts = DEFAULT_PREMIUM_DISCOUNTS,
+  entryHours = DEFAULT_ENTRY_HOURS,
+  newsDays = DEFAULT_NEWS_DAYS,
+  strategies = DEFAULT_STRATEGIES,
+  asiaRangeFvgs = DEFAULT_ASIA_RANGE_FVGS,
   definitionTitles = DEFAULT_DEFINITION_TITLES,
   persistPlatforms,
   persistTimeframes,
@@ -75,6 +180,13 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
   persistPlanFidelities,
   persistEntryModels = () => {},
   persistTrendTypes = () => {},
+  persistTpTargets = () => {},
+  persistPremiumDiscounts = () => {},
+  persistEntryHours = () => {},
+  persistNewsDays = () => {},
+  persistStrategies = () => {},
+  persistAsiaRangeFvgs = () => {},
+  onRenameDefinition,
   persistDefinitionTitles,
 }) => {
   useBodyScrollLock(isOpen);
@@ -93,6 +205,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
   // Compute trade usage counts per active category
   const usageCounts = useMemo(() => {
     const counts: Record<string, number> = {};
+    const [newsYes, newsNo] = normalizeNewsDays(newsDays);
     if (!isOpen || !trades || trades.length === 0) return counts;
 
     trades.forEach(t => {
@@ -123,6 +236,19 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
         });
       }
       if (t.trend) counts[`trendTypes:${t.trend}`] = (counts[`trendTypes:${t.trend}`] || 0) + 1;
+      if (t.premiumDiscount) counts[`premiumDiscounts:${t.premiumDiscount}`] = (counts[`premiumDiscounts:${t.premiumDiscount}`] || 0) + 1;
+      if (t.entryTime) counts[`entryHours:${t.entryTime}`] = (counts[`entryHours:${t.entryTime}`] || 0) + 1;
+      if (t.strategy) counts[`strategies:${t.strategy}`] = (counts[`strategies:${t.strategy}`] || 0) + 1;
+      if (t.asiaRangeFvg) counts[`asiaRangeFvgs:${t.asiaRangeFvg}`] = (counts[`asiaRangeFvgs:${t.asiaRangeFvg}`] || 0) + 1;
+      if (typeof t.newsDay === 'boolean') {
+        const nk = `newsDays:${t.newsDay ? newsYes : newsNo}`;
+        counts[nk] = (counts[nk] || 0) + 1;
+      }
+      if (Array.isArray(t.tpTargets)) {
+        t.tpTargets.forEach(tp => {
+          counts[`tpTargets:${tp}`] = (counts[`tpTargets:${tp}`] || 0) + 1;
+        });
+      }
       if (t.confirmations && Array.isArray(t.confirmations)) {
         t.confirmations.forEach(c => {
           counts[`confirmations:${c}`] = (counts[`confirmations:${c}`] || 0) + 1;
@@ -130,9 +256,9 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
       }
     });
     return counts;
-  }, [trades]);
+  }, [trades, isOpen, newsDays]);
 
-  const tabs: { id: TabType; label: string; icon: React.ComponentType<{ size?: number; className?: string }>; list: string[]; persist: (list: string[]) => void; defaultList: string[] }[] = [
+  const tabs: { id: TabType; label: string; icon: React.ComponentType<{ size?: number; className?: string }>; list: string[]; persist: (list: string[]) => void; defaultList: string[]; fixed?: boolean; special?: boolean }[] = [
     { id: 'platforms', label: definitionTitles.platforms || DEFAULT_DEFINITION_TITLES.platforms, icon: Monitor, list: platforms, persist: persistPlatforms, defaultList: DEFAULT_PLATFORMS },
     { id: 'assets', label: definitionTitles.assets || DEFAULT_DEFINITION_TITLES.assets, icon: LineChart, list: assets, persist: persistAssets, defaultList: DEFAULT_ASSETS },
     { id: 'trendTypes', label: definitionTitles.trendTypes || DEFAULT_DEFINITION_TITLES.trendTypes || "Trend Yapısı", icon: TrendingUp, list: trendTypes, persist: persistTrendTypes, defaultList: DEFAULT_TREND_TYPES },
@@ -143,11 +269,22 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
     { id: 'concepts', label: definitionTitles.liquiditySweeps || definitionTitles.concepts || DEFAULT_DEFINITION_TITLES.liquiditySweeps || "Liquidity Sweep", icon: Target, list: concepts, persist: persistConcepts, defaultList: DEFAULT_LIQUIDITY_SWEEPS },
     { id: 'sessions', label: definitionTitles.sessions || DEFAULT_DEFINITION_TITLES.sessions, icon: Sun, list: sessions, persist: persistSessions, defaultList: DEFAULT_SESSIONS },
     { id: 'planFidelities', label: definitionTitles.planFidelities || DEFAULT_DEFINITION_TITLES.planFidelities, icon: Crosshair, list: planFidelities, persist: persistPlanFidelities, defaultList: DEFAULT_PLAN_FIDELITIES },
+    { id: 'entryHours', label: definitionTitles.entryHours || DEFAULT_DEFINITION_TITLES.entryHours || "Entry Time", icon: Timer, list: entryHours, persist: persistEntryHours, defaultList: DEFAULT_ENTRY_HOURS },
+    { id: 'tpTargets', label: definitionTitles.tpTargets || DEFAULT_DEFINITION_TITLES.tpTargets || "TP Target", icon: Flag, list: tpTargets, persist: persistTpTargets, defaultList: DEFAULT_TP_TARGETS },
+    { id: 'premiumDiscounts', label: definitionTitles.premiumDiscounts || DEFAULT_DEFINITION_TITLES.premiumDiscounts || "Premium / Discount", icon: Layers, list: premiumDiscounts, persist: persistPremiumDiscounts, defaultList: DEFAULT_PREMIUM_DISCOUNTS },
+    { id: 'strategies', label: definitionTitles.strategies || DEFAULT_DEFINITION_TITLES.strategies || "Strateji", icon: Compass, list: strategies, persist: persistStrategies, defaultList: DEFAULT_STRATEGIES },
+    { id: 'asiaRangeFvgs', label: definitionTitles.asiaRangeFvgs || DEFAULT_DEFINITION_TITLES.asiaRangeFvgs || "Asia Range FVG", icon: Layers, list: asiaRangeFvgs, persist: persistAsiaRangeFvgs, defaultList: DEFAULT_ASIA_RANGE_FVGS },
+    // Sabit iki durumlu alan: yalnızca etiketler (Var / Yok) yeniden adlandırılır, ekleme/silme/sıralama yok
+    { id: 'newsDays', label: definitionTitles.newsDays || DEFAULT_DEFINITION_TITLES.newsDays || "News Day/Bank Holiday", icon: Newspaper, list: normalizeNewsDays(newsDays), persist: persistNewsDays, defaultList: DEFAULT_NEWS_DAYS, fixed: true },
+    // Listesi olmayan form alanlarının (Yön, Stop, R:R, Notlar...) başlıkları
+    { id: 'formLabels', label: 'Form Başlıkları', icon: Type, list: [...FORM_LABEL_KEYS], persist: () => {}, defaultList: [], special: true },
   ];
 
   const currentTabObj = tabs.find(t => t.id === activeTab) || tabs[0];
   const activeList = currentTabObj.list;
   const currentPersist = currentTabObj.persist;
+  const isFixedTab = !!currentTabObj.fixed;
+  const isSpecialTab = !!currentTabObj.special;
 
   const handleSaveCategoryTitle = () => {
     const trimmed = customTitleInput.trim();
@@ -159,7 +296,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
       const updatedTitles: DefinitionTitles = {
         ...DEFAULT_DEFINITION_TITLES,
         ...(definitionTitles || {}),
-        [activeTab]: trimmed,
+        [titleKeyFor(activeTab)]: trimmed,
       };
       persistDefinitionTitles(updatedTitles);
       toast.success(`"${trimmed}" başlığı güncellendi ve tüm projeye uygulandı.`);
@@ -175,7 +312,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
 
   const handleAddItem = () => {
     const val = newItemText.trim();
-    if (!val) return;
+    if (!val || isFixedTab) return;
     if (activeList.some(i => caseInsensitiveEquals(i, val))) {
       toast.error(`"${val.toUpperCase()}" zaten listede mevcut!`);
       return;
@@ -194,16 +331,34 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
 
   const handleSaveEdit = (originalIndex: number) => {
     const val = editingText.trim();
-    if (!val) {
+    const previous = activeList[originalIndex];
+    if (!val || val === previous) {
       setEditingIndex(null);
+      setEditingText('');
+      return;
+    }
+    if (activeList.some((i, idx) => idx !== originalIndex && caseInsensitiveEquals(i, val))) {
+      toast.error(`"${val.toUpperCase()}" zaten listede mevcut!`);
       return;
     }
     const updated = [...activeList];
     updated[originalIndex] = val;
-    currentPersist(updated);
+
+    if (isFixedTab) {
+      currentPersist(updated);
+      toast.success('Etiket güncellendi.');
+    } else {
+      if (activeTab === 'platforms') {
+        // Platformun Funded / Challenge / Demo kategorisi yeni adla devam eder
+        const cat = getStoredPlatformCategories()[previous.trim()];
+        if (cat) savePlatformCategory(val, cat);
+      }
+      currentPersist(updated);
+      const migrated = onRenameDefinition ? onRenameDefinition(activeTab, previous, val) : 0;
+      toast.success(migrated > 0 ? `Tanım güncellendi; ${migrated} işlemdeki değer de yeni adla değiştirildi.` : 'Tanım başarıyla güncellendi.');
+    }
     setEditingIndex(null);
     setEditingText('');
-    toast.success('Tanım başarıyla güncellendi.');
   };
 
   const handleDeleteItem = (itemToDelete: string) => {
@@ -218,7 +373,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
       const updatedTitles: DefinitionTitles = {
         ...DEFAULT_DEFINITION_TITLES,
         ...(definitionTitles || {}),
-        [activeTab]: DEFAULT_DEFINITION_TITLES[activeTab],
+        [titleKeyFor(activeTab)]: DEFAULT_DEFINITION_TITLES[titleKeyFor(activeTab)],
       };
       persistDefinitionTitles(updatedTitles);
     }
@@ -229,14 +384,14 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
   const [draggedItemIndex, setDraggedItemIndex] = useState<number | null>(null);
 
   const handleDragStart = (e: React.DragEvent, index: number) => {
-    if (searchQuery.trim()) return; // Disable drag during search
+    if (searchQuery.trim() || isFixedTab) return; // Arama sırasında ve sabit listelerde sürükleme kapalı
     setDraggedItemIndex(index);
     e.dataTransfer.effectAllowed = 'move';
   };
 
   const handleDragEnter = (e: React.DragEvent, targetIndex: number) => {
     e.preventDefault();
-    if (searchQuery.trim()) return;
+    if (searchQuery.trim() || isFixedTab) return;
     if (draggedItemIndex === null || draggedItemIndex === targetIndex) return;
 
     const newList = [...activeList];
@@ -266,6 +421,13 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
       planFidelities,
       entryModels,
       trendTypes,
+      tpTargets,
+      premiumDiscounts,
+      entryHours,
+      newsDays: normalizeNewsDays(newsDays),
+      strategies,
+      asiaRangeFvgs,
+      platformCategories: getStoredPlatformCategories(),
       exportedAt: new Date().toISOString(),
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -286,20 +448,54 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
     reader.onload = (event) => {
       try {
         const data = JSON.parse(event.target?.result as string);
-        if (data.definitionTitles && persistDefinitionTitles) {
+        if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('format');
+        const list = (v: unknown): string[] | null => {
+          if (!Array.isArray(v)) return null;
+          const out: string[] = [];
+          v.forEach((x) => {
+            if (typeof x !== 'string') return;
+            const t = x.trim();
+            if (t && !out.some((o) => caseInsensitiveEquals(o, t))) out.push(t);
+          });
+          return out;
+        };
+        let applied = 0;
+        const apply = (v: unknown, fn: (l: string[]) => void) => {
+          const l = list(v);
+          if (l) { fn(l); applied++; }
+        };
+        if (data.definitionTitles && typeof data.definitionTitles === 'object' && persistDefinitionTitles) {
           persistDefinitionTitles({ ...DEFAULT_DEFINITION_TITLES, ...data.definitionTitles });
+          applied++;
         }
-        if (data.platforms) persistPlatforms(data.platforms);
-        if (data.timeframes) persistTimeframes(data.timeframes);
-        if (data.htfTimeframes) persistHtfTimeframes(data.htfTimeframes);
-        if (data.confirmations) persistConfirmations(data.confirmations);
-        if (data.concepts) persistConcepts(data.concepts);
-        if (data.sessions) persistSessions(data.sessions);
-        if (data.assets) persistAssets(data.assets);
-        if (data.planFidelities) persistPlanFidelities(data.planFidelities);
-        if (data.entryModels) persistEntryModels(data.entryModels);
-        if (data.trendTypes) persistTrendTypes(data.trendTypes);
-        toast.success('Tanımlamalar ve başlıklar başarıyla içe aktarıldı.');
+        apply(data.platforms, persistPlatforms);
+        apply(data.timeframes, persistTimeframes);
+        apply(data.htfTimeframes, persistHtfTimeframes);
+        apply(data.confirmations, persistConfirmations);
+        apply(data.concepts ?? data.liquiditySweeps, persistConcepts);
+        apply(data.sessions, persistSessions);
+        apply(data.assets, persistAssets);
+        apply(data.planFidelities, persistPlanFidelities);
+        apply(data.entryModels, persistEntryModels);
+        apply(data.trendTypes, persistTrendTypes);
+        apply(data.tpTargets, persistTpTargets);
+        apply(data.premiumDiscounts, persistPremiumDiscounts);
+        apply(data.entryHours, persistEntryHours);
+        apply(data.strategies, persistStrategies);
+        apply(data.asiaRangeFvgs, persistAsiaRangeFvgs);
+        if (Array.isArray(data.newsDays)) {
+          persistNewsDays(normalizeNewsDays(data.newsDays));
+          applied++;
+        }
+        if (data.platformCategories && typeof data.platformCategories === 'object') {
+          replacePlatformCategories({ ...getStoredPlatformCategories(), ...data.platformCategories });
+          setCategoryVersion((v) => v + 1);
+        }
+        if (applied === 0) {
+          toast.error('Dosyada içe aktarılabilecek tanımlama bulunamadı.');
+        } else {
+          toast.success('Tanımlamalar ve başlıklar başarıyla içe aktarıldı.');
+        }
       } catch (err) {
         toast.error('Geçersiz JSON dosyası!');
       }
@@ -314,20 +510,13 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
       {isOpen && (
         <motion.div
           key="definitions-modal-backdrop"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.15, ease: EASE }}
-          className="will-change-[opacity] fixed inset-0 z-[2500] flex items-center justify-center p-3 sm:p-5 bg-zinc-950/80  overflow-y-auto"
+          {...MODAL_BACKDROP}
+          className="fixed inset-0 modal-layer modal-dim z-[2500] flex items-center justify-center p-3 sm:p-5   overflow-y-auto"
           onClick={onClose}
         >
           <motion.div
             key="definitions-modal-content"
-            initial={{ opacity: 0, scale: 0.96, y: 16 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: 16 }}
-            transition={{ duration: 0.2, ease: EASE }}
-            style={{ willChange: "transform, opacity" }}
+            {...MODAL_PANEL}
             className="relative w-full max-w-4xl h-[620px] max-h-[90vh] min-h-[480px] bg-zinc-900 border border-zinc-700/50 rounded-2xl shadow-2xl overflow-hidden flex flex-col my-auto"
             onClick={e => e.stopPropagation()}
           >
@@ -427,6 +616,13 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
               {/* Active Tab Panel */}
               <div className="flex-1 flex flex-col min-h-0 bg-zinc-900/80 rounded-2xl border border-zinc-700/50 p-4 sm:p-5 shadow-inner">
                 
+                {isSpecialTab ? (
+                  <FormLabelsPanel
+                    definitionTitles={definitionTitles}
+                    persistDefinitionTitles={persistDefinitionTitles}
+                  />
+                ) : (
+                <>
                 {/* Category Header & Title Rename Strip */}
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 bg-zinc-950/60 border border-zinc-800/80 rounded-xl px-3.5 py-2.5 mb-3.5">
                   <div className="flex items-center gap-2.5 min-w-0 flex-1">
@@ -488,12 +684,17 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                       onClick={() => setShowResetConfirm(true)}
                       className="text-[10px] font-sans text-zinc-400 hover:text-rose-400 flex items-center gap-1 transition-colors cursor-pointer"
                     >
-                      <RotateCcw size={11} /> Varsayılanlara Sıfırla
+                      <RotateCcw size={11} /> {isFixedTab ? 'Etiketleri Sıfırla' : 'Varsayılanlara Sıfırla'}
                     </button>
                   </div>
                 </div>
 
                 {/* Search & Add Bar */}
+                {isFixedTab ? (
+                  <div className="mb-4 px-3.5 py-2.5 rounded-xl bg-zinc-950/60 border border-zinc-800/80 text-[11px] font-sans text-zinc-400 leading-relaxed">
+                    Bu alan sabit iki durumludur: <strong className="text-zinc-200">ilk satır</strong> “evet” anlamına, <strong className="text-zinc-200">ikinci satır</strong> “hayır” (varsayılan seçili) anlamına gelir. Yalnızca butonlarda görünen etiketleri değiştirebilirsiniz; geçmiş işlemler etiketten bağımsız saklandığı için bozulmaz.
+                  </div>
+                ) : (
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mb-4">
                   {/* Search input */}
                   <div className="relative flex-1">
@@ -576,6 +777,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                     </button>
                   </div>
                 </div>
+                )}
 
                 {/* Header info strip */}
                 <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5 mb-3 px-1">
@@ -601,7 +803,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                       return (
                         <div
                           key={item}
-                          draggable={!searchQuery.trim() && !isEditing}
+                          draggable={!searchQuery.trim() && !isEditing && !isFixedTab}
                           onDragStart={(e) => handleDragStart(e, originalIndex)}
                           onDragEnter={(e) => handleDragEnter(e, originalIndex)}
                           onDragEnd={handleDragEnd}
@@ -641,7 +843,12 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                           ) : (
                             <>
                               <div className="flex items-center gap-2.5 min-w-0">
-                                <GripVertical size={13} className="text-zinc-600 group-hover:text-zinc-400 transition-colors cursor-grab" />
+                                {!isFixedTab && <GripVertical size={13} className="text-zinc-600 group-hover:text-zinc-400 transition-colors cursor-grab" />}
+                                {isFixedTab && (
+                                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md border shrink-0 ${originalIndex === 0 ? 'bg-amber-500/15 text-amber-300 border-amber-500/30' : 'bg-blue-500/15 text-blue-300 border-blue-500/30'}`}>
+                                    {originalIndex === 0 ? 'EVET' : 'HAYIR · VARSAYILAN'}
+                                  </span>
+                                )}
                                 <span className="font-sans font-bold text-xs text-zinc-200 tracking-wide truncate uppercase">
                                   {item}
                                 </span>
@@ -697,6 +904,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                                 </button>
 
                                 {/* Delete Button */}
+                                {!isFixedTab && (
                                 <button
                                   type="button"
                                   onClick={() => handleDeleteItem(item)}
@@ -704,6 +912,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                                 >
                                   <Trash2 size={13} />
                                 </button>
+                                )}
                               </div>
                             </>
                           )}
@@ -713,6 +922,8 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                   )}
                 </div>
 
+                </>
+                )}
               </div>
 
             </div>
@@ -731,11 +942,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                 >
                   <motion.div
                     key="delete-confirm-content"
-                    initial={{ opacity: 0, scale: 0.96, y: 16 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.96, y: 16 }}
-                    transition={{ duration: 0.2, ease: EASE }}
-                    style={{ willChange: "transform, opacity" }}
+                    {...MODAL_PANEL}
                     className="bg-zinc-900 border border-zinc-700/60 rounded-2xl p-5 max-w-sm w-full shadow-2xl space-y-4"
                     onClick={(e) => e.stopPropagation()}
                   >
@@ -752,9 +959,15 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                       {deleteConfirmItem.count > 0 && (
                         <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-300 text-[11px] font-sans leading-relaxed text-left flex items-start gap-2">
                           <AlertCircle size={15} className="text-amber-400 shrink-0 mt-0.5" />
-                          <div>
-                            Bu platforma ait <strong className="text-amber-200 underline">{deleteConfirmItem.count} adet işlem kaydı</strong> bulunmaktadır. Platformu silerken bu işlemleri de silmek istiyor musunuz?
-                          </div>
+                          {activeTab === 'platforms' ? (
+                            <div>
+                              Bu platforma ait <strong className="text-amber-200 underline">{deleteConfirmItem.count} adet işlem kaydı</strong> bulunmaktadır. Platformu silerken bu işlemleri de silmek istiyor musunuz?
+                            </div>
+                          ) : (
+                            <div>
+                              Bu tanım <strong className="text-amber-200 underline">{deleteConfirmItem.count} işlemde</strong> kullanılıyor. Silerseniz yalnızca seçim listesinden kalkar; işlemlerdeki kayıtlı değer ve istatistikler korunur.
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -840,11 +1053,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                 >
                   <motion.div
                     key="reset-confirm-content"
-                    initial={{ opacity: 0, scale: 0.96, y: 16 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.96, y: 16 }}
-                    transition={{ duration: 0.2, ease: EASE }}
-                    style={{ willChange: "transform, opacity" }}
+                    {...MODAL_PANEL}
                     className="bg-zinc-900 border border-zinc-700/60 rounded-2xl p-5 max-w-sm w-full shadow-2xl space-y-4"
                     onClick={(e) => e.stopPropagation()}
                   >

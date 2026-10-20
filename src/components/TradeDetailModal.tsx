@@ -1,18 +1,20 @@
-import { EASE } from '../lib/motion';
+import { MODAL_BACKDROP, MODAL_PANEL } from '../lib/motion';
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
 import toast from "react-hot-toast";
 import { Trade, DefinitionTitles } from "../types";
-import { DEFAULT_DEFINITION_TITLES, cleanDefinitionTitleString, getTradeAccountCategory } from "../constants/constants";
+import { DEFAULT_DEFINITION_TITLES, cleanDefinitionTitleString, getTradeAccountCategory, getNewsDayLabels } from "../constants/constants";
 import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
+import { authFetch } from "../lib/api";
 import { 
 
 
   X, Edit3, Trash2, Calendar, Clock, Target, 
   Maximize2, ExternalLink, Image as ImageIcon, FileText, 
   Activity, Layers, Monitor, ShieldCheck, AlertCircle,
-  Download, Loader2, Trophy, TrendingDown, Minus, Zap, TrendingUp
+  Download, Loader2, Trophy, TrendingDown, Minus, Zap, TrendingUp,
+  Flag
 } from "lucide-react";
 import * as htmlToImage from "html-to-image";
 
@@ -64,7 +66,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
     
     setIsImageLoading(true);
     if (screenshot.includes('tradingview.com/x/')) {
-      fetch(`/api/resolve-tv?url=${encodeURIComponent(screenshot)}`)
+      authFetch(`/api/resolve-tv?url=${encodeURIComponent(screenshot)}`)
         .then(res => res.json())
         .then(data => {
           if (data.url) setResolvedImageUrl(data.url);
@@ -189,21 +191,14 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
         {trade && (
           <motion.div 
             key="trade-detail-backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15, ease: EASE }}
-            
+            {...MODAL_BACKDROP}
             onClick={onClose}
-             className="will-change-[opacity] modal-overlay"
+             className="modal-overlay modal-layer modal-dim"
           >
             <motion.div 
               key="trade-detail-content"
               ref={contentRef}
-              initial={{ opacity: 0, scale: 0.96, y: 16 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.96, y: 16 }}
-              transition={{ duration: 0.2, ease: EASE }}
+              {...MODAL_PANEL}
               style={{ 
                 willChange: "transform, opacity", 
                 ...(isExporting ? { margin: 0, padding: 0, boxShadow: 'none', borderRadius: 0, border: 'none', transform: 'none' } : {}) 
@@ -435,6 +430,30 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                             icon={<TrendingUp size={14} className="text-emerald-400"/>} 
                             valueColor={trendColor}
                           />
+                          {/* TP TARGET */}
+                          <ContextRow 
+                            label={(cleanDefinitionTitleString(definitionTitles.tpTargets) || "TP TARGET").toUpperCase()} 
+                            value={Array.isArray(currentTrade.tpTargets) && currentTrade.tpTargets.length > 0 
+                              ? currentTrade.tpTargets.map(e => String(e).toLocaleUpperCase('tr-TR')).join(", ") 
+                              : undefined} 
+                            icon={<Flag size={14} className="text-purple-400"/>} 
+                          />
+                          <ContextRow
+                            label={(cleanDefinitionTitleString(definitionTitles.strategies) || "STRATEJİ").toUpperCase()}
+                            value={currentTrade.strategy ? String(currentTrade.strategy).toLocaleUpperCase('tr-TR') : undefined}
+                            icon={<Target size={14} className="text-cyan-400"/>}
+                          />
+                          <ContextRow
+                            label={(cleanDefinitionTitleString(definitionTitles.asiaRangeFvgs) || "ASIA RANGE FVG").toUpperCase()}
+                            value={currentTrade.asiaRangeFvg ? String(currentTrade.asiaRangeFvg).toLocaleUpperCase('tr-TR') : undefined}
+                            icon={<Flag size={14} className="text-orange-400"/>}
+                          />
+                          {/* NEWS DAY / BANK HOLIDAY */}
+                          <ContextRow
+                            label={(cleanDefinitionTitleString(definitionTitles.newsDays) || "NEWS DAY/BANK HOLIDAY").toUpperCase()}
+                            value={typeof currentTrade.newsDay === "boolean" ? (currentTrade.newsDay ? getNewsDayLabels().yes : getNewsDayLabels().no).toLocaleUpperCase('tr-TR') : undefined}
+                            icon={<Clock size={14} className="text-amber-400"/>}
+                          />
                           {/* 9. SETUP KALİTESİ */}
                           <ContextRow 
                             label={(cleanDefinitionTitleString(definitionTitles.planFidelities) || "SETUP KALİTESİ").toUpperCase()} 
@@ -580,20 +599,13 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
         {showDeleteConfirm && currentTrade && (
           <motion.div
             key="trade-delete-confirm-backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15, ease: EASE }}
-            className="will-change-[opacity] fixed inset-0 z-[4500] bg-zinc-950/85 flex items-center justify-center p-4"
+            {...MODAL_BACKDROP}
+            className="fixed inset-0 modal-layer modal-dim z-[4500]  flex items-center justify-center p-4"
             onClick={() => setShowDeleteConfirm(false)}
           >
             <motion.div
               key="trade-delete-confirm-content"
-              initial={{ opacity: 0, scale: 0.96, y: 16 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.96, y: 16 }}
-              transition={{ duration: 0.2, ease: EASE }}
-              style={{ willChange: "transform, opacity" }}
+              {...MODAL_PANEL}
               onClick={(e) => e.stopPropagation()}
               className="bg-zinc-900 border border-zinc-700/80 rounded-2xl p-5 max-w-sm w-full shadow-2xl relative"
             >

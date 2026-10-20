@@ -2,12 +2,12 @@ import { useEffect } from 'react';
 
 let activeModalCount = 0;
 let prevHtmlOverflow = '';
-let prevBodyOverflow = '';
 let prevBodyPaddingRight = '';
 
 /**
  * Modal / overlay açıkken arka plan kaydırmasını kilitler.
  * - Sayaç sayesinde iç içe modallar sorunsuz çalışır.
+ * - <body> kaydırma kabı yapılmaz: üst navigasyon çubuğu (sticky) pencere açıkken de yerinde kalır.
  * - Kaydırma çubuğu kaybolunca sayfanın genişleyip içeriğin kaymasını (arka planın
  *   "sıkışma/zıplama" hissi) engeller: `scrollbar-gutter: stable` (index.css) yoksa,
  *   çubuk genişliği kadar padding-right ile telafi edilir.
@@ -22,7 +22,6 @@ export function useBodyScrollLock(isOpen: boolean = true) {
       const body = document.body;
 
       prevHtmlOverflow = html.style.overflow;
-      prevBodyOverflow = body.style.overflow;
       prevBodyPaddingRight = body.style.paddingRight;
 
       const supportsGutter =
@@ -34,15 +33,15 @@ export function useBodyScrollLock(isOpen: boolean = true) {
         body.style.paddingRight = `${current + scrollbarWidth}px`;
       }
 
+      // Yalnızca <html> kilitlenir. <body>'ye overflow verilirse body kendi kaydırma kabı olur ve
+      // `position: sticky` üst çubuk kaydırılmış sayfada görünümden kaybolur.
       html.style.overflow = 'hidden';
-      body.style.overflow = 'hidden';
     }
 
     return () => {
       activeModalCount = Math.max(0, activeModalCount - 1);
       if (activeModalCount === 0) {
         document.documentElement.style.overflow = prevHtmlOverflow;
-        document.body.style.overflow = prevBodyOverflow;
         document.body.style.paddingRight = prevBodyPaddingRight;
       }
     };

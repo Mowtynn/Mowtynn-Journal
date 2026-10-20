@@ -1,4 +1,4 @@
-import { EASE } from '../lib/motion';
+import { MODAL_BACKDROP, MODAL_PANEL, POPOVER } from '../lib/motion';
 import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
@@ -133,21 +133,13 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
         {isOpen && (
           <motion.div
             key="trade-history-modal-backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15, ease: EASE }}
-            style={{ willChange: "opacity" }}
-            className="fixed inset-0 z-[1500] flex items-center justify-center p-4 bg-zinc-950/80"
+            {...MODAL_BACKDROP}
+            className="fixed inset-0 modal-layer modal-dim z-[1500] flex items-center justify-center p-4 "
             onClick={onClose}
           >
             <motion.div
               key="trade-history-modal-content"
-              initial={{ opacity: 0, scale: 0.96, y: 16 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.96, y: 16 }}
-              transition={{ duration: 0.2, ease: EASE }}
-              style={{ willChange: "transform, opacity" }}
+              {...MODAL_PANEL}
               className="w-full max-w-4xl h-[80vh] sm:h-[620px] max-h-[85vh] min-h-[420px] flex flex-col bg-zinc-950/95 border border-zinc-800/80 rounded-2xl shadow-2xl relative overflow-hidden"
               onClick={e => e.stopPropagation()}
             >
@@ -183,11 +175,8 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                     {isExportOpen && (
                       <motion.div
                         key="modal-export-dropdown"
-                        initial={{ opacity: 0, y: 4, scale: 0.98 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 4, scale: 0.98 }}
-                        transition={{ duration: 0.15, ease: EASE }}
-                        className="absolute right-0 top-[calc(100%+8px)] w-[290px] max-w-[calc(100vw-2rem)] bg-zinc-900 border border-zinc-700/80 rounded-2xl shadow-2xl z-[60] p-2 overflow-hidden"
+                        {...POPOVER}
+                        className="origin-top-right absolute right-0 top-[calc(100%+8px)] w-[290px] max-w-[calc(100vw-2rem)] bg-zinc-900 border border-zinc-700/80 rounded-2xl shadow-2xl z-[60] p-2 overflow-hidden"
                       >
                         {/* Format Tabs */}
                         <div className="flex items-center gap-1 p-1 bg-zinc-950 rounded-xl border border-zinc-800/80 mb-2">

@@ -1,4 +1,4 @@
-import { EASE } from '../lib/motion';
+import { MODAL_BACKDROP, MODAL_PANEL } from '../lib/motion';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -77,21 +77,13 @@ export function MetricDetailModal({
       {isOpen && currentMetric && (
         <motion.div
           key="metric-detail-backdrop"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.15, ease: EASE }}
-          
+          {...MODAL_BACKDROP}
           onClick={onClose}
-           className="will-change-[opacity] fixed inset-0 bg-zinc-950/80 z-[1500] flex items-center justify-center p-4"
+           className="fixed inset-0 modal-layer modal-dim  z-[1500] flex items-center justify-center p-4"
         >
           <motion.div
             key="metric-detail-content"
-            initial={{ opacity: 0, scale: 0.96, y: 16 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: 16 }}
-            transition={{ duration: 0.2, ease: EASE }}
-            style={{ willChange: "transform, opacity" }}
+            {...MODAL_PANEL}
             onClick={(e) => e.stopPropagation()}
             id="metric-detail-popup"
             className="bg-zinc-900 border border-zinc-700/50 rounded-2xl w-full max-w-lg h-[520px] max-h-[85vh] min-h-0 sm:min-h-[380px] relative z-10 overflow-hidden flex flex-col shadow-2xl"

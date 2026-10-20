@@ -6,7 +6,7 @@
 - AddTradeForm: düzenlemede tarih/saat değişikliği kaydedilmiyordu
 - strategyAnalytics: saat/gün analizi NY saatine çevrildi; saat formatı tekilleştirildi; Monte Carlo gerçek R dağılımından ve sabit tohumla; Asia range kovaları parite medyanına göre
 - App.tsx: silinen işlemlerin eski cihazdan geri yüklenmesi engellendi
-- exportTrades: DXY, Premium/Discount, NY saati, bias, spread, çıkış nedeni, potansiyel R, R bazlı PF/beklenti
+- exportTrades: TP Target, Premium/Discount, NY saati, bias, spread, çıkış nedeni, potansiyel R, R bazlı PF/beklenti
 - AICoPilotModal: yeni alanlar + NY saati gönderiliyor
 
 ## Yeni
@@ -125,3 +125,33 @@ Ağ kapalı olduğu için `npm install` / `npm run build` bu ortamda çalıştı
 - `src/lib/motion.ts`: tek EASE eğrisi, süre ve spring ayarları. 26 dosyadaki dağınık eğri/yay/süre değerleri buraya bağlandı (0.16/0.26/0.28/0.34 gibi yakın süreler standartlara çekildi, easeInOut/easeOut → EASE).
 - index.css: Tailwind `ease-out` sınıfı da aynı eğriyi kullanıyor (CSS ve motion artık aynı hissi veriyor).
 - Firebase kuralları değiştirilmedi. Ağ kapalı olduğundan build çalıştırılamadı: `npm install && npm run lint && npm run build`.
+
+## 10. tur: pencere sistemi, navigasyon çubuğu, AI Co-Pilot
+**Navigasyon çubuğu pencere açılınca kayboluyordu (kök neden):** scroll kilidi `<html>` ile birlikte `<body>`'ye de `overflow: hidden` veriyordu; `body` ayrıca `overflow-x: hidden` taşıdığı için kilit anında kendi kaydırma kabı oluyor ve `position: sticky` üst çubuk, sayfa aşağı kaydırılmışken görünümden çıkıyordu. Ayrıca modal arka planı (%80 koyu) neredeyse siyah olan çubuğu zaten görünmez yapıyordu.
+- `useBodyScrollLock`: yalnızca `<html>` kilitlenir. `index.css`: `body { overflow-x: clip }` (desteklemeyen tarayıcıda `hidden` yedeği).
+- Tüm pencere katmanları `.modal-layer` ile navigasyon çubuğunun ALTINDAN başlar (`--nav-h`, App.tsx'te ResizeObserver ile ölçülür); çubuk açık pencerede de net ve yerinde görünür. Tek karartma rengi: `.modal-dim`. Ortalanmış pencereler çubuğun altındaki alana sığacak şekilde sınırlandı.
+
+**Tek açılış / kapanış animasyonu:** `lib/motion.ts` → `MODAL_BACKDROP`, `MODAL_PANEL`, `POPOVER`, `PANE`. 21 arka plan ve 24 panel, 5 dışa aktarma/hesap menüsü, tarih-saat seçici açılır penceresi aynı hareketi kullanır (açılış 0.28 s expo-out, kapanış 0.18 s, aynı yoldan geri).
+- **Kapanış animasyonu görünmeyen pencereler (kök neden):** App.tsx'te `{isPlatformMenuOpen && <DefinitionsManagerModal/>}`, `{isAuthModalOpen && <AuthModal/>}`, `{isCopilotOpen && <AICoPilotModal/>}` kalıbı bileşeni anında söküyordu, çıkış animasyonu hiç oynamıyordu. Yeni `useExitMount` kancası bileşeni çıkış bitene kadar bağlı tutar.
+- Tarih-saat seçici açılır penceresine (iki sürüm) açılış/kapanış animasyonu eklendi (önceden anında kapanıyordu).
+- Denetim penceresi (AuditReport) de aynı sisteme bağlandı; kalıcı `will-change` sınıfları ve modal arka planındaki `backdrop-blur` kaldırıldı.
+
+**AI Co-Pilot yenilendi:**
+- Proje tasarım diline uyumlu başlık/panel (`bg-bg-modal`, `border-border-card`, `shadow-modal`); başlıkta aktif filtreye göre "N / M işlem analiz ediliyor" bilgisi.
+- Sekme şeridinde kayan gösterge (spring), sekme içerik geçişi `PANE` ile (önceden 0.12 s `linear`).
+- Yeni mesajlar yay animasyonuyla girer (eskiler tekrar animasyonlanmaz), "Analiz ediliyor" için üç noktalı yazıyor göstergesi, yazı alanı içeriğe göre büyür.
+- Otomatik kaydırma: 4 ayrı zamanlayıcı yerine tek `scrollTo` (sekme açılışında anında, yeni mesajda yumuşak).
+- Tanımsız olan `copilot-scrollbar` / `hide-scrollbar` sınıfları tanımlandı.
+- Hazır analizler güncel projeye göre: "Silver Bullet" yerine "Asia Range" (performans özeti + girdi analizi + edge önerileri) ve "Haftalık Oyun Planı" eklendi; kaldırılan Spread özelliğine yapılan atıf silindi.
+- Yüzen AI butonu pencere açılınca nazikçe gizlenir, kapanınca geri gelir (hover/tap geri bildirimi).
+
+**Doğrulama notu:** ağ kapalı olduğundan `npm install` / `npm run build` çalıştırılamadı. Tüm `src` için TypeScript sözdizimi taraması (JSX etiket dengesi dahil) ve eksik import taraması yapıldı: hata yok. Yayından önce: `npm install && npm run lint && npm run build`.
+
+## 11. tur: News Day, Strateji, Asia Range FVG, güvenlik, yedekleme
+- İşlem formu: News Day/Bank Holiday (Var/Yok, varsayılan Yok), altında Strateji ve Asia Range FVG. Tüm form başlıkları Tanımlamalar > Form Başlıkları'ndan, tüm listeler kendi sekmelerinden düzenlenir.
+- Yeni alanlar: Trade.newsDay (boolean), strategy, asiaRangeFvg. Asia Edge Lab, Strateji Laboratuvarı, Excel, detay penceresi, AI Co-Pilot ve yedeğe dahil.
+- Tanımlamalar: yeniden adlandırma işlemlerdeki değeri de günceller; başlık anahtarı hatası (Liquidity Sweep) düzeltildi.
+- Yedek: içe aktarma eksik alanları (premiumDiscount, accountCategory, newsDay...) silmiyor; başarısız yükleme/sıfırlamada yanlış "başarılı" bildirimi kaldırıldı; sıfırlama tüm yerel anahtarları temizler.
+- Güvenlik: site jetonu artık süreli HMAC imzalı (eski sha256(parola) jetonu geçersiz, bir kez yeniden giriş gerekir); parola limiti yalnızca başarısız denemeleri sayar, jeton doğrulama ayrı limit; /api/resolve-tv ve /api/proxy-image jeton ister; ağ hatasında oturum düşmez. İsteğe bağlı TOKEN_SECRET.
+- trading_definitions_revision artık kullanıcı listelerini sıfırlamıyor.
+- Derleme bu ortamda çalıştırılamadı (ağ kapalı): `npm install && npm run lint && npm run build`.

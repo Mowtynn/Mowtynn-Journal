@@ -319,8 +319,13 @@ button, a, input, select, textarea, [role="button"] {
 /* Not: kalıcı will-change / translate3d katman zorlaması kaldırıldı (bellek + bulanık yazı + fixed çocuklar için
    yeni containing block yaratıyordu). Animasyon sırasında motion/tarayıcı katmanı kendisi yükseltir. */
 
+/* `clip` kaydırma kabı oluşturmaz: <html> kilitlendiğinde (pencere açıkken) sticky üst çubuk yerinde kalır.
+   `hidden` yalnızca `clip` desteklemeyen eski tarayıcılar için yedek. */
 body {
   overflow-x: hidden;
+}
+@supports (overflow: clip) {
+  body { overflow-x: clip; }
 }
 
 /* Sekme panelleri bellekte kalır, yalnızca gizlenir. Gösterilince giriş animasyonu yeniden başlar.
@@ -387,6 +392,8 @@ input[type="number"] {
   --sb-thumb: rgba(147, 155, 170, 0.28);
   --sb-thumb-hover: rgba(147, 155, 170, 0.5);
   --ring: rgba(98, 141, 214, 0.65);
+  /* Üst navigasyon çubuğu yüksekliği (App.tsx ölçüp günceller); pencere katmanları bunun altından başlar */
+  --nav-h: 48px;
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -497,6 +504,32 @@ body { font-variant-numeric: tabular-nums; }
 .trade-form-root button[data-selected="true"] { animation: none; }
 
 /* ==========================================================================
+   AÇILIR MENÜLER (Parite, Platform, Tarih, Saat, Dakika, Hesap): tek tip seçim hareketi
+   - Açılış/kapanış: lib/motion.ts POPOVER / POPOVER_UP (aynı eğri ve süreler).
+   - Seçenekler: yumuşak renk geçişi, basınca hafif küçülme; seçili seçenekteki onay işareti bir kez "pop" yapar.
+   ========================================================================== */
+.dd-option {
+  transition-property: color, background-color, border-color, box-shadow, scale;
+  transition-duration: 160ms;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+@media (hover: hover) {
+  .dd-option:not([data-selected="true"]):hover { background-color: rgb(39 39 42 / 0.9); color: #fff; }
+}
+.dd-option:active { scale: 0.98; }
+.dd-check { animation: ddCheckPop 260ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+@keyframes ddCheckPop {
+  from { opacity: 0; transform: scale(0.4); }
+  60% { opacity: 1; transform: scale(1.15); }
+  to { opacity: 1; transform: scale(1); }
+}
+.dd-chevron { transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1), color 160ms; }
+.dd-chevron[data-open="true"] { transform: rotate(180deg); }
+@media (prefers-reduced-motion: reduce) {
+  .dd-check { animation: none; }
+}
+
+/* ==========================================================================
    İŞLEM GEÇMİŞİ TABLOLARI: satır + sütun tam ortalama (masaüstü)
    Tailwind yardımcı sınıfları katmanlıdır; bu kurallar katmansız olduğundan onları ezer.
    ========================================================================== */
@@ -571,4 +604,38 @@ body { font-variant-numeric: tabular-nums; }
 @keyframes certRipple {
   from { opacity: 1; transform: scale(0.1); }
   to   { opacity: 0; transform: scale(1.4); }
+}
+
+
+/* ==========================================================================
+   PENCERE KATMANLARI
+   - Tüm modal arka planları navigasyon çubuğunun ALTINDAN başlar: çubuk pencere açıkken de
+     karartılmadan, yerinde ve görünür kalır.
+   - Tek bir karartma rengi (bg-zinc-950/80 yerine); açılış/kapanış hareketi lib/motion.ts'te.
+   ========================================================================== */
+.modal-layer { top: var(--nav-h, 0px); }
+.modal-dim { background-color: rgba(6, 8, 12, 0.72); }
+/* Kaydırılmayan ortalanmış pencereler, çubuğun altındaki alana sığsın */
+.modal-layer:not(.overflow-y-auto):not(.overflow-auto) > * {
+  max-height: calc(100dvh - var(--nav-h, 0px) - 1rem);
+}
+
+/* ==========================================================================
+   AI CO-PILOT: kaydırma çubuğu, yazıyor göstergesi
+   ========================================================================== */
+.copilot-scrollbar { scrollbar-width: thin; overscroll-behavior: contain; scroll-behavior: auto; }
+.hide-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+
+.copilot-typing { display: inline-flex; align-items: center; gap: 4px; height: 12px; }
+.copilot-typing > i {
+  width: 5px; height: 5px; border-radius: 9999px; background: var(--color-brand);
+  opacity: 0.35;
+  animation: copilotDot 1100ms var(--ease-out-expo) infinite;
+}
+.copilot-typing > i:nth-child(2) { animation-delay: 140ms; }
+.copilot-typing > i:nth-child(3) { animation-delay: 280ms; }
+@keyframes copilotDot {
+  0%, 60%, 100% { opacity: 0.35; transform: translateY(0); }
+  30%           { opacity: 1;    transform: translateY(-3px); }
 }

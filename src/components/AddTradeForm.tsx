@@ -1,7 +1,7 @@
-import { SPRING } from '../lib/motion';
+import { SPRING, POPOVER } from '../lib/motion';
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import toast from "react-hot-toast";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import { Trade, DefinitionTitles, PlatformCategory } from "../types";
 import { 
   DEFAULT_PLAN_FIDELITIES, 
@@ -9,6 +9,12 @@ import {
   DEFAULT_TREND_TYPES, 
   DEFAULT_DEFINITION_TITLES, 
   DEFAULT_ENTRY_HOURS,
+  DEFAULT_TP_TARGETS,
+  DEFAULT_PREMIUM_DISCOUNTS,
+  DEFAULT_NEWS_DAYS,
+  DEFAULT_STRATEGIES,
+  DEFAULT_ASIA_RANGE_FVGS,
+  normalizeNewsDays,
   cleanDefinitionTitleString,
   getTradeAccountCategory
 } from "../constants/constants";
@@ -35,6 +41,8 @@ import {
   Monitor,
   Shield,
   Trophy,
+  Flag,
+  Newspaper,
   Compass
 } from "lucide-react";
 
@@ -60,11 +68,15 @@ interface AddTradeFormProps {
   planFidelities?: string[];
   entryModels?: string[];
   trendTypes?: string[];
+  tpTargets?: string[];
+  premiumDiscounts?: string[];
+  entryHours?: string[];
+  newsDays?: string[];
+  strategies?: string[];
+  asiaRangeFvgs?: string[];
   definitionTitles?: DefinitionTitles;
   persistPlatforms?: (platforms: string[]) => void;
 }
-
-const ENTRY_HOURS = DEFAULT_ENTRY_HOURS;
 
 const AddTradeForm = React.memo(function AddTradeForm({
   onSave,
@@ -83,6 +95,12 @@ const AddTradeForm = React.memo(function AddTradeForm({
   planFidelities = DEFAULT_PLAN_FIDELITIES,
   entryModels = DEFAULT_ENTRY_MODELS,
   trendTypes = DEFAULT_TREND_TYPES,
+  tpTargets = DEFAULT_TP_TARGETS,
+  premiumDiscounts = DEFAULT_PREMIUM_DISCOUNTS,
+  entryHours = DEFAULT_ENTRY_HOURS,
+  newsDays = DEFAULT_NEWS_DAYS,
+  strategies = DEFAULT_STRATEGIES,
+  asiaRangeFvgs = DEFAULT_ASIA_RANGE_FVGS,
   definitionTitles = DEFAULT_DEFINITION_TITLES,
   persistPlatforms: _persistPlatforms,
 }: AddTradeFormProps) {
@@ -112,6 +130,12 @@ const AddTradeForm = React.memo(function AddTradeForm({
     return platforms.filter(p => getTradeAccountCategory({ platform: p }) === 'DEMO');
   }, [platforms]);
 
+  // Seçili değer Tanımlamalar'dan silinmiş olsa bile (düzenleme modunda) chip olarak görünsün
+  const withSelected = (list: string[], selected: string[]) => {
+    const extra = selected.filter((x) => x && !list.includes(x));
+    return extra.length > 0 ? [...list, ...extra] : list;
+  };
+
   const [selectedTimeframe, setSelectedTimeframe] = useState("");
   const [selectedHtfTimeframe, setSelectedHtfTimeframe] = useState("");
   const [selectedSession, setSelectedSession] = useState("");
@@ -121,8 +145,18 @@ const AddTradeForm = React.memo(function AddTradeForm({
   const [selectedEntries, setSelectedEntries] = useState<string[]>([]);
   const [selectedTrend, setSelectedTrend] = useState("");
   const [planFidelity, setPlanFidelity] = useState<string | null>(null);
-  const [dxy, setDxy] = useState("");
+  const [selectedTpTargets, setSelectedTpTargets] = useState<string[]>([]);
   const [premiumDiscount, setPremiumDiscount] = useState("");
+  // News Day / Bank Holiday: her zaman "Yok" ile başlar
+  const [newsDay, setNewsDay] = useState(false);
+  const [newsYesLabel, newsNoLabel] = normalizeNewsDays(newsDays);
+  const [selectedStrategy, setSelectedStrategy] = useState("");
+  const [selectedAsiaFvg, setSelectedAsiaFvg] = useState("");
+
+  // Form başlıkları Tanımlamalar > Form Başlıkları'ndan değiştirilebilir
+  const T = (key: keyof DefinitionTitles) =>
+    cleanDefinitionTitleString(definitionTitles[key]) || cleanDefinitionTitleString(DEFAULT_DEFINITION_TITLES[key]) || "";
+  const L = (key: keyof DefinitionTitles) => T(key).toUpperCase();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -327,8 +361,11 @@ const AddTradeForm = React.memo(function AddTradeForm({
       setSelectedEntries(initialEntries);
       setSelectedTrend(editingTrade.trend || "");
       setPlanFidelity(editingTrade.planFidelity || null);
-      setDxy(editingTrade.dxy || "");
+      setSelectedTpTargets(Array.isArray(editingTrade.tpTargets) ? editingTrade.tpTargets : []);
       setPremiumDiscount(editingTrade.premiumDiscount || "");
+      setNewsDay(editingTrade.newsDay === true);
+      setSelectedStrategy(editingTrade.strategy || "");
+      setSelectedAsiaFvg(editingTrade.asiaRangeFvg || "");
       const d = new Date(editingTrade.createdAt || Date.now());
       d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
       setTradeDate(d.toISOString().slice(0, 16));
@@ -392,8 +429,11 @@ const AddTradeForm = React.memo(function AddTradeForm({
     setSelectedEntries([]);
     setSelectedTrend("");
     setPlanFidelity(null);
-    setDxy("");
+    setSelectedTpTargets([]);
     setPremiumDiscount("");
+    setNewsDay(false);
+    setSelectedStrategy("");
+    setSelectedAsiaFvg("");
     const d = new Date();
     d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
     setTradeDate(d.toISOString().slice(0, 16));
@@ -523,8 +563,11 @@ const AddTradeForm = React.memo(function AddTradeForm({
       entryModels: selectedEntries.length > 0 ? selectedEntries : undefined,
       trend: selectedTrend || undefined,
       planFidelity: planFidelity || undefined,
-      dxy: dxy || undefined,
+      tpTargets: selectedTpTargets.length > 0 ? selectedTpTargets : undefined,
       premiumDiscount: premiumDiscount || undefined,
+      newsDay,
+      strategy: selectedStrategy || undefined,
+      asiaRangeFvg: selectedAsiaFvg || undefined,
       htfBias: editingTrade?.htfBias,
       spreadPips: editingTrade?.spreadPips,
       notes: safeNotes || undefined,
@@ -569,7 +612,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
             <div className="bg-zinc-900/50 border border-zinc-800/80 rounded-2xl p-3 sm:p-3.5 flex flex-col gap-2.5 shadow-sm">
               <div className="flex items-center gap-2 pb-1 border-b border-zinc-800/60">
                 <Layers size={14} className="text-blue-400" />
-                <span className="text-xs font-bold text-zinc-200 uppercase tracking-wider font-sans">Temel Bilgiler</span>
+                <span className="text-xs font-bold text-zinc-200 uppercase tracking-wider font-sans">{T("basicInfoCard")}</span>
               </div>
 
               {/* Satır 1: Parite & Yön */}
@@ -595,33 +638,48 @@ const AddTradeForm = React.memo(function AddTradeForm({
                       className="w-full h-8 sm:h-8.5 pl-7.5 pr-2.5 bg-zinc-950/80 border border-zinc-700/70 hover:border-zinc-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 rounded-lg sm:rounded-xl text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none transition-ui uppercase shadow-inner font-sans font-bold"
                     />
                   </div>
-                  {isAssetDropdownOpen && (
-                    <div className="absolute z-30 w-full mt-1.5 bg-zinc-900 border border-zinc-700/80 rounded-xl max-h-48 flex flex-col overflow-hidden shadow-2xl">
-                      <div className="overflow-y-auto flex-1 py-1 divide-y divide-zinc-800/50 custom-scrollbar">
-                        {assets.filter((a) => a.toLowerCase().includes(asset.toLowerCase())).length > 0 ? (
-                          assets.filter((a) => a.toLowerCase().includes(asset.toLowerCase())).map((a, idx) => (
-                            <div
-                              key={idx}
-                              onMouseDown={() => {
-                                setAsset(a);
-                                setIsAssetDropdownOpen(false);
-                              }}
-                              className="px-3 py-1.5 text-xs font-sans font-bold text-zinc-200 cursor-pointer hover:bg-zinc-800 hover:text-white uppercase transition-colors"
-                            >
-                              {a}
-                            </div>
-                          ))
-                        ) : (
-                          <div className="px-3 py-2 text-xs text-zinc-500 text-center font-sans font-bold">Bulunamadı</div>
-                        )}
-                      </div>
-                    </div>
-                  )}
+                  <AnimatePresence>
+                    {isAssetDropdownOpen && (
+                      <motion.div
+                        key="asset-dropdown"
+                        {...POPOVER}
+                        className="origin-top absolute z-30 w-full mt-1.5 bg-zinc-900 border border-zinc-700/80 rounded-xl max-h-48 flex flex-col overflow-hidden shadow-2xl"
+                      >
+                        <div className="overflow-y-auto flex-1 p-1 space-y-0.5 custom-scrollbar">
+                          {(() => {
+                            const matches = assets.filter((x) => x.toLowerCase().includes(asset.toLowerCase()));
+                            if (matches.length === 0) {
+                              return <div className="px-3 py-2 text-xs text-zinc-500 text-center font-sans font-bold">Bulunamadı</div>;
+                            }
+                            return matches.map((a) => {
+                              const isSel = a.toLowerCase() === asset.trim().toLowerCase();
+                              return (
+                                <div
+                                  key={a}
+                                  data-selected={isSel}
+                                  onMouseDown={() => {
+                                    setAsset(a);
+                                    setIsAssetDropdownOpen(false);
+                                  }}
+                                  className={`dd-option px-2.5 py-1.5 rounded-lg text-xs font-sans font-bold uppercase cursor-pointer flex items-center justify-between gap-2 border ${
+                                    isSel ? "bg-blue-500/15 text-blue-300 border-blue-500/30" : "text-zinc-200 border-transparent"
+                                  }`}
+                                >
+                                  <span className="truncate">{a}</span>
+                                  {isSel && <Check size={12} className="dd-check text-blue-400 shrink-0" strokeWidth={2.5} />}
+                                </div>
+                              );
+                            });
+                          })()}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
 
                 {/* YÖN (LONG/SHORT) */}
                 <div>
-                  <label className="text-[10px] sm:text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 block font-sans">YÖN</label>
+                  <label className="text-[10px] sm:text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 block font-sans">{L("direction")}</label>
                   <div className="grid grid-cols-2 gap-1 h-8 sm:h-8.5 bg-zinc-950/80 border border-zinc-700/70 rounded-lg sm:rounded-xl p-0.5 shadow-inner">
                     <button
                       type="button"
@@ -657,7 +715,10 @@ const AddTradeForm = React.memo(function AddTradeForm({
                     {(cleanDefinitionTitleString(definitionTitles.platforms) || "PLATFORM").toUpperCase()}
                   </label>
                   <div
-                    onClick={() => setIsPlatformDropdownOpen(!isPlatformDropdownOpen)}
+                    onClick={() => {
+                      setIsAssetDropdownOpen(false);
+                      setIsPlatformDropdownOpen(!isPlatformDropdownOpen);
+                    }}
                     className="w-full h-8 sm:h-8.5 bg-zinc-950/80 border border-zinc-700/70 hover:border-zinc-500 rounded-lg sm:rounded-xl px-2.5 text-xs text-white flex items-center justify-between cursor-pointer transition-ui shadow-inner font-sans uppercase select-none"
                   >
                     <div className="flex items-center gap-1.5 truncate">
@@ -677,10 +738,14 @@ const AddTradeForm = React.memo(function AddTradeForm({
                         </span>
                       )}
                     </div>
-                    <ChevronDown size={13} className="text-zinc-400 shrink-0" />
+                    <ChevronDown size={13} data-open={isPlatformDropdownOpen} className="dd-chevron text-zinc-400 shrink-0" />
                   </div>
+                  <AnimatePresence>
                   {isPlatformDropdownOpen && (
-                    <div className="absolute z-30 w-72 sm:w-84 left-0 mt-1.5 bg-zinc-900 border border-zinc-700/80 rounded-xl max-h-64 flex flex-col overflow-hidden shadow-2xl">
+                    <motion.div
+                      key="platform-dropdown"
+                      {...POPOVER}
+                      className="origin-top-left absolute z-30 w-72 sm:w-84 left-0 mt-1.5 bg-zinc-900 border border-zinc-700/80 rounded-xl max-h-64 flex flex-col overflow-hidden shadow-2xl">
                       {/* Category Quick Filter */}
                       <div className="p-1.5 bg-zinc-950/80 border-b border-zinc-800 flex items-center gap-1">
                         <button
@@ -758,13 +823,17 @@ const AddTradeForm = React.memo(function AddTradeForm({
                                     setSelectedAccountCategory('FUNDED');
                                     setIsPlatformDropdownOpen(false);
                                   }}
-                                  className={`px-3 py-2 text-xs cursor-pointer hover:bg-emerald-500/10 hover:text-emerald-200 font-sans font-bold uppercase transition-colors flex items-center justify-between ${
+                                  data-selected={selectedPlatform === p && selectedAccountCategory === 'FUNDED'}
+                                  className={`dd-option px-3 py-2 text-xs cursor-pointer font-sans font-bold uppercase flex items-center justify-between ${
                                     selectedPlatform === p && selectedAccountCategory === 'FUNDED' ? 'bg-emerald-500/15 text-emerald-300' : 'text-zinc-200'
                                   }`}
                                 >
                                   <span>{p}</span>
-                                  <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                                    FUNDED
+                                  <span className="flex items-center gap-1.5">
+                                    <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                                      FUNDED
+                                    </span>
+                                    {selectedPlatform === p && selectedAccountCategory === 'FUNDED' && <Check size={12} className="dd-check text-emerald-400" strokeWidth={2.5} />}
                                   </span>
                                 </div>
                               ))}
@@ -788,13 +857,17 @@ const AddTradeForm = React.memo(function AddTradeForm({
                                     setSelectedAccountCategory('CHALLENGE');
                                     setIsPlatformDropdownOpen(false);
                                   }}
-                                  className={`px-3 py-2 text-xs cursor-pointer hover:bg-blue-500/10 hover:text-blue-200 font-sans font-bold uppercase transition-colors flex items-center justify-between ${
+                                  data-selected={selectedPlatform === p && selectedAccountCategory === 'CHALLENGE'}
+                                  className={`dd-option px-3 py-2 text-xs cursor-pointer font-sans font-bold uppercase flex items-center justify-between ${
                                     selectedPlatform === p && selectedAccountCategory === 'CHALLENGE' ? 'bg-blue-500/15 text-blue-300' : 'text-zinc-200'
                                   }`}
                                 >
                                   <span>{p}</span>
-                                  <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30">
-                                    CHALLENGE
+                                  <span className="flex items-center gap-1.5">
+                                    <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30">
+                                      CHALLENGE
+                                    </span>
+                                    {selectedPlatform === p && selectedAccountCategory === 'CHALLENGE' && <Check size={12} className="dd-check text-blue-400" strokeWidth={2.5} />}
                                   </span>
                                 </div>
                               ))}
@@ -818,13 +891,17 @@ const AddTradeForm = React.memo(function AddTradeForm({
                                     setSelectedAccountCategory('DEMO');
                                     setIsPlatformDropdownOpen(false);
                                   }}
-                                  className={`px-3 py-2 text-xs cursor-pointer hover:bg-amber-500/10 hover:text-amber-200 font-sans font-bold uppercase transition-colors flex items-center justify-between ${
+                                  data-selected={selectedPlatform === p && selectedAccountCategory === 'DEMO'}
+                                  className={`dd-option px-3 py-2 text-xs cursor-pointer font-sans font-bold uppercase flex items-center justify-between ${
                                     selectedPlatform === p && selectedAccountCategory === 'DEMO' ? 'bg-amber-500/15 text-amber-300' : 'text-zinc-200'
                                   }`}
                                 >
                                   <span>{p}</span>
-                                  <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                                    DEMO
+                                  <span className="flex items-center gap-1.5">
+                                    <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                                      DEMO
+                                    </span>
+                                    {selectedPlatform === p && selectedAccountCategory === 'DEMO' && <Check size={12} className="dd-check text-amber-400" strokeWidth={2.5} />}
                                   </span>
                                 </div>
                               ))}
@@ -841,13 +918,14 @@ const AddTradeForm = React.memo(function AddTradeForm({
                           </div>
                         )}
                       </div>
-                    </div>
+                    </motion.div>
                   )}
+                  </AnimatePresence>
                 </div>
 
                 {/* TARİH */}
                 <div>
-                  <label className="text-[10px] sm:text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 block font-sans">TARİH</label>
+                  <label className="text-[10px] sm:text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 block font-sans">{L("tradeDate")}</label>
                   <div className="h-8 sm:h-8.5 flex items-center">
                     <TurkishDateTimePicker value={tradeDate} onChange={setTradeDate} className="w-full" />
                   </div>
@@ -859,12 +937,12 @@ const AddTradeForm = React.memo(function AddTradeForm({
             <div className="bg-zinc-900/50 border border-zinc-800/80 rounded-2xl p-3 sm:p-3.5 flex flex-col gap-2.5 shadow-sm">
               <div className="flex items-center gap-2 pb-1 border-b border-zinc-800/60">
                 <Activity size={14} className="text-emerald-400" />
-                <span className="text-xs font-bold text-zinc-200 uppercase tracking-wider font-sans">Finansal Sonuç</span>
+                <span className="text-xs font-bold text-zinc-200 uppercase tracking-wider font-sans">{T("financialCard")}</span>
               </div>
 
               {/* DURUM: WIN / LOSS / BREAKEVEN */}
               <div>
-                <label className="text-[10px] sm:text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 block font-sans">İŞLEM DURUMU</label>
+                <label className="text-[10px] sm:text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 block font-sans">{L("tradeStatus")}</label>
                 <div className="grid grid-cols-3 gap-1.5 h-10 sm:h-11 w-full bg-zinc-950/80 border border-zinc-700/70 rounded-xl p-1 shadow-inner">
                   {(["WIN", "LOSS", "BREAKEVEN"] as const).map((sVal) => {
                     const colors: Record<string, string> = {
@@ -919,7 +997,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                   <div>
                     <label className="text-[10px] sm:text-[11px] font-bold text-rose-400 uppercase tracking-wide font-sans flex items-center gap-1 mb-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-                      STOP (PİP)
+                      {L("stopPips")}
                     </label>
                     <input
                       type="number"
@@ -936,7 +1014,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                   <div>
                     <label className="text-[10px] sm:text-[11px] font-bold text-emerald-400 uppercase tracking-wide font-sans flex items-center gap-1 mb-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                      TP (PİP)
+                      {L("tpPips")}
                     </label>
                     <input
                       type="number"
@@ -956,7 +1034,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                   <div>
                     <label className="text-[10px] sm:text-[11px] font-bold text-orange-400 uppercase tracking-wide font-sans flex items-center gap-1 mb-1" title="Maximum Adverse Excursion - Aleyhe maksimum sapma">
                       <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
-                      MAE (PİP)
+                      {L("maePips")}
                     </label>
                     <input
                       type="number"
@@ -973,7 +1051,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                   <div>
                     <label className="text-[10px] sm:text-[11px] font-bold text-cyan-400 uppercase tracking-wide font-sans flex items-center gap-1 mb-1" title="Maximum Favorable Excursion - Lehe maksimum potansiyel">
                       <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
-                      MFE (PİP)
+                      {L("mfePips")}
                     </label>
                     <input
                       type="number"
@@ -991,7 +1069,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                 <div className="pt-1.5 border-t border-zinc-800/60">
                   <label className="text-[10px] sm:text-[11px] font-bold text-amber-400 uppercase tracking-wide font-sans flex items-center gap-1 mb-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                    ASIA RANGE (PİP)
+                    {L("asiaRangePips")}
                   </label>
                   <input
                     type="number"
@@ -1010,7 +1088,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                 {/* R:R */}
                 <div>
                   <label className="text-[10px] sm:text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 block font-sans">
-                    R:R ORANI
+                    {L("rr")}
                   </label>
                   <div className="relative">
                     {tradeStatus === "LOSS" && (
@@ -1037,7 +1115,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                 {/* PNL */}
                 <div>
                   <label className="text-[10px] sm:text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 block font-sans">
-                    PNL
+                    {L("pnl")}
                   </label>
                   <input
                     type="number"
@@ -1058,7 +1136,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
               <div className="flex items-center justify-between text-zinc-400 pb-1 border-b border-zinc-800/60">
                 <div className="flex items-center gap-2">
                   <ImageIcon size={14} className="text-zinc-400" />
-                  <span className="text-xs font-bold text-zinc-200 uppercase tracking-wider font-sans">Grafik Linki</span>
+                  <span className="text-xs font-bold text-zinc-200 uppercase tracking-wider font-sans">{T("chartLink")}</span>
                 </div>
                 {screenshot && (
                   <span className="text-[11px] text-emerald-400 font-sans flex items-center gap-1 font-bold">
@@ -1164,10 +1242,94 @@ const AddTradeForm = React.memo(function AddTradeForm({
                 </div>
               </div>
 
+              {/* 2b. NEWS DAY / BANK HOLIDAY (Var / Yok) — varsayılan her zaman "Yok" */}
+              <div>
+                <label className="text-[10px] sm:text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
+                  <Newspaper size={13} className="text-amber-400" />
+                  {(cleanDefinitionTitleString(definitionTitles.newsDays) || "NEWS DAY/BANK HOLIDAY").toUpperCase()}
+                </label>
+                <div className="w-full grid grid-flow-col auto-cols-fr bg-zinc-950/80 border border-zinc-800/90 rounded-xl p-1 gap-1.5 h-10 sm:h-11 shadow-inner">
+                  {([
+                    { value: true, label: newsYesLabel, active: "bg-amber-500/20 text-amber-300 border-amber-500/40" },
+                    { value: false, label: newsNoLabel, active: "bg-blue-500/20 text-blue-300 border-blue-500/40" },
+                  ] as const).map((opt) => {
+                    const isSelected = newsDay === opt.value;
+                    return (
+                      <button
+                        key={String(opt.value)}
+                        type="button"
+                        data-selected={isSelected}
+                        onClick={() => setNewsDay(opt.value)}
+                        className={`min-w-0 h-full flex items-center justify-center px-4 sm:px-6 rounded-lg text-[13px] font-sans font-bold tracking-wide uppercase transition-ui duration-150 select-none border cursor-pointer ${
+                          isSelected
+                            ? `${opt.active} font-bold shadow-xs`
+                            : "border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
+                        }`}
+                      >
+                        <span className="truncate">{opt.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 2c. STRATEJİ + ASIA RANGE FVG (Tanımlamalar'dan yönetilir) */}
+              <div className="grid grid-cols-2 gap-x-4 gap-y-3 pt-1 border-t border-zinc-800/60">
+                <div className="flex flex-col">
+                  <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1.5 flex items-center gap-1.5 font-sans">
+                    <Compass size={12} className="text-cyan-400 shrink-0" />
+                    {L("strategies")}
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {withSelected(strategies, selectedStrategy ? [selectedStrategy] : []).map((st) => (
+                      <button
+                        key={st}
+                        type="button"
+                        data-selected={st === selectedStrategy}
+                        onClick={() => setSelectedStrategy(st === selectedStrategy ? "" : st)}
+                        className={`relative px-3 py-1.5 text-xs rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
+                          st === selectedStrategy
+                            ? "text-cyan-300 border-transparent"
+                            : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
+                        }`}
+                      >
+                        {st === selectedStrategy && <SlideBg id="strategySlide" rounded="rounded-xl" className="bg-cyan-500/20 border-cyan-500/60 shadow-xs" />}
+                        <span className="relative z-10">{st}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1.5 flex items-center gap-1.5 font-sans">
+                    <Layers size={12} className="text-orange-400 shrink-0" />
+                    {L("asiaRangeFvgs")}
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {withSelected(asiaRangeFvgs, selectedAsiaFvg ? [selectedAsiaFvg] : []).map((fv) => (
+                      <button
+                        key={fv}
+                        type="button"
+                        data-selected={fv === selectedAsiaFvg}
+                        onClick={() => setSelectedAsiaFvg(fv === selectedAsiaFvg ? "" : fv)}
+                        className={`relative px-3 py-1.5 text-xs rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
+                          fv === selectedAsiaFvg
+                            ? "text-orange-300 border-transparent"
+                            : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
+                        }`}
+                      >
+                        {fv === selectedAsiaFvg && <SlideBg id="asiaFvgSlide" rounded="rounded-xl" className="bg-orange-500/20 border-orange-500/60 shadow-xs" />}
+                        <span className="relative z-10">{fv}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
               {/* 3 SATIRLI TEKNİK MATRİS:
                   1. Satır: SESSION yanında ENTRY TIME
                   2. Satır: TIMEFRAME yanında PD ARRAY
-                  3. Satır: ENTRY TIMEFRAME yanında ENTRY MODEL */}
+                  3. Satır: ENTRY TIMEFRAME yanında ENTRY MODEL
+                  4. Satır: TP TARGET yanında PREMIUM / DISCOUNT */}
               <div className="grid grid-cols-2 gap-x-4 gap-y-3 pt-1 border-t border-zinc-800/60">
                 {/* 1. SATIR SOL: SESSION */}
                 <div className="flex flex-col">
@@ -1200,11 +1362,11 @@ const AddTradeForm = React.memo(function AddTradeForm({
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide flex items-center gap-1.5 font-sans">
                       <Clock size={12} className="text-amber-400 shrink-0" />
-                      ENTRY TIME
+                      {(cleanDefinitionTitleString(definitionTitles.entryHours) || "ENTRY TIME").toUpperCase()}
                     </span>
                   </div>
                   <div className="flex flex-wrap items-center gap-1.5 max-h-24 overflow-y-auto custom-scrollbar p-0.5">
-                    {ENTRY_HOURS.map((time) => {
+                    {withSelected(entryHours, selectedEntryTime ? [selectedEntryTime] : []).map((time) => {
                       const isSelected = selectedEntryTime === time;
                       return (
                         <button
@@ -1345,42 +1507,48 @@ const AddTradeForm = React.memo(function AddTradeForm({
                   </div>
                 </div>
 
-                {/* 4. SATIR SOL: DXY */}
+                {/* 4. SATIR SOL: TP TARGET (Multi-select) */}
                 <div className="flex flex-col">
                   <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1.5 flex items-center gap-1.5 font-sans">
-                    <Compass size={12} className="text-purple-400 shrink-0" />
-                    DXY
+                    <Flag size={12} className="text-purple-400 shrink-0" />
+                    {(cleanDefinitionTitleString(definitionTitles.tpTargets) || "TP TARGET").toUpperCase()}
                   </span>
                   <div className="flex flex-wrap gap-1.5">
-                    {["Bullish (Yükseliş)", "Bearish (Düşüş)", "Neutral (Yatay)"].map((dx) => {
-                      const isSelected = dxy === dx;
+                    {withSelected(tpTargets, selectedTpTargets).map((tp) => {
+                      const isActive = selectedTpTargets.includes(tp);
                       return (
                         <button
-                          key={dx}
+                          key={tp}
                           type="button"
-                          data-selected={isSelected}
-                          onClick={() => setDxy(isSelected ? "" : dx)}
+                          data-selected={isActive}
+                          onClick={() =>
+                            setSelectedTpTargets(
+                              isActive
+                                ? selectedTpTargets.filter((x) => x !== tp)
+                                : [...selectedTpTargets, tp]
+                            )
+                          }
                           className={`px-3 py-1.5 text-xs rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
-                            isSelected
+                            isActive
                               ? "bg-purple-500/20 text-purple-300 border-purple-500/60 shadow-xs"
                               : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
                           }`}
                         >
-                          {dx}
+                          {tp}
                         </button>
                       );
                     })}
                   </div>
                 </div>
 
-                {/* 4. SATIR SAĞ: CONFIRMATIONS & ZONE */}
+                {/* 4. SATIR SAĞ: PREMIUM / DISCOUNT */}
                 <div className="flex flex-col">
                   <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1.5 flex items-center gap-1.5 font-sans">
                     <ShieldCheck size={12} className="text-emerald-400 shrink-0" />
-                    CONFIRMATIONS & ZONE (PREM/DISC)
+                    {(cleanDefinitionTitleString(definitionTitles.premiumDiscounts) || "PREMIUM / DISCOUNT").toUpperCase()}
                   </span>
                   <div className="flex flex-wrap gap-1.5">
-                    {["Premium", "Discount", "Equilibrium / OTE"].map((zone) => {
+                    {withSelected(premiumDiscounts, premiumDiscount ? [premiumDiscount] : []).map((zone) => {
                       const isSelected = premiumDiscount === zone;
                       return (
                         <button
@@ -1413,7 +1581,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
               <div className="flex items-center justify-between shrink-0 pb-1 border-b border-zinc-800/60">
                 <div className="flex items-center gap-2">
                   <FileText size={14} className="text-zinc-400" />
-                  <span className="text-xs font-bold text-zinc-200 uppercase tracking-wider font-sans">Analiz & Notlar</span>
+                  <span className="text-xs font-bold text-zinc-200 uppercase tracking-wider font-sans">{T("notesCard")}</span>
                 </div>
                 <VoiceToTradeButton
                   options={{ platforms, sessions, concepts: concepts || liquiditySweeps, confirmations, timeframes, htfTimeframes, planFidelities, entryModels, trendTypes }}

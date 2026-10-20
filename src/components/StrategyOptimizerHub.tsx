@@ -24,9 +24,13 @@ import {
   ShieldAlert,
   Flame,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Flag,
+  Newspaper
 } from 'lucide-react';
 import { Trade } from '../types';
+import { getNewsDayLabels } from '../constants/constants';
+import { useNewsDayLabels } from '../hooks/useNewsDayLabels';
 import { calculateStrategyAnalytics, StrategyAnalyticsResult } from '../lib/strategyAnalytics';
 import { AsiaEdgeLab } from './AsiaEdgeLab';
 
@@ -134,7 +138,7 @@ type LabTab =
   | 'confluence'
   | 'psychology'
   | 'day_of_week'
-  | 'dxy_zone' 
+  | 'tp_zone' 
   | 'mae_mfe' 
   | 'ict_concepts' 
   | 'trend_time' 
@@ -151,7 +155,7 @@ const SUBTABS: Array<{ id: LabTab; label: string; icon: React.ComponentType<{ si
   { id: 'confluence', label: 'Konfluans Gücü', icon: Zap, activeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/40' },
   { id: 'psychology', label: 'Psikoloji & Tilt', icon: Brain, activeColor: 'bg-purple-500/20 text-purple-300 border-purple-500/40' },
   { id: 'day_of_week', label: 'Günlük Edge', icon: Calendar, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
-  { id: 'dxy_zone', label: 'DXY & Bölge', icon: Compass, activeColor: 'bg-purple-500/20 text-purple-300 border-purple-500/40' },
+  { id: 'tp_zone', label: 'TP Target & Bölge', icon: Flag, activeColor: 'bg-purple-500/20 text-purple-300 border-purple-500/40' },
   { id: 'mae_mfe', label: 'MAE, MFE & Stop', icon: Target, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
   { id: 'ict_concepts', label: 'Likidite & Modeller', icon: Layers, activeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' },
   { id: 'trend_time', label: 'HTF, Entry TF & Saatler', icon: Clock, activeColor: 'bg-rose-500/20 text-rose-300 border-rose-500/40' },
@@ -168,23 +172,25 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
   const [activeSubTab, setActiveSubTab] = useState<LabTab>('overview');
 
   // Interactive Comparator States
-  const [compDimensionX, setCompDimensionX] = useState<'session' | 'dxy' | 'premiumDiscount' | 'planFidelity' | 'trend' | 'htfTimeframe'>('session');
+  const [compDimensionX, setCompDimensionX] = useState<'session' | 'tpTarget' | 'premiumDiscount' | 'planFidelity' | 'trend' | 'htfTimeframe' | 'newsDay' | 'strategy' | 'asiaRangeFvg'>('session');
   const [compDimensionY, setCompDimensionY] = useState<'type' | 'entryModels' | 'timeframe' | 'liquiditySweeps'>('type');
 
   // Pre-Trade Checker States
   const [checkerAsset, setCheckerAsset] = useState<string>('');
   const [checkerType, setCheckerType] = useState<'LONG' | 'SHORT'>('LONG');
   const [checkerSession, setCheckerSession] = useState<string>('');
-  const [checkerDxy, setCheckerDxy] = useState<string>('');
+  const [checkerTpTarget, setCheckerTpTarget] = useState<string>('');
   const [checkerZone, setCheckerZone] = useState<string>('');
   const [checkerModel, setCheckerModel] = useState<string>('');
   const [checkerQuality, setCheckerQuality] = useState<string>('');
 
-  const stats: StrategyAnalyticsResult = useMemo(() => calculateStrategyAnalytics(trades), [trades]);
+  const { version: newsLabelsVersion } = useNewsDayLabels();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const stats: StrategyAnalyticsResult = useMemo(() => calculateStrategyAnalytics(trades), [trades, newsLabelsVersion]);
 
   const uniqueAssets = useMemo(() => Array.from(new Set(trades.map(t => t.asset).filter(Boolean))), [trades]);
   const uniqueSessions = useMemo(() => Array.from(new Set(trades.map(t => t.session).filter(Boolean))), [trades]);
-  const uniqueDxys = useMemo(() => Array.from(new Set(trades.map(t => t.dxy).filter(Boolean))), [trades]);
+  const uniqueTpTargets = useMemo(() => Array.from(new Set(trades.flatMap(t => t.tpTargets || []).filter(Boolean))), [trades]);
   const uniqueZones = useMemo(() => Array.from(new Set(trades.map(t => t.premiumDiscount).filter(Boolean))), [trades]);
   const uniqueModels = useMemo(() => {
     const list: string[] = [];
@@ -201,7 +207,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
         <Compass className="w-10 h-10 text-zinc-600 mx-auto mb-3" />
         <h4 className="text-sm font-bold text-zinc-200 font-sans">Strateji Geliştirme İçin Yeterli Veri Yok</h4>
         <p className="text-xs text-zinc-500 mt-1 max-w-md mx-auto font-sans">
-          İşlem eklerken girdiğiniz Parite, Stop/TP Pip, MAE, MFE, Asia Range, DXY, Premium/Discount, Onaylar ve Giriş Modelleri burada otomatik strateji önerilerine ve edge matrislerine dönüştürülür.
+          İşlem eklerken girdiğiniz Parite, Stop/TP Pip, MAE, MFE, Asia Range, TP Target, Premium/Discount, Onaylar ve Giriş Modelleri burada otomatik strateji önerilerine ve edge matrislerine dönüştürülür.
         </p>
       </div>
     );
@@ -217,8 +223,9 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
     trendStats, 
     timeframeMatrix, 
     hourlyStats, 
-    dxyStats,
+    tpTargetStats,
     premiumDiscountStats,
+    newsDayStats,
     confirmationStats,
     setupQualityStats,
     sessionDirectionStats,
@@ -240,11 +247,17 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
   const comparatorMatrix = useMemo(() => {
     const getValuesX = (t: Trade): string[] => {
       if (compDimensionX === 'session') return [t.session || 'Belirtilmemiş'];
-      if (compDimensionX === 'dxy') return [t.dxy || 'Belirtilmemiş'];
+      if (compDimensionX === 'tpTarget') return t.tpTargets && t.tpTargets.length > 0 ? t.tpTargets : ['Belirtilmemiş'];
       if (compDimensionX === 'premiumDiscount') return [t.premiumDiscount || 'Belirtilmemiş'];
       if (compDimensionX === 'planFidelity') return [t.planFidelity || 'Belirtilmemiş'];
       if (compDimensionX === 'trend') return [t.trend || 'Belirtilmemiş'];
       if (compDimensionX === 'htfTimeframe') return [t.htfTimeframe || 'Belirtilmemiş'];
+      if (compDimensionX === 'strategy') return [t.strategy || 'Belirtilmemiş'];
+      if (compDimensionX === 'asiaRangeFvg') return [t.asiaRangeFvg || 'Belirtilmemiş'];
+      if (compDimensionX === 'newsDay') {
+        const nl = getNewsDayLabels();
+        return [typeof t.newsDay === 'boolean' ? (t.newsDay ? nl.yes : nl.no) : 'Belirtilmemiş'];
+      }
       return ['Genel'];
     };
 
@@ -289,7 +302,8 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
       netR: Math.round(item.netR * 100) / 100,
       avgR: Math.round((item.netR / item.total) * 100) / 100,
     })).sort((a, b) => b.netR - a.netR);
-  }, [trades, compDimensionX, compDimensionY]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trades, compDimensionX, compDimensionY, newsLabelsVersion]);
 
   // Pre-Trade Checker Evaluation
   const checkerResult = useMemo(() => {
@@ -308,8 +322,8 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
       matchedTrades = matchedTrades.filter(t => (t.session || '').toLowerCase() === checkerSession.toLowerCase());
       criteriaCount++;
     }
-    if (checkerDxy) {
-      matchedTrades = matchedTrades.filter(t => (t.dxy || '').toLowerCase() === checkerDxy.toLowerCase());
+    if (checkerTpTarget) {
+      matchedTrades = matchedTrades.filter(t => (t.tpTargets || []).some(x => x.toLowerCase() === checkerTpTarget.toLowerCase()));
       criteriaCount++;
     }
     if (checkerZone) {
@@ -343,7 +357,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
     }
 
     return { total, wins, winRate, netR, avgR, verdict, criteriaCount };
-  }, [trades, checkerAsset, checkerType, checkerSession, checkerDxy, checkerZone, checkerModel, checkerQuality]);
+  }, [trades, checkerAsset, checkerType, checkerSession, checkerTpTarget, checkerZone, checkerModel, checkerQuality]);
 
   return (
     <motion.div 
@@ -875,36 +889,36 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
         </div>
       )}
 
-      {/* SUBTAB 6: DXY & ZONE & CONFIRMATIONS */}
-      {activeSubTab === 'dxy_zone' && (
+      {/* SUBTAB 6: TP TARGET & ZONE & CONFIRMATIONS */}
+      {activeSubTab === 'tp_zone' && (
         <div className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             
-            {/* DXY Bias Card */}
+            {/* TP Target Card */}
             <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 space-y-3">
               <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5">
                 <div className="flex items-center gap-2">
-                  <Compass size={16} className="text-purple-400" />
+                  <Flag size={16} className="text-purple-400" />
                   <h4 className="text-xs font-bold text-zinc-100 font-sans uppercase tracking-wider">
-                    DXY (Korelasyon / Bias) Performansı
+                    TP Target Performansı
                   </h4>
                 </div>
                 <span className="text-[10px] font-mono text-zinc-400">
-                  {dxyStats.ranking.length} Farklı Bias
+                  {tpTargetStats.ranking.length} Farklı Hedef
                 </span>
               </div>
               <p className="text-[11px] text-purple-300 bg-purple-500/10 border border-purple-500/20 p-2.5 rounded-lg font-sans">
-                {dxyStats.insight}
+                {tpTargetStats.insight}
               </p>
 
-              {dxyStats.ranking.length === 0 ? (
-                <div className="text-center py-6 text-xs text-zinc-500 font-sans">Henüz DXY verisi girilmemiş.</div>
+              {tpTargetStats.ranking.length === 0 ? (
+                <div className="text-center py-6 text-xs text-zinc-500 font-sans">Henüz TP Target verisi girilmemiş.</div>
               ) : (
                 <div className="space-y-1.5">
-                  {dxyStats.ranking.map((item) => (
-                    <div key={item.dxy} className="flex items-center justify-between p-2.5 bg-zinc-900/60 border border-zinc-800/80 rounded-lg text-xs">
+                  {tpTargetStats.ranking.map((item) => (
+                    <div key={item.target} className="flex items-center justify-between p-2.5 bg-zinc-900/60 border border-zinc-800/80 rounded-lg text-xs">
                       <div>
-                        <span className="font-bold text-zinc-200 uppercase block font-sans">{item.dxy}</span>
+                        <span className="font-bold text-zinc-200 uppercase block font-sans">{item.target}</span>
                         <span className="text-[10px] text-zinc-500 font-sans">{item.total} İşlem ({item.wins} Galibiyet)</span>
                       </div>
                       <div className="flex items-center gap-4 text-right">
@@ -921,23 +935,6 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
                       </div>
                     </div>
                   ))}
-                </div>
-              )}
-
-              {/* DXY Direction Matrix */}
-              {dxyStats.dxyDirectionMatrix.length > 0 && (
-                <div className="pt-2 border-t border-zinc-800">
-                  <span className="text-[10px] font-bold uppercase text-zinc-400 mb-2 block font-sans">DXY Bias x İşlem Yönü Kesişimi</span>
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {dxyStats.dxyDirectionMatrix.map((dxDir, i) => (
-                      <div key={i} className="p-2 bg-zinc-900 border border-zinc-800/60 rounded-md text-[11px] flex justify-between items-center">
-                        <span className="font-bold text-zinc-300">{dxDir.dxy} {dxDir.direction}</span>
-                        <span className={`font-bold ${dxDir.netR >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                          {dxDir.netR >= 0 ? '+' : ''}{dxDir.netR} R (%{dxDir.winRate})
-                        </span>
-                      </div>
-                    ))}
-                  </div>
                 </div>
               )}
             </div>
@@ -1000,6 +997,62 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
                   ))}
                 </div>
               </div>
+            </div>
+
+            {/* News Day / Bank Holiday Card */}
+            <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 space-y-3">
+              <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5">
+                <div className="flex items-center gap-2">
+                  <Newspaper size={16} className="text-amber-400" />
+                  <h4 className="text-xs font-bold text-zinc-100 font-sans uppercase tracking-wider">
+                    News Day / Bank Holiday Analizi
+                  </h4>
+                </div>
+                <span className="text-[10px] font-mono text-zinc-400">
+                  {newsDayStats.ranking.reduce((sum, r) => sum + r.total, 0)} Verili İşlem
+                </span>
+              </div>
+              <p className="text-[11px] text-amber-300 bg-amber-500/10 border border-amber-500/20 p-2.5 rounded-lg font-sans leading-relaxed">
+                {newsDayStats.insight}
+              </p>
+
+              {newsDayStats.ranking.length === 0 ? (
+                <div className="text-center py-6 text-xs text-zinc-500 font-sans">Henüz News Day / Bank Holiday bilgisi olan işlem yok.</div>
+              ) : (
+                <div className="space-y-1.5">
+                  {newsDayStats.ranking.map((item) => (
+                    <div key={item.label} className="flex items-center justify-between p-2.5 bg-zinc-900/60 border border-zinc-800/80 rounded-lg text-xs">
+                      <div>
+                        <span className="font-bold text-zinc-200 uppercase block font-sans">{item.label}</span>
+                        <span className="text-[10px] text-zinc-500 font-sans">{item.total} İşlem ({item.wins} Galibiyet)</span>
+                      </div>
+                      <div className="flex items-center gap-4 text-right">
+                        <div>
+                          <span className="text-[10px] text-zinc-500 block font-sans">Win Rate</span>
+                          <span className={`font-bold font-sans ${item.winRate >= 50 ? 'text-emerald-400' : 'text-zinc-300'}`}>%{item.winRate}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-zinc-500 block font-sans">Ort. R</span>
+                          <span className={`font-bold font-sans ${item.avgR >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                            {item.avgR >= 0 ? '+' : ''}{item.avgR}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-zinc-500 block font-sans">Net R</span>
+                          <span className={`font-bold font-sans ${item.netR >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                            {item.netR >= 0 ? '+' : ''}{item.netR} R
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {newsDayStats.unknownCount > 0 && (
+                <p className="text-[10px] text-zinc-500 font-sans">
+                  {newsDayStats.unknownCount} işlemde News Day bilgisi girilmemiş (eski kayıt); kıyasa dahil edilmedi.
+                </p>
+              )}
             </div>
 
           </div>
@@ -1574,11 +1627,14 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
                     className="bg-zinc-900 border border-zinc-700 text-zinc-200 text-xs rounded-lg px-2 py-1 font-sans cursor-pointer outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus:border-indigo-500/60 select-none"
                   >
                     <option value="session">Seans (Session)</option>
-                    <option value="dxy">DXY Bias</option>
+                    <option value="tpTarget">TP Target</option>
                     <option value="premiumDiscount">Bölge (Prem/Disc)</option>
                     <option value="planFidelity">Setup Kalitesi</option>
                     <option value="trend">Trend Yapısı</option>
                     <option value="htfTimeframe">Timeframe (HTF)</option>
+                    <option value="newsDay">News Day / Bank Holiday</option>
+                    <option value="strategy">Strateji</option>
+                    <option value="asiaRangeFvg">Asia Range FVG</option>
                   </select>
                 </div>
                 <div className="flex items-center gap-1">
@@ -1682,14 +1738,14 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
               </div>
 
               <div>
-                <label className="text-[10px] font-bold text-zinc-400 uppercase block mb-1 font-sans">DXY</label>
+                <label className="text-[10px] font-bold text-zinc-400 uppercase block mb-1 font-sans">TP Target</label>
                 <select
-                  value={checkerDxy}
-                  onChange={(e) => setCheckerDxy(e.target.value)}
+                  value={checkerTpTarget}
+                  onChange={(e) => setCheckerTpTarget(e.target.value)}
                   className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-1.5 text-xs text-zinc-200 font-sans outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus:border-emerald-500/60 cursor-pointer select-none"
                 >
                   <option value="">Tümü</option>
-                  {uniqueDxys.map(d => <option key={d} value={d}>{d}</option>)}
+                  {uniqueTpTargets.map(d => <option key={d} value={d}>{d}</option>)}
                 </select>
               </div>
 
