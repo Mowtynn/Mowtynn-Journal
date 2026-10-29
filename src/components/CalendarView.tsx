@@ -1,10 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { smartUpper } from '../constants/constants';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
 import { Trade } from '../types';
-import { PrintReportModal } from './PrintReportModal';
 import { TradeHistoryModal } from './TradeHistoryModal';
-import { useMetricMode } from '../context/MetricContext';
-import { ValueTransition } from './ValueTransition';
+import { nyWallDate, nyNow } from '../lib/tradingTime';
 
 const DAYS_OF_WEEK = ['PZT', 'SAL', 'ÇAR', 'PER', 'CUM', 'CMT', 'PAZ'];
 
@@ -37,28 +36,16 @@ const formatDisplayDate = (dateStr: string | null) => {
   return displayDateFormatter.format(dateObj);
 };
 
-export const CalendarView = React.memo(({ trades, currency, onEdit }: { trades: Trade[], currency: string, onEdit?: (trade: Trade) => void }) => {
-  const [currentDate, setCurrentDate] = useState(new Date());
+export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], onEdit?: (trade: Trade) => void }) => {
+  const [currentDate, setCurrentDate] = useState(nyNow());
   const [selectedDateStr, setSelectedDateStr] = useState<string | null>(null);
-  const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
-  const [printModalState, setPrintModalState] = useState<{
-    isOpen: boolean;
-    trades: Trade[];
-    title: string;
-    dateRangeText: string;
-  }>({
-    isOpen: false,
-    trades: [],
-    title: '',
-    dateRangeText: ''
-  });
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
   const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
   const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
-  const goToToday = () => setCurrentDate(new Date());
+  const goToToday = () => setCurrentDate(nyNow());
 
   const daysInMonth = getDaysInMonth(year, month);
   const firstDay = getFirstDayOfMonth(year, month);
@@ -66,36 +53,29 @@ export const CalendarView = React.memo(({ trades, currency, onEdit }: { trades: 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (selectedTrade) {
-          setSelectedTrade(null);
-        } else if (selectedDateStr) {
-          setSelectedDateStr(null);
-        }
+        if (selectedDateStr) setSelectedDateStr(null);
       }
     };
-    if (selectedDateStr || selectedTrade) {
+    if (selectedDateStr) {
       window.addEventListener('keydown', handleKeyDown);
     }
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [selectedDateStr, selectedTrade]);
+  }, [selectedDateStr]);
 
-  const { isRrMode } = useMetricMode();
-  
   // Group trades by date string "YYYY-MM-DD" based on user's timezone implicitly
   const dailyStats = useMemo(() => {
-    const stats: Record<string, { pnl: number, rr: number, count: number, trades: Trade[] }> = {};
+    const stats: Record<string, { rr: number, count: number, trades: Trade[] }> = {};
     
     trades.forEach(trade => {
       // Assuming createdAt is timestamp
-      const date = new Date(trade.createdAt);
+      const date = nyWallDate(trade.createdAt);
       const dateStr = formatDateLocal(date);
       
       if (!stats[dateStr]) {
-        stats[dateStr] = { pnl: 0, rr: 0, count: 0, trades: [] };
+        stats[dateStr] = { rr: 0, count: 0, trades: [] };
       }
-      stats[dateStr].pnl += trade.pnl || 0;
       stats[dateStr].rr += trade.rr || 0;
       stats[dateStr].count += 1;
       stats[dateStr].trades.push(trade);
@@ -105,20 +85,18 @@ export const CalendarView = React.memo(({ trades, currency, onEdit }: { trades: 
   }, [trades]);
 
   const monthlyStats = useMemo(() => {
-    let totalPnl = 0;
     let totalRr = 0;
     let tradingDays = 0;
     
     for (let day = 1; day <= daysInMonth; day++) {
       const dateStr = formatDateLocal(new Date(year, month, day));
       if (dailyStats[dateStr]) {
-        totalPnl += dailyStats[dateStr].pnl;
         totalRr += dailyStats[dateStr].rr;
         tradingDays++;
       }
     }
     
-    return { totalPnl, totalRr, tradingDays };
+    return { totalRr, tradingDays };
   }, [dailyStats, year, month, daysInMonth]);
 
   const renderCells = () => {
@@ -137,14 +115,14 @@ export const CalendarView = React.memo(({ trades, currency, onEdit }: { trades: 
     for (let day = 1; day <= daysInMonth; day++) {
       const dateStr = formatDateLocal(new Date(year, month, day));
       const stat = dailyStats[dateStr];
-      const isToday = formatDateLocal(new Date()) === dateStr;
+      const isToday = formatDateLocal(nyNow()) === dateStr;
       
       let cardStyle = "bg-zinc-900 border-zinc-900 hover:border-zinc-800 hover:bg-zinc-800";
       let primaryColor = "text-zinc-400";
       let secondaryColor = "text-zinc-500";
       
       if (stat) {
-         const val = isRrMode ? stat.rr : stat.pnl;
+         const val = stat.rr;
          if (val > 0) {
             cardStyle = "bg-emerald-500/[0.07] hover:bg-emerald-500/15 border-emerald-500/25 hover:border-emerald-500/50 cursor-pointer shadow-xs shadow-emerald-500/5";
             primaryColor = "text-emerald-400";
@@ -186,26 +164,11 @@ export const CalendarView = React.memo(({ trades, currency, onEdit }: { trades: 
           {/* Bottom Row: Trade Statistics */}
           {stat ? (
             <div className="mt-auto flex flex-col items-end text-right overflow-hidden">
-               {/* Primary Value */}
                <div className={`font-sans font-extrabold text-xs sm:text-xs leading-none ${primaryColor} tracking-tight truncate`}>
-                 <ValueTransition modeKey={isRrMode}>
-                   {isRrMode ? (
-                     <>{stat.rr > 0 ? '+' : ''}{stat.rr.toFixed(1)}<span className="text-[8px] font-bold ml-0.5 opacity-80">R</span></>
-                   ) : (
-                     <>{stat.pnl > 0 ? '+' : ''}{(stat?.pnl || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 1 })}<span className="text-[8px] font-bold ml-0.5 opacity-80">{currency}</span></>
-                   )}
-                 </ValueTransition>
+                 {stat.rr > 0 ? '+' : ''}{stat.rr.toFixed(1)}<span className="text-[8px] font-bold ml-0.5 opacity-80">R</span>
                </div>
-
-               {/* Secondary Value */}
                <div className={`font-sans text-[8.5px] sm:text-[9px] font-medium mt-0.5 ${secondaryColor} truncate leading-none`}>
-                 <ValueTransition modeKey={isRrMode}>
-                   {isRrMode ? (
-                     <>{stat.pnl > 0 ? '+' : ''}{(stat?.pnl || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} {currency}</>
-                   ) : (
-                     <>{stat.rr > 0 ? '+' : ''}{stat.rr.toFixed(1)} R</>
-                   )}
-                 </ValueTransition>
+                 {stat.count} işlem
                </div>
             </div>
           ) : (
@@ -248,20 +211,20 @@ export const CalendarView = React.memo(({ trades, currency, onEdit }: { trades: 
                  Bugün
                </button>
                <div className="flex items-center gap-1.5 bg-zinc-900 border border-zinc-700/50 rounded-xl p-1 shadow-xs">
-                 <button 
+                 <button aria-label="Önceki" title="Önceki" 
                    type="button"
                    onClick={prevMonth} 
-                   className="w-6.5 h-6.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 flex items-center justify-center transition-colors duration-150 cursor-pointer"
+                   className="w-7 h-7 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 flex items-center justify-center transition-colors duration-150 cursor-pointer"
                  >
                    <ChevronLeft size={13} />
                  </button>
                  <span className="min-w-[110px] text-center font-sans font-semibold text-xs text-zinc-100 tracking-wide select-none">
                    {monthNames[month]} {year}
                  </span>
-                 <button 
+                 <button aria-label="Sonraki" title="Sonraki" 
                    type="button"
                    onClick={nextMonth} 
-                   className="w-6.5 h-6.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 flex items-center justify-center transition-colors duration-150 cursor-pointer"
+                   className="w-7 h-7 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 flex items-center justify-center transition-colors duration-150 cursor-pointer"
                  >
                    <ChevronRight size={13} />
                  </button>
@@ -272,14 +235,12 @@ export const CalendarView = React.memo(({ trades, currency, onEdit }: { trades: 
              <div className="flex flex-wrap items-center gap-2.5 text-xs font-sans">
                {/* Total PnL / RR */}
                <div className="flex items-center gap-2 px-3 py-1.5 bg-zinc-900/80 border border-zinc-800/80 rounded-xl shadow-xs overflow-hidden">
-                 <ValueTransition modeKey={isRrMode}>
-                   <div className="flex items-center gap-2">
-                     <span className="text-zinc-500 font-bold uppercase text-[10px] tracking-wider">{isRrMode ? 'Aylık RR:' : 'Aylık PnL:'}</span>
-                     <span className={`font-black font-sans text-xs ${(isRrMode ? monthlyStats.totalRr : monthlyStats.totalPnl) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                       {(isRrMode ? monthlyStats.totalRr : monthlyStats.totalPnl) >= 0 ? '+' : ''}{(isRrMode ? monthlyStats.totalRr : monthlyStats.totalPnl).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} {isRrMode ? 'R' : currency}
-                     </span>
-                   </div>
-                 </ValueTransition>
+                 <div className="flex items-center gap-2">
+                   <span className="text-zinc-500 font-bold uppercase text-[10px] tracking-wider">{smartUpper("Aylık R:")}</span>
+                   <span className={`font-black font-sans text-xs ${monthlyStats.totalRr >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                     {monthlyStats.totalRr >= 0 ? '+' : ''}{monthlyStats.totalRr.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} R
+                   </span>
+                 </div>
                </div>
 
                {/* Trading Days */}
@@ -314,20 +275,12 @@ export const CalendarView = React.memo(({ trades, currency, onEdit }: { trades: 
          title={selectedDateStr ? formatDisplayDate(selectedDateStr) : ""}
          icon={<CalendarIcon size={16} className="mr-1.5 text-blue-400 shrink-0" />}
          trades={selectedDateStats?.trades || []}
-         currency={currency}
          onEdit={(trade) => {
            if (onEdit) onEdit(trade);
            setSelectedDateStr(null);
          }}
        />
 
-       <PrintReportModal title="Analiz Raporu" isOpen={printModalState.isOpen}
-         onClose={() => setPrintModalState(prev => ({ ...prev, isOpen: false }))}
-         trades={printModalState.trades}
-         
-         dateRangeText={printModalState.dateRangeText}
-         currency={currency}
-       />
     </div>
   );
 });

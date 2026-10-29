@@ -1,4 +1,6 @@
-import { EASE, MODAL_BACKDROP, MODAL_PANEL } from '../lib/motion';
+import { EASE, MODAL_BACKDROP, MODAL_PANEL, POPOVER } from '../lib/motion';
+import { smartUpper } from '../constants/constants';
+import { FilterChip, FILTER_INPUT, FILTER_LABEL } from './filters/FilterControls';
 import React, { useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -6,34 +8,26 @@ import { Crosshair, Target, Infinity as InfinityIcon, Calendar, AlertTriangle, A
 import { Trade } from '../types';
 import { caseInsensitiveMatch } from '../constants/constants';
 import { HeatmapModal } from './HeatmapModal';
-import { useMetricMode } from '../context/MetricContext';
 import { calculateAdvancedMetrics } from '../lib/advancedMetrics';
-import TradeDetailModal from './TradeDetailModal';
-import { PrintReportModal } from './PrintReportModal';
+import { setupQualityTier } from '../lib/discipline';
+import { formatPF } from '../lib/statMath';
 import { TradeHistoryModal } from './TradeHistoryModal';
-import { StrategyOptimizerHub } from './StrategyOptimizerHub';
+import { lazyWithPreload, named } from '../lib/lazyWithPreload';
+import { Deferred } from './common/Deferred';
+
+// Strateji laboratuvarı ayrı parçada; ekrana yaklaşınca indirilip çizilir
+const StrategyOptimizerHub = lazyWithPreload(() => named(import('./StrategyOptimizerHub'), 'StrategyOptimizerHub'));
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
+import { nyWallDate } from '../lib/tradingTime';
 
 
-const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, sessions = [] }: { trades: Trade[], currency: string, onMetricClick?: (id: string, val: string | number) => void, onEdit?: (trade: Trade) => void, sessions?: string[] }) => {
-  const [selectedTrade, setSelectedTrade] = React.useState<Trade | null>(null);
+const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [] }: { trades: Trade[], onMetricClick?: (id: string, val: string | number) => void, onEdit?: (trade: Trade) => void, sessions?: string[] }) => {
   const [selectedAsset, setSelectedAsset] = React.useState<string | null>(null);
   const [selectedPerformancePeriod, setSelectedPerformancePeriod] = React.useState<{
     label: string;
     trades: Trade[];
   } | null>(null);
 
-  const [printModalState, setPrintModalState] = React.useState<{
-    isOpen: boolean;
-    trades: Trade[];
-    title: string;
-    dateRangeText: string;
-  }>({
-    isOpen: false,
-    trades: [],
-    title: '',
-    dateRangeText: ''
-  });
   const [assetSort, setAssetSort] = React.useState<'pnl' | 'winrate' | 'rr' | 'trades_desc' | 'trades_asc'>('pnl');
   const [assetFilter, setAssetFilter] = React.useState<'all' | 'profitable' | 'loss'>('all');
   const [detailedFilter, setDetailedFilter] = React.useState<'all' | 'mükemmel' | 'riskli'>('all');
@@ -45,7 +39,6 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
   const [isPlanFidelityFilterOpen, setIsPlanFidelityFilterOpen] = React.useState(false);
   const [sessionSort, setSessionSort] = React.useState<'pnl' | 'loss' | 'winrate'>('pnl');
   const [performanceTimeframe, setPerformanceTimeframe] = React.useState<'day' | 'week' | 'month' | 'year'>('week');
-  const { isRrMode } = useMetricMode();
   const [assetSearch, setAssetSearch] = React.useState('');
   const [detailedSearch, setDetailedSearch] = React.useState('');
   const [deadZoneSearch, setDeadZoneSearch] = React.useState('');
@@ -70,8 +63,6 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
           setIsOptimalFreqModalOpen(false);
         } else if (isHeatmapOpen) {
           setIsHeatmapOpen(false);
-        } else if (selectedTrade) {
-          setSelectedTrade(null);
         } else if (selectedPerformancePeriod) {
           setSelectedPerformancePeriod(null);
         } else if (selectedAsset) {
@@ -91,7 +82,6 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
     isDeadZoneModalOpen,
     isOptimalFreqModalOpen,
     isHeatmapOpen,
-    selectedTrade,
     selectedPerformancePeriod,
     selectedAsset
   ]);
@@ -135,13 +125,13 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
     };
 
     closedTrades.forEach(t => {
-      const d = new Date(t.createdAt);
+      const d = nyWallDate(t.createdAt);
       const dayIdx = d.getDay();
       const dayKey = dayNames[dayIdx];
       
       if (dayStats[dayKey] !== undefined) {
         dayStats[dayKey].total++;
-        dayStats[dayKey].pnl += t.pnl || 0; // Accumulates actual financial PNL
+        dayStats[dayKey].pnl += t.rr || 0;
         dayStats[dayKey].rr += t.rr || 0;   // Accumulates R ratio
         if (t.status === 'WIN') {
           dayStats[dayKey].wins++;
@@ -155,14 +145,14 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
       if (!assetStatsMap[t.asset]) {
         assetStatsMap[t.asset] = { asset: t.asset, pnl: 0, total: 0, wins: 0, rr: 0 };
       }
-      assetStatsMap[t.asset].pnl += t.pnl || 0; // Accumulates actual financial PnL
+      assetStatsMap[t.asset].pnl += t.rr || 0;
       assetStatsMap[t.asset].rr += t.rr || 0;
       assetStatsMap[t.asset].total++;
       if (t.status === 'WIN') {
         assetStatsMap[t.asset].wins++;
       }
     });
-    const assetRanking = Object.values(assetStatsMap).sort((a, b) => isRrMode ? b.rr - a.rr : b.pnl - a.pnl);
+    const assetRanking = Object.values(assetStatsMap).sort((a, b) => b.rr - a.rr);
 
     // 4. En kârlı sessionlar (in R)
     const sessionStatsMap: Record<string, { session: string; pnl: number; total: number; wins: number; rr: number }> = {};
@@ -173,7 +163,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
       if (!sessionStatsMap[s]) {
         sessionStatsMap[s] = { session: s, pnl: 0, total: 0, wins: 0, rr: 0 };
       }
-      sessionStatsMap[s].pnl += t.pnl || 0; // Accumulates actual financial PnL
+      sessionStatsMap[s].pnl += t.rr || 0;
       sessionStatsMap[s].rr += t.rr || 0;
       sessionStatsMap[s].total++;
       if (t.status === 'WIN') {
@@ -184,15 +174,15 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
       if (!planFidelityStatsMap[pf]) {
         planFidelityStatsMap[pf] = { planFidelity: pf, pnl: 0, total: 0, wins: 0, rr: 0 };
       }
-      planFidelityStatsMap[pf].pnl += t.pnl || 0;
+      planFidelityStatsMap[pf].pnl += t.rr || 0;
       planFidelityStatsMap[pf].rr += t.rr || 0;
       planFidelityStatsMap[pf].total++;
       if (t.status === 'WIN') {
         planFidelityStatsMap[pf].wins++;
       }
     });
-    const sessionRanking = Object.values(sessionStatsMap).sort((a, b) => isRrMode ? b.rr - a.rr : b.pnl - a.pnl);
-    const planFidelityRanking = Object.values(planFidelityStatsMap).sort((a, b) => isRrMode ? b.rr - a.rr : b.pnl - a.pnl);
+    const sessionRanking = Object.values(sessionStatsMap).sort((a, b) => b.rr - a.rr);
+    const planFidelityRanking = Object.values(planFidelityStatsMap).sort((a, b) => b.rr - a.rr);
 
     // 5. Performans Geçmişi (Day, Week, Month, Year PnL OHLC)
     const dailyTradesMap: Record<string, Trade[]> = {};
@@ -201,7 +191,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
     const yearlyTradesMap: Record<string, Trade[]> = {};
     
     closedTrades.forEach(t => {
-      const d = new Date(t.createdAt);
+      const d = nyWallDate(t.createdAt);
       
       // Daily
       const dayDate = new Date(d);
@@ -260,7 +250,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
             let rrLow = 0;
             
             tradesInPeriod.forEach(t => {
-                cumulativePnl += (t.pnl || 0);
+                cumulativePnl += t.rr || 0;
                 if (cumulativePnl > pnlHigh) pnlHigh = cumulativePnl;
                 if (cumulativePnl < pnlLow) pnlLow = cumulativePnl;
 
@@ -293,7 +283,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
     const monthlyPerformance = buildStats(monthlyTradesMap, d => `${monthTurkishShort[d.getMonth()]} ${d.getFullYear().toString().slice(-2)}`, 12); // Son 12 ay
     const yearlyPerformance = buildStats(yearlyTradesMap, d => `${d.getFullYear()}`, 5); // Son 5 yıl
 
-    // 6. Konsept & Parite Dağılım Matrisi (Isı Haritası / Heatmap)
+    // 6. Strateji & Parite Dağılım Matrisi (Isı Haritası / Heatmap)
     const allUniqueConfirmations = new Set<string>();
     closedTrades.forEach(t => {
       if (t.confirmations) {
@@ -329,7 +319,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
           const total = matches.length;
           const wins = matches.filter(t => t.status === 'WIN').length;
           const winRate = total > 0 ? (wins / total) * 100 : 0;
-          const pnl = matches.reduce((acc, t) => acc + (t.pnl || 0), 0);
+          const pnl = matches.reduce((acc, t) => acc + (t.rr || 0), 0);
           const rr = matches.reduce((acc, t) => acc + (t.rr || 0), 0);
 
           return {
@@ -353,12 +343,12 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
           directionStatsMap[t.asset] = { asset: t.asset, longPnl: 0, longRr: 0, longWins: 0, longTotal: 0, shortPnl: 0, shortRr: 0, shortWins: 0, shortTotal: 0 };
         }
         if (t.type === 'LONG') {
-          directionStatsMap[t.asset].longPnl += t.pnl || 0;
+          directionStatsMap[t.asset].longPnl += t.rr || 0;
           directionStatsMap[t.asset].longRr += t.rr || 0;
           directionStatsMap[t.asset].longTotal++;
           if (t.status === 'WIN') directionStatsMap[t.asset].longWins++;
         } else if (t.type === 'SHORT') {
-          directionStatsMap[t.asset].shortPnl += t.pnl || 0;
+          directionStatsMap[t.asset].shortPnl += t.rr || 0;
           directionStatsMap[t.asset].shortRr += t.rr || 0;
           directionStatsMap[t.asset].shortTotal++;
           if (t.status === 'WIN') directionStatsMap[t.asset].shortWins++;
@@ -397,7 +387,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
         const total = confirmationTrades.length;
         const wins = confirmationTrades.filter(t => t.status === 'WIN').length;
         const winRate = total > 0 ? Math.round((wins / total) * 100) : 0;
-        const pnl = confirmationTrades.reduce((acc, t) => acc + (t.pnl || 0), 0);
+        const pnl = confirmationTrades.reduce((acc, t) => acc + (t.rr || 0), 0);
         const rr = confirmationTrades.reduce((acc, t) => acc + (t.rr || 0), 0);
         
         return { confirmation, total, wins, winRate, pnl, rr };
@@ -434,12 +424,12 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
       displayConfirmations,
       heatmapMatrix,
       directionStats: Object.values(directionStatsMap).sort((a, b) => {
-        const totalA = isRrMode ? (a.longRr + a.shortRr) : (a.longPnl + a.shortPnl);
-        const totalB = isRrMode ? (b.longRr + b.shortRr) : (b.longPnl + b.shortPnl);
+        const totalA = (a.longRr + a.shortRr);
+        const totalB = (b.longRr + b.shortRr);
         return totalB - totalA;
       })
     };
-  }, [trades, isRrMode]);
+  }, [trades]);
 
 
     
@@ -464,8 +454,9 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
     const groupedList = Object.entries(assetsMap).map(([asset, assetTrades]) => {
       const parentTotal = assetTrades.length;
       const parentWins = assetTrades.filter(t => t.status === 'WIN').length;
+      const parentLosses = assetTrades.filter(t => t.status === 'LOSS').length;
       const parentWinRate = parentTotal > 0 ? (parentWins / parentTotal) * 100 : 0;
-      const parentPnl = assetTrades.reduce((acc, t) => acc + (t.pnl || 0), 0);
+      const parentPnl = assetTrades.reduce((acc, t) => acc + (t.rr || 0), 0);
       const parentRr = assetTrades.reduce((acc, t) => acc + (t.rr || 0), 0);
 
       const childRows: any[] = [];
@@ -473,7 +464,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
         session: string;
         htfTimeframe?: string;
         trend?: string;
-        concept: string;
+        concept: string; // strateji
         timeframe: string;
         confirmation: string;
         entryModel?: string;
@@ -481,48 +472,32 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
         trades: Trade[];
       }> = {};
       
+      // Her işlem tek bir kombinasyona girer. Eskiden birden fazla PD Array seçili işlem her PD Array için ayrı
+      // satıra yazılıyor, aynı işlem birden çok kez sayılıyordu.
       assetTrades.forEach(t => {
-        const tradeConfirmations: string[] = (t.confirmations && t.confirmations.length > 0)
-          ? t.confirmations
-          : [''];
-
-        const entryModel = (Array.isArray(t.entryModels) && t.entryModels.length > 0)
-          ? t.entryModels.join(', ')
-          : (t.entry || '');
+        const confirmation = Array.isArray(t.confirmations) && t.confirmations.length > 0 ? t.confirmations.join(' + ') : '';
+        const entryModel = Array.isArray(t.entryModels) && t.entryModels.length > 0 ? t.entryModels.join(', ') : '';
         const trend = t.trend || '';
+        const session = t.session || '';
+        const htfTimeframe = t.htfTimeframe || '';
+        const timeframe = t.timeframe || '';
+        const concept = t.strategy || '';
+        const planFidelity = t.planFidelity || '';
 
-        tradeConfirmations.forEach(confirmation => {
-          const session = t.session || '';
-          const htfTimeframe = t.htfTimeframe || '';
-          const timeframe = t.timeframe || '';
-          const concept = t.liquiditySweep || t.concept || '';
-          const planFidelity = t.planFidelity || '';
-          const cleanConf = confirmation.trim();
-          
-          // Silver Bullet Analysis Hierarchy: Session (Window) -> HTF -> Trend -> Concept -> Execution TF -> PD Array -> Entry Model -> Plan Fidelity
-          const key = `${session}|${htfTimeframe}|${trend}|${concept}|${timeframe}|${cleanConf}|${entryModel}|${planFidelity}`;
-          if (!comboMap[key]) {
-            comboMap[key] = {
-              session,
-              htfTimeframe,
-              trend,
-              concept,
-              timeframe,
-              confirmation: cleanConf,
-              entryModel,
-              planFidelity,
-              trades: []
-            };
-          }
-          comboMap[key].trades.push(t);
-        });
+        // Hiyerarşi: Seans -> HTF -> Trend -> Strateji -> Entry TF -> PD Array -> Entry Model -> Setup Kalitesi
+        const key = `${session}|${htfTimeframe}|${trend}|${concept}|${timeframe}|${confirmation}|${entryModel}|${planFidelity}`;
+        if (!comboMap[key]) {
+          comboMap[key] = { session, htfTimeframe, trend, concept, timeframe, confirmation, entryModel, planFidelity, trades: [] };
+        }
+        comboMap[key].trades.push(t);
       });
 
       Object.values(comboMap).forEach(combo => {
         const total = combo.trades.length;
         const wins = combo.trades.filter(t => t.status === 'WIN').length;
+        const losses = combo.trades.filter(t => t.status === 'LOSS').length;
         const winRate = total > 0 ? Math.round((wins / total) * 100) : 0;
-        const pnl = combo.trades.reduce((acc, t) => acc + (t.pnl || 0), 0);
+        const pnl = combo.trades.reduce((acc, t) => acc + (t.rr || 0), 0);
         const rr = combo.trades.reduce((acc, t) => acc + (t.rr || 0), 0);
 
         childRows.push({
@@ -537,6 +512,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
           trades: combo.trades,
           total,
           wins,
+          losses,
           winRate,
           pnl,
           rr,
@@ -548,17 +524,14 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
       childRows.sort((a, b) => {
         if (detailedSort === 'winrate') {
           if (b.winRate !== a.winRate) return b.winRate - a.winRate;
-          return isRrMode ? b.rr - a.rr : b.pnl - a.pnl;
+          return b.rr - a.rr;
         }
         if (detailedSort === 'rr') {
-          if (b.rr !== a.rr) return b.rr - a.rr;
+          // "Ort. R": işlem başına R (Net R ile aynı sıralamayı vermesin diye)
+          if (avgR(b) !== avgR(a)) return avgR(b) - avgR(a);
           return b.winRate - a.winRate;
         }
-        if (isRrMode) {
-          if (b.rr !== a.rr) return b.rr - a.rr;
-          return b.winRate - a.winRate;
-        }
-        if (b.pnl !== a.pnl) return b.pnl - a.pnl;
+        if (b.rr !== a.rr) return b.rr - a.rr;
         return b.winRate - a.winRate;
       });
 
@@ -566,6 +539,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
         asset,
         total: parentTotal,
         wins: parentWins,
+        losses: parentLosses,
         winRate: parentWinRate,
         pnl: parentPnl,
         rr: parentRr,
@@ -601,7 +575,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
 
     filteredList.sort((a, b) => {
       if (detailedSort === 'pnl') return b.pnl - a.pnl;
-      if (detailedSort === 'rr') return b.rr - a.rr;
+      if (detailedSort === 'rr') return avgR(b) - avgR(a);
       if (detailedSort === 'winrate') return b.winRate - a.winRate;
       return 0;
     });
@@ -614,9 +588,9 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
     let filtered = customMetrics.assetRanking;
     
     if (assetFilter === 'profitable') {
-      filtered = filtered.filter(ar => (isRrMode ? ar.rr : ar.pnl) > 0);
+      filtered = filtered.filter(ar => (ar.rr) > 0);
     } else if (assetFilter === 'loss') {
-      filtered = filtered.filter(ar => (isRrMode ? ar.rr : ar.pnl) < 0);
+      filtered = filtered.filter(ar => (ar.rr) < 0);
     }
 
     if (assetSearch.trim()) {
@@ -633,7 +607,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
         return assetFilter === 'loss' ? (wrA - wrB) : (wrB - wrA);
       }
       if (assetSort === 'rr') {
-        return assetFilter === 'loss' ? (a.rr - b.rr) : (b.rr - a.rr);
+        return assetFilter === 'loss' ? avgR(a) - avgR(b) : avgR(b) - avgR(a);
       }
       if (assetSort === 'trades_desc') {
         return b.total - a.total;
@@ -643,7 +617,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
       }
       return 0;
     });
-  }, [customMetrics, assetSort, assetFilter, assetSearch, isRrMode]);
+  }, [customMetrics, assetSort, assetFilter, assetSearch]);
 
   const processedDeadZone = useMemo(() => {
     if (!metrics || !metrics.deadZone) return [];
@@ -658,8 +632,8 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
       const dataA = Object.values(metrics.deadZone[a]);
       const dataB = Object.values(metrics.deadZone[b]);
       
-      const pnlA = dataA.reduce((acc: number, curr: any) => acc + (curr.pnl || 0), 0);
-      const pnlB = dataB.reduce((acc: number, curr: any) => acc + (curr.pnl || 0), 0);
+      const pnlA = dataA.reduce((acc: number, curr: any) => acc + (curr.rr || 0), 0);
+      const pnlB = dataB.reduce((acc: number, curr: any) => acc + (curr.rr || 0), 0);
       
       if (deadZoneSort === 'winrate') {
         const winsA = dataA.reduce((acc: number, curr: any) => acc + (curr.wins || 0), 0);
@@ -675,9 +649,11 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
       }
       
       if (deadZoneSort === 'rr') {
-        const rrA = dataA.reduce((acc: number, curr: any) => acc + (curr.rr || 0), 0);
-        const rrB = dataB.reduce((acc: number, curr: any) => acc + (curr.rr || 0), 0);
-        if (rrB !== rrA) return rrB - rrA;
+        const cA = dataA.reduce((acc: number, curr: any) => acc + (curr.count || 0), 0);
+        const cB = dataB.reduce((acc: number, curr: any) => acc + (curr.count || 0), 0);
+        const avgA = cA > 0 ? pnlA / cA : 0;
+        const avgB = cB > 0 ? pnlB / cB : 0;
+        if (avgB !== avgA) return avgB - avgA;
         return pnlB - pnlA;
       }
       
@@ -721,10 +697,10 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
       warnings.push("İstatistikleri bozabilecek ekstrem R:R değerlerine sahip işlemler tespit edildi (örn >50R veya <-10R).");
     }
 
-    const noPnlWinTrades = trades.filter(t => t.status === 'WIN' && (t.pnl === 0 || !t.pnl) && (t.rr === 0 || !t.rr));
+    const noPnlWinTrades = trades.filter(t => t.status === 'WIN' && (t.rr === 0 || !t.rr));
     if (noPnlWinTrades.length > 0) {
       hasIntegrityIssue = true;
-      warnings.push("Sıfır kâr ile kaydedilmiş 'WIN' statüsünde işlemler var. Lütfen bunları 'BREAKEVEN' olarak değiştirin veya R:R/PnL girin.");
+      warnings.push("Sıfır kâr ile kaydedilmiş 'WIN' statüsünde işlemler var. Lütfen bunları 'BREAKEVEN' olarak değiştirin veya R girin.");
     }
 
     return { hasIntegrityIssue, warnings };
@@ -762,9 +738,8 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
   })();
 
   const maxWeeklyPnlAbs = Math.max(
-    ...performanceData.map(w => Math.abs(isRrMode ? w.rr : w.pnl)),
-    isRrMode ? 1 : 100
-  );
+    ...performanceData.map(w => Math.abs(w.rr)),
+    1);
 
   return (
     <div className="mt-4 mb-4 flex flex-col bg-zinc-900/70 border border-zinc-700/50  rounded-xl transition-ui duration-300 shadow-sm overflow-hidden divide-y divide-zinc-800/80 w-full">
@@ -786,6 +761,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
               <div className="flex bg-zinc-800/90 border border-zinc-700/50 text-zinc-100 rounded-lg overflow-hidden p-0.5">
                 {(['day', 'week', 'month', 'year'] as const).map(tf => (
                   <button
+                    lang="en"
                     key={tf}
                     onClick={() => setPerformanceTimeframe(tf)}
                     className={`px-2.5 py-1 heading-3 transition-colors duration-200 ease-out border rounded-lg ${
@@ -803,12 +779,10 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
 
           <div className="h-52 flex items-end justify-center gap-[1px] sm:gap-[2px] px-1 relative mt-4 max-w-4xl mx-auto w-full">
             {performanceData.map((week, idx) => {
-              const metricValue = isRrMode ? week.rr : week.pnl;
+              const metricValue = week.rr;
               const isProfit = metricValue >= 0;
 
-              const labelValueText = isRrMode
-                ? (week.rr !== 0 ? (week.rr > 0 ? '+' : '') + week.rr.toFixed(1) : '0')
-                : (week.pnl !== 0 ? (week.pnl > 0 ? '+' : '') + Math.round(week?.pnl || 0).toLocaleString() : '0');
+              const labelValueText = (week.rr !== 0 ? (week.rr > 0 ? '+' : '') + week.rr.toFixed(1) : '0');
 
               return (
                 <div key={idx} className="flex flex-col flex-1 max-w-[52px] sm:max-w-[76px] h-full justify-end items-center relative z-10 group cursor-pointer" onClick={() => setSelectedPerformancePeriod({ label: week.weekLabel, trades: week.trades })}>
@@ -843,7 +817,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
 
             {performanceData.length === 0 && (
               <div className="absolute inset-0 flex items-center justify-center text-[10px] text-zinc-600 font-sans tracking-widest uppercase">
-                Veri Yok
+                {smartUpper("Veri Yok")}
               </div>
             )}
           </div>
@@ -862,9 +836,9 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                   <h3 className="heading-2">
                     SESSION PERFORMANSI
                   </h3>
-                  <button
+                  <button aria-label="Filtrele" title="Filtrele"
                     onClick={() => setIsSessionFilterOpen(!isSessionFilterOpen)}
-                    className={`flex items-center justify-center w-5 h-5 ml-1 rounded-lg border transition-colors duration-200 ease-out ${
+                    className={`flex items-center justify-center w-7 h-7 ml-1 rounded-lg border transition-colors duration-200 ease-out ${
                       isSessionFilterOpen 
                         ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' 
                         : 'bg-zinc-900/50 border-zinc-700/50 text-zinc-300 hover:bg-zinc-800'
@@ -872,15 +846,15 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                   >
                     <Filter size={9} />
                   </button>
-                  <button
+                  <button aria-label="Izgara görünümü" title="Izgara görünümü"
                     onClick={() => setIsHeatmapOpen(true)}
-                    className="flex items-center justify-center w-5 h-5 rounded-lg border transition-colors duration-200 ease-out bg-zinc-900/50 border-zinc-700/50 text-zinc-300 hover:bg-emerald-500/10 hover:border-emerald-500/30 hover:text-emerald-400 shrink-0"
+                    className="flex items-center justify-center w-7 h-7 rounded-lg border transition-colors duration-200 ease-out bg-zinc-900/50 border-zinc-700/50 text-zinc-300 hover:bg-emerald-500/10 hover:border-emerald-500/30 hover:text-emerald-400 shrink-0"
                   >
                     <Grid size={9} />
                   </button>
                   <button
                     onClick={() => setIsDeadZoneModalOpen(true)}
-                    className="flex items-center justify-center w-5 h-5 rounded-lg border transition-colors duration-200 ease-out bg-zinc-900/50 border-zinc-700/50 text-zinc-300 hover:bg-blue-500/10 hover:border-blue-500/30 hover:text-blue-400 shrink-0"
+                    className="flex items-center justify-center w-7 h-7 rounded-lg border transition-colors duration-200 ease-out bg-zinc-900/50 border-zinc-700/50 text-zinc-300 hover:bg-blue-500/10 hover:border-blue-500/30 hover:text-blue-400 shrink-0"
                   >
                     <InfinityIcon size={10} />
                   </button>
@@ -897,7 +871,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                       className="overflow-hidden whitespace-nowrap "
                     >
                       <div className="flex gap-1">
-                        <button onClick={() => setSessionSort('pnl')} className={`px-2 py-0.5 rounded-lg heading-3 transition-colors duration-200 ease-out border ${sessionSort === 'pnl' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'}`}>Kâr</button>
+                        <button onClick={() => setSessionSort('pnl')} className={`px-2 py-0.5 rounded-lg heading-3 transition-colors duration-200 ease-out border ${sessionSort === 'pnl' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'}`}>Net R</button>
                         <button onClick={() => setSessionSort('loss')} className={`px-2 py-0.5 rounded-lg heading-3 transition-colors duration-200 ease-out border ${sessionSort === 'loss' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'}`}>Zarar</button>
                         <button onClick={() => setSessionSort('winrate')} className={`px-2 py-0.5 rounded-lg heading-3 transition-colors duration-200 ease-out border ${sessionSort === 'winrate' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'}`}>WR</button>
                       </div>
@@ -941,12 +915,12 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                               {readableSession}
                             </span>
                             <span className="text-zinc-500 font-normal text-[9px]">
-                              ({sr.total} Trade・%{winRate.toFixed(0)} WR・{sr.rr >= 0 ? '+' : ''}{sr.rr.toFixed(1)} R)
+                              ({sr.total} Trade・%{winRate.toFixed(0)} WR)
                             </span>
                           </div>
                           <div className="text-right">
                             <span className={`font-black ${isProfit ? 'text-emerald-400' : 'text-rose-400'}`}>
-                              {isProfit ? '+' : ''}{(sr?.pnl || 0).toLocaleString()} <span className="text-[9px] text-zinc-500">{currency}</span>
+                              {isProfit ? '+' : ''}{(sr?.rr || 0).toFixed(2)} <span className="text-[9px] text-zinc-500">R</span>
                             </span>
                           </div>
                         </div>
@@ -968,7 +942,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                 })()}
                 {customMetrics.sessionRanking.length === 0 && (
                   <div className="text-center py-6 text-[9px] text-zinc-600 font-sans uppercase tracking-widest flex-1 flex items-center justify-center">
-                    Veri Yok
+                    {smartUpper("Veri Yok")}
                   </div>
                 )}
               </div>
@@ -987,7 +961,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                   </h3>
                   <button
                     onClick={() => setIsOptimalFreqModalOpen(true)}
-                    className="flex items-center justify-center w-5 h-5 ml-1 rounded-lg border transition-colors duration-200 ease-out bg-zinc-900/50 border-zinc-700/50 text-zinc-300 hover:bg-pink-500/10 hover:border-pink-500/30 hover:text-pink-400 shrink-0"
+                    className="flex items-center justify-center w-7 h-7 ml-1 rounded-lg border transition-colors duration-200 ease-out bg-zinc-900/50 border-zinc-700/50 text-zinc-300 hover:bg-pink-500/10 hover:border-pink-500/30 hover:text-pink-400 shrink-0"
                   >
                     <Crosshair size={10} />
                   </button>
@@ -999,8 +973,8 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                 const stats = customMetrics.dayStats[dayKey] || { total: 0, wins: 0, pnl: 0, rr: 0 };
                 const fullDayName = customMetrics.TurkishDayFullNames[dayKey];
 
-                const maxDayPnlAbs = Math.max(...Object.values(customMetrics.dayStats).map(d => Math.abs(isRrMode ? d.rr : d.pnl)), isRrMode ? 1 : 100);
-                const val = isRrMode ? stats.rr : stats.pnl;
+                const maxDayPnlAbs = Math.max(...Object.values(customMetrics.dayStats).map(d => Math.abs(d.rr)), 1);
+                const val = stats.rr;
                 const isProfitVal = val >= 0;
                 const pnlPercentage = Math.min((Math.abs(val) / maxDayPnlAbs) * 100, 100);
 
@@ -1009,24 +983,11 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                     <div className="flex justify-between items-baseline mb-0.5">
                       <span className="text-xs font-bold text-zinc-200 tracking-tight font-sans">{fullDayName}</span>
                       <span className={`text-[10px] font-bold font-sans flex items-center gap-1.5 ${isProfitVal ? 'text-emerald-400' : 'text-rose-400'}`}>
-                        {isRrMode ? (
+                        {(
                           <>
                             <span>
                               {val !== 0 ? (isProfitVal ? '+' : '') + val.toFixed(2) : '0'}{' '}
-                              <span className="text-[9px] text-zinc-500">RR</span>
-                            </span>
-                            <span className="text-[9px] text-zinc-500 font-bold bg-zinc-950 px-1.5 py-0.5 rounded-md border border-zinc-900/60 font-sans">
-                              {stats.pnl >= 0 ? '+' : ''}{(stats?.pnl || 0).toLocaleString()} {currency}
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            <span>
-                              {val !== 0 ? (isProfitVal ? '+' : '') + (val || 0).toLocaleString() : '0'}{' '}
-                              <span className="text-[9px] text-zinc-500">{currency}</span>
-                            </span>
-                            <span className="text-[9px] text-zinc-500 font-bold bg-zinc-950 px-1.5 py-0.5 rounded-md border border-zinc-900/60 font-sans">
-                              {stats.rr >= 0 ? '+' : ''}{stats.rr.toFixed(1)} RR
+                              <span className="text-[9px] text-zinc-500">R</span>
                             </span>
                           </>
                         )}
@@ -1077,9 +1038,9 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                   <h3 className="heading-2">
                     SETUP KALİTESİ PERFORMANSI
                   </h3>
-                  <button
+                  <button aria-label="Filtrele" title="Filtrele"
                     onClick={() => setIsPlanFidelityFilterOpen(!isPlanFidelityFilterOpen)}
-                    className={`flex items-center justify-center w-5 h-5 ml-1 rounded-lg border transition-colors duration-200 ease-out ${
+                    className={`flex items-center justify-center w-7 h-7 ml-1 rounded-lg border transition-colors duration-200 ease-out ${
                       isPlanFidelityFilterOpen 
                         ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' 
                         : 'bg-zinc-900/50 border-zinc-700/50 text-zinc-300 hover:bg-zinc-800'
@@ -1100,7 +1061,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                       className="overflow-hidden whitespace-nowrap "
                     >
                       <div className="flex gap-1">
-                        <button onClick={() => setPlanFidelitySort('pnl')} className={`px-2 py-0.5 rounded-lg heading-3 transition-colors duration-200 ease-out border ${planFidelitySort === 'pnl' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'}`}>Kâr</button>
+                        <button onClick={() => setPlanFidelitySort('pnl')} className={`px-2 py-0.5 rounded-lg heading-3 transition-colors duration-200 ease-out border ${planFidelitySort === 'pnl' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'}`}>Net R</button>
                         <button onClick={() => setPlanFidelitySort('loss')} className={`px-2 py-0.5 rounded-lg heading-3 transition-colors duration-200 ease-out border ${planFidelitySort === 'loss' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'}`}>Zarar</button>
                         <button onClick={() => setPlanFidelitySort('winrate')} className={`px-2 py-0.5 rounded-lg heading-3 transition-colors duration-200 ease-out border ${planFidelitySort === 'winrate' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'}`}>WR</button>
                       </div>
@@ -1130,11 +1091,8 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
 
                     const readableName = sr.planFidelity || 'Belirtilmemiş';
 
-                    const lowerPf = (sr.planFidelity || '').toLowerCase();
-                    const rowColors = lowerPf === 'tam' || lowerPf.includes('sadık') || lowerPf.includes('uygun') || lowerPf.includes('disciplined') ? 'text-emerald-400' :
-                                      lowerPf === 'kısmen' || lowerPf.includes('partial') || lowerPf.includes('orta') ? 'text-amber-400' :
-                                      lowerPf === 'fomo' || lowerPf.includes('ihlal') || lowerPf.includes('disiplinsiz') || lowerPf.includes('hata') ? 'text-rose-400' :
-                                      sr.planFidelity ? 'text-blue-400' : 'text-zinc-400';
+                    const tier = setupQualityTier(sr.planFidelity);
+                    const rowColors = tier === 'high' ? 'text-emerald-400' : tier === 'mid' ? 'text-blue-300' : tier === 'low' ? 'text-rose-400' : sr.planFidelity ? 'text-purple-400' : 'text-zinc-400';
 
                     return (
                       <div key={idx} className="bg-zinc-800 px-2 py-1.5 flex flex-col justify-center rounded-lg border border-zinc-700/50">
@@ -1145,12 +1103,12 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                               {readableName}
                             </span>
                             <span className="text-zinc-500 font-normal text-[9px]">
-                              ({sr.total} Trade・%{winRate.toFixed(0)} WR・{sr.rr >= 0 ? '+' : ''}{sr.rr.toFixed(1)} R)
+                              ({sr.total} Trade・%{winRate.toFixed(0)} WR)
                             </span>
                           </div>
                           <div className="text-right">
                             <span className={`font-black ${isProfit ? 'text-emerald-400' : 'text-rose-400'}`}>
-                              {isProfit ? '+' : ''}{(sr?.pnl || 0).toLocaleString()} <span className="text-[9px] text-zinc-500">{currency}</span>
+                              {isProfit ? '+' : ''}{(sr?.rr || 0).toFixed(2)} <span className="text-[9px] text-zinc-500">R</span>
                             </span>
                           </div>
                         </div>
@@ -1172,7 +1130,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                 })()}
                 {customMetrics.planFidelityRanking.length === 0 && (
                   <div className="text-center py-6 text-[9px] text-zinc-600 font-sans uppercase tracking-widest flex-1 flex items-center justify-center">
-                    Veri Yok
+                    {smartUpper("Veri Yok")}
                   </div>
                 )}
               </div>
@@ -1199,35 +1157,41 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
               {isAssetFilterOpen && (
                 <motion.div
                   key="asset-filter-panel"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.15, ease: EASE }}
-                  className="absolute right-9 top-[50%] -translate-y-[50%] z-30 bg-zinc-800/90 border border-zinc-700/50 text-zinc-100 rounded-lg p-1  whitespace-nowrap select-none flex items-center gap-1.5"
+                  {...POPOVER}
+                  className="origin-top-right absolute right-0 top-full mt-2 z-30 w-[min(22rem,calc(100vw-2rem))] bg-zinc-900 border border-zinc-700/80 rounded-xl shadow-xl p-2 flex flex-col gap-2 select-none"
                 >
                   <input
-                    type="text"
-                    placeholder="Ara..."
+                    type="search"
+                    placeholder="Parite ara…"
+                    aria-label="Parite ara"
                     value={assetSearch}
                     onChange={(e) => { setAssetSearch(e.target.value); setAssetsPage(1); }}
-                    className="bg-zinc-900/70 border border-zinc-700/50  rounded-lg px-2 py-0.5 text-[9px] font-sans text-zinc-300 focus:outline-none focus:border-zinc-700 w-20 sm:w-28 placeholder-zinc-600 h-[20px]"
+                    className={FILTER_INPUT}
                   />
-                  <div className="flex bg-transparent p-0.5 rounded-lg border border-zinc-800">
-                    <button type="button" onClick={() => { setAssetFilter('all'); setAssetsPage(1); }} className={`text-[9px] font-sans px-1.5 py-0.5 rounded-md transition-colors duration-200 ease-out font-bold ${assetFilter === 'all' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}>TÜMÜ</button>
-                    <button type="button" onClick={() => { setAssetFilter('profitable'); setAssetsPage(1); }} className={`text-[9px] font-sans px-1.5 py-0.5 rounded-md transition-colors duration-200 ease-out font-bold ${assetFilter === 'profitable' ? 'bg-emerald-500/20 text-emerald-400 shadow-sm' : 'text-zinc-500 hover:text-emerald-400'}`}>KÂR</button>
-                    <button type="button" onClick={() => { setAssetFilter('loss'); setAssetsPage(1); }} className={`text-[9px] font-sans px-1.5 py-0.5 rounded-md transition-colors duration-200 ease-out font-bold ${assetFilter === 'loss' ? 'bg-rose-500/20 text-rose-400 shadow-sm' : 'text-zinc-500 hover:text-rose-400'}`}>ZARAR</button>
+                  <div className="flex flex-col gap-1">
+                    <span className={FILTER_LABEL}>Göster</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {([['all', 'Tümü', 'neutral'], ['profitable', 'Kâr', 'win'], ['loss', 'Zarar', 'loss']] as const).map(([v, label, tone]) => (
+                        <FilterChip key={v} tone={tone} check={false} active={assetFilter === v} onClick={() => { setAssetFilter(v); setAssetsPage(1); }}>
+                          {label}
+                        </FilterChip>
+                      ))}
+                    </div>
                   </div>
-                  <div className="flex bg-transparent p-0.5 rounded-lg border border-zinc-800">
-                    <button type="button" onClick={() => { setAssetSort('pnl'); setAssetsPage(1); }} className={`text-[9px] font-sans px-1.5 py-0.5 rounded-md transition-colors duration-200 ease-out font-bold ${assetSort === 'pnl' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}>PNL</button>
-                    <button type="button" onClick={() => { setAssetSort('rr'); setAssetsPage(1); }} className={`text-[9px] font-sans px-1.5 py-0.5 rounded-md transition-colors duration-200 ease-out font-bold ${assetSort === 'rr' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}>RR</button>
-                    <button type="button" onClick={() => { setAssetSort('winrate'); setAssetsPage(1); }} className={`text-[9px] font-sans px-1.5 py-0.5 rounded-md transition-colors duration-200 ease-out font-bold ${assetSort === 'winrate' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}>WR</button>
-                    <button type="button" onClick={() => { setAssetSort('trades_desc'); setAssetsPage(1); }} className={`text-[9px] font-sans px-1.5 py-0.5 rounded-md transition-colors duration-200 ease-out font-bold ${assetSort === 'trades_desc' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}>↑</button>
-                    <button type="button" onClick={() => { setAssetSort('trades_asc'); setAssetsPage(1); }} className={`text-[9px] font-sans px-1.5 py-0.5 rounded-md transition-colors duration-200 ease-out font-bold ${assetSort === 'trades_asc' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}>↓</button>
+                  <div className="flex flex-col gap-1">
+                    <span className={FILTER_LABEL}>Sırala</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {([['pnl', 'Net R'], ['rr', 'Ort. R'], ['winrate', 'WR'], ['trades_desc', 'İşlem ↓'], ['trades_asc', 'İşlem ↑']] as const).map(([v, label]) => (
+                        <FilterChip key={v} check={false} active={assetSort === v} onClick={() => { setAssetSort(v); setAssetsPage(1); }}>
+                          {label}
+                        </FilterChip>
+                      ))}
+                    </div>
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
-            <button
+            <button aria-label="Filtrele" title="Filtrele"
               type="button"
               onClick={() => {
                 setIsAssetFilterOpen(!isAssetFilterOpen);
@@ -1248,7 +1212,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
         {processedAssets.length === 0 ? (
           <div className="text-center py-8 rounded-lg border border-dashed border-zinc-800 bg-zinc-950 flex-1 min-h-[350px] flex flex-col items-center justify-center">
             <AlertTriangle className="mx-auto text-amber-500/60 mb-2" size={24} />
-            <p className="text-[10px] font-sans text-zinc-500 uppercase tracking-wider">Seçilen kriterlere uygun parite bulunamadı.</p>
+            <p className="text-[10px] font-sans text-zinc-500 uppercase tracking-wider">{smartUpper("Seçilen kriterlere uygun parite bulunamadı.")}</p>
           </div>
         ) : (
           <div className="space-y-4 flex-1 flex flex-col justify-between min-h-[440px]">
@@ -1269,6 +1233,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                   
                   return (
                     <button
+                      lang="en"
                       key={ar.asset}
                       onClick={() => setSelectedAsset(isSelected ? null : ar.asset)}
                       className={`text-left p-2.5 rounded-lg border transition-ui duration-300 cursor-pointer flex flex-col justify-between relative overflow-hidden group ${
@@ -1290,19 +1255,9 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                         
                         <div className="flex flex-col gap-1 z-10">
                           <div className="flex justify-between items-center text-[9px] font-sans">
-                            <span className="text-zinc-500 font-bold tracking-widest uppercase font-sans">PNL</span>
-                            <span className={`font-bold tracking-wider text-xs ${isProfit ? 'text-emerald-400' : 'text-rose-400'}`}>
-                              {isProfit ? '+' : ''}{(ar?.pnl || 0).toLocaleString()} {currency}
-                            </span>
-                          </div>
- 
-                          {/* Divider */}
-                          <div className="h-px w-full bg-zinc-800/50 group-hover:bg-zinc-700/60 transition-colors duration-200 my-0.5" />
- 
-                          <div className="flex justify-between items-center text-[9px] font-sans">
-                            <span className="text-zinc-500 font-bold tracking-widest uppercase font-sans">RR</span>
+                            <span className="text-zinc-500 font-bold tracking-widest uppercase font-sans">Net R</span>
                             <span className={`font-bold tracking-wider text-xs ${ar.rr >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>
-                              {ar.rr >= 0 ? '+' : ''}{ar.rr.toFixed(2)} RR
+                              {ar.rr >= 0 ? '+' : ''}{ar.rr.toFixed(2)} R
                             </span>
                           </div>
  
@@ -1336,20 +1291,20 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                     Sayfa: {assetsPage}/{Math.max(1, Math.ceil(processedAssets.length / 9))}
                   </span>
                   <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-700/50 rounded-xl p-1 shadow-xs">
-                    <button
+                    <button aria-label="Önceki" title="Önceki"
                       type="button"
                       onClick={() => setAssetsPage(prev => Math.max(1, prev - 1))}
                       disabled={assetsPage <= 1}
-                      className="w-6.5 h-6.5 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-400 transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed"
+                      className="w-7 h-7 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-400 transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed"
                     >
                       <ChevronLeft size={13} />
                     </button>
                     <div className="w-px h-3.5 bg-zinc-800" />
-                    <button
+                    <button aria-label="Sonraki" title="Sonraki"
                       type="button"
                       onClick={() => setAssetsPage(prev => Math.min(Math.ceil(processedAssets.length / 9), prev + 1))}
                       disabled={assetsPage >= Math.ceil(processedAssets.length / 9)}
-                      className="w-6.5 h-6.5 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-400 transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed"
+                      className="w-7 h-7 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-400 transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed"
                     >
                       <ChevronRight size={13} />
                     </button>
@@ -1363,7 +1318,9 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
 
       {/* Strateji & Edge Geliştirme Laboratuvarı */}
       <motion.div variants={itemVariants} className="w-full my-3">
-        <StrategyOptimizerHub trades={trades} currency={currency} />
+        <Deferred minHeight={520}>
+          <StrategyOptimizerHub trades={trades} onEdit={onEdit} />
+        </Deferred>
       </motion.div>
 
       <motion.div variants={itemVariants} className="bg-zinc-900/70 border border-zinc-700/50  rounded-xl transition-ui duration-300 p-4 sm:p-5 shadow-sm transition-colors duration-200 mb-2 relative overflow-visible mt-1 flex flex-col justify-between">
@@ -1435,7 +1392,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                     <span className="text-xs font-semibold text-zinc-300 flex items-center gap-1.5">
                       <SlidersHorizontal size={13} className="text-blue-400" /> Matris Filtreleri
                     </span>
-                    <button 
+                    <button aria-label="Kapat" title="Kapat" 
                       onClick={() => setIsDetailedFilterOpen(false)}
                       className="text-zinc-500 hover:text-zinc-300 p-0.5"
                     >
@@ -1454,7 +1411,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                       className="w-full bg-zinc-950 border border-zinc-800 rounded-lg pl-8 pr-7 py-1.5 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-zinc-700"
                     />
                     {detailedSearch && (
-                      <button 
+                      <button aria-label="Kapat" title="Kapat" 
                         onClick={() => { setDetailedSearch(''); setDetailedPage(1); }}
                         className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
                       >
@@ -1558,13 +1515,13 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                         onClick={() => { setDetailedSort('pnl'); setDetailedPage(1); }} 
                         className={`text-xs py-1 rounded-lg transition-ui font-medium text-center ${detailedSort === 'pnl' ? 'bg-zinc-800 text-white font-semibold shadow-xs' : 'text-zinc-400 hover:text-zinc-200'}`}
                       >
-                        Net PnL
+                        Net R
                       </button>
                       <button 
                         onClick={() => { setDetailedSort('rr'); setDetailedPage(1); }} 
                         className={`text-xs py-1 rounded-lg transition-ui font-medium text-center ${detailedSort === 'rr' ? 'bg-zinc-800 text-white font-semibold shadow-xs' : 'text-zinc-400 hover:text-zinc-200'}`}
                       >
-                        Net R:R
+                        Ort. R
                       </button>
                       <button 
                         onClick={() => { setDetailedSort('winrate'); setDetailedPage(1); }} 
@@ -1620,7 +1577,6 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                 >
                   {processedDetailedRows.slice((detailedPage - 1) * 10, detailedPage * 10).map((parent) => {
                     const isExpanded = !!expandedAssets[parent.asset];
-                    const isProfit = parent.pnl >= 0;
                     const isRrProfit = parent.rr >= 0;
 
                     // Parite ana satırında (tıklamadan önce görünen kısım) sadece Session, HTF ve PD Array
@@ -1644,13 +1600,13 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                           {/* Asset Name + Expand Toggle */}
                           <td className="py-3 px-3 rounded-l-xl bg-zinc-900/90 group-hover:bg-zinc-800/40 border-y border-l border-zinc-800/80 group-hover:border-zinc-700/60 transition-ui duration-200">
                             <div className="flex items-center gap-2.5">
-                              <button
+                              <button aria-label="Sonraki" title="Sonraki"
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setExpandedAssets(prev => ({ ...prev, [parent.asset]: !prev[parent.asset] }));
                                 }}
-                                className="w-5.5 h-5.5 rounded-lg flex items-center justify-center text-zinc-400 group-hover:text-zinc-300 group-hover:bg-zinc-800 transition-ui focus:outline-none focus:ring-0 outline-none select-none"
+                                className="w-7 h-7 rounded-lg flex items-center justify-center text-zinc-400 group-hover:text-zinc-300 group-hover:bg-zinc-800 transition-ui focus:outline-none focus:ring-0 outline-none select-none"
                               >
                                 <ChevronRight 
                                   size={13} 
@@ -1701,17 +1657,14 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                                   ))}
                                 </>
                               ) : (
-                                <span className="text-xs text-zinc-500 group-hover:text-zinc-400 italic font-bold uppercase">Genel Girişler</span>
+                                <span className="text-xs text-zinc-500 group-hover:text-zinc-400 italic font-bold uppercase">{smartUpper("Genel Girişler")}</span>
                               )}
                             </div>
                           </td>
 
-                          {/* Performance: Net PnL & R */}
+                          {/* Performance: Net R */}
                           <td className="py-3 px-3 text-center bg-zinc-900/90 group-hover:bg-zinc-800/40 border-y border-zinc-800/80 group-hover:border-zinc-700/60 transition-ui duration-200">
                             <div className="inline-flex flex-col items-center">
-                              <span className={`text-xs font-bold font-sans ${isProfit ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                {isProfit ? '+' : ''}{(parent?.pnl || 0).toLocaleString()} {currency}
-                              </span>
                               <span className={`text-[10px] font-medium font-sans ${isRrProfit ? 'text-emerald-400/80' : 'text-rose-400/80'}`}>
                                 {isRrProfit ? '+' : ''}{parent.rr.toFixed(1)} R
                               </span>
@@ -1744,7 +1697,13 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                               <div className="text-xs font-sans font-medium text-zinc-300">
                                 <span className="text-emerald-400 font-bold">{parent.wins}W</span>
                                 <span className="text-zinc-600 mx-1">/</span>
-                                <span className="text-rose-400 font-bold">{parent.total - parent.wins}L</span>
+                                <span className="text-rose-400 font-bold">{parent.losses}L</span>
+                                {parent.total - parent.wins - parent.losses > 0 && (
+                                  <>
+                                    <span className="text-zinc-600 mx-1">/</span>
+                                    <span className="text-zinc-400 font-bold">{parent.total - parent.wins - parent.losses}BE</span>
+                                  </>
+                                )}
                               </div>
                             </button>
                           </td>
@@ -1753,7 +1712,6 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                         {/* Child Rows when expanded */}
                         <AnimatePresence>
                           {isExpanded && parent.children?.map((child: any, cIdx: number) => {
-                            const childIsProfit = child.pnl >= 0;
                             const childIsRrProfit = child.rr >= 0;
                             const hasAnyDimension = !!(child.session || child.htfTimeframe || child.trend || child.concept || child.timeframe || (child.confirmation && child.confirmation !== 'Diğer') || child.entryModel || child.planFidelity);
 
@@ -1816,10 +1774,10 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                                           </span>
                                         )}
 
-                                        {/* 4. LIQUIDITY SWEEP */}
+                                        {/* 4. STRATEJİ */}
                                         {child.concept && (
                                           <span 
-                                            title="Liquidity Sweep"
+                                            title="Strateji"
                                             className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-amber-300 bg-amber-500/10 px-2 py-0.5 border border-amber-500/25 rounded-lg"
                                           >
                                             <Target size={10} className="text-amber-400 shrink-0" />
@@ -1874,18 +1832,15 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                                       </>
                                     ) : (
                                       <span className="text-[10px] font-bold uppercase text-zinc-500 bg-zinc-950 px-2 py-0.5 rounded-lg border border-zinc-800">
-                                        Doğrudan İşlem (Filtresiz)
+                                        {smartUpper("Doğrudan İşlem (Filtresiz)")}
                                       </span>
                                     )}
                                   </div>
                                 </td>
 
-                                {/* Performance: Net PnL & R */}
+                                {/* Performance: Net R */}
                                 <td className="py-2 px-3 text-center bg-zinc-950/70 group-hover/child:bg-zinc-850/30 border-y border-zinc-800/50 group-hover/child:border-zinc-800 transition-ui duration-200">
                                   <div className="inline-flex flex-col items-center">
-                                    <span className={`text-xs font-bold font-sans ${childIsProfit ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                      {childIsProfit ? '+' : ''}{(child?.pnl || 0).toLocaleString()} {currency}
-                                    </span>
                                     <span className={`text-[9px] font-medium font-sans ${childIsRrProfit ? 'text-emerald-400/70' : 'text-rose-400/70'}`}>
                                       {childIsRrProfit ? '+' : ''}{child.rr.toFixed(1)} R
                                     </span>
@@ -1908,7 +1863,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                                 {/* Trade Breakdown */}
                                 <td className="py-2 px-3 text-right rounded-r-xl bg-zinc-950/70 group-hover/child:bg-zinc-850/30 border-y border-r border-zinc-800/50 group-hover/child:border-zinc-800 transition-ui duration-200">
                                   <div className="text-[10px] font-sans text-zinc-400 group-hover/child:text-zinc-300">
-                                    {child.total} İşlem <span className="text-zinc-500 group-hover/child:text-zinc-500">({child.wins}W / {child.total - child.wins}L)</span>
+                                    {child.total} İşlem <span className="text-zinc-500 group-hover/child:text-zinc-500">({child.wins}W / {child.losses}L{child.total - child.wins - child.losses > 0 ? ` / ${child.total - child.wins - child.losses}BE` : ''})</span>
                                   </div>
                                 </td>
                               </motion.tr>
@@ -1948,20 +1903,20 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                 Sayfa: {detailedPage}/{Math.max(1, Math.ceil(processedDetailedRows.length / 10))}
               </span>
               <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-700/50 rounded-xl p-1 shadow-xs">
-                <button
+                <button aria-label="Önceki" title="Önceki"
                   type="button"
                   onClick={() => setDetailedPage(prev => Math.max(1, prev - 1))}
                   disabled={detailedPage <= 1}
-                  className="w-6.5 h-6.5 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-400 transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed"
+                  className="w-7 h-7 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-400 transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed"
                 >
                   <ChevronLeft size={13} />
                 </button>
                 <div className="w-px h-3.5 bg-zinc-800" />
-                <button
+                <button aria-label="Sonraki" title="Sonraki"
                   type="button"
                   onClick={() => setDetailedPage(prev => Math.min(Math.ceil(processedDetailedRows.length / 10), prev + 1))}
                   disabled={detailedPage >= Math.ceil(processedDetailedRows.length / 10)}
-                  className="w-6.5 h-6.5 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-400 transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed"
+                  className="w-7 h-7 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-400 transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed"
                 >
                   <ChevronRight size={13} />
                 </button>
@@ -1971,18 +1926,6 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
         )}
       </motion.div>
 
-      <TradeDetailModal 
-        key="dashboard-trade-detail"
-        trade={selectedTrade} 
-        onClose={() => setSelectedTrade(null)} 
-        onEdit={(trade) => {
-          if (onEdit) onEdit(trade);
-          setSelectedTrade(null);
-          setSelectedAsset(null);
-          setSelectedPerformancePeriod(null);
-        }}
-        currency={currency} 
-      />
 
       <TradeHistoryModal
         isOpen={!!selectedPerformancePeriod}
@@ -1990,7 +1933,6 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
         title={selectedPerformancePeriod?.label || ""}
         icon={<Calendar size={16} className="mr-1.5 text-blue-400 shrink-0" />}
         trades={selectedPerformancePeriod?.trades || []}
-        currency={currency}
         onEdit={(trade) => {
           if (onEdit) onEdit(trade);
           setSelectedPerformancePeriod(null);
@@ -2003,7 +1945,6 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
         title={selectedAsset || ""}
         icon={<Activity size={16} className="mr-1.5 text-blue-400 shrink-0" />}
         trades={selectedAssetTrades}
-        currency={currency}
         onEdit={(trade) => {
           if (onEdit) onEdit(trade);
           setSelectedAsset(null);
@@ -2032,13 +1973,6 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
         </motion.div>
       )}
 
-      <PrintReportModal title="Analiz Raporu" isOpen={printModalState.isOpen}
-        onClose={() => setPrintModalState(prev => ({ ...prev, isOpen: false }))}
-        trades={printModalState.trades}
-        
-        dateRangeText={printModalState.dateRangeText}
-        currency={currency}
-      />
       
       <HeatmapModal
         isOpen={isHeatmapOpen}
@@ -2069,14 +2003,14 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                     <InfinityIcon size={18} />
                   </div>
                   <div>
-                    <h2 className="text-sm font-black uppercase font-sans text-zinc-100 tracking-wider">SESSION Kör Nokta Matrisi
+                    <h2 className="text-sm font-black uppercase font-sans text-zinc-100 tracking-wider">{smartUpper("SESSION Kör Nokta Matrisi")}
                     </h2>
                     <p className="text-xs text-zinc-400 font-sans">
                       Parite ve seans bazlı kârlılık, R getirisi ve başarı oranı analizi
                     </p>
                   </div>
                 </div>
-                <button
+                <button aria-label="Kapat" title="Kapat"
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
@@ -2106,14 +2040,14 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                     onClick={() => { setDeadZoneSort('pnl'); setDeadZonePage(1); }}
                     className={`text-xs font-sans px-3 py-1 rounded-xl transition-colors duration-200 ease-out font-bold border ${deadZoneSort === 'pnl' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'}`}
                   >
-                    PNL
+                    NET R
                   </button>
                   <button
                     type="button"
                     onClick={() => { setDeadZoneSort('rr'); setDeadZonePage(1); }}
                     className={`text-xs font-sans px-3 py-1 rounded-xl transition-colors duration-200 ease-out font-bold border ${deadZoneSort === 'rr' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'}`}
                   >
-                    RR
+                    Ort. R
                   </button>
                   <button
                     type="button"
@@ -2162,13 +2096,11 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                           const wr = cell.count > 0 ? (cell.wins / cell.count) * 100 : 0;
                           return (
                             <div className="flex flex-col gap-0.5 items-center justify-center py-1.5 px-2 bg-zinc-900/60 border border-zinc-800/80 rounded-xl transition-ui hover:border-zinc-700/60 shadow-xs">
-                              <span className={`font-black text-xs ${cell.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                {cell.pnl >= 0 ? '+' : ''}{Math.round(cell?.pnl || 0).toLocaleString()} {currency}
+                              <span className={`font-black text-xs ${(cell.rr || 0) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                {(cell.rr || 0) >= 0 ? '+' : ''}{(cell.rr || 0).toFixed(1)} R
                               </span>
                               <div className="flex items-center gap-1.5 text-[10px]">
-                                <span className="text-zinc-300 font-bold">{cell.rr ? cell.rr.toFixed(1) : '0.0'} R</span>
-                                <span className="text-zinc-600">|</span>
-                                <span className="text-zinc-400">%{wr.toFixed(0)}</span>
+                                                                <span className="text-zinc-400">%{wr.toFixed(0)}</span>
                               </div>
                             </div>
                           );
@@ -2206,20 +2138,20 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                       Sayfa: {deadZonePage}/{Math.max(1, Math.ceil(processedDeadZone.length / 8))}
                     </span>
                     <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-700/50 rounded-xl p-1 shadow-xs">
-                      <button
+                      <button aria-label="Önceki" title="Önceki"
                         type="button"
                         onClick={() => setDeadZonePage(prev => Math.max(1, prev - 1))}
                         disabled={deadZonePage <= 1}
-                        className="w-6.5 h-6.5 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-400 transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed"
+                        className="w-7 h-7 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-400 transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed"
                       >
                         <ChevronLeft size={13} />
                       </button>
                       <div className="w-px h-3.5 bg-zinc-800" />
-                      <button
+                      <button aria-label="Sonraki" title="Sonraki"
                         type="button"
                         onClick={() => setDeadZonePage(prev => Math.min(Math.ceil(processedDeadZone.length / 8), prev + 1))}
                         disabled={deadZonePage >= Math.ceil(processedDeadZone.length / 8)}
-                        className="w-6.5 h-6.5 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-400 transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed"
+                        className="w-7 h-7 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-400 transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed"
                       >
                         <ChevronRight size={13} />
                       </button>
@@ -2258,14 +2190,14 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                   </div>
                   <div>
                     <h2 className="text-sm font-black uppercase font-sans text-zinc-100 tracking-wider">
-                      Haftalık İdeal İşlem Frekansı
+                      {smartUpper("Haftalık İdeal İşlem Frekansı")}
                     </h2>
                     <p className="text-xs text-zinc-400 font-sans">
                       Haftalık işlem hacminize göre kârlılık, Profit Factor ve R verimlilik analizi
                     </p>
                   </div>
                 </div>
-                <button
+                <button aria-label="Kapat" title="Kapat"
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
@@ -2289,12 +2221,12 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-800/60">
-                    {metrics.optimalFreq.map((f: any) => (
+                    {metrics.optimalFreq.map((f) => (
                       <tr key={f.label} className="hover:bg-zinc-800/30 transition-colors">
                         <td className="py-3 px-3 text-zinc-200 font-black">{f.label}</td>
                         <td className="py-3 px-3 text-center">
                           <span className={`px-2.5 py-0.5 rounded-lg text-xs font-black ${getPFColor(f.avgPF)} bg-zinc-800/90 border border-zinc-700/50 text-zinc-100`}>
-                            {!isFinite(f.avgPF) || f.avgPF === Number.POSITIVE_INFINITY ? "Sonsuz" : f.avgPF.toFixed(2)}
+                            {f.weeksCount === 0 ? "—" : formatPF(f.avgPF)}
                           </span>
                         </td>
                         <td className="py-3 px-3 text-center">
@@ -2328,6 +2260,10 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, currency, onEdit, se
   );
 });
 
-export const AdvancedMetricsDashboard = React.memo((props: { trades: Trade[], currency: string, onMetricClick?: (id: string, val: string | number) => void, onEdit?: (trade: Trade) => void, sessions?: string[] }) => {
+
+/** İşlem başına ortalama R (sıralama için) */
+const avgR = (x: { rr: number; total: number }) => (x.total > 0 ? x.rr / x.total : 0);
+
+export const AdvancedMetricsDashboard = React.memo((props: { trades: Trade[], onMetricClick?: (id: string, val: string | number) => void, onEdit?: (trade: Trade) => void, sessions?: string[] }) => {
   return <AdvancedMetricsDashboardInner {...props} />;
 });

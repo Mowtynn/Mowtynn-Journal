@@ -20,6 +20,9 @@ export const db = initializeFirestore(app, {
 
 export const auth = getAuth(app);
 export const storage = getStorage(app);
+// Görsel yükleme bağlantı yokken sonsuza dek (varsayılan 10 dk) beklemesin; 2 dk sonra hata verir ve işlem görselsiz kaydedilir
+storage.maxUploadRetryTime = 120_000;
+storage.maxOperationRetryTime = 60_000;
 auth.languageCode = 'tr';
 
 // Ensure persistence is explicitly local

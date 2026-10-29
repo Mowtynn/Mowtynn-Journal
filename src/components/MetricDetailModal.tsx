@@ -20,7 +20,6 @@ interface MetricDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   metric: MetricDetail | null;
-  currency?: string;
 }
 
 export function MetricDetailModal({
@@ -86,7 +85,7 @@ export function MetricDetailModal({
             {...MODAL_PANEL}
             onClick={(e) => e.stopPropagation()}
             id="metric-detail-popup"
-            className="bg-zinc-900 border border-zinc-700/50 rounded-2xl w-full max-w-lg h-[520px] max-h-[85vh] min-h-0 sm:min-h-[380px] relative z-10 overflow-hidden flex flex-col shadow-2xl"
+            className="bg-zinc-900 border border-zinc-700/50 rounded-2xl w-full max-w-lg max-h-[85vh] min-h-0 relative z-10 overflow-hidden flex flex-col shadow-2xl"
           >
             
           {/* Header */}
@@ -98,7 +97,7 @@ export function MetricDetailModal({
               Metrik Detayları
             </h2>
             <div className="flex items-center gap-2 shrink-0">
-              <button
+              <button aria-label="Kapat" title="Kapat"
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -150,7 +149,7 @@ export function MetricDetailModal({
               {currentMetric.details && currentMetric.details.length > 0 && (
                 <div className="space-y-2 w-full bg-zinc-900/40 rounded-xl p-3.5 border border-zinc-800/80">
                   <h4 className="text-xs font-bold font-sans text-zinc-300 uppercase tracking-wider flex items-center gap-2">
-                    <Activity size={14} className="text-emerald-400" /> Konsept Çıkarımlar
+                    <Activity size={14} className="text-emerald-400" /> Nasıl yorumlanır
                   </h4>
                   <ul className="space-y-2">
                     {currentMetric.details.map((detail, index) => (

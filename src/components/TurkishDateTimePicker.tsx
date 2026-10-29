@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { POPOVER, POPOVER_UP } from '../lib/motion';
 import { Calendar as CalendarIcon, Clock, ChevronLeft, ChevronRight, ChevronDown, Check } from 'lucide-react';
+import { nyNow } from '../lib/tradingTime';
 
 interface TurkishDateTimePickerProps {
   value: string; // "YYYY-MM-DDTHH:mm" format
@@ -18,6 +19,8 @@ export const TURKISH_MONTHS = [
 export const TURKISH_DAYS_SHORT = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
 
 export const TurkishDateTimePicker = React.memo(function TurkishDateTimePicker({ value, onChange, className = '' }: TurkishDateTimePickerProps) {
+  // Şu anın duvar saati (yerel ya da NY) — yerel alanları o saate eşit bir Date
+  const nowWall = React.useCallback(() => nyNow(), []);
   const [isOpen, setIsOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<'none' | 'hour' | 'minute'>('none');
   const containerRef = useRef<HTMLDivElement>(null);
@@ -29,14 +32,14 @@ export const TurkishDateTimePicker = React.memo(function TurkishDateTimePicker({
   // Parse current value
   const parsedDate = React.useMemo(() => {
     if (!value) {
-      return new Date();
+      return nyNow();
     }
     const [datePart, timePart] = value.split('T');
-    if (!datePart) return new Date();
+    if (!datePart) return nyNow();
     const [year, month, day] = datePart.split('-').map(Number);
     const [hour, minute] = (timePart || '12:00').split(':').map(Number);
     const d = new Date(year, (month || 1) - 1, day || 1, hour || 0, minute || 0);
-    return isNaN(d.getTime()) ? new Date() : d;
+    return isNaN(d.getTime()) ? nyNow() : d;
   }, [value]);
 
   const [viewYear, setViewYear] = useState(parsedDate.getFullYear());
@@ -218,7 +221,7 @@ export const TurkishDateTimePicker = React.memo(function TurkishDateTimePicker({
   };
 
   const handleSetNow = () => {
-    const now = new Date();
+    const now = nowWall();
     updateDateTime(now);
     setViewYear(now.getFullYear());
     setViewMonth(now.getMonth());
@@ -226,7 +229,7 @@ export const TurkishDateTimePicker = React.memo(function TurkishDateTimePicker({
   };
 
   const handleSetToday = () => {
-    const now = new Date();
+    const now = nowWall();
     const newDate = new Date(parsedDate);
     newDate.setFullYear(now.getFullYear());
     newDate.setMonth(now.getMonth());
@@ -238,7 +241,7 @@ export const TurkishDateTimePicker = React.memo(function TurkishDateTimePicker({
   };
 
   const handleSetYesterday = () => {
-    const yesterday = new Date();
+    const yesterday = nowWall();
     yesterday.setDate(yesterday.getDate() - 1);
     const newDate = new Date(parsedDate);
     newDate.setFullYear(yesterday.getFullYear());
@@ -294,7 +297,7 @@ export const TurkishDateTimePicker = React.memo(function TurkishDateTimePicker({
   }, [viewYear, viewMonth]);
 
   const isToday = (date: Date) => {
-    const now = new Date();
+    const now = nyNow();
     return (
       date.getDate() === now.getDate() &&
       date.getMonth() === now.getMonth() &&
@@ -333,7 +336,7 @@ export const TurkishDateTimePicker = React.memo(function TurkishDateTimePicker({
       <button
         type="button"
         onClick={handleToggle}
-        className="w-full h-8 sm:h-8.5 bg-zinc-950/80 hover:bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 rounded-lg sm:rounded-xl px-2.5 text-xs text-zinc-100 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-ui font-sans font-bold flex items-center justify-between gap-2 cursor-pointer shadow-inner group"
+        className="w-full h-9 bg-zinc-950/80 hover:bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 rounded-lg sm:rounded-xl px-2.5 text-xs text-zinc-100 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-ui font-sans font-bold flex items-center justify-between gap-2 cursor-pointer shadow-inner group"
       >
         <span className="tracking-wide truncate">{displayFormatted}</span>
         
@@ -398,18 +401,18 @@ export const TurkishDateTimePicker = React.memo(function TurkishDateTimePicker({
               {TURKISH_MONTHS[viewMonth]} {viewYear}
             </span>
             <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-700/50 rounded-xl p-0.5 shadow-xs">
-              <button
+              <button aria-label="Önceki" title="Önceki"
                 type="button"
                 onClick={handlePrevMonth}
-                className="w-6.5 h-6.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 flex items-center justify-center transition-colors duration-150 cursor-pointer"
+                className="w-7 h-7 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 flex items-center justify-center transition-colors duration-150 cursor-pointer"
               >
                 <ChevronLeft size={13} />
               </button>
               <div className="w-px h-3.5 bg-zinc-800" />
-              <button
+              <button aria-label="Sonraki" title="Sonraki"
                 type="button"
                 onClick={handleNextMonth}
-                className="w-6.5 h-6.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 flex items-center justify-center transition-colors duration-150 cursor-pointer"
+                className="w-7 h-7 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 flex items-center justify-center transition-colors duration-150 cursor-pointer"
               >
                 <ChevronRight size={13} />
               </button>
@@ -635,11 +638,11 @@ export const TurkishDatePicker = React.memo(function TurkishDatePicker({
   // Parse current value
   const parsedDate = React.useMemo(() => {
     if (!value) {
-      return new Date();
+      return nyNow();
     }
     const [year, month, day] = value.split('-').map(Number);
     const d = new Date(year, (month || 1) - 1, day || 1);
-    return isNaN(d.getTime()) ? new Date() : d;
+    return isNaN(d.getTime()) ? nyNow() : d;
   }, [value]);
 
   const [viewYear, setViewYear] = useState(parsedDate.getFullYear());
@@ -778,7 +781,7 @@ export const TurkishDatePicker = React.memo(function TurkishDatePicker({
   };
 
   const handleSetToday = () => {
-    const now = new Date();
+    const now = nyNow();
     const formatted = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
     onChange(formatted);
     setViewYear(now.getFullYear());
@@ -787,7 +790,7 @@ export const TurkishDatePicker = React.memo(function TurkishDatePicker({
   };
 
   const handleSetYesterday = () => {
-    const yesterday = new Date();
+    const yesterday = nyNow();
     yesterday.setDate(yesterday.getDate() - 1);
     const formatted = `${yesterday.getFullYear()}-${pad(yesterday.getMonth() + 1)}-${pad(yesterday.getDate())}`;
     onChange(formatted);
@@ -839,7 +842,7 @@ export const TurkishDatePicker = React.memo(function TurkishDatePicker({
   }, [viewYear, viewMonth]);
 
   const isToday = (date: Date) => {
-    const now = new Date();
+    const now = nyNow();
     return (
       date.getDate() === now.getDate() &&
       date.getMonth() === now.getMonth() &&
@@ -932,18 +935,18 @@ export const TurkishDatePicker = React.memo(function TurkishDatePicker({
               {TURKISH_MONTHS[viewMonth]} {viewYear}
             </span>
             <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-700/50 rounded-xl p-0.5 shadow-xs">
-              <button
+              <button aria-label="Önceki" title="Önceki"
                 type="button"
                 onClick={handlePrevMonth}
-                className="w-6.5 h-6.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 flex items-center justify-center transition-colors duration-150 cursor-pointer"
+                className="w-7 h-7 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 flex items-center justify-center transition-colors duration-150 cursor-pointer"
               >
                 <ChevronLeft size={13} />
               </button>
               <div className="w-px h-3.5 bg-zinc-800" />
-              <button
+              <button aria-label="Sonraki" title="Sonraki"
                 type="button"
                 onClick={handleNextMonth}
-                className="w-6.5 h-6.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 flex items-center justify-center transition-colors duration-150 cursor-pointer"
+                className="w-7 h-7 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 flex items-center justify-center transition-colors duration-150 cursor-pointer"
               >
                 <ChevronRight size={13} />
               </button>

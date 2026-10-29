@@ -2,55 +2,145 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // ---------- Ortak yardımcılar ----------
+
     function signedIn() {
       return request.auth != null;
     }
 
-    // Existing document belongs to the caller
+    // Mevcut belge çağıranın
     function ownsExisting() {
       return signedIn() && resource.data.userId == request.auth.uid;
     }
 
-    // Document being written belongs to the caller (prevents writing data under someone else's userId)
+    // Yazılan belge çağıranın (başkasının userId'si altına yazmayı engeller; güncellemede sahiplik değiştirilemez)
     function ownsIncoming() {
       return signedIn() && request.resource.data.userId == request.auth.uid;
     }
 
-    // Per-record collections: every document carries a userId field
+    // Belgenin içindeki id alanı (varsa) belge kimliğiyle aynı olmalı
+    function idMatches(d, docId) {
+      return !('id' in d) || d.id == docId;
+    }
+
+    // İsteğe bağlı alan denetimleri: alan yoksa ya da null ise geçer
+    function optStr(d, f, max) {
+      return !(f in d) || d[f] == null || (d[f] is string && d[f].size() <= max);
+    }
+    function optNum(d, f) {
+      return !(f in d) || d[f] == null || d[f] is number;
+    }
+    function optBool(d, f) {
+      return !(f in d) || d[f] == null || d[f] is bool;
+    }
+    function optList(d, f, max) {
+      return !(f in d) || d[f] == null || (d[f] is list && d[f].size() <= max);
+    }
+
+    // ---------- İşlem ----------
+    // İstemcideki isValidTrade (src/lib/tradeModel.ts) ile birebir aynı zorunlu alanlar.
+    // screenshot: Storage URL'si; eski yedeklerden gelen gömülü görsel (data URL) de kabul edilir (belge sınırı 1 MiB).
+    function validTrade(d, docId) {
+      return d.keys().size() <= 60
+        && idMatches(d, docId)
+        && d.asset is string && d.asset.size() > 0 && d.asset.size() <= 64
+        && d.type in ['LONG', 'SHORT']
+        && d.status in ['WIN', 'LOSS', 'BREAKEVEN']
+        && d.createdAt is number
+        && d.rr is number
+        && optNum(d, 'exitAt')
+        && optNum(d, 'riskPct') && optNum(d, 'riskAmount') && optNum(d, 'accountStage')
+        && optNum(d, 'stopPips') && optNum(d, 'tpPips') && optNum(d, 'maePips') && optNum(d, 'mfePips') && optNum(d, 'asiaRangePips')
+        && optBool(d, 'newsDay') && optBool(d, 'quickEntry')
+        && optList(d, 'confirmations', 50) && optList(d, 'entryModels', 50) && optList(d, 'tpTargets', 50)
+        && optStr(d, 'notes', 50000)
+        && optStr(d, 'screenshot', 1000000)
+        && optStr(d, 'platform', 200) && optStr(d, 'accountId', 128)
+        && optStr(d, 'timeframe', 200) && optStr(d, 'htfTimeframe', 200) && optStr(d, 'session', 200)
+        && optStr(d, 'planFidelity', 200) && optStr(d, 'trend', 200) && optStr(d, 'premiumDiscount', 200)
+        && optStr(d, 'strategy', 200) && optStr(d, 'asiaRangeFvg', 200)
+        && (!('accountCategory' in d) || d.accountCategory == null || d.accountCategory in ['FUNDED', 'CHALLENGE', 'DEMO']);
+    }
+
     match /trades/{docId} {
       allow read, delete: if ownsExisting();
-      allow create: if ownsIncoming();
-      allow update: if ownsExisting() && ownsIncoming();
+      allow create: if ownsIncoming() && validTrade(request.resource.data, docId);
+      allow update: if ownsExisting() && ownsIncoming() && validTrade(request.resource.data, docId);
     }
+
+    // ---------- Not ----------
+    function validNote(d, docId) {
+      return d.keys().size() <= 20
+        && idMatches(d, docId)
+        && optStr(d, 'title', 1000)
+        && optStr(d, 'content', 200000)
+        && optNum(d, 'createdAt') && optNum(d, 'updatedAt')
+        && optBool(d, 'isPinned');
+    }
+
     match /notes/{docId} {
       allow read, delete: if ownsExisting();
-      allow create: if ownsIncoming();
-      allow update: if ownsExisting() && ownsIncoming();
+      allow create: if ownsIncoming() && validNote(request.resource.data, docId);
+      allow update: if ownsExisting() && ownsIncoming() && validNote(request.resource.data, docId);
     }
+
+    // ---------- Günlük ----------
+    function validJournal(d, docId) {
+      return d.keys().size() <= 20
+        && idMatches(d, docId)
+        && optStr(d, 'date', 32)
+        && optStr(d, 'title', 1000)
+        && optStr(d, 'content', 200000)
+        && optList(d, 'tags', 50)
+        && optBool(d, 'isFavorite')
+        && optNum(d, 'createdAt') && optNum(d, 'updatedAt')
+        && (!('mood' in d) || d.mood == null || d.mood in ['excellent', 'good', 'neutral', 'bad', 'terrible'])
+        && validWeekly(d);
+    }
+
+    // Haftalık değerlendirme cevapları (yalnızca haftalık kayıtta): üç metin alanı, istemcideki 5000 karakter sınırı
+    function validWeekly(d) {
+      return !('weekly' in d) || d.weekly == null
+        || (d.weekly is map
+            && d.weekly.keys().hasOnly(['good', 'avoid', 'focus'])
+            && optStr(d.weekly, 'good', 5000) && optStr(d.weekly, 'avoid', 5000) && optStr(d.weekly, 'focus', 5000));
+    }
+
     match /journals/{docId} {
       allow read, delete: if ownsExisting();
-      allow create: if ownsIncoming();
-      allow update: if ownsExisting() && ownsIncoming();
+      allow create: if ownsIncoming() && validJournal(request.resource.data, docId);
+      allow update: if ownsExisting() && ownsIncoming() && validJournal(request.resource.data, docId);
     }
+
+    // Sertifikalar kaldırıldı: eski kayıtlar yalnızca okunup silinebilir (Verileri sıfırla bunları temizler)
     match /certificates/{docId} {
       allow read, delete: if ownsExisting();
-      allow create: if ownsIncoming();
-      allow update: if ownsExisting() && ownsIncoming();
-    }
-    match /portfolioTransactions/{docId} {
-      allow read, delete: if ownsExisting();
-      allow create: if ownsIncoming();
-      allow update: if ownsExisting() && ownsIncoming();
     }
 
-    // Per-user singleton documents keyed by uid
+    // ---------- Kullanıcı ayarları ----------
+    // Kullanıcı başına tek belge: tanımlamalar, başlıklar ve prop hesapları (fotoğraflar Storage'da, burada URL).
+    // Belge kimliği kullanıcının uid'si; içerideki userId alanı (varsa) aynı olmalı.
+    // Tanım listeleri ve prop hesapları makul boyutta; ad ve kullanıcı adı metin
+    function validSettings(d) {
+      return d.keys().size() <= 60
+        && optList(d, 'propAccounts', 500)
+        && optList(d, 'assets', 500) && optList(d, 'sessions', 500) && optList(d, 'timeframes', 500)
+        && optList(d, 'htfTimeframes', 500) && optList(d, 'confirmations', 500) && optList(d, 'planFidelities', 500)
+        && optList(d, 'entryModels', 500) && optList(d, 'trendTypes', 500) && optList(d, 'tpTargets', 500)
+        && optList(d, 'premiumDiscounts', 500) && optList(d, 'newsDays', 50) && optList(d, 'strategies', 500)
+        && optList(d, 'asiaRangeFvgs', 500)
+        && optStr(d, 'displayName', 200);
+    }
+
     match /settings/{userId} {
-      allow read, write: if signedIn() && request.auth.uid == userId;
-    }
-    match /portfolioSettings/{userId} {
-      allow read, write: if signedIn() && request.auth.uid == userId;
+      allow read: if signedIn() && request.auth.uid == userId;
+      allow create, update: if signedIn()
+                            && request.auth.uid == userId
+                            && (!('userId' in request.resource.data) || request.resource.data.userId == userId)
+                            && validSettings(request.resource.data);
+      allow delete: if signedIn() && request.auth.uid == userId;
     }
 
-    // Everything else is denied by default
+    // Diğer her şey varsayılan olarak reddedilir
   }
 }

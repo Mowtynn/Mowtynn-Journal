@@ -1,50 +1,28 @@
-import { SPRING, POPOVER } from '../lib/motion';
+import { PANE } from '../lib/motion';
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "motion/react";
-import { Trade, DefinitionTitles, PlatformCategory } from "../types";
-import { 
-  DEFAULT_PLAN_FIDELITIES, 
-  DEFAULT_ENTRY_MODELS, 
-  DEFAULT_TREND_TYPES, 
-  DEFAULT_DEFINITION_TITLES, 
-  DEFAULT_ENTRY_HOURS,
+import { Trade, DefinitionTitles, PropAccount } from "../types";
+import { defaultRiskAmount } from "../lib/propAccounts";
+import {
+  DEFAULT_PLAN_FIDELITIES,
+  DEFAULT_ENTRY_MODELS,
+  DEFAULT_TREND_TYPES,
+  DEFAULT_DEFINITION_TITLES,
   DEFAULT_TP_TARGETS,
   DEFAULT_PREMIUM_DISCOUNTS,
   DEFAULT_NEWS_DAYS,
   DEFAULT_STRATEGIES,
   DEFAULT_ASIA_RANGE_FVGS,
-  normalizeNewsDays,
-  cleanDefinitionTitleString,
-  getTradeAccountCategory
 } from "../constants/constants";
-import { VoiceToTradeButton } from "./VoiceToTradeButton";
-import { TurkishDateTimePicker } from "./TurkishDateTimePicker";
 import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
-import {
-  Plus,
-  X,
-  Search,
-  ChevronDown,
-  Layers,
-  Activity,
-  FileText,
-  ShieldCheck,
-  Image as ImageIcon,
-  Zap,
-  TrendingUp,
-  ExternalLink,
-  Check,
-  Clock,
-  Maximize2,
-  Target,
-  Monitor,
-  Shield,
-  Trophy,
-  Flag,
-  Newspaper,
-  Compass
-} from "lucide-react";
+import { Plus, X, Zap, Copy } from "lucide-react";
+import { NO_ACCOUNT, Num, Status, AccountOption, buildInitial, useTitles } from './tradeForm/shared';
+import { toNyInput, nyInputToTs } from '../lib/tradingTime';
+import { BasicInfoCard } from './tradeForm/BasicInfoCard';
+import { ResultCard } from './tradeForm/ResultCard';
+import { SetupChips } from './tradeForm/SetupChips';
+import { NotesCard, ChartLinkCard } from './tradeForm/NotesCard';
 
 interface AddTradeFormProps {
   onSave: (
@@ -55,14 +33,9 @@ interface AddTradeFormProps {
   ) => void;
   editingTrade: Trade | null;
   onCancelEdit: () => void;
-  currency: string;
-  platforms: string[];
-  defaultPlatform?: string;
   timeframes: string[];
   htfTimeframes?: string[];
   sessions: string[];
-  liquiditySweeps?: string[];
-  concepts?: string[];
   confirmations: string[];
   assets: string[];
   planFidelities?: string[];
@@ -70,26 +43,36 @@ interface AddTradeFormProps {
   trendTypes?: string[];
   tpTargets?: string[];
   premiumDiscounts?: string[];
-  entryHours?: string[];
   newsDays?: string[];
   strategies?: string[];
   asiaRangeFvgs?: string[];
   definitionTitles?: DefinitionTitles;
-  persistPlatforms?: (platforms: string[]) => void;
+  /** En son kaydedilen işlem: "Son kurulumu kopyala" için */
+  lastTrade?: Trade | null;
+  /** Pencere kapatma isteği (Esc / X / arka plan) önce forma sorulur; true dönerse form isteği karşıladı demektir */
+  registerCloseGuard?: (guard: (() => boolean) | null) => void;
+  /** Prop hesapları: formda aktif hesaplar + "Hesapsız" seçenekleri olarak listelenir */
+  propAccounts?: PropAccount[];
+  /** Hızlı kayıt: yalnızca temel bilgiler + sonuç; ayrıntılar sonra düzenle ile tamamlanır */
+  quickMode?: boolean;
+  onQuickModeChange?: (v: boolean) => void;
+  /**
+   * Pencere şu an açık mı? App, yeni işlem formunu arka planda HAZIR (gizli) tutar; tıklanınca yalnızca görünür olur.
+   * Kapalıyken: kaydırma kilidi, odak ve kapatma koruması devre dışı.
+   */
+  active?: boolean;
+  /** Yeni işlemde önceden seçili hesap: üst çubukta tek hesap ya da Hesapsız seçiliyse o */
+  defaultAccountChoice?: string | null;
 }
 
+/** Hesapsız (demo/backtest) seçimi */
 const AddTradeForm = React.memo(function AddTradeForm({
   onSave,
   editingTrade,
   onCancelEdit,
-  currency: _currency,
-  platforms,
-  defaultPlatform,
   timeframes,
   htfTimeframes = [],
   sessions,
-  liquiditySweeps,
-  concepts,
   confirmations,
   assets,
   planFidelities = DEFAULT_PLAN_FIDELITIES,
@@ -97,382 +80,98 @@ const AddTradeForm = React.memo(function AddTradeForm({
   trendTypes = DEFAULT_TREND_TYPES,
   tpTargets = DEFAULT_TP_TARGETS,
   premiumDiscounts = DEFAULT_PREMIUM_DISCOUNTS,
-  entryHours = DEFAULT_ENTRY_HOURS,
   newsDays = DEFAULT_NEWS_DAYS,
   strategies = DEFAULT_STRATEGIES,
   asiaRangeFvgs = DEFAULT_ASIA_RANGE_FVGS,
   definitionTitles = DEFAULT_DEFINITION_TITLES,
-  persistPlatforms: _persistPlatforms,
+  lastTrade = null,
+  registerCloseGuard,
+  propAccounts = [],
+  quickMode = false,
+  onQuickModeChange,
+  active = true,
+  defaultAccountChoice = null,
 }: AddTradeFormProps) {
-  useBodyScrollLock(true);
+  useBodyScrollLock(active);
+  // Hızlı mod yalnızca yeni işlemde; düzenlerken her zaman tam form açılır (eksikler orada tamamlanır)
+  const isQuick = quickMode && !editingTrade;
+  const titles = useTitles(definitionTitles);
 
-  const [asset, setAsset] = useState("");
-  const [type, setType] = useState<"LONG" | "SHORT">("LONG");
-  const [selectedPlatform, setSelectedPlatform] = useState(() => {
-    return defaultPlatform || localStorage.getItem("last_used_trade_platform") || platforms[0] || "";
+  // İlk değerler bir kez, doğrudan işlemden. Form her açılışta yeniden bağlanır (App'te key).
+  const [init] = useState(() => {
+    const base = buildInitial(editingTrade);
+    return !editingTrade && defaultAccountChoice ? { ...base, accountChoice: defaultAccountChoice } : base;
   });
-  const [selectedAccountCategory, setSelectedAccountCategory] = useState<PlatformCategory>(() => {
-    if (editingTrade) return getTradeAccountCategory(editingTrade);
-    const initial = defaultPlatform || localStorage.getItem("last_used_trade_platform") || platforms[0] || "";
-    return getTradeAccountCategory({ platform: initial });
-  });
-  const [platformTabFilter, setPlatformTabFilter] = useState<'ALL' | 'FUNDED' | 'CHALLENGE' | 'DEMO'>('ALL');
+  const [asset, setAsset] = useState(init.asset);
+  const [type, setType] = useState<"LONG" | "SHORT">(init.type);
+  // Hesap seçimi: aktif prop hesabı id'si ya da NO_ACCOUNT (demo/backtest). Varsayılan yok; seçilmeden kayıt yapılmaz.
+  const [accountChoice, setAccountChoice] = useState<string | null>(init.accountChoice);
+  const [accountError, setAccountError] = useState(false);
+  // Risk: hazır yüzde çipleri ya da elle yüzde (CUSTOM). Varsayılan yok; hesaplı işlemde seçilmeden kayıt yapılmaz.
+  const [riskChoice, setRiskChoice] = useState<number | "CUSTOM" | null>(init.riskChoice);
+  const [customRiskPct, setCustomRiskPct] = useState<Num>(init.customRiskPct);
+  const [riskError, setRiskError] = useState(false);
 
-  const fundedPlatformList = useMemo(() => {
-    return platforms.filter(p => getTradeAccountCategory({ platform: p }) === 'FUNDED');
-  }, [platforms]);
+  const [selectedTimeframe, setSelectedTimeframe] = useState(init.timeframe);
+  const [selectedHtfTimeframe, setSelectedHtfTimeframe] = useState(init.htfTimeframe);
+  const [selectedSession, setSelectedSession] = useState(init.session);
+  const [selectedConfirmations, setSelectedConfirmations] = useState<string[]>(init.confirmations);
+  const [selectedEntries, setSelectedEntries] = useState<string[]>(init.entries);
+  const [selectedTrend, setSelectedTrend] = useState(init.trend);
+  const [planFidelity, setPlanFidelity] = useState<string | null>(init.planFidelity);
+  const [selectedTpTargets, setSelectedTpTargets] = useState<string[]>(init.tpTargets);
+  const [premiumDiscount, setPremiumDiscount] = useState(init.premiumDiscount);
+  // News Day / Bank Holiday: varsayılan yok; tam kayıtta seçilmesi zorunlu (yanlışlıkla "Yok" kalıp istatistiği kaydırmasın)
+  const [newsDay, setNewsDay] = useState<boolean | null>(init.newsDay);
+  const [newsDayError, setNewsDayError] = useState(false);
+  const [selectedStrategy, setSelectedStrategy] = useState(init.strategy);
+  const [selectedAsiaFvg, setSelectedAsiaFvg] = useState(init.asiaFvg);
 
-  const challengePlatformList = useMemo(() => {
-    return platforms.filter(p => getTradeAccountCategory({ platform: p }) === 'CHALLENGE');
-  }, [platforms]);
+  const [stopPips, setStopPips] = useState<Num>(init.stopPips);
+  const [tpPips, setTpPips] = useState<Num>(init.tpPips);
+  const [asiaRangePips, setAsiaRangePips] = useState<Num>(init.asiaRangePips);
+  const [maePips, setMaePips] = useState<Num>(init.maePips);
+  const [mfePips, setMfePips] = useState<Num>(init.mfePips);
+  const [rrValue, setRrValue] = useState<Num>(init.rrValue);
+  const [tradeStatus, setTradeStatus] = useState<Status>(init.status);
 
-  const demoPlatformList = useMemo(() => {
-    return platforms.filter(p => getTradeAccountCategory({ platform: p }) === 'DEMO');
-  }, [platforms]);
-
-  // Seçili değer Tanımlamalar'dan silinmiş olsa bile (düzenleme modunda) chip olarak görünsün
-  const withSelected = (list: string[], selected: string[]) => {
-    const extra = selected.filter((x) => x && !list.includes(x));
-    return extra.length > 0 ? [...list, ...extra] : list;
-  };
-
-  const [selectedTimeframe, setSelectedTimeframe] = useState("");
-  const [selectedHtfTimeframe, setSelectedHtfTimeframe] = useState("");
-  const [selectedSession, setSelectedSession] = useState("");
-  const [selectedEntryTime, setSelectedEntryTime] = useState("");
-  const [selectedLiquiditySweeps, setSelectedLiquiditySweeps] = useState<string[]>([]);
-  const [selectedConfirmations, setSelectedConfirmations] = useState<string[]>([]);
-  const [selectedEntries, setSelectedEntries] = useState<string[]>([]);
-  const [selectedTrend, setSelectedTrend] = useState("");
-  const [planFidelity, setPlanFidelity] = useState<string | null>(null);
-  const [selectedTpTargets, setSelectedTpTargets] = useState<string[]>([]);
-  const [premiumDiscount, setPremiumDiscount] = useState("");
-  // News Day / Bank Holiday: her zaman "Yok" ile başlar
-  const [newsDay, setNewsDay] = useState(false);
-  const [newsYesLabel, newsNoLabel] = normalizeNewsDays(newsDays);
-  const [selectedStrategy, setSelectedStrategy] = useState("");
-  const [selectedAsiaFvg, setSelectedAsiaFvg] = useState("");
-
-  // Form başlıkları Tanımlamalar > Form Başlıkları'ndan değiştirilebilir
-  const T = (key: keyof DefinitionTitles) =>
-    cleanDefinitionTitleString(definitionTitles[key]) || cleanDefinitionTitleString(DEFAULT_DEFINITION_TITLES[key]) || "";
-  const L = (key: keyof DefinitionTitles) => T(key).toUpperCase();
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && onCancelEdit) {
-        onCancelEdit();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [onCancelEdit]);
-
-  const [stopPips, setStopPips] = useState<number | "">("");
-  const [tpPips, setTpPips] = useState<number | "">("");
-  const [asiaRangePips, setAsiaRangePips] = useState<number | "">("");
-  const [maePips, setMaePips] = useState<number | "">("");
-  const [mfePips, setMfePips] = useState<number | "">("");
-  const [rrValue, setRrValue] = useState<number | "">("");
-  const [tradeStatus, setTradeStatus] = useState<"WIN" | "LOSS" | "BREAKEVEN">("WIN");
-  const [manualPnl, setManualPnl] = useState<number | "">("");
-
-  // Auto calculate R:R from stopPips & tpPips
-  const handleStopPipsChange = (val: string) => {
-    if (val === "") {
-      setStopPips("");
-      return;
-    }
-    const num = parseFloat(val);
-    if (isNaN(num)) {
-      setStopPips("");
-      return;
-    }
-    setStopPips(num);
-    if (tpPips !== "" && typeof tpPips === 'number' && num > 0) {
-      const calculated = parseFloat((tpPips / num).toFixed(2));
-      if (tradeStatus === "WIN") {
-        setRrValue(calculated);
-      }
-    }
-  };
-
-  const handleTpPipsChange = (val: string) => {
-    if (val === "") {
-      setTpPips("");
-      return;
-    }
-    const num = parseFloat(val);
-    if (isNaN(num)) {
-      setTpPips("");
-      return;
-    }
-    setTpPips(num);
-    if (stopPips !== "" && typeof stopPips === 'number' && stopPips > 0) {
-      const calculated = parseFloat((num / stopPips).toFixed(2));
-      if (tradeStatus === "WIN") {
-        setRrValue(calculated);
-      }
-    }
-  };
-
-  const handleAsiaRangePipsChange = (val: string) => {
-    if (val === "") {
-      setAsiaRangePips("");
-      return;
-    }
-    const num = parseFloat(val);
-    if (isNaN(num)) {
-      setAsiaRangePips("");
-      return;
-    }
-    setAsiaRangePips(num);
-  };
-
-  const handleMaePipsChange = (val: string) => {
-    if (val === "") {
-      setMaePips("");
-      return;
-    }
-    const num = parseFloat(val);
-    if (isNaN(num)) {
-      setMaePips("");
-      return;
-    }
-    setMaePips(num);
-  };
-
-  const handleMfePipsChange = (val: string) => {
-    if (val === "") {
-      setMfePips("");
-      return;
-    }
-    const num = parseFloat(val);
-    if (isNaN(num)) {
-      setMfePips("");
-      return;
-    }
-    setMfePips(num);
-  };
-
-  const [notes, setNotes] = useState("");
-  const [screenshot, setScreenshot] = useState<string | null>(null);
-  const [previewError, setPreviewError] = useState(false);
-
-  useEffect(() => {
-    setPreviewError(false);
-  }, [screenshot]);
+  const [notes, setNotes] = useState(init.notes);
+  const [screenshot, setScreenshot] = useState<string | null>(init.screenshot);
+  const [tradeDate, setTradeDate] = useState(init.tradeDate);
+  // Çıkış (NY): isteğe bağlı; boşsa işlemde kalma süresi hesaplanmaz
+  const [exitDate, setExitDate] = useState<string>(init.exitDate);
 
   const [isAssetDropdownOpen, setIsAssetDropdownOpen] = useState(false);
-  const assetDropdownRef = useRef<HTMLDivElement>(null);
+  const [pairError, setPairError] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+  const assetInputRef = useRef<HTMLInputElement>(null);
 
-  const [isPlatformDropdownOpen, setIsPlatformDropdownOpen] = useState(false);
-  const platformDropdownRef = useRef<HTMLDivElement>(null);
 
-  const [tradeDate, setTradeDate] = useState(() => {
-    const d = new Date();
-    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-    return d.toISOString().slice(0, 16);
-  });
-
-  useEffect(() => {
-    if (editingTrade) {
-      setAsset(editingTrade.asset || "");
-      setType(editingTrade.type || "LONG");
-
-      const initialStatus = editingTrade.status || (editingTrade.rr < 0 ? "LOSS" : editingTrade.rr === 0 ? "BREAKEVEN" : "WIN");
-      setTradeStatus(initialStatus);
-
-      if (editingTrade.stopPips !== undefined && editingTrade.stopPips !== null) {
-        setStopPips(editingTrade.stopPips);
-      } else {
-        setStopPips("");
-      }
-
-      if (editingTrade.tpPips !== undefined && editingTrade.tpPips !== null) {
-        setTpPips(editingTrade.tpPips);
-      } else {
-        setTpPips("");
-      }
-
-      if (editingTrade.asiaRangePips !== undefined && editingTrade.asiaRangePips !== null) {
-        setAsiaRangePips(editingTrade.asiaRangePips);
-      } else {
-        setAsiaRangePips("");
-      }
-
-      if (editingTrade.maePips !== undefined && editingTrade.maePips !== null) {
-        setMaePips(editingTrade.maePips);
-      } else {
-        setMaePips("");
-      }
-
-      if (editingTrade.mfePips !== undefined && editingTrade.mfePips !== null) {
-        setMfePips(editingTrade.mfePips);
-      } else {
-        setMfePips("");
-      }
-
-      if (editingTrade.rr !== undefined && editingTrade.rr !== null) {
-        setRrValue(Math.abs(editingTrade.rr));
-      } else {
-        setRrValue("");
-      }
-
-      setManualPnl(
-        editingTrade.pnl !== null && editingTrade.pnl !== undefined
-          ? Math.abs(editingTrade.pnl)
-          : "",
+  // Seçilebilir hesaplar: aktif prop hesapları + düzenlenen işlemin kendi hesabı (arşivde/silinmiş olsa bile)
+  const accountOptions = useMemo<AccountOption[]>(() => {
+    const list: AccountOption[] = propAccounts
+      .filter((a) => a.status === "ACTIVE")
+      .map((a) => ({ id: a.id, name: a.name, label: a.chainName || a.name, stage: a.stage, size: a.size, status: a.status }));
+    const ownId = editingTrade?.accountId;
+    if (ownId && !list.some((o) => o.id === ownId)) {
+      const own = propAccounts.find((a) => a.id === ownId);
+      list.push(
+        own
+          ? { id: own.id, name: own.name, label: own.chainName || own.name, stage: own.stage, size: own.size, status: own.status }
+          : { id: ownId, name: editingTrade?.platform || "Silinmiş hesap", label: editingTrade?.platform || "Silinmiş hesap", stage: typeof editingTrade?.accountStage === "number" ? editingTrade.accountStage : 1 },
       );
-
-      setNotes(editingTrade.notes || "");
-      setScreenshot(editingTrade.screenshot || null);
-      const plat = editingTrade.platform || defaultPlatform || platforms[0] || "";
-      setSelectedPlatform(plat);
-      setSelectedAccountCategory(editingTrade.accountCategory || getTradeAccountCategory({ accountCategory: editingTrade.accountCategory, platform: plat }));
-      setSelectedTimeframe(editingTrade.timeframe || "");
-      setSelectedHtfTimeframe(editingTrade.htfTimeframe || "");
-      setSelectedSession(editingTrade.session || "");
-      setSelectedEntryTime(editingTrade.entryTime || "");
-      let initialSweeps: string[] = [];
-      if (Array.isArray(editingTrade.liquiditySweeps) && editingTrade.liquiditySweeps.length > 0) {
-        initialSweeps = editingTrade.liquiditySweeps;
-      } else if (editingTrade.liquiditySweep) {
-        initialSweeps = typeof editingTrade.liquiditySweep === 'string'
-          ? editingTrade.liquiditySweep.split(',').map(s => s.trim()).filter(Boolean)
-          : [];
-      } else if (editingTrade.concept) {
-        initialSweeps = typeof editingTrade.concept === 'string'
-          ? editingTrade.concept.split(',').map(s => s.trim()).filter(Boolean)
-          : [];
-      }
-      setSelectedLiquiditySweeps(initialSweeps);
-      setSelectedConfirmations(editingTrade.confirmations || []);
-      let initialEntries: string[] = [];
-      if (Array.isArray(editingTrade.entryModels) && editingTrade.entryModels.length > 0) {
-        initialEntries = editingTrade.entryModels;
-      } else if (editingTrade.entry) {
-        initialEntries = typeof editingTrade.entry === 'string'
-          ? editingTrade.entry.split(',').map(s => s.trim()).filter(Boolean)
-          : Array.isArray(editingTrade.entry) ? (editingTrade.entry as string[]) : [];
-      }
-      setSelectedEntries(initialEntries);
-      setSelectedTrend(editingTrade.trend || "");
-      setPlanFidelity(editingTrade.planFidelity || null);
-      setSelectedTpTargets(Array.isArray(editingTrade.tpTargets) ? editingTrade.tpTargets : []);
-      setPremiumDiscount(editingTrade.premiumDiscount || "");
-      setNewsDay(editingTrade.newsDay === true);
-      setSelectedStrategy(editingTrade.strategy || "");
-      setSelectedAsiaFvg(editingTrade.asiaRangeFvg || "");
-      const d = new Date(editingTrade.createdAt || Date.now());
-      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-      setTradeDate(d.toISOString().slice(0, 16));
-    } else {
-      resetForm();
     }
-  }, [editingTrade, platforms]);
+    return list;
+  }, [propAccounts, editingTrade]);
 
-  useEffect(() => {
-    if (rrValue === 0) {
-      setTradeStatus("BREAKEVEN");
-    } else if (rrValue !== "" && tradeStatus === "BREAKEVEN") {
-      setTradeStatus("WIN");
-    }
-  }, [rrValue]);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        assetDropdownRef.current &&
-        !assetDropdownRef.current.contains(event.target as Node)
-      ) {
-        setIsAssetDropdownOpen(false);
-      }
-      if (
-        platformDropdownRef.current &&
-        !platformDropdownRef.current.contains(event.target as Node)
-      ) {
-        setIsPlatformDropdownOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
-
-  const resetForm = () => {
-    setAsset("");
-    setType("LONG");
-    setStopPips("");
-    setTpPips("");
-    setAsiaRangePips("");
-    setMaePips("");
-    setMfePips("");
-    setRrValue("");
-    setTradeStatus("WIN");
-    setManualPnl("");
-    setNotes("");
-    setScreenshot(null);
-
-    const initialPlat = defaultPlatform || localStorage.getItem("last_used_trade_platform") || platforms[0] || "";
-    setSelectedPlatform(initialPlat);
-    setSelectedAccountCategory(getTradeAccountCategory({ platform: initialPlat }));
-    setSelectedTimeframe("");
-    setSelectedHtfTimeframe("");
-    setSelectedSession("");
-    setSelectedEntryTime("");
-    setSelectedLiquiditySweeps([]);
-    setSelectedConfirmations([]);
-    setSelectedEntries([]);
-    setSelectedTrend("");
-    setPlanFidelity(null);
-    setSelectedTpTargets([]);
-    setPremiumDiscount("");
-    setNewsDay(false);
-    setSelectedStrategy("");
-    setSelectedAsiaFvg("");
-    const d = new Date();
-    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-    setTradeDate(d.toISOString().slice(0, 16));
-  };
-
-  const removeScreenshot = () => {
-    setScreenshot(null);
-  };
-
-  const handleVoiceParsed = (data: any) => {
-    if (data.asset) setAsset(data.asset);
-    if (data.type === 'LONG' || data.type === 'SHORT') setType(data.type);
-    if (data.platform) setSelectedPlatform(data.platform);
-    if (data.timeframe) setSelectedTimeframe(data.timeframe);
-    if (data.htfTimeframe) setSelectedHtfTimeframe(data.htfTimeframe);
-    if (data.session) setSelectedSession(data.session);
-    if (data.entryTime) setSelectedEntryTime(data.entryTime);
-    if (data.liquiditySweeps && Array.isArray(data.liquiditySweeps)) {
-      setSelectedLiquiditySweeps(data.liquiditySweeps);
-    } else if (data.liquiditySweep || data.concept) {
-      const parsed = typeof (data.liquiditySweep || data.concept) === 'string'
-        ? (data.liquiditySweep || data.concept).split(',').map((s: string) => s.trim()).filter(Boolean)
-        : [data.liquiditySweep || data.concept];
-      setSelectedLiquiditySweeps(parsed);
-    }
-    if (data.confirmations && Array.isArray(data.confirmations)) setSelectedConfirmations(data.confirmations);
-    if (data.entryModels && Array.isArray(data.entryModels)) {
-      setSelectedEntries(data.entryModels);
-    } else if (data.entry) {
-      const parsed = typeof data.entry === 'string' ? data.entry.split(',').map((s: string) => s.trim()).filter(Boolean) : data.entry;
-      setSelectedEntries(Array.isArray(parsed) ? parsed : [data.entry]);
-    }
-    if (data.trend) setSelectedTrend(data.trend);
-    if (data.planFidelity) setPlanFidelity(data.planFidelity);
-    if (data.status) setTradeStatus(data.status);
-    if (data.rr !== undefined) setRrValue(Math.abs(data.rr));
-    if (data.pnl !== undefined) setManualPnl(Math.abs(data.pnl));
-    if (data.notes) setNotes(data.notes);
-  };
+  const selectedAccount = accountChoice && accountChoice !== NO_ACCOUNT ? accountOptions.find((o) => o.id === accountChoice) : undefined;
+  const effectiveRiskPct =
+    riskChoice === "CUSTOM" ? (typeof customRiskPct === "number" && customRiskPct > 0 ? customRiskPct : null) : riskChoice;
+  // Risk hesabın BAŞLANGIÇ bakiyesi üzerinden: $ = bakiye × % / 100 (salt okunur gösterim + hesap bakiyesi için)
+  const riskDollar =
+    selectedAccount && typeof selectedAccount.size === "number" && effectiveRiskPct
+      ? defaultRiskAmount({ size: selectedAccount.size, riskPct: effectiveRiskPct })
+      : null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -481,7 +180,32 @@ const AddTradeForm = React.memo(function AddTradeForm({
     const safeNotes = (notes || "").trim();
 
     if (!safeAsset) {
-      toast.error("Lütfen bir enstrüman girin (örn: BTC/USDT, ETH, AAPL).");
+      setPairError(true);
+      assetInputRef.current?.focus();
+      toast.error("Lütfen bir parite seçin veya yazın.");
+      return;
+    }
+    if (!accountChoice || (accountChoice !== NO_ACCOUNT && !selectedAccount)) {
+      setAccountError(true);
+      document.getElementById("account-field")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      toast.error("Hesap seçin (prop hesabı ya da Hesapsız).");
+      return;
+    }
+    if (selectedAccount && !effectiveRiskPct) {
+      setRiskError(true);
+      document.getElementById("risk-field")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      toast.error("Bu işlemin riskini seçin (%).");
+      return;
+    }
+    if (selectedAccount && effectiveRiskPct && effectiveRiskPct > 10) {
+      setRiskError(true);
+      toast.error("Risk yüzdesi gerçekçi değil (en fazla %10).");
+      return;
+    }
+    if (!isQuick && newsDay === null) {
+      setNewsDayError(true);
+      document.getElementById("news-day-field")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      toast.error("News Day / Bank Holiday seçimini yapın (Var / Yok).");
       return;
     }
     const matchedAsset = assets.find(
@@ -498,45 +222,28 @@ const AddTradeForm = React.memo(function AddTradeForm({
               ? 0
               : 1)
         : 0;
-    const numericPnl =
-      manualPnl !== ""
-        ? Number(manualPnl) * (tradeStatus === "LOSS" ? -1 : 1)
-        : 0;
 
     if (numericRR > 100 || numericRR < -20) {
-      toast.error(
-        "R:R değeri gerçekçi değil (-20 ile 100 R arası olmalıdır).",
-      );
+      toast.error("R değeri gerçekçi değil (-20 ile 100 R arası olmalıdır).");
       return;
     }
-    if (Math.abs(numericPnl) > 100000000) {
-      toast.error(
-        "Kâr/Zarar değeri limiti aşıyor.",
-      );
+    if (tradeStatus === "WIN" && numericRR <= 0) {
+      toast.error("WIN işlemde sonuç R pozitif olmalı.");
       return;
     }
-    if (tradeStatus === "WIN" && numericRR <= 0 && numericPnl <= 0) {
-      toast.error(
-        "WIN statüsündeki bir işlemin R:R veya PnL değeri pozitif olmalıdır.",
-      );
-      return;
-    }
-    if (tradeStatus === "LOSS" && numericRR >= 0 && numericPnl >= 0) {
-      toast.error(
-        "LOSS statüsündeki bir işlemin R:R veya PnL değeri pozitif OLMAMALIDIR. Lütfen eksi girmeyin, statü eksiye çevirecek, sadece mutlak değeri yazın. Ancak 0 girdiniz. Lütfen geçerli bir zarar büyüklüğü girin.",
-      );
+    if (tradeStatus === "LOSS" && numericRR >= 0) {
+      toast.error("LOSS işlemde R girin (eksi işareti koymayın; durum işareti belirler).");
       return;
     }
 
-    try {
-      localStorage.setItem("last_used_trade_platform", selectedPlatform);
-    } catch (e) {
-      console.warn("Could not save last_used_trade_platform", e);
+    // Giriş ve çıkış NY saatiyle girilir; gerçek ana (UTC) çevrilerek saklanır
+    const parsedTime = tradeDate ? nyInputToTs(tradeDate) : null;
+    const safeCreatedAt = parsedTime !== null && parsedTime > 0 ? parsedTime : Date.now();
+    const exitTs = exitDate ? nyInputToTs(exitDate) : null;
+    if (exitTs !== null && exitTs < safeCreatedAt) {
+      toast.error("Çıkış saati girişten önce olamaz.");
+      return;
     }
-
-    const entryStr = selectedEntries.join(", ");
-    const parsedTime = tradeDate ? new Date(tradeDate).getTime() : Date.now();
-    const safeCreatedAt = !isNaN(parsedTime) && parsedTime > 0 ? parsedTime : Date.now();
 
     onSave({
       ...(editingTrade?.id ? { id: editingTrade.id } : {}),
@@ -545,7 +252,6 @@ const AddTradeForm = React.memo(function AddTradeForm({
       type,
       status: tradeStatus,
       rr: Number(numericRR.toFixed(2)),
-      pnl: numericPnl,
       stopPips: stopPips !== "" && typeof stopPips === 'number' ? stopPips : undefined,
       tpPips: tpPips !== "" && typeof tpPips === 'number' ? tpPips : undefined,
       asiaRangePips: asiaRangePips !== "" && typeof asiaRangePips === 'number' ? asiaRangePips : undefined,
@@ -554,46 +260,174 @@ const AddTradeForm = React.memo(function AddTradeForm({
       timeframe: selectedTimeframe || undefined,
       htfTimeframe: selectedHtfTimeframe || undefined,
       session: selectedSession || undefined,
-      entryTime: selectedEntryTime || undefined,
-      liquiditySweep: selectedLiquiditySweeps.length > 0 ? selectedLiquiditySweeps.join(", ") : undefined,
-      liquiditySweeps: selectedLiquiditySweeps.length > 0 ? selectedLiquiditySweeps : undefined,
-      concept: selectedLiquiditySweeps.length > 0 ? selectedLiquiditySweeps.join(", ") : undefined,
       confirmations: selectedConfirmations.length > 0 ? selectedConfirmations : undefined,
-      entry: entryStr || undefined,
       entryModels: selectedEntries.length > 0 ? selectedEntries : undefined,
       trend: selectedTrend || undefined,
       planFidelity: planFidelity || undefined,
       tpTargets: selectedTpTargets.length > 0 ? selectedTpTargets : undefined,
       premiumDiscount: premiumDiscount || undefined,
-      newsDay,
+      newsDay: newsDay ?? undefined,
       strategy: selectedStrategy || undefined,
       asiaRangeFvg: selectedAsiaFvg || undefined,
-      htfBias: editingTrade?.htfBias,
-      spreadPips: editingTrade?.spreadPips,
       notes: safeNotes || undefined,
       screenshot: screenshot || undefined,
-      platform: selectedPlatform || undefined,
-      accountCategory: selectedAccountCategory || getTradeAccountCategory({ platform: selectedPlatform }),
+      // Hesap anlık görüntüsü: filtreler hesap aramadan çalışsın (aşama, tip, ad)
+      ...accountSnapshot(),
+      // Hızlı kayıt işareti; tam formla kaydedilince kalkar. Hızlı kayıtta girilmeyen alanlar düzenlemede korunur.
+      quickEntry: isQuick ? true : undefined,
+      exitAt: exitTs ?? undefined,
     });
   };
 
+  function accountSnapshot(): Pick<Trade, "platform" | "accountId" | "accountStage" | "accountCategory" | "riskPct" | "riskAmount"> {
+    if (!selectedAccount) {
+      return { platform: undefined, accountId: undefined, accountStage: undefined, accountCategory: "DEMO", riskPct: undefined, riskAmount: undefined };
+    }
+    // Düzenlemede aynı hesap kaldıysa işlemin alındığı aşama korunur (hesap sonradan bir üst aşamaya geçmiş olabilir)
+    const keepStage = editingTrade?.accountId === selectedAccount.id && typeof editingTrade.accountStage === "number";
+    const stage = keepStage ? (editingTrade!.accountStage as number) : selectedAccount.stage;
+    return {
+      platform: selectedAccount.name,
+      accountId: selectedAccount.id,
+      accountStage: stage,
+      accountCategory: stage === 0 ? "FUNDED" : "CHALLENGE",
+      riskPct: effectiveRiskPct ?? undefined,
+      riskAmount: riskDollar ?? (keepStage ? editingTrade?.riskAmount : undefined),
+    };
+  }
+
+  // Kaydedilmemiş değişiklik takibi: ilk çizimdeki durum temel alınır (ek çizim yok)
+  const snapshot = JSON.stringify([
+    asset, type, accountChoice, riskChoice, customRiskPct, tradeDate, exitDate, tradeStatus, stopPips, tpPips, asiaRangePips,
+    maePips, mfePips, rrValue, notes, screenshot, selectedTimeframe, selectedHtfTimeframe, selectedSession,
+    selectedConfirmations, selectedEntries, selectedTrend, planFidelity,
+    selectedTpTargets, premiumDiscount, newsDay, selectedStrategy, selectedAsiaFvg,
+  ]);
+  const baselineRef = useRef(snapshot);
+  // Hazır bekleyen form açılınca tarih "şimdi"ye çekilir; bu değişiklik kirli sayılmasın diye taban yenilenir
+  const rebaseRef = useRef(false);
+  if (rebaseRef.current) {
+    baselineRef.current = snapshot;
+    rebaseRef.current = false;
+  }
+  const isDirty = baselineRef.current !== snapshot;
+
+  // Kapatma isteği: önce açık menüyü kapat, sonra kaydedilmemiş değişiklik varsa onay iste
+  // Kapatma: açık parite listesi varsa önce o kapanır; aksi halde pencere doğrudan kapanır (onay sorulmaz)
+  const guardStateRef = useRef({ isDirty, isAssetDropdownOpen });
+  guardStateRef.current = { isDirty, isAssetDropdownOpen };
+  useEffect(() => {
+    if (!registerCloseGuard || !active) return;
+    registerCloseGuard(() => {
+      const st = guardStateRef.current;
+      if (st.isAssetDropdownOpen) {
+        setIsAssetDropdownOpen(false);
+        return true;
+      }
+      return false;
+    });
+    return () => registerCloseGuard(null);
+  }, [registerCloseGuard, active]);
+
+  // Arka planda hazır tutulan yeni işlem formu açıldığında: dokunulmamışsa tarih/saat açılış anına güncellenir
+  useEffect(() => {
+    if (!active || editingTrade || guardStateRef.current.isDirty) return;
+    const now = toNyInput(Date.now());
+    if (now !== tradeDate) {
+      rebaseRef.current = true;
+      setTradeDate(now);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active]);
+
+  const requestClose = () => onCancelEdit();
+
+  // Yeni işlemde imleç doğrudan pariteye (yalnızca fare/klavye cihazlarında; telefonda klavye kendiliğinden açılmasın)
+  useEffect(() => {
+    if (editingTrade || !active) return;
+    if (typeof window === "undefined" || !window.matchMedia?.("(pointer: fine)").matches) return;
+    const t = window.setTimeout(() => assetInputRef.current?.focus({ preventScroll: true }), 60);
+    return () => window.clearTimeout(t);
+  }, [editingTrade, active]);
+
+  // Son işlemin kurulumunu kopyala (sayısal sonuçlar, notlar ve News Day kopyalanmaz: bunlar işleme özgü)
+  const applyLastSetup = () => {
+    const t = lastTrade;
+    if (!t) return;
+    if (t.asset) setAsset(t.asset);
+    if (t.type) setType(t.type);
+    // Hesap yalnızca hâlâ aktifse kopyalanır; risk her işlemde bilinçli seçilir (kopyalanmaz)
+    if (t.accountId && accountOptions.some((o) => o.id === t.accountId)) setAccountChoice(t.accountId);
+    else if (!t.accountId && t.accountCategory === "DEMO") setAccountChoice(NO_ACCOUNT);
+    setSelectedSession(t.session || "");
+    setSelectedHtfTimeframe(t.htfTimeframe || "");
+    setSelectedTimeframe(t.timeframe || "");
+    setSelectedConfirmations(Array.isArray(t.confirmations) ? t.confirmations : []);
+    setSelectedEntries(Array.isArray(t.entryModels) ? t.entryModels : []);
+    setSelectedTrend(t.trend || "");
+    setSelectedTpTargets(Array.isArray(t.tpTargets) ? t.tpTargets : []);
+    setPremiumDiscount(t.premiumDiscount || "");
+    setSelectedStrategy(t.strategy || "");
+    setSelectedAsiaFvg(t.asiaRangeFvg || "");
+    toast.success("Son işlemin kurulumu uygulandı. Riski, sonucu ve pip değerlerini girin.");
+  };
+
   return (
-    <div className="trade-form-root flex flex-col bg-[#0a0a0c] overflow-hidden rounded-2xl">
+    <div
+      className="trade-form-root flex flex-col flex-1 min-h-0 bg-[#0a0a0c] overflow-hidden rounded-2xl"
+      data-dirty={isDirty || undefined}
+      onKeyDown={(e) => {
+        // Ctrl/Cmd + Enter: her alandan kaydet
+        if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+          e.preventDefault();
+          formRef.current?.requestSubmit();
+        }
+      }}
+    >
       
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2 sm:py-2.5 border-b border-zinc-800/80 bg-zinc-950/80 shrink-0 select-none">
+      <div className="tf-head flex items-center justify-between px-4 sm:px-5 py-3 sm:py-3.5 border-b border-zinc-800/80 bg-zinc-950/80 shrink-0 select-none">
         <div className="flex items-center gap-3">
           <div className={`h-2.5 w-2.5 rounded-full ${editingTrade ? "bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]" : "bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]"}`} />
           <h2 className="heading-1 text-sm sm:text-base tracking-wider">
-            {editingTrade ? "İşlemi Düzenle" : "Yeni İşlem Ekle"}
+            {editingTrade ? (editingTrade.quickEntry ? "İşlemi Tamamla" : "İşlemi Düzenle") : isQuick ? "Hızlı Kayıt" : "Yeni İşlem Ekle"}
           </h2>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <button
+          {!editingTrade && onQuickModeChange && (
+            <button
+              type="button"
+              onClick={() => onQuickModeChange(!quickMode)}
+              aria-pressed={quickMode}
+              title={quickMode ? "Tam forma geç" : "Yalnızca temel bilgiler ve sonuç; ayrıntıları sonra tamamla"}
+              className={`flex items-center gap-1.5 h-8 px-3 rounded-xl border text-[11px] font-bold transition-ui cursor-pointer ${
+                quickMode
+                  ? "border-amber-500/40 bg-amber-500/15 text-amber-200 hover:bg-amber-500/25"
+                  : "border-zinc-700/70 bg-zinc-900/80 text-zinc-300 hover:text-white hover:border-zinc-500 hover:bg-zinc-800"
+              }`}
+            >
+              <Zap size={13} className={quickMode ? "text-amber-300" : "text-amber-400"} />
+              {quickMode ? "Hızlı Kayıt: Açık" : "Hızlı Kayıt"}
+            </button>
+          )}
+          {!editingTrade && lastTrade && (
+            <button
+              type="button"
+              onClick={applyLastSetup}
+              title="Son işlemdeki parite, hesap ve strateji seçimlerini uygular"
+              className="hidden sm:flex items-center gap-1.5 h-8 px-3 rounded-xl border border-zinc-700/70 bg-zinc-900/80 text-[11px] font-bold text-zinc-300 hover:text-white hover:border-zinc-500 hover:bg-zinc-800 transition-ui cursor-pointer"
+            >
+              <Copy size={13} className="text-blue-400" />
+              Son Kurulumu Kopyala
+            </button>
+          )}
+          <button lang="en"
             type="button"
+            aria-label="Kapat"
+            title="Kapat (Esc)"
             onClick={(e) => {
               e.stopPropagation();
-              onCancelEdit();
+              requestClose();
             }}
             className="btn-icon w-8 h-8 text-zinc-400 hover:text-white hover:bg-zinc-800/80 rounded-xl transition-colors cursor-pointer"
           >
@@ -602,1078 +436,177 @@ const AddTradeForm = React.memo(function AddTradeForm({
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex flex-col">
-        <div className="p-3 sm:p-3 lg:p-4 flex flex-col lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)_minmax(0,3fr)] gap-3 overflow-y-auto max-h-[calc(96vh-84px)]">
-          
-          {/* 1. SÜTUN: TEMEL & FİNANS (4 / 12) */}
-          <div className="flex flex-col gap-3 sm:gap-3.5 min-w-0">
 
-            {/* KART 1: TEMEL BİLGİLER */}
-            <div className="bg-zinc-900/50 border border-zinc-800/80 rounded-2xl p-3 sm:p-3.5 flex flex-col gap-2.5 shadow-sm">
-              <div className="flex items-center gap-2 pb-1 border-b border-zinc-800/60">
-                <Layers size={14} className="text-blue-400" />
-                <span className="text-xs font-bold text-zinc-200 uppercase tracking-wider font-sans">{T("basicInfoCard")}</span>
-              </div>
+      <form ref={formRef} onSubmit={handleSubmit} noValidate className="flex flex-col flex-1 min-h-0">
+        <div className={`tf-body p-4 sm:p-5 flex flex-col ${isQuick ? "md:grid md:grid-cols-2 md:items-start" : "lg:grid lg:grid-cols-2 xl:grid-cols-[minmax(0,11fr)_minmax(0,14fr)_minmax(0,8fr)]"} gap-4 overflow-y-auto overscroll-contain flex-1 min-h-0`}>
 
-              {/* Satır 1: Parite & Yön */}
-              <div className="grid grid-cols-2 gap-2">
-                {/* PARİTE */}
-                <div className="relative" ref={assetDropdownRef}>
-                  <label className="text-[10px] sm:text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 block font-sans">
-                    {(cleanDefinitionTitleString(definitionTitles.assets) || "PARİTE").toUpperCase()}
-                  </label>
-                  <div className="relative group">
-                    <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-zinc-500 group-focus-within:text-blue-400 transition-colors">
-                      <Search size={12} />
-                    </span>
-                    <input
-                      type="text"
-                      placeholder="ARA..."
-                      value={asset}
-                      onChange={(e) => {
-                        setAsset(e.target.value.toUpperCase());
-                        setIsAssetDropdownOpen(true);
-                      }}
-                      onFocus={() => setIsAssetDropdownOpen(true)}
-                      className="w-full h-8 sm:h-8.5 pl-7.5 pr-2.5 bg-zinc-950/80 border border-zinc-700/70 hover:border-zinc-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 rounded-lg sm:rounded-xl text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none transition-ui uppercase shadow-inner font-sans font-bold"
-                    />
-                  </div>
-                  <AnimatePresence>
-                    {isAssetDropdownOpen && (
-                      <motion.div
-                        key="asset-dropdown"
-                        {...POPOVER}
-                        className="origin-top absolute z-30 w-full mt-1.5 bg-zinc-900 border border-zinc-700/80 rounded-xl max-h-48 flex flex-col overflow-hidden shadow-2xl"
-                      >
-                        <div className="overflow-y-auto flex-1 p-1 space-y-0.5 custom-scrollbar">
-                          {(() => {
-                            const matches = assets.filter((x) => x.toLowerCase().includes(asset.toLowerCase()));
-                            if (matches.length === 0) {
-                              return <div className="px-3 py-2 text-xs text-zinc-500 text-center font-sans font-bold">Bulunamadı</div>;
-                            }
-                            return matches.map((a) => {
-                              const isSel = a.toLowerCase() === asset.trim().toLowerCase();
-                              return (
-                                <div
-                                  key={a}
-                                  data-selected={isSel}
-                                  onMouseDown={() => {
-                                    setAsset(a);
-                                    setIsAssetDropdownOpen(false);
-                                  }}
-                                  className={`dd-option px-2.5 py-1.5 rounded-lg text-xs font-sans font-bold uppercase cursor-pointer flex items-center justify-between gap-2 border ${
-                                    isSel ? "bg-blue-500/15 text-blue-300 border-blue-500/30" : "text-zinc-200 border-transparent"
-                                  }`}
-                                >
-                                  <span className="truncate">{a}</span>
-                                  {isSel && <Check size={12} className="dd-check text-blue-400 shrink-0" strokeWidth={2.5} />}
-                                </div>
-                              );
-                            });
-                          })()}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                {/* YÖN (LONG/SHORT) */}
-                <div>
-                  <label className="text-[10px] sm:text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 block font-sans">{L("direction")}</label>
-                  <div className="grid grid-cols-2 gap-1 h-8 sm:h-8.5 bg-zinc-950/80 border border-zinc-700/70 rounded-lg sm:rounded-xl p-0.5 shadow-inner">
-                    <button
-                      type="button"
-                      data-selected={type === "LONG"}
-                      onClick={() => setType("LONG")}
-                      className={`relative h-full rounded-md sm:rounded-lg text-xs font-sans font-bold uppercase transition-ui flex items-center justify-center cursor-pointer ${
-                        type === "LONG" ? "text-win font-bold" : "text-zinc-400 hover:text-zinc-200 font-bold"
-                      }`}
-                    >
-                      {type === "LONG" && <SlideBg id="tradeTypeSlide" rounded="rounded-md sm:rounded-lg" className="bg-win-bg border-win-border shadow-xs" />}
-                      <span className="relative z-10">LONG</span>
-                    </button>
-                    <button
-                      type="button"
-                      data-selected={type === "SHORT"}
-                      onClick={() => setType("SHORT")}
-                      className={`relative h-full rounded-md sm:rounded-lg text-xs font-sans font-bold uppercase transition-ui flex items-center justify-center cursor-pointer ${
-                        type === "SHORT" ? "text-loss font-bold" : "text-zinc-400 hover:text-zinc-200 font-bold"
-                      }`}
-                    >
-                      {type === "SHORT" && <SlideBg id="tradeTypeSlide" rounded="rounded-md sm:rounded-lg" className="bg-loss-bg border-loss-border shadow-xs" />}
-                      <span className="relative z-10">SHORT</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Satır 2: Platform & Tarih */}
-              <div className="grid grid-cols-2 gap-2">
-                {/* PLATFORM */}
-                <div className="relative" ref={platformDropdownRef}>
-                  <label className="text-[10px] sm:text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 block font-sans">
-                    {(cleanDefinitionTitleString(definitionTitles.platforms) || "PLATFORM").toUpperCase()}
-                  </label>
-                  <div
-                    onClick={() => {
-                      setIsAssetDropdownOpen(false);
-                      setIsPlatformDropdownOpen(!isPlatformDropdownOpen);
-                    }}
-                    className="w-full h-8 sm:h-8.5 bg-zinc-950/80 border border-zinc-700/70 hover:border-zinc-500 rounded-lg sm:rounded-xl px-2.5 text-xs text-white flex items-center justify-between cursor-pointer transition-ui shadow-inner font-sans uppercase select-none"
-                  >
-                    <div className="flex items-center gap-1.5 truncate">
-                      <Monitor size={13} className="text-zinc-400 shrink-0" />
-                      <span className={`truncate font-sans font-bold uppercase ${selectedPlatform ? "text-zinc-100" : "text-zinc-500"}`}>
-                        {selectedPlatform || "Seç"}
-                      </span>
-                      {selectedPlatform && (
-                        <span className={`text-[8px] sm:text-[9px] px-1.5 py-0.2 rounded-md font-bold shrink-0 ${
-                          selectedAccountCategory === 'FUNDED'
-                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                            : selectedAccountCategory === 'CHALLENGE'
-                              ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
-                              : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                        }`}>
-                          {selectedAccountCategory}
-                        </span>
-                      )}
-                    </div>
-                    <ChevronDown size={13} data-open={isPlatformDropdownOpen} className="dd-chevron text-zinc-400 shrink-0" />
-                  </div>
-                  <AnimatePresence>
-                  {isPlatformDropdownOpen && (
-                    <motion.div
-                      key="platform-dropdown"
-                      {...POPOVER}
-                      className="origin-top-left absolute z-30 w-72 sm:w-84 left-0 mt-1.5 bg-zinc-900 border border-zinc-700/80 rounded-xl max-h-64 flex flex-col overflow-hidden shadow-2xl">
-                      {/* Category Quick Filter */}
-                      <div className="p-1.5 bg-zinc-950/80 border-b border-zinc-800 flex items-center gap-1">
-                        <button
-                          type="button"
-                          data-selected={platformTabFilter === 'ALL'}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setPlatformTabFilter('ALL');
-                          }}
-                          className={`relative flex-1 py-1 text-[10px] font-bold rounded-lg uppercase transition-colors cursor-pointer text-center ${
-                            platformTabFilter === 'ALL' ? 'text-white' : 'text-zinc-400 hover:text-zinc-200'
-                          }`}
-                        >
-                          {platformTabFilter === 'ALL' && <SlideBg id="platformTabSlide" className="bg-zinc-800 border-transparent shadow-xs" />}
-                          <span className="relative z-10">Tümü</span>
-                        </button>
-                        <button
-                          type="button"
-                          data-selected={platformTabFilter === 'FUNDED'}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setPlatformTabFilter('FUNDED');
-                          }}
-                          className={`relative flex-1 py-1 text-[10px] font-bold rounded-lg uppercase transition-colors flex items-center justify-center gap-1 cursor-pointer ${
-                            platformTabFilter === 'FUNDED' ? 'text-emerald-300' : 'text-zinc-400 hover:text-emerald-400'
-                          }`}
-                        >
-                          {platformTabFilter === 'FUNDED' && <SlideBg id="platformTabSlide" className="bg-emerald-500/20 border-emerald-500/40 shadow-xs" />}
-                          <span className="relative z-10 flex items-center justify-center gap-1"><Trophy size={10} />Funded</span>
-                        </button>
-                        <button
-                          type="button"
-                          data-selected={platformTabFilter === 'CHALLENGE'}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setPlatformTabFilter('CHALLENGE');
-                          }}
-                          className={`relative flex-1 py-1 text-[10px] font-bold rounded-lg uppercase transition-colors flex items-center justify-center gap-1 cursor-pointer ${
-                            platformTabFilter === 'CHALLENGE' ? 'text-blue-300' : 'text-zinc-400 hover:text-blue-400'
-                          }`}
-                        >
-                          {platformTabFilter === 'CHALLENGE' && <SlideBg id="platformTabSlide" className="bg-blue-500/20 border-blue-500/40 shadow-xs" />}
-                          <span className="relative z-10 flex items-center justify-center gap-1"><Target size={10} />Challenge</span>
-                        </button>
-                        <button
-                          type="button"
-                          data-selected={platformTabFilter === 'DEMO'}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setPlatformTabFilter('DEMO');
-                          }}
-                          className={`relative flex-1 py-1 text-[10px] font-bold rounded-lg uppercase transition-colors flex items-center justify-center gap-1 cursor-pointer ${
-                            platformTabFilter === 'DEMO' ? 'text-amber-300' : 'text-zinc-400 hover:text-amber-400'
-                          }`}
-                        >
-                          {platformTabFilter === 'DEMO' && <SlideBg id="platformTabSlide" className="bg-amber-500/20 border-amber-500/40 shadow-xs" />}
-                          <span className="relative z-10 flex items-center justify-center gap-1"><Shield size={10} />Demo</span>
-                        </button>
-                      </div>
-
-                      <div className="overflow-y-auto flex-1 divide-y divide-zinc-800/50 custom-scrollbar">
-                        {/* SECTION 1: FUNDED & CANLI HESAPLAR */}
-                        {(platformTabFilter === 'ALL' || platformTabFilter === 'FUNDED') && fundedPlatformList.length > 0 && (
-                          <div>
-                            <div className="px-3 py-1.5 bg-zinc-950/60 text-[9px] font-bold uppercase tracking-wider text-emerald-400/90 flex items-center gap-1.5 border-b border-zinc-800/40">
-                              <Trophy size={11} className="text-emerald-400" />
-                              <span>Funded & Canlı Hesaplar</span>
-                            </div>
-                            <div className="py-0.5">
-                              {fundedPlatformList.map((p, idx) => (
-                                <div
-                                  key={`funded-${idx}`}
-                                  onMouseDown={() => {
-                                    setSelectedPlatform(p);
-                                    setSelectedAccountCategory('FUNDED');
-                                    setIsPlatformDropdownOpen(false);
-                                  }}
-                                  data-selected={selectedPlatform === p && selectedAccountCategory === 'FUNDED'}
-                                  className={`dd-option px-3 py-2 text-xs cursor-pointer font-sans font-bold uppercase flex items-center justify-between ${
-                                    selectedPlatform === p && selectedAccountCategory === 'FUNDED' ? 'bg-emerald-500/15 text-emerald-300' : 'text-zinc-200'
-                                  }`}
-                                >
-                                  <span>{p}</span>
-                                  <span className="flex items-center gap-1.5">
-                                    <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                                      FUNDED
-                                    </span>
-                                    {selectedPlatform === p && selectedAccountCategory === 'FUNDED' && <Check size={12} className="dd-check text-emerald-400" strokeWidth={2.5} />}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* SECTION 2: CHALLENGE & DEĞERLENDİRME */}
-                        {(platformTabFilter === 'ALL' || platformTabFilter === 'CHALLENGE') && challengePlatformList.length > 0 && (
-                          <div>
-                            <div className="px-3 py-1.5 bg-zinc-950/60 text-[9px] font-bold uppercase tracking-wider text-blue-400/90 flex items-center gap-1.5 border-b border-zinc-800/40">
-                              <Target size={11} className="text-blue-400" />
-                              <span>Challenge & Değerlendirme</span>
-                            </div>
-                            <div className="py-0.5">
-                              {challengePlatformList.map((p, idx) => (
-                                <div
-                                  key={`challenge-${idx}`}
-                                  onMouseDown={() => {
-                                    setSelectedPlatform(p);
-                                    setSelectedAccountCategory('CHALLENGE');
-                                    setIsPlatformDropdownOpen(false);
-                                  }}
-                                  data-selected={selectedPlatform === p && selectedAccountCategory === 'CHALLENGE'}
-                                  className={`dd-option px-3 py-2 text-xs cursor-pointer font-sans font-bold uppercase flex items-center justify-between ${
-                                    selectedPlatform === p && selectedAccountCategory === 'CHALLENGE' ? 'bg-blue-500/15 text-blue-300' : 'text-zinc-200'
-                                  }`}
-                                >
-                                  <span>{p}</span>
-                                  <span className="flex items-center gap-1.5">
-                                    <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30">
-                                      CHALLENGE
-                                    </span>
-                                    {selectedPlatform === p && selectedAccountCategory === 'CHALLENGE' && <Check size={12} className="dd-check text-blue-400" strokeWidth={2.5} />}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* SECTION 3: DEMO & PRATİK */}
-                        {(platformTabFilter === 'ALL' || platformTabFilter === 'DEMO') && demoPlatformList.length > 0 && (
-                          <div>
-                            <div className="px-3 py-1.5 bg-zinc-950/60 text-[9px] font-bold uppercase tracking-wider text-amber-400/90 flex items-center gap-1.5 border-b border-zinc-800/40">
-                              <Shield size={11} className="text-amber-400" />
-                              <span>Demo & Pratik Hesaplar</span>
-                            </div>
-                            <div className="py-0.5">
-                              {demoPlatformList.map((p, idx) => (
-                                <div
-                                  key={`demo-${idx}`}
-                                  onMouseDown={() => {
-                                    setSelectedPlatform(p);
-                                    setSelectedAccountCategory('DEMO');
-                                    setIsPlatformDropdownOpen(false);
-                                  }}
-                                  data-selected={selectedPlatform === p && selectedAccountCategory === 'DEMO'}
-                                  className={`dd-option px-3 py-2 text-xs cursor-pointer font-sans font-bold uppercase flex items-center justify-between ${
-                                    selectedPlatform === p && selectedAccountCategory === 'DEMO' ? 'bg-amber-500/15 text-amber-300' : 'text-zinc-200'
-                                  }`}
-                                >
-                                  <span>{p}</span>
-                                  <span className="flex items-center gap-1.5">
-                                    <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                                      DEMO
-                                    </span>
-                                    {selectedPlatform === p && selectedAccountCategory === 'DEMO' && <Check size={12} className="dd-check text-amber-400" strokeWidth={2.5} />}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {((platformTabFilter === 'ALL' && platforms.length === 0) ||
-                          (platformTabFilter === 'FUNDED' && fundedPlatformList.length === 0) ||
-                          (platformTabFilter === 'CHALLENGE' && challengePlatformList.length === 0) ||
-                          (platformTabFilter === 'DEMO' && demoPlatformList.length === 0)) && (
-                          <div className="px-4 py-8 text-center text-xs text-zinc-500 font-sans font-bold">
-                            Kayıtlı platform bulunamadı
-                          </div>
-                        )}
-                      </div>
-                    </motion.div>
-                  )}
-                  </AnimatePresence>
-                </div>
-
-                {/* TARİH */}
-                <div>
-                  <label className="text-[10px] sm:text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 block font-sans">{L("tradeDate")}</label>
-                  <div className="h-8 sm:h-8.5 flex items-center">
-                    <TurkishDateTimePicker value={tradeDate} onChange={setTradeDate} className="w-full" />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* KART 2: FİNANSAL SONUÇ */}
-            <div className="bg-zinc-900/50 border border-zinc-800/80 rounded-2xl p-3 sm:p-3.5 flex flex-col gap-2.5 shadow-sm">
-              <div className="flex items-center gap-2 pb-1 border-b border-zinc-800/60">
-                <Activity size={14} className="text-emerald-400" />
-                <span className="text-xs font-bold text-zinc-200 uppercase tracking-wider font-sans">{T("financialCard")}</span>
-              </div>
-
-              {/* DURUM: WIN / LOSS / BREAKEVEN */}
-              <div>
-                <label className="text-[10px] sm:text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 block font-sans">{L("tradeStatus")}</label>
-                <div className="grid grid-cols-3 gap-1.5 h-9 sm:h-10 w-full bg-zinc-950/80 border border-zinc-700/70 rounded-xl p-1 shadow-inner">
-                  {(["WIN", "LOSS", "BREAKEVEN"] as const).map((sVal) => {
-                    const colors: Record<string, string> = {
-                      WIN: "text-win font-bold",
-                      LOSS: "text-loss font-bold",
-                      BREAKEVEN: "text-brand font-bold",
-                    };
-                    const bgColors: Record<string, string> = {
-                      WIN: "bg-win-bg border-win-border shadow-xs",
-                      LOSS: "bg-loss-bg border-loss-border shadow-xs",
-                      BREAKEVEN: "bg-brand/10 border-brand/20 shadow-xs",
-                    };
-                    return (
-                      <button
-                        key={sVal}
-                        type="button"
-                        data-selected={tradeStatus === sVal}
-                        onClick={() => {
-                          setTradeStatus(sVal);
-                          if (sVal === "BREAKEVEN") {
-                            setRrValue(0);
-                            setManualPnl("");
-                          } else if (sVal === "LOSS") {
-                            setRrValue(1);
-                          } else if (sVal === "WIN") {
-                            if (stopPips !== "" && tpPips !== "" && typeof stopPips === 'number' && typeof tpPips === 'number' && stopPips > 0) {
-                              setRrValue(parseFloat((tpPips / stopPips).toFixed(2)));
-                            } else if (rrValue === 0 || rrValue === 1) {
-                              setRrValue("");
-                            }
-                          }
-                        }}
-                        className={`relative h-full min-w-0 px-3 sm:px-4 text-xs font-bold font-sans rounded-lg border border-transparent uppercase transition-ui cursor-pointer ${
-                          tradeStatus === sVal
-                            ? colors[sVal]
-                            : "bg-transparent text-zinc-400 hover:text-zinc-200"
-                        }`}
-                      >
-                        {tradeStatus === sVal && <SlideBg id="tradeStatusSlide" className={bgColors[sVal]} />}
-                        <span className="relative z-10">{sVal}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* PİP HESAPLAYICI & DEĞERLERİ */}
-              <div className="bg-zinc-950/40 p-2 sm:p-2.5 rounded-xl border border-zinc-800/70 space-y-2">
-                {/* 1. SATIR: STOP & TP */}
-                <div className="grid grid-cols-2 gap-2">
-                  {/* STOP PİP */}
-                  <div>
-                    <label className="text-[10px] sm:text-[11px] font-bold text-rose-400 uppercase tracking-wide font-sans flex items-center gap-1 mb-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-                      {L("stopPips")}
-                    </label>
-                    <input
-                      type="number"
-                      step="any"
-                      min="0"
-                      placeholder="örn: 10"
-                      value={stopPips}
-                      onChange={(e) => handleStopPipsChange(e.target.value)}
-                      className="w-full h-8 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-rose-500 focus:ring-1 focus:ring-rose-500/30 rounded-lg sm:rounded-xl px-2.5 text-xs text-zinc-100 focus:outline-none placeholder-zinc-500 font-sans shadow-inner transition-ui [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
-                    />
-                  </div>
-
-                  {/* TP PİP */}
-                  <div>
-                    <label className="text-[10px] sm:text-[11px] font-bold text-emerald-400 uppercase tracking-wide font-sans flex items-center gap-1 mb-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                      {L("tpPips")}
-                    </label>
-                    <input
-                      type="number"
-                      step="any"
-                      min="0"
-                      placeholder="örn: 30"
-                      value={tpPips}
-                      onChange={(e) => handleTpPipsChange(e.target.value)}
-                      className="w-full h-8 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 rounded-lg sm:rounded-xl px-2.5 text-xs text-zinc-100 focus:outline-none placeholder-zinc-500 font-sans shadow-inner transition-ui [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
-                    />
-                  </div>
-                </div>
-
-                {/* 2. SATIR: MAE (PİP) & MFE (PİP) */}
-                <div className="grid grid-cols-2 gap-2 pt-1.5 border-t border-zinc-800/60">
-                  {/* MAE PİP */}
-                  <div>
-                    <label className="text-[10px] sm:text-[11px] font-bold text-orange-400 uppercase tracking-wide font-sans flex items-center gap-1 mb-1" title="Maximum Adverse Excursion - Aleyhe maksimum sapma">
-                      <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
-                      {L("maePips")}
-                    </label>
-                    <input
-                      type="number"
-                      step="any"
-                      min="0"
-                      placeholder="örn: 4.5"
-                      value={maePips}
-                      onChange={(e) => handleMaePipsChange(e.target.value)}
-                      className="w-full h-8 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-orange-500 focus:ring-1 focus:ring-orange-500/30 rounded-lg sm:rounded-xl px-2.5 text-xs text-zinc-100 focus:outline-none placeholder-zinc-500 font-sans shadow-inner transition-ui [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
-                    />
-                  </div>
-
-                  {/* MFE PİP */}
-                  <div>
-                    <label className="text-[10px] sm:text-[11px] font-bold text-cyan-400 uppercase tracking-wide font-sans flex items-center gap-1 mb-1" title="Maximum Favorable Excursion - Lehe maksimum potansiyel">
-                      <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
-                      {L("mfePips")}
-                    </label>
-                    <input
-                      type="number"
-                      step="any"
-                      min="0"
-                      placeholder="örn: 28"
-                      value={mfePips}
-                      onChange={(e) => handleMfePipsChange(e.target.value)}
-                      className="w-full h-8 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/30 rounded-lg sm:rounded-xl px-2.5 text-xs text-zinc-100 focus:outline-none placeholder-zinc-500 font-sans shadow-inner transition-ui [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
-                    />
-                  </div>
-                </div>
-
-                {/* 3. SATIR: ASIA RANGE (PİP) */}
-                <div className="pt-1.5 border-t border-zinc-800/60">
-                  <label className="text-[10px] sm:text-[11px] font-bold text-amber-400 uppercase tracking-wide font-sans flex items-center gap-1 mb-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                    {L("asiaRangePips")}
-                  </label>
-                  <input
-                    type="number"
-                    step="any"
-                    min="0"
-                    placeholder="örn: 18.5"
-                    value={asiaRangePips}
-                    onChange={(e) => handleAsiaRangePipsChange(e.target.value)}
-                    className="w-full h-8 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 rounded-lg sm:rounded-xl px-2.5 text-xs text-zinc-100 focus:outline-none placeholder-zinc-500 font-sans shadow-inner transition-ui [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
-                  />
-                </div>
-              </div>
-
-              {/* R:R ORANI & PNL */}
-              <div className="grid grid-cols-2 gap-2">
-                {/* R:R */}
-                <div>
-                  <label className="text-[10px] sm:text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 block font-sans">
-                    {L("rr")}
-                  </label>
-                  <div className="relative">
-                    {tradeStatus === "LOSS" && (
-                      <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-rose-400 font-bold text-xs font-sans">
-                        -
-                      </span>
-                    )}
-                    <input
-                      type="number"
-                      step="any"
-                      min="0"
-                      placeholder={tradeStatus === "LOSS" ? "1" : "2.5"}
-                      value={tradeStatus === "BREAKEVEN" ? 0 : rrValue}
-                      disabled={tradeStatus === "BREAKEVEN"}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setRrValue(val !== "" ? Math.abs(Number(val)) : "");
-                      }}
-                      className={`w-full h-8 sm:h-8.5 bg-zinc-950/80 border border-zinc-700/70 hover:border-zinc-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 rounded-lg sm:rounded-xl ${tradeStatus === "LOSS" ? "pl-5.5 pr-2.5" : "px-2.5"} text-xs text-zinc-100 focus:outline-none placeholder-zinc-500 font-sans shadow-inner disabled:opacity-50 transition-ui [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold`}
-                    />
-                  </div>
-                </div>
-
-                {/* PNL */}
-                <div>
-                  <label className="text-[10px] sm:text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 block font-sans">
-                    {L("pnl")}
-                  </label>
-                  <input
-                    type="number"
-                    step="any"
-                    min="0"
-                    placeholder="0.00"
-                    value={tradeStatus === "BREAKEVEN" ? "0" : manualPnl}
-                    disabled={tradeStatus === "BREAKEVEN"}
-                    onChange={(e) => setManualPnl(e.target.value !== "" ? Number(e.target.value) : "")}
-                    className="w-full h-8 sm:h-8.5 bg-zinc-950/80 border border-zinc-700/70 hover:border-zinc-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 rounded-lg sm:rounded-xl px-2.5 text-xs text-zinc-100 focus:outline-none placeholder-zinc-500 font-sans shadow-inner disabled:opacity-50 transition-ui [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* KART 3: GRAFİK BAĞLANTISI */}
-            <div className="bg-zinc-900/50 border border-zinc-800/80 rounded-2xl p-3 sm:p-3.5 flex flex-col gap-2 shadow-sm">
-              <div className="flex items-center justify-between text-zinc-400 pb-1 border-b border-zinc-800/60">
-                <div className="flex items-center gap-2">
-                  <ImageIcon size={14} className="text-zinc-400" />
-                  <span className="text-xs font-bold text-zinc-200 uppercase tracking-wider font-sans">{T("chartLink")}</span>
-                </div>
-                {screenshot && (
-                  <span className="text-[11px] text-emerald-400 font-sans flex items-center gap-1 font-bold">
-                    <Check size={11} /> Link Eklendi
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="url"
-                  value={screenshot || ""}
-                  onChange={(e) => setScreenshot(e.target.value)}
-                  placeholder="https://... TradingView veya grafik linki"
-                  className="flex-1 h-8 sm:h-8.5 bg-zinc-950/80 border border-zinc-700/70 hover:border-zinc-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 rounded-lg sm:rounded-xl px-2.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none transition-ui font-sans font-medium shadow-inner"
-                />
-                {screenshot && (
-                  <button
-                    type="button"
-                    onClick={removeScreenshot}
-                    className="h-8 sm:h-8.5 px-2.5 bg-zinc-900 hover:bg-red-500/20 hover:text-red-400 border border-zinc-700/70 rounded-lg sm:rounded-xl text-zinc-400 text-xs font-bold transition-colors shrink-0 flex items-center gap-1 font-sans cursor-pointer"
-                  >
-                    <X size={12} />
-                    <span>Sil</span>
-                  </button>
-                )}
-              </div>
-            </div>
-
+          {/* 1. SÜTUN: TEMEL BİLGİLER + NOTLAR. Hızlı kayıtta sarmalayıcı "contents" olur: Temel ve Sonuç yan yana iki sütun */}
+          <div className={isQuick ? "contents" : "flex flex-col gap-4 min-w-0"}>
+            <BasicInfoCard
+              titles={titles}
+              assets={assets}
+              asset={asset}
+              setAsset={setAsset}
+              pairError={pairError}
+              setPairError={setPairError}
+              assetInputRef={assetInputRef}
+              isAssetDropdownOpen={isAssetDropdownOpen}
+              setIsAssetDropdownOpen={setIsAssetDropdownOpen}
+              type={type}
+              setType={setType}
+              accountOptions={accountOptions}
+              accountChoice={accountChoice}
+              setAccountChoice={setAccountChoice}
+              accountError={accountError}
+              setAccountError={setAccountError}
+              selectedAccount={selectedAccount}
+              riskChoice={riskChoice}
+              setRiskChoice={setRiskChoice}
+              customRiskPct={customRiskPct}
+              setCustomRiskPct={setCustomRiskPct}
+              riskError={riskError}
+              setRiskError={setRiskError}
+              riskDollar={riskDollar}
+              tradeDate={tradeDate}
+              setTradeDate={setTradeDate}
+              exitDate={exitDate}
+              setExitDate={setExitDate}
+            />
+            {!isQuick && <NotesCard titles={titles} notes={notes} setNotes={setNotes} />}
+            {isQuick && (
+              <ResultCard
+                titles={titles}
+                isQuick={isQuick}
+                tradeStatus={tradeStatus}
+                setTradeStatus={setTradeStatus}
+                rrValue={rrValue}
+                setRrValue={setRrValue}
+                stopPips={stopPips}
+                setStopPips={setStopPips}
+                tpPips={tpPips}
+                setTpPips={setTpPips}
+                maePips={maePips}
+                setMaePips={setMaePips}
+                mfePips={mfePips}
+                setMfePips={setMfePips}
+                asiaRangePips={asiaRangePips}
+                setAsiaRangePips={setAsiaRangePips}
+              />
+            )}
           </div>
 
-          {/* 2. SÜTUN: TEKNİK STRATEJİ & KURGU (5 / 12) */}
-          <div className="flex flex-col min-w-0">
-            <div className="bg-zinc-900/50 border border-zinc-800/80 rounded-2xl p-3 sm:p-3.5 flex flex-col gap-2 shadow-sm h-full">
-              
-              {/* 1. SETUP KALİTESİ */}
-              <div>
-                <label className="text-[10px] sm:text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
-                  <ShieldCheck size={13} className="text-blue-400" />
-                  {(cleanDefinitionTitleString(definitionTitles.planFidelities) || "SETUP KALİTESİ").toUpperCase()}
-                </label>
-                <div className="w-full grid grid-flow-col auto-cols-fr bg-zinc-950/80 border border-zinc-800/90 rounded-xl p-1 gap-1.5 h-9 sm:h-10 shadow-inner">
-                  {planFidelities.map((item) => {
-                    const isSelected = planFidelity === item;
-                    const lower = item.toLowerCase();
-                    let activeStyle = "bg-blue-500/20 text-blue-300 border-blue-500/40 font-bold shadow-xs";
-                    if (lower === "a+" || lower === "tam" || lower.includes("uygun") || lower.includes("sadık") || lower.includes("disciplined") || lower.includes("yüksek") || lower.includes("kusursuz")) {
-                      activeStyle = "toggle-item-win font-bold shadow-xs";
-                    } else if (lower === "a" || lower === "kısmen" || lower.includes("partial") || lower.includes("orta") || lower === "b") {
-                      activeStyle = "bg-blue-500/20 text-blue-300 border-blue-500/40 font-bold shadow-xs";
-                    } else if (lower.includes("b-c") || lower === "fomo" || lower.includes("ihlal") || lower.includes("disiplinsiz") || lower.includes("intikam") || lower.includes("düşük") || lower === "c") {
-                      activeStyle = "toggle-item-loss font-bold shadow-xs";
-                    }
-                    return (
-                      <button
-                        key={item}
-                        type="button"
-                        data-selected={isSelected}
-                        onClick={() => setPlanFidelity(isSelected ? null : item)}
-                        className={`min-w-0 h-full flex items-center justify-center px-3 sm:px-4 rounded-lg text-xs font-sans font-bold tracking-wide uppercase transition-ui duration-150 select-none border cursor-pointer ${
-                          isSelected ? activeStyle : "border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
-                        }`}
-                      >
-                        <span className="truncate">{item}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* 2. TREND YAPISI */}
-              <div>
-                <label className="text-[10px] sm:text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
-                  <TrendingUp size={13} className="text-emerald-400" />
-                  {(cleanDefinitionTitleString(definitionTitles.trendTypes) || "TREND").toUpperCase()}
-                </label>
-                <div className="w-full grid grid-flow-col auto-cols-fr bg-zinc-950/80 border border-zinc-800/90 rounded-xl p-1 gap-1.5 h-9 sm:h-10 shadow-inner">
-                  {(trendTypes.length > 0 ? trendTypes : ["Continuation", "Reversal"]).map((tr, idx) => {
-                    const isSelected = selectedTrend === tr;
-                    const lower = tr.toLowerCase();
-                    const isContinuation = lower.includes("continuation") || lower.includes("devam") || lower.includes("trend");
-                    const isReversal = lower.includes("reversal") || lower.includes("dönüş") || lower.includes("ters");
-
-                    const activeStyle = (isReversal || (!isContinuation && idx === 1))
-                      ? "toggle-item-loss font-bold shadow-xs"
-                      : "toggle-item-win font-bold shadow-xs";
-
-                    return (
-                      <button
-                        key={tr}
-                        type="button"
-                        data-selected={isSelected}
-                        onClick={() => setSelectedTrend(isSelected ? "" : tr)}
-                        className={`min-w-0 h-full flex items-center justify-center px-3 sm:px-4 rounded-lg text-xs font-sans font-bold tracking-wide uppercase transition-ui duration-150 select-none border cursor-pointer ${
-                          isSelected
-                            ? activeStyle
-                            : "border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
-                        }`}
-                      >
-                        <span className="truncate">{tr}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* 2b. NEWS DAY / BANK HOLIDAY (Var / Yok) — varsayılan her zaman "Yok" */}
-              <div>
-                <label className="text-[10px] sm:text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
-                  <Newspaper size={13} className="text-amber-400" />
-                  {(cleanDefinitionTitleString(definitionTitles.newsDays) || "NEWS DAY/BANK HOLIDAY").toUpperCase()}
-                </label>
-                <div className="w-full grid grid-flow-col auto-cols-fr bg-zinc-950/80 border border-zinc-800/90 rounded-xl p-1 gap-1.5 h-9 sm:h-10 shadow-inner">
-                  {([
-                    { value: true, label: newsYesLabel, active: "bg-amber-500/20 text-amber-300 border-amber-500/40" },
-                    { value: false, label: newsNoLabel, active: "bg-blue-500/20 text-blue-300 border-blue-500/40" },
-                  ] as const).map((opt) => {
-                    const isSelected = newsDay === opt.value;
-                    return (
-                      <button
-                        key={String(opt.value)}
-                        type="button"
-                        data-selected={isSelected}
-                        onClick={() => setNewsDay(opt.value)}
-                        className={`min-w-0 h-full flex items-center justify-center px-3 sm:px-4 rounded-lg text-xs font-sans font-bold tracking-wide uppercase transition-ui duration-150 select-none border cursor-pointer ${
-                          isSelected
-                            ? `${opt.active} font-bold shadow-xs`
-                            : "border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
-                        }`}
-                      >
-                        <span className="truncate">{opt.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* 2c. STRATEJİ + ASIA RANGE FVG (Tanımlamalar'dan yönetilir) */}
-              <div className="grid grid-cols-2 gap-x-3 gap-y-2 pt-1 border-t border-zinc-800/60">
-                <div className="flex flex-col">
-                  <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
-                    <Compass size={12} className="text-cyan-400 shrink-0" />
-                    {L("strategies")}
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {withSelected(strategies, selectedStrategy ? [selectedStrategy] : []).map((st) => (
-                      <button
-                        key={st}
-                        type="button"
-                        data-selected={st === selectedStrategy}
-                        onClick={() => setSelectedStrategy(st === selectedStrategy ? "" : st)}
-                        className={`relative px-2.5 py-1 text-[11px] rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
-                          st === selectedStrategy
-                            ? "text-cyan-300 border-transparent"
-                            : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
-                        }`}
-                      >
-                        {st === selectedStrategy && <SlideBg id="strategySlide" rounded="rounded-xl" className="bg-cyan-500/20 border-cyan-500/60 shadow-xs" />}
-                        <span className="relative z-10">{st}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
-                    <Layers size={12} className="text-orange-400 shrink-0" />
-                    {L("asiaRangeFvgs")}
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {withSelected(asiaRangeFvgs, selectedAsiaFvg ? [selectedAsiaFvg] : []).map((fv) => (
-                      <button
-                        key={fv}
-                        type="button"
-                        data-selected={fv === selectedAsiaFvg}
-                        onClick={() => setSelectedAsiaFvg(fv === selectedAsiaFvg ? "" : fv)}
-                        className={`relative px-2.5 py-1 text-[11px] rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
-                          fv === selectedAsiaFvg
-                            ? "text-orange-300 border-transparent"
-                            : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
-                        }`}
-                      >
-                        {fv === selectedAsiaFvg && <SlideBg id="asiaFvgSlide" rounded="rounded-xl" className="bg-orange-500/20 border-orange-500/60 shadow-xs" />}
-                        <span className="relative z-10">{fv}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* 3 SATIRLI TEKNİK MATRİS:
-                  1. Satır: SESSION yanında ENTRY TIME
-                  2. Satır: TIMEFRAME yanında PD ARRAY
-                  3. Satır: ENTRY TIMEFRAME yanında ENTRY MODEL
-                  4. Satır: TP TARGET yanında PREMIUM / DISCOUNT */}
-              <div className="grid grid-cols-2 gap-x-3 gap-y-2">
-                {/* 1. SATIR SOL: SESSION */}
-                <div className="flex flex-col">
-                  <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
-                    <Clock size={12} className="text-purple-400 shrink-0" />
-                    {(cleanDefinitionTitleString(definitionTitles.sessions) || "SESSION").toUpperCase()}
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {sessions.map((sess, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        data-selected={sess === selectedSession}
-                        onClick={() => setSelectedSession(sess === selectedSession ? "" : sess)}
-                        className={`relative px-2.5 py-1 text-[11px] rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
-                          sess === selectedSession
-                            ? "text-purple-300 border-transparent"
-                            : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
-                        }`}
-                      >
-                        {sess === selectedSession && <SlideBg id="sessionSlide" rounded="rounded-xl" className="bg-purple-500/20 border-purple-500/60 shadow-xs" />}
-                        <span className="relative z-10">{sess}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 1. SATIR SAĞ: ENTRY TIME */}
-                <div className="flex flex-col">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide flex items-center gap-1.5 font-sans">
-                      <Clock size={12} className="text-amber-400 shrink-0" />
-                      {(cleanDefinitionTitleString(definitionTitles.entryHours) || "ENTRY TIME").toUpperCase()}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-1.5 max-h-24 overflow-y-auto custom-scrollbar p-0.5">
-                    {withSelected(entryHours, selectedEntryTime ? [selectedEntryTime] : []).map((time) => {
-                      const isSelected = selectedEntryTime === time;
-                      return (
-                        <button
-                          key={time}
-                          type="button"
-                          data-selected={isSelected}
-                          onClick={() => setSelectedEntryTime(isSelected ? "" : time)}
-                          className={`px-2 py-0.5 text-[11px] rounded-xl transition-ui font-sans font-bold tracking-wider cursor-pointer border tabular-nums ${
-                            isSelected
-                              ? "bg-amber-500/20 text-amber-300 border-amber-500/60 shadow-xs"
-                              : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
-                          }`}
-                        >
-                          {time}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* 2. SATIR SOL: TIMEFRAME */}
-                <div className="flex flex-col">
-                  <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
-                    <Maximize2 size={12} className="text-rose-400 shrink-0" />
-                    {(cleanDefinitionTitleString(definitionTitles.htfTimeframes) || "TIMEFRAME").toUpperCase()}
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {htfTimeframes.map((tf, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        data-selected={tf === selectedHtfTimeframe}
-                        onClick={() => setSelectedHtfTimeframe(tf === selectedHtfTimeframe ? "" : tf)}
-                        className={`relative px-2.5 py-1 text-[11px] rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
-                          tf === selectedHtfTimeframe
-                            ? "text-rose-300 border-transparent"
-                            : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
-                        }`}
-                      >
-                        {tf === selectedHtfTimeframe && <SlideBg id="htfSlide" rounded="rounded-xl" className="bg-rose-500/20 border-rose-500/60 shadow-xs" />}
-                        <span className="relative z-10">{tf}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 2. SATIR SAĞ: PD ARRAY */}
-                <div className="flex flex-col">
-                  <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
-                    <Layers size={12} className="text-emerald-400 shrink-0" />
-                    {(cleanDefinitionTitleString(definitionTitles.confirmations) || "PD ARRAY").toUpperCase()}
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {confirmations.map((c, idx) => {
-                      const isActive = selectedConfirmations.includes(c);
-                      return (
-                        <button
-                          key={idx}
-                          type="button"
-                          data-selected={isActive}
-                          onClick={() =>
-                            setSelectedConfirmations(
-                              isActive
-                                ? selectedConfirmations.filter((x) => x !== c)
-                                : [...selectedConfirmations, c]
-                            )
-                          }
-                          className={`px-2.5 py-1 text-[11px] rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
-                            isActive
-                              ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/60 shadow-xs"
-                              : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
-                          }`}
-                        >
-                          {c}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* 3. SATIR SOL: ENTRY TIMEFRAME */}
-                <div className="flex flex-col">
-                  <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
-                    <Target size={12} className="text-blue-400 shrink-0" />
-                    {(cleanDefinitionTitleString(definitionTitles.timeframes) || "ENTRY TIMEFRAME").toUpperCase()}
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {timeframes.map((tf, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        data-selected={tf === selectedTimeframe}
-                        onClick={() => setSelectedTimeframe(tf === selectedTimeframe ? "" : tf)}
-                        className={`relative px-2.5 py-1 text-[11px] rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
-                          tf === selectedTimeframe
-                            ? "text-blue-300 border-transparent"
-                            : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
-                        }`}
-                      >
-                        {tf === selectedTimeframe && <SlideBg id="ltfSlide" rounded="rounded-xl" className="bg-blue-500/20 border-blue-500/60 shadow-xs" />}
-                        <span className="relative z-10">{tf}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 3. SATIR SAĞ: ENTRY MODEL (Multi-select) */}
-                <div className="flex flex-col">
-                  <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
-                    <Zap size={12} className="text-amber-400 shrink-0" />
-                    {(cleanDefinitionTitleString(definitionTitles.entryModels) || "ENTRY MODEL").toUpperCase()}
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {entryModels.map((em, idx) => {
-                      const isActive = selectedEntries.includes(em);
-                      return (
-                        <button
-                          key={idx}
-                          type="button"
-                          data-selected={isActive}
-                          onClick={() =>
-                            setSelectedEntries(
-                              isActive
-                                ? selectedEntries.filter((x) => x !== em)
-                                : [...selectedEntries, em]
-                            )
-                          }
-                          className={`px-2.5 py-1 text-[11px] rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
-                            isActive
-                              ? "bg-amber-500/20 text-amber-300 border-amber-500/60 shadow-xs"
-                              : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
-                          }`}
-                        >
-                          {em}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* 4. SATIR SOL: TP TARGET (Multi-select) */}
-                <div className="flex flex-col">
-                  <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
-                    <Flag size={12} className="text-purple-400 shrink-0" />
-                    {(cleanDefinitionTitleString(definitionTitles.tpTargets) || "TP TARGET").toUpperCase()}
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {withSelected(tpTargets, selectedTpTargets).map((tp) => {
-                      const isActive = selectedTpTargets.includes(tp);
-                      return (
-                        <button
-                          key={tp}
-                          type="button"
-                          data-selected={isActive}
-                          onClick={() =>
-                            setSelectedTpTargets(
-                              isActive
-                                ? selectedTpTargets.filter((x) => x !== tp)
-                                : [...selectedTpTargets, tp]
-                            )
-                          }
-                          className={`px-2.5 py-1 text-[11px] rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
-                            isActive
-                              ? "bg-purple-500/20 text-purple-300 border-purple-500/60 shadow-xs"
-                              : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
-                          }`}
-                        >
-                          {tp}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* 4. SATIR SAĞ: PREMIUM / DISCOUNT */}
-                <div className="flex flex-col">
-                  <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
-                    <ShieldCheck size={12} className="text-emerald-400 shrink-0" />
-                    {(cleanDefinitionTitleString(definitionTitles.premiumDiscounts) || "PREMIUM / DISCOUNT").toUpperCase()}
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {withSelected(premiumDiscounts, premiumDiscount ? [premiumDiscount] : []).map((zone) => {
-                      const isSelected = premiumDiscount === zone;
-                      return (
-                        <button
-                          key={zone}
-                          type="button"
-                          data-selected={isSelected}
-                          onClick={() => setPremiumDiscount(isSelected ? "" : zone)}
-                          className={`px-2 py-0.5 text-[11px] rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
-                            isSelected
-                              ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/60 shadow-xs"
-                              : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
-                          }`}
-                        >
-                          {zone}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          </div>
-
-          {/* 3. SÜTUN: ANALİZ, NOTLAR & SES (3 / 12) */}
-          <div className="flex flex-col min-w-0">
-            <div className="bg-zinc-900/50 border border-zinc-800/80 rounded-2xl p-3 sm:p-3.5 flex flex-col gap-2 shadow-sm h-full">
-              
-              {/* BAŞLIK & VOICE-TO-TRADE */}
-              <div className="flex items-center justify-between shrink-0 pb-1 border-b border-zinc-800/60">
-                <div className="flex items-center gap-2">
-                  <FileText size={14} className="text-zinc-400" />
-                  <span className="text-xs font-bold text-zinc-200 uppercase tracking-wider font-sans">{T("notesCard")}</span>
-                </div>
-                <VoiceToTradeButton
-                  options={{ platforms, sessions, concepts: concepts || liquiditySweeps, confirmations, timeframes, htfTimeframes, planFidelities, entryModels, trendTypes }}
-                  onParsed={handleVoiceParsed}
+          {/* 2. SÜTUN: KURULUM ÇİPLERİ — 3. SÜTUN: NOTLAR (hızlı kayıtta yok) */}
+          {!isQuick && (
+            <div className="flex flex-col min-w-0">
+              <SetupChips
+                  titles={titles}
+                  newsDays={newsDays}
+                  planFidelities={planFidelities}
+                  planFidelity={planFidelity}
+                  setPlanFidelity={setPlanFidelity}
+                  trendTypes={trendTypes}
+                  selectedTrend={selectedTrend}
+                  setSelectedTrend={setSelectedTrend}
+                  newsDay={newsDay}
+                  setNewsDay={setNewsDay}
+                  newsDayError={newsDayError}
+                  setNewsDayError={setNewsDayError}
+                  strategies={strategies}
+                  selectedStrategy={selectedStrategy}
+                  setSelectedStrategy={setSelectedStrategy}
+                  asiaRangeFvgs={asiaRangeFvgs}
+                  selectedAsiaFvg={selectedAsiaFvg}
+                  setSelectedAsiaFvg={setSelectedAsiaFvg}
+                  sessions={sessions}
+                  selectedSession={selectedSession}
+                  setSelectedSession={setSelectedSession}
+                  htfTimeframes={htfTimeframes}
+                  selectedHtfTimeframe={selectedHtfTimeframe}
+                  setSelectedHtfTimeframe={setSelectedHtfTimeframe}
+                  timeframes={timeframes}
+                  selectedTimeframe={selectedTimeframe}
+                  setSelectedTimeframe={setSelectedTimeframe}
+                  confirmations={confirmations}
+                  selectedConfirmations={selectedConfirmations}
+                  setSelectedConfirmations={setSelectedConfirmations}
+                  entryModels={entryModels}
+                  selectedEntries={selectedEntries}
+                  setSelectedEntries={setSelectedEntries}
+                  tpTargets={tpTargets}
+                  selectedTpTargets={selectedTpTargets}
+                  setSelectedTpTargets={setSelectedTpTargets}
+                  premiumDiscounts={premiumDiscounts}
+                  premiumDiscount={premiumDiscount}
+                  setPremiumDiscount={setPremiumDiscount}
                 />
-              </div>
-
-              {/* NOTLAR TEXTAREA */}
-              <div className="flex-1 flex flex-col min-h-0">
-                <textarea
-                  placeholder="Setup kurgusu, destek/direnç, psikolojik etkenler veya FOMO notlarınız..."
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  className="w-full flex-1 min-h-[110px] sm:min-h-[125px] bg-zinc-950/80 border border-zinc-700/70 hover:border-zinc-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 rounded-lg sm:rounded-xl p-2.5 sm:p-3 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none transition-ui resize-none leading-relaxed font-sans font-medium shadow-inner"
-                />
-              </div>
-
-              {/* GÖRSEL ÖNİZLEME */}
-              {screenshot ? (
-                <div className="relative group rounded-xl overflow-hidden border border-zinc-800 bg-zinc-950 h-[88px] flex items-center justify-center shrink-0">
-                  {previewError ? (
-                    <p className="text-xs text-rose-400 font-sans font-bold text-center px-3">Görsel yüklenemedi (URL geçersiz)</p>
-                  ) : (
-                    <img decoding="async"
-                      src={screenshot}
-                      alt="Grafik Önizleme"
-                      className="object-cover h-full w-full opacity-90 group-hover:opacity-100 transition-opacity"
-                      onError={() => setPreviewError(true)}
-                    />
-                  )}
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                    <a
-                      href={screenshot}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="bg-zinc-900/90 hover:bg-zinc-800 text-white p-1.5 rounded-lg text-xs flex items-center gap-1 font-sans font-bold"
-                    >
-                      <ExternalLink size={13} />
-                    </a>
-                    <button
-                      type="button"
-                      onClick={removeScreenshot}
-                      className="bg-red-500/90 hover:bg-red-500 text-white p-1.5 rounded-lg text-xs font-sans font-bold cursor-pointer"
-                    >
-                      <X size={13} />
-                    </button>
-                  </div>
-                </div>
-              ) : null}
-
             </div>
-          </div>
+          )}
+          {!isQuick && (
+            <div className="flex flex-col gap-4 min-w-0 lg:col-span-2 lg:grid lg:grid-cols-2 xl:col-span-1 xl:flex">
+              {/* 3. SÜTUN: SONUÇ + GRAFİK LİNKİ. Geniş ekranda (xl) üç sütun yan yana ve form kaydırmadan sığar;
+                  1024–1279px'de iki sütuna sığmayan bu ikili alta, yan yana iner (alanlar sıkışmaz) */}
+              <ResultCard
+                titles={titles}
+                isQuick={isQuick}
+                tradeStatus={tradeStatus}
+                setTradeStatus={setTradeStatus}
+                rrValue={rrValue}
+                setRrValue={setRrValue}
+                stopPips={stopPips}
+                setStopPips={setStopPips}
+                tpPips={tpPips}
+                setTpPips={setTpPips}
+                maePips={maePips}
+                setMaePips={setMaePips}
+                mfePips={mfePips}
+                setMfePips={setMfePips}
+                asiaRangePips={asiaRangePips}
+                setAsiaRangePips={setAsiaRangePips}
+              />
+              <ChartLinkCard titles={titles} screenshot={screenshot} setScreenshot={setScreenshot} />
+            </div>
+          )}
 
         </div>
 
         {/* ALT AKSİYON BUTONLARI */}
-        <div className="px-4 py-2.5 border-t border-zinc-800/80 bg-zinc-950/90 flex items-center justify-end shrink-0">
-          <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
-            <button
-              type="button"
-              onClick={onCancelEdit}
-              className="bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/70 hover:border-zinc-500 text-zinc-300 hover:text-white px-5 h-10 text-xs font-bold tracking-wider rounded-xl uppercase transition-ui cursor-pointer font-sans"
-            >
-              İptal
-            </button>
-            <button
-              type="submit"
-              className={`px-7 h-10 text-xs font-black font-sans tracking-wider rounded-xl uppercase transition-ui flex items-center justify-center gap-1.5 cursor-pointer shadow-lg ${
-                editingTrade
-                  ? "bg-amber-500 hover:bg-amber-400 text-zinc-950 shadow-amber-500/20"
-                  : "bg-blue-600 hover:bg-blue-500 text-white shadow-blue-500/25"
-              }`}
-            >
-              {editingTrade ? "Değişiklikleri Kaydet" : <><Plus size={14} /> İşlemi Ekle</>}
-            </button>
-          </div>
+        <div className="tf-foot px-4 sm:px-5 py-3 sm:py-3.5 border-t border-zinc-800/80 bg-zinc-950/90 shrink-0 grid [&>*]:[grid-area:1/1]">
+          <AnimatePresence initial={false}>
+              <motion.div key="actions" {...PANE} className="flex items-center justify-between gap-3">
+                <span className="hidden md:flex items-center gap-1.5 text-[10px] font-sans text-zinc-500 select-none">
+                  <kbd className="px-1.5 py-0.5 rounded-md border border-zinc-700 bg-zinc-900 text-zinc-400 font-sans">Ctrl</kbd>
+                  <span>+</span>
+                  <kbd className="px-1.5 py-0.5 rounded-md border border-zinc-700 bg-zinc-900 text-zinc-400 font-sans">Enter</kbd>
+                  <span>kaydet</span>
+                  <span className="mx-1 text-zinc-700">·</span>
+                  <kbd className="px-1.5 py-0.5 rounded-md border border-zinc-700 bg-zinc-900 text-zinc-400 font-sans">Esc</kbd>
+                  <span>kapat</span>
+                </span>
+                <div className="flex items-center gap-3 w-full md:w-auto justify-end">
+                  <button
+                    type="button"
+                    onClick={requestClose}
+                    className="bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/70 hover:border-zinc-500 text-zinc-300 hover:text-white px-5 h-10 text-xs font-bold tracking-wider rounded-xl uppercase transition-ui cursor-pointer font-sans"
+                  >
+                    İptal
+                  </button>
+                  <button
+                    type="submit"
+                    className={`px-7 h-10 text-xs font-black font-sans tracking-wider rounded-xl uppercase transition-ui flex items-center justify-center gap-1.5 cursor-pointer shadow-lg ${
+                      editingTrade
+                        ? "bg-amber-500 hover:bg-amber-400 text-zinc-950 shadow-amber-500/20"
+                        : "bg-blue-600 hover:bg-blue-500 text-white shadow-blue-500/25"
+                    }`}
+                  >
+                    {editingTrade ? "Değişiklikleri Kaydet" : <><Plus size={14} /> İşlemi Ekle</>}
+                  </button>
+                </div>
+              </motion.div>
+          </AnimatePresence>
         </div>
       </form>
     </div>
   );
 });
-
-/* Seçili butonun arkasındaki, butonlar arasında kayan vurgu (layoutId ile) */
-const SLIDE_SPRING = SPRING.indicator;
-function SlideBg({ id, className, rounded = "rounded-lg" }: { id: string; className: string; rounded?: string }) {
-  return (
-    <motion.span
-      layoutId={id}
-      transition={SLIDE_SPRING}
-      className={`absolute inset-0 border pointer-events-none ${rounded} ${className}`}
-    />
-  );
-}
 
 export default AddTradeForm;

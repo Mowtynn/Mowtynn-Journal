@@ -1,9 +1,16 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Download, Upload, Database, AlertTriangle, Cloud, X, CheckCircle2 } from 'lucide-react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { smartUpper } from '../constants/constants';
+import { Download, Upload, Database, AlertTriangle, Cloud, X, CheckCircle2, Pencil, ChevronDown } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
 import { PANE } from '../lib/motion';
-import { Trade, Note, Certificate, DefinitionTitles, HtfBias, PlatformCategory } from '../types';
+import { Trade, Note, DefinitionTitles, PropAccount } from '../types';
+import { missingFields, logicProblem } from '../lib/integrity';
+import { localDateKey } from '../utils/math';
+import { mapAccountImages } from '../lib/propAccounts';
+import { ACCOUNT_CATEGORY_LABELS, getTradeAccountCategory } from '../constants/constants';
+import { isStorageUrl, storageUrlToDataUrl } from '../lib/storage';
+import { nyWallDate, nyNow } from '../lib/tradingTime';
 
 function getLocalStorageUsage() {
 
@@ -38,13 +45,10 @@ interface BackupRescueProps {
   trades: Trade[];
   notes?: Note[];
   journals?: any[];
-  certificates?: Certificate[];
   settings?: {
-    platforms: string[];
     timeframes: string[];
     htfTimeframes?: string[];
     confirmations: string[];
-    concepts: string[];
     sessions: string[];
     assets: string[];
     planFidelities?: string[];
@@ -52,33 +56,31 @@ interface BackupRescueProps {
     trendTypes?: string[];
     tpTargets?: string[];
     premiumDiscounts?: string[];
-    entryHours?: string[];
     newsDays?: string[];
     strategies?: string[];
     asiaRangeFvgs?: string[];
     definitionTitles?: DefinitionTitles;
-    platformCategories?: Record<string, PlatformCategory>;
-    currency?: string;
-    isRrMode?: boolean;
+    propAccounts?: PropAccount[];
   };
   onImportTrades: (
     importedTrades: Trade[],
     importedNotes?: Note[],
     importedJournals?: any[],
-    importedCertificates?: Certificate[],
     importedSettings?: any
   ) => Promise<boolean | void> | boolean | void;
   onClearAll: () => Promise<boolean | void> | boolean | void;
+  /** Eksik/hatalı kaydı düzenleme formunda açar */
+  onEditTrade?: (trade: Trade) => void;
 }
 
 const BackupRescue = React.memo(function BackupRescue({
   trades,
   notes = [],
   journals = [],
-  certificates = [],
   settings,
   onImportTrades,
   onClearAll,
+  onEditTrade,
 }: BackupRescueProps) {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [confirmInput, setConfirmInput] = useState('');
@@ -104,20 +106,52 @@ const BackupRescue = React.memo(function BackupRescue({
 
   const { usedBytes } = React.useMemo(
     () => getLocalStorageUsage(),
-    [trades.length, notes.length, journals.length, certificates.length]
+    [trades.length, notes.length, journals.length]
   );
 
-  const handleExport = () => {
+  const handleExport = async () => {
+    const toastId = toast.loading('Yedek hazırlanıyor…');
     try {
+      // Prop fotoğrafları yedeğe gömülür (Storage URL'si → data URL); böylece yedek tek başına eksiksizdir
+      let exportSettings = settings;
+      let missingImages = 0;
+      if (settings?.propAccounts?.length) {
+        const propAccounts = await mapAccountImages(settings.propAccounts, async (img) => {
+          if (!isStorageUrl(img)) return img;
+          try {
+            return await storageUrlToDataUrl(img);
+          } catch (e) {
+            console.error('Backup image fetch failed:', e);
+            missingImages++;
+            return img;
+          }
+        });
+        exportSettings = { ...settings, propAccounts };
+      }
+      // İşlemlere yüklenmiş görseller (Firebase Storage) de gömülür; TradingView vb. dış bağlantılar olduğu gibi kalır
+      const embed = new Map<string, string>();
+      const storageShots = Array.from(new Set(trades.map((t) => t.screenshot).filter((u): u is string => !!u && isStorageUrl(u))));
+      for (let i = 0; i < storageShots.length; i += 4) {
+        await Promise.all(
+          storageShots.slice(i, i + 4).map(async (u) => {
+            try {
+              embed.set(u, await storageUrlToDataUrl(u));
+            } catch (e) {
+              console.error('Backup trade image fetch failed:', e);
+              missingImages++;
+            }
+          }),
+        );
+      }
+      const tradesOut = embed.size ? trades.map((t) => (t.screenshot && embed.has(t.screenshot) ? { ...t, screenshot: embed.get(t.screenshot)! } : t)) : trades;
       const payload = {
         app: "TradingJournalPro",
-        version: "2.6",
+        version: "2.7",
         exportedAt: new Date().toISOString(),
-        trades,
+        trades: tradesOut,
         notes,
         journals,
-        certificates,
-        settings,
+        settings: exportSettings,
       };
 
       const jsonStr = JSON.stringify(payload, null, 2);
@@ -125,22 +159,30 @@ const BackupRescue = React.memo(function BackupRescue({
       const downloadUrl = URL.createObjectURL(blob);
       const downloadAnchor = document.createElement('a');
       
-      const now = new Date();
-      const dateStr = now.toISOString().slice(0, 10);
+      const now = nyNow();
+      const dateStr = localDateKey(now);
       const timeStr = now.toTimeString().slice(0, 5).replace(':', '-');
-      const fileName = `trading_journal_backup_${dateStr}_${timeStr}_[${trades.length}_trades]_[${notes.length}_notes]_[${journals.length}_journals]_[${certificates.length}_certs].json`;
+      const fileName = `trading_journal_backup_${dateStr}_${timeStr}_[${trades.length}_trades]_[${notes.length}_notes]_[${journals.length}_journals].json`;
       
       downloadAnchor.setAttribute('href', downloadUrl);
       downloadAnchor.setAttribute('download', fileName);
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();
       downloadAnchor.remove();
-      URL.revokeObjectURL(downloadUrl);
+      // İndirme tıklamadan sonra başlar; adres hemen iptal edilirse bazı tarayıcılarda dosya boş iner
+      window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
 
-      toast.success(`Tüm verileriniz (${trades.length} işlem, ${notes.length} not, ${journals.length} günlük, ${certificates.length} sertifika ve ayarlar) dışa aktarıldı.`);
+      if (missingImages > 0) {
+        toast.error(
+          `${missingImages} görsel (prop / işlem) yedeğe gömülemedi (yalnızca bağlantısı yazıldı). Firebase Storage için CORS ayarı gerekiyor; README'deki komutu bir kez çalıştır.`,
+          { id: toastId, duration: 9000 },
+        );
+      } else {
+        toast.success(`Tüm verileriniz (${trades.length} işlem, ${notes.length} not, ${journals.length} günlük, prop hesapları ve ayarlar) dışa aktarıldı.`, { id: toastId });
+      }
     } catch (err) {
       console.error('Export error:', err);
-      toast.error('Dışa aktarım sırasında bir hata oluştu.');
+      toast.error('Dışa aktarım sırasında bir hata oluştu.', { id: toastId });
     }
   };
 
@@ -179,7 +221,6 @@ const BackupRescue = React.memo(function BackupRescue({
         let importedTrades: any[] = [];
         let importedNotes: any[] = [];
         let importedJournals: any[] = [];
-        let importedCertificates: any[] = [];
         let importedSettings: any = null;
 
         if (Array.isArray(parsed)) {
@@ -189,7 +230,6 @@ const BackupRescue = React.memo(function BackupRescue({
           if (Array.isArray(parsed.notes)) importedNotes = parsed.notes;
           if (Array.isArray(parsed.journals)) importedJournals = parsed.journals;
           else if (Array.isArray(parsed.entries)) importedJournals = parsed.entries;
-          if (Array.isArray(parsed.certificates)) importedCertificates = parsed.certificates;
           if (parsed.settings && typeof parsed.settings === 'object') importedSettings = parsed.settings;
         } else {
           toast.error('Hata: Yüklenen dosya geçerli bir yedek formatı içermiyor.');
@@ -199,30 +239,23 @@ const BackupRescue = React.memo(function BackupRescue({
         const validatedTrades: Trade[] = [];
         const validatedNotes: Note[] = [];
         const validatedJournals: any[] = [];
-        const validatedCertificates: Certificate[] = [];
 
         for (let i = 0; i < importedTrades.length; i++) {
           const item = importedTrades[i];
           if (!item || typeof item !== 'object') continue;
 
           const rr = num(item.rr);
-          const pnl = num(item.pnl);
           const rawAsset = typeof item.asset === 'string' && item.asset.trim() ? item.asset.trim() : (item.symbol || item.pair || 'PARİTE');
           const rawType = item.type === 'SHORT' ? 'SHORT' : 'LONG';
           let rawStatus: 'WIN' | 'LOSS' | 'BREAKEVEN' = 'BREAKEVEN';
           if (['WIN', 'LOSS', 'BREAKEVEN'].includes(item.status)) {
             rawStatus = item.status;
-          } else if (pnl !== undefined) {
-            rawStatus = pnl > 0 ? 'WIN' : pnl < 0 ? 'LOSS' : 'BREAKEVEN';
           } else if (rr !== undefined) {
             rawStatus = rr > 0 ? 'WIN' : rr < 0 ? 'LOSS' : 'BREAKEVEN';
           }
 
           const created = num(item.createdAt);
           const fromDate = item.date ? new Date(item.date).getTime() : NaN;
-          const sweepsArr = strArr(item.liquiditySweeps) ?? (typeof item.liquiditySweep === 'string' && item.liquiditySweep
-            ? item.liquiditySweep.split(',').map((x: string) => x.trim()).filter(Boolean)
-            : undefined);
           const entryArr = strArr(item.entryModels) ?? (typeof item.entry === 'string' && item.entry
             ? item.entry.split(',').map((x: string) => x.trim()).filter(Boolean)
             : undefined);
@@ -231,8 +264,7 @@ const BackupRescue = React.memo(function BackupRescue({
             id: typeof item.id === 'string' && item.id ? item.id : `trade_${Math.random().toString(36).slice(2, 11)}`,
             asset: rawAsset,
             type: rawType,
-            rr: rr ?? 0,
-            pnl: pnl ?? 0,
+            rr: rawStatus === 'BREAKEVEN' ? 0 : (rr ?? 0),
             status: rawStatus,
             notes: typeof item.notes === 'string' ? item.notes : (item.description || ''),
             screenshot: typeof item.screenshot === 'string' ? item.screenshot : (item.image || null),
@@ -242,27 +274,26 @@ const BackupRescue = React.memo(function BackupRescue({
             timeframe: typeof item.timeframe === 'string' ? item.timeframe : undefined,
             htfTimeframe: typeof item.htfTimeframe === 'string' ? item.htfTimeframe : undefined,
             session: typeof item.session === 'string' ? item.session : undefined,
-            liquiditySweep: sweepsArr ? sweepsArr.join(', ') : undefined,
-            liquiditySweeps: sweepsArr,
-            concept: sweepsArr ? sweepsArr.join(', ') : undefined,
             planFidelity: typeof item.planFidelity === 'string' && item.planFidelity.trim() ? item.planFidelity.trim() : undefined,
             confirmations: strArr(item.confirmations),
-            entry: entryArr ? entryArr.join(', ') : undefined,
             entryModels: entryArr,
             stopPips: num(item.stopPips),
             tpPips: num(item.tpPips),
             asiaRangePips: num(item.asiaRangePips),
             maePips: num(item.maePips),
             mfePips: num(item.mfePips),
-            entryTime: typeof item.entryTime === 'string' ? item.entryTime : undefined,
             trend: typeof item.trend === 'string' ? item.trend : undefined,
             tpTargets: strArr(item.tpTargets),
             premiumDiscount: typeof item.premiumDiscount === 'string' && item.premiumDiscount.trim() ? item.premiumDiscount.trim() : undefined,
             newsDay: typeof item.newsDay === 'boolean' ? item.newsDay : undefined,
             strategy: typeof item.strategy === 'string' && item.strategy.trim() ? item.strategy.trim() : undefined,
             asiaRangeFvg: typeof item.asiaRangeFvg === 'string' && item.asiaRangeFvg.trim() ? item.asiaRangeFvg.trim() : undefined,
-            htfBias: item.htfBias === 'BULLISH' || item.htfBias === 'BEARISH' || item.htfBias === 'NEUTRAL' ? (item.htfBias as HtfBias) : undefined,
-            spreadPips: num(item.spreadPips),
+            accountId: typeof item.accountId === 'string' && item.accountId ? item.accountId : undefined,
+            accountStage: num(item.accountStage),
+            riskPct: num(item.riskPct),
+            riskAmount: num(item.riskAmount),
+            quickEntry: item.quickEntry === true ? true : undefined,
+            exitAt: num(item.exitAt),
           };
           validatedTrades.push(trade);
         }
@@ -285,34 +316,23 @@ const BackupRescue = React.memo(function BackupRescue({
           if (!item || typeof item !== 'object') continue;
           validatedJournals.push({
             id: typeof item.id === 'string' && item.id ? item.id : `journal_${Math.random().toString(36).slice(2, 11)}`,
-            date: typeof item.date === 'string' ? item.date : new Date().toISOString().split('T')[0],
+            date: typeof item.date === 'string' ? item.date : localDateKey(),
             title: typeof item.title === 'string' ? item.title : 'Günlük Girişi',
             content: typeof item.content === 'string' ? item.content : (item.notes || ''),
             mood: ['excellent', 'good', 'neutral', 'bad', 'terrible'].includes(item.mood) ? item.mood : undefined,
             tags: strArr(item.tags),
             isFavorite: typeof item.isFavorite === 'boolean' ? item.isFavorite : false,
+            // Haftalık değerlendirme cevapları (varsa) korunur
+            ...(item.weekly && typeof item.weekly === 'object'
+              ? { weekly: { good: String(item.weekly.good ?? ''), avoid: String(item.weekly.avoid ?? ''), focus: String(item.weekly.focus ?? '') } }
+              : {}),
             createdAt: num(item.createdAt) ?? Date.now(),
             updatedAt: num(item.updatedAt) ?? Date.now(),
           });
         }
 
-        for (let i = 0; i < importedCertificates.length; i++) {
-          const item = importedCertificates[i];
-          if (!item || typeof item !== 'object') continue;
-          validatedCertificates.push({
-            id: typeof item.id === 'string' && item.id ? item.id : `cert_${Math.random().toString(36).slice(2, 11)}`,
-            title: typeof item.title === 'string' ? item.title : 'Sertifika',
-            type: item.type === 'PAYOUT' ? 'PAYOUT' : (item.type === 'OTHER' ? 'OTHER' : 'PHASE'),
-            date: typeof item.date === 'string' ? item.date : new Date().toISOString().split('T')[0],
-            description: typeof item.description === 'string' ? item.description : '',
-            amount: num(item.amount) ?? 0,
-            image: typeof item.image === 'string' ? item.image : (item.screenshot || null),
-            createdAt: num(item.createdAt) ?? Date.now(),
-          });
-        }
-
         if (
-          validatedTrades.length + validatedNotes.length + validatedJournals.length + validatedCertificates.length === 0 &&
+          validatedTrades.length + validatedNotes.length + validatedJournals.length === 0 &&
           !importedSettings
         ) {
           toast.error('Yedek dosyasında içe aktarılacak veri bulunamadı.');
@@ -324,7 +344,6 @@ const BackupRescue = React.memo(function BackupRescue({
           validatedTrades,
           validatedNotes,
           validatedJournals,
-          validatedCertificates,
           importedSettings
         );
       } catch (err: any) {
@@ -422,18 +441,11 @@ const BackupRescue = React.memo(function BackupRescue({
         )}
 
         <div className="bg-zinc-950/80 border border-zinc-800/80 rounded-2xl p-4 flex flex-col justify-between shadow-md">
-          {false ? (
-            <div className="h-full flex flex-col justify-center items-center text-center p-4 bg-zinc-800 rounded-xl border border-zinc-800">
-              <CheckCircle2 size={24} className="text-emerald-500 mb-2 opacity-50" />
-              <span className="text-[10px] font-bold text-emerald-500/80 uppercase tracking-widest block mb-1">Registry Status</span>
-              <p className="text-xs font-sans text-zinc-400 font-bold">Immutable / Read-Only</p>
-            </div>
-          ) : (
             <>
               <div>
-                <span className="text-[9px] font-bold text-rose-400 uppercase tracking-widest block mb-2">Tehlikeli Bölge</span>
+                <span className="text-[9px] font-bold text-rose-400 uppercase tracking-widest block mb-2">{smartUpper("Tehlikeli Bölge")}</span>
                 <p className="text-[10px] text-zinc-400 leading-relaxed">
-                  Tüm işlem kayıtlarını, notları, günlükleri, sertifikaları ve kişisel tanımlamaları kalıcı olarak siler ve sistemi ilk haline sıfırlar. Bu işlem geri alınamaz.
+                  Bu cihazdaki ve buluttaki (Firebase) tüm işlemleri, notları, günlükleri, prop hesaplarını, görselleri ve tanımlamaları kalıcı olarak siler; tanımlamalar varsayılana döner. Giriş ve site şifresi korunur. Bu işlem geri alınamaz.
                 </p>
               </div>
 
@@ -468,7 +480,7 @@ const BackupRescue = React.memo(function BackupRescue({
                     >
                       {isWiping ? 'Siliniyor...' : 'Sil'}
                     </button>
-                    <button
+                    <button aria-label="Kapat" title="Kapat"
                       type="button"
                       disabled={isWiping}
                       onClick={() => {
@@ -484,86 +496,95 @@ const BackupRescue = React.memo(function BackupRescue({
               )}
               </AnimatePresence>
             </>
-          )}
         </div>
       </div>
 
-      {(() => {
-        const problematicTrades = trades.filter(t => {
-          if (!t.asset || !t.status) return true;
-          if (t.status === 'WIN' && t.rr < 0) return true;
-          if (t.status === 'LOSS' && t.rr > 0) return true;
-          if (t.status === 'BREAKEVEN' && t.rr !== 0) return true;
-          return false;
-        });
-
-        const getProblemReason = (t: Trade) => {
-          if (!t.asset || !t.status) return "Kritik veri (Parite/Durum) eksik";
-          if (t.status === 'WIN' && t.rr < 0) return "Kazançlı (WIN) işlemde R değeri negatif girilmiş, R > 0 olmalıdır";
-          if (t.status === 'LOSS' && t.rr > 0) return "Zararlı (LOSS) işlemde R değeri pozitif girilmiş, R < 0 olmalıdır";
-          if (t.status === 'BREAKEVEN' && t.rr !== 0) return "Başabaş (BREAKEVEN) işlemde R değeri 0 olmalıdır";
-          return "Bilinmeyen mantıksal hata";
-        };
-
-        const hasIssues = problematicTrades.length > 0;
-
-        return (
-          <div className={`mt-5 rounded-2xl p-4 border shadow-sm ${
-            hasIssues 
-              ? 'bg-amber-500/5 border-amber-500/20' 
-              : 'bg-emerald-500/5 border-emerald-500/20'
-          }`}>
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-              <div className="flex gap-3 items-start w-full">
-                <div className="mt-0.5">
-                  {hasIssues ? (
-                    <AlertTriangle size={16} className="text-amber-500" />
-                  ) : (
-                    <CheckCircle2 size={16} className="text-emerald-500" />
-                  )}
-                </div>
-                <div className="w-full">
-                  <span className={`text-[10px] font-bold uppercase tracking-widest block mb-1 ${
-                    hasIssues ? 'text-amber-500' : 'text-emerald-500'
-                  }`}>
-                    Sistem Bütünlüğü ve Veri Analizi
-                  </span>
-                  
-                  {hasIssues ? (
-                    <>
-                      <p className="text-xs text-amber-500/70 leading-relaxed max-w-2xl mb-2">
-                        Veritabanınızda istatistiklerin (Kazanma Oranı, Toplam R, vs.) yanlış hesaplanmasına sebep olabilecek {problematicTrades.length} hatalı kayıt tespit edildi. Lütfen bu kayıtları güncelleyin veya silin.
-                      </p>
-                      <div className="bg-amber-500/10 rounded-lg overflow-hidden">
-                        <ul className="text-xs text-amber-200/90 divide-y divide-amber-500/10">
-                          {problematicTrades.slice(0, 5).map(pt => (
-                            <li key={pt.id} className="p-2 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
-                              <span className="font-sans text-amber-400 min-w-[80px]">{pt.asset || 'Bilinmiyor'}</span>
-                              <span className="font-sans text-amber-500/60 text-[9px]">{new Date(pt.createdAt).toLocaleDateString()}</span>
-                              <span className="text-amber-300 flex-1">{getProblemReason(pt)}</span>
-                            </li>
-                          ))}
-                          {problematicTrades.length > 5 && (
-                            <li className="p-2 text-center text-amber-500/60 font-medium italic">
-                              ...ve {problematicTrades.length - 5} işlem daha.
-                            </li>
-                          )}
-                        </ul>
-                      </div>
-                    </>
-                  ) : (
-                    <p className="text-xs text-emerald-500/70 leading-relaxed max-w-2xl">
-                      {"Mevcut veritabanında tüm işlemler istatistiksel açıdan uyumlu. Çelişen bir kayıt bulunamadı (Tüm WIN'ler pozitif R, LOSS'lar negatif R vb.). Veri sağlığı mükemmel durumda."}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
+      <IntegrityPanel trades={trades} onEditTrade={onEditTrade} />
     </div>
   );
 });
+
+/* ---------- Sistem bütünlüğü: mantık hataları + eksik kayıtlar (kurallar: lib/integrity) ---------- */
+
+function IntegrityPanel({ trades, onEditTrade }: { trades: Trade[]; onEditTrade?: (t: Trade) => void }) {
+  const [expanded, setExpanded] = useState(false);
+  const rows = useMemo(() => {
+    const list: { t: Trade; problem: string | null; missing: string[] }[] = [];
+    trades.forEach((t) => {
+      const problem = logicProblem(t);
+      const missing = missingFields(t);
+      if (problem || missing.length > 0 || t.quickEntry) list.push({ t, problem, missing });
+    });
+    // Önce mantık hataları, sonra en yeni eksikler
+    return list.sort((a, b) => (a.problem ? 0 : 1) - (b.problem ? 0 : 1) || b.t.createdAt - a.t.createdAt);
+  }, [trades]);
+
+  const problemCount = rows.filter((r) => r.problem).length;
+  const incompleteCount = rows.length - problemCount;
+  const ok = rows.length === 0;
+  const visible = expanded ? rows : rows.slice(0, 6);
+
+  return (
+    <div className={`mt-5 rounded-2xl p-4 border shadow-sm ${ok ? 'bg-emerald-500/5 border-emerald-500/20' : problemCount > 0 ? 'bg-rose-500/5 border-rose-500/20' : 'bg-amber-500/5 border-amber-500/20'}`}>
+      <div className="flex gap-3 items-start w-full">
+        <div className="mt-0.5">{ok ? <CheckCircle2 size={16} className="text-emerald-500" /> : <AlertTriangle size={16} className={problemCount > 0 ? 'text-rose-400' : 'text-amber-500'} />}</div>
+        <div className="w-full min-w-0">
+          <span className={`text-[10px] font-bold uppercase tracking-widest block mb-1 ${ok ? 'text-emerald-500' : problemCount > 0 ? 'text-rose-400' : 'text-amber-500'}`}>
+            Sistem Bütünlüğü ve Veri Analizi
+          </span>
+          {ok ? (
+            <p className="text-xs text-emerald-500/80 leading-relaxed max-w-2xl">
+              {trades.length === 0
+                ? 'Henüz kayıt yok.'
+                : `${trades.length} işlemin tamamı eksiksiz ve tutarlı. Analizler tüm örneklemi kullanıyor.`}
+            </p>
+          ) : (
+            <>
+              <p className="text-xs text-zinc-300 leading-relaxed max-w-2xl mb-2">
+                {problemCount > 0 && <><b className="text-rose-300">{problemCount} hatalı</b> (istatistiği bozar){incompleteCount > 0 ? ', ' : ' '}</>}
+                {incompleteCount > 0 && <><b className="text-amber-300">{incompleteCount} eksik</b> kayıt var (bu işlemler ilgili analizlerin dışında kalır). </>}
+                Tamamla ile işlemi açıp boş alanları doldurabilirsin.
+                <span className="block text-[10px] text-zinc-500 mt-0.5">Bu kontrol hesap seçiminden bağımsızdır: tüm hesaplar ve hesapsız işlemler dahil.</span>
+              </p>
+              <ul className="rounded-xl border border-zinc-800/80 bg-zinc-950/40 divide-y divide-zinc-800/80 overflow-hidden">
+                {visible.map(({ t, problem, missing }) => (
+                  <li key={t.id} className="p-2 sm:p-2.5 flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3">
+                    <div className="flex items-center gap-2 min-w-0 sm:w-48 shrink-0">
+                      <span className="text-xs font-bold text-zinc-200 truncate">{t.asset || 'Bilinmiyor'}</span>
+                      <span className="text-[10px] text-zinc-500 tabular-nums">{nyWallDate(t.createdAt).toLocaleDateString('tr-TR')}</span>
+                      <span className="text-[9px] font-bold uppercase text-zinc-500 truncate">{t.platform || ACCOUNT_CATEGORY_LABELS[getTradeAccountCategory(t)]}</span>
+                      {t.quickEntry && <span className="px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase border border-amber-500/30 bg-amber-500/10 text-amber-300">{smartUpper("Hızlı")}</span>}
+                    </div>
+                    <div className="flex-1 min-w-0 flex flex-wrap gap-1">
+                      {problem && <span className="px-1.5 py-0.5 rounded-md text-[10px] font-bold border border-rose-500/30 bg-rose-500/10 text-rose-300">{problem}</span>}
+                      {missing.map((m) => (
+                        <span key={m} className="px-1.5 py-0.5 rounded-md text-[10px] font-bold border border-zinc-700 bg-zinc-900 text-zinc-400">{m}</span>
+                      ))}
+                    </div>
+                    {onEditTrade && (
+                      <button
+                        type="button"
+                        onClick={() => onEditTrade(t)}
+                        className="h-7 px-2.5 rounded-lg border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 text-[11px] font-bold flex items-center gap-1.5 cursor-pointer shrink-0 self-start sm:self-auto"
+                      >
+                        <Pencil size={12} /> Tamamla
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+              {rows.length > 6 && (
+                <button type="button" onClick={() => setExpanded((v) => !v)} className="mt-2 text-[11px] font-bold text-zinc-400 hover:text-zinc-200 flex items-center gap-1 cursor-pointer">
+                  <ChevronDown size={13} className={`transition-transform ${expanded ? 'rotate-180' : ''}`} />
+                  {expanded ? 'Daha Az Göster' : `Tümünü Göster (${rows.length})`}
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default BackupRescue;

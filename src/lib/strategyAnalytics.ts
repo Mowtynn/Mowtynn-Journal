@@ -2,13 +2,17 @@ import { Trade } from '../types';
 import { calculateProfitFactor, toRR } from './statMath';
 import { getTradeAccountCategory, getNewsDayLabels } from '../constants/constants';
 import { getTradeHourBucket, getTradeNyWeekday } from './tradingTime';
-import { bucketAsiaRanges } from './asiaAnalytics';
+import { bucketAsiaRanges, edgeFromR } from './asiaAnalytics';
+import { isLowQualitySetup, setupQualityTier } from './discipline';
+
+/** Bir grup hakkında yorum/kural üretmek için gereken en az işlem sayısı — projenin tek eşiği (src/lib/sampleSize.ts). */
+import { MIN_SAMPLE, EDGE_PROOF_MIN } from './sampleSize';
+import { signalStrength } from './setupScorecard';
+export { MIN_SAMPLE };
 
 export interface StrategyAnalyticsResult {
   totalTrades: number;
   overallScore: {
-    score: number; // 0-100
-    grade: 'A+' | 'A' | 'B' | 'C' | 'D';
     winRate: number;
     profitFactor: number;
     netR: number;
@@ -25,11 +29,6 @@ export interface StrategyAnalyticsResult {
     avgStopPips: number;
     stopCushionEfficiency: number; // % of stop unused on winners
     earlyEntryWarningCount: number; // trades with MAE > 75% of stop that still won
-    tightStopRecommendation?: {
-      suggestedStopPips: number;
-      potentialRrBoostPercent: number;
-      insight: string;
-    };
   };
 
   // 2. MFE (Maximum Favorable Excursion) Analytics
@@ -41,12 +40,8 @@ export interface StrategyAnalyticsResult {
     avgTpPips: number;
     mfeRealizationRate: number; // % of MFE captured (TP / MFE)
     leftOnTheTablePips: number;
-    missedProfitTradesCount: number; // High MFE but ended BE or Loss
+    missedProfitTradesCount: number; // MFE ≥ 1R (stop mesafesi) ama BE / Loss kapanan işlemler
     missedProfitTrades: Trade[];
-    optimalTpRecommendation?: {
-      suggestedTpPips: number;
-      insight: string;
-    };
   };
 
   // 3. Asia Range Volatility Matrix
@@ -60,27 +55,6 @@ export interface StrategyAnalyticsResult {
     };
     bestBracket: string;
     insight: string;
-  };
-
-  // 4. ICT Liquidity Sweeps Performance
-  liquiditySweepStats: {
-    hasData: boolean;
-    ranking: Array<{
-      sweep: string;
-      total: number;
-      wins: number;
-      winRate: number;
-      netR: number;
-      avgR: number;
-      profitFactor: number;
-    }>;
-    multiSweepEdge: {
-      singleSweepWinRate: number;
-      singleSweepNetR: number;
-      multiSweepWinRate: number;
-      multiSweepNetR: number;
-      diffR: number;
-    };
   };
 
   // 5. Entry Models Performance (Breaker, Mitigation, FVG, IFVG)
@@ -136,7 +110,7 @@ export interface StrategyAnalyticsResult {
     profitFactor: number;
   }>;
 
-  // 9. TP Target Analytics
+  // 9. Target (çıkış hedefi) analizi
   tpTargetStats: {
     hasData: boolean;
     ranking: Array<{
@@ -241,25 +215,11 @@ export interface StrategyAnalyticsResult {
     highQualityTradesCount: number;
     highQualityNetR: number;
     highQualityWinRate: number;
+    midQualityTradesCount: number;
+    midQualityNetR: number;
     lowQualityTradesCount: number;
     lowQualityNetR: number;
     disciplineAlphaR: number; // Potential R saved by avoiding low quality/FOMO trades
-  };
-
-  // 15. Confluence Factor Matrix (0-2 vs 3-4 vs 5+ Confluences)
-  confluenceStats: {
-    hasData: boolean;
-    brackets: Array<{
-      label: string;
-      count: number;
-      total: number;
-      wins: number;
-      winRate: number;
-      netR: number;
-      avgR: number;
-      profitFactor: number;
-    }>;
-    sweetSpotInsight: string;
   };
 
   // 16. Day of the Week Edge (Pazartesi - Cuma)
@@ -301,18 +261,6 @@ export interface StrategyAnalyticsResult {
     insight: string;
   };
 
-  // 19. Monte Carlo Prop Firm & Drawdown Risk Simulation
-  monteCarloSimulation: {
-    hasData: boolean;
-    simulatedDrawdownRisk4Percent: number; // % prob of 4R DD
-    simulatedDrawdownRisk8Percent: number; // % prob of 8R DD
-    simulatedProbHitting10R: number; // % prob of +10R target
-    expectedMaxLosingStreak: number;
-    medianFinalR: number;
-    simulatedCurves: number[][]; // sample equity paths
-    insight: string;
-  };
-
   // 20. Negative Edge Bleed / Kırmızı Bayraklar (Otomatik Eliminasyon Kuralları)
   redFlagRules: Array<{
     id: string;
@@ -330,6 +278,8 @@ export interface StrategyAnalyticsResult {
     winRate: number;
     netR: number;
     sampleSize: number;
+    /** %95 aralık sıfırın üstünde VE en az EDGE_PROOF_MIN işlem: kanıtlı; değilse erken sinyal */
+    confirmed: boolean;
   };
   actionableInsights: Array<{
     type: 'positive' | 'warning' | 'opportunity';
@@ -338,31 +288,12 @@ export interface StrategyAnalyticsResult {
     metricTag: string;
   }>;
 
-  // 22. Detailed Mistake & Loss Leak Breakdown (Hata ve Sızıntı Analizi)
-  mistakeStats: {
-    totalLeakR: number;
-    bCLeakR: number;
-    counterTrendLeakR: number;
-    wrongZoneLeakR: number;
-    lowConfluenceLeakR: number;
-    preventableLeakTotalR: number;
-    potentialNetR: number;
-    potentialWinRate: number;
-    leaks: Array<{
-      category: string;
-      title: string;
-      count: number;
-      lostR: number;
-      winRate: number;
-      fixAdvice: string;
-    }>;
-  };
-
   // 23. Asset & Instrument Edge (Parite Bazında Performans)
   assetStats: Array<{
     asset: string;
     total: number;
     wins: number;
+    losses: number;
     winRate: number;
     netR: number;
     avgR: number;
@@ -381,12 +312,22 @@ export interface StrategyAnalyticsResult {
   }>;
 }
 
+/** Küçük örneklemli sıralama cümlelerine eklenen not (EDGE_PROOF_MIN altı = erken sinyal) */
+const earlyNote = (n: number) => (n < EDGE_PROOF_MIN ? ` Erken sinyal (${n}/${EDGE_PROOF_MIN} işlem): kural yapmadan önce doğrula.` : '');
+
+/** Wilson %95 aralığının üst sınırı (oran 0–1) */
+const wilsonUpper = (wins: number, n: number) => {
+  if (n <= 0) return 1;
+  const z = 1.96, p = wins / n, d = 1 + (z * z) / n;
+  return Math.min(1, ((p + (z * z) / (2 * n)) + z * Math.sqrt((p * (1 - p)) / n + (z * z) / (4 * n * n))) / d);
+};
+
 export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsResult {
   const totalTrades = trades.length;
 
   const defaultEmptyResult: StrategyAnalyticsResult = {
     totalTrades: 0,
-    overallScore: { score: 0, grade: 'C', winRate: 0, profitFactor: 0, netR: 0, expectancy: 0 },
+    overallScore: { winRate: 0, profitFactor: 0, netR: 0, expectancy: 0 },
     maeStats: {
       hasData: false,
       tradeCount: 0,
@@ -419,16 +360,11 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
       bestBracket: '-',
       insight: 'Asia Range verisi bulunamadı.',
     },
-    liquiditySweepStats: {
-      hasData: false,
-      ranking: [],
-      multiSweepEdge: { singleSweepWinRate: 0, singleSweepNetR: 0, multiSweepWinRate: 0, multiSweepNetR: 0, diffR: 0 },
-    },
     entryModelStats: { hasData: false, ranking: [] },
     trendStats: { hasData: false, ranking: [], reversalCostR: 0, continuationEdgeR: 0 },
     timeframeMatrix: [],
     hourlyStats: [],
-    tpTargetStats: { hasData: false, ranking: [], insight: 'TP Target verisi bulunamadı.' },
+    tpTargetStats: { hasData: false, ranking: [], insight: 'Target (çıkış hedefi) verisi bulunamadı.' },
     premiumDiscountStats: { hasData: false, ranking: [], zoneDirectionMatrix: [], insight: 'Zone verisi bulunamadı.' },
     newsDayStats: { hasData: false, ranking: [], unknownCount: 0, insight: 'News Day / Bank Holiday verisi bulunamadı.' },
     confirmationStats: { hasData: false, ranking: [], multiConfirmationWinRate: 0 },
@@ -438,11 +374,12 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
       highQualityTradesCount: 0,
       highQualityNetR: 0,
       highQualityWinRate: 0,
+      midQualityTradesCount: 0,
+      midQualityNetR: 0,
       lowQualityTradesCount: 0,
       lowQualityNetR: 0,
       disciplineAlphaR: 0,
     },
-    confluenceStats: { hasData: false, brackets: [], sweetSpotInsight: 'Yeterli konfluans verisi yok.' },
     dayOfWeekStats: [],
     stopSizeStats: { hasData: false, brackets: [], insight: 'Stop pip verisi yok.' },
     streakStats: {
@@ -454,30 +391,9 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
       postLossTiltRisk: 'DÜŞÜK',
       insight: 'İşlem geçmişi yetersiz.',
     },
-    monteCarloSimulation: {
-      hasData: false,
-      simulatedDrawdownRisk4Percent: 0,
-      simulatedDrawdownRisk8Percent: 0,
-      simulatedProbHitting10R: 0,
-      expectedMaxLosingStreak: 0,
-      medianFinalR: 0,
-      simulatedCurves: [],
-      insight: 'Simülasyon için en az 5 işlem gereklidir.',
-    },
     redFlagRules: [],
-    goldenSetup: { hasFormula: false, description: 'Yeterli işlem verisi yok.', winRate: 0, netR: 0, sampleSize: 0 },
+    goldenSetup: { hasFormula: false, description: 'Yeterli işlem verisi yok.', winRate: 0, netR: 0, sampleSize: 0, confirmed: false },
     actionableInsights: [],
-    mistakeStats: {
-      totalLeakR: 0,
-      bCLeakR: 0,
-      counterTrendLeakR: 0,
-      wrongZoneLeakR: 0,
-      lowConfluenceLeakR: 0,
-      preventableLeakTotalR: 0,
-      potentialNetR: 0,
-      potentialWinRate: 0,
-      leaks: [],
-    },
     assetStats: [],
     accountCategoryStats: [],
   };
@@ -492,20 +408,6 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
   const negR = Math.abs(trades.filter(t => (t.rr || 0) < 0).reduce((s, t) => s + (t.rr || 0), 0));
   const overallProfitFactor = Math.round(calculateProfitFactor(toRR(posR), toRR(negR)) * 100) / 100;
   const overallExpectancy = Math.round((overallNetR / totalTrades) * 100) / 100;
-
-  // Score calculation (0-100)
-  let baseScore = 50;
-  baseScore += (overallWinRate - 50) * 0.6;
-  baseScore += Math.min(25, Math.max(-25, (overallProfitFactor - 1) * 20));
-  baseScore += Math.min(15, Math.max(-15, overallExpectancy * 15));
-  const normalizedScore = Math.min(100, Math.max(0, Math.round(baseScore)));
-
-  let grade: 'A+' | 'A' | 'B' | 'C' | 'D' = 'C';
-  if (normalizedScore >= 85) grade = 'A+';
-  else if (normalizedScore >= 70) grade = 'A';
-  else if (normalizedScore >= 55) grade = 'B';
-  else if (normalizedScore >= 40) grade = 'C';
-  else grade = 'D';
 
   // 1. MAE Analytics
   const tradesWithMae = trades.filter(t => typeof t.maePips === 'number' && !isNaN(t.maePips) && t.maePips >= 0);
@@ -538,24 +440,9 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
     }
   });
 
-  let tightStopRecommendation: StrategyAnalyticsResult['maeStats']['tightStopRecommendation'] = undefined;
-  if (maeWins.length >= 3 && avgStopPips > 0) {
-    const sortedWinningMae = maeWins.map(t => t.maePips || 0).sort((a, b) => a - b);
-    const p85Index = Math.min(sortedWinningMae.length - 1, Math.floor(sortedWinningMae.length * 0.85));
-    const suggestedStop = Math.max(3, Math.round((sortedWinningMae[p85Index] * 1.25) * 10) / 10);
-    
-    if (suggestedStop < avgStopPips * 0.85) {
-      const boost = Math.round(((avgStopPips / suggestedStop) - 1) * 100);
-      tightStopRecommendation = {
-        suggestedStopPips: suggestedStop,
-        potentialRrBoostPercent: boost,
-        insight: `Kazanan işlemlerinizin %85'i en fazla ${sortedWinningMae[p85Index]} Pip drawdown gördü. Stop mesafenizi ortalama ${avgStopPips.toFixed(1)} Pip'ten ${suggestedStop} Pip'e çekerseniz, aynı hedeflerde R:R kazancınız yaklaşık %${boost} artabilir!`,
-      };
-    }
-  }
-
   // 2. MFE Analytics
-  const tradesWithMfe = trades.filter(t => typeof t.mfePips === 'number' && !isNaN(t.mfePips) && t.mfePips > 0);
+  // MFE = 0 da geçerli bir ölçüm: dışarıda bırakılırsa ortalama MFE olduğundan yüksek çıkar
+  const tradesWithMfe = trades.filter(t => typeof t.mfePips === 'number' && !isNaN(t.mfePips) && t.mfePips >= 0);
   const mfeWins = tradesWithMfe.filter(t => t.status === 'WIN');
   const tradesWithTp = trades.filter(t => typeof t.tpPips === 'number' && !isNaN(t.tpPips) && t.tpPips > 0);
 
@@ -576,21 +463,11 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
 
   const leftOnTheTablePips = Math.max(0, Math.round((avgMfeWins - avgTpPips) * 10) / 10);
 
+  // Kârsız kapanan ama en az 1R (kendi stop mesafesi kadar) lehte gitmiş işlemler. Sabit pip eşiği pariteler arasında anlamsızdı.
   const missedProfitTrades = tradesWithMfe.filter(t => {
     const isBeOrLoss = t.status === 'BREAKEVEN' || t.status === 'LOSS';
-    const significantMfe = (t.mfePips || 0) >= Math.max(12, avgStopPips * 1.2);
-    return isBeOrLoss && significantMfe;
+    return isBeOrLoss && typeof t.stopPips === 'number' && t.stopPips > 0 && (t.mfePips || 0) >= t.stopPips;
   });
-
-  let optimalTpRecommendation: StrategyAnalyticsResult['mfeStats']['optimalTpRecommendation'] = undefined;
-  if (tradesWithMfe.length >= 3) {
-    const sortedMfe = tradesWithMfe.map(t => t.mfePips || 0).sort((a, b) => a - b);
-    const medianMfe = sortedMfe[Math.floor(sortedMfe.length * 0.5)];
-    optimalTpRecommendation = {
-      suggestedTpPips: Math.round(medianMfe * 10) / 10,
-      insight: `İşlemlerinizin %50'si en az ${medianMfe.toFixed(1)} Pip lehte hareket üretiyor. Masada ortalama ${leftOnTheTablePips.toFixed(1)} Pip bırakıyorsunuz; kısmi kâr alma (Partial TP) veya trailing stop net kârınızı koruyacaktır.`,
-    };
-  }
 
   // 3. Asia Range Volatility Matrix
   const tradesWithAsia = trades.filter(t => typeof t.asiaRangePips === 'number' && !isNaN(t.asiaRangePips) && t.asiaRangePips > 0);
@@ -621,22 +498,20 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
 
   let bestAsiaBracket = '-';
   let asiaInsight = 'Yeterli Asia Range verisi yok.';
-  if (tradesWithAsia.length >= 3) {
-    const list = [asiaBrackets.tight, asiaBrackets.medium, asiaBrackets.wide].filter(b => b.count > 0);
-    list.sort((a, b) => b.netR - a.netR);
+  if (tradesWithAsia.length >= MIN_SAMPLE) {
+    const list = [asiaBrackets.tight, asiaBrackets.medium, asiaBrackets.wide].filter(b => b.count >= MIN_SAMPLE);
+    list.sort((a, b) => b.avgR - a.avgR);
     if (list.length > 0) {
       bestAsiaBracket = list[0].label;
-      if (asiaBrackets.tight.winRate > asiaBrackets.wide.winRate && asiaBrackets.tight.count >= 2) {
-        asiaInsight = `Dar Asia Range günlerinde (parite medyanının altında) kazanma oranınız %${asiaBrackets.tight.winRate} ile zirve yapıyor.`;
-      } else {
-        asiaInsight = `En yüksek getiri ${bestAsiaBracket} aralığında (+${list[0].netR} R) gerçekleşti.`;
-      }
+      asiaInsight = `İşlem başına en yüksek beklenti ${bestAsiaBracket} aralığında (${list[0].avgR >= 0 ? '+' : ''}${list[0].avgR} R, ${list[0].count} işlem).${earlyNote(list[0].count)} Güven aralıkları için Asia Edge Lab'e bakın.`;
+    } else {
+      asiaInsight = `Her aralıkta en az ${MIN_SAMPLE} işlem birikince kıyas yapılır.`;
     }
   }
 
   // Helper for ranking calculation
   const buildRankings = (groupBy: (t: Trade) => string[]) => {
-    const map: Record<string, { total: number; wins: number; netR: number; posR: number; negR: number }> = {};
+    const map: Record<string, { total: number; wins: number; losses: number; netR: number; posR: number; negR: number }> = {};
     trades.forEach(t => {
       const keys = groupBy(t);
       const uniqueKeys = Array.from(new Set(keys.filter(Boolean)));
@@ -644,9 +519,10 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
       const isWin = t.status === 'WIN';
 
       uniqueKeys.forEach(k => {
-        if (!map[k]) map[k] = { total: 0, wins: 0, netR: 0, posR: 0, negR: 0 };
+        if (!map[k]) map[k] = { total: 0, wins: 0, losses: 0, netR: 0, posR: 0, negR: 0 };
         map[k].total++;
         if (isWin) map[k].wins++;
+        else if (t.status === 'LOSS') map[k].losses++;
         map[k].netR += valR;
         if (valR > 0) map[k].posR += valR;
         if (valR < 0) map[k].negR += Math.abs(valR);
@@ -661,6 +537,7 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
         key,
         total: data.total,
         wins: data.wins,
+        losses: data.losses,
         winRate: Math.round(winRate * 10) / 10,
         netR: Math.round(data.netR * 100) / 100,
         avgR: Math.round(avgR * 100) / 100,
@@ -669,48 +546,8 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
     }).sort((a, b) => b.netR - a.netR);
   };
 
-  // 4. Liquidity Sweeps Breakdown
-  let singleSweepCount = 0;
-  let singleSweepWins = 0;
-  let singleSweepNetR = 0;
-  let multiSweepCount = 0;
-  let multiSweepWins = 0;
-  let multiSweepNetR = 0;
-
-  trades.forEach(t => {
-    const sweeps: string[] = [];
-    if (Array.isArray(t.liquiditySweeps) && t.liquiditySweeps.length > 0) sweeps.push(...t.liquiditySweeps);
-    else if (t.liquiditySweep) sweeps.push(t.liquiditySweep);
-    else if (t.concept) sweeps.push(t.concept);
-
-    const uniqueSweeps = Array.from(new Set(sweeps.filter(Boolean)));
-    const valR = t.rr || 0;
-    const isWin = t.status === 'WIN';
-
-    if (uniqueSweeps.length === 1) {
-      singleSweepCount++;
-      if (isWin) singleSweepWins++;
-      singleSweepNetR += valR;
-    } else if (uniqueSweeps.length > 1) {
-      multiSweepCount++;
-      if (isWin) multiSweepWins++;
-      multiSweepNetR += valR;
-    }
-  });
-
-  const sweepRanking = buildRankings(t => {
-    if (Array.isArray(t.liquiditySweeps) && t.liquiditySweeps.length > 0) return t.liquiditySweeps;
-    if (t.liquiditySweep) return [t.liquiditySweep];
-    if (t.concept) return [t.concept];
-    return [];
-  }).map(r => ({ sweep: r.key, total: r.total, wins: r.wins, winRate: r.winRate, netR: r.netR, avgR: r.avgR, profitFactor: r.profitFactor }));
-
   // 5. Entry Models Breakdown
-  const entryModelRanking = buildRankings(t => {
-    if (Array.isArray(t.entryModels) && t.entryModels.length > 0) return t.entryModels;
-    if (t.entry) return [t.entry];
-    return [];
-  }).map(r => ({ model: r.key, total: r.total, wins: r.wins, winRate: r.winRate, netR: r.netR, avgR: r.avgR, profitFactor: r.profitFactor }));
+  const entryModelRanking = buildRankings(t => (Array.isArray(t.entryModels) ? t.entryModels : [])).map(r => ({ model: r.key, total: r.total, wins: r.wins, winRate: r.winRate, netR: r.netR, avgR: r.avgR, profitFactor: r.profitFactor }));
 
   // 6. Trend Structure Breakdown
   const trendRanking = buildRankings(t => [t.trend || 'Belirtilmemiş'])
@@ -779,15 +616,18 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
     }))
     .sort((a, b) => a.hour.localeCompare(b.hour));
 
-  // 9. TP Target Analytics
+  // 9. Target (çıkış hedefi) analizi
   const tpTargetTrades = trades.filter(t => Array.isArray(t.tpTargets) && t.tpTargets.length > 0);
   const tpTargetRanking = buildRankings(t => (Array.isArray(t.tpTargets) ? t.tpTargets : []))
     .map(r => ({ target: r.key, total: r.total, wins: r.wins, winRate: r.winRate, netR: r.netR, avgR: r.avgR, profitFactor: r.profitFactor }));
 
-  let tpTargetInsight = 'İşlem eklerken TP Target seçtiğinizde hangi hedefin size kazandırdığı burada görünecektir.';
-  if (tpTargetRanking.length > 0) {
-    const topTp = tpTargetRanking[0];
-    tpTargetInsight = `En yüksek kârlılık TP Target "${topTp.target}" hedefinde (${topTp.netR >= 0 ? '+' : ''}${topTp.netR} R, %${topTp.winRate} WR) yakalandı.`;
+  let tpTargetInsight = 'İşlem eklerken Target (çıkış hedefi) seçtiğinizde hangi çıkış hedefinin size kazandırdığı burada görünecektir.';
+  const tpReliable = tpTargetRanking.filter(r => r.total >= MIN_SAMPLE).sort((a, b) => b.avgR - a.avgR);
+  if (tpReliable.length > 0) {
+    const topTp = tpReliable[0];
+    tpTargetInsight = `En az ${MIN_SAMPLE} işlemli hedefler içinde işlem başına en yüksek beklenti "${topTp.target}" (${topTp.avgR >= 0 ? '+' : ''}${topTp.avgR} R, %${topTp.winRate} WR, ${topTp.total} işlem).${earlyNote(topTp.total)}`;
+  } else if (tpTargetRanking.length > 0) {
+    tpTargetInsight = `Hiçbir çıkış hedefi (Target) ${MIN_SAMPLE} işleme ulaşmadı; sıralama henüz güvenilir değil.`;
   }
 
   // 10. Premium / Discount Zone Analytics
@@ -818,11 +658,13 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
     profitFactor: Math.round(calculateProfitFactor(toRR(d.posR), toRR(d.negR)) * 100) / 100,
   })).sort((a, b) => b.netR - a.netR);
 
-  let zoneInsight = 'Premium / Discount alanı girildikçe en avantajlı alış-satış bölgeleri burada listelenir.';
-  const discountLong = zoneDirectionMatrix.find(z => z.zone.toLowerCase().includes('discount') && z.direction === 'LONG');
-  const premiumShort = zoneDirectionMatrix.find(z => z.zone.toLowerCase().includes('premium') && z.direction === 'SHORT');
-  if (discountLong || premiumShort) {
-    zoneInsight = `ICT Kuralı Onaylandı: Discount Long (%${discountLong?.winRate || 0} WR) ve Premium Short (%${premiumShort?.winRate || 0} WR) optimum getiri sağlıyor.`;
+  let zoneInsight = 'Confirmations alanı girildikçe değer × yön performansı burada listelenir.';
+  const zoneReliable = zoneDirectionMatrix.filter(z => z.total >= MIN_SAMPLE).sort((a, b) => b.avgR - a.avgR);
+  if (zoneReliable.length > 0) {
+    const z = zoneReliable[0];
+    zoneInsight = `En az ${MIN_SAMPLE} işlemli gruplar içinde en yüksek beklenti: ${z.zone} ${z.direction} (${z.avgR >= 0 ? '+' : ''}${z.avgR} R/işlem, %${z.winRate} WR, ${z.total} işlem).${earlyNote(z.total)}`;
+  } else if (zoneDirectionMatrix.length > 0) {
+    zoneInsight = `Hiçbir bölge × yön grubu ${MIN_SAMPLE} işleme ulaşmadı; kıyas henüz güvenilir değil.`;
   }
 
   // 10b. News Day / Bank Holiday (Var vs Yok). Bilgisi olmayan eski işlemler kıyasa katılmaz.
@@ -838,8 +680,8 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
   let newsInsight = 'İşlem eklerken News Day / Bank Holiday seçtiğinizde haber günlerinin performansı burada görünür.';
   if (newsYesRow && newsNoRow) {
     const diff = Math.round((newsYesRow.avgR - newsNoRow.avgR) * 100) / 100;
-    const small = Math.min(newsYesRow.total, newsNoRow.total) < 10;
-    newsInsight = `${newsLabels.yes}: işlem başına ${newsYesRow.avgR >= 0 ? '+' : ''}${newsYesRow.avgR} R (%${newsYesRow.winRate} WR, ${newsYesRow.total} işlem) — ${newsLabels.no}: ${newsNoRow.avgR >= 0 ? '+' : ''}${newsNoRow.avgR} R (%${newsNoRow.winRate} WR, ${newsNoRow.total} işlem). Fark ${diff >= 0 ? '+' : ''}${diff} R.${small ? ' Gruplardan biri 10 işlemden az; sonuç henüz güvenilir değil.' : ''}`;
+    const small = Math.min(newsYesRow.total, newsNoRow.total) < EDGE_PROOF_MIN;
+    newsInsight = `${newsLabels.yes}: işlem başına ${newsYesRow.avgR >= 0 ? '+' : ''}${newsYesRow.avgR} R (%${newsYesRow.winRate} WR, ${newsYesRow.total} işlem) — ${newsLabels.no}: ${newsNoRow.avgR >= 0 ? '+' : ''}${newsNoRow.avgR} R (%${newsNoRow.winRate} WR, ${newsNoRow.total} işlem). Fark ${diff >= 0 ? '+' : ''}${diff} R.${small ? ` Gruplardan biri ${EDGE_PROOF_MIN} işlemden az; fark henüz erken sinyal.` : ''}`;
   } else if (newsYesRow || newsNoRow) {
     const only = (newsYesRow || newsNoRow)!;
     newsInsight = `Yalnızca "${only.label}" grubunda işlem var (${only.total}). Kıyas için diğer gruptan da işlem gerekir.`;
@@ -876,10 +718,13 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
     profitFactor: Math.round(calculateProfitFactor(toRR(data.posR), toRR(data.negR)) * 100) / 100,
   })).sort((a, b) => b.netR - a.netR);
 
-  const aPlusData = setupQualityRanking.find(q => q.quality.toLowerCase() === 'a+');
-  const onlyAPlusNetR = aPlusData ? aPlusData.netR : 0;
-  const onlyAPlusWinRate = aPlusData ? aPlusData.winRate : 0;
-  const bcTrades = trades.filter(t => (t.planFidelity || '').toLowerCase().includes('b-c') || (t.planFidelity || '').toLowerCase() === 'fomo' || (t.planFidelity || '').toLowerCase() === 'c');
+  // "Yalnızca yüksek kalite": kademe tanımıyla (A+, Tam, Kusursuz …) — etiket yazımına bağlı değil
+  const highTrades = trades.filter(t => setupQualityTier(t.planFidelity) === 'high');
+  const onlyAPlusNetR = highTrades.reduce((s, t) => s + (t.rr || 0), 0);
+  const onlyAPlusWinRate = highTrades.length ? (highTrades.filter(t => t.status === 'WIN').length / highTrades.length) * 100 : 0;
+  // Düşük kalite: Disiplin paneliyle AYNI tanım (tek kaynak)
+  const isLowQuality = (t: Trade) => isLowQualitySetup(t.planFidelity);
+  const bcTrades = trades.filter(isLowQuality);
   const bcNetR = bcTrades.reduce((s, t) => s + (t.rr || 0), 0);
   const bCEliminationBoostR = bcNetR < 0 ? Math.abs(Math.round(bcNetR * 100) / 100) : 0;
 
@@ -915,53 +760,26 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
   let lowQualityCount = 0;
   let lowQualityNetR = 0;
 
+  let midQualityCount = 0;
+  let midQualityNetR = 0;
+  // Kademe tek kaynaktan (setupQualityTier): A+ yüksek · A orta · B-C / FOMO düşük
   trades.forEach(t => {
-    const pf = (t.planFidelity || '').toLowerCase();
+    const tier = setupQualityTier(t.planFidelity);
     const valR = t.rr || 0;
-    const isWin = t.status === 'WIN';
-    const isHigh = pf === 'a+' || pf === 'a' || pf === 'tam' || pf.includes('sadık') || pf.includes('uygun') || pf.includes('kusursuz');
-    const isLow = pf === 'b-c' || pf === 'c' || pf === 'fomo' || pf.includes('ihlal') || pf.includes('disiplinsiz') || pf.includes('intikam');
-
-    if (isHigh) {
+    if (tier === 'high') {
       highQualityCount++;
-      if (isWin) highQualityWins++;
+      if (t.status === 'WIN') highQualityWins++;
       highQualityNetR += valR;
-    } else if (isLow) {
+    } else if (tier === 'mid') {
+      midQualityCount++;
+      midQualityNetR += valR;
+    } else if (tier === 'low') {
       lowQualityCount++;
       lowQualityNetR += valR;
     }
   });
 
   const disciplineAlphaR = lowQualityNetR < 0 ? Math.abs(Math.round(lowQualityNetR * 100) / 100) : 0;
-
-  // 15. Confluence Factor Analysis
-  const countConfluences = (t: Trade): number => {
-    let score = 0;
-    if (t.liquiditySweeps && t.liquiditySweeps.length > 0) score += t.liquiditySweeps.length;
-    else if (t.liquiditySweep) score += 1;
-    if (t.confirmations && t.confirmations.length > 0) score += t.confirmations.length;
-    if (t.premiumDiscount) score += 1;
-    if (t.trend && (t.trend.toLowerCase().includes('continuation') || t.trend.toLowerCase().includes('devam'))) score += 1;
-    if (t.planFidelity && (t.planFidelity.toLowerCase() === 'a+' || t.planFidelity.toLowerCase() === 'tam')) score += 1;
-    return score;
-  };
-
-  const confGroup1 = trades.filter(t => countConfluences(t) <= 1);
-  const confGroup2 = trades.filter(t => countConfluences(t) === 2 || countConfluences(t) === 3);
-  const confGroup3 = trades.filter(t => countConfluences(t) >= 4);
-
-  const confluenceBrackets = [
-    { label: 'Düşük Onay (0 - 1 Onay)', ...calcBucket(confGroup1, 'Düşük Onay (0 - 1 Onay)') },
-    { label: 'Orta Onay (2 - 3 Onay)', ...calcBucket(confGroup2, 'Orta Onay (2 - 3 Onay)') },
-    { label: 'Yüksek Onay (4+ Onay)', ...calcBucket(confGroup3, 'Yüksek Onay (4+ Onay)') },
-  ];
-
-  let sweetSpotInsight = 'Konfluans sayısı arttıkça başarı oranınız burada test edilir.';
-  if (confGroup3.length >= 2 && confGroup1.length >= 2) {
-    const highWR = confluenceBrackets[2].winRate;
-    const lowWR = confluenceBrackets[0].winRate;
-    sweetSpotInsight = `4 ve üzeri onay ile girilen işlemlerde kazanma oranınız %${highWR} seviyesine çıkarken, tek onaylı işlemlerde %${lowWR} seviyesinde kalıyor.`;
-  }
 
   // 16. Day of the Week Analytics
   const dayNames = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
@@ -1006,11 +824,10 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
     { label: 'Geniş Stop (> 25 Pip)', ...calcBucket(wideStopTrades, 'Geniş Stop (> 25 Pip)') },
   ];
 
-  let stopSizeInsight = 'Stop mesafesi dağılımı inceleniyor.';
-  if (tightStopTrades.length >= 2 && mediumStopTrades.length >= 2) {
-    if (stopSizeBrackets[0].avgR > stopSizeBrackets[1].avgR) {
-      stopSizeInsight = `Sıkı Stop (<10 Pip) işlemleri ortalama ${stopSizeBrackets[0].avgR} R getiri ile en yüksek risk/ödül verimliliğine sahip.`;
-    }
+  let stopSizeInsight = `Pip eşikleri sabittir; farklı volatilitedeki pariteleri karıştırıyorsan Asia Edge Lab'i parite filtresiyle kullan. Her grupta en az ${MIN_SAMPLE} işlem olunca yorum yapılır.`;
+  const stopReliable = stopSizeBrackets.filter(b => b.count >= MIN_SAMPLE).sort((a, b) => b.avgR - a.avgR);
+  if (stopReliable.length >= 2) {
+    stopSizeInsight = `İşlem başına en yüksek beklenti ${stopReliable[0].label} grubunda (${stopReliable[0].avgR} R, ${stopReliable[0].count} işlem).${earlyNote(stopReliable[0].count)}`;
   }
 
   // 18. Streak & Post-Loss / Tilt Analytics
@@ -1069,258 +886,126 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
   const postLossWinRate = postLossTotal > 0 ? Math.round((postLossWins / postLossTotal) * 1000) / 10 : overallWinRate;
 
   let postLossTiltRisk: 'DÜŞÜK' | 'ORTA' | 'YÜKSEK' = 'DÜŞÜK';
-  if (postLossTotal >= 3) {
-    if (postLossWinRate < overallWinRate - 15) postLossTiltRisk = 'YÜKSEK';
-    else if (postLossWinRate < overallWinRate - 5) postLossTiltRisk = 'ORTA';
+  // YÜKSEK yalnızca istatistiksel olarak anlamlıysa: kayıp sonrası kazanma oranının %95 üst sınırı bile genel oranın altında.
+  // Birkaç işlemlik dalgalanma (5 işlemde 1 işlem = 20 puan) tilt sayılmaz.
+  if (postLossTotal >= MIN_SAMPLE) {
+    if (wilsonUpper(postLossWins, postLossTotal) * 100 < overallWinRate) postLossTiltRisk = 'YÜKSEK';
+    else if (postLossWinRate < overallWinRate - 10) postLossTiltRisk = 'ORTA';
   }
 
   let streakInsight = 'Kayıp ve galibiyet ardışıklık dinamikleriniz dengeli.';
   if (postLossTiltRisk === 'YÜKSEK') {
-    streakInsight = `Dikkat: Mağlubiyet sonrasında aldığınız işlemlerde kazanma oranınız %${postLossWinRate} seviyesine çakılıyor! Kayıp sonrası ekran başından kalkıp mola vermek hesabınızı koruyacaktır.`;
-  } else if (postWinWinRate > overallWinRate + 10) {
+    streakInsight = `Dikkat: Kayıp sonrası işlemlerde kazanma oranın %${postLossWinRate} (genel %${overallWinRate}, ${postLossTotal} işlem) ve fark istatistiksel olarak anlamlı. Kayıptan sonra mola vermek hesabını korur.`;
+  } else if (postLossTiltRisk === 'ORTA') {
+    streakInsight = `Kayıp sonrası kazanma oranın %${postLossWinRate} (genel %${overallWinRate}, ${postLossTotal} işlem). Fark henüz kesin değil; izlemeye devam et.`;
+  } else if (postWinTotal >= EDGE_PROOF_MIN && postWinWinRate > overallWinRate + 10) {
     streakInsight = `Kazanç serisi momentumunuz yüksek: Kazanç sonrası işlemlerinizin %${postWinWinRate}'i yine galibiyetle sonuçlanıyor.`;
   }
 
-  // 19. Monte Carlo Prop Firm & Drawdown Risk Simulation (500 runs of 50 trades)
-  let monteCarloSimulation: StrategyAnalyticsResult['monteCarloSimulation'] = {
-    hasData: false,
-    simulatedDrawdownRisk4Percent: 0,
-    simulatedDrawdownRisk8Percent: 0,
-    simulatedProbHitting10R: 0,
-    expectedMaxLosingStreak: 0,
-    medianFinalR: 0,
-    simulatedCurves: [],
-    insight: 'En az 5 işlem verisi gereklidir.',
+  // 19. (Monte Carlo kaldırıldı: geçme / ayakta kalma olasılığı Prop kartında, hesabın kendi kurallarıyla hesaplanır)
+
+  // 20. Kırmızı Bayraklar: yalnızca en az MIN_SAMPLE işlemli ve NET beklentisi negatif gruplar (kazananlar dahil).
+  // Eskiden 2 işlemle "yasakla" kuralı üretiliyor, kaybeden işlemler tek başına toplanıyordu.
+  const redFlagRules: StrategyAnalyticsResult['redFlagRules'] = [];
+  const groupNet = (list: Trade[]) => {
+    const e = edgeFromR(list.map(t => t.rr || 0), list.map(t => t.status));
+    return { n: e.n, netR: e.netR, avgR: e.expectancy, expHi: e.expHi };
+  };
+  const pushFlag = (id: string, rule: string, list: Trade[], recommendation: string) => {
+    const g = groupNet(list);
+    if (g.n < MIN_SAMPLE || g.netR >= 0) return;
+    redFlagRules.push({
+      id,
+      // %95 aralığın üst sınırı da negatifse kritik, değilse uyarı
+      severity: g.expHi < 0 ? 'CRITICAL' : 'WARNING',
+      rule,
+      lossR: Math.round(Math.abs(g.netR) * 100) / 100,
+      tradeCount: g.n,
+      recommendation: `${recommendation} (işlem başına ${g.avgR} R, ${g.n} işlem${g.expHi < 0 ? '; %95 güvenle negatif' : '; henüz kesin değil, yeni veriyle doğrula'})`,
+    });
   };
 
-  if (trades.length >= 5) {
-    // Bootstrap directly from the recorded R outcomes (wins, losses AND breakevens) so the win rate and payoff
-    // distribution stay consistent. A seeded PRNG keeps the result stable between renders.
-    const rDistribution = trades.map(t => (typeof t.rr === 'number' && Number.isFinite(t.rr) ? t.rr : 0));
-    let seed = (trades.length * 2654435761 + Math.round(rDistribution.reduce((a, b) => a + b, 0) * 1000)) >>> 0;
-    const rand = () => {
-      seed = (seed + 0x6D2B79F5) >>> 0;
-      let t = seed;
-      t = Math.imul(t ^ (t >>> 15), t | 1);
-      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
+  pushFlag('no_reversal', 'Trend tersi (Reversal) işlemleri', trades.filter(t => /reversal|dönüş|counter/i.test(t.trend || '')), 'Bu veride reversal işlemlerinin net getirisi negatif');
+  pushFlag('no_bc_setups', 'Düşük kalite (B-C / FOMO) setuplar', bcTrades, 'Düşük kaliteli setupların net getirisi negatif');
+  sessionDirectionStats
+    .filter(sd => sd.session !== 'Genel')
+    .forEach(sd => pushFlag(
+      `session_${sd.session}_${sd.direction}`,
+      `${sd.session} ${sd.direction} işlemleri`,
+      trades.filter(t => (t.session || 'Genel') === sd.session && t.type === sd.direction),
+      `${sd.session} seansında ${sd.direction} yönlü işlemlerin net getirisi negatif`,
+    ));
+  pushFlag('wide_asia_filter', 'Geniş Asia Range (parite medyanının >1.25 katı) günleri', wideTrades, 'Geniş Asia range günlerinde net getiri negatif');
 
-    let dd4Count = 0;
-    let dd8Count = 0;
-    let hit10RCount = 0;
-    const finalRs: number[] = [];
-    const maxLossStreaks: number[] = [];
-    const sampleCurves: number[][] = [];
-
-    const RUNS = 400;
-    const STEPS = 50;
-
-    for (let r = 0; r < RUNS; r++) {
-      let equity = 0;
-      let peak = 0;
-      let maxDD = 0;
-      let curLossStreak = 0;
-      let maxLossRun = 0;
-      let hit10 = false;
-      const curve: number[] = [0];
-
-      for (let s = 0; s < STEPS; s++) {
-        const delta = rDistribution[Math.floor(rand() * rDistribution.length)];
-        if (delta < 0) {
-          curLossStreak++;
-          if (curLossStreak > maxLossRun) maxLossRun = curLossStreak;
-        } else {
-          curLossStreak = 0;
-        }
-
-        equity += delta;
-        curve.push(Math.round(equity * 10) / 10);
-        if (equity > peak) peak = equity;
-        const dd = peak - equity;
-        if (dd > maxDD) maxDD = dd;
-        if (equity >= 10) hit10 = true;
-      }
-
-      if (maxDD >= 4) dd4Count++;
-      if (maxDD >= 8) dd8Count++;
-      if (hit10) hit10RCount++;
-      finalRs.push(equity);
-      maxLossStreaks.push(maxLossRun);
-
-      if (r < 5) sampleCurves.push(curve);
-    }
-
-    finalRs.sort((a, b) => a - b);
-    maxLossStreaks.sort((a, b) => a - b);
-
-    const medianR = finalRs[Math.floor(finalRs.length * 0.5)];
-    const medianLossRun = maxLossStreaks[Math.floor(maxLossStreaks.length * 0.5)];
-    const probDD4 = Math.round((dd4Count / RUNS) * 100);
-    const probDD8 = Math.round((dd8Count / RUNS) * 100);
-    const probHit10 = Math.round((hit10RCount / RUNS) * 100);
-
-    monteCarloSimulation = {
-      hasData: true,
-      simulatedDrawdownRisk4Percent: probDD4,
-      simulatedDrawdownRisk8Percent: probDD8,
-      simulatedProbHitting10R: probHit10,
-      expectedMaxLosingStreak: medianLossRun,
-      medianFinalR: Math.round(medianR * 10) / 10,
-      simulatedCurves: sampleCurves,
-      insight: `Monte Carlo analizi (kayıtlı R dağılımından): gelecek 50 işlemde 8R'lik bir drawdown görme olasılığınız %${probDD8}, +10R'ye ulaşma olasılığınız %${probHit10}. R'yi hesap yüzdesine çevirmek için risk oranınızla çarpın (örn. %0.75 risk ile 8R ≈ %6).`,
-    };
-  }
-
-  // 20. Negative Edge Bleed / Kırmızı Bayraklar (Otomatik Eliminasyon Kuralları)
-  const redFlagRules: StrategyAnalyticsResult['redFlagRules'] = [];
-
-  // Check Reversals
-  if (reversalCostR >= 1.5) {
-    redFlagRules.push({
-      id: 'no_reversal',
-      severity: 'CRITICAL',
-      rule: 'Trend Tersi (Reversal) İşlemleri Yasakla',
-      lossR: reversalCostR,
-      tradeCount: trendRanking.find(t => t.trend.toLowerCase().includes('reversal'))?.total || 0,
-      recommendation: 'Sadece trend yönü (Continuation) işlemlerine izin verin; dönüş kovalamayın.',
-    });
-  }
-
-  // Check B-C setups
-  if (bCEliminationBoostR >= 1.5) {
-    redFlagRules.push({
-      id: 'no_bc_setups',
-      severity: 'CRITICAL',
-      rule: 'B-C / FOMO Kalitesindeki Setupları Tamamen Ele',
-      lossR: bCEliminationBoostR,
-      tradeCount: bcTrades.length,
-      recommendation: 'Yalnızca A+ ve A kalitedeki disiplinli kurgulara emir girin.',
-    });
-  }
-
-  // Check Worst Session / Worst Asset
-  const worstSession = sessionDirectionStats.find(s => s.netR <= -2.0 && s.total >= 2);
-  if (worstSession) {
-    redFlagRules.push({
-      id: 'toxic_session',
-      severity: 'WARNING',
-      rule: `${worstSession.session} ${worstSession.direction} İşlemlerini Durdur`,
-      lossR: Math.abs(worstSession.netR),
-      tradeCount: worstSession.total,
-      recommendation: `${worstSession.session} seansında ${worstSession.direction} yönlü istatistiğiniz negatif; bu seansı pas geçin.`,
-    });
-  }
-
-  // Check Wide Asia Range if negative
-  if (asiaBrackets.wide.count >= 2 && asiaBrackets.wide.netR < 0) {
-    redFlagRules.push({
-      id: 'wide_asia_filter',
-      severity: 'WARNING',
-      rule: 'Geniş Asia Range (parite medyanının >1.25 katı) Günlerinde İşlem Alma',
-      lossR: Math.abs(asiaBrackets.wide.netR),
-      tradeCount: asiaBrackets.wide.count,
-      recommendation: 'Geniş Asia range günlerinde bu veride beklenti negatif; örneklem küçükse yeni veriyle doğrula, ardından filtre olarak düşün.',
-    });
-  }
-
-  // 21. Golden Setup
-  const comboMap: Record<string, { total: number; wins: number; netR: number; sampleDesc: string }> = {};
+  // 21. En iyi kombinasyon: parite + seans + strateji + giriş modeli; en az MIN_SAMPLE işlem, güven aralığı alt sınırına göre
+  const comboMap: Record<string, { list: Trade[]; sampleDesc: string }> = {};
   trades.forEach(t => {
     const asset = t.asset || 'Genel';
     const session = t.session || 'Genel';
-    const sweep = Array.isArray(t.liquiditySweeps) && t.liquiditySweeps.length > 0 
-      ? t.liquiditySweeps[0] 
-      : (t.liquiditySweep || t.concept || 'Sweep');
-    const model = Array.isArray(t.entryModels) && t.entryModels.length > 0 
-      ? t.entryModels[0] 
-      : (t.entry || 'Model');
-
-    const key = `${asset} | ${session} | ${sweep} | ${model}`;
-    if (!comboMap[key]) {
-      comboMap[key] = { 
-        total: 0, 
-        wins: 0, 
-        netR: 0, 
-        sampleDesc: `${asset} paritesinde ${session} seansı, ${sweep} likidite alımı ve ${model} modeli` 
-      };
-    }
-    comboMap[key].total++;
-    if (t.status === 'WIN') comboMap[key].wins++;
-    comboMap[key].netR += (t.rr || 0);
+    const strategy = t.strategy || 'Strateji yok';
+    const model = Array.isArray(t.entryModels) && t.entryModels.length > 0 ? t.entryModels.join(' + ') : 'Model yok';
+    const key = `${asset} | ${session} | ${strategy} | ${model}`;
+    if (!comboMap[key]) comboMap[key] = { list: [], sampleDesc: `${asset} · ${session} · ${strategy} · ${model}` };
+    comboMap[key].list.push(t);
   });
 
-  const comboList = Object.values(comboMap).filter(c => c.total >= 2);
-  comboList.sort((a, b) => b.netR - a.netR);
+  const comboList = Object.values(comboMap)
+    .filter(c => c.list.length >= MIN_SAMPLE)
+    .map(c => ({ ...c, edge: edgeFromR(c.list.map(t => t.rr || 0), c.list.map(t => t.status)) }))
+    .sort((a, b) => b.edge.expLo - a.edge.expLo);
 
   let goldenSetup = {
     hasFormula: false,
-    description: 'Yeterli işlem tekrarı yok.',
+    description: `Aynı parite, seans, strateji ve giriş modeliyle en az ${MIN_SAMPLE} işlem biriktiğinde en güçlü kombinasyon burada görünür.`,
     winRate: 0,
     netR: 0,
     sampleSize: 0,
+    confirmed: false,
   };
 
-  if (comboList.length > 0 && comboList[0].netR > 0) {
-    const topCombo = comboList[0];
+  if (comboList.length > 0 && comboList[0].edge.expectancy > 0) {
+    const top = comboList[0];
     goldenSetup = {
       hasFormula: true,
-      description: topCombo.sampleDesc,
-      winRate: Math.round((topCombo.wins / topCombo.total) * 1000) / 10,
-      netR: Math.round(topCombo.netR * 100) / 100,
-      sampleSize: topCombo.total,
+      description: `${top.sampleDesc} — işlem başına ${top.edge.expectancy} R (%95 aralık ${top.edge.expLo} / ${top.edge.expHi})`,
+      winRate: top.edge.winRate,
+      netR: top.edge.netR,
+      sampleSize: top.edge.n,
+      confirmed: signalStrength(top.edge) === 'CONFIRMED',
     };
   }
 
-  // Generate top actionable insights
+  // Öneriler: yalnızca yeterli örneklemli bulgular
   const actionableInsights: StrategyAnalyticsResult['actionableInsights'] = [];
 
-  if (tightStopRecommendation) {
-    actionableInsights.push({
-      type: 'opportunity',
-      title: 'Stop Loss Optimizasyonu (MAE)',
-      description: tightStopRecommendation.insight,
-      metricTag: `+${tightStopRecommendation.potentialRrBoostPercent}% Potansiyel R/R`,
-    });
-  }
-
   if (missedProfitTrades.length > 0) {
-    const totalLostFromMissed = missedProfitTrades.reduce((s, t) => s + Math.abs(t.rr || 0), 0);
+    const totalLostFromMissed = missedProfitTrades.reduce((s, t) => s + Math.min(0, t.rr || 0), 0);
     actionableInsights.push({
       type: 'warning',
-      title: 'Masada Bırakılan Kâr & Trailing Stop Eksikliği',
-      description: `${missedProfitTrades.length} adet işlemde fiyat lehinize derin gitmesine rağmen (yüksek MFE) işlem kârsız kapandı. Kısmi kâr (Partial TP) almak veya başabaşa çekme (BE) kurallarını netleştirmek sizi korur.`,
-      metricTag: `${missedProfitTrades.length} İşlem Sızıntısı (-${totalLostFromMissed.toFixed(1)}R)`,
+      title: 'Lehine 1R gidip kârsız kapanan işlemler',
+      description: `${missedProfitTrades.length} işlemde fiyat en az stop mesafesi kadar lehine gitti ama işlem zararla veya başabaşta kapandı. Başabaşa çekme / kısmi kâr kuralını Asia Edge Lab'deki TP simülatörüyle test et.`,
+      metricTag: `${missedProfitTrades.length} işlem (${Math.round(totalLostFromMissed * 100) / 100} R)`,
     });
   }
 
-  if (tpTargetRanking.length > 0) {
-    const bestTp = tpTargetRanking[0];
-    if (bestTp.total >= 2 && bestTp.netR > 0) {
-      actionableInsights.push({
-        type: 'positive',
-        title: 'TP Target Kenarı',
-        description: `"${bestTp.target}" hedefine yönelttiğiniz işlemler %${bestTp.winRate} kazanma oranı ve +${bestTp.netR} R getiri üretiyor!`,
-        metricTag: `+%${bestTp.winRate} WR`,
-      });
-    }
-  }
-
-  if (confluenceBrackets[2].count >= 2 && confluenceBrackets[2].winRate >= 60) {
+  if (tpReliable.length > 0 && tpReliable[0].avgR > 0) {
+    const bestTp = tpReliable[0];
+    const tpList = trades.filter(t => Array.isArray(t.tpTargets) && t.tpTargets.includes(bestTp.target));
+    const tpConfirmed = signalStrength(edgeFromR(tpList.map(t => t.rr || 0), tpList.map(t => t.status))) === 'CONFIRMED';
     actionableInsights.push({
       type: 'positive',
-      title: 'Yüksek Konfluans Gücü (4+ Onay)',
-      description: sweetSpotInsight,
-      metricTag: `%${confluenceBrackets[2].winRate} Win Rate`,
+      title: tpConfirmed ? 'Çıkış hedefi (Target) kenarı' : 'Çıkış hedefi (Target) · erken sinyal',
+      description: `"${bestTp.target}" hedefli işlemler: %${bestTp.winRate} kazanma, işlem başına +${bestTp.avgR} R (${bestTp.total} işlem).${tpConfirmed ? '' : ` Henüz kesin değil: kanıt için en az ${EDGE_PROOF_MIN} işlem ve sıfırın üstünde güven aralığı gerekir.`}`,
+      metricTag: `+${bestTp.avgR} R/işlem`,
     });
   }
 
-  if (disciplineAlphaR > 0.5) {
+  if (lowQualityCount >= MIN_SAMPLE && disciplineAlphaR > 0) {
     actionableInsights.push({
       type: 'opportunity',
-      title: 'B-C / FOMO Filtreleme Kazancı',
-      description: `B-C kalitesindeki ya da plan dışı işlemleri tamamen elerseniz hesabınız tam +${disciplineAlphaR.toFixed(1)}R daha kârda olacaktı!`,
-      metricTag: `+${disciplineAlphaR.toFixed(1)}R Disiplin Deltası`,
+      title: 'Düşük kalite setupların maliyeti',
+      description: `B-C / plan dışı ${lowQualityCount} işlemin net sonucu -${disciplineAlphaR.toFixed(1)} R. Setup kalitesini girişten ÖNCE işaretliyorsan bu filtre gerçek bir kazanç; sonradan işaretliyorsan sonuç yanlıdır.`,
+      metricTag: `-${disciplineAlphaR.toFixed(1)} R`,
     });
   }
 
@@ -1329,6 +1014,7 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
     asset: r.key,
     total: r.total,
     wins: r.wins,
+    losses: r.losses,
     winRate: r.winRate,
     netR: r.netR,
     avgR: r.avgR,
@@ -1336,7 +1022,7 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
   }));
 
   // 23. Account Category Stats (Funded vs Challenge vs Demo)
-  const accountCategoryRanking = buildRankings(t => [t.accountCategory || (t.platform ? getTradeAccountCategory({ platform: t.platform }) : 'FUNDED')]).map(r => ({
+  const accountCategoryRanking = buildRankings(t => [getTradeAccountCategory(t)]).map(r => ({
     category: r.key,
     total: r.total,
     wins: r.wins,
@@ -1346,92 +1032,9 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
     profitFactor: r.profitFactor,
   }));
 
-  // 24. Detailed Mistake & Loss Leak Breakdown
-  const bCTrades = trades.filter(t => (t.planFidelity || '').toUpperCase() === 'B-C');
-  const bCLossTrades = bCTrades.filter(t => (t.rr || 0) < 0);
-  const bCLeakR = Math.round(Math.abs(bCLossTrades.reduce((s, t) => s + (t.rr || 0), 0)) * 100) / 100;
-
-  const counterTrendTrades = trades.filter(t => (t.trend || '').toLowerCase() === 'reversal');
-  const counterTrendLossTrades = counterTrendTrades.filter(t => (t.rr || 0) < 0);
-  const counterTrendLeakR = Math.round(Math.abs(counterTrendLossTrades.reduce((s, t) => s + (t.rr || 0), 0)) * 100) / 100;
-
-  const wrongZoneTrades = trades.filter(t => {
-    const z = (t.premiumDiscount || '').toLowerCase();
-    return (t.type === 'LONG' && z.includes('premium')) || (t.type === 'SHORT' && z.includes('discount'));
-  });
-  const wrongZoneLossTrades = wrongZoneTrades.filter(t => (t.rr || 0) < 0);
-  const wrongZoneLeakR = Math.round(Math.abs(wrongZoneLossTrades.reduce((s, t) => s + (t.rr || 0), 0)) * 100) / 100;
-
-  const lowConfTrades = trades.filter(t => countConfluences(t) <= 1);
-  const lowConfLossTrades = lowConfTrades.filter(t => (t.rr || 0) < 0);
-  const lowConfluenceLeakR = Math.round(Math.abs(lowConfLossTrades.reduce((s, t) => s + (t.rr || 0), 0)) * 100) / 100;
-
-  const preventableLossTradeIds = new Set<string>();
-  [...bCLossTrades, ...counterTrendLossTrades, ...wrongZoneLossTrades, ...lowConfLossTrades].forEach(t => {
-    if (t.id) preventableLossTradeIds.add(t.id);
-  });
-  const preventableLossTrades = trades.filter(t => preventableLossTradeIds.has(t.id));
-  const preventableLeakTotalR = Math.round(Math.abs(preventableLossTrades.reduce((s, t) => s + (t.rr || 0), 0)) * 100) / 100;
-
-  const cleanTrades = trades.filter(t => !preventableLossTradeIds.has(t.id));
-  const potentialNetR = Math.round(cleanTrades.reduce((s, t) => s + (t.rr || 0), 0) * 100) / 100;
-  const potentialWins = cleanTrades.filter(t => t.status === 'WIN').length;
-  const potentialWinRate = cleanTrades.length > 0 ? Math.round((potentialWins / cleanTrades.length) * 1000) / 10 : overallWinRate;
-
-  const leakCategories = [
-    {
-      category: 'Düşük Kalite Kurulum',
-      title: 'B-C / Zorlama Setup Girişleri',
-      count: bCTrades.length,
-      lostR: bCLeakR,
-      winRate: bCTrades.length > 0 ? Math.round((bCTrades.filter(t => t.status === 'WIN').length / bCTrades.length) * 1000) / 10 : 0,
-      fixAdvice: 'Yalnızca A+ ve A kalite setup şartları sağlandığında pozisyona girin; B-C kurulumları derhal filtreleyin.',
-    },
-    {
-      category: 'Ters Trend Girişi',
-      title: 'Trende Karşı Erken Bıçak Tutma',
-      count: counterTrendTrades.length,
-      lostR: counterTrendLeakR,
-      winRate: counterTrendTrades.length > 0 ? Math.round((counterTrendTrades.filter(t => t.status === 'WIN').length / counterTrendTrades.length) * 1000) / 10 : 0,
-      fixAdvice: 'Dönüş (reversal) yerine ana trend devamı (continuation) kurulumlarına odaklanarak kazanma oranınızı koruyun.',
-    },
-    {
-      category: 'Yanlış Fiyat Bölgesi',
-      title: 'Premiumda Long / Discountta Short',
-      count: wrongZoneTrades.length,
-      lostR: wrongZoneLeakR,
-      winRate: wrongZoneTrades.length > 0 ? Math.round((wrongZoneTrades.filter(t => t.status === 'WIN').length / wrongZoneTrades.length) * 1000) / 10 : 0,
-      fixAdvice: 'Pahalı (Premium) bölgede Long, ucuz (Discount) bölgede Short arama hatasından kaçının; daima likidite havuzunu bekleyin.',
-    },
-    {
-      category: 'Yetersiz Konfluans',
-      title: '0-1 Onayla Acele Pozisyona Girme',
-      count: lowConfTrades.length,
-      lostR: lowConfluenceLeakR,
-      winRate: lowConfTrades.length > 0 ? Math.round((lowConfTrades.filter(t => t.status === 'WIN').length / lowConfTrades.length) * 1000) / 10 : 0,
-      fixAdvice: 'En az 3 bağımsız ICT teyidi (HTF + Likidite Süpürmesi + FVG/IFVG) oluşmadan tetiğe basmayın.',
-    },
-  ];
-
-  const totalLeakR = Math.round((bCLeakR + counterTrendLeakR + wrongZoneLeakR + lowConfluenceLeakR) * 100) / 100;
-
-  const mistakeStats = {
-    totalLeakR,
-    bCLeakR,
-    counterTrendLeakR,
-    wrongZoneLeakR,
-    lowConfluenceLeakR,
-    preventableLeakTotalR,
-    potentialNetR,
-    potentialWinRate,
-    leaks: leakCategories,
-  };
-
   return {
     totalTrades,
     overallScore: {
-      score: normalizedScore,
-      grade,
       winRate: overallWinRate,
       profitFactor: overallProfitFactor,
       netR: overallNetR,
@@ -1446,7 +1049,6 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
       avgStopPips: Math.round(avgStopPips * 10) / 10,
       stopCushionEfficiency: Math.round(stopCushionEfficiency),
       earlyEntryWarningCount: earlyEntryCount,
-      tightStopRecommendation,
     },
     mfeStats: {
       hasData: tradesWithMfe.length > 0,
@@ -1458,7 +1060,6 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
       leftOnTheTablePips,
       missedProfitTradesCount: missedProfitTrades.length,
       missedProfitTrades,
-      optimalTpRecommendation,
     },
     asiaRangeStats: {
       hasData: tradesWithAsia.length > 0,
@@ -1466,17 +1067,6 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
       brackets: asiaBrackets,
       bestBracket: bestAsiaBracket,
       insight: asiaInsight,
-    },
-    liquiditySweepStats: {
-      hasData: sweepRanking.length > 0,
-      ranking: sweepRanking,
-      multiSweepEdge: {
-        singleSweepWinRate: singleSweepCount > 0 ? Math.round((singleSweepWins / singleSweepCount) * 1000) / 10 : 0,
-        singleSweepNetR: Math.round(singleSweepNetR * 100) / 100,
-        multiSweepWinRate: multiSweepCount > 0 ? Math.round((multiSweepWins / multiSweepCount) * 1000) / 10 : 0,
-        multiSweepNetR: Math.round(multiSweepNetR * 100) / 100,
-        diffR: Math.round((multiSweepNetR - singleSweepNetR) * 100) / 100,
-      },
     },
     entryModelStats: {
       hasData: entryModelRanking.length > 0,
@@ -1523,14 +1113,11 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
       highQualityTradesCount: highQualityCount,
       highQualityNetR: Math.round(highQualityNetR * 100) / 100,
       highQualityWinRate: highQualityCount > 0 ? Math.round((highQualityWins / highQualityCount) * 1000) / 10 : 0,
+      midQualityTradesCount: midQualityCount,
+      midQualityNetR: Math.round(midQualityNetR * 100) / 100,
       lowQualityTradesCount: lowQualityCount,
       lowQualityNetR: Math.round(lowQualityNetR * 100) / 100,
       disciplineAlphaR,
-    },
-    confluenceStats: {
-      hasData: trades.length >= 2,
-      brackets: confluenceBrackets,
-      sweetSpotInsight,
     },
     dayOfWeekStats,
     stopSizeStats: {
@@ -1547,12 +1134,10 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
       postLossTiltRisk,
       insight: streakInsight,
     },
-    monteCarloSimulation,
     redFlagRules,
     goldenSetup,
     actionableInsights,
     assetStats: assetRanking,
     accountCategoryStats: accountCategoryRanking,
-    mistakeStats,
   };
 }

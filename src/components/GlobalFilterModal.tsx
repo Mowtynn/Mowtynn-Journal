@@ -1,23 +1,55 @@
 import { MODAL_BACKDROP, MODAL_PANEL } from '../lib/motion';
+import { smartUpper } from '../constants/constants';
 import React, { useState, useEffect } from 'react';
 import { useAfterPaint } from '../hooks/useAfterPaint';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Filter, RotateCcw, Check, Calendar, Monitor, Activity, ArrowUpRight, Coins, Flame, ChevronRight, Eye, EyeOff, ChevronDown, Clock, Sparkles, X, Target, Zap, TrendingUp } from 'lucide-react';
-import { DEFAULT_PLAN_FIDELITIES, DEFAULT_ENTRY_MODELS, DEFAULT_TREND_TYPES, DEFAULT_DEFINITION_TITLES, caseInsensitiveEquals } from '../constants/constants';
+import {
+  Filter,
+  RotateCcw,
+  Check,
+  Calendar,
+  Activity,
+  ArrowUpRight,
+  Coins,
+  Flame,
+  Eye,
+  EyeOff,
+  Clock,
+  Sparkles,
+  X,
+  Target,
+  Zap,
+  TrendingUp,
+  Layers,
+  BookOpen,
+  Newspaper,
+  Percent,
+  Crosshair,
+  Scale,
+  PenLine,
+} from 'lucide-react';
+import {
+  DEFAULT_PLAN_FIDELITIES,
+  DEFAULT_ENTRY_MODELS,
+  DEFAULT_TREND_TYPES,
+  DEFAULT_DEFINITION_TITLES,
+} from '../constants/constants';
 import { DefinitionTitles } from '../types';
+import { DEFAULT_DATE_LIMIT, EMPTY_EXTRA_FILTERS, countExtraFilters, type ExtraTradeFilters } from '../lib/tradeFilters';
+import { setupQualityTier } from '../lib/discipline';
+import { useNewsDayLabels } from '../hooks/useNewsDayLabels';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
+import { PillMultiSelect, StatusMultiSelect, TypeMultiSelect, FilterAccordionRow, FilterChip, FilterChipRow, FILTER_INPUT, FILTER_LABEL } from './filters/FilterControls';
 
 interface GlobalFilterModalProps {
   isOpen: boolean;
   onClose: () => void;
   trades?: any[];
   // Options
-  platforms: string[];
   timeframes: string[];
   htfTimeframes: string[];
   confirmations: string[];
-  concepts: string[];
   sessions: string[];
   assets: string[];
   planFidelities?: string[];
@@ -27,12 +59,8 @@ interface GlobalFilterModalProps {
   // Selected
   globalSelectedConfirmations: string[];
   setGlobalSelectedConfirmations: (v: string[]) => void;
-  globalSelectedConcepts: string[];
-  setGlobalSelectedConcepts: (v: string[]) => void;
   globalSelectedPlanFidelity: string[];
   setGlobalSelectedPlanFidelity: (v: string[]) => void;
-  globalSelectedPlatforms: string[];
-  setGlobalSelectedPlatforms: (v: string[]) => void;
   globalSelectedAssets: string[];
   setGlobalSelectedAssets: (v: string[]) => void;
   globalSelectedSessions: string[];
@@ -63,275 +91,23 @@ interface GlobalFilterModalProps {
   setGlobalMinMfePips?: (v?: number) => void;
   globalMaxMfePips?: number;
   setGlobalMaxMfePips?: (v?: number) => void;
+  // Sonradan eklenen alanlar
+  strategies?: string[];
+  premiumDiscounts?: string[];
+  tpTargets?: string[];
+  asiaRangeFvgs?: string[];
+  globalExtra?: ExtraTradeFilters;
+  setGlobalExtra?: (v: ExtraTradeFilters) => void;
 }
 
-
-const PillMultiSelect = ({ 
-  options, 
-  selectedValues, 
-  onChange,
-  activeColor = "blue"
-}: { 
-  options: string[], 
-  selectedValues: string[], 
-  onChange: (v: string[]) => void,
-  activeColor?: "blue" | "emerald" | "rose" | "amber" | "purple"
-}) => {
-  const isAllSelected = selectedValues.length === 0;
-
-  const toggleOption = (option: string) => {
-    if (selectedValues.some(v => caseInsensitiveEquals(v, option))) {
-      onChange(selectedValues.filter(v => !caseInsensitiveEquals(v, option)));
-    } else {
-      onChange([...selectedValues, option]);
-    }
-  };
-
-  const activeStyle = {
-    blue: "bg-blue-500/20 border-blue-500/50 text-blue-300 font-bold shadow-sm",
-    emerald: "bg-emerald-500/20 border-emerald-500/50 text-emerald-300 font-bold shadow-sm",
-    rose: "bg-rose-500/20 border-rose-500/50 text-rose-300 font-bold shadow-sm",
-    amber: "bg-amber-500/20 border-amber-500/50 text-amber-300 font-bold shadow-sm",
-    purple: "bg-purple-500/20 border-purple-500/50 text-purple-300 font-bold shadow-sm",
-  }[activeColor];
-
-  return (
-    <div className="flex flex-wrap gap-1 max-h-36 overflow-y-auto custom-scrollbar p-1">
-      <button
-        type="button"
-        onClick={() => onChange([])}
-        className={`px-3 py-2 sm:px-2 sm:py-1 rounded-lg text-[10px] font-sans uppercase font-bold tracking-wider transition-colors duration-200 ease-out border cursor-pointer ${
-          isAllSelected 
-            ? 'bg-blue-500/20 border-blue-500/50 text-blue-300 font-bold' 
-            : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
-        }`}
-      >
-        Tümü ({options.length})
-      </button>
-      {options.map(option => {
-        const isSelected = selectedValues.some(v => caseInsensitiveEquals(v, option));
-        return (
-          <button
-            key={option}
-            type="button"
-            onClick={() => toggleOption(option)}
-            className={`px-3 py-2 sm:px-2 sm:py-1 rounded-lg text-[10px] font-sans uppercase font-bold tracking-wider transition-colors duration-200 ease-out border cursor-pointer flex items-center gap-1 ${
-              isSelected 
-                ? activeStyle 
-                : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
-            }`}
-          >
-            {isSelected && <Check size={10} className="shrink-0" />}
-            {option}
-          </button>
-        );
-      })}
-    </div>
-  );
-};
-
-const StatusMultiSelect = ({
-  selectedValues,
-  onChange
-}: {
-  selectedValues: string[],
-  onChange: (v: string[]) => void
-}) => {
-  const isAll = selectedValues.length === 0;
-
-  const toggle = (val: string) => {
-    if (selectedValues.some(v => caseInsensitiveEquals(v, val))) {
-      onChange(selectedValues.filter(v => !caseInsensitiveEquals(v, val)));
-    } else {
-      onChange([...selectedValues, val]);
-    }
-  };
-
-  return (
-    <div className="flex flex-wrap gap-1.5 p-1">
-      <button
-        type="button"
-        onClick={() => onChange([])}
-        className={`px-3 py-2 sm:px-2.5 sm:py-1 rounded-lg text-[10px] font-sans uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer ${
-          isAll 
-            ? 'bg-blue-500/20 border-blue-500/50 text-blue-300 font-bold' 
-            : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
-        }`}
-      >
-        Tümü
-      </button>
-      <button
-        type="button"
-        onClick={() => toggle("WIN")}
-        className={`px-3 py-2 sm:px-2.5 sm:py-1 rounded-lg text-[10px] font-sans uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer flex items-center gap-1 ${
-          selectedValues.includes("WIN")
-            ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300 font-bold shadow-sm'
-            : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-emerald-400'
-        }`}
-      >
-        {selectedValues.includes("WIN") && <Check size={10} />}
-        WIN
-      </button>
-      <button
-        type="button"
-        onClick={() => toggle("LOSS")}
-        className={`px-3 py-2 sm:px-2.5 sm:py-1 rounded-lg text-[10px] font-sans uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer flex items-center gap-1 ${
-          selectedValues.includes("LOSS")
-            ? 'bg-rose-500/20 border-rose-500/50 text-rose-300 font-bold shadow-sm'
-            : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-rose-400'
-        }`}
-      >
-        {selectedValues.includes("LOSS") && <Check size={10} />}
-        LOSS
-      </button>
-      <button
-        type="button"
-        onClick={() => toggle("BREAKEVEN")}
-        className={`px-3 py-2 sm:px-2.5 sm:py-1 rounded-lg text-[10px] font-sans uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer flex items-center gap-1 ${
-          selectedValues.includes("BREAKEVEN")
-            ? 'bg-amber-500/20 border-amber-500/50 text-amber-300 font-bold shadow-sm'
-            : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-amber-400'
-        }`}
-      >
-        {selectedValues.includes("BREAKEVEN") && <Check size={10} />}
-        BREAKEVEN
-      </button>
-    </div>
-  );
-};
-
-const TypeMultiSelect = ({
-  selectedValues,
-  onChange
-}: {
-  selectedValues: string[],
-  onChange: (v: string[]) => void
-}) => {
-  const isAll = selectedValues.length === 0;
-
-  const toggle = (val: string) => {
-    if (selectedValues.includes(val)) {
-      onChange(selectedValues.filter(v => v !== val));
-    } else {
-      onChange([...selectedValues, val]);
-    }
-  };
-
-  return (
-    <div className="flex flex-wrap gap-1.5 p-1">
-      <button
-        type="button"
-        onClick={() => onChange([])}
-        className={`px-3 py-2 sm:px-2.5 sm:py-1 rounded-lg text-[10px] font-sans uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer ${
-          isAll 
-            ? 'bg-blue-500/20 border-blue-500/50 text-blue-300 font-bold' 
-            : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
-        }`}
-      >
-        Tümü
-      </button>
-      <button
-        type="button"
-        onClick={() => toggle("LONG")}
-        className={`px-3 py-2 sm:px-2.5 sm:py-1 rounded-lg text-[10px] font-sans uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer flex items-center gap-1 ${
-          selectedValues.includes("LONG")
-            ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300 font-bold shadow-sm'
-            : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-emerald-400'
-        }`}
-      >
-        {selectedValues.includes("LONG") && <Check size={10} />}
-        LONG
-      </button>
-      <button
-        type="button"
-        onClick={() => toggle("SHORT")}
-        className={`px-3 py-2 sm:px-2.5 sm:py-1 rounded-lg text-[10px] font-sans uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer flex items-center gap-1 ${
-          selectedValues.includes("SHORT")
-            ? 'bg-rose-500/20 border-rose-500/50 text-rose-300 font-bold shadow-sm'
-            : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-rose-400'
-        }`}
-      >
-        {selectedValues.includes("SHORT") && <Check size={10} />}
-        SHORT
-      </button>
-    </div>
-  );
-};
-
-interface FilterAccordionRowProps {
-  icon: React.ReactNode;
-  title: string;
-  summaryText: string;
-  badgeCount?: number;
-  isOpen: boolean;
-  onToggle: () => void;
-  children: React.ReactNode;
-}
-
-const FilterAccordionRow: React.FC<FilterAccordionRowProps> = ({
-  icon,
-  title,
-  summaryText,
-  badgeCount = 0,
-  isOpen,
-  onToggle,
-  children
-}) => {
-  return (
-    <div className="bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden transition-colors">
-      <button
-        type="button"
-        onClick={onToggle}
-        className="w-full px-3.5 py-2.5 flex items-center justify-between hover:bg-zinc-800/50 transition-colors duration-200 ease-out text-left cursor-pointer select-none"
-      >
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="shrink-0">{icon}</div>
-          <span className="text-xs font-bold font-sans text-zinc-200 uppercase tracking-wider shrink-0">
-            {title}
-          </span>
-          <span className="text-xs font-sans text-zinc-400 truncate hidden sm:inline-block uppercase">
-            — {summaryText}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2 shrink-0 ml-2">
-          {badgeCount > 0 ? (
-            <span className="px-2 py-0.5 rounded-full text-[9px] font-sans font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">
-              {badgeCount} seçili
-            </span>
-          ) : (
-            <span className="text-[10px] font-sans text-zinc-400 hidden xs:inline">Tümü</span>
-          )}
-          <div className="text-zinc-400">
-            {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-          </div>
-        </div>
-      </button>
-
-      <div 
-        className={`grid transition-[grid-template-rows,opacity] duration-200 ease-out will-change-[grid-template-rows,opacity] ${
-          isOpen ? 'grid-rows-[1fr] opacity-100 border-t border-zinc-800' : 'grid-rows-[0fr] opacity-0'
-        }`}
-      >
-        <div className="min-h-0 overflow-hidden bg-zinc-900">
-          <div className="p-2.5">
-            {children}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
   isOpen,
   onClose,
   trades = [],
-  platforms,
   timeframes,
   htfTimeframes,
   confirmations,
-  concepts,
   sessions,
   assets,
   planFidelities = DEFAULT_PLAN_FIDELITIES,
@@ -339,9 +115,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
   trendTypes = DEFAULT_TREND_TYPES,
   definitionTitles = DEFAULT_DEFINITION_TITLES,
   globalSelectedConfirmations, setGlobalSelectedConfirmations,
-  globalSelectedConcepts, setGlobalSelectedConcepts,
   globalSelectedPlanFidelity, setGlobalSelectedPlanFidelity,
-  globalSelectedPlatforms, setGlobalSelectedPlatforms,
   globalSelectedAssets, setGlobalSelectedAssets,
   globalSelectedSessions, setGlobalSelectedSessions,
   globalSelectedTimeframes, setGlobalSelectedTimeframes,
@@ -356,20 +130,21 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
   globalMinMaePips, setGlobalMinMaePips,
   globalMaxMaePips, setGlobalMaxMaePips,
   globalMinMfePips, setGlobalMinMfePips,
-  globalMaxMfePips, setGlobalMaxMfePips
+  globalMaxMfePips, setGlobalMaxMfePips,
+  strategies = [],
+  premiumDiscounts = [],
+  tpTargets = [],
+  asiaRangeFvgs = [],
+  globalExtra = EMPTY_EXTRA_FILTERS,
+  setGlobalExtra,
 }) => {
+  const { labels: newsLabels } = useNewsDayLabels();
+  const patchExtra = (p: Partial<ExtraTradeFilters>) => setGlobalExtra?.({ ...globalExtra, ...p });
   useBodyScrollLock(isOpen);
   // Seçenek listeleri (tüm işlemleri tarar) açılış animasyonu çizildikten sonra hesaplanır
   const ready = useAfterPaint(isOpen);
 
   // Dynamic extraction of unique options from both definitions and actual trade data
-  const dynamicPlatforms = React.useMemo(() => {
-    if (!ready) return platforms || [];
-    const set = new Set(platforms || []);
-    trades.forEach(t => { if (t.platform) set.add(t.platform); });
-    return Array.from(set);
-  }, [ready, platforms, trades]);
-
   const dynamicAssets = React.useMemo(() => {
     if (!ready) return assets || [];
     const set = new Set(assets || []);
@@ -377,20 +152,6 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
     return Array.from(set);
   }, [ready, assets, trades]);
 
-  const dynamicConcepts = React.useMemo(() => {
-    if (!ready) return concepts || [];
-    const set = new Set(concepts || []);
-    trades.forEach(t => { 
-      if (Array.isArray(t.liquiditySweeps)) {
-        t.liquiditySweeps.forEach(s => s && set.add(s));
-      } else if (t.liquiditySweep) {
-        t.liquiditySweep.split(',').map(s => s.trim()).forEach(s => s && set.add(s));
-      } else if (t.concept) {
-        t.concept.split(',').map(s => s.trim()).forEach(s => s && set.add(s));
-      }
-    });
-    return Array.from(set);
-  }, [ready, concepts, trades]);
 
   const dynamicConfirmations = React.useMemo(() => {
     if (!ready) return confirmations || [];
@@ -437,8 +198,6 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
     trades.forEach(t => {
       if (t.entryModels && Array.isArray(t.entryModels)) {
         t.entryModels.forEach(em => set.add(em));
-      } else if (t.entry) {
-        t.entry.split(',').forEach(em => set.add(em.trim()));
       }
     });
     return Array.from(set);
@@ -450,6 +209,36 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
     trades.forEach(t => { if (t.trend) set.add(t.trend); });
     return Array.from(set);
   }, [ready, trendTypes, trades]);
+
+  // Ek alanların seçenekleri: Tanımlamalar + işlemlerde görülen değerler
+  const extraOptions = React.useMemo(() => {
+    const strat = new Set(strategies);
+    const pd = new Set(premiumDiscounts);
+    const tp = new Set(tpTargets);
+    const fvg = new Set(asiaRangeFvgs);
+    const risk = new Set<number>();
+    let incomplete = 0;
+    if (ready) {
+      trades.forEach((t) => {
+        if (t.strategy) strat.add(t.strategy);
+        if (t.premiumDiscount) pd.add(t.premiumDiscount);
+        if (Array.isArray(t.tpTargets)) t.tpTargets.forEach((x: string) => x && tp.add(x));
+        if (t.asiaRangeFvg) fvg.add(t.asiaRangeFvg);
+        if (typeof t.riskPct === 'number' && t.riskPct > 0) risk.add(Math.round(t.riskPct * 1000) / 1000);
+        if (t.quickEntry === true) incomplete++;
+      });
+    }
+    return {
+      strategies: Array.from(strat),
+      premiumDiscounts: Array.from(pd),
+      tpTargets: Array.from(tp),
+      asiaRangeFvgs: Array.from(fvg),
+      riskPcts: Array.from(risk).sort((a, b) => a - b),
+      incomplete,
+    };
+  }, [ready, trades, strategies, premiumDiscounts, tpTargets, asiaRangeFvgs]);
+  const riskLabel = (n: number) => `%${n.toLocaleString('tr-TR', { maximumFractionDigits: 3 })}`;
+  const newsSummary = globalExtra.newsDay === 'YES' ? newsLabels.yes : globalExtra.newsDay === 'NO' ? newsLabels.no : 'Tümü';
 
   // Keep track of which accordion categories are expanded
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
@@ -465,10 +254,10 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
     setOpenSections({
       trend: true,
       entry: true,
-      concept: true,
       planFidelity: true,
       confirmation: true,
       platform: true,
+      stage: true,
       date: true,
       status: true,
       type: true,
@@ -477,6 +266,13 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
       htfTf: true,
       session: true,
       asiaRange: true,
+      strategy: true,
+      pd: true,
+      tpTarget: true,
+      asiaFvg: true,
+      newsDay: true,
+      riskPct: true,
+      quickEntry: true,
     });
   };
 
@@ -486,9 +282,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
 
   const handleReset = () => {
     setGlobalSelectedConfirmations([]);
-    setGlobalSelectedConcepts([]);
     setGlobalSelectedPlanFidelity([]);
-    setGlobalSelectedPlatforms([]);
     setGlobalSelectedAssets([]);
     setGlobalSelectedSessions([]);
     setGlobalSelectedTimeframes([]);
@@ -497,13 +291,14 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
     setGlobalSelectedTypes([]);
     setGlobalSelectedEntryModels?.([]);
     setGlobalSelectedTrendTypes?.([]);
-    setGlobalDateLimit("6m");
+    setGlobalDateLimit(DEFAULT_DATE_LIMIT);
     setGlobalMinAsiaRangePips?.(undefined);
     setGlobalMaxAsiaRangePips?.(undefined);
     setGlobalMinMaePips?.(undefined);
     setGlobalMaxMaePips?.(undefined);
     setGlobalMinMfePips?.(undefined);
     setGlobalMaxMfePips?.(undefined);
+    setGlobalExtra?.(EMPTY_EXTRA_FILTERS);
   };
 
   useEffect(() => {
@@ -522,9 +317,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
 
   const activeFilterCount = 
     globalSelectedConfirmations.length + 
-    globalSelectedConcepts.length + 
     globalSelectedPlanFidelity.length +
-    globalSelectedPlatforms.length +
     globalSelectedAssets.length + 
     globalSelectedSessions.length + 
     globalSelectedTimeframes.length + 
@@ -533,23 +326,24 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
     globalSelectedTypes.length + 
     (globalSelectedEntryModels?.length || 0) + 
     (globalSelectedTrendTypes?.length || 0) + 
-    (globalDateLimit !== "6m" ? 1 : 0) +
+    (globalDateLimit !== DEFAULT_DATE_LIMIT ? 1 : 0) +
     (globalMinAsiaRangePips !== undefined || globalMaxAsiaRangePips !== undefined ? 1 : 0) +
     (globalMinMaePips !== undefined || globalMaxMaePips !== undefined ? 1 : 0) +
-    (globalMinMfePips !== undefined || globalMaxMfePips !== undefined ? 1 : 0);
+    (globalMinMfePips !== undefined || globalMaxMfePips !== undefined ? 1 : 0) +
+    countExtraFilters(globalExtra);
 
   const dateOptions = [
     { value: '1w', label: '1 Hafta' },
     { value: '1m', label: '1 Ay' },
     { value: '3m', label: '3 Ay' },
-    { value: '6m', label: '6 Ay (Varsayılan)' },
+    { value: '6m', label: '6 Ay' },
     { value: '1y', label: '1 Yıl' },
-    { value: 'all', label: 'Tüm Zamanlar' }
+    { value: 'all', label: 'Tüm Zamanlar (Varsayılan)' }
   ];
 
   const getDateLabel = (val: string) => {
     const found = dateOptions.find(d => d.value === val);
-    return found ? found.label : '6 Ay';
+    return found ? found.label : 'Tüm Zamanlar';
   };
 
   const isAnyOpen = Object.values(openSections).some(Boolean);
@@ -587,14 +381,14 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
               >
                 {isAnyOpen ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
-              <button
+              <button aria-label="Sıfırla" title="Sıfırla"
                 type="button"
                 onClick={handleReset}
                 className="btn-icon"
               >
                 <RotateCcw size={16} />
               </button>
-              <button
+              <button aria-label="Kapat" title="Kapat"
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -616,45 +410,17 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                 icon={<Calendar size={14} className="text-amber-400" />}
                 
                 summaryText={getDateLabel(globalDateLimit)}
-                badgeCount={globalDateLimit !== '6m' ? 1 : 0}
+                badgeCount={globalDateLimit !== DEFAULT_DATE_LIMIT ? 1 : 0}
                 isOpen={!!openSections.date}
                 onToggle={() => toggleSection('date')}
               >
-                <div className="flex flex-wrap gap-1 p-1">
-                  {dateOptions.map(option => {
-                    const isSelected = globalDateLimit === option.value;
-                    return (
-                      <button
-                        key={option.value}
-                        type="button"
-                        onClick={() => setGlobalDateLimit(option.value)}
-                        className={`px-3 py-2 sm:px-2.5 sm:py-1 rounded-lg text-[10px] font-sans uppercase tracking-wider transition-colors duration-200 ease-out border cursor-pointer ${
-                          isSelected 
-                            ? 'bg-amber-500/20 border-amber-500/50 text-amber-300 font-bold shadow-sm' 
-                            : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
-                        }`}
-                      >
-                        {option.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </FilterAccordionRow>
-
-              {/* 1.5 PLATFORM */}
-              <FilterAccordionRow title={definitionTitles.platforms || "PLATFORM"} 
-                icon={<Monitor size={14} className="text-blue-400" />}
-                summaryText={globalSelectedPlatforms.length > 0 ? globalSelectedPlatforms.join(', ') : 'Tümü'}
-                badgeCount={globalSelectedPlatforms.length}
-                isOpen={!!openSections.platform}
-                onToggle={() => toggleSection('platform')}
-              >
-                <PillMultiSelect
-                  options={dynamicPlatforms}
-                  selectedValues={globalSelectedPlatforms}
-                  onChange={setGlobalSelectedPlatforms}
-                  activeColor="blue"
-                />
+                <FilterChipRow>
+                  {dateOptions.map((option) => (
+                    <FilterChip key={option.value} check={false} tone={option.value === 'all' ? 'neutral' : 'brand'} active={globalDateLimit === option.value} onClick={() => setGlobalDateLimit(option.value)}>
+                      {option.label}
+                    </FilterChip>
+                  ))}
+                </FilterChipRow>
               </FilterAccordionRow>
 
               {/* 2. PARİTE (ASSET) */}
@@ -670,7 +436,6 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                   options={dynamicAssets}
                   selectedValues={globalSelectedAssets}
                   onChange={setGlobalSelectedAssets}
-                  activeColor="amber"
                 />
               </FilterAccordionRow>
 
@@ -702,7 +467,6 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                   options={dynamicSessions}
                   selectedValues={globalSelectedSessions}
                   onChange={setGlobalSelectedSessions}
-                  activeColor="amber"
                 />
               </FilterAccordionRow>
 
@@ -720,7 +484,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
               >
                 <div className="bg-zinc-950/60 p-3 rounded-xl border border-zinc-800/80 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-zinc-400 font-sans font-bold uppercase tracking-wider">Aralık (En Az - En Çok)</span>
+                    <span className="text-[10px] text-zinc-400 font-sans font-bold uppercase tracking-wider">{smartUpper("Aralık (En Az - En Çok)")}</span>
                     {(globalMinAsiaRangePips !== undefined || globalMaxAsiaRangePips !== undefined) && (
                       <button
                         type="button"
@@ -736,7 +500,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                   </div>
                   <div className="grid grid-cols-2 gap-2.5">
                     <div>
-                      <label className="text-[10px] text-zinc-400 uppercase font-bold tracking-wider mb-1 block">En Az (Min Pip)</label>
+                      <label className={`${FILTER_LABEL} mb-1 block`}>En Az (Min Pip)</label>
                       <input
                         type="number"
                         step="any"
@@ -747,11 +511,11 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                           const val = e.target.value;
                           setGlobalMinAsiaRangePips?.(val !== '' ? parseFloat(val) : undefined);
                         }}
-                        className="w-full h-8.5 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-amber-500 rounded-lg px-2.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none shadow-inner"
+                        className={FILTER_INPUT}
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] text-zinc-400 uppercase font-bold tracking-wider mb-1 block">En Çok (Maks Pip)</label>
+                      <label className={`${FILTER_LABEL} mb-1 block`}>En Çok (Maks Pip)</label>
                       <input
                         type="number"
                         step="any"
@@ -762,7 +526,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                           const val = e.target.value;
                           setGlobalMaxAsiaRangePips?.(val !== '' ? parseFloat(val) : undefined);
                         }}
-                        className="w-full h-8.5 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-amber-500 rounded-lg px-2.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none shadow-inner"
+                        className={FILTER_INPUT}
                       />
                     </div>
                   </div>
@@ -783,7 +547,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
               >
                 <div className="bg-zinc-950/60 p-3 rounded-xl border border-zinc-800/80 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-zinc-400 font-sans font-bold uppercase tracking-wider">Aralık (En Az - En Çok Drawdown)</span>
+                    <span className="text-[10px] text-zinc-400 font-sans font-bold uppercase tracking-wider">{smartUpper("Aralık (En Az - En Çok Drawdown)")}</span>
                     {(globalMinMaePips !== undefined || globalMaxMaePips !== undefined) && (
                       <button
                         type="button"
@@ -799,7 +563,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                   </div>
                   <div className="grid grid-cols-2 gap-2.5">
                     <div>
-                      <label className="text-[10px] text-zinc-400 uppercase font-bold tracking-wider mb-1 block">En Az (Min Pip)</label>
+                      <label className={`${FILTER_LABEL} mb-1 block`}>En Az (Min Pip)</label>
                       <input
                         type="number"
                         step="any"
@@ -810,11 +574,11 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                           const val = e.target.value;
                           setGlobalMinMaePips?.(val !== '' ? parseFloat(val) : undefined);
                         }}
-                        className="w-full h-8.5 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-rose-500 rounded-lg px-2.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none shadow-inner"
+                        className={FILTER_INPUT}
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] text-zinc-400 uppercase font-bold tracking-wider mb-1 block">En Çok (Maks Pip)</label>
+                      <label className={`${FILTER_LABEL} mb-1 block`}>En Çok (Maks Pip)</label>
                       <input
                         type="number"
                         step="any"
@@ -825,7 +589,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                           const val = e.target.value;
                           setGlobalMaxMaePips?.(val !== '' ? parseFloat(val) : undefined);
                         }}
-                        className="w-full h-8.5 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-rose-500 rounded-lg px-2.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none shadow-inner"
+                        className={FILTER_INPUT}
                       />
                     </div>
                   </div>
@@ -846,7 +610,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
               >
                 <div className="bg-zinc-950/60 p-3 rounded-xl border border-zinc-800/80 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-zinc-400 font-sans font-bold uppercase tracking-wider">Aralık (En Az - En Çok Tepe)</span>
+                    <span className="text-[10px] text-zinc-400 font-sans font-bold uppercase tracking-wider">{smartUpper("Aralık (En Az - En Çok Tepe)")}</span>
                     {(globalMinMfePips !== undefined || globalMaxMfePips !== undefined) && (
                       <button
                         type="button"
@@ -862,7 +626,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                   </div>
                   <div className="grid grid-cols-2 gap-2.5">
                     <div>
-                      <label className="text-[10px] text-zinc-400 uppercase font-bold tracking-wider mb-1 block">En Az (Min Pip)</label>
+                      <label className={`${FILTER_LABEL} mb-1 block`}>En Az (Min Pip)</label>
                       <input
                         type="number"
                         step="any"
@@ -873,11 +637,11 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                           const val = e.target.value;
                           setGlobalMinMfePips?.(val !== '' ? parseFloat(val) : undefined);
                         }}
-                        className="w-full h-8.5 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-cyan-500 rounded-lg px-2.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none shadow-inner"
+                        className={FILTER_INPUT}
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] text-zinc-400 uppercase font-bold tracking-wider mb-1 block">En Çok (Maks Pip)</label>
+                      <label className={`${FILTER_LABEL} mb-1 block`}>En Çok (Maks Pip)</label>
                       <input
                         type="number"
                         step="any"
@@ -888,7 +652,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                           const val = e.target.value;
                           setGlobalMaxMfePips?.(val !== '' ? parseFloat(val) : undefined);
                         }}
-                        className="w-full h-8.5 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-cyan-500 rounded-lg px-2.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none shadow-inner"
+                        className={FILTER_INPUT}
                       />
                     </div>
                   </div>
@@ -908,7 +672,6 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                   options={dynamicHtfTimeframes}
                   selectedValues={globalSelectedHtfTimeframes}
                   onChange={setGlobalSelectedHtfTimeframes}
-                  activeColor="blue"
                 />
               </FilterAccordionRow>
 
@@ -925,7 +688,6 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                   options={dynamicTimeframes}
                   selectedValues={globalSelectedTimeframes}
                   onChange={setGlobalSelectedTimeframes}
-                  activeColor="blue"
                 />
               </FilterAccordionRow>
 
@@ -940,18 +702,14 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                 <div className="w-full flex items-center bg-zinc-950/50 p-1.5 rounded-xl border border-zinc-800/80 mt-1 gap-1.5 overflow-hidden">
                   {dynamicPlanFidelities.map((item) => {
                     const isSelected = globalSelectedPlanFidelity.includes(item);
-                    const lower = item.toLowerCase();
-                    let activeClasses = 'bg-blue-500/20 border-blue-500/40 text-blue-300 font-bold';
-                    if (lower === 'tam' || lower.includes('uygun') || lower.includes('sadık') || lower.includes('disciplined') || lower.includes('a+') || lower.includes('yüksek') || lower.includes('kusursuz')) {
-                      activeClasses = 'toggle-item-win font-bold';
-                    } else if (lower === 'kısmen' || lower.includes('partial') || lower.includes('orta') || lower === 'b') {
-                      activeClasses = 'toggle-item-breakeven font-bold';
-                    } else if (lower === 'fomo' || lower.includes('ihlal') || lower.includes('disiplinsiz') || lower.includes('intikam') || lower.includes('düşük') || lower === 'c') {
-                      activeClasses = 'toggle-item-loss font-bold';
-                    }
+                    const tier = setupQualityTier(item);
+                    const activeClasses = tier === 'high' ? 'toggle-item-win font-bold'
+                      : tier === 'low' ? 'toggle-item-loss font-bold'
+                      : 'bg-blue-500/20 border-blue-500/40 text-blue-300 font-bold';
 
                     return (
                       <button
+                        lang="en"
                         key={item}
                         type="button"
                         onClick={() => {
@@ -972,22 +730,6 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                 </div>
               </FilterAccordionRow>
 
-              <FilterAccordionRow title={definitionTitles.liquiditySweeps || definitionTitles.concepts || "Liquidity Sweep"} 
-                icon={<Target size={14} className="text-blue-400" />}
-                
-                summaryText={globalSelectedConcepts.length > 0 ? globalSelectedConcepts.join(', ') : 'Tümü'}
-                badgeCount={globalSelectedConcepts.length}
-                isOpen={!!openSections.concept}
-                onToggle={() => toggleSection('concept')}
-              >
-                <PillMultiSelect
-                  options={dynamicConcepts}
-                  selectedValues={globalSelectedConcepts}
-                  onChange={setGlobalSelectedConcepts}
-                  activeColor="blue"
-                />
-              </FilterAccordionRow>
-
               {/* 8. PD ARRAY */}
               <FilterAccordionRow title={definitionTitles.confirmations || "PD ARRAY"} 
                 icon={<Sparkles size={14} className="text-purple-400" />}
@@ -1001,7 +743,6 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                   options={dynamicConfirmations}
                   selectedValues={globalSelectedConfirmations}
                   onChange={setGlobalSelectedConfirmations}
-                  activeColor="purple"
                 />
               </FilterAccordionRow>
 
@@ -1017,7 +758,6 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                   options={dynamicTrendTypes}
                   selectedValues={globalSelectedTrendTypes}
                   onChange={(vals) => setGlobalSelectedTrendTypes?.(vals)}
-                  activeColor="purple"
                 />
               </FilterAccordionRow>
 
@@ -1033,11 +773,125 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                   options={dynamicEntryModels}
                   selectedValues={globalSelectedEntryModels}
                   onChange={(vals) => setGlobalSelectedEntryModels?.(vals)}
-                  activeColor="amber"
                 />
               </FilterAccordionRow>
 
-              {/* 11. İŞLEM SONUCU */}
+              {/* 11. STRATEJİ */}
+              <FilterAccordionRow title={definitionTitles.strategies || "Strateji"}
+                icon={<BookOpen size={14} className="text-cyan-400" />}
+                summaryText={globalExtra.strategies.length > 0 ? globalExtra.strategies.join(', ') : 'Tümü'}
+                badgeCount={globalExtra.strategies.length}
+                isOpen={!!openSections.strategy}
+                onToggle={() => toggleSection('strategy')}
+              >
+                <PillMultiSelect
+                  options={extraOptions.strategies}
+                  selectedValues={globalExtra.strategies}
+                  onChange={(vals) => patchExtra({ strategies: vals })}
+                />
+              </FilterAccordionRow>
+
+              {/* 12. PREMIUM / DISCOUNT */}
+              <FilterAccordionRow title={definitionTitles.premiumDiscounts || "Confirmations"}
+                icon={<Scale size={14} className="text-purple-400" />}
+                summaryText={globalExtra.premiumDiscounts.length > 0 ? globalExtra.premiumDiscounts.join(', ') : 'Tümü'}
+                badgeCount={globalExtra.premiumDiscounts.length}
+                isOpen={!!openSections.pd}
+                onToggle={() => toggleSection('pd')}
+              >
+                <PillMultiSelect
+                  options={extraOptions.premiumDiscounts}
+                  selectedValues={globalExtra.premiumDiscounts}
+                  onChange={(vals) => patchExtra({ premiumDiscounts: vals })}
+                />
+              </FilterAccordionRow>
+
+              {/* 13. TP TARGET */}
+              <FilterAccordionRow title={definitionTitles.tpTargets || "Target"}
+                icon={<Crosshair size={14} className="text-emerald-400" />}
+                summaryText={globalExtra.tpTargets.length > 0 ? globalExtra.tpTargets.join(', ') : 'Tümü'}
+                badgeCount={globalExtra.tpTargets.length}
+                isOpen={!!openSections.tpTarget}
+                onToggle={() => toggleSection('tpTarget')}
+              >
+                <PillMultiSelect
+                  options={extraOptions.tpTargets}
+                  selectedValues={globalExtra.tpTargets}
+                  onChange={(vals) => patchExtra({ tpTargets: vals })}
+                />
+              </FilterAccordionRow>
+
+              {/* 14. ASIA RANGE FVG */}
+              <FilterAccordionRow title={definitionTitles.asiaRangeFvgs || "Asia Range FVG"}
+                icon={<Layers size={14} className="text-amber-400" />}
+                summaryText={globalExtra.asiaRangeFvgs.length > 0 ? globalExtra.asiaRangeFvgs.join(', ') : 'Tümü'}
+                badgeCount={globalExtra.asiaRangeFvgs.length}
+                isOpen={!!openSections.asiaFvg}
+                onToggle={() => toggleSection('asiaFvg')}
+              >
+                <PillMultiSelect
+                  options={extraOptions.asiaRangeFvgs}
+                  selectedValues={globalExtra.asiaRangeFvgs}
+                  onChange={(vals) => patchExtra({ asiaRangeFvgs: vals })}
+                />
+              </FilterAccordionRow>
+
+              {/* 15. NEWS DAY */}
+              <FilterAccordionRow title={definitionTitles.newsDays || "News Day"}
+                icon={<Newspaper size={14} className="text-rose-400" />}
+                summaryText={newsSummary}
+                badgeCount={globalExtra.newsDay !== 'ALL' ? 1 : 0}
+                isOpen={!!openSections.newsDay}
+                onToggle={() => toggleSection('newsDay')}
+              >
+                <FilterChipRow>
+                  {([['ALL', 'Tümü'], ['YES', newsLabels.yes], ['NO', newsLabels.no]] as const).map(([v, label]) => (
+                    <FilterChip key={v} check={v !== 'ALL'} tone={v === 'ALL' ? 'neutral' : 'brand'} active={globalExtra.newsDay === v} onClick={() => patchExtra({ newsDay: v })}>
+                      {label}
+                    </FilterChip>
+                  ))}
+                </FilterChipRow>
+              </FilterAccordionRow>
+
+              {/* 16. RİSK % */}
+              <FilterAccordionRow title="İşlem Başı Risk"
+                icon={<Percent size={14} className="text-blue-400" />}
+                summaryText={globalExtra.riskPcts.length > 0 ? globalExtra.riskPcts.map(riskLabel).join(', ') : 'Tümü'}
+                badgeCount={globalExtra.riskPcts.length}
+                isOpen={!!openSections.riskPct}
+                onToggle={() => toggleSection('riskPct')}
+              >
+                {extraOptions.riskPcts.length > 0 ? (
+                  <PillMultiSelect
+                    options={extraOptions.riskPcts.map(riskLabel)}
+                    selectedValues={globalExtra.riskPcts.map(riskLabel)}
+                    onChange={(vals) => patchExtra({ riskPcts: extraOptions.riskPcts.filter((n) => vals.includes(riskLabel(n))) })}
+                  />
+                ) : (
+                  <p className="text-[11px] text-zinc-500 p-1">Risk yüzdesi girilmiş işlem yok. Prop hesabına bağlı işlemlerde risk % formda kaydedilir.</p>
+                )}
+              </FilterAccordionRow>
+
+              {/* 17. HIZLI KAYIT */}
+              <FilterAccordionRow title="Hızlı Kayıt"
+                icon={<PenLine size={14} className="text-amber-400" />}
+                summaryText={globalExtra.onlyIncomplete ? 'Yalnızca tamamlanmamışlar' : `${extraOptions.incomplete} tamamlanmamış`}
+                badgeCount={globalExtra.onlyIncomplete ? 1 : 0}
+                isOpen={!!openSections.quickEntry}
+                onToggle={() => toggleSection('quickEntry')}
+              >
+                <label className="flex items-center gap-2 p-1 text-[11px] font-bold text-zinc-300 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    className="accent-amber-500"
+                    checked={globalExtra.onlyIncomplete}
+                    onChange={(e) => patchExtra({ onlyIncomplete: e.target.checked })}
+                  />
+                  Yalnızca hızlı kayıtla girilip ayrıntısı tamamlanmamış işlemleri göster ({extraOptions.incomplete})
+                </label>
+              </FilterAccordionRow>
+
+              {/* 18. İŞLEM SONUCU */}
               <FilterAccordionRow title="İşlem Sonucu" 
                 icon={<Activity size={14} className="text-emerald-400" />}
                 
@@ -1060,7 +914,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                 {activeFilterCount > 0 ? (
                   <span className="text-blue-400 font-semibold">{activeFilterCount} kriter aktif</span>
                 ) : (
-                  <span>Tüm veriler gösteriliyor (6 Ay varsayılan)</span>
+                  <span>Filtre yok · tüm zamanlar gösteriliyor</span>
                 )}
               </div>
               <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
@@ -1070,7 +924,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                     onClick={handleReset}
                     className="px-4 py-2 sm:px-3 sm:py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-sans font-bold uppercase tracking-wider transition-colors duration-200 ease-out cursor-pointer border border-zinc-700/60"
                   >
-                    Temizle
+                    {smartUpper("Temizle")}
                   </button>
                 )}
                 <button

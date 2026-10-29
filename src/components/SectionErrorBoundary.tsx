@@ -1,5 +1,6 @@
 import { Component, ErrorInfo, ReactNode } from "react";
 import { AlertTriangle } from "lucide-react";
+import { isStaleChunkError, reloadForNewVersion } from "../lib/chunkReload";
 
 interface Props {
   children?: ReactNode;
@@ -33,6 +34,7 @@ export class SectionErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error(`Uncaught error in ${this.props.sectionName || 'section'}:`, error, errorInfo);
+    if (isStaleChunkError(error)) reloadForNewVersion();
   }
 
   public render() {

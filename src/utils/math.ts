@@ -1,3 +1,4 @@
+import { nyNow, nyWallDate } from '../lib/tradingTime';
 export function calculateSQN(rrValues: number[]): number {
   if (!rrValues || !Array.isArray(rrValues) || rrValues.length < 2) return 0;
   
@@ -19,3 +20,11 @@ export function calculateSQN(rrValues: number[]): number {
   return (avg / stdDev) * Math.sqrt(sqnN);
 }
 
+
+
+/** Tarih nesnesinin kendi (duvar saati) alanlarından YYYY-MM-DD. Varsayılan: bugün, New York günü. */
+export function localDateKey(input: number | Date = nyNow()): string {
+  const d = input instanceof Date ? input : nyWallDate(input);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}

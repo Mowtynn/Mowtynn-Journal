@@ -77,7 +77,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             onClick={(e) => e.stopPropagation()}
             className="relative w-full max-w-sm bg-zinc-900 border border-zinc-700/50 rounded-2xl shadow-2xl p-5 overflow-hidden text-center"
           >
-            <button
+            <button aria-label="Kapat" title="Kapat"
               type="button"
               onClick={(e) => {
                 e.stopPropagation();

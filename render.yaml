@@ -8,10 +8,11 @@ services:
     healthCheckPath: /api/health
     envVars:
       - key: NODE_VERSION
-        value: 20
+        value: 22
       - key: NODE_ENV
         value: production
       - key: SITE_PASSWORD
         sync: false
-      - key: GEMINI_API_KEY
-        sync: false
+      # Site erişim jetonlarını imzalar; parola değişse de ayrı tutulur (Render otomatik üretir)
+      - key: TOKEN_SECRET
+        generateValue: true

@@ -1,4 +1,6 @@
 import { EASE, SPRING, MODAL_BACKDROP, MODAL_PANEL, POPOVER } from '../lib/motion';
+import { smartUpper } from '../constants/constants';
+import { nyWallDate } from '../lib/tradingTime';
 import React, { useState, memo, useMemo, useRef, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -19,10 +21,10 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Note } from '../types';
-import { VoiceToNoteButton } from './VoiceToNoteButton';
 import { caseInsensitiveMatch } from '../constants/constants';
 import { exportNotesToExcel, exportNotesToCSV } from '../utils/exportTrades';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
+import { localDateKey } from '../utils/math';
 
 interface NotesViewProps {
   notes: Note[];
@@ -140,13 +142,6 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
     setIsEditing(true);
   };
 
-  const handleVoiceParsed = (data: any) => {
-    setEditTitle(data.title || '');
-    setEditContent(data.content || '');
-    setIsEditing(true);
-    setActiveNote(null);
-  };
-
   const executeSave = () => {
     if (!editTitle.trim() && !editContent.trim()) {
       setIsEditing(false);
@@ -190,7 +185,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
   };
 
   const formatDateStr = (ms: number) => {
-    return new Date(ms).toLocaleDateString('tr-TR', {
+    return nyWallDate(ms).toLocaleDateString('tr-TR', {
       day: 'numeric',
       month: 'short',
       year: 'numeric'
@@ -212,7 +207,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
           >
             <div className="bg-zinc-950/60 border border-zinc-800/80  rounded-2xl p-4 sm:p-5 relative overflow-hidden shadow-sm">
               <div className="flex items-center gap-3">
-                <button 
+                <button aria-label="Geri" title="Geri" 
                   onClick={() => setIsEditing(false)}
                   className="p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-ui cursor-pointer shrink-0"
                 >
@@ -229,11 +224,8 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                   />
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  {!activeNote && (
-                    <VoiceToNoteButton onParsed={handleVoiceParsed} />
-                  )}
                   {activeNote && (
-                    <button
+                    <button aria-label="Sil" title="Sil"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
@@ -282,7 +274,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
             <div className="bg-zinc-950/60 border border-zinc-800/80  rounded-2xl p-4 sm:p-5 relative overflow-hidden shadow-sm">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-3 min-w-0">
-                  <button 
+                  <button aria-label="Geri" title="Geri" 
                     onClick={() => setActiveNote(null)}
                     className="p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-ui cursor-pointer shrink-0"
                   >
@@ -308,7 +300,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
-                  <button 
+                  <button aria-label="Sabitle" title="Sabitle" 
                     onClick={(e) => handleTogglePin(activeNote, e)}
                     className={`p-2 rounded-xl transition-ui cursor-pointer border ${
                       activeNote.isPinned 
@@ -318,7 +310,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                   >
                     <Pin size={15} className={activeNote.isPinned ? "fill-current" : ""} />
                   </button>
-                  <button 
+                  <button aria-label="Sil" title="Sil" 
                     onClick={() => {
                       setNoteToDelete(activeNote);
                     }}
@@ -430,7 +422,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                       className="w-full h-8 bg-zinc-900 border border-zinc-800 focus:border-zinc-700 rounded-xl pl-7 pr-7 text-xs text-zinc-200 placeholder:text-zinc-500 focus:outline-none transition font-sans"
                     />
                     {searchTerm && (
-                      <button 
+                      <button aria-label="Kapat" title="Kapat" 
                         onClick={() => setSearchTerm('')}
                         className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 cursor-pointer"
                       >
@@ -501,15 +493,18 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                               type="button"
                               onClick={() => {
                                 try {
-                                  const dateStr = new Date().toISOString().slice(0, 10);
+                                  const dateStr = localDateKey();
                                   const targetList = filteredNotes;
                                   if (targetList.length === 0) {
                                     toast.error('Dışa aktarılacak not bulunamadı.');
                                     return;
                                   }
                                   if (exportFormatTab === 'excel') {
-                                    exportNotesToExcel(targetList, `Notlar_Filtrelenmis_${dateStr}_[${targetList.length}_not]`);
-                                    toast.success(`Excel tablosu (.xlsx) indirildi (${targetList.length} not).`);
+                                    void toast.promise(exportNotesToExcel(targetList, `Notlar_Filtrelenmis_${dateStr}_[${targetList.length}_not]`), {
+                                      loading: 'Excel hazırlanıyor…',
+                                      success: `Excel tablosu (.xlsx) indirildi (${targetList.length} not).`,
+                                      error: (e) => e?.message || 'Excel dosyası oluşturulamadı.',
+                                    });
                                   } else {
                                     exportNotesToCSV(targetList, `Notlar_Filtrelenmis_${dateStr}_[${targetList.length}_not]`);
                                     toast.success(`CSV dosyası (.csv) indirildi (${targetList.length} not).`);
@@ -534,15 +529,18 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                               type="button"
                               onClick={() => {
                                 try {
-                                  const dateStr = new Date().toISOString().slice(0, 10);
+                                  const dateStr = localDateKey();
                                   const targetList = notes;
                                   if (targetList.length === 0) {
                                     toast.error('Dışa aktarılacak not bulunamadı.');
                                     return;
                                   }
                                   if (exportFormatTab === 'excel') {
-                                    exportNotesToExcel(targetList, `Notlar_Tum_${dateStr}_[${targetList.length}_not]`);
-                                    toast.success(`Excel tablosu (.xlsx) indirildi (${targetList.length} not).`);
+                                    void toast.promise(exportNotesToExcel(targetList, `Notlar_Tum_${dateStr}_[${targetList.length}_not]`), {
+                                      loading: 'Excel hazırlanıyor…',
+                                      success: `Excel tablosu (.xlsx) indirildi (${targetList.length} not).`,
+                                      error: (e) => e?.message || 'Excel dosyası oluşturulamadı.',
+                                    });
                                   } else {
                                     exportNotesToCSV(targetList, `Notlar_Tum_${dateStr}_[${targetList.length}_not]`);
                                     toast.success(`CSV dosyası (.csv) indirildi (${targetList.length} not).`);
@@ -568,15 +566,18 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                                 type="button"
                                 onClick={() => {
                                   try {
-                                    const dateStr = new Date().toISOString().slice(0, 10);
+                                    const dateStr = localDateKey();
                                     const targetList = notes.filter(n => n.isPinned);
                                     if (targetList.length === 0) {
                                       toast.error('Sabitlenmiş not bulunamadı.');
                                       return;
                                     }
                                     if (exportFormatTab === 'excel') {
-                                      exportNotesToExcel(targetList, `Notlar_Sabitlenenler_${dateStr}_[${targetList.length}_not]`);
-                                      toast.success(`Excel tablosu (.xlsx) indirildi (${targetList.length} sabitli not).`);
+                                      void toast.promise(exportNotesToExcel(targetList, `Notlar_Sabitlenenler_${dateStr}_[${targetList.length}_not]`), {
+                                        loading: 'Excel hazırlanıyor…',
+                                        success: `Excel tablosu (.xlsx) indirildi (${targetList.length} sabitli not).`,
+                                        error: (e) => e?.message || 'Excel dosyası oluşturulamadı.',
+                                      });
                                     } else {
                                       exportNotesToCSV(targetList, `Notlar_Sabitlenenler_${dateStr}_[${targetList.length}_not]`);
                                       toast.success(`CSV dosyası (.csv) indirildi (${targetList.length} sabitli not).`);
@@ -603,8 +604,6 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                     </AnimatePresence>
                   </div>
 
-                  <VoiceToNoteButton onParsed={handleVoiceParsed} />
-
                   <button 
                     onClick={handleAddNew}
                     className="bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 px-3.5 py-1.5 h-8 rounded-xl text-xs font-bold font-sans uppercase tracking-wider flex items-center gap-1.5 transition-ui cursor-pointer shadow-xs border border-blue-500/30 shrink-0"
@@ -621,7 +620,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                 <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-500 mb-3 shadow-inner">
                   <FileText size={24} />
                 </div>
-                <h3 className="text-xs font-bold text-zinc-200 mb-1 uppercase tracking-wider font-sans">Henüz Not Eklenmedi</h3>
+                <h3 className="text-xs font-bold text-zinc-200 mb-1 uppercase tracking-wider font-sans">{smartUpper("Henüz Not Eklenmedi")}</h3>
                 <p className="text-zinc-500 text-xs max-w-sm mb-5 font-sans leading-relaxed">
                   Öğrendiğiniz işlem stratejilerini, analiz kurallarını ve konseptleri buraya kaydedebilirsiniz.
                 </p>
@@ -658,7 +657,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                       </h3>
                       
                       <div className="absolute top-3.5 right-3.5 flex items-center gap-1 bg-zinc-900 p-0.5 rounded-lg border border-zinc-800">
-                        <button 
+                        <button aria-label="Sabitle" title="Sabitle" 
                           onClick={(e) => handleTogglePin(note, e)}
                           className={`p-1.5 rounded-md transition-ui cursor-pointer ${
                             note.isPinned 
@@ -668,7 +667,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                         >
                           <Pin size={12} className={note.isPinned ? "fill-current" : ""} />
                         </button>
-                        <button 
+                        <button aria-label="Sil" title="Sil" 
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
@@ -724,7 +723,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                 </div>
                 
                 <h3 className="text-sm font-bold tracking-wide text-zinc-100 uppercase text-center mb-1 font-sans">
-                  Notu Sil
+                  {smartUpper("Notu Sil")}
                 </h3>
                 
                 <p className="text-zinc-400 text-xs text-center mb-6 leading-relaxed">

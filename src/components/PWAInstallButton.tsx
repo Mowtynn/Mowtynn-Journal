@@ -1,4 +1,5 @@
 import { MODAL_BACKDROP, MODAL_PANEL } from '../lib/motion';
+import { smartUpper } from '../constants/constants';
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Download, Smartphone, Share, PlusSquare, X, CheckCircle2 } from 'lucide-react';
@@ -73,14 +74,14 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
                     </div>
                     <div>
                       <h3 className="text-xs font-bold text-zinc-100 uppercase tracking-wide font-sans">
-                        iPhone / iPad Kurulumu
+                        {smartUpper("iPhone / iPad Kurulumu")}
                       </h3>
                       <p className="text-[10px] text-zinc-400 font-sans">
                         Tam Ekran PWA Deneyimi
                       </p>
                     </div>
                   </div>
-                  <button
+                  <button aria-label="Kapat" title="Kapat"
                     type="button"
                     onClick={() => setShowIOSGuide(false)}
                     className="w-7 h-7 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 flex items-center justify-center transition-colors cursor-pointer"

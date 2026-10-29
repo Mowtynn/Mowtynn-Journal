@@ -4,6 +4,7 @@ import { calculateProfitFactor, toRR } from './statMath';
 import {
   getSweepSide,
   getTradeHourBucket,
+  nyDateKey,
   getTradeNyWeekday,
   normalizePair,
   WEEKDAY_NAMES_TR,
@@ -149,10 +150,21 @@ export function edgeFromR(rs: number[], statuses?: Array<Trade['status']>): Edge
   if (n > 1 && se > 0) pPositive = normCdf(mean / se) * 100;
   else if (n > 1) pPositive = mean > 0 ? 100 : 0;
 
+  // Güven aralığının alt sınırı sıfırı geçsin diye gereken toplam işlem: aralıkla AYNI t-değeriyle aranır
+  // (eskiden z=1.96 kullanılıyordu; küçük örneklemde "0 işlem daha" deyip aralık hâlâ sıfırı kapsayabiliyordu)
   let tradesNeeded: number | null = null;
   if (mean > 0 && sd > 0) {
-    const needed = Math.ceil(Math.pow((1.96 * sd) / mean, 2));
-    tradesNeeded = Math.max(0, needed - n);
+    if (n > 1 && expLo > 0) {
+      tradesNeeded = 0;
+    } else {
+      let k = Math.max(2, n + 1, Math.ceil(Math.pow((1.96 * sd) / mean, 2)));
+      if (k > 10000) {
+        tradesNeeded = k - n;
+      } else {
+        while (k < 10000 && mean - tCrit95(k - 1) * (sd / Math.sqrt(k)) <= 0) k++;
+        tradesNeeded = Math.max(1, k - n);
+      }
+    }
   }
 
   return {
@@ -372,11 +384,10 @@ export function computeCoverage(trades: Trade[]): CoverageRow[] {
     { field: 'asiaRangePips', label: 'Asia range (pip)', unlocks: 'Range büyüklüğü edge analizi (parite bazlı)', ok: (t) => hasNum(t.asiaRangePips) && t.asiaRangePips > 0 },
     { field: 'htfTimeframe', label: 'PD array zaman dilimi', unlocks: '1H / 4H / D kıyası', ok: (t) => !!t.htfTimeframe },
     { field: 'confirmations', label: 'PD array türü', unlocks: 'FVG / OB / seviye kıyası', ok: (t) => Array.isArray(t.confirmations) && t.confirmations.length > 0 },
-    { field: 'liquiditySweeps', label: 'Likidite seviyesi', unlocks: 'PDH/PDL, PWH/PWL, PMH/PML kıyası', ok: (t) => (Array.isArray(t.liquiditySweeps) && t.liquiditySweeps.length > 0) || !!t.liquiditySweep },
     { field: 'strategy', label: 'Strateji', unlocks: 'Strateji bazında edge kıyası', ok: (t) => !!t.strategy },
     { field: 'asiaRangeFvg', label: 'Asia Range FVG', unlocks: 'Asia Range FVG türü kıyası', ok: (t) => !!t.asiaRangeFvg },
     { field: 'newsDay', label: 'News Day / Bank Holiday', unlocks: 'Haber günü – normal gün edge kıyası', ok: (t) => typeof t.newsDay === 'boolean' },
-    { field: 'entryModels', label: 'Giriş modeli', unlocks: 'MSS / Breaker / IFVG kıyası', ok: (t) => (Array.isArray(t.entryModels) && t.entryModels.length > 0) || !!t.entry },
+    { field: 'entryModels', label: 'Giriş modeli', unlocks: 'MSS / Breaker / IFVG kıyası', ok: (t) => Array.isArray(t.entryModels) && t.entryModels.length > 0 },
   ];
   return defs.map((d) => {
     const filled = trades.filter(d.ok).length;
@@ -409,7 +420,6 @@ export interface AsiaLabResult {
   sweepSide: GroupRow[];
   pdTimeframe: GroupRow[];
   pdType: GroupRow[];
-  levels: GroupRow[];
   entryModels: GroupRow[];
   newsDay: { rows: GroupRow[]; unknown: number };
   strategies: GroupRow[];
@@ -476,16 +486,7 @@ export function analyzeAsia(allTrades: Trade[], opts: AsiaLabOptions): AsiaLabRe
 
   const pdTimeframe = groupTrades(trades, (t) => (t.htfTimeframe ? t.htfTimeframe : null));
   const pdType = groupTrades(trades, (t) => (Array.isArray(t.confirmations) && t.confirmations.length > 0 ? t.confirmations : null));
-  const levels = groupTrades(trades, (t) => {
-    if (Array.isArray(t.liquiditySweeps) && t.liquiditySweeps.length > 0) return t.liquiditySweeps;
-    if (t.liquiditySweep) return t.liquiditySweep.split(',').map((s) => s.trim());
-    return null;
-  });
-  const entryModels = groupTrades(trades, (t) => {
-    if (Array.isArray(t.entryModels) && t.entryModels.length > 0) return t.entryModels;
-    if (t.entry) return t.entry.split(',').map((s) => s.trim());
-    return null;
-  });
+  const entryModels = groupTrades(trades, (t) => (Array.isArray(t.entryModels) && t.entryModels.length > 0 ? t.entryModels : null));
 
   // News Day / Bank Holiday: bilgisi olmayan (eski) işlemler kıyasa girmez
   const nl = getNewsDayLabels();
@@ -538,7 +539,7 @@ export function analyzeAsia(allTrades: Trade[], opts: AsiaLabOptions): AsiaLabRe
     const slice = sorted.slice(i - WINDOW, i);
     const exp = slice.reduce((s, t) => s + (t.rr || 0), 0) / WINDOW;
     const last = slice[slice.length - 1];
-    rolling.push({ index: i, date: new Date(last.createdAt).toISOString().slice(0, 10), expectancy: round(exp, 3) });
+    rolling.push({ index: i, date: nyDateKey(last.createdAt), expectancy: round(exp, 3) });
   }
 
   // Combination finder (two-factor), ranked for reliability — not by raw expectancy alone
@@ -581,7 +582,6 @@ export function analyzeAsia(allTrades: Trade[], opts: AsiaLabOptions): AsiaLabRe
     sweepSide,
     pdTimeframe,
     pdType,
-    levels,
     entryModels,
     newsDay,
     strategies,

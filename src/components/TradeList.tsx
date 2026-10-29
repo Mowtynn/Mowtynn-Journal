@@ -1,13 +1,13 @@
-import { EASE, SPRING, MODAL_BACKDROP, MODAL_PANEL, POPOVER } from '../lib/motion';
+import { MODAL_BACKDROP, MODAL_PANEL, POPOVER } from '../lib/motion';
+import { smartUpper } from '../constants/constants';
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Trade, TradeFilter, DefinitionTitles } from '../types';
-import { DEFAULT_DEFINITION_TITLES, caseInsensitiveMatch, caseInsensitiveEquals, getTradeAccountCategory } from '../constants/constants';
-import { 
-  Search, 
-  Edit3, 
-  Trash2, 
+import { DEFAULT_DEFINITION_TITLES, caseInsensitiveMatch } from '../constants/constants';
+import {
+  Search,
+  Trash2,
   Clock,
   Filter,
   Download,
@@ -15,438 +15,25 @@ import {
   FileSpreadsheet,
   Calendar,
   RotateCcw,
-  ChevronDown,
-  ChevronUp,
-  ArrowUp,
-  ArrowDown,
-  Layers
+  Layers,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { exportTradesToExcel, exportTradesToCSV } from '../utils/exportTrades';
 import { PrintReportModal } from './PrintReportModal';
 import { TurkishDatePicker } from './TurkishDateTimePicker';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
-
-function TableSortBadge({ sortState }: { sortState: 'asc' | 'des' | null }) {
-  if (!sortState) {
-    return (
-      <span className="inline-flex flex-col items-center justify-center w-3 h-3 opacity-0 group-hover/th:opacity-50 transition-opacity text-zinc-500 shrink-0">
-        <ChevronUp size={8} strokeWidth={2.5} className="-mb-1" />
-        <ChevronDown size={8} strokeWidth={2.5} />
-      </span>
-    );
-  }
-
-  return (
-    <span className="inline-flex items-center justify-center w-4 h-4 rounded-md bg-blue-500/15 border border-blue-500/30 text-blue-400 shadow-glow-sm shrink-0 transition-ui duration-150">
-      {sortState === 'asc' ? (
-        <ArrowUp size={9} strokeWidth={2.5} />
-      ) : (
-        <ArrowDown size={9} strokeWidth={2.5} />
-      )}
-    </span>
-  );
-}
-
-/* Sütun başlığı: sıralama oku akış dışında (absolute) durur; böylece yazı, altındaki satır
-   içerikleriyle birebir aynı eksende (hücrenin tam ortasında) kalır. */
-function HeaderLabel({ children, sortState }: { children: React.ReactNode; sortState: 'asc' | 'des' | null }) {
-  return (
-    <span className="relative inline-flex items-center justify-center pl-[0.1em]">
-      <span>{children}</span>
-      <span className="absolute left-full top-1/2 -translate-y-1/2 ml-1.5 flex items-center">
-        <TableSortBadge sortState={sortState} />
-      </span>
-    </span>
-  );
-}
-
-interface CustomSelectOption {
-  value: string;
-  label: string;
-}
-
-interface CustomSelectProps {
-  value: string;
-  onChange: (value: string) => void;
-  options: CustomSelectOption[];
-  placeholder?: string;
-  className?: string;
-}
-
-const CustomSelect = React.memo(function CustomSelect({ value, onChange, options, placeholder = 'Seçiniz...', className = '' }: CustomSelectProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    }
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    if (isOpen) {
-      window.addEventListener('keydown', handleKeyDown);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isOpen]);
-
-  const selectedOption = options.find(o => o.value === value);
-
-  return (
-    <div className={`relative ${isOpen ? 'z-50' : 'z-10'} ${className}`} ref={dropdownRef}>
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full h-9 sm:h-8 bg-zinc-950 hover:bg-zinc-900/70 border border-zinc-700/50  hover:border-zinc-700/80 rounded-xl px-2.5 text-[10px] text-zinc-300 font-bold flex items-center justify-between transition-colors duration-200 ease-out cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500/20"
-      >
-        <span className="truncate uppercase">{selectedOption ? selectedOption.label : placeholder}</span>
-        <ChevronDown size={11} className={`text-zinc-500 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180 text-blue-400' : ''}`} />
-      </button>
-
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            key="custom-select-dropdown"
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 4 }}
-            transition={{ duration: 0.15, ease: EASE }}
-            className="absolute z-50 mt-1 w-full max-h-56 overflow-y-auto bg-zinc-950 border border-zinc-800 rounded-xl shadow-md py-1 custom-scrollbar"
-          >
-            {options.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => {
-                  onChange(option.value);
-                  setIsOpen(false);
-                }}
-                className={`w-full px-2.5 py-1.5 text-left text-[10px] font-bold transition-colors duration-200 ease-out flex items-center justify-between cursor-pointer ${
-                  option.value === value
-                    ? 'toggle-item-brand'
-                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
-                }`}
-              >
-                <span className="truncate uppercase">{option.label}</span>
-                {option.value === value && <span className="w-1.5 h-1.5 bg-blue-400 rounded-full shrink-0" />}
-              </button>
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-});
-
-interface CustomComboBoxProps {
-  value: string;
-  onChange: (value: string) => void;
-  options: CustomSelectOption[];
-  placeholder?: string;
-  className?: string;
-}
-
-const CustomComboBox = React.memo(function CustomComboBox({ value, onChange, options, placeholder = 'Parite Seç/Yaz...', className = '' }: CustomComboBoxProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [search, setSearch] = useState(value);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    setSearch(value);
-  }, [value]);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    }
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    if (isOpen) {
-      window.addEventListener('keydown', handleKeyDown);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isOpen]);
-
-  const filteredOptions = useMemo(() => {
-    const term = search.toLowerCase().trim();
-    return options.filter(o => {
-      if (o.value === '') return true;
-      return o.label.toLowerCase().includes(term);
-    });
-  }, [options, search]);
-
-  return (
-    <div className={`relative ${isOpen ? 'z-50' : 'z-10'} ${className}`} ref={dropdownRef}>
-      <div className="relative w-full h-9 sm:h-8 bg-zinc-950 hover:bg-zinc-900/70 border border-zinc-700/50  hover:border-zinc-700/80 rounded-xl flex items-center transition-colors duration-200 ease-out focus-within:ring-1 focus-within:ring-blue-500/20 focus-within:border-blue-500/40">
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => {
-            const newVal = e.target.value;
-            setSearch(newVal);
-            onChange(newVal);
-            setIsOpen(true);
-          }}
-          onFocus={() => setIsOpen(true)}
-          placeholder={placeholder}
-          className="w-full h-full bg-transparent pl-2.5 pr-8 text-[10px] text-zinc-300 font-bold focus:outline-none placeholder-zinc-600 truncate uppercase"
-        />
-        <button
-          type="button"
-          onClick={() => setIsOpen(!isOpen)}
-          className="absolute right-0 px-2.5 h-full flex items-center justify-center text-zinc-500 hover:text-zinc-300 transition-colors"
-        >
-          <ChevronDown size={11} className={`transition-transform duration-200 ${isOpen ? 'rotate-180 text-blue-400' : ''}`} />
-        </button>
-      </div>
-
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            key="custom-combobox-dropdown"
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 4 }}
-            transition={{ duration: 0.15, ease: EASE }}
-            className="absolute z-50 mt-1 w-full max-h-56 overflow-y-auto bg-zinc-950 border border-zinc-800 rounded-xl shadow-md py-1 custom-scrollbar"
-          >
-            {filteredOptions.length === 0 ? (
-              <button
-                type="button"
-                onClick={() => {
-                  // Keep custom value typed by user
-                  setIsOpen(false);
-                }}
-                className="w-full px-2.5 py-1.5 text-left text-[9px] text-zinc-500 font-bold italic hover:bg-zinc-900 uppercase"
-              >
-                "{search}" olarak filtrele
-              </button>
-            ) : (
-              filteredOptions.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => {
-                    onChange(option.value);
-                    setSearch(option.label);
-                    setIsOpen(false);
-                  }}
-                  className={`w-full px-2.5 py-1.5 text-left text-[10px] font-bold transition-colors duration-200 ease-out flex items-center justify-between cursor-pointer ${
-                    option.value === value
-                      ? 'toggle-item-brand'
-                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
-                  }`}
-                >
-                  <span className="truncate uppercase">{option.label}</span>
-                  {option.value === value && <span className="w-1.5 h-1.5 bg-blue-400 rounded-full shrink-0" />}
-                </button>
-              ))
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-});
-
-const tradeRowDateFormatter = new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' });
-const tradeRowTimeFormatter = new Intl.DateTimeFormat('tr-TR', { hour: '2-digit', minute: '2-digit', hour12: false });
-const TR_COLLATOR = new Intl.Collator('tr', { sensitivity: 'base' });
-
-const MemoizedTradeRow = React.memo(function MemoizedTradeRow({ 
-  trade, 
-  currency, 
-  onViewDetails, 
-  onEdit, 
-  setTradeToDelete 
-}: { 
-  trade: Trade; 
-  currency: string; 
-  onViewDetails: (trade: Trade) => void; 
-  onEdit: (trade: Trade) => void; 
-  setTradeToDelete: (trade: Trade) => void; 
-}) {
-  const isWin = trade.status === 'WIN';
-  const isLoss = trade.status === 'LOSS';
-  const isBe = trade.status === 'BREAKEVEN';
-
-  const category = getTradeAccountCategory(trade);
-  const categoryBadgeClass = category === 'FUNDED'
-    ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30 group-hover:border-emerald-500/60'
-    : category === 'CHALLENGE'
-      ? 'bg-blue-500/10 text-blue-300 border-blue-500/30 group-hover:border-blue-500/60'
-      : 'bg-amber-500/10 text-amber-300 border-amber-500/30 group-hover:border-amber-500/60';
-
-  const { pnlText, pnlColor } = useMemo(() => {
-    if (isBe) {
-      return { pnlText: `0.00 ${currency}`, pnlColor: 'text-zinc-500 font-bold' };
-    }
-    const pnlValue = trade.pnl || 0;
-    const prefix = pnlValue > 0 ? '+' : '';
-    const text = `${prefix}${(pnlValue || 0).toLocaleString()} ${currency}`;
-    const color = pnlValue > 0 ? 'text-emerald-400 font-bold' : (pnlValue < 0 ? 'text-rose-400 font-bold' : 'text-zinc-500 font-bold');
-    return { pnlText: text, pnlColor: color };
-  }, [isBe, trade.pnl, currency]);
-
-  const { formattedDateOnly, formattedTimeOnly } = useMemo(() => {
-    if (!trade.createdAt) return { formattedDateOnly: '—', formattedTimeOnly: '' };
-    const dateObj = new Date(trade.createdAt);
-    return {
-      formattedDateOnly: tradeRowDateFormatter.format(dateObj),
-      formattedTimeOnly: tradeRowTimeFormatter.format(dateObj)
-    };
-  }, [trade.createdAt]);
-
-  return (
-    <tr 
-      onClick={() => onViewDetails(trade)}
-      className="group select-none relative flex flex-wrap sm:table-row bg-zinc-900 mb-2 sm:mb-0 rounded-xl sm:rounded-none border border-zinc-800/80 sm:border-none p-2 sm:p-0 align-middle cursor-pointer hover:bg-zinc-800/50 transition-colors duration-100"
-    >
-      <td className="w-1/2 min-w-[130px] flex justify-start items-center sm:table-cell order-1 py-1 px-0 sm:px-3 text-zinc-400 font-sans sm:bg-transparent sm:rounded-l-xl sm:border-y sm:border-l sm:border-zinc-800/80 align-middle sm:w-[18%] group-hover:text-zinc-100">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-center sm:w-full gap-0.5 sm:gap-1.5">
-          <span className="sm:hidden text-white font-bold text-xs uppercase">{trade.asset}</span>
-          <span className="text-[10px] sm:text-[10px] flex items-center gap-1.5">
-            <span className="text-zinc-400 font-medium">{formattedDateOnly}</span>
-            <span className="text-zinc-600 font-bold">•</span>
-            <span className="text-zinc-500 font-sans">{formattedTimeOnly}</span>
-          </span>
-        </div>
-      </td>
-      <td className="hidden sm:table-cell min-w-[90px] py-1 px-0 sm:px-3 sm:bg-transparent sm:border-y sm:border-zinc-800/80 text-left sm:text-center align-middle sm:w-[14%]">
-        <div className="flex flex-col items-center gap-0.5">
-          <span className="text-white font-bold text-[10px] uppercase">{trade.asset}</span>
-        </div>
-      </td>
-      <td className="w-1/2 min-w-[65px] flex justify-end sm:justify-center items-center sm:table-cell order-2 py-1 px-0 sm:px-2 text-center sm:bg-transparent sm:border-y sm:border-zinc-800/80 align-middle sm:w-[10%]">
-        <div className="flex items-center justify-center w-full">
-          {trade.type === 'LONG' ? (
-            <span className="inline-flex items-center justify-center h-[20px] px-2 py-0 text-center text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded-full uppercase tracking-wider font-sans w-[46px] sm:w-[54px]">LONG</span>
-          ) : (
-            <span className="inline-flex items-center justify-center h-[20px] px-2 py-0 text-center text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 group-hover:border-rose-500/50 rounded-full uppercase tracking-wider font-sans w-[46px] sm:w-[54px]">SHORT</span>
-          )}
-        </div>
-      </td>
-      <td className="w-1/2 min-w-[65px] flex justify-start sm:justify-center items-center sm:table-cell order-3 py-1 px-0 sm:px-2 text-center sm:bg-transparent sm:border-y sm:border-zinc-800/80 mt-1.5 sm:mt-0 align-middle sm:w-[10%]">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-1.5 w-full justify-start sm:justify-center">
-          <span className="sm:hidden text-[9px] font-bold text-zinc-500 uppercase tracking-widest leading-none h-[10px]">RR</span>
-          <div className="flex items-center justify-center w-full h-[18px]">
-            {trade.rr !== undefined && trade.rr !== null && trade.rr !== 0 ? (
-              trade.rr > 0 ? (
-                <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded-full uppercase tracking-wider font-sans">
-                  +{trade.rr}R
-                </span>
-              ) : trade.rr < 0 ? (
-                <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 group-hover:border-rose-500/50 rounded-full uppercase tracking-wider font-sans">
-                  {trade.rr}R
-                </span>
-              ) : (
-                <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-zinc-400 bg-zinc-500/10 border border-zinc-500/20 group-hover:border-zinc-500/50 rounded-full uppercase tracking-wider font-sans">
-                  {trade.rr}R
-                </span>
-              )
-            ) : (
-              <span className="inline-flex items-center justify-center w-[38px] sm:w-[44px] h-[18px] text-center text-[9px] sm:text-[10px] font-medium text-zinc-500 rounded-md">—</span>
-            )}
-          </div>
-        </div>
-      </td>
-      <td className="w-1/2 min-w-[75px] flex justify-end sm:justify-center items-center sm:table-cell order-4 py-1 px-0 sm:px-2 text-center sm:bg-transparent sm:border-y sm:border-zinc-800/80 mt-1.5 sm:mt-0 align-middle sm:w-[12%]">
-        <div className="flex items-center justify-center w-full h-[18px]">
-          {isWin ? (
-            <span className="inline-flex items-center justify-center h-[20px] px-2 py-0 text-center text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded-full uppercase tracking-wider font-sans w-[46px] sm:w-[54px]">WIN</span>
-          ) : isLoss ? (
-            <span className="inline-flex items-center justify-center h-[20px] px-2 py-0 text-center text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 group-hover:border-rose-500/50 rounded-full uppercase tracking-wider font-sans w-[46px] sm:w-[54px]">LOSS</span>
-          ) : isBe ? (
-            <span className="inline-flex items-center justify-center h-[20px] px-2 py-0 text-center text-[10px] font-bold text-zinc-400 bg-zinc-500/10 border border-zinc-500/20 group-hover:border-zinc-500/50 rounded-full uppercase tracking-wider font-sans w-[46px] sm:w-[54px]">BE</span>
-          ) : (
-            <span className="inline-flex items-center justify-center h-[20px] px-2 py-0 text-center text-[10px] font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 group-hover:border-blue-500/50 rounded-full uppercase tracking-wider font-sans w-[46px] sm:w-[54px]">AÇIK</span>
-          )}
-        </div>
-      </td>
-      <td className={`w-full min-w-[95px] flex justify-between sm:justify-center items-center sm:table-cell order-5 py-1 px-0 sm:px-3 text-right sm:text-center ${pnlColor} sm:bg-transparent sm:border-y sm:border-zinc-800/80 mt-1.5 sm:mt-0 max-sm:pt-3 max-sm:border-t max-sm:border-zinc-800/50 sm:py-1 align-middle sm:w-[16%]`}>
-        <span className="sm:hidden heading-3 text-left font-sans">Kâr/Zarar</span>
-        <div className="flex flex-col sm:flex-row items-end sm:items-center gap-0.5 sm:gap-1.5 sm:w-full sm:justify-center sm:h-[20px]">
-          <span className="text-sm sm:text-xs font-bold font-sans inline-flex items-center justify-center h-[20px] leading-none tracking-tight">{pnlText}</span>
-        </div>
-      </td>
-      {true && (
-        <td className="hidden sm:table-cell sm:w-[12%] sm:min-w-[75px] py-1.5 px-2 text-center bg-transparent border-y border-zinc-800/80 align-middle">
-          <div className="flex items-center justify-center w-full">
-            {trade.platform ? (
-              <span className={`inline-flex items-center justify-center min-w-[54px] max-w-[130px] h-[20px] px-2.5 py-0 text-center text-[10px] font-bold rounded-full uppercase tracking-wider font-sans whitespace-nowrap truncate border transition-colors ${categoryBadgeClass}`}>
-                {trade.platform}
-              </span>
-            ) : (
-              <span className="text-zinc-600">—</span>
-            )}
-          </div>
-        </td>
-      )}
-      <td className="w-full sm:w-[8%] sm:min-w-[60px] flex justify-between sm:justify-center items-center sm:table-cell order-6 py-1 px-0 sm:px-3 text-right sm:text-center sm:bg-transparent sm:rounded-r-xl sm:border-y sm:border-r sm:border-zinc-800/80 mt-1.5 sm:mt-0 sm:pt-1.5 pt-0 align-middle">
-        {true && (
-          <div className="sm:hidden trade-mobile-only">
-            {trade.platform ? (
-              <span className={`inline-flex items-center justify-center min-w-[46px] max-w-[120px] h-[20px] px-2.5 py-0 text-center text-[10px] font-bold rounded-full uppercase tracking-wider font-sans whitespace-nowrap truncate border ${categoryBadgeClass}`}>
-                {trade.platform}
-              </span>
-            ) : null}
-          </div>
-        )}
-        <div className="flex items-center justify-end sm:justify-center gap-1 w-full" onClick={(e) => e.stopPropagation()}>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onEdit(trade);
-            }}
-            className="p-1 hover:bg-zinc-800 hover:text-blue-400 text-zinc-400 rounded-lg transition duration-150 ease-out cursor-pointer"
-          >
-            <Edit3 size={12} />
-          </button>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setTradeToDelete(trade);
-            }}
-            className="p-1 hover:bg-rose-500/20 hover:text-rose-400 text-zinc-400 rounded-lg transition duration-150 ease-out cursor-pointer"
-          >
-            <Trash2 size={12} />
-          </button>
-        </div>
-      </td>
-    </tr>
-  );
-});
+import { localDateKey } from '../utils/math';
+import { TR_COLLATOR, MemoizedTradeRow } from './tradeList/TradeRow';
+import { HeaderLabel, CustomSelect } from './tradeList/controls';
+import { FILTER_LABEL } from './filters/FilterControls';
+import { nyWallDate, nyInputToTs, nyDateKey } from '../lib/tradingTime';
 
 interface TradeListProps {
   trades: Trade[];
   onEdit: (trade: Trade) => void;
   onDelete: (id: string) => void;
-  onViewDetails: (trade: Trade) => void;
-  currency: string;
+  onViewDetails: (trade: Trade, list?: Trade[]) => void;
   definitionTitles?: DefinitionTitles;
-  planFidelities?: string[];
-  entryModels?: string[];
-  trendTypes?: string[];
 }
 
 const TradeList = React.memo(function TradeList({ 
@@ -454,20 +41,15 @@ const TradeList = React.memo(function TradeList({
   onEdit, 
   onDelete, 
   onViewDetails, 
-  currency,
   definitionTitles = DEFAULT_DEFINITION_TITLES,
-  planFidelities = [],
-  entryModels = [],
-  trendTypes = []
 }: TradeListProps) {
 
   // Filters State
   
+  // Liste yalnızca kendine özgü süzgeçleri tutar (arama, sıralama, tarih aralığı).
+  // Sonuç, yön, parite, seans, timeframe vb. tek yerde: üstteki Filtreleme Menüsü.
   const [filter, setFilter] = useState<TradeFilter>({
     search: '',
-    status: 'ALL',
-    type: 'ALL',
-    asset: '',
     sortBy: 'dateDes',
     startDate: '',
     endDate: ''
@@ -479,44 +61,10 @@ const TradeList = React.memo(function TradeList({
   const [tradeToDelete, setTradeToDelete] = useState<Trade | null>(null);
   useBodyScrollLock(!!tradeToDelete);
 
-  const isFilteringActive = useMemo(() => {
-    return filter.status !== 'ALL' ||
-           filter.type !== 'ALL' ||
-           filter.asset !== '' ||
-           !!filter.startDate ||
-           !!filter.endDate ||
-           !!filter.timeframe ||
-           !!filter.htfTimeframe ||
-           !!filter.session ||
-           !!filter.confirmation ||
-           !!filter.concept ||
-           !!filter.planFidelity ||
-           !!filter.entry ||
-           !!filter.trend ||
-           filter.minAsiaRangePips !== undefined ||
-           filter.maxAsiaRangePips !== undefined;
-  }, [filter]);
+  const isFilteringActive = !!filter.startDate || !!filter.endDate || filter.sortBy !== 'dateDes';
 
   const handleResetFilters = () => {
-    setFilter({
-      search: filter.search,
-      status: 'ALL',
-      type: 'ALL',
-      asset: '',
-      sortBy: filter.sortBy,
-      startDate: '',
-      endDate: '',
-      minAsiaRangePips: undefined,
-      maxAsiaRangePips: undefined,
-      timeframe: undefined,
-      htfTimeframe: undefined,
-      session: undefined,
-      confirmation: undefined,
-      concept: undefined,
-      planFidelity: undefined,
-      entry: undefined,
-      trend: undefined
-    });
+    setFilter({ search: filter.search, sortBy: 'dateDes', startDate: '', endDate: '' });
   };
   
   // State to manage high-fidelity report print modal
@@ -550,25 +98,29 @@ const TradeList = React.memo(function TradeList({
   // Export format tab (Excel, CSV, PDF)
   const [exportFormatTab, setExportFormatTab] = useState<'excel' | 'csv' | 'pdf'>('excel');
 
+  // Bu hafta / bu ay: New York takvimine göre (hafta pazartesi 00:00 NY'de başlar)
+  const nyStartTs = (wall: Date) => {
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return nyInputToTs(`${wall.getFullYear()}-${pad(wall.getMonth() + 1)}-${pad(wall.getDate())}T00:00`) ?? 0;
+  };
+
   const getWeeklyTrades = useCallback(() => {
-    const now = new Date();
-    const day = now.getDay();
-    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-    const startOfWeek = new Date(now.setDate(diff));
-    startOfWeek.setHours(0, 0, 0, 0);
-    return trades.filter(t => t.createdAt >= startOfWeek.getTime()).sort((a, b) => b.createdAt - a.createdAt);
+    const nowNy = nyWallDate(Date.now());
+    const day = nowNy.getDay();
+    const monday = new Date(nowNy.getFullYear(), nowNy.getMonth(), nowNy.getDate() - (day === 0 ? 6 : day - 1));
+    const start = nyStartTs(monday);
+    return trades.filter(t => t.createdAt >= start).sort((a, b) => b.createdAt - a.createdAt);
   }, [trades]);
 
   const getMonthlyTrades = useCallback(() => {
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    startOfMonth.setHours(0, 0, 0, 0);
-    return trades.filter(t => t.createdAt >= startOfMonth.getTime()).sort((a, b) => b.createdAt - a.createdAt);
+    const nowNy = nyWallDate(Date.now());
+    const start = nyStartTs(new Date(nowNy.getFullYear(), nowNy.getMonth(), 1));
+    return trades.filter(t => t.createdAt >= start).sort((a, b) => b.createdAt - a.createdAt);
   }, [trades]);
 
   const handleExport = (format: 'excel' | 'csv', scope: 'filtered' | 'all' | 'weekly' | 'monthly' | 'custom') => {
     try {
-      const dateStr = new Date().toISOString().slice(0, 10);
+      const dateStr = localDateKey();
       let targetList: Trade[] = [];
       let scopeName = '';
 
@@ -599,15 +151,16 @@ const TradeList = React.memo(function TradeList({
       const filename = `Islem_Gecmisi_${scopeName}_${dateStr}_[${targetList.length}_islem]`;
 
       if (format === 'excel') {
-        exportTradesToExcel(targetList, filename, {
-          currency,
+        void toast.promise(exportTradesToExcel(targetList, filename, {
           title: `İşlem Geçmişi (${scopeName.replace(/_/g, ' ')})`,
           definitionTitles: definitionTitles as any
+        }), {
+          loading: 'Excel hazırlanıyor…',
+          success: `Excel tablosu (.xlsx) başarıyla indirildi (${targetList.length} işlem).`,
+          error: (e) => e?.message || 'Excel dosyası oluşturulamadı.',
         });
-        toast.success(`Excel tablosu (.xlsx) başarıyla indirildi (${targetList.length} işlem).`);
       } else {
         exportTradesToCSV(targetList, filename, {
-          currency,
           title: `İşlem Geçmişi (${scopeName.replace(/_/g, ' ')})`,
           definitionTitles: definitionTitles as any
         });
@@ -658,133 +211,33 @@ const TradeList = React.memo(function TradeList({
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 30; // Limit items per page to 30
 
-  const uniqueAssets = useMemo(() => Array.from(new Set(trades.map(t => t.asset))).sort(), [trades]);
-  const uniqueTimeframes = useMemo(() => Array.from(new Set(trades.map(t => t.timeframe).filter(Boolean) as string[])).sort(), [trades]);
-  const uniqueHtfTimeframes = useMemo(() => Array.from(new Set(trades.map(t => t.htfTimeframe).filter(Boolean) as string[])).sort(), [trades]);
-  const uniqueSessions = useMemo(() => Array.from(new Set(trades.map(t => t.session).filter(Boolean) as string[])).sort(), [trades]);
-  const uniqueConfirmations = useMemo(() => Array.from(new Set(trades.flatMap(t => t.confirmations || []))).sort(), [trades]);
-  const uniqueConcepts = useMemo(() => {
-    const set = new Set<string>();
-    trades.forEach(t => {
-      if (Array.isArray(t.liquiditySweeps)) {
-        t.liquiditySweeps.forEach(s => s && set.add(s));
-      } else if (t.liquiditySweep) {
-        t.liquiditySweep.split(',').map(s => s.trim()).forEach(s => s && set.add(s));
-      } else if (t.concept) {
-        t.concept.split(',').map(s => s.trim()).forEach(s => s && set.add(s));
-      }
-    });
-    return Array.from(set).sort();
-  }, [trades]);
-  const uniquePlanFidelities = useMemo(() => {
-    const set = new Set<string>();
-    trades.forEach(t => {
-      if (t.planFidelity) set.add(t.planFidelity);
-    });
-    planFidelities.forEach(pf => {
-      if (pf) set.add(pf);
-    });
-    return Array.from(set).sort();
-  }, [trades, planFidelities]);
-
-  const uniqueTrendTypes = useMemo(() => {
-    const set = new Set<string>();
-    trades.forEach(t => {
-      if (t.trend) set.add(t.trend);
-    });
-    trendTypes.forEach(tt => {
-      if (tt) set.add(tt);
-    });
-    return Array.from(set).sort();
-  }, [trades, trendTypes]);
-
-  const uniqueEntryModels = useMemo(() => {
-    const set = new Set<string>();
-    trades.forEach(t => {
-      if (t.entryModels && Array.isArray(t.entryModels)) {
-        t.entryModels.forEach(em => em && set.add(em));
-      } else if (t.entry) {
-        t.entry.split(',').map(s => s.trim()).forEach(em => em && set.add(em));
-      }
-    });
-    entryModels.forEach(em => {
-      if (em) set.add(em);
-    });
-    return Array.from(set).sort();
-  }, [trades, entryModels]);
-
   const sortByOptions = useMemo(() => [
     { value: 'dateDes', label: 'En Yeni Aktiviteler' },
     { value: 'dateAsc', label: 'En Eski Aktiviteler' },
-    { value: 'pnlDes', label: 'Kârlılık (Yüksekten Düşüğe)' },
-    { value: 'pnlAsc', label: 'Kârlılık (Düşükten Yükseğe)' },
     { value: 'rrDes', label: 'R Oranı (Yüksekten Düşüğe)' },
     { value: 'rrAsc', label: 'R Oranı (Düşükten Yükseğe)' }
   ], []);
-
-  const assetOptions = useMemo(() => [
-    { value: '', label: 'Tümü' },
-    ...uniqueAssets.map(asset => ({ value: asset, label: asset }))
-  ], [uniqueAssets]);
-
-  const conceptOptions = useMemo(() => [
-    { value: '', label: 'Tümü' },
-    ...uniqueConcepts.map(s => ({ value: s, label: s }))
-  ], [uniqueConcepts]);
-
-  const confirmationOptions = useMemo(() => [
-    { value: '', label: 'Tümü' },
-    ...uniqueConfirmations.map(c => ({ value: c, label: c }))
-  ], [uniqueConfirmations]);
-
-  const planFidelityOptions = useMemo(() => [
-    { value: '', label: 'Tümü' },
-    ...uniquePlanFidelities.map(pf => ({ value: pf, label: pf }))
-  ], [uniquePlanFidelities]);
-
-  const trendTypeOptions = useMemo(() => [
-    { value: '', label: 'Tümü' },
-    ...uniqueTrendTypes.map(tt => ({ value: tt, label: tt }))
-  ], [uniqueTrendTypes]);
-
-  const entryModelOptions = useMemo(() => [
-    { value: '', label: 'Tümü' },
-    ...uniqueEntryModels.map(em => ({ value: em, label: em }))
-  ], [uniqueEntryModels]);
-
-  const sessionOptions = useMemo(() => [
-    { value: '', label: 'Tümü' },
-    ...uniqueSessions.map(sess => ({ value: sess, label: sess }))
-  ], [uniqueSessions]);
-
-  const timeframeOptions = useMemo(() => [
-    { value: '', label: 'ETF (Tümü)' },
-    ...uniqueTimeframes.map(tf => ({ value: tf, label: tf }))
-  ], [uniqueTimeframes]);
-
-  const htfTimeframeOptions = useMemo(() => [
-    { value: '', label: `${definitionTitles?.htfTimeframes || 'Timeframe'} (Tümü)` },
-    ...uniqueHtfTimeframes.map(tf => ({ value: tf, label: tf }))
-  ], [uniqueHtfTimeframes, definitionTitles]);
 
   const deferredFilter = filter;
 
   // Apply filters & sorting
   const filteredTrades = useMemo(() => {
-    const startTime = deferredFilter.startDate ? new Date(deferredFilter.startDate).setHours(0, 0, 0, 0) : null;
-    const endTime = deferredFilter.endDate ? new Date(deferredFilter.endDate).setHours(23, 59, 59, 999) : null;
+    // Tarih aralığı NY takvim gününe göre (YYYY-MM-DD karşılaştırması; yaz/kış saatinden etkilenmez)
+    const startKey = deferredFilter.startDate ? String(deferredFilter.startDate).slice(0, 10) : null;
+    const endKey = deferredFilter.endDate ? String(deferredFilter.endDate).slice(0, 10) : null;
 
     return trades
       .filter(trade => {
-        if (startTime !== null && trade.createdAt < startTime) return false;
-        if (endTime !== null && trade.createdAt > endTime) return false;
+        if (startKey || endKey) {
+          const k = nyDateKey(trade.createdAt);
+          if (startKey && k < startKey) return false;
+          if (endKey && k > endKey) return false;
+        }
 
         const matchesSearch = !deferredFilter.search || 
           caseInsensitiveMatch(trade.asset, deferredFilter.search) || 
           caseInsensitiveMatch(trade.notes, deferredFilter.search) ||
-          (trade.liquiditySweeps && trade.liquiditySweeps.some(s => caseInsensitiveMatch(s, deferredFilter.search))) ||
-          caseInsensitiveMatch(trade.liquiditySweep, deferredFilter.search) ||
-          caseInsensitiveMatch(trade.concept, deferredFilter.search) ||
+          caseInsensitiveMatch(trade.strategy, deferredFilter.search) ||
           caseInsensitiveMatch(trade.session, deferredFilter.search) ||
           caseInsensitiveMatch(trade.platform, deferredFilter.search) ||
           caseInsensitiveMatch(trade.planFidelity, deferredFilter.search) ||
@@ -794,57 +247,6 @@ const TradeList = React.memo(function TradeList({
         
         if (!matchesSearch) return false;
 
-        const matchesStatus = deferredFilter.status === 'ALL' || caseInsensitiveEquals(trade.status, deferredFilter.status);
-        if (!matchesStatus) return false;
-
-        const matchesType = deferredFilter.type === 'ALL' || caseInsensitiveEquals(trade.type, deferredFilter.type);
-        if (!matchesType) return false;
-
-        const matchesAsset = !deferredFilter.asset || caseInsensitiveEquals(trade.asset, deferredFilter.asset);
-        if (!matchesAsset) return false;
-
-        const matchesTimeframe = !deferredFilter.timeframe || caseInsensitiveEquals(trade.timeframe, deferredFilter.timeframe);
-        if (!matchesTimeframe) return false;
-
-        const matchesHtfTimeframe = !deferredFilter.htfTimeframe || caseInsensitiveEquals(trade.htfTimeframe, deferredFilter.htfTimeframe);
-        if (!matchesHtfTimeframe) return false;
-
-        const matchesSession = !deferredFilter.session || caseInsensitiveEquals(trade.session, deferredFilter.session);
-        if (!matchesSession) return false;
-
-        const matchesConfirmation = !deferredFilter.confirmation || (trade.confirmations && trade.confirmations.some(c => caseInsensitiveEquals(c, deferredFilter.confirmation)));
-        if (!matchesConfirmation) return false;
-
-        const targetSweepFilter = deferredFilter.liquiditySweep || deferredFilter.concept;
-        const matchesConcept = !targetSweepFilter ||
-          (trade.liquiditySweeps && trade.liquiditySweeps.some(s => caseInsensitiveEquals(s, targetSweepFilter))) ||
-          (trade.liquiditySweep && trade.liquiditySweep.split(',').map(s => s.trim()).some(s => caseInsensitiveEquals(s, targetSweepFilter))) ||
-          (trade.concept && trade.concept.split(',').map(s => s.trim()).some(s => caseInsensitiveEquals(s, targetSweepFilter)));
-        if (!matchesConcept) return false;
-
-        const matchesPlanFidelity = !deferredFilter.planFidelity || caseInsensitiveEquals(trade.planFidelity, deferredFilter.planFidelity);
-        if (!matchesPlanFidelity) return false;
-
-        const matchesEntry = !deferredFilter.entry || 
-          (trade.entryModels && trade.entryModels.some(em => caseInsensitiveEquals(em, deferredFilter.entry))) ||
-          (trade.entry && trade.entry.split(',').map(s => s.trim()).some(em => caseInsensitiveEquals(em, deferredFilter.entry)));
-        if (!matchesEntry) return false;
-
-         const matchesTrend = !deferredFilter.trend || caseInsensitiveEquals(trade.trend, deferredFilter.trend);
-        if (!matchesTrend) return false;
-
-        if (deferredFilter.minAsiaRangePips !== undefined) {
-          if (trade.asiaRangePips === undefined || trade.asiaRangePips === null || trade.asiaRangePips < deferredFilter.minAsiaRangePips) {
-            return false;
-          }
-        }
-
-        if (deferredFilter.maxAsiaRangePips !== undefined) {
-          if (trade.asiaRangePips === undefined || trade.asiaRangePips === null || trade.asiaRangePips > deferredFilter.maxAsiaRangePips) {
-            return false;
-          }
-        }
-
         return true;
       })
       .sort((a, b) => {
@@ -853,10 +255,6 @@ const TradeList = React.memo(function TradeList({
             return b.createdAt - a.createdAt;
           case 'dateAsc':
             return a.createdAt - b.createdAt;
-          case 'pnlDes':
-            return (b.pnl || 0) - (a.pnl || 0);
-          case 'pnlAsc':
-            return (a.pnl || 0) - (b.pnl || 0);
           case 'assetAsc':
             return TR_COLLATOR.compare(a.asset, b.asset);
           case 'assetDes':
@@ -888,6 +286,9 @@ const TradeList = React.memo(function TradeList({
       setCurrentPage(maxPage);
     }
   }, [currentPage, maxPage]);
+
+  // Detayda ← / → gezinme için görünen (filtrelenmiş + sıralı) liste de iletilir
+  const handleViewDetails = useCallback((t: Trade) => onViewDetails(t, filteredTrades), [onViewDetails, filteredTrades]);
 
   const paginatedTrades = useMemo(() => {
     const start = (effectivePage - 1) * itemsPerPage;
@@ -946,7 +347,7 @@ const TradeList = React.memo(function TradeList({
           
           {/* EXPORT DROP-DOWN */}
           <div className="relative" ref={exportRef}>
-            <button
+            <button aria-label="İndir" title="İndir"
               onClick={() => setIsExportOpen(!isExportOpen)}
               className={`flex items-center justify-center w-9 sm:w-8 h-9 sm:h-8 rounded-xl border transition-ui duration-200 shrink-0 cursor-pointer ${
                 isExportOpen
@@ -1273,273 +674,40 @@ const TradeList = React.memo(function TradeList({
               )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 text-xs pt-1">
-              {/* Sol Sütun: Hızlı Filtreler & Sıralama */}
-              <div className="space-y-3.5 lg:border-r border-zinc-800 lg:pr-6">
-                {/* Durum */}
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-zinc-400">Durum</span>
-                  <div className="flex bg-zinc-950 p-1 rounded-xl border border-zinc-800 gap-0.5 w-full relative">
-                    {(['ALL', 'WIN', 'LOSS', 'BREAKEVEN'] as const).map((st) => (
-                      <button
-                        key={st}
-                        type="button"
-                        onClick={() => handleFilterChange({ ...filter, status: st })}
-                        className={`relative flex-1 py-1.5 text-[9px] font-bold rounded-lg transition-colors duration-200 ease-out cursor-pointer text-center select-none ${
-                          filter.status === st
-                            ? st === 'WIN'
-                              ? 'text-emerald-400'
-                              : st === 'LOSS'
-                              ? 'text-rose-400'
-                              : st === 'BREAKEVEN'
-                              ? 'text-amber-400'
-                              : 'text-zinc-100'
-                            : 'text-zinc-500 hover:text-zinc-300'
-                        }`}
-                      >
-                        {filter.status === st && (
-                          <motion.div
-                            layoutId="tradeStatusFilterIndicator"
-                            className={`absolute inset-0 rounded-lg border shadow-xs ${
-                              st === 'WIN'
-                                ? 'bg-emerald-500/15 border-emerald-500/20 shadow-emerald-500/5'
-                                : st === 'LOSS'
-                                ? 'bg-rose-500/15 border-rose-500/20 shadow-rose-500/5'
-                                : st === 'BREAKEVEN'
-                                ? 'bg-amber-500/15 border-amber-500/20 shadow-amber-500/5'
-                                : 'bg-zinc-800 border-zinc-700/50'
-                            }`}
-                            transition={SPRING.indicator}
-                          />
-                        )}
-                        <span className="relative z-10">{st === 'ALL' ? 'TÜMÜ' : st === 'BREAKEVEN' ? 'BE' : st}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Yön */}
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-zinc-400">Yön</span>
-                  <div className="flex bg-zinc-950 p-1 rounded-xl border border-zinc-800 gap-0.5 w-full relative">
-                    {(['ALL', 'LONG', 'SHORT'] as const).map((dir) => (
-                      <button
-                        key={dir}
-                        type="button"
-                        onClick={() => handleFilterChange({ ...filter, type: dir })}
-                        className={`relative flex-1 py-1.5 text-[9px] font-bold rounded-lg transition-colors duration-200 ease-out cursor-pointer text-center select-none ${
-                          filter.type === dir
-                            ? dir === 'LONG'
-                              ? 'text-emerald-400'
-                              : dir === 'SHORT'
-                              ? 'text-rose-400'
-                              : 'text-zinc-100'
-                            : 'text-zinc-500 hover:text-zinc-300'
-                        }`}
-                      >
-                        {filter.type === dir && (
-                          <motion.div
-                            layoutId="tradeTypeFilterIndicator"
-                            className={`absolute inset-0 rounded-lg border shadow-xs ${
-                              dir === 'LONG'
-                                ? 'bg-emerald-500/15 border-emerald-500/20'
-                                : dir === 'SHORT'
-                                ? 'bg-rose-500/15 border-rose-500/20'
-                                : 'bg-zinc-800 border-zinc-700/50'
-                            }`}
-                            transition={SPRING.indicator}
-                          />
-                        )}
-                        <span className="relative z-10">{dir === 'ALL' ? 'TÜMÜ' : dir}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Sıralama */}
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-zinc-400">Sıralama</span>
-                  <CustomSelect
-                    value={filter.sortBy}
-                    onChange={(val) => handleFilterChange({ ...filter, sortBy: val as any })}
-                    options={sortByOptions}
-                    className="w-full animate-fadeIn"
-                  />
-                </div>
+            <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] gap-4 text-xs pt-1">
+              {/* Sıralama */}
+              <div className="flex flex-col gap-1.5 min-w-0">
+                <span className={FILTER_LABEL}>Sıralama</span>
+                <CustomSelect
+                  value={filter.sortBy}
+                  onChange={(val) => handleFilterChange({ ...filter, sortBy: val as any })}
+                  options={sortByOptions}
+                  className="w-full"
+                />
               </div>
 
-              {/* Orta Sütun: Enstrüman & Kurulum */}
-              <div className="space-y-3.5 lg:border-r border-zinc-800 lg:px-6">
-                {/* Parite */}
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-zinc-400">{definitionTitles.assets || "Parite"}</span>
-                  <CustomComboBox
-                    value={filter.asset}
-                    onChange={(val) => handleFilterChange({ ...filter, asset: val })}
-                    options={assetOptions}
-                    placeholder={`${definitionTitles.assets || "Parite"} Seç / Yaz`}
-                    className="w-full"
-                  />
-                </div>
-
-                {/* Liquidity Sweep */}
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-zinc-400">{definitionTitles.liquiditySweeps || definitionTitles.concepts || "Liquidity Sweep"}</span>
-                  <CustomSelect
-                    value={filter.liquiditySweep || filter.concept || ''}
-                    onChange={(val) => handleFilterChange({ ...filter, liquiditySweep: val || undefined, concept: val || undefined })}
-                    options={conceptOptions}
-                    placeholder={`${definitionTitles.liquiditySweeps || definitionTitles.concepts || "Liquidity Sweep"} Seçin`}
-                    className="w-full"
-                  />
-                </div>
-
-                {/* PD ARRAY */}
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-zinc-400">{definitionTitles.confirmations || "PD ARRAY"}</span>
-                  <CustomSelect
-                    value={filter.confirmation || ''}
-                    onChange={(val) => handleFilterChange({ ...filter, confirmation: val || undefined })}
-                    options={confirmationOptions}
-                    placeholder={`${definitionTitles.confirmations || "PD ARRAY"} Seçin`}
-                    className="w-full"
-                  />
-                </div>
-
-                {/* Setup Kalitesi / Plan Sadakati */}
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-zinc-400">{definitionTitles.planFidelities || "Kalite / Plan"}</span>
-                  <CustomSelect
-                    value={filter.planFidelity || ''}
-                    onChange={(val) => handleFilterChange({ ...filter, planFidelity: val || undefined })}
-                    options={planFidelityOptions}
-                    placeholder={`${definitionTitles.planFidelities || "Setup Kalitesi"} Seçin`}
-                    className="w-full"
-                  />
-                </div>
-              </div>
-
-              {/* Sağ Sütun: Session & Zaman Dilimi */}
-              <div className="space-y-3.5 lg:pl-6">
-                {/* Session */}
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-zinc-400">{definitionTitles.sessions || "Session"}</span>
-                  <CustomSelect
-                    value={filter.session || ''}
-                    onChange={(val) => handleFilterChange({ ...filter, session: val || undefined })}
-                    options={sessionOptions}
-                    placeholder={`${definitionTitles.sessions || "Session"} Seçin`}
-                    className="w-full"
-                  />
-                </div>
-
-                {/* Timeframes */}
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-zinc-400">{definitionTitles.timeframes || "Entry Timeframe"} / {definitionTitles.htfTimeframes || "Timeframe"}</span>
-                  <div className="grid grid-cols-2 gap-2 w-full">
-                    <CustomSelect
-                      value={filter.timeframe || ''}
-                      onChange={(val) => handleFilterChange({ ...filter, timeframe: val || undefined })}
-                      options={timeframeOptions}
-                      placeholder={definitionTitles.timeframes || "Entry Timeframe"}
-                      className="w-full min-w-0"
-                    />
-                    <CustomSelect
-                      value={filter.htfTimeframe || ''}
-                      onChange={(val) => handleFilterChange({ ...filter, htfTimeframe: val || undefined })}
-                      options={htfTimeframeOptions}
-                      placeholder={definitionTitles.htfTimeframes || "Timeframe"}
-                      className="w-full min-w-0"
-                    />
-                  </div>
-                </div>
-
-                {/* Trend Yapısı & Entry Model */}
+              {/* Tarih Aralığı */}
+              <div className="flex flex-col gap-1.5 min-w-0">
+                <span className={FILTER_LABEL}>Tarih Aralığı</span>
                 <div className="grid grid-cols-2 gap-2 w-full">
-                  <div className="flex flex-col gap-1.5">
-                    <span className="text-[10px] uppercase font-bold tracking-wider text-zinc-400">{definitionTitles.trendTypes || "Trend"}</span>
-                    <CustomSelect
-                      value={filter.trend || ''}
-                      onChange={(val) => handleFilterChange({ ...filter, trend: val || undefined })}
-                      options={trendTypeOptions}
-                      placeholder={definitionTitles.trendTypes || "Trend"}
-                      className="w-full min-w-0"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <span className="text-[10px] uppercase font-bold tracking-wider text-zinc-400">{definitionTitles.entryModels || "Entry Model"}</span>
-                    <CustomSelect
-                      value={filter.entry || ''}
-                      onChange={(val) => handleFilterChange({ ...filter, entry: val || undefined })}
-                      options={entryModelOptions}
-                      placeholder={definitionTitles.entryModels || "Entry Model"}
-                      className="w-full min-w-0"
-                    />
-                  </div>
-                </div>
-
-                {/* Tarih Aralığı */}
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-zinc-400">Tarih Aralığı</span>
-                  <div className="grid grid-cols-2 gap-2 w-full">
-                    <TurkishDatePicker
-                      value={filter.startDate || ''}
-                      onChange={(val) => handleFilterChange({ ...filter, startDate: val || undefined })}
-                      placeholder="Başlangıç"
-                      className="w-full min-w-0"
-                    />
-                    <TurkishDatePicker
-                      value={filter.endDate || ''}
-                      onChange={(val) => handleFilterChange({ ...filter, endDate: val || undefined })}
-                      placeholder="Bitiş"
-                      className="w-full min-w-0"
-                    />
-                  </div>
-                </div>
-
-                {/* Asia Range (Pip) Aralığı */}
-                <div className="flex flex-col gap-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] uppercase font-bold tracking-wider text-zinc-400">Asia Range (Pip)</span>
-                    {(filter.minAsiaRangePips !== undefined || filter.maxAsiaRangePips !== undefined) && (
-                      <button
-                        type="button"
-                        onClick={() => handleFilterChange({ ...filter, minAsiaRangePips: undefined, maxAsiaRangePips: undefined })}
-                        className="text-[9px] text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer"
-                      >
-                        Temizle
-                      </button>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 w-full">
-                    <input
-                      type="number"
-                      step="any"
-                      min="0"
-                      placeholder="En Az (Min)"
-                      value={filter.minAsiaRangePips ?? ''}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        handleFilterChange({ ...filter, minAsiaRangePips: val !== '' ? parseFloat(val) : undefined });
-                      }}
-                      className="w-full h-8.5 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 rounded-xl px-2.5 text-xs text-zinc-100 placeholder-zinc-500 font-sans shadow-inner transition-ui [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
-                    />
-                    <input
-                      type="number"
-                      step="any"
-                      min="0"
-                      placeholder="En Çok (Maks)"
-                      value={filter.maxAsiaRangePips ?? ''}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        handleFilterChange({ ...filter, maxAsiaRangePips: val !== '' ? parseFloat(val) : undefined });
-                      }}
-                      className="w-full h-8.5 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 rounded-xl px-2.5 text-xs text-zinc-100 placeholder-zinc-500 font-sans shadow-inner transition-ui [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
-                    />
-                  </div>
+                  <TurkishDatePicker
+                    value={filter.startDate || ''}
+                    onChange={(val) => handleFilterChange({ ...filter, startDate: val || undefined })}
+                    placeholder="Başlangıç"
+                    className="w-full min-w-0"
+                  />
+                  <TurkishDatePicker
+                    value={filter.endDate || ''}
+                    onChange={(val) => handleFilterChange({ ...filter, endDate: val || undefined })}
+                    placeholder="Bitiş"
+                    className="w-full min-w-0"
+                  />
                 </div>
               </div>
             </div>
+            <p className="mt-3 text-[11px] text-zinc-500">
+              Sonuç, yön, parite, seans ve diğer kurulum filtreleri üstteki <span className="font-semibold text-zinc-400">Filtreleme Menüsü</span>'nde; tüm sayfalara birlikte uygulanır.
+            </p>
           </div>
         </div>
       </div>
@@ -1550,7 +718,7 @@ const TradeList = React.memo(function TradeList({
           <div className="w-10 h-10 rounded-xl bg-zinc-800/80 border border-zinc-700/50 flex items-center justify-center text-zinc-400 mb-2.5 shadow-inner">
             <Clock size={20} className="text-zinc-400" />
           </div>
-          <h4 className="text-xs font-black text-zinc-200 uppercase tracking-widest font-sans">Kayıt Bulunamadı</h4>
+          <h4 className="text-xs font-black text-zinc-200 uppercase tracking-widest font-sans">{smartUpper("Kayıt Bulunamadı")}</h4>
           <p className="text-xs text-zinc-400 max-w-sm mt-1.5 leading-relaxed font-sans">
             {trades.length === 0 
               ? "Herhangi bir işlem kaydı bulunmuyor. Üst kısımdaki 'İşlem Ekle' kutusunu kullanarak ilk kaydınızı girin."
@@ -1602,20 +770,11 @@ const TradeList = React.memo(function TradeList({
                     onClick={() => handleFilterChange({...filter, sortBy: filter.sortBy === 'rrDes' ? 'rrAsc' : 'rrDes'})}
                   >
                     <div className="flex items-center justify-center gap-1.5">
-                      <HeaderLabel sortState={filter.sortBy === 'rrAsc' ? 'asc' : filter.sortBy === 'rrDes' ? 'des' : null}>RR</HeaderLabel>
+                      <HeaderLabel sortState={filter.sortBy === 'rrAsc' ? 'asc' : filter.sortBy === 'rrDes' ? 'des' : null}>R</HeaderLabel>
                     </div>
                   </th>
                   <th className={`py-2 px-2 text-center font-sans select-none min-w-[75px] ${'w-[12%]'}`}>Sonuç</th>
-                  <th 
-                    className={`py-2 px-3 text-center font-sans select-none min-w-[95px] cursor-pointer group/th transition-colors hover:text-zinc-200 ${
-                      filter.sortBy === 'pnlAsc' || filter.sortBy === 'pnlDes' ? 'text-blue-400 font-bold' : 'text-zinc-400'
-                    } ${'w-[16%]'}`}
-                    onClick={() => handleFilterChange({...filter, sortBy: filter.sortBy === 'pnlDes' ? 'pnlAsc' : 'pnlDes'})}
-                  >
-                    <div className="flex items-center justify-center gap-1.5 w-full">
-                      <HeaderLabel sortState={filter.sortBy === 'pnlAsc' ? 'asc' : filter.sortBy === 'pnlDes' ? 'des' : null}>Kâr/Zarar</HeaderLabel>
-                    </div>
-                  </th>
+                  <th className="py-2 px-3 text-center font-sans select-none min-w-[95px] text-zinc-400 w-[14%]">Risk</th>
                   {true && (
                     <th 
                       className={`py-2 px-2 text-center font-sans select-none w-[12%] min-w-[75px] cursor-pointer group/th transition-colors hover:text-zinc-200 ${
@@ -1624,11 +783,11 @@ const TradeList = React.memo(function TradeList({
                       onClick={() => handleFilterChange({...filter, sortBy: filter.sortBy === 'platformDes' ? 'platformAsc' : 'platformDes'})}
                     >
                       <div className="flex items-center justify-center gap-1.5">
-                        <HeaderLabel sortState={filter.sortBy === 'platformAsc' ? 'asc' : filter.sortBy === 'platformDes' ? 'des' : null}>{definitionTitles.platforms || "Platform"}</HeaderLabel>
+                        <HeaderLabel sortState={filter.sortBy === 'platformAsc' ? 'asc' : filter.sortBy === 'platformDes' ? 'des' : null}>{definitionTitles.platforms || "Hesap"}</HeaderLabel>
                     </div>
                     </th>
                   )}
-                  <th className="py-2 px-3 text-center font-sans select-none w-[8%] min-w-[60px]">İşlem</th>
+                  <th className="py-2 px-1.5 text-center font-sans select-none w-[10%] min-w-[80px]">İşlem</th>
                 </tr>
               </thead>
               <tbody key={effectivePage} className="trade-tbody-fade block sm:table-row-group">
@@ -1636,8 +795,7 @@ const TradeList = React.memo(function TradeList({
                   <MemoizedTradeRow 
                     key={trade.id ? `${trade.id}` : `trade-fallback-${idx}`}
                     trade={trade}
-                    currency={currency}
-                    onViewDetails={onViewDetails}
+                    onViewDetails={handleViewDetails}
                     onEdit={onEdit}
                     setTradeToDelete={setTradeToDelete}
                   />
@@ -1707,7 +865,7 @@ const TradeList = React.memo(function TradeList({
                 </h3>
                 
                 <p className="text-zinc-400 text-xs text-center mb-6 leading-relaxed font-sans">
-                  <span className="font-semibold text-zinc-200">{tradeToDelete.asset}</span> ({false ? (tradeToDelete.type === 'LONG' ? 'Bullish' : 'Bearish') : (tradeToDelete.type === 'LONG' ? 'Long' : 'Short')} - {false ? (tradeToDelete.platform?.toUpperCase().includes('25K') ? 'Rise Works' : 'FSL PROP DMCC') : (tradeToDelete.platform || 'PLATFORM')}) {"pozisyonunu silmek istediğinize emin misiniz? Bu işlem geri alınamaz."}
+                  <span className="font-semibold text-zinc-200">{tradeToDelete.asset}</span> ({tradeToDelete.type === 'LONG' ? 'Long' : 'Short'} - {tradeToDelete.platform || 'Hesapsız'}) {"pozisyonunu silmek istediğinize emin misiniz? Bu işlem geri alınamaz."}
                 </p>
                 
                 <div className="flex items-center gap-3">
@@ -1740,12 +898,11 @@ const TradeList = React.memo(function TradeList({
       )}
 
       {/* High-fidelity PDF/Print Report Preview Modal */}
-      <PrintReportModal title="Analiz Raporu" isOpen={printModalState.isOpen}
+      <PrintReportModal title={printModalState.title || "İşlem Raporu"} isOpen={printModalState.isOpen}
         onClose={() => setPrintModalState(prev => ({ ...prev, isOpen: false }))}
         trades={printModalState.trades}
         
         dateRangeText={printModalState.dateRangeText}
-        currency={currency}
       />
     </div>
   );

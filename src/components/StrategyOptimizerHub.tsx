@@ -1,38 +1,44 @@
 import { EASE } from '../lib/motion';
+import { smartUpper } from '../constants/constants';
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  Target, 
-  TrendingUp, 
-  Compass, 
-  Sparkles, 
-  AlertTriangle, 
-  CheckCircle2, 
-  Clock, 
-  Zap, 
-  ShieldCheck, 
+import {
+  Target,
+  TrendingUp,
+  Compass,
+  Sparkles,
+  AlertTriangle,
+  CheckCircle2,
+  Clock,
+  ShieldCheck,
   Award,
   BarChart3,
   Layers,
   Scale,
   Activity,
-  ArrowUpRight,
-  Sliders,
   Calendar,
   Brain,
-  Dices,
   ShieldAlert,
   Flame,
   ChevronLeft,
   ChevronRight,
   Flag,
-  Newspaper
+  Newspaper,
+  ClipboardList,
 } from 'lucide-react';
 import { Trade } from '../types';
-import { getNewsDayLabels } from '../constants/constants';
 import { useNewsDayLabels } from '../hooks/useNewsDayLabels';
 import { calculateStrategyAnalytics, StrategyAnalyticsResult } from '../lib/strategyAnalytics';
 import { AsiaEdgeLab } from './AsiaEdgeLab';
+import { SetupScorecardTab } from './strategy/SetupScorecardTab';
+import { EdgeSummaryCard, DisciplineCard } from './deepAnalysis/EdgeCockpit';
+import { TradeHistoryModal } from './TradeHistoryModal';
+import { ComparatorTab } from './strategy/ComparatorTab';
+import { setupQualityTier } from '../lib/discipline';
+import { EDGE_PROOF_MIN } from '../lib/sampleSize';
+import { formatPF } from '../lib/statMath';
+
+const signedR = (v: number) => (v > 0 ? `+${v}` : `${v}`);
 
 /**
  * Sekme şeridi: kullanıcı kaydırmaz, sağ/sol butonlarla kayar.
@@ -126,16 +132,17 @@ const TabStrip = React.memo(function TabStrip({
 
 interface StrategyOptimizerHubProps {
   trades: Trade[];
-  currency?: string;
   onViewTrade?: (trade: Trade) => void;
+  /** Edge Özeti / Disiplin satırlarından açılan işlem listesinde düzenleme */
+  onEdit?: (trade: Trade) => void;
 }
 
 type LabTab = 
   | 'overview' 
+  | 'edge_summary'
+  | 'discipline'
+  | 'setup_scorecard'
   | 'asia_lab'
-  | 'mistakes_leak'
-  | 'monte_carlo'
-  | 'confluence'
   | 'psychology'
   | 'day_of_week'
   | 'tp_zone' 
@@ -144,81 +151,57 @@ type LabTab =
   | 'trend_time' 
   | 'setup_quality'
   | 'asset_account'
-  | 'matrix_comparator' 
-  | 'pre_trade_checker';
+  | 'matrix_comparator' ;
 
 const SUBTABS: Array<{ id: LabTab; label: string; icon: React.ComponentType<{ size?: number; className?: string }>; activeColor: string }> = [
   { id: 'overview', label: 'Genel Bakış', icon: Award, activeColor: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40' },
+  { id: 'edge_summary', label: 'Edge Özeti', icon: Sparkles, activeColor: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40' },
+  { id: 'discipline', label: 'Disiplin', icon: ShieldCheck, activeColor: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40' },
+  { id: 'setup_scorecard', label: 'Kurulum Karnesi', icon: ClipboardList, activeColor: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40' },
   { id: 'asia_lab', label: 'Asia Edge Lab', icon: Compass, activeColor: 'bg-zinc-500/20 text-zinc-200 border-zinc-500/40' },
-  { id: 'mistakes_leak', label: 'Hata & Sızıntı Analizi', icon: ShieldAlert, activeColor: 'bg-rose-500/20 text-rose-300 border-rose-500/40' },
-  { id: 'monte_carlo', label: 'Monte Carlo Riski', icon: Dices, activeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' },
-  { id: 'confluence', label: 'Konfluans Gücü', icon: Zap, activeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/40' },
   { id: 'psychology', label: 'Psikoloji & Tilt', icon: Brain, activeColor: 'bg-purple-500/20 text-purple-300 border-purple-500/40' },
   { id: 'day_of_week', label: 'Günlük Edge', icon: Calendar, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
-  { id: 'tp_zone', label: 'TP Target & Bölge', icon: Flag, activeColor: 'bg-purple-500/20 text-purple-300 border-purple-500/40' },
+  { id: 'tp_zone', label: 'Target & Confirmations', icon: Flag, activeColor: 'bg-purple-500/20 text-purple-300 border-purple-500/40' },
   { id: 'mae_mfe', label: 'MAE, MFE & Stop', icon: Target, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
   { id: 'ict_concepts', label: 'Likidite & Modeller', icon: Layers, activeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' },
   { id: 'trend_time', label: 'HTF, Entry TF & Saatler', icon: Clock, activeColor: 'bg-rose-500/20 text-rose-300 border-rose-500/40' },
   { id: 'setup_quality', label: 'A+ Kalite & Disiplin', icon: ShieldCheck, activeColor: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40' },
   { id: 'asset_account', label: 'Parite & Hesap Türü', icon: Scale, activeColor: 'bg-teal-500/20 text-teal-300 border-teal-500/40' },
   { id: 'matrix_comparator', label: 'Kıyaslama', icon: BarChart3, activeColor: 'bg-orange-500/20 text-orange-300 border-orange-500/40' },
-  { id: 'pre_trade_checker', label: 'Pre-Trade Kontrol', icon: Sparkles, activeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' },
 ];
 
 export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
   trades,
-  currency: _currency = '$',
+  onEdit,
 }: StrategyOptimizerHubProps) {
+  // Edge Özeti / Disiplin satırlarına tıklanınca ilgili işlemler geçmiş penceresinde açılır
+  const [shownTrades, setShownTrades] = useState<{ title: string; trades: Trade[] } | null>(null);
+  const showTrades = useCallback((title: string, list: Trade[]) => setShownTrades({ title, trades: list }), []);
   const [activeSubTab, setActiveSubTab] = useState<LabTab>('overview');
-
-  // Interactive Comparator States
-  const [compDimensionX, setCompDimensionX] = useState<'session' | 'tpTarget' | 'premiumDiscount' | 'planFidelity' | 'trend' | 'htfTimeframe' | 'newsDay' | 'strategy' | 'asiaRangeFvg'>('session');
-  const [compDimensionY, setCompDimensionY] = useState<'type' | 'entryModels' | 'timeframe' | 'liquiditySweeps'>('type');
-
-  // Pre-Trade Checker States
-  const [checkerAsset, setCheckerAsset] = useState<string>('');
-  const [checkerType, setCheckerType] = useState<'LONG' | 'SHORT'>('LONG');
-  const [checkerSession, setCheckerSession] = useState<string>('');
-  const [checkerTpTarget, setCheckerTpTarget] = useState<string>('');
-  const [checkerZone, setCheckerZone] = useState<string>('');
-  const [checkerModel, setCheckerModel] = useState<string>('');
-  const [checkerQuality, setCheckerQuality] = useState<string>('');
 
   const { version: newsLabelsVersion } = useNewsDayLabels();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const stats: StrategyAnalyticsResult = useMemo(() => calculateStrategyAnalytics(trades), [trades, newsLabelsVersion]);
 
-  const uniqueAssets = useMemo(() => Array.from(new Set(trades.map(t => t.asset).filter(Boolean))), [trades]);
-  const uniqueSessions = useMemo(() => Array.from(new Set(trades.map(t => t.session).filter(Boolean))), [trades]);
-  const uniqueTpTargets = useMemo(() => Array.from(new Set(trades.flatMap(t => t.tpTargets || []).filter(Boolean))), [trades]);
-  const uniqueZones = useMemo(() => Array.from(new Set(trades.map(t => t.premiumDiscount).filter(Boolean))), [trades]);
-  const uniqueModels = useMemo(() => {
-    const list: string[] = [];
-    trades.forEach(t => {
-      if (Array.isArray(t.entryModels)) list.push(...t.entryModels);
-      else if (t.entry) list.push(t.entry);
-    });
-    return Array.from(new Set(list.filter(Boolean)));
-  }, [trades]);
-
-  if (!trades || trades.length === 0) {
-    return (
+  const isEmpty = !trades || trades.length === 0;
+  // Not: boş durum hook'lardan SONRA döndürülür. Eskiden hook'lardan önce erken dönüş vardı;
+  // ilk işlem eklenince veya filtre sonucu boşalınca "Rendered more hooks" hatasıyla ekran çöküyordu.
+  const emptyState = (
       <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-8 text-center text-zinc-400">
         <Compass className="w-10 h-10 text-zinc-600 mx-auto mb-3" />
         <h4 className="text-sm font-bold text-zinc-200 font-sans">Strateji Geliştirme İçin Yeterli Veri Yok</h4>
         <p className="text-xs text-zinc-500 mt-1 max-w-md mx-auto font-sans">
-          İşlem eklerken girdiğiniz Parite, Stop/TP Pip, MAE, MFE, Asia Range, TP Target, Premium/Discount, Onaylar ve Giriş Modelleri burada otomatik strateji önerilerine ve edge matrislerine dönüştürülür.
+          İşlem eklerken girdiğiniz Parite, Stop/TP Pip, MAE, MFE, Asia Range, Target (çıkış hedefi), Confirmations, Onaylar ve Giriş Modelleri burada otomatik strateji önerilerine ve edge matrislerine dönüştürülür.
         </p>
       </div>
-    );
-  }
+    
+  );
 
   const { 
     overallScore,
     maeStats, 
     mfeStats, 
     asiaRangeStats, 
-    liquiditySweepStats, 
     entryModelStats, 
     trendStats, 
     timeframeMatrix, 
@@ -230,134 +213,17 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
     setupQualityStats,
     sessionDirectionStats,
     disciplineStats, 
-    confluenceStats,
     dayOfWeekStats,
     stopSizeStats,
     streakStats,
-    monteCarloSimulation,
     redFlagRules,
     goldenSetup, 
     actionableInsights,
     assetStats,
-    accountCategoryStats,
-    mistakeStats
+    accountCategoryStats
   } = stats;
 
-  // Comparator dynamic matrix computation
-  const comparatorMatrix = useMemo(() => {
-    const getValuesX = (t: Trade): string[] => {
-      if (compDimensionX === 'session') return [t.session || 'Belirtilmemiş'];
-      if (compDimensionX === 'tpTarget') return t.tpTargets && t.tpTargets.length > 0 ? t.tpTargets : ['Belirtilmemiş'];
-      if (compDimensionX === 'premiumDiscount') return [t.premiumDiscount || 'Belirtilmemiş'];
-      if (compDimensionX === 'planFidelity') return [t.planFidelity || 'Belirtilmemiş'];
-      if (compDimensionX === 'trend') return [t.trend || 'Belirtilmemiş'];
-      if (compDimensionX === 'htfTimeframe') return [t.htfTimeframe || 'Belirtilmemiş'];
-      if (compDimensionX === 'strategy') return [t.strategy || 'Belirtilmemiş'];
-      if (compDimensionX === 'asiaRangeFvg') return [t.asiaRangeFvg || 'Belirtilmemiş'];
-      if (compDimensionX === 'newsDay') {
-        const nl = getNewsDayLabels();
-        return [typeof t.newsDay === 'boolean' ? (t.newsDay ? nl.yes : nl.no) : 'Belirtilmemiş'];
-      }
-      return ['Genel'];
-    };
-
-    const getValuesY = (t: Trade): string[] => {
-      if (compDimensionY === 'type') return [t.type];
-      if (compDimensionY === 'timeframe') return [t.timeframe || 'Belirtilmemiş'];
-      if (compDimensionY === 'entryModels') {
-        if (Array.isArray(t.entryModels) && t.entryModels.length > 0) return t.entryModels;
-        if (t.entry) return [t.entry];
-        return ['Belirtilmemiş'];
-      }
-      if (compDimensionY === 'liquiditySweeps') {
-        if (Array.isArray(t.liquiditySweeps) && t.liquiditySweeps.length > 0) return t.liquiditySweeps;
-        if (t.liquiditySweep) return [t.liquiditySweep];
-        return ['Belirtilmemiş'];
-      }
-      return ['Genel'];
-    };
-
-    const crossMap: Record<string, { total: number; wins: number; netR: number; valX: string; valY: string }> = {};
-
-    trades.forEach(t => {
-      const xs = getValuesX(t);
-      const ys = getValuesY(t);
-      const isWin = t.status === 'WIN';
-      const valR = t.rr || 0;
-
-      xs.forEach(x => {
-        ys.forEach(y => {
-          const key = `${x}___${y}`;
-          if (!crossMap[key]) crossMap[key] = { total: 0, wins: 0, netR: 0, valX: x, valY: y };
-          crossMap[key].total++;
-          if (isWin) crossMap[key].wins++;
-          crossMap[key].netR += valR;
-        });
-      });
-    });
-
-    return Object.values(crossMap).map(item => ({
-      ...item,
-      winRate: Math.round((item.wins / item.total) * 1000) / 10,
-      netR: Math.round(item.netR * 100) / 100,
-      avgR: Math.round((item.netR / item.total) * 100) / 100,
-    })).sort((a, b) => b.netR - a.netR);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trades, compDimensionX, compDimensionY, newsLabelsVersion]);
-
-  // Pre-Trade Checker Evaluation
-  const checkerResult = useMemo(() => {
-    let matchedTrades = trades;
-    let criteriaCount = 0;
-
-    if (checkerAsset) {
-      matchedTrades = matchedTrades.filter(t => t.asset.toLowerCase() === checkerAsset.toLowerCase());
-      criteriaCount++;
-    }
-    if (checkerType) {
-      matchedTrades = matchedTrades.filter(t => t.type === checkerType);
-      criteriaCount++;
-    }
-    if (checkerSession) {
-      matchedTrades = matchedTrades.filter(t => (t.session || '').toLowerCase() === checkerSession.toLowerCase());
-      criteriaCount++;
-    }
-    if (checkerTpTarget) {
-      matchedTrades = matchedTrades.filter(t => (t.tpTargets || []).some(x => x.toLowerCase() === checkerTpTarget.toLowerCase()));
-      criteriaCount++;
-    }
-    if (checkerZone) {
-      matchedTrades = matchedTrades.filter(t => (t.premiumDiscount || '').toLowerCase() === checkerZone.toLowerCase());
-      criteriaCount++;
-    }
-    if (checkerModel) {
-      matchedTrades = matchedTrades.filter(t => {
-        if (Array.isArray(t.entryModels)) return t.entryModels.some(m => m.toLowerCase() === checkerModel.toLowerCase());
-        return (t.entry || '').toLowerCase() === checkerModel.toLowerCase();
-      });
-      criteriaCount++;
-    }
-    if (checkerQuality) {
-      matchedTrades = matchedTrades.filter(t => (t.planFidelity || '').toLowerCase() === checkerQuality.toLowerCase());
-      criteriaCount++;
-    }
-
-    const total = matchedTrades.length;
-    const wins = matchedTrades.filter(t => t.status === 'WIN').length;
-    const winRate = total > 0 ? Math.round((wins / total) * 1000) / 10 : 0;
-    const netR = Math.round(matchedTrades.reduce((s, t) => s + (t.rr || 0), 0) * 100) / 100;
-    const avgR = total > 0 ? Math.round((netR / total) * 100) / 100 : 0;
-
-    let verdict: 'EXCELLENT' | 'GOOD' | 'NEUTRAL' | 'POOR' | 'NO_DATA' = 'NO_DATA';
-    if (total >= 2) {
-      if (winRate >= 60 && netR > 0) verdict = 'EXCELLENT';
-      else if (winRate >= 45 && netR > 0) verdict = 'GOOD';
-      else if (netR >= 0) verdict = 'NEUTRAL';
-      else verdict = 'POOR';
-    }
-
-    return { total, wins, winRate, netR, avgR, verdict, criteriaCount };
-  }, [trades, checkerAsset, checkerType, checkerSession, checkerTpTarget, checkerZone, checkerModel, checkerQuality]);
+  if (isEmpty) return emptyState;
 
   return (
     <motion.div 
@@ -381,14 +247,6 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-indigo-500/10 border border-indigo-500/30 text-indigo-300">
                 {trades.length} İşlem İncelendi
               </span>
-              <span className={`px-2 py-0.5 rounded-md text-[10px] font-black font-sans uppercase border ${
-                overallScore.grade === 'A+' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' :
-                overallScore.grade === 'A' ? 'bg-blue-500/20 text-blue-300 border-blue-500/40' :
-                overallScore.grade === 'B' ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' :
-                'bg-rose-500/20 text-rose-300 border-rose-500/40'
-              }`}>
-                Skor: {overallScore.score}/100 (Derece: {overallScore.grade})
-              </span>
             </div>
           </div>
         </div>
@@ -396,13 +254,19 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
         {/* Quick KPI Strip */}
         <div className="flex items-center flex-wrap gap-2 sm:gap-3">
           <div className="bg-zinc-950/70 border border-zinc-800 px-3 py-1.5 rounded-xl text-center shrink-0">
-            <span className="text-[9px] uppercase tracking-wider text-zinc-500 block font-sans font-bold">Kazanma Oranı</span>
+            <span className="text-[9px] uppercase tracking-wider text-zinc-500 block font-sans font-bold">{smartUpper("Kazanma Oranı")}</span>
             <span className="text-xs font-black font-sans text-zinc-100">%{overallScore.winRate}</span>
           </div>
           <div className="bg-zinc-950/70 border border-zinc-800 px-3 py-1.5 rounded-xl text-center shrink-0">
             <span className="text-[9px] uppercase tracking-wider text-zinc-500 block font-sans font-bold">Kâr Faktörü</span>
             <span className={`text-xs font-black font-sans ${overallScore.profitFactor >= 1.5 ? 'text-emerald-400' : 'text-zinc-200'}`}>
-              {overallScore.profitFactor}
+              {formatPF(overallScore.profitFactor)}
+            </span>
+          </div>
+          <div className="bg-zinc-950/70 border border-zinc-800 px-3 py-1.5 rounded-xl text-center shrink-0">
+            <span className="text-[9px] uppercase tracking-wider text-zinc-500 block font-sans font-bold">Beklenti</span>
+            <span className={`text-xs font-black font-sans ${overallScore.expectancy >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+              {overallScore.expectancy >= 0 ? '+' : ''}{overallScore.expectancy} R
             </span>
           </div>
           <div className="bg-zinc-950/70 border border-zinc-800 px-3 py-1.5 rounded-xl text-center shrink-0">
@@ -452,6 +316,12 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
         >
 
       {/* SUBTAB 0: ASIA EDGE LAB */}
+      {activeSubTab === 'edge_summary' && <EdgeSummaryCard trades={trades} onShowTrades={showTrades} />}
+
+      {activeSubTab === 'discipline' && <DisciplineCard trades={trades} onShowTrades={showTrades} />}
+
+      {activeSubTab === 'setup_scorecard' && <SetupScorecardTab trades={trades} />}
+
       {activeSubTab === 'asia_lab' && <AsiaEdgeLab trades={trades} />}
 
       {/* SUBTAB 1: OVERVIEW & RED FLAG RULES */}
@@ -466,8 +336,16 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
                   <Award size={14} /> Senin Altın Setup Formülün
                 </span>
                 {goldenSetup.hasFormula && (
-                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/20">
-                    {goldenSetup.sampleSize} İşlem
+                  <span className="flex items-center gap-1.5">
+                    <span
+                      className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-md border ${goldenSetup.confirmed ? 'text-emerald-300 border-emerald-500/30 bg-emerald-500/10' : 'text-zinc-400 border-zinc-700 bg-zinc-800/60'}`}
+                      title={goldenSetup.confirmed ? 'En az ' + EDGE_PROOF_MIN + ' işlem ve %95 güven aralığı sıfırın üstünde' : 'Henüz kesin değil: kanıt için en az ' + EDGE_PROOF_MIN + ' işlem ve sıfırın üstünde güven aralığı gerekir'}
+                    >
+                      {goldenSetup.confirmed ? 'Kanıtlı' : `Erken${goldenSetup.sampleSize < EDGE_PROOF_MIN ? ` · ${goldenSetup.sampleSize}/${EDGE_PROOF_MIN}` : ''}`}
+                    </span>
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                      {goldenSetup.sampleSize} İşlem
+                    </span>
                   </span>
                 )}
               </div>
@@ -492,7 +370,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
             <div className="bg-gradient-to-br from-indigo-950/20 via-zinc-900/60 to-zinc-950 border border-indigo-500/30 rounded-xl p-4 flex flex-col justify-between relative overflow-hidden">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[11px] font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5 font-sans">
-                  <Scale size={14} /> Disiplin Deltası (A+ vs B-C)
+                  <Scale size={14} /> Disiplin Deltası (kaliteye göre)
                 </span>
                 <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
                   Potansiyel Kurtarma
@@ -503,14 +381,21 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
                   ? `Plan dışı (B-C / FOMO) işlemleri tamamen elerseniz portföyünüze net +${disciplineStats.disciplineAlphaR} R eklenmiş olacaktı.`
                   : 'B-C / FOMO işlemlerinizin hesaba net bir negatif etkisi tespit edilmedi. Disiplininizi koruyun!'}
               </p>
-              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-indigo-500/15 text-xs">
-                <div>
-                  <span className="text-zinc-500 text-[10px] block font-sans">A+ / A Kalite Getirisi</span>
-                  <span className="text-emerald-400 font-bold font-sans">+{disciplineStats.highQualityNetR} R ({disciplineStats.highQualityTradesCount} İşlem)</span>
+              <div className="grid grid-cols-3 gap-2 pt-2 border-t border-indigo-500/15 text-xs">
+                <div className="min-w-0">
+                  <span className="text-zinc-500 text-[10px] block font-sans">Yüksek (A+)</span>
+                  <span className={`${disciplineStats.highQualityNetR >= 0 ? 'text-emerald-400' : 'text-rose-400'} font-bold font-sans`}>{signedR(disciplineStats.highQualityNetR)} R</span>
+                  <span className="text-zinc-500 text-[10px] block font-sans">{disciplineStats.highQualityTradesCount} işlem</span>
                 </div>
-                <div>
-                  <span className="text-zinc-500 text-[10px] block font-sans">B-C Kalite Kaybı</span>
-                  <span className="text-rose-400 font-bold font-sans">{disciplineStats.lowQualityNetR} R ({disciplineStats.lowQualityTradesCount} İşlem)</span>
+                <div className="min-w-0">
+                  <span className="text-zinc-500 text-[10px] block font-sans">Orta (A)</span>
+                  <span className={`${disciplineStats.midQualityNetR >= 0 ? 'text-emerald-400' : 'text-rose-400'} font-bold font-sans`}>{signedR(disciplineStats.midQualityNetR)} R</span>
+                  <span className="text-zinc-500 text-[10px] block font-sans">{disciplineStats.midQualityTradesCount} işlem</span>
+                </div>
+                <div className="min-w-0">
+                  <span className="text-zinc-500 text-[10px] block font-sans">Düşük (B-C)</span>
+                  <span className={`${disciplineStats.lowQualityNetR < 0 ? 'text-rose-400' : 'text-emerald-400'} font-bold font-sans`}>{signedR(disciplineStats.lowQualityNetR)} R</span>
+                  <span className="text-zinc-500 text-[10px] block font-sans">{disciplineStats.lowQualityTradesCount} işlem</span>
                 </div>
               </div>
             </div>
@@ -581,214 +466,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
         </div>
       )}
 
-      {/* SUBTAB 2: MISTAKES & LOSS LEAK ANALYSIS */}
-      {activeSubTab === 'mistakes_leak' && (
-        <div className="space-y-4">
-          {/* Top Summary Banner */}
-          <div className="bg-gradient-to-br from-rose-950/20 via-zinc-900/60 to-zinc-950 border border-rose-500/30 rounded-xl p-4 sm:p-5 relative overflow-hidden">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-rose-400 font-sans block mb-1">
-                  Önlenebilir Hesap Sızıntıları
-                </span>
-                <h4 className="text-base sm:text-lg font-black text-zinc-100 font-sans tracking-tight">
-                  Disiplin & Hata Otopsisi
-                </h4>
-                <p className="text-xs text-zinc-400 mt-1 max-w-xl font-sans leading-relaxed">
-                  B-C kalitesinde zorlama girişler, trende karşı açılan pozisyonlar, yanlış fiyat bölgesinde (Premium'da Long / Discount'ta Short) yapılan işlemler ve tek onayla alınan pozisyonların bilançonuzdan çaldığı toplam kârı inceler.
-                </p>
-              </div>
-              <div className="grid grid-cols-3 gap-2 shrink-0 w-full md:w-auto">
-                <div className="p-3 bg-zinc-950/80 border border-rose-500/30 rounded-xl text-center">
-                  <span className="text-[9px] uppercase tracking-wider text-rose-400 block font-sans font-bold">Toplam Sızıntı</span>
-                  <span className="text-sm sm:text-base font-black text-rose-400 font-mono">-{mistakeStats.preventableLeakTotalR} R</span>
-                </div>
-                <div className="p-3 bg-zinc-950/80 border border-emerald-500/30 rounded-xl text-center">
-                  <span className="text-[9px] uppercase tracking-wider text-emerald-400 block font-sans font-bold">Potansiyel Net R</span>
-                  <span className="text-sm sm:text-base font-black text-emerald-300 font-mono">+{mistakeStats.potentialNetR} R</span>
-                </div>
-                <div className="p-3 bg-zinc-950/80 border border-blue-500/30 rounded-xl text-center">
-                  <span className="text-[9px] uppercase tracking-wider text-blue-400 block font-sans font-bold">Potansiyel WR</span>
-                  <span className="text-sm sm:text-base font-black text-blue-300 font-mono">%{mistakeStats.potentialWinRate}</span>
-                </div>
-              </div>
-            </div>
-          </div>
 
-          {/* What-If Simulation Box */}
-          <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              <ShieldAlert className="text-emerald-400 shrink-0" size={18} />
-              <div className="text-xs text-zinc-300 font-sans">
-                <span className="font-bold text-emerald-300 block">Sıfır Hata Simülasyonu:</span>
-                Eğer bu hatalı ve zorlama işlemler elenseydi, net kârınız <span className="font-bold text-emerald-300">+{mistakeStats.preventableLeakTotalR} R</span> daha yüksek olacak ve kazanma oranınız <span className="font-bold text-emerald-300">%{overallScore.winRate}</span> seviyesinden <span className="font-bold text-emerald-300">%{mistakeStats.potentialWinRate}</span> seviyesine yükselecekti.
-              </div>
-            </div>
-          </div>
-
-          {/* Leak Breakdown Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {mistakeStats.leaks.map((leak, idx) => (
-              <div key={idx} className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 space-y-3">
-                <div className="flex items-start justify-between gap-2 border-b border-zinc-800/80 pb-2.5">
-                  <div>
-                    <span className="text-[10px] font-bold uppercase text-zinc-500 tracking-wider block font-sans">
-                      {leak.category}
-                    </span>
-                    <h5 className="text-xs font-bold text-zinc-100 font-sans mt-0.5">
-                      {leak.title}
-                    </h5>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <span className="text-xs font-black text-rose-400 font-mono block">
-                      -{leak.lostR} R Kayıp
-                    </span>
-                    <span className="text-[10px] text-zinc-400 font-sans">
-                      {leak.count} İşlem (%{leak.winRate} WR)
-                    </span>
-                  </div>
-                </div>
-                <div className="p-2.5 bg-zinc-900/60 border border-zinc-800/60 rounded-lg text-xs text-zinc-300 font-sans leading-relaxed">
-                  <span className="text-[10px] font-bold text-amber-400 block uppercase tracking-wider mb-1">
-                    Düzeltme & Strateji Kuralı:
-                  </span>
-                  {leak.fixAdvice}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* SUBTAB 2: MONTE CARLO SIMULATION */}
-      {activeSubTab === 'monte_carlo' && (
-        <div className="space-y-4">
-          <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 space-y-4">
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5">
-              <div className="flex items-center gap-2">
-                <Dices size={16} className="text-emerald-400" />
-                <h4 className="text-xs font-bold text-zinc-100 font-sans uppercase tracking-wider">
-                  Monte Carlo Prop Firm & Drawdown Simülatörü (400 Senaryo x 50 İşlem)
-                </h4>
-              </div>
-              <span className="text-[10px] font-mono text-zinc-400">
-                Gelecek Olasılıklar
-              </span>
-            </div>
-
-            <p className="text-xs text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 p-2.5 rounded-lg font-sans">
-              {monteCarloSimulation.insight}
-            </p>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-center">
-                <span className="text-[9px] uppercase tracking-wider text-zinc-500 block font-sans">-%4 Drawdown Riski</span>
-                <span className={`text-base font-bold font-mono ${monteCarloSimulation.simulatedDrawdownRisk4Percent > 30 ? 'text-amber-400' : 'text-zinc-200'}`}>
-                  %{monteCarloSimulation.simulatedDrawdownRisk4Percent}
-                </span>
-                <span className="text-[9px] text-zinc-500 block mt-0.5">Orta Düzey Drawdown</span>
-              </div>
-
-              <div className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-center">
-                <span className="text-[9px] uppercase tracking-wider text-zinc-500 block font-sans">-%8 Limit Aşma Riski</span>
-                <span className={`text-base font-bold font-mono ${monteCarloSimulation.simulatedDrawdownRisk8Percent > 15 ? 'text-rose-400' : 'text-emerald-400'}`}>
-                  %{monteCarloSimulation.simulatedDrawdownRisk8Percent}
-                </span>
-                <span className="text-[9px] text-zinc-500 block mt-0.5">Challenge Yanma Riski</span>
-              </div>
-
-              <div className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-center">
-                <span className="text-[9px] uppercase tracking-wider text-zinc-500 block font-sans">+10R Hedefe Ulaşma</span>
-                <span className="text-base font-bold font-mono text-emerald-400">
-                  %{monteCarloSimulation.simulatedProbHitting10R}
-                </span>
-                <span className="text-[9px] text-zinc-500 block mt-0.5">50 İşlem İçinde</span>
-              </div>
-
-              <div className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-center">
-                <span className="text-[9px] uppercase tracking-wider text-zinc-500 block font-sans">Beklenen Maks. Seri Kayıp</span>
-                <span className="text-base font-bold font-mono text-amber-400">
-                  {monteCarloSimulation.expectedMaxLosingStreak} İşlem
-                </span>
-                <span className="text-[9px] text-zinc-500 block mt-0.5">Art Arda Zarar</span>
-              </div>
-            </div>
-
-            {/* Simulated Curve Pathways */}
-            {monteCarloSimulation.simulatedCurves.length > 0 && (
-              <div className="p-3 bg-zinc-900/60 border border-zinc-800/80 rounded-xl">
-                <span className="text-[10px] font-bold text-zinc-400 uppercase block mb-2 font-sans">
-                  Örnek 5 Monte Carlo Simülasyon Yörüngesi (50 İşlem Boyunca Büyüme R)
-                </span>
-                <div className="space-y-1.5 font-mono text-xs">
-                  {monteCarloSimulation.simulatedCurves.map((curve, idx) => {
-                    const finalVal = curve[curve.length - 1];
-                    return (
-                      <div key={idx} className="flex items-center justify-between p-1.5 bg-zinc-950/80 rounded border border-zinc-800 text-[11px]">
-                        <span className="text-zinc-500 font-sans">Yörünge #{idx + 1}</span>
-                        <div className="flex items-center gap-3">
-                          <span className="text-zinc-400 text-[10px]">Maks: +{Math.max(...curve)}R / Dip: {Math.min(...curve)}R</span>
-                          <span className={`font-bold ${finalVal >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                            {finalVal >= 0 ? '+' : ''}{finalVal} R
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* SUBTAB 3: CONFLUENCE FACTOR */}
-      {activeSubTab === 'confluence' && (
-        <div className="space-y-4">
-          <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 space-y-3">
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5">
-              <div className="flex items-center gap-2">
-                <Zap size={16} className="text-amber-400" />
-                <h4 className="text-xs font-bold text-zinc-100 font-sans uppercase tracking-wider">
-                  Konfluans Gücü & Onay Katsayısı (Edge Sweet Spot)
-                </h4>
-              </div>
-              <span className="text-[10px] font-mono text-zinc-400">
-                Onay Sayısına Göre Kârlılık
-              </span>
-            </div>
-
-            <p className="text-xs text-amber-300 bg-amber-500/10 border border-amber-500/20 p-2.5 rounded-lg font-sans">
-              {confluenceStats.sweetSpotInsight}
-            </p>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {confluenceStats.brackets.map((b, idx) => (
-                <div key={idx} className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-zinc-200 uppercase font-sans">{b.label}</span>
-                    <span className="text-[10px] font-mono text-zinc-500">{b.count} İşlem</span>
-                  </div>
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-zinc-500 font-sans">Kazanma Oranı</span>
-                    <span className={`font-bold font-sans ${b.winRate >= 50 ? 'text-emerald-400' : 'text-zinc-300'}`}>%{b.winRate}</span>
-                  </div>
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-zinc-500 font-sans">Toplam Getiri</span>
-                    <span className={`font-bold font-sans ${b.netR >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                      {b.netR >= 0 ? '+' : ''}{b.netR} R
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-zinc-500 font-sans">Kâr Faktörü</span>
-                    <span className="font-bold text-zinc-200 font-sans">{b.profitFactor}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* SUBTAB 4: PSYCHOLOGY & TILT */}
       {activeSubTab === 'psychology' && (
@@ -816,7 +494,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-center">
-                <span className="text-[9px] uppercase tracking-wider text-zinc-500 block font-sans">Mevcut Seri</span>
+                <span className="text-[9px] uppercase tracking-wider text-zinc-500 block font-sans">{smartUpper("Mevcut Seri")}</span>
                 <span className={`text-base font-bold font-sans ${streakStats.currentStreak.type === 'WIN' ? 'text-emerald-400' : streakStats.currentStreak.type === 'LOSS' ? 'text-rose-400' : 'text-zinc-300'}`}>
                   {streakStats.currentStreak.count} {streakStats.currentStreak.type === 'WIN' ? 'Galibiyet' : streakStats.currentStreak.type === 'LOSS' ? 'Mağlubiyet' : '-'}
                 </span>
@@ -842,7 +520,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
                 <span className={`text-base font-bold font-mono ${streakStats.postLossWinRate < 45 ? 'text-rose-400' : 'text-zinc-200'}`}>
                   %{streakStats.postLossWinRate}
                 </span>
-                <span className="text-[9px] text-zinc-500 block mt-0.5">İntikam İşlemi Riski</span>
+                <span className="text-[9px] text-zinc-500 block mt-0.5">Kayıp sonrası performans</span>
               </div>
             </div>
           </div>
@@ -868,7 +546,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
             <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
               {dayOfWeekStats.map((d) => (
                 <div key={d.dayIndex} className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl space-y-1.5 text-center">
-                  <span className="text-xs font-bold text-zinc-200 uppercase block font-sans">{d.dayName}</span>
+                  <span className="text-xs font-bold text-zinc-200 uppercase block font-sans">{smartUpper(d.dayName)}</span>
                   <span className="text-[10px] text-zinc-500 block font-sans">{d.total} İşlem</span>
                   <div className="pt-1 border-t border-zinc-800/80">
                     <span className="text-[9px] text-zinc-500 block font-sans">Win Rate</span>
@@ -894,13 +572,13 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
         <div className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             
-            {/* TP Target Card */}
+            {/* Target (çıkış hedefi) Card */}
             <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 space-y-3">
               <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5">
                 <div className="flex items-center gap-2">
                   <Flag size={16} className="text-purple-400" />
                   <h4 className="text-xs font-bold text-zinc-100 font-sans uppercase tracking-wider">
-                    TP Target Performansı
+                    {smartUpper("Target (çıkış hedefi) performansı")}
                   </h4>
                 </div>
                 <span className="text-[10px] font-mono text-zinc-400">
@@ -912,13 +590,13 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
               </p>
 
               {tpTargetStats.ranking.length === 0 ? (
-                <div className="text-center py-6 text-xs text-zinc-500 font-sans">Henüz TP Target verisi girilmemiş.</div>
+                <div className="text-center py-6 text-xs text-zinc-500 font-sans">Henüz Target (çıkış hedefi) girilmemiş.</div>
               ) : (
                 <div className="space-y-1.5">
                   {tpTargetStats.ranking.map((item) => (
                     <div key={item.target} className="flex items-center justify-between p-2.5 bg-zinc-900/60 border border-zinc-800/80 rounded-lg text-xs">
                       <div>
-                        <span className="font-bold text-zinc-200 uppercase block font-sans">{item.target}</span>
+                        <span className="font-bold text-zinc-200 uppercase block font-sans">{smartUpper(item.target)}</span>
                         <span className="text-[10px] text-zinc-500 font-sans">{item.total} İşlem ({item.wins} Galibiyet)</span>
                       </div>
                       <div className="flex items-center gap-4 text-right">
@@ -939,17 +617,17 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
               )}
             </div>
 
-            {/* Premium / Discount Zone Card */}
+            {/* Confirmations Card */}
             <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 space-y-3">
               <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5">
                 <div className="flex items-center gap-2">
                   <ShieldCheck size={16} className="text-emerald-400" />
                   <h4 className="text-xs font-bold text-zinc-100 font-sans uppercase tracking-wider">
-                    Premium / Discount Zone Analizi
+                    {smartUpper("Confirmations analizi")}
                   </h4>
                 </div>
                 <span className="text-[10px] font-mono text-zinc-400">
-                  {premiumDiscountStats.ranking.length} Bölge
+                  {premiumDiscountStats.ranking.length} değer
                 </span>
               </div>
               <p className="text-[11px] text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 p-2.5 rounded-lg font-sans">
@@ -957,13 +635,13 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
               </p>
 
               {premiumDiscountStats.ranking.length === 0 ? (
-                <div className="text-center py-6 text-xs text-zinc-500 font-sans">Henüz Premium/Discount alanı girilmemiş.</div>
+                <div className="text-center py-6 text-xs text-zinc-500 font-sans">Henüz Confirmations alanı girilmemiş.</div>
               ) : (
                 <div className="space-y-1.5">
                   {premiumDiscountStats.ranking.map((item) => (
                     <div key={item.zone} className="flex items-center justify-between p-2.5 bg-zinc-900/60 border border-zinc-800/80 rounded-lg text-xs">
                       <div>
-                        <span className="font-bold text-zinc-200 uppercase block font-sans">{item.zone}</span>
+                        <span className="font-bold text-zinc-200 uppercase block font-sans">{smartUpper(item.zone)}</span>
                         <span className="text-[10px] text-zinc-500 font-sans">{item.total} İşlem ({item.wins} Galibiyet)</span>
                       </div>
                       <div className="flex items-center gap-4 text-right">
@@ -1005,7 +683,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
                 <div className="flex items-center gap-2">
                   <Newspaper size={16} className="text-amber-400" />
                   <h4 className="text-xs font-bold text-zinc-100 font-sans uppercase tracking-wider">
-                    News Day / Bank Holiday Analizi
+                    {smartUpper("News Day / Bank Holiday Analizi")}
                   </h4>
                 </div>
                 <span className="text-[10px] font-mono text-zinc-400">
@@ -1023,7 +701,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
                   {newsDayStats.ranking.map((item) => (
                     <div key={item.label} className="flex items-center justify-between p-2.5 bg-zinc-900/60 border border-zinc-800/80 rounded-lg text-xs">
                       <div>
-                        <span className="font-bold text-zinc-200 uppercase block font-sans">{item.label}</span>
+                        <span className="font-bold text-zinc-200 uppercase block font-sans">{smartUpper(item.label)}</span>
                         <span className="text-[10px] text-zinc-500 font-sans">{item.total} İşlem ({item.wins} Galibiyet)</span>
                       </div>
                       <div className="flex items-center gap-4 text-right">
@@ -1070,7 +748,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
                 <div className="flex items-center gap-2">
                   <Target size={16} className="text-blue-400" />
                   <h4 className="text-xs font-bold text-zinc-100 font-sans uppercase tracking-wider">
-                    MAE (Maksimum Aleyhte Drawdown)
+                    {smartUpper("MAE (Maksimum Aleyhte Drawdown)")}
                   </h4>
                 </div>
                 <span className="text-[10px] font-mono text-zinc-400">
@@ -1093,14 +771,6 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
                 </div>
               </div>
 
-              {maeStats.tightStopRecommendation && (
-                <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-xl text-xs text-blue-200 leading-relaxed font-sans">
-                  <span className="font-bold block mb-1 flex items-center gap-1.5 text-blue-300">
-                    <ArrowUpRight size={14} /> Stop Loss Daraltma Fırsatı:
-                  </span>
-                  {maeStats.tightStopRecommendation.insight}
-                </div>
-              )}
             </div>
 
             {/* MFE Profit Realization Card */}
@@ -1109,7 +779,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
                 <div className="flex items-center gap-2">
                   <TrendingUp size={16} className="text-emerald-400" />
                   <h4 className="text-xs font-bold text-zinc-100 font-sans uppercase tracking-wider">
-                    MFE (Maksimum Kâr Potansiyeli)
+                    {smartUpper("MFE (Maksimum Kâr Potansiyeli)")}
                   </h4>
                 </div>
                 <span className="text-[10px] font-mono text-zinc-400">
@@ -1132,14 +802,6 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
                 </div>
               </div>
 
-              {mfeStats.optimalTpRecommendation && (
-                <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-xs text-emerald-200 leading-relaxed font-sans">
-                  <span className="font-bold block mb-1 flex items-center gap-1.5 text-emerald-300">
-                    <Sparkles size={14} /> Kâr Realizasyon Analizi:
-                  </span>
-                  {mfeStats.optimalTpRecommendation.insight}
-                </div>
-              )}
             </div>
 
           </div>
@@ -1147,7 +809,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
           {/* Stop Size Volatility Distribution */}
           <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 space-y-3">
             <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
-              <span className="text-xs font-bold uppercase text-zinc-200 font-sans">Stop Mesafesi (Pip) Dağılımı & Başarı Oranı</span>
+              <span className="text-xs font-bold uppercase text-zinc-200 font-sans">{smartUpper("Stop Mesafesi (Pip) Dağılımı & Başarı Oranı")}</span>
               <span className="text-[10px] text-zinc-500 font-sans">{stopSizeStats.insight}</span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
@@ -1202,51 +864,13 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
         <div className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             
-            {/* Liquidity Sweeps */}
-            <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 space-y-3">
-              <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5">
-                <div className="flex items-center gap-2">
-                  <Zap size={16} className="text-amber-400" />
-                  <h4 className="text-xs font-bold text-zinc-100 font-sans uppercase tracking-wider">
-                    Likidite Süpürmeleri Sıralaması
-                  </h4>
-                </div>
-                <span className="text-[10px] font-mono text-zinc-400">
-                  {liquiditySweepStats.ranking.length} Havuz
-                </span>
-              </div>
-
-              <div className="space-y-1.5 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
-                {liquiditySweepStats.ranking.map((s) => (
-                  <div key={s.sweep} className="flex items-center justify-between p-2.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs">
-                    <div>
-                      <span className="font-bold text-zinc-200 uppercase block font-sans">{s.sweep}</span>
-                      <span className="text-[10px] text-zinc-500 font-sans">{s.total} İşlem ({s.wins} Win)</span>
-                    </div>
-                    <div className="flex items-center gap-4 text-right">
-                      <div>
-                        <span className="text-[10px] text-zinc-500 block font-sans">WR</span>
-                        <span className={`font-bold font-sans ${s.winRate >= 50 ? 'text-emerald-400' : 'text-zinc-300'}`}>%{s.winRate}</span>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-zinc-500 block font-sans">Net R</span>
-                        <span className={`font-bold font-sans ${s.netR >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                          {s.netR >= 0 ? '+' : ''}{s.netR} R
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
             {/* Entry Models */}
             <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 space-y-3">
               <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5">
                 <div className="flex items-center gap-2">
                   <Layers size={16} className="text-blue-400" />
                   <h4 className="text-xs font-bold text-zinc-100 font-sans uppercase tracking-wider">
-                    Giriş Modelleri (Breaker, Mitigation, FVG, IFVG)
+                    {smartUpper("Giriş Modelleri (Breaker, Mitigation, FVG, IFVG)")}
                   </h4>
                 </div>
                 <span className="text-[10px] font-mono text-zinc-400">
@@ -1258,7 +882,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
                 {entryModelStats.ranking.map((m) => (
                   <div key={m.model} className="flex items-center justify-between p-2.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs">
                     <div>
-                      <span className="font-bold text-zinc-200 uppercase block font-sans">{m.model}</span>
+                      <span className="font-bold text-zinc-200 uppercase block font-sans">{smartUpper(m.model)}</span>
                       <span className="text-[10px] text-zinc-500 font-sans">{m.total} İşlem ({m.wins} Win)</span>
                     </div>
                     <div className="flex items-center gap-4 text-right">
@@ -1293,7 +917,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
                 <div className="flex items-center gap-2">
                   <Clock size={16} className="text-rose-400" />
                   <h4 className="text-xs font-bold text-zinc-100 font-sans uppercase tracking-wider">
-                    Timeframe (HTF) x Entry Timeframe Sinerjisi
+                    {smartUpper("Timeframe (HTF) x Entry Timeframe Sinerjisi")}
                   </h4>
                 </div>
                 <span className="text-[10px] font-mono text-zinc-400">
@@ -1305,7 +929,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
                 {timeframeMatrix.map((tf) => (
                   <div key={tf.pair} className="flex items-center justify-between p-2.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs">
                     <div>
-                      <span className="font-bold text-zinc-200 uppercase block font-sans">{tf.pair}</span>
+                      <span className="font-bold text-zinc-200 uppercase block font-sans">{smartUpper(tf.pair)}</span>
                       <span className="text-[10px] text-zinc-500 font-sans">{tf.total} İşlem ({tf.wins} Galibiyet)</span>
                     </div>
                     <div className="flex items-center gap-4 text-right">
@@ -1331,7 +955,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
                 <div className="flex items-center gap-2">
                   <Clock size={16} className="text-amber-400" />
                   <h4 className="text-xs font-bold text-zinc-100 font-sans uppercase tracking-wider">
-                    Giriş Saatleri (Entry Time) Performansı
+                    {smartUpper("Giriş Saatleri (Entry Time) Performansı")}
                   </h4>
                 </div>
                 <span className="text-[10px] font-mono text-zinc-400">
@@ -1369,7 +993,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
                 <div className="flex items-center gap-2">
                   <TrendingUp size={16} className="text-emerald-400" />
                   <h4 className="text-xs font-bold text-zinc-100 font-sans uppercase tracking-wider">
-                    Trend Yapısı (Continuation vs Reversal)
+                    {smartUpper("Trend Yapısı (Continuation vs Reversal)")}
                   </h4>
                 </div>
                 <span className="text-[10px] font-mono text-zinc-400">
@@ -1381,7 +1005,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
                 {trendStats.ranking.map((tr) => (
                   <div key={tr.trend} className="flex items-center justify-between p-2.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs">
                     <div>
-                      <span className="font-bold text-zinc-200 uppercase block font-sans">{tr.trend}</span>
+                      <span className="font-bold text-zinc-200 uppercase block font-sans">{smartUpper(tr.trend)}</span>
                       <span className="text-[10px] text-zinc-500 font-sans">{tr.total} İşlem ({tr.wins} Win)</span>
                     </div>
                     <div className="flex items-center gap-4 text-right">
@@ -1407,7 +1031,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
                 <div className="flex items-center gap-2">
                   <Scale size={16} className="text-indigo-400" />
                   <h4 className="text-xs font-bold text-zinc-100 font-sans uppercase tracking-wider">
-                    Seans x İşlem Yönü (Long / Short) Kesişimi
+                    {smartUpper("Seans x İşlem Yönü (Long / Short) Kesişimi")}
                   </h4>
                 </div>
                 <span className="text-[10px] font-mono text-zinc-400">
@@ -1442,17 +1066,18 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {setupQualityStats.ranking.map((sq) => {
-              const isAPlus = sq.quality.toLowerCase() === 'a+';
-              const isA = sq.quality.toLowerCase() === 'a';
+              const tier = setupQualityTier(sq.quality);
               return (
                 <div 
                   key={sq.quality}
                   className={`p-4 rounded-xl border flex flex-col justify-between ${
-                    isAPlus 
-                      ? 'bg-emerald-950/20 border-emerald-500/40' 
-                      : isA 
-                      ? 'bg-blue-950/20 border-blue-500/40' 
-                      : 'bg-rose-950/20 border-rose-500/40'
+                    tier === 'high'
+                      ? 'bg-emerald-950/20 border-emerald-500/40'
+                      : tier === 'mid'
+                      ? 'bg-blue-950/20 border-blue-500/40'
+                      : tier === 'low'
+                      ? 'bg-rose-950/20 border-rose-500/40'
+                      : 'bg-zinc-900/40 border-zinc-700/60'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-2">
@@ -1469,12 +1094,12 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
                     <div className="flex justify-between text-xs">
                       <span className="text-zinc-400 font-sans">Net R</span>
                       <span className={`font-bold font-sans ${sq.netR >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                        {sq.netR >= 0 ? '+' : ''}{sq.netR} R
+                        {signedR(sq.netR)} R
                       </span>
                     </div>
                     <div className="flex justify-between text-xs">
                       <span className="text-zinc-400 font-sans">Kâr Faktörü</span>
-                      <span className="font-bold font-sans text-zinc-200">{sq.profitFactor}</span>
+                      <span className="font-bold font-sans text-zinc-200">{formatPF(sq.profitFactor)}</span>
                     </div>
                   </div>
                 </div>
@@ -1485,19 +1110,19 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
           <div className="p-4 bg-zinc-950/80 border border-zinc-800 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4">
             <div>
               <h5 className="text-xs font-bold text-zinc-200 uppercase tracking-wide font-sans flex items-center gap-1.5">
-                <CheckCircle2 size={14} className="text-emerald-400" /> Sadece A+ Kurulum Simülasyonu
+                <CheckCircle2 size={14} className="text-emerald-400" /> Sadece Yüksek Kalite (A+) Simülasyonu
               </h5>
               <p className="text-[11px] text-zinc-400 mt-0.5 font-sans">
-                Eğer sadece A+ kurulumları almış ve B-C kalitesindeki setupları tamamen pas geçmiş olsaydınız net kârlılık durumunuz:
+                Yalnızca yüksek kalite (A+) kurulumları alıp A ve B-C kurulumlarını pas geçseydin:
               </p>
             </div>
             <div className="flex items-center gap-4 shrink-0">
               <div className="text-right">
                 <span className="text-[10px] text-zinc-500 block uppercase font-sans">A+ Net R</span>
-                <span className="text-sm font-bold text-emerald-400 font-sans">+{setupQualityStats.onlyAPlusNetR} R</span>
+                <span className={`text-sm font-bold ${setupQualityStats.onlyAPlusNetR >= 0 ? 'text-emerald-400' : 'text-rose-400'} font-sans`}>{signedR(setupQualityStats.onlyAPlusNetR)} R</span>
               </div>
               <div className="text-right">
-                <span className="text-[10px] text-zinc-500 block uppercase font-sans">A+ Win Rate</span>
+                <span className="text-[10px] text-zinc-500 block uppercase font-sans">A+ Kazanma</span>
                 <span className="text-sm font-bold text-zinc-200 font-sans">%{setupQualityStats.onlyAPlusWinRate}</span>
               </div>
             </div>
@@ -1516,7 +1141,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
                 <div className="flex items-center gap-2">
                   <Scale size={16} className="text-teal-400" />
                   <h4 className="text-xs font-bold text-zinc-100 font-sans uppercase tracking-wider">
-                    Parite Bazında Performans & Kârlılık
+                    {smartUpper("Parite Bazında Performans & Kârlılık")}
                   </h4>
                 </div>
                 <span className="text-[10px] text-zinc-500 font-sans font-mono">
@@ -1530,7 +1155,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
                     <div>
                       <span className="font-bold text-zinc-100 block font-sans text-sm">{ast.asset}</span>
                       <span className="text-[10px] text-zinc-400 font-sans">
-                        {ast.total} İşlem ({ast.wins}W / {ast.total - ast.wins}L) • Kâr Faktörü: {ast.profitFactor}
+                        {ast.total} İşlem ({ast.wins}W / {ast.losses}L{ast.total - ast.wins - ast.losses > 0 ? ` / ${ast.total - ast.wins - ast.losses}BE` : ''}) • Kâr Faktörü: {formatPF(ast.profitFactor)}
                       </span>
                     </div>
                     <div className="text-right">
@@ -1550,7 +1175,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
                 <div className="flex items-center gap-2">
                   <ShieldCheck size={16} className="text-emerald-400" />
                   <h4 className="text-xs font-bold text-zinc-100 font-sans uppercase tracking-wider">
-                    Hesap Türü & Disiplin Karşılaştırması
+                    {smartUpper("Hesap Türü & Disiplin Karşılaştırması")}
                   </h4>
                 </div>
                 <span className="text-[10px] text-zinc-500 font-sans font-mono">
@@ -1608,222 +1233,20 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
       )}
 
       {/* SUBTAB 11: MULTI-VARIABLE COMPARATOR */}
-      {activeSubTab === 'matrix_comparator' && (
-        <div className="space-y-4">
-          <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-3">
-              <div className="flex items-center gap-2">
-                <Sliders size={16} className="text-orange-400" />
-                <h4 className="text-xs font-bold text-zinc-100 font-sans uppercase tracking-wider">
-                  Dinamik Çok Boyutlu Kıyaslama Motoru
-                </h4>
-              </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-zinc-400 uppercase font-bold font-sans">X Boyutu:</span>
-                  <select
-                    value={compDimensionX}
-                    onChange={(e: any) => setCompDimensionX(e.target.value)}
-                    className="bg-zinc-900 border border-zinc-700 text-zinc-200 text-xs rounded-lg px-2 py-1 font-sans cursor-pointer outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus:border-indigo-500/60 select-none"
-                  >
-                    <option value="session">Seans (Session)</option>
-                    <option value="tpTarget">TP Target</option>
-                    <option value="premiumDiscount">Bölge (Prem/Disc)</option>
-                    <option value="planFidelity">Setup Kalitesi</option>
-                    <option value="trend">Trend Yapısı</option>
-                    <option value="htfTimeframe">Timeframe (HTF)</option>
-                    <option value="newsDay">News Day / Bank Holiday</option>
-                    <option value="strategy">Strateji</option>
-                    <option value="asiaRangeFvg">Asia Range FVG</option>
-                  </select>
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-zinc-400 uppercase font-bold font-sans">Y Boyutu:</span>
-                  <select
-                    value={compDimensionY}
-                    onChange={(e: any) => setCompDimensionY(e.target.value)}
-                    className="bg-zinc-900 border border-zinc-700 text-zinc-200 text-xs rounded-lg px-2 py-1 font-sans cursor-pointer outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus:border-indigo-500/60 select-none"
-                  >
-                    <option value="type">İşlem Yönü (Long/Short)</option>
-                    <option value="entryModels">Giriş Modeli</option>
-                    <option value="timeframe">Entry Timeframe</option>
-                    <option value="liquiditySweeps">Likidite Süpürmesi</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <p className="text-[11px] text-zinc-400 font-sans">
-              Seçtiğiniz iki değişkenin tüm kombinasyonlarının kazanma oranı, işlem adedi ve net getiri kıyaslaması:
-            </p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-[420px] overflow-y-auto custom-scrollbar pr-1">
-              {comparatorMatrix.map((item, idx) => (
-                <div key={idx} className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-zinc-200 uppercase font-sans truncate mr-2">
-                      {item.valX} + {item.valY}
-                    </span>
-                    <span className="text-[10px] font-mono text-zinc-500 shrink-0">{item.total} İşlem</span>
-                  </div>
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-zinc-500 font-sans">Win Rate</span>
-                    <span className={`font-bold font-sans ${item.winRate >= 50 ? 'text-emerald-400' : 'text-zinc-300'}`}>%{item.winRate}</span>
-                  </div>
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-zinc-500 font-sans">Net R</span>
-                    <span className={`font-bold font-sans ${item.netR >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                      {item.netR >= 0 ? '+' : ''}{item.netR} R
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+      {activeSubTab === 'matrix_comparator' && <ComparatorTab trades={trades} />}
 
       {/* SUBTAB 12: PRE-TRADE EDGE CHECKER */}
-      {activeSubTab === 'pre_trade_checker' && (
-        <div className="space-y-4">
-          <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 space-y-4">
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5">
-              <div className="flex items-center gap-2">
-                <Sparkles size={16} className="text-emerald-400" />
-                <h4 className="text-xs font-bold text-zinc-100 font-sans uppercase tracking-wider">
-                  ⚡ Canlı Pre-Trade Edge Kontrolü & Setup Skorlayıcı
-                </h4>
-              </div>
-              <span className="text-[10px] text-zinc-400 font-sans">
-                İşleme girmeden önce setup parametrelerinizi seçin, tarihsel verinizden anında teyit alın!
-              </span>
-            </div>
-
-            {/* Selector Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
-              <div>
-                <label className="text-[10px] font-bold text-zinc-400 uppercase block mb-1 font-sans">Parite</label>
-                <select
-                  value={checkerAsset}
-                  onChange={(e) => setCheckerAsset(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-1.5 text-xs text-zinc-200 font-sans outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus:border-emerald-500/60 cursor-pointer select-none"
-                >
-                  <option value="">Tümü</option>
-                  {uniqueAssets.map(a => <option key={a} value={a}>{a}</option>)}
-                </select>
-              </div>
-
-              <div>
-                <label className="text-[10px] font-bold text-zinc-400 uppercase block mb-1 font-sans">Yön</label>
-                <select
-                  value={checkerType}
-                  onChange={(e: any) => setCheckerType(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-1.5 text-xs text-zinc-200 font-sans outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus:border-emerald-500/60 cursor-pointer select-none"
-                >
-                  <option value="LONG">LONG</option>
-                  <option value="SHORT">SHORT</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="text-[10px] font-bold text-zinc-400 uppercase block mb-1 font-sans">Seans</label>
-                <select
-                  value={checkerSession}
-                  onChange={(e) => setCheckerSession(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-1.5 text-xs text-zinc-200 font-sans outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus:border-emerald-500/60 cursor-pointer select-none"
-                >
-                  <option value="">Tümü</option>
-                  {uniqueSessions.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </div>
-
-              <div>
-                <label className="text-[10px] font-bold text-zinc-400 uppercase block mb-1 font-sans">TP Target</label>
-                <select
-                  value={checkerTpTarget}
-                  onChange={(e) => setCheckerTpTarget(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-1.5 text-xs text-zinc-200 font-sans outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus:border-emerald-500/60 cursor-pointer select-none"
-                >
-                  <option value="">Tümü</option>
-                  {uniqueTpTargets.map(d => <option key={d} value={d}>{d}</option>)}
-                </select>
-              </div>
-
-              <div>
-                <label className="text-[10px] font-bold text-zinc-400 uppercase block mb-1 font-sans">Bölge</label>
-                <select
-                  value={checkerZone}
-                  onChange={(e) => setCheckerZone(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-1.5 text-xs text-zinc-200 font-sans outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus:border-emerald-500/60 cursor-pointer select-none"
-                >
-                  <option value="">Tümü</option>
-                  {uniqueZones.map(z => <option key={z} value={z}>{z}</option>)}
-                </select>
-              </div>
-
-              <div>
-                <label className="text-[10px] font-bold text-zinc-400 uppercase block mb-1 font-sans">Model</label>
-                <select
-                  value={checkerModel}
-                  onChange={(e) => setCheckerModel(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-1.5 text-xs text-zinc-200 font-sans outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus:border-emerald-500/60 cursor-pointer select-none"
-                >
-                  <option value="">Tümü</option>
-                  {uniqueModels.map(m => <option key={m} value={m}>{m}</option>)}
-                </select>
-              </div>
-
-              <div>
-                <label className="text-[10px] font-bold text-zinc-400 uppercase block mb-1 font-sans">Kalite</label>
-                <select
-                  value={checkerQuality}
-                  onChange={(e) => setCheckerQuality(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-1.5 text-xs text-zinc-200 font-sans outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus:border-emerald-500/60 cursor-pointer select-none"
-                >
-                  <option value="">Tümü</option>
-                  <option value="A+">A+</option>
-                  <option value="A">A</option>
-                  <option value="B-C">B-C</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Verdict Box */}
-            <div className={`p-4 rounded-xl border flex flex-col sm:flex-row items-center justify-between gap-4 ${
-              checkerResult.verdict === 'EXCELLENT' ? 'bg-emerald-950/20 border-emerald-500/40 text-emerald-200' :
-              checkerResult.verdict === 'GOOD' ? 'bg-blue-950/20 border-blue-500/40 text-blue-200' :
-              checkerResult.verdict === 'POOR' ? 'bg-rose-950/20 border-rose-500/40 text-rose-200' :
-              'bg-zinc-900/60 border-zinc-800 text-zinc-300'
-            }`}>
-              <div>
-                <span className="text-xs font-bold uppercase tracking-wider block font-sans">
-                  {checkerResult.verdict === 'EXCELLENT' ? '🟢 A+ YÜKSEK OLASILIKLI EDGE: İŞLEM ALINABİLİR' :
-                   checkerResult.verdict === 'GOOD' ? '🔵 OLUMLU BEKLENTİLİ KURULUM: GEÇERLİ' :
-                   checkerResult.verdict === 'POOR' ? '🔴 DİKKAT: TARİHSEL ZARARLI BÖLGE (İŞLEM ÖNERİLMEZ)' :
-                   '⚪ YETERLİ TARİHSEL EŞLEŞME YOK'}
-                </span>
-                <p className="text-[11px] opacity-80 mt-1 font-sans">
-                  Tarihsel verinizde bu parametrelere uyan toplam {checkerResult.total} işlem bulundu.
-                </p>
-              </div>
-              <div className="flex items-center gap-4 text-right shrink-0">
-                <div>
-                  <span className="text-[9px] uppercase tracking-wider opacity-60 block font-sans">Tarihsel Win Rate</span>
-                  <span className="text-sm font-black font-sans">%{checkerResult.winRate}</span>
-                </div>
-                <div>
-                  <span className="text-[9px] uppercase tracking-wider opacity-60 block font-sans">Net R Getirisi</span>
-                  <span className="text-sm font-black font-sans">{checkerResult.netR >= 0 ? '+' : ''}{checkerResult.netR} R</span>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      )}
         </motion.div>
       </AnimatePresence>
 
+      <TradeHistoryModal
+        isOpen={!!shownTrades}
+        onClose={() => setShownTrades(null)}
+        title={shownTrades?.title || ''}
+        icon={<Compass size={16} className="mr-1.5 text-indigo-400 shrink-0" />}
+        trades={shownTrades?.trades || []}
+        onEdit={onEdit ? (t) => { onEdit(t); setShownTrades(null); } : undefined}
+      />
     </motion.div>
   );
 });

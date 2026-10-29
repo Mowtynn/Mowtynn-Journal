@@ -1,4 +1,5 @@
 import { EASE, MODAL_BACKDROP, MODAL_PANEL, POPOVER } from '../lib/motion';
+import { smartUpper } from '../constants/constants';
 import React, { useState, memo, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -24,25 +25,38 @@ import {
   Download,
   FileSpreadsheet,
   FileText,
-  Layers
+  Layers,
+  CalendarRange
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { JournalEntry, Trade } from '../types';
 import { JournalCalendar } from './JournalCalendar';
 import { TurkishDatePicker } from './TurkishDateTimePicker';
-import { VoiceToJournalButton } from './VoiceToJournalButton';
-import { useMetricMode } from '../context/MetricContext';
 import { caseInsensitiveMatch } from '../constants/constants';
 import { exportJournalsToExcel, exportJournalsToCSV } from '../utils/exportTrades';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
+import { localDateKey } from '../utils/math';
+import { nyWallDate, nyNow } from '../lib/tradingTime';
+import { WeeklyReview } from './journal/WeeklyReview';
+import { currentWeekStart, isWeeklyEntry, weeklyEntryScope } from '../lib/weeklyReview';
 
 interface JournalViewProps {
   entries: JournalEntry[];
   trades?: Trade[];
-  currency?: string;
+  /** Ana paneldeki hatırlatmadan: bu haftanın değerlendirmesini aç (nonce her istekte değişir) */
+  weeklyRequest?: { week: string; nonce: number } | null;
+  /** Üst çubuktaki hesap kapsamı: haftalık değerlendirmeler kapsam başına ayrı tutulur ve listelenir */
+  weeklyScope?: string;
+  weeklyScopeName?: string;
   onSaveEntry: (entry: Omit<JournalEntry, 'id' | 'createdAt' | 'updatedAt'> | JournalEntry, options?: { silent?: boolean }) => void;
   onDeleteEntry: (id: string) => void;
 }
+
+/** "YYYY-MM-DD" → yerel takvim günü (new Date("YYYY-MM-DD") UTC sayar ve UTC'nin batısında bir önceki günü gösterir) */
+const dateFromKey = (key: string) => {
+  const [y, m, d] = (key || '').split('-').map(Number);
+  return Number.isFinite(y) && Number.isFinite(m) && Number.isFinite(d) ? new Date(y, m - 1, d) : new Date(key);
+};
 
 // Günlük sağ panel geçişi: kayıt sağdan kayarak açılır, kapanırken hafifçe sola çekilip solar.
 const JOURNAL_EASE = EASE;
@@ -81,10 +95,14 @@ const moodLabels = {
   terrible: 'Berbat / FOMO',
 };
 
-const JournalView = memo(function JournalView({ entries, trades = [], currency = 'USD', onSaveEntry, onDeleteEntry }: JournalViewProps) {
-  const { isRrMode } = useMetricMode();
+const JournalView = memo(function JournalView({ entries: allEntries, trades = [], onSaveEntry, onDeleteEntry, weeklyRequest, weeklyScope = '', weeklyScopeName = 'Tüm hesaplar' }: JournalViewProps) {
+  // Başka bir hesap kapsamının haftalık değerlendirmesi bu kapsamda listelenmez
+  const entries = useMemo(
+    () => allEntries.filter((e) => !isWeeklyEntry(e) || weeklyEntryScope(e) === weeklyScope),
+    [allEntries, weeklyScope],
+  );
   const getLocalDateString = () => {
-    const d = new Date();
+    const d = nyNow();
     return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-');
   };
 
@@ -103,6 +121,16 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
   const [exportFormatTab, setExportFormatTab] = useState<'excel' | 'csv'>('excel');
   const [weekOffset, setWeekOffset] = useState(0);
   const [entryToDelete, setEntryToDelete] = useState<JournalEntry | null>(null);
+  // Haftalık değerlendirme açıkken sağ panelde gösterilen haftanın Pazartesi'si (NY)
+  const [weeklyWeek, setWeeklyWeek] = useState<string | null>(null);
+  const openWeekly = (week: string) => {
+    setActiveEntry(null);
+    setIsEditing(false);
+    setWeeklyWeek(week);
+  };
+  React.useEffect(() => {
+    if (weeklyRequest) openWeekly(weeklyRequest.week);
+  }, [weeklyRequest?.nonce]); // eslint-disable-line react-hooks/exhaustive-deps
   useBodyScrollLock(!!entryToDelete);
   const exportRef = React.useRef<HTMLDivElement>(null);
 
@@ -136,20 +164,22 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
           setIsEditing(false);
         } else if (activeEntry) {
           setActiveEntry(null);
+        } else if (weeklyWeek) {
+          setWeeklyWeek(null);
         }
       }
     };
-    if (isEditing || activeEntry) {
+    if (isEditing || activeEntry || weeklyWeek) {
       window.addEventListener('keydown', handleKeyDown);
     }
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isEditing, activeEntry]);
+  }, [isEditing, activeEntry, weeklyWeek]);
 
   const getTradesForDate = (dateStr: string) => {
     return trades.filter(t => {
-      const d = new Date(t.createdAt);
+      const d = nyWallDate(t.createdAt);
       const tDateStr = [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-');
       return tDateStr === dateStr;
     });
@@ -159,7 +189,6 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
     const dayTrades = getTradesForDate(dateStr);
     if (dayTrades.length === 0) return null;
 
-    const totalPnL = dayTrades.reduce((acc, t) => acc + (t.pnl || 0), 0);
     const totalRR = dayTrades.reduce((acc, t) => acc + (t.rr || 0), 0);
     const winCount = dayTrades.filter(t => t.status === 'WIN').length;
 
@@ -177,15 +206,13 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
               {winCount}W / {dayTrades.filter(t => t.status === 'LOSS').length}L
             </span>
             <span className={`text-[10px] font-sans font-bold px-2 py-0.5 rounded-lg border ${
-              totalPnL > 0 
+              totalRR > 0 
                 ? 'toggle-item-win' 
-                : totalPnL < 0 
+                : totalRR < 0 
                 ? 'toggle-item-loss' 
                 : 'bg-zinc-800 text-zinc-400 border-zinc-700'
             }`}>
-              {isRrMode 
-                ? `${totalRR >= 0 ? '+' : ''}${totalRR.toFixed(2)}R` 
-                : `${totalPnL >= 0 ? '+' : ''}${totalPnL.toFixed(2)} ${currency}`}
+              {`${totalRR >= 0 ? '+' : ''}${totalRR.toFixed(2)}R`}
             </span>
           </div>
         </div>
@@ -196,9 +223,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
             const isLoss = trade.status === 'LOSS';
             const pnlColor = isWin ? 'text-emerald-400' : isLoss ? 'text-rose-400' : 'text-zinc-400';
             const pnlPrefix = isWin ? '+' : isLoss ? '-' : '';
-            const displayValue = isRrMode
-              ? (trade.rr !== undefined && trade.rr !== null ? `${pnlPrefix}${Math.abs(trade.rr)}R` : '—')
-              : (trade.pnl !== undefined ? `${pnlPrefix}${Math.abs(trade.pnl)} ${currency}` : '');
+            const displayValue = trade.rr !== undefined && trade.rr !== null ? `${pnlPrefix}${Math.abs(trade.rr)}R` : '—';
             
             return (
               <div 
@@ -231,7 +256,8 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
 
   // Sort entries by date descending
   const sortedEntries = useMemo(() => {
-    return [...entries].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    // YYYY-MM-DD metni sözlük sırasıyla tarih sırasıdır; aynı gündekiler son güncellenene göre
+    return [...entries].sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.updatedAt || 0) - (a.updatedAt || 0));
   }, [entries]);
 
   const filteredEntries = useMemo(() => {
@@ -254,7 +280,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
   // Modern feature: Last 7 days mood trend heatmap -> Current Week Mon-Sun
   const last7DaysMoods = useMemo(() => {
     const moods: { date: string; mood: JournalEntry['mood'] | null; shortDay: string; dayNumber: number }[] = [];
-    const today = new Date();
+    const today = nyNow();
     today.setHours(0, 0, 0, 0);
     
     // Apply week offset
@@ -286,8 +312,8 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
 
   const weekRangeStr = useMemo(() => {
     if (!last7DaysMoods.length) return '';
-    const d1 = new Date(last7DaysMoods[0].date);
-    const d2 = new Date(last7DaysMoods[6].date);
+    const d1 = dateFromKey(last7DaysMoods[0].date);
+    const d2 = dateFromKey(last7DaysMoods[6].date);
     const m1 = d1.toLocaleDateString('tr-TR', { month: 'short' });
     const m2 = d2.toLocaleDateString('tr-TR', { month: 'short' });
     if (m1 === m2) {
@@ -308,6 +334,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
   };
 
   const handleCreateNew = () => {
+    setWeeklyWeek(null);
     setActiveEntry(null);
     setEditTitle('');
     setEditContent('');
@@ -325,16 +352,6 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
     setEditMood(entry.mood || 'neutral');
     setEditIsFavorite(entry.isFavorite || false);
     setIsEditing(true);
-  };
-
-  const handleVoiceParsed = (data: any) => {
-    if (data.title) setEditTitle(data.title);
-    if (data.content) setEditContent(data.content);
-    if (data.mood) {
-      const moodEntries = Object.entries(moodLabels).map(([id, label]) => ({ id, label }));
-      const moodItem = moodEntries.find(m => m.label === data.mood);
-      if (moodItem) setEditMood(moodItem.id as JournalEntry["mood"]);
-    }
   };
 
   const handleSave = () => {
@@ -372,7 +389,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
       className="flex flex-col md:flex-row h-[calc(100vh-170px)] min-h-[640px] bg-zinc-950/60 border border-zinc-800/80  rounded-2xl overflow-hidden text-zinc-200 shadow-sm relative"
     >
       {/* LEFT SIDEBAR: Entry List */}
-      <div className={`w-full md:w-80 lg:w-96 border-r border-zinc-800/80 flex flex-col shrink-0 ${isEditing && 'hidden md:flex'}`}>
+      <div className={`w-full md:w-80 lg:w-96 border-r border-zinc-800/80 flex flex-col shrink-0 ${(isEditing || weeklyWeek) ? 'hidden md:flex' : ''}`}>
         {/* Top bar */}
         <div className="px-4 py-3 shrink-0 border-b border-zinc-800/80 flex items-center justify-between relative z-30">
           <div className="flex items-center gap-2.5">
@@ -398,7 +415,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
               <button
                 type="button"
                 onClick={() => setIsExportOpen(!isExportOpen)}
-                className={`w-7.5 h-7.5 rounded-lg flex items-center justify-center transition-ui cursor-pointer border ${
+                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-ui cursor-pointer border ${
                   isExportOpen
                     ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
                     : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
@@ -455,15 +472,18 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
                         type="button"
                         onClick={() => {
                           try {
-                            const dateStr = new Date().toISOString().slice(0, 10);
+                            const dateStr = localDateKey();
                             const targetList = filteredEntries;
                             if (targetList.length === 0) {
                               toast.error('Dışa aktarılacak günlük bulunamadı.');
                               return;
                             }
                             if (exportFormatTab === 'excel') {
-                              exportJournalsToExcel(targetList, `Gunluk_Kayitlari_Filtrelenmis_${dateStr}_[${targetList.length}_gunluk]`);
-                              toast.success(`Excel tablosu (.xlsx) indirildi (${targetList.length} günlük).`);
+                              void toast.promise(exportJournalsToExcel(targetList, `Gunluk_Kayitlari_Filtrelenmis_${dateStr}_[${targetList.length}_gunluk]`), {
+                                loading: 'Excel hazırlanıyor…',
+                                success: `Excel tablosu (.xlsx) indirildi (${targetList.length} günlük).`,
+                                error: (e) => e?.message || 'Excel dosyası oluşturulamadı.',
+                              });
                             } else {
                               exportJournalsToCSV(targetList, `Gunluk_Kayitlari_Filtrelenmis_${dateStr}_[${targetList.length}_gunluk]`);
                               toast.success(`CSV dosyası (.csv) indirildi (${targetList.length} günlük).`);
@@ -488,15 +508,18 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
                         type="button"
                         onClick={() => {
                           try {
-                            const dateStr = new Date().toISOString().slice(0, 10);
+                            const dateStr = localDateKey();
                             const targetList = entries;
                             if (targetList.length === 0) {
                               toast.error('Dışa aktarılacak günlük bulunamadı.');
                               return;
                             }
                             if (exportFormatTab === 'excel') {
-                              exportJournalsToExcel(targetList, `Gunluk_Kayitlari_Tum_${dateStr}_[${targetList.length}_gunluk]`);
-                              toast.success(`Excel tablosu (.xlsx) indirildi (${targetList.length} günlük).`);
+                              void toast.promise(exportJournalsToExcel(targetList, `Gunluk_Kayitlari_Tum_${dateStr}_[${targetList.length}_gunluk]`), {
+                                loading: 'Excel hazırlanıyor…',
+                                success: `Excel tablosu (.xlsx) indirildi (${targetList.length} günlük).`,
+                                error: (e) => e?.message || 'Excel dosyası oluşturulamadı.',
+                              });
                             } else {
                               exportJournalsToCSV(targetList, `Gunluk_Kayitlari_Tum_${dateStr}_[${targetList.length}_gunluk]`);
                               toast.success(`CSV dosyası (.csv) indirildi (${targetList.length} günlük).`);
@@ -522,9 +545,9 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
               </AnimatePresence>
             </div>
 
-            <button
+            <button aria-label="Takvim" title="Takvim"
               onClick={() => setShowSearch(!showSearch)}
-              className={`w-7.5 h-7.5 rounded-lg flex items-center justify-center transition-ui cursor-pointer border ${
+              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-ui cursor-pointer border ${
                 showSearch || searchDate 
                   ? 'bg-blue-500/15 border-blue-500/30 text-blue-400' 
                   : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
@@ -548,9 +571,9 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
               )}
             </AnimatePresence>
 
-            <button
+            <button aria-label="Favori" title="Favori"
               onClick={() => setShowOnlyFavorites(prev => !prev)}
-              className={`w-7.5 h-7.5 rounded-lg flex items-center justify-center transition-ui cursor-pointer border ${
+              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-ui cursor-pointer border ${
                 showOnlyFavorites 
                   ? 'bg-amber-500/20 border-amber-500/40 text-amber-400' 
                   : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
@@ -559,9 +582,21 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
               <Star size={13} className={showOnlyFavorites ? "fill-amber-400 text-amber-400" : ""} />
             </button>
 
-            <button
+            <button aria-label="Haftalık değerlendirme" title="Haftalık değerlendirme"
+              type="button"
+              onClick={() => (weeklyWeek ? setWeeklyWeek(null) : openWeekly(currentWeekStart()))}
+              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-ui cursor-pointer border ${
+                weeklyWeek
+                  ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
+                  : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
+              }`}
+            >
+              <CalendarRange size={13} />
+            </button>
+
+            <button aria-label="Ekle" title="Ekle"
               onClick={handleCreateNew}
-              className="w-7.5 h-7.5 rounded-lg bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 border border-blue-500/30 flex items-center justify-center transition-ui cursor-pointer shadow-xs"
+              className="w-8 h-8 rounded-lg bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 border border-blue-500/30 flex items-center justify-center transition-ui cursor-pointer shadow-xs"
             >
               <Plus size={15} />
             </button>
@@ -580,7 +615,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
               className="w-full h-7.5 bg-zinc-900/90 border border-zinc-800/90 focus:border-zinc-700 rounded-lg pl-7 pr-7 text-[11px] text-zinc-200 placeholder:text-zinc-600 focus:outline-none transition font-sans"
             />
             {searchTerm && (
-              <button
+              <button aria-label="Kapat" title="Kapat"
                 onClick={() => setSearchTerm('')}
                 className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 cursor-pointer"
               >
@@ -622,15 +657,15 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
               <span className="text-zinc-600 font-normal">({weekRangeStr})</span>
             </span>
             <div className="flex items-center gap-1">
-              <button 
+              <button aria-label="Önceki" title="Önceki" 
                 onClick={() => setWeekOffset(prev => prev - 1)}
-                className="w-5 h-5 rounded flex items-center justify-center bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors border border-zinc-800"
+                className="w-7 h-7 rounded flex items-center justify-center bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors border border-zinc-800"
               >
                 <ChevronLeft size={11} />
               </button>
-              <button 
+              <button aria-label="Sonraki" title="Sonraki" 
                 onClick={() => setWeekOffset(prev => prev + 1)}
-                className="w-5 h-5 rounded flex items-center justify-center bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors border border-zinc-800"
+                className="w-7 h-7 rounded flex items-center justify-center bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors border border-zinc-800"
               >
                 <ChevronRight size={11} />
               </button>
@@ -657,7 +692,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
                       : 'cursor-default opacity-60'
                   } ${isCurrentDay ? 'bg-zinc-900/90 border-zinc-800' : 'border-transparent'}`}
                 >
-                  <span className="text-[8px] font-sans font-bold text-zinc-500 uppercase">{day.shortDay}</span>
+                  <span className="text-[8px] font-sans font-bold text-zinc-500 uppercase">{smartUpper(day.shortDay)}</span>
                   <div className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] my-0.5 transition-colors ${getMoodColor(day.mood)}`}>
                     {day.mood ? moodEmojis[day.mood] : <span className="text-[8px] text-zinc-600 font-sans">{day.dayNumber}</span>}
                   </div>
@@ -693,11 +728,17 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
                 <div className="px-2.5 py-1.5">
                   <div
                     onClick={() => {
+                      // Haftalık kayıt: haftalık değerlendirme panelinde (o haftanın istatistikleriyle) açılır
+                      if (isWeeklyEntry(entry)) {
+                        openWeekly(entry.date);
+                        return;
+                      }
+                      setWeeklyWeek(null);
                       setActiveEntry(entry);
                       setIsEditing(false);
                     }}
                     className={`p-3 rounded-xl cursor-pointer border transition duration-150 relative overflow-hidden group ${
-                      activeEntry?.id === entry.id && !isEditing
+                      (activeEntry?.id === entry.id && !isEditing) || (isWeeklyEntry(entry) && weeklyWeek === entry.date)
                         ? 'bg-blue-500/10 border-blue-500/40 text-white shadow-xs'
                         : 'bg-zinc-950/60 border-zinc-800/80 hover:bg-zinc-900 hover:border-zinc-700 text-zinc-400'
                     }`}
@@ -705,11 +746,11 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
                     <div className="flex items-center justify-between mb-1.5">
                       <div className="flex items-center gap-1 text-[10px] font-sans font-bold tracking-wider text-zinc-400">
                         <CalendarIcon size={11} className="text-zinc-500" />
-                        {new Date(entry.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        {dateFromKey(entry.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </div>
                       
                       <div className="flex items-center gap-1">
-                        <button
+                        <button aria-label="Favori" title="Favori"
                           type="button"
                           onClick={(e) => {
                             e.preventDefault();
@@ -731,7 +772,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
                           <Star size={11} className={entry.isFavorite ? "fill-amber-400" : ""} />
                         </button>
                         
-                        <button
+                        <button aria-label="Sil" title="Sil"
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
@@ -742,7 +783,9 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
                           <Trash2 size={11} />
                         </button>
 
-                        {entry.mood && (
+                        {isWeeklyEntry(entry) ? (
+                          <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md border border-violet-500/30 bg-violet-500/10 text-violet-300 ml-0.5">{smartUpper("Haftalık")}</span>
+                        ) : entry.mood && (
                           <div className="text-xs shrink-0 ml-0.5">
                             {moodEmojis[entry.mood]}
                           </div>
@@ -763,9 +806,29 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
       </div>
 
       {/* RIGHT PANE: Editor / Viewer */}
-      <div className={`flex-1 flex flex-col bg-transparent overflow-hidden relative ${!isEditing && !activeEntry ? 'hidden md:flex items-center justify-center' : 'flex'}`}>
+      <div className={`flex-1 flex flex-col bg-transparent overflow-hidden relative ${!isEditing && !activeEntry && !weeklyWeek ? 'hidden md:flex items-center justify-center' : 'flex'}`}>
         <AnimatePresence mode="wait" initial={false}>
-          {!isEditing && !activeEntry ? (
+          {weeklyWeek ? (
+            <motion.div
+              key="weekly-review"
+              variants={journalPaneMotion}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              className="flex-1 flex flex-col min-h-0 w-full"
+            >
+              <WeeklyReview
+                trades={trades}
+                entries={entries}
+                weekStart={weeklyWeek}
+                onChangeWeek={setWeeklyWeek}
+                onSave={(e) => onSaveEntry(e)}
+                onClose={() => setWeeklyWeek(null)}
+                scope={weeklyScope}
+                scopeName={weeklyScopeName}
+              />
+            </motion.div>
+          ) : !isEditing && !activeEntry ? (
             <motion.div 
               key="empty-state"
               variants={journalEmptyMotion}
@@ -778,7 +841,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
                 <div className="w-14 h-14 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-500 mx-auto mb-3 shadow-inner">
                   <CalendarIcon size={26} />
                 </div>
-                <p className="text-xs font-bold uppercase tracking-wider font-sans text-zinc-300">Bir günlük seçin</p>
+                <p className="text-xs font-bold uppercase tracking-wider font-sans text-zinc-300">{smartUpper("Bir günlük seçin")}</p>
                 <p className="text-[11px] text-zinc-500 mt-1 font-sans">veya yeni bir kayıt eklemek için sol üstteki '+' butonuna tıklayın.</p>
               </div>
             </motion.div>
@@ -794,7 +857,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
             >
               <div className="px-5 py-3 shrink-0 border-b border-zinc-800/80 flex items-center justify-between bg-zinc-950/30">
                 <div className="flex items-center gap-3">
-                  <button
+                  <button aria-label="Geri" title="Geri"
                     onClick={() => setIsEditing(false)}
                     className="md:hidden p-1.5 bg-zinc-900 border border-zinc-800 rounded-lg hover:bg-zinc-800 text-zinc-400"
                   >
@@ -804,12 +867,6 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
                     <span className="text-xs font-bold uppercase text-blue-400 tracking-wider font-sans">
                       {activeEntry ? 'Günlüğü Düzenle' : 'Yeni Günlük Kaydı'}
                     </span>
-                    {!activeEntry && (
-                      <VoiceToJournalButton 
-                        options={{ moods: Object.values(moodLabels) }} 
-                        onParsed={handleVoiceParsed} 
-                      />
-                    )}
                   </div>
                 </div>
 
@@ -828,7 +885,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
                   </button>
 
                   {activeEntry && (
-                    <button
+                    <button aria-label="Sil" title="Sil"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
@@ -868,7 +925,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
                   <div>
-                    <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2 font-sans">Tarih</label>
+                    <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2 font-sans">{smartUpper("Tarih")}</label>
                     <TurkishDatePicker
                       value={editDate}
                       onChange={(newDate) => setEditDate(newDate)}
@@ -878,7 +935,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2 font-sans">Ruh Hali</label>
+                    <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2 font-sans">{smartUpper("Ruh Hali")}</label>
                     <div className="grid grid-cols-5 gap-1.5 h-9">
                       {(Object.keys(moodIcons) as Array<keyof typeof moodIcons>).map(mood => {
                         const isSelected = editMood === mood;
@@ -933,7 +990,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
             >
               <div className="px-5 py-3.5 shrink-0 border-b border-zinc-800/80 flex items-center justify-between bg-zinc-950/30">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <button
+                  <button aria-label="Geri" title="Geri"
                     onClick={() => setActiveEntry(null)}
                     className="md:hidden p-1.5 bg-zinc-900 border border-zinc-800 rounded-lg hover:bg-zinc-800 text-zinc-400"
                   >
@@ -941,7 +998,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
                   </button>
                   <span className="inline-flex items-center gap-1.5 text-xs text-blue-400 font-sans font-bold tracking-wider bg-blue-500/10 px-2.5 py-1 rounded-lg border border-blue-500/20">
                     <CalendarIcon size={12} />
-                    {new Date(activeEntry!.date).toLocaleDateString('tr-TR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                    {dateFromKey(activeEntry!.date).toLocaleDateString('tr-TR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                   </span>
 
                   {activeEntry!.mood && (
@@ -953,7 +1010,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
                 </div>
                 
                 <div className="flex items-center gap-2 shrink-0">
-                  <button
+                  <button aria-label="Favori" title="Favori"
                     onClick={() => {
                       if (activeEntry) {
                         const nextFav = !activeEntry.isFavorite;
@@ -973,13 +1030,13 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
                   >
                     <Star size={16} className={activeEntry!.isFavorite ? "fill-amber-400 text-amber-400" : ""} />
                   </button>
-                  <button
+                  <button aria-label="Düzenle" title="Düzenle"
                     onClick={() => activeEntry && handleEdit(activeEntry)}
                     className="flex items-center justify-center w-9 h-9 rounded-xl border transition-colors cursor-pointer shrink-0 text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 border-blue-500/20"
                   >
                     <Edit3 size={16} />
                   </button>
-                  <button
+                  <button aria-label="Sil" title="Sil"
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -1009,7 +1066,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
                   
                   <div className="pt-4 border-t border-zinc-800/80 flex justify-end items-center gap-2 text-[10px] text-zinc-500 font-sans tracking-wider uppercase">
                     <Clock size={11} />
-                    <span>Son Güncelleme: {new Date(activeEntry!.updatedAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>
+                    <span>Son Güncelleme: {nyWallDate(activeEntry!.updatedAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>
                   </div>
                 </div>
               </div>
@@ -1039,7 +1096,7 @@ const JournalView = memo(function JournalView({ entries, trades = [], currency =
                 </div>
                 
                 <h3 className="text-sm font-bold tracking-wide text-zinc-100 uppercase text-center mb-1 font-sans">
-                  Günlüğü Sil
+                  {smartUpper("Günlüğü Sil")}
                 </h3>
                 
                 <p className="text-zinc-400 text-xs text-center mb-6 leading-relaxed">

@@ -6,8 +6,6 @@
  */
 export const EASE: [number, number, number, number] = [0.16, 1, 0.3, 1];
 
-/** Süreler (saniye): anlık geri bildirim / hızlı / standart / yavaş */
-export const DUR = { instant: 0.1, fast: 0.15, base: 0.2, slow: 0.3 } as const;
 
 export const SPRING = {
   /** Kayan göstergeler (sekme alt çizgisi, filtre/segment vurgusu) */

@@ -1,3 +1,4 @@
+/** İşlemin hesap tipi: prop hesabının aşaması (Challenge / Funded) veya hesapsız (demo / backtest) */
 export type PlatformCategory = 'FUNDED' | 'CHALLENGE' | 'DEMO';
 export type AccountCategory = 'ALL' | 'FUNDED' | 'CHALLENGE' | 'DEMO';
 
@@ -5,8 +6,7 @@ export interface Trade {
   id: string;
   asset: string;            // e.g., BTC/USDT, ETH/USDT, AAPL
   type: 'LONG' | 'SHORT';   // Trade direction
-  rr: number;               // Risk/Reward ratio (e.g., +2.5 or -1.0)
-  pnl: number;              // Manually entered realized Profit & Loss ($)
+  rr: number;               // Sonuç (R). BE her zaman 0.
   status: 'WIN' | 'LOSS' | 'BREAKEVEN'; // Trade result code
   stopPips?: number;        // Stop Loss in pips / ticks / points
   tpPips?: number;          // Take Profit in pips / ticks / points
@@ -16,30 +16,87 @@ export interface Trade {
   notes: string;            // Analysis notes, setup descriptions
   screenshot: string | null; // Base64 data URI of compressed screenshot
   createdAt: number;        // Timestamp of entry
-  platform?: string;        // Trading platform (e.g., Binance, Bybit, Metatrader, Demo, Challenge, Funded)
-  accountCategory?: 'FUNDED' | 'CHALLENGE' | 'DEMO'; // Account category: Funded vs Challenge vs Demo
+  platform?: string;        // Hesabın kayıt anındaki adı (görüntüleme ve filtre için); hesapsız işlemde boş
+  accountCategory?: 'FUNDED' | 'CHALLENGE' | 'DEMO'; // Kayıt anındaki hesap tipi; DEMO = hesapsız
+  accountStage?: number;    // Kayıt anındaki aşama: 1, 2, 3 = Phase, 0 = Funded; hesapsızda boş
   timeframe?: string;       // Execution timeframe (e.g., 1m, 5m, 1h)
   htfTimeframe?: string;    // Higher Timeframe (HTF)
   session?: string;         // Trading session (e.g., London, New York)
-  entryTime?: string;       // Giriş saati (Entry Time e.g. "02:00", "03:00")
-  liquiditySweep?: string;  // Liquidity Sweep türü (e.g. PDH / PDL, Asia High/Low, Session High/Low)
-  liquiditySweeps?: string[]; // Birden fazla Liquidity Sweep seçeneği
-  concept?: string;         // legacy fallback
   confirmations?: string[];      // Array of trading confirmations used (e.g., FVG, Orderblock)
   planFidelity?: string | null; // Setup kalitesi (Plan fidelity)
-  entry?: string;           // Giriş Modeli (Entry Model e.g. IFVG, FVG, Orderblock)
   entryModels?: string[];   // Birden fazla Giriş Modeli (Multiple Entry Models)
   trend?: string;           // Trend Yapısı (Trend Type e.g. Continuation, Reversal)
-  tpTargets?: string[];     // TP Target — hedeflenen likidite / seviye (e.g. PDH / PDL, Asia High / Low)
+  tpTargets?: string[];     // Target — çıkış hedefi / seviye (e.g. PDH / PDL, Asia High / Low)
   premiumDiscount?: string; // Premium / Discount zone (e.g. Premium, Discount, Equilibrium / OTE)
   strategy?: string;        // Strateji (Tanımlamalar'dan yönetilir)
   asiaRangeFvg?: string;    // Asia Range FVG (Tanımlamalar'dan yönetilir)
-  newsDay?: boolean;        // News Day / Bank Holiday: true = Var, false = Yok. Eski kayıtlarda tanımsız (bilinmiyor)
-  htfBias?: HtfBias;        // 1H (max 4H) bias at entry time — alignment with direction is derived, not stored
-  spreadPips?: number;      // Spread paid on this trade, in pips (cost per pair / broker analysis)
+  newsDay?: boolean;        // News Day / Bank Holiday: true = Var, false = Yok. Girilmemişse tanımsız (bilinmiyor)
+  accountId?: string;       // Prop hesap kimliği (PropAccount.id)
+  riskPct?: number;         // İşlem başı risk (%), hesabın başlangıç bakiyesine göre
+  riskAmount?: number;      // riskPct'nin dolar karşılığı; hesap bakiyesi = R × riskAmount
+  quickEntry?: boolean;     // Hızlı kayıtla girildi; ayrıntılar sonra tamamlanacak
+  exitAt?: number;          // Çıkış anı (ms). Formda NY saatiyle girilir; işlemde kalma süresi = exitAt − createdAt
 }
 
-export type HtfBias = 'BULLISH' | 'BEARISH' | 'NEUTRAL';
+/**
+ * Prop firm hesabı. Bir "zincir" aynı değerlendirmenin aşamalarıdır: Phase 1 → Phase 2 → … → Funded.
+ * Her aşama ayrı bir hesap kaydıdır (kendi bakiyesi sıfırdan başlar) ve chainId ile bağlıdır.
+ */
+export type PropAccountStatus = 'ACTIVE' | 'PASSED' | 'BLOWN' | 'ARCHIVED';
+
+/** Bir aşamanın kuralı (yüzde, hesap boyutuna göre) */
+export interface PropStageRule {
+  targetPct: number;
+  maxDdPct: number;
+}
+
+/** "Gerçek bakiyeyi gir" ile oluşan fark kaydı. R istatistiğine girmez; yalnızca bakiye ve drawdown takibini düzeltir. */
+export interface PropBalanceAdjustment {
+  id: string;
+  at: number;
+  amount: number;       // eklenen / düşülen fark ($)
+  realBalance: number;  // girilen gerçek bakiye ($)
+}
+
+export interface PropCertificate {
+  id: string;
+  kind: 'FUNDED' | 'PAYOUT';
+  date: string;         // YYYY-MM-DD
+  amount?: number;      // payout: elime geçen net tutar ($)
+  image?: string;       // Storage URL'si veya (girişsiz kullanımda) sıkıştırılmış data URL
+  note?: string;
+  createdAt: number;
+}
+
+export interface PropAccount {
+  id: string;
+  chainId: string;
+  chainName: string;            // zincirin adı (ör. "FTMO 100K #3")
+  name: string;                 // aşamalı tam ad; işlem formunda platform adı olarak görünür (ör. "FTMO 100K #3 · Phase 1")
+  firm?: string;
+  size: number;                 // hesap boyutu ($)
+  drawdownMode: 'STATIC' | 'TRAILING';
+  stage: number;                // 1..phaseRules.length = değerlendirme aşaması, 0 = Funded
+  phaseRules: PropStageRule[];  // zincirin aşama kuralları (aşama sayısı = uzunluk)
+  fundedMaxDdPct: number;
+  riskPct: number;              // kartta R gösterimi için 1R = boyut × risk %
+  fee?: number;                 // challenge ücreti; yalnızca zincirin ilk hesabında
+  status: PropAccountStatus;
+  createdAt: number;
+  closedAt?: number;
+  /** Bu günden itibaren, hesaba bağlanmamış ama aynı ad ile kaydedilmiş işlemler de bu hesaba sayılır */
+  startDate?: number;
+  note?: string;
+  images?: string[];
+  adjustments?: PropBalanceAdjustment[];
+  certificates?: PropCertificate[];
+}
+
+export interface WeeklyAnswers {
+  good: string;   // Bu hafta neyi iyi yaptım?
+  avoid: string;  // Neyi tekrar etmemeliyim?
+  focus: string;  // Gelecek haftanın tek odağı
+}
 
 export interface JournalEntry {
   id: string;
@@ -49,30 +106,20 @@ export interface JournalEntry {
   mood?: 'excellent' | 'good' | 'neutral' | 'bad' | 'terrible';
   tags?: string[];
   isFavorite?: boolean;
+  /** Haftalık değerlendirme cevapları (yalnızca haftalık kayıtta; istatistikler saklanmaz, işlemlerden hesaplanır) */
+  weekly?: WeeklyAnswers;
   createdAt: number;
   updatedAt: number;
 }
 
 export interface TradeStats {
   totalTrades: number;
-  closedTrades: number;
   winningTrades: number;
   losingTrades: number;
   breakevenTrades: number;
-  winRate: number;         // Percentage
-  totalPnl: number;
-  netPnl: number;
-  averageWin: number;
-  averageLoss: number;
-  profitFactor: number;    // Gross Win / Gross Loss
-  largestWin: number;
-  largestLoss: number;
+  winRate: number;         // Yüzde (kazanç / tüm işlemler)
   bestAsset: string;
   worstAsset: string;
-  weeklyPnl: number;
-  monthlyPnl: number;
-  
-  // R-Multiple properties
   netR: number;
   averageWinRR: number;
   averageLossRR: number;
@@ -80,33 +127,25 @@ export interface TradeStats {
   largestWinRR: number;
   largestLossRR: number;
   expectancyRR: number;
-  expectancyCash?: number;
+  weeklyR: number;        // son 7 gün
+  monthlyR: number;       // son 30 gün
+  // Kart ayrıntıları
+  bestAssetR: number;
+  bestAssetCount: number;
+  worstAssetR: number;
+  worstAssetCount: number;
+  weeklyCount: number;
+  weeklyWins: number;
+  monthlyCount: number;
+  monthlyWins: number;
+  grossWinR: number;
+  grossLossR: number;
 }
 
+/** İşlem listesinin kendi süzgeçleri: arama, sıralama, tarih aralığı (diğerleri üstteki Filtreleme Menüsü'nde) */
 export interface TradeFilter {
   search: string;
-  status: 'ALL' | 'WIN' | 'LOSS' | 'BREAKEVEN';
-  type: 'ALL' | 'LONG' | 'SHORT';
-  asset: string;
-  timeframe?: string;
-  htfTimeframe?: string;
-  session?: string;
-  entryTime?: string;
-  confirmation?: string;
-  liquiditySweep?: string;
-  liquiditySweeps?: string[];
-  concept?: string;
-  planFidelity?: string;
-  entry?: string;
-  trend?: string;
-  premiumDiscount?: string;
-  sortBy: 'dateDes' | 'dateAsc' | 'pnlDes' | 'pnlAsc' | 'assetAsc' | 'assetDes' | 'typeAsc' | 'typeDes' | 'rrAsc' | 'rrDes' | 'platformAsc' | 'platformDes';
-  minAsiaRangePips?: number;
-  maxAsiaRangePips?: number;
-  minMaePips?: number;
-  maxMaePips?: number;
-  minMfePips?: number;
-  maxMfePips?: number;
+  sortBy: 'dateDes' | 'dateAsc' | 'assetAsc' | 'assetDes' | 'typeAsc' | 'typeDes' | 'rrAsc' | 'rrDes' | 'platformAsc' | 'platformDes';
   startDate?: string;
   endDate?: string;
 }
@@ -120,22 +159,9 @@ export interface Note {
   isPinned?: boolean;
 }
 
-export interface Certificate {
-  id: string;
-  type: 'PHASE' | 'PAYOUT' | 'OTHER';
-  title: string;
-  date: string;
-  image: string | null;
-  description?: string;
-  amount?: number;
-  createdAt: number;
-}
-
 export interface DefinitionTitles {
   platforms: string;
   assets: string;
-  liquiditySweeps?: string;
-  concepts?: string;
   confirmations: string;
   timeframes: string;
   htfTimeframes: string;
@@ -145,7 +171,6 @@ export interface DefinitionTitles {
   trendTypes?: string;
   tpTargets?: string;
   premiumDiscounts?: string;
-  entryHours?: string;
   newsDays?: string;
   strategies?: string;
   asiaRangeFvgs?: string;
@@ -161,7 +186,6 @@ export interface DefinitionTitles {
   mfePips?: string;
   asiaRangePips?: string;
   rr?: string;
-  pnl?: string;
   chartLink?: string;
   notesCard?: string;
 }

@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Calendar as CalendarIcon, Info, Crown, Skull, X } from 'lucide-react';
 import { Trade } from '../types';
+import { getTradeNyWeekday } from '../lib/tradingTime';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 interface HeatmapModalProps {
@@ -37,7 +38,8 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
   const heatmapData = useMemo(() => {
     if (!filteredTrades || filteredTrades.length === 0) return { matrix: {}, sessions: [], days: [], bestCellKey: null, worstCellKey: null };
 
-    const closedTrades = filteredTrades.filter(t => t.status === "WIN" || t.status === "LOSS");
+    // BE işlemler de dahil: kazanma oranı ana paneldeki tanımla aynı (kazanç / tüm işlemler)
+    const closedTrades = filteredTrades.filter(t => t.status === "WIN" || t.status === "LOSS" || t.status === "BREAKEVEN");
 
     const days = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
     const sessionSet = new Set<string>();
@@ -52,18 +54,18 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
     if (sessions.length === 0) sessions.push("Bilinmeyen");
 
     // Initialize matrix
-    const matrix: { [day: string]: { [session: string]: { pnl: number, r: number, count: number, winCount: number, conceptCounts: Record<string, number>, planFidelityCounts: Record<string, number> } } } = {};
+    const matrix: { [day: string]: { [session: string]: { r: number, count: number, winCount: number, conceptCounts: Record<string, number>, planFidelityCounts: Record<string, number> } } } = {};
     days.forEach(d => {
       matrix[d] = {};
       sessions.forEach(s => {
-        matrix[d][s] = { pnl: 0, r: 0, count: 0, winCount: 0, conceptCounts: {}, planFidelityCounts: {} };
+        matrix[d][s] = { r: 0, count: 0, winCount: 0, conceptCounts: {}, planFidelityCounts: {} };
       });
     });
 
     closedTrades.forEach(t => {
       if (t.createdAt) {
-        const d = new Date(t.createdAt);
-        let dayIndex = d.getDay(); // 0 = Sunday, 1 = Monday
+        // Gün, analizlerin geri kalanı gibi New York takvimine göre
+        let dayIndex = getTradeNyWeekday(t); // 0 = Sunday, 1 = Monday
         dayIndex = dayIndex === 0 ? 6 : dayIndex - 1; // Convert to 0 = Monday
         const dayName = days[dayIndex];
         const s = (t.session && t.session.trim() !== '') ? t.session : "Bilinmeyen";
@@ -71,10 +73,9 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
         if (matrix[dayName] && matrix[dayName][s]) {
           matrix[dayName][s].count += 1;
           if (t.status === 'WIN') matrix[dayName][s].winCount += 1;
-          matrix[dayName][s].pnl += (t.pnl || 0);
           matrix[dayName][s].r += (t.rr || 0);
           
-          const strat = t.liquiditySweep?.trim() || t.concept?.trim() || t.confirmations?.[0]?.trim();
+          const strat = t.strategy?.trim() || t.entryModels?.[0]?.trim() || t.confirmations?.[0]?.trim();
           if (strat) {
             matrix[dayName][s].conceptCounts[strat] = (matrix[dayName][s].conceptCounts[strat] || 0) + (t.status === 'WIN' ? 1 : 0);
           }
@@ -89,22 +90,22 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
 
     let bestCellKey: string | null = null;
     let worstCellKey: string | null = null;
-    let maxPnL = -Infinity;
-    let minPnL = Infinity;
+    let maxR = -Infinity;
+    let minR = Infinity;
 
     days.forEach(d => {
       sessions.forEach(s => {
         const cell = matrix[d]?.[s];
         if (cell && cell.count > 0) {
           const wr = cell.count > 0 ? (cell.winCount / cell.count) : 0;
-          // Best: positive PnL and high WR
-          if (cell.pnl > maxPnL && cell.pnl > 0 && wr >= 0.4) {
-            maxPnL = cell.pnl;
+          // En iyi: pozitif R ve yeterli kazanma oranı
+          if (cell.r > maxR && cell.r > 0 && wr >= 0.4) {
+            maxR = cell.r;
             bestCellKey = `${d}-${s}`;
           }
-          // Worst: lowest PnL
-          if (cell.pnl < minPnL && cell.pnl < 0) {
-            minPnL = cell.pnl;
+          // En kötü: en düşük R
+          if (cell.r < minR && cell.r < 0) {
+            minR = cell.r;
             worstCellKey = `${d}-${s}`;
           }
         }
@@ -116,20 +117,21 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
 
   const { matrix, sessions, days, bestCellKey, worstCellKey } = heatmapData;
 
-  const getCellColor = (pnl: number, count: number) => {
+  // Renk yoğunluğu hücrenin net R'sine göre
+  const getCellColor = (r: number, count: number) => {
     if (count === 0) return 'bg-zinc-800 border-zinc-800/60';
-    if (pnl > 0) {
-      if (pnl > 100) return 'bg-emerald-500/80 border-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.25)]';
-      if (pnl > 50) return 'bg-emerald-500/60 border-emerald-500/80';
-      if (pnl > 20) return 'bg-emerald-500/40 border-emerald-500/60';
+    if (r > 0) {
+      if (r >= 4) return 'bg-emerald-500/80 border-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.25)]';
+      if (r >= 2) return 'bg-emerald-500/60 border-emerald-500/80';
+      if (r >= 1) return 'bg-emerald-500/40 border-emerald-500/60';
       return 'bg-emerald-500/25 border-emerald-500/40';
-    } else if (pnl < 0) {
-      if (pnl < -100) return 'bg-rose-500/80 border-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.25)]';
-      if (pnl < -50) return 'bg-rose-500/60 border-rose-500/80';
-      if (pnl < -20) return 'bg-rose-500/40 border-rose-500/60';
+    } else if (r < 0) {
+      if (r <= -4) return 'bg-rose-500/80 border-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.25)]';
+      if (r <= -2) return 'bg-rose-500/60 border-rose-500/80';
+      if (r <= -1) return 'bg-rose-500/40 border-rose-500/60';
       return 'bg-rose-500/25 border-rose-500/40';
     }
-    return 'bg-zinc-800 border-zinc-700'; // Break even
+    return 'bg-zinc-800 border-zinc-700'; // BE
   };
 
   return createPortal(
@@ -179,7 +181,7 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
                 ))}
               </div>
 
-              <button
+              <button aria-label="Kapat" title="Kapat"
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -242,7 +244,7 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
                             >
                               <div 
                                 className={`w-full h-10 rounded-xl border transition-ui duration-200 flex items-center justify-center overflow-hidden relative ${
-                                  getCellColor(cell?.pnl || 0, cell?.count || 0)
+                                  getCellColor(cell?.r || 0, cell?.count || 0)
                                 } ${isWorst ? 'ring-1 ring-rose-500/50' : ''}`}
                               >
                                 {hasTrades && (
@@ -257,7 +259,6 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
                                 <span className="font-bold text-blue-400 border-b border-zinc-800 pb-1 mb-1">{day} — {session}</span>
                                 <div className="space-y-0.5 text-zinc-300">
                                   <div>İşlem: <span className="text-white font-bold">{cell?.count || 0}</span></div>
-                                  <div>Net PnL: <span className={(cell?.pnl || 0) >= 0 ? "text-emerald-400 font-bold" : "text-rose-400 font-bold"}>{(cell?.pnl || 0).toLocaleString()}</span></div>
                                   <div>Net R: <span className="text-indigo-300 font-bold">{(cell?.r || 0).toFixed(1)} R</span></div>
                                   <div>Başarı Oranı: <span className="text-amber-300 font-bold">%{winRatePercent}</span></div>
                                   {cell?.planFidelityCounts && Object.keys(cell.planFidelityCounts).length > 0 && (
@@ -294,7 +295,7 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
           <div className="p-4 border-t border-zinc-700/40 bg-zinc-900/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-zinc-400 font-sans shrink-0">
             <div className="flex items-center gap-1.5 text-zinc-400">
               <Info size={13} className="text-blue-400 shrink-0" />
-              <span>Renk yoğunluğu PnL büyüklüğünü, kutu içi değerler ise Başarı Oranını (Win Rate %) belirtir.</span>
+              <span>Renk yoğunluğu net R büyüklüğünü, kutu içi değerler ise Başarı Oranını (Win Rate %) belirtir.</span>
             </div>
             <div className="flex items-center gap-2 font-sans text-[10px] shrink-0">
               <span className="text-rose-400 font-bold">Zarar</span>

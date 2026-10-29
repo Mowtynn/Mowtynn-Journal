@@ -1,11 +1,10 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { DEFAULT_DATE_LIMIT, EMPTY_EXTRA_FILTERS, sanitizeExtraFilters, type ExtraTradeFilters } from '../lib/tradeFilters';
 
 interface AppState {
   globalSelectedConfirmations: string[];
-  globalSelectedConcepts: string[];
   globalSelectedPlanFidelity: string[];
-  globalSelectedPlatforms: string[];
   globalSelectedAssets: string[];
   globalSelectedSessions: string[];
   globalSelectedTimeframes: string[];
@@ -21,11 +20,11 @@ interface AppState {
   globalMaxMaePips?: number;
   globalMinMfePips?: number;
   globalMaxMfePips?: number;
+  /** Strateji, News day, P/D, TP target, Asia FVG, risk %, hızlı kayıt filtreleri */
+  globalExtra: ExtraTradeFilters;
   isQuantMode: boolean;
   setGlobalSelectedConfirmations: (val: string[]) => void;
-  setGlobalSelectedConcepts: (val: string[]) => void;
   setGlobalSelectedPlanFidelity: (val: string[]) => void;
-  setGlobalSelectedPlatforms: (val: string[]) => void;
   setGlobalSelectedAssets: (val: string[]) => void;
   setGlobalSelectedSessions: (val: string[]) => void;
   setGlobalSelectedTimeframes: (val: string[]) => void;
@@ -41,6 +40,7 @@ interface AppState {
   setGlobalMaxMaePips: (val?: number) => void;
   setGlobalMinMfePips: (val?: number) => void;
   setGlobalMaxMfePips: (val?: number) => void;
+  setGlobalExtra: (val: ExtraTradeFilters) => void;
   setIsQuantMode: (val: boolean) => void;
 }
 
@@ -48,9 +48,7 @@ export const useAppStore = create<AppState>()(
   persist(
     (set) => ({
       globalSelectedConfirmations: [],
-      globalSelectedConcepts: [],
       globalSelectedPlanFidelity: [],
-      globalSelectedPlatforms: [],
       globalSelectedAssets: [],
       globalSelectedSessions: [],
       globalSelectedTimeframes: [],
@@ -59,19 +57,18 @@ export const useAppStore = create<AppState>()(
       globalSelectedTypes: [],
       globalSelectedEntryModels: [],
       globalSelectedTrendTypes: [],
-      globalDateLimit: "6m",
+      globalDateLimit: DEFAULT_DATE_LIMIT,
       globalMinAsiaRangePips: undefined,
       globalMaxAsiaRangePips: undefined,
       globalMinMaePips: undefined,
       globalMaxMaePips: undefined,
       globalMinMfePips: undefined,
       globalMaxMfePips: undefined,
+      globalExtra: EMPTY_EXTRA_FILTERS,
       isQuantMode: false,
       
       setGlobalSelectedConfirmations: (val) => set({ globalSelectedConfirmations: val }),
-      setGlobalSelectedConcepts: (val) => set({ globalSelectedConcepts: val }),
       setGlobalSelectedPlanFidelity: (val) => set({ globalSelectedPlanFidelity: val }),
-      setGlobalSelectedPlatforms: (val) => set({ globalSelectedPlatforms: val }),
       setGlobalSelectedAssets: (val) => set({ globalSelectedAssets: val }),
       setGlobalSelectedSessions: (val) => set({ globalSelectedSessions: val }),
       setGlobalSelectedTimeframes: (val) => set({ globalSelectedTimeframes: val }),
@@ -87,10 +84,28 @@ export const useAppStore = create<AppState>()(
       setGlobalMaxMaePips: (val) => set({ globalMaxMaePips: val }),
       setGlobalMinMfePips: (val) => set({ globalMinMfePips: val }),
       setGlobalMaxMfePips: (val) => set({ globalMaxMfePips: val }),
+      setGlobalExtra: (val) => set({ globalExtra: val }),
       setIsQuantMode: (val) => set({ isQuantMode: val }),
     }),
     {
       name: 'trading_journal_filters',
+      version: 6,
+      // Zaman aralığı kalıcı değildir: uygulama her açılışta "Tüm zamanlar" ile başlar (üst çubuktaki TÜMÜ gibi)
+      partialize: ({ globalDateLimit: _omit, ...rest }) => rest,
+      merge: (persisted, current) => ({ ...current, ...(persisted as object), globalDateLimit: DEFAULT_DATE_LIMIT }),
+      // v3: Liquidity Sweep filtresi düştü · v4: ek alan filtreleri (globalExtra)
+      // v5: Hesap ve Aşama filtreleri üst çubuktaki hesap seçicisine taşındı (eski seçimler gizli filtre olarak kalmasın);
+      //     varsayılan tarih aralığı "6 ay"dan "tüm zamanlar"a geçti (dokunulmamış eski varsayılan da taşınır)
+      migrate: (persisted: any, version: number) => {
+        if (persisted && typeof persisted === 'object') {
+          delete persisted.globalSelectedConcepts;
+          delete persisted.globalSelectedPlatforms;
+          delete persisted.globalSelectedStages;
+          if (version < 5 && persisted.globalDateLimit === '6m') persisted.globalDateLimit = DEFAULT_DATE_LIMIT;
+          persisted.globalExtra = sanitizeExtraFilters(persisted.globalExtra);
+        }
+        return persisted;
+      },
     }
   )
 );

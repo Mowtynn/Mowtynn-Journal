@@ -1,15 +1,16 @@
 import { MODAL_BACKDROP, MODAL_PANEL, POPOVER } from '../lib/motion';
+import { smartUpper } from '../constants/constants';
 import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { Calendar as CalendarIcon, Download, X, FileSpreadsheet, FileText } from "lucide-react";
 import toast from "react-hot-toast";
 import { Trade, DefinitionTitles } from "../types";
-import { useMetricMode } from "../context/MetricContext";
 import { PrintReportModal } from "./PrintReportModal";
 import TradeDetailModal from "./TradeDetailModal";
 import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
 import { exportTradesToExcel, exportTradesToCSV } from "../utils/exportTrades";
+import { localDateKey } from '../utils/math';
 
 export interface TradeHistoryModalProps {
   isOpen: boolean;
@@ -17,7 +18,6 @@ export interface TradeHistoryModalProps {
   title: string;
   icon?: React.ReactNode;
   trades: Trade[];
-  currency: string;
   onEdit?: (trade: Trade) => void;
   onDelete?: (id: string) => void;
   definitionTitles?: DefinitionTitles;
@@ -29,12 +29,10 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
   title,
   icon,
   trades,
-  currency,
   onEdit,
   onDelete,
   definitionTitles
 }) => {
-  const { isRrMode } = useMetricMode();
   const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
@@ -74,7 +72,8 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         if (selectedTrade) {
-          setSelectedTrade(null);
+          // Açık işlem detayı kendi Escape'ini yönetir
+          return;
         } else if (isPrintModalOpen) {
           setIsPrintModalOpen(false);
         } else if (isOpen) {
@@ -113,11 +112,10 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
   const sessionBreakdown = React.useMemo(() => {
     return sortedTrades.reduce((acc, t) => {
       const s = t.session || "Belirtilmemiş";
-      if (!acc[s]) acc[s] = { pnl: 0, rr: 0 };
-      acc[s].pnl += t.pnl || 0;
+      if (!acc[s]) acc[s] = { rr: 0 };
       acc[s].rr += t.rr || 0;
       return acc;
-    }, {} as Record<string, { pnl: number; rr: number }>);
+    }, {} as Record<string, { rr: number }>);
   }, [sortedTrades]);
 
   return createPortal(
@@ -140,7 +138,7 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
             <motion.div
               key="trade-history-modal-content"
               {...MODAL_PANEL}
-              className="w-full max-w-4xl h-[80vh] sm:h-[620px] max-h-[85vh] min-h-[420px] flex flex-col bg-zinc-950/95 border border-zinc-800/80 rounded-2xl shadow-2xl relative overflow-hidden"
+              className="w-full max-w-4xl h-[80vh] sm:h-[620px] max-h-[85vh] min-h-0 sm:min-h-[420px] flex flex-col bg-zinc-950/95 border border-zinc-800/80 rounded-2xl shadow-2xl relative overflow-hidden"
               onClick={e => e.stopPropagation()}
             >
               {/* Header */}
@@ -159,7 +157,7 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                   </div>
                 </div>
                 <div className="flex items-center gap-2 relative" ref={exportRef}>
-                  <button
+                  <button aria-label="İndir" title="İndir"
                     type="button"
                     onClick={() => setIsExportOpen(!isExportOpen)}
                     className={`w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl border transition-colors duration-200 ease-out cursor-pointer group shadow-xs shrink-0 ${
@@ -224,13 +222,15 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                               type="button"
                               onClick={() => {
                                 try {
-                                  const dateStr = new Date().toISOString().slice(0, 10);
-                                  exportTradesToExcel(sortedTrades, `Islem_Gecmisi_${(activeTitle || 'Rapor').replace(/\s+/g, '_')}_${dateStr}`, {
-                                    currency,
+                                  const dateStr = localDateKey();
+                                  void toast.promise(exportTradesToExcel(sortedTrades, `Islem_Gecmisi_${(activeTitle || 'Rapor').replace(/\s+/g, '_')}_${dateStr}`, {
                                     title: `${activeTitle} İşlem Geçmişi`,
                                     definitionTitles: definitionTitles as any
+                                  }), {
+                                    loading: 'Excel hazırlanıyor…',
+                                    success: `Excel tablosu (.xlsx) indirildi (${sortedTrades.length} işlem).`,
+                                    error: (e) => e?.message || 'Excel dosyası oluşturulamadı.',
                                   });
-                                  toast.success(`Excel tablosu (.xlsx) indirildi (${sortedTrades.length} işlem).`);
                                   setIsExportOpen(false);
                                 } catch (e: any) {
                                   toast.error(e?.message || 'Hata oluştu.');
@@ -255,9 +255,8 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                               type="button"
                               onClick={() => {
                                 try {
-                                  const dateStr = new Date().toISOString().slice(0, 10);
+                                  const dateStr = localDateKey();
                                   exportTradesToCSV(sortedTrades, `Islem_Gecmisi_${(activeTitle || 'Rapor').replace(/\s+/g, '_')}_${dateStr}`, {
-                                    currency,
                                     title: `${activeTitle} İşlem Geçmişi`,
                                     definitionTitles: definitionTitles as any
                                   });
@@ -304,7 +303,7 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                     )}
                   </AnimatePresence>
 
-                  <button
+                  <button aria-label="Kapat" title="Kapat"
                     type="button"
                     onClick={onClose}
                     className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-zinc-400 hover:text-white bg-zinc-950 hover:bg-zinc-900/70 border border-zinc-700/50 rounded-xl transition-colors duration-200 ease-out cursor-pointer group shadow-xs shrink-0"
@@ -338,7 +337,7 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                 </div>
                 <div className="flex flex-wrap items-center justify-end gap-1.5 ml-auto">
                   {Object.entries(sessionBreakdown).map(([session, vals]) => {
-                    const val = isRrMode ? vals.rr : vals.pnl;
+                    const val = vals.rr;
                     if (val === 0) return null;
 
                     const valueColor = val > 0 ? "text-emerald-400" : "text-rose-400";
@@ -347,7 +346,7 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                       <div key={session} className="flex items-center justify-center gap-1 shrink-0 px-2 py-1 rounded-lg border border-zinc-800/80 bg-zinc-900 leading-none">
                         <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest font-sans leading-none">{session}:</span>
                         <span className={`text-[10px] font-black font-sans leading-none ${valueColor}`}>
-                          {isRrMode ? `${val > 0 ? "+" : ""}${val.toFixed(1)}R` : `${val > 0 ? "+" : ""}${val.toLocaleString("tr-TR", { maximumFractionDigits: 0 })}`}
+                          {`${val > 0 ? "+" : ""}${val.toFixed(1)}R`}
                         </span>
                       </div>
                     );
@@ -362,13 +361,13 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                     <tr className="text-[9px] text-zinc-400 uppercase tracking-widest border-b border-zinc-800/80">
                       <th className="py-2 px-3 font-sans select-none w-[20%] min-w-[120px] text-center">Parite</th>
                       <th className="py-2 px-2 text-center font-sans select-none w-[11%] min-w-[65px]">Yön</th>
-                      <th className="py-2 px-2 text-center font-sans select-none w-[11%] min-w-[65px]">RR</th>
+                      <th className="py-2 px-2 text-center font-sans select-none w-[11%] min-w-[65px]">R</th>
                       <th className="py-2 px-2 text-center font-sans select-none w-[14%] min-w-[75px]">Session</th>
                       <th className="py-2 px-2 text-center font-sans select-none w-[14%] min-w-[75px]">Sonuç</th>
                       <th className="py-2 px-3 text-center font-sans select-none w-[16%] min-w-[95px]">
-                        <div className="flex items-center justify-center w-full">Kâr/Zarar</div>
+                        <div className="flex items-center justify-center w-full">Risk</div>
                       </th>
-                      <th className="py-2 px-2 text-center font-sans select-none w-[14%] min-w-[80px]">Platform</th>
+                      <th className="py-2 px-2 text-center font-sans select-none w-[14%] min-w-[80px]">Hesap</th>
                     </tr>
                   </thead>
                   <tbody className="block sm:table-row-group">
@@ -376,17 +375,8 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                       const isWin = t.status === "WIN";
                       const isLoss = t.status === "LOSS";
                       const isBe = t.status === "BREAKEVEN";
-                      let pnlText = "—";
-                      let pnlColor = "text-zinc-400";
-                      if (isBe) {
-                        pnlText = `0.00 ${currency}`;
-                        pnlColor = "text-zinc-500 font-bold";
-                      } else {
-                        const pnlValue = t.pnl || 0;
-                        const prefix = pnlValue > 0 ? "+" : "";
-                        pnlText = `${prefix}${(pnlValue || 0).toLocaleString()} ${currency}`;
-                        pnlColor = pnlValue > 0 ? "text-emerald-400 font-bold" : (pnlValue < 0 ? "text-rose-400 font-bold" : "text-zinc-500 font-bold");
-                      }
+                      const pnlText = typeof t.riskPct === "number" ? `%${t.riskPct.toLocaleString("tr-TR", { maximumFractionDigits: 2 })}` : "—";
+                      const pnlColor = "text-zinc-300 font-bold";
 
                       return (
                         <tr
@@ -410,7 +400,7 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                           </td>
                           <td className="w-1/2 sm:w-[11%] sm:min-w-[65px] flex justify-start sm:justify-center items-center sm:table-cell order-3 py-1 px-0 sm:px-2 text-center sm:bg-zinc-900 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 align-middle">
                             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-1.5 w-full justify-start sm:justify-center">
-                              <span className="sm:hidden heading-3 h-[10px]">RR</span>
+                              <span className="sm:hidden heading-3 h-[10px]">R</span>
                               <div className="flex items-center justify-center w-full h-[18px]">
                                 {t.rr !== undefined && t.rr !== null && t.rr !== 0 ? (
                                   t.rr > 0 ? (
@@ -442,34 +432,30 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                           <td className="w-1/2 sm:w-[14%] sm:min-w-[75px] flex justify-end sm:justify-center items-center sm:table-cell order-4 py-1 px-0 sm:px-2 text-center sm:bg-zinc-900 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 align-middle">
                             <div className="flex items-center justify-center w-full h-[18px]">
                               {isWin ? (
-                                <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded-full uppercase tracking-wider font-sans transition-colors">WIN</span>
+                                <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded-full uppercase tracking-wider font-sans transition-colors">{smartUpper("WIN")}</span>
                               ) : isLoss ? (
                                 <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 group-hover:border-rose-500/50 rounded-full uppercase tracking-wider font-sans transition-colors">LOSS</span>
                               ) : isBe ? (
                                 <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-zinc-400 bg-zinc-500/10 border border-zinc-500/20 group-hover:border-zinc-500/50 rounded-full uppercase tracking-wider font-sans transition-colors">BE</span>
                               ) : (
-                                <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 group-hover:border-blue-500/50 rounded-full uppercase tracking-wider font-sans transition-colors">AÇIK</span>
+                                <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 group-hover:border-blue-500/50 rounded-full uppercase tracking-wider font-sans transition-colors">{smartUpper("AÇIK")}</span>
                               )}
                             </div>
                           </td>
                           <td className={`w-full sm:w-[16%] sm:min-w-[95px] flex justify-between sm:justify-center items-center sm:table-cell order-5 py-1 px-0 sm:px-3 text-right sm:text-center ${pnlColor} sm:bg-zinc-900 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 max-sm:pt-3 max-sm:border-t max-sm:border-zinc-800/50 sm:py-1 align-middle`}>
-                            <span className="sm:hidden text-[10px] font-bold text-zinc-500 uppercase tracking-widest text-left font-sans">Kâr/Zarar</span>
+                            <span className="sm:hidden text-[10px] font-bold text-zinc-500 uppercase tracking-widest text-left font-sans">{smartUpper("Risk")}</span>
                             <div className="flex flex-col sm:flex-row items-end sm:items-center gap-0.5 sm:gap-1.5 sm:w-full sm:justify-center sm:h-[20px]">
                               <span className="text-sm sm:text-xs font-bold font-sans inline-flex items-center justify-center h-[20px] leading-none tracking-tight">{pnlText}</span>
                             </div>
                           </td>
                           <td className="w-full sm:w-[14%] sm:min-w-[80px] flex justify-between sm:justify-center items-center sm:table-cell order-6 py-1 px-0 sm:px-2 text-center sm:bg-zinc-900 group-hover:bg-blue-950/10 sm:rounded-r-xl sm:border-y sm:border-r sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 sm:pt-1.5 pt-0 align-middle">
                             <div className="sm:hidden trade-mobile-only">
-                              <span className="heading-3">Platform</span>
+                              <span className="heading-3">Hesap</span>
                             </div>
                             <div className="flex items-center justify-center w-full">
-                              {t.platform ? (
-                                <span className="inline-flex items-center justify-center min-w-[54px] max-w-[130px] h-[20px] px-2.5 py-0 text-center text-[10px] font-bold text-zinc-300 bg-zinc-800/80 border border-zinc-700/80 group-hover:border-zinc-500 rounded-full uppercase tracking-wider font-sans transition-colors whitespace-nowrap truncate">
-                                  {t.platform}
-                                </span>
-                              ) : (
-                                <span className="text-zinc-600">—</span>
-                              )}
+                              <span className="inline-flex items-center justify-center min-w-[54px] max-w-[130px] h-[20px] px-2.5 py-0 text-center text-[10px] font-bold text-zinc-300 bg-zinc-800/80 border border-zinc-700/80 group-hover:border-zinc-500 rounded-full uppercase tracking-wider font-sans transition-colors whitespace-nowrap truncate">
+                                {t.platform || "Hesapsız"}
+                              </span>
                             </div>
                           </td>
                         </tr>
@@ -496,12 +482,13 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
         trades={sortedTrades}
         title={`${title} İşlem Raporu`}
         dateRangeText={title}
-        currency={currency}
       />
 
       <TradeDetailModal
         key="trade-history-detail-modal"
         trade={selectedTrade}
+        navList={sortedTrades}
+        onNavigate={setSelectedTrade}
         onClose={() => setSelectedTrade(null)}
         onEdit={(trade) => {
           if (onEdit) onEdit(trade);
@@ -513,7 +500,6 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
           setSelectedTrade(null);
           onClose();
         }}
-        currency={currency}
         definitionTitles={definitionTitles}
       />
     </>,

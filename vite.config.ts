@@ -2,99 +2,11 @@ import { VitePWA } from 'vite-plugin-pwa';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
-import {defineConfig, Plugin} from 'vite';
-
-function marketTickerPlugin(): Plugin {
-  const handleTicker = async (req: any, res: any) => {
-    try {
-      let bodyData: any = {};
-      if (req.method === 'POST') {
-        const buffers = [];
-        for await (const chunk of req) {
-          buffers.push(chunk);
-        }
-        if (buffers.length > 0) {
-          try {
-            bodyData = JSON.parse(Buffer.concat(buffers).toString());
-          } catch {}
-        }
-      }
-
-      const symbols = bodyData.symbols || ['OANDA:XAUUSD', 'TVC:USOIL'];
-
-      const tvResponse = await fetch('https://scanner.tradingview.com/global/scan', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
-        },
-        body: JSON.stringify({
-          symbols: { tickers: symbols },
-          columns: ['name', 'close', 'change', 'description', 'exchange', 'type']
-        })
-      });
-
-      if (tvResponse.ok) {
-        const tvData = await tvResponse.json();
-        res.setHeader('Content-Type', 'application/json');
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        return res.end(JSON.stringify({ success: true, data: tvData.data || [], timestamp: new Date().toISOString() }));
-      }
-
-      throw new Error('TradingView scanner response invalid');
-    } catch (error: any) {
-      res.statusCode = 500;
-      res.setHeader('Content-Type', 'application/json');
-      res.end(JSON.stringify({ error: error?.message || 'Failed to fetch market ticker' }));
-    }
-  };
-
-  const handleSymbols = async (req: any, res: any) => {
-    try {
-      const tvResponse = await fetch('https://scanner.tradingview.com/global/scan', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
-        },
-        body: JSON.stringify({
-          filter: [{ left: 'exchange', operation: 'in_range', right: ['OANDA', 'TVC', 'FXCM'] }],
-          columns: ['name', 'close', 'change', 'description', 'exchange', 'type'],
-          options: { range: [0, 500] }
-        })
-      });
-
-      if (tvResponse.ok) {
-        const tvData = await tvResponse.json();
-        res.setHeader('Content-Type', 'application/json');
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        return res.end(JSON.stringify({ success: true, data: tvData.data || [] }));
-      }
-
-      throw new Error('Failed to fetch available symbols');
-    } catch (error: any) {
-      res.statusCode = 500;
-      res.setHeader('Content-Type', 'application/json');
-      res.end(JSON.stringify({ error: error?.message || 'Failed to fetch symbols' }));
-    }
-  };
-
-  return {
-    name: 'market-ticker-plugin',
-    configureServer(server) {
-      server.middlewares.use('/api/market-ticker', handleTicker);
-      server.middlewares.use('/api/market-symbols', handleSymbols);
-    },
-    configurePreviewServer(server) {
-      server.middlewares.use('/api/market-ticker', handleTicker);
-      server.middlewares.use('/api/market-symbols', handleSymbols);
-    }
-  };
-}
+import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
   return {
-    plugins: [react(), tailwindcss(), marketTickerPlugin(), VitePWA({
+    plugins: [react(), tailwindcss(), VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['tj-icon-v5-64.png', 'tj-icon-v5.ico', 'tj-icon-v5.svg', 'tj-icon-v5-180.png'],
       workbox: {
@@ -174,24 +86,24 @@ export default defineConfig(() => {
         output: {
           manualChunks(id) {
             if (!id.includes('node_modules')) return;
-            // Not: önceki `id.includes('react')` kontrolü lucide-react, react-markdown, react-virtuoso,
+            // Not: önceki `id.includes('react')` kontrolü lucide-react, react-virtuoso,
             // react-hot-toast gibi paketleri de vendor-react içine çekiyordu. Artık yalnızca çekirdek paketler.
             if (/node_modules\/(react|react-dom|scheduler)\//.test(id)) return 'vendor-react';
             if (/node_modules\/(motion|framer-motion|motion-dom|motion-utils)\//.test(id)) return 'vendor-motion';
             if (/node_modules\/(firebase|@firebase)\//.test(id)) return 'vendor-firebase';
-            if (/node_modules\/(recharts|d3-[^/]+)\//.test(id)) return 'vendor-charts';
             if (/node_modules\/lucide-react\//.test(id)) return 'vendor-icons';
-            // Hepsi statik import; ayrı parçalar paralel indirilir ve uygulama kodu değişince önbellekten gelir.
-            if (/node_modules\/(xlsx|jspdf|html2canvas|html-to-image|canvg|fflate|dompurify|svg-pathdata|rgbcolor|stackblur-canvas)\//.test(id)) return 'vendor-export';
-            if (/node_modules\/(react-markdown|remark-[^/]+|rehype-[^/]+|unified|mdast-[^/]+|hast-[^/]+|micromark[^/]*|unist-[^/]+|vfile[^/]*|property-information|space-separated-tokens|comma-separated-tokens|decode-named-character-reference|character-entities[^/]*|trim-lines|trough|bail|is-plain-obj|devlop|html-url-attributes|estree-util-[^/]+|ccount|zwitch|longest-streak|markdown-table)\//.test(id)) return 'vendor-markdown';
+            // Dışa aktarma kütüphaneleri (xlsx, html-to-image) bilerek burada YOK:
+            // yalnızca dinamik import ile, kullanıldıkları anda indirilirler; Rollup her birini kendi parçasına ayırır.
           }
         }
       }
     },
     server: {
-      // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
-      hmr: { clientPort: 443, overlay: false },
+      // Canlı yenileme (HMR). Yerelde Vite sayfanın kendi portunu kullanır; HTTPS proxy arkasında çalışırken
+      // HMR_CLIENT_PORT=443 verilir. Eski sabit 443 ayarı yerelde bağlantıyı her açılışta düşürüyordu.
+      hmr: process.env.DISABLE_HMR === 'true'
+        ? false
+        : { overlay: false, ...(process.env.HMR_CLIENT_PORT ? { clientPort: Number(process.env.HMR_CLIENT_PORT) } : {}) },
       // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
     },

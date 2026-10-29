@@ -1,14 +1,15 @@
-import { EASE, SPRING, MODAL_BACKDROP, MODAL_PANEL, POPOVER } from './lib/motion';
-import { useState, useEffect, useMemo, useCallback, useRef, type ReactNode } from "react";
+import { EASE, SPRING, POPOVER } from './lib/motion';
+import { useState, useEffect, useMemo, useCallback, useRef, Suspense, startTransition, type ReactNode, type Dispatch, type SetStateAction } from "react";
 import { createPortal } from "react-dom";
-import { Trade, TradeStats, Note, JournalEntry, Certificate, DefinitionTitles, AccountCategory } from "./types";
+import { Trade, Note, JournalEntry, DefinitionTitles, AccountCategory, PropAccount } from "./types";
+import { loadPropAccounts, sanitizePropAccounts, PROP_ACCOUNTS_KEY, collectAccountImages } from "./lib/propAccounts";
+import { calculateComprehensiveStats } from "./lib/stats";
+import { edgeFromR } from "./lib/asiaAnalytics";
+import { applyGlobalFilters, countExtraFilters, DEFAULT_DATE_LIMIT, EMPTY_EXTRA_FILTERS } from "./lib/tradeFilters";
 import {
-  DEFAULT_PLATFORMS,
   DEFAULT_TIMEFRAMES,
   DEFAULT_HTF_TIMEFRAMES,
   DEFAULT_CONFIRMATIONS,
-  DEFAULT_LIQUIDITY_SWEEPS,
-  DEFAULT_CONCEPTS,
   DEFAULT_SESSIONS,
   DEFAULT_ASSETS,
   DEFAULT_PLAN_FIDELITIES,
@@ -16,46 +17,36 @@ import {
   DEFAULT_TREND_TYPES,
   DEFAULT_TP_TARGETS,
   DEFAULT_PREMIUM_DISCOUNTS,
-  DEFAULT_ENTRY_HOURS,
   DEFAULT_NEWS_DAYS,
   DEFAULT_STRATEGIES,
   DEFAULT_ASIA_RANGE_FVGS,
   NEWS_DAYS_EVENT,
   normalizeNewsDays,
-  replacePlatformCategories,
   DEFAULT_DEFINITION_TITLES,
   sanitizeDefinitionTitles,
-  normalizeSearchString,
   getTradeAccountCategory,
-  getStoredPlatformCategories,
+  titleCaseList,
 } from "./constants/constants";
 
 import StatsDashboard from "./components/StatsDashboard";
 import TradeList from "./components/TradeList";
-import DeepAnalysis from "./components/DeepAnalysis";
-import NotesView from "./components/NotesView";
-import JournalView from "./components/JournalView";
-import { CertificatesView } from "./components/CertificatesView";
-import AddTradeForm from "./components/AddTradeForm";
-import { GlobalFilterModal } from "./components/GlobalFilterModal";
-import { AuthModal } from "./components/AuthModal";
-import AICoPilotModal from "./components/AICoPilotModal";
-import DefinitionsManagerModal from "./components/DefinitionsManagerModal";
+import { lazyWithPreload, named, preloadWhenIdle } from "./lib/lazyWithPreload";
+import { PaneLoader } from "./components/common/Deferred";
 import { SectionErrorBoundary } from "./components/SectionErrorBoundary";
 import { AccountSwitcher } from "./components/AccountSwitcher";
 import { PWAInstallButton } from "./components/PWAInstallButton";
-import { useMetricMode } from "./context/MetricContext";
 import { useLocalStorageState } from "./hooks/useLocalStorageState";
+import { normalizeTrade, normalizeTrades, isValidTrade, canonicalAsset, canonicalAssetList } from "./lib/tradeModel";
 import { useExitMount } from "./hooks/useExitMount";
 import { useAppStore } from "./store/useAppStore";
+import { AllTradesContext } from "./lib/allTradesContext";
 import { Toaster, toast } from "react-hot-toast";
 
-import TradeDetailModal from "./components/TradeDetailModal";
-import BackupRescue from "./components/BackupRescue";
 
 
 import {
   Plus,
+  CalendarRange,
   LayoutDashboard,
   BarChart3,
   Cloud,
@@ -63,16 +54,15 @@ import {
   LogIn,
   FileText,
   Book,
-  Award,
   AlertTriangle,
   Filter,
   SlidersHorizontal,
   Settings,
-  Monitor,
   Pencil,
   Check,
   X,
   User as UserIcon,
+  Wallet,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { auth, db, logout } from "./lib/firebase";
@@ -86,25 +76,130 @@ import {
   deleteDoc,
   writeBatch,
   getDocs,
+  waitForPendingWrites,
 } from "firebase/firestore";
 import { onAuthStateChanged, User, updateProfile } from "firebase/auth";
-import { uploadImageToStorage } from "./lib/storage";
-import { calculateProfitFactor, calculateExpectancy, toRR } from "./lib/statMath";
+import { uploadImageToStorage, deleteAllUserImages, deleteImageByUrl } from "./lib/storage";
+import { reportCloudError, muteAuthErrors } from "./lib/cloudErrors";
+import { weeklyReviewDue } from "./lib/weeklyReview";
+import { NO_ACCOUNT } from "./components/tradeForm/shared";
+import { prepareTradeSave, prepareJournalSave, prepareNoteSave, upsertById, removeById, rollbackUpsert, restoreDeleted, mergeCloudSnapshot, byCreatedDesc, byUpdatedDesc, byJournalDateDesc, normalizeNote, normalizeJournal, normalizeNotes, normalizeJournals } from "./lib/recordStore";
+import { inScope, resolveScope, scopeKey, scopeLabel, scopeTrades, scopeAccountRows } from "./lib/accountScope";
+import { STORAGE_KEY as SITE_TOKEN_KEY } from "./components/PasswordGate";
 
-// Sekme panelleri: açılışta kurulur ve bellekte kalır; yalnızca gizlenir/gösterilir (giriş animasyonu CSS'te: .tab-pane).
+// Sekmeler ve pencereler ayrı parçalarda: ilk açılışta yalnızca ana panel indirilir.
+// Kalanlar tarayıcı boşta kaldıkça arka planda indirilir (preloadWhenIdle), açılınca beklemeden gelir.
+const DeepAnalysis = lazyWithPreload(() => import("./components/DeepAnalysis"));
+const JournalView = lazyWithPreload(() => import("./components/JournalView"));
+const NotesView = lazyWithPreload(() => import("./components/NotesView"));
+const PropView = lazyWithPreload(() => named(import("./components/PropView"), "PropView"));
+const AddTradeForm = lazyWithPreload(() => import("./components/AddTradeForm"));
+const GlobalFilterModal = lazyWithPreload(() => named(import("./components/GlobalFilterModal"), "GlobalFilterModal"));
+const AuthModal = lazyWithPreload(() => named(import("./components/AuthModal"), "AuthModal"));
+const DefinitionsManagerModal = lazyWithPreload(() => import("./components/DefinitionsManagerModal"));
+const TradeDetailModal = lazyWithPreload(() => import("./components/TradeDetailModal"));
+const BackupRescue = lazyWithPreload(() => import("./components/BackupRescue"));
+
+/** Boşta önden indirme sırası: en sık açılanlar önce (işlem formu ve detay açılışta hemen indirilir) */
+const IDLE_PRELOAD = [
+  GlobalFilterModal.preload,
+  DeepAnalysis.preload,
+  PropView.preload,
+  BackupRescue.preload,
+  JournalView.preload,
+  NotesView.preload,
+  DefinitionsManagerModal.preload,
+];
+
+const paneFallback = <PaneLoader minHeight={420} />;
+
+const DATE_LIMIT_LABELS: Record<string, string> = { "1w": "Son 1 hafta", "1m": "Son 1 ay", "3m": "Son 3 ay", "6m": "Son 6 ay", "1y": "Son 1 yıl" };
+
+/** Tarih aralığı daraltılmışsa görünür not: üst menüdeki hesap sayıları tüm zamanları sayar, panel daha az gösterebilir */
+const DateLimitNote = ({ limit, shown, onReset }: { limit: string; shown: number; onReset: () => void }) =>
+  limit === DEFAULT_DATE_LIMIT ? null : (
+    <div className="flex items-center justify-between gap-2 rounded-xl border border-amber-500/25 bg-amber-500/5 px-3 py-2 text-[11px] text-amber-200/90">
+      <span className="flex items-center gap-1.5 min-w-0">
+        <CalendarRange size={13} className="text-amber-300 shrink-0" />
+        <span className="truncate">
+          {DATE_LIMIT_LABELS[limit] || "Seçili aralık"} gösteriliyor · {shown} işlem
+        </span>
+      </span>
+      <button type="button" onClick={onReset} className="shrink-0 font-bold text-amber-200 hover:text-white transition-colors cursor-pointer">
+        Tüm zamanları göster
+      </button>
+    </div>
+  );
+
+// Sekme panelleri: İLK AÇILDIKLARINDA kurulur ve sonra bellekte kalır; yalnızca gizlenir/gösterilir (giriş animasyonu CSS'te: .tab-pane).
+// İlk açılışta önce "Yükleniyor" işareti çizilir (tıklama anında tepki), ağır içerik bir sonraki karede
+// kesintiye uğratılabilir bir güncellemeyle kurulur; böylece sekme düğmesi takılmaz.
 // Gizliyken alt ağaç dondurulur: son aktif render'ın elemanı yeniden kullanıldığından React gizli sekmeyi
 // Firestore anlık güncellemelerinde / modal açılışında yeniden render etmez. Sekme açılınca güncel veriyle çizilir.
 const TabPane = ({ active, className = "", children }: { active: boolean; className?: string; children: ReactNode }) => {
-  const frozen = useRef<ReactNode>(children);
-  if (active) frozen.current = children;
+  // Açılıştaki sekme beklemeden çizilir
+  const [ready, setReady] = useState(active);
+  useEffect(() => {
+    if (!active || ready) return;
+    let t = 0;
+    const raf = requestAnimationFrame(() => {
+      t = window.setTimeout(() => startTransition(() => setReady(true)), 0);
+    });
+    return () => {
+      cancelAnimationFrame(raf);
+      window.clearTimeout(t);
+    };
+  }, [active, ready]);
+  const frozen = useRef<ReactNode>(null);
+  if (active && ready) frozen.current = children;
   return (
-    <div hidden={!active} className={`tab-pane ${className}`}>
-      {frozen.current}
+    <div hidden={!active} className="tab-pane">
+      {ready ? (
+        <Suspense fallback={paneFallback}>
+          {/* Düzen sınıfları (gap vb.) içerik sarmalayıcısına uygulanır; dış kap yalnızca göster/gizle yapar */}
+          <div className={`pane-content-in ${className}`}>{frozen.current}</div>
+        </Suspense>
+      ) : active ? (
+        paneFallback
+      ) : null}
     </div>
   );
 };
 
 // Utility to recursively clean undefined, NaN, and invalid values before saving to Firestore
+/** localStorage'daki dizi kaydını güvenle okur: yoksa ya da bozuksa null. Her anahtar ayrı; biri bozuksa diğerleri etkilenmez. */
+const readStoredArray = (key: string): unknown[] | null => {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const v = JSON.parse(raw);
+    return Array.isArray(v) ? v : null;
+  } catch {
+    return null;
+  }
+};
+/** Ayar belgesindeki tanım listeleri ↔ yerel anahtarları */
+const SETTINGS_LIST_KEYS: [string, string][] = [
+  ["timeframes", "trading_timeframes_list"],
+  ["htfTimeframes", "trading_htf_timeframes_list"],
+  ["confirmations", "trading_confirmations_list"],
+  ["sessions", "trading_sessions_list"],
+  ["assets", "trading_assets_list"],
+  ["planFidelities", "trading_plan_fidelities_list"],
+  ["entryModels", "trading_entry_models_list"],
+  ["trendTypes", "trading_trend_types_list"],
+  ["tpTargets", "trading_tp_targets_list"],
+  ["premiumDiscounts", "trading_premium_discounts_list"],
+  ["newsDays", "trading_news_days_list"],
+  ["strategies", "trading_strategies_list"],
+  ["asiaRangeFvgs", "trading_asia_range_fvgs_list"],
+];
+/** Cihazdaki işlem/not/günlük verisinin hangi hesaba ait olduğu (hesaplar arası karışmayı önler) */
+const DATA_OWNER_KEY = "tj_data_owner";
+const reviveNotes = (v: unknown): Note[] => normalizeNotes(v);
+const reviveJournals = (v: unknown): JournalEntry[] => normalizeJournals(v);
+const onlyStrings = (v: unknown[]) => v.filter((x): x is string => typeof x === "string");
+
 const cleanForFirestore = <T extends Record<string, any>>(obj: T): T => {
   const result: any = {};
   for (const key in obj) {
@@ -113,7 +208,12 @@ const cleanForFirestore = <T extends Record<string, any>>(obj: T): T => {
       if (val === undefined) continue;
       if (typeof val === 'number' && isNaN(val)) continue;
       if (typeof val === 'function') continue;
-      if (val && typeof val === 'object' && !Array.isArray(val) && !((val as any) instanceof Date)) {
+      if (Array.isArray(val)) {
+        // Dizilerdeki nesneler de temizlenir (ör. prop hesapları); Firestore tanımsız alanı kabul etmez
+        result[key] = val
+          .filter((v) => v !== undefined && !(typeof v === 'number' && isNaN(v)))
+          .map((v) => (v && typeof v === 'object' && !(v instanceof Date) && !Array.isArray(v) ? cleanForFirestore(v) : v));
+      } else if (val && typeof val === 'object' && !((val as any) instanceof Date)) {
         result[key] = cleanForFirestore(val);
       } else {
         result[key] = val;
@@ -121,161 +221,6 @@ const cleanForFirestore = <T extends Record<string, any>>(obj: T): T => {
     }
   }
   return result;
-};
-
-export const calculateComprehensiveStats = (list: Trade[], isRrMode: boolean = false): TradeStats => {
-  const totalTrades = list.length;
-  const closedTrades = totalTrades;
-
-  let winningTrades = 0;
-  let losingTrades = 0;
-  let breakevenTrades = 0;
-
-  let totalPnl = 0;
-  let grossWins = 0;
-  let grossLosses = 0;
-  let largestWin = 0;
-  let largestLoss = 0;
-
-  const now = Date.now();
-  const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
-  const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
-
-  let weeklyPnl = 0;
-  let monthlyPnl = 0;
-
-  let netR = 0;
-  let grossWinRR = 0;
-  let grossLossRR = 0;
-  let largestWinRR = 0;
-  let largestLossRR = 0;
-
-  const assetPnlMap: { [key: string]: number } = {};
-  const assetRrMap: { [key: string]: number } = {};
-
-  for (let i = 0; i < list.length; i++) {
-    const t = list[i];
-    if (t.status === "WIN") winningTrades++;
-    else if (t.status === "LOSS") losingTrades++;
-    else if (t.status === "BREAKEVEN") breakevenTrades++;
-
-    const p = t.pnl || 0;
-    const rrVal = t.rr || 0;
-    
-    totalPnl += p;
-    assetPnlMap[t.asset] = (assetPnlMap[t.asset] || 0) + p;
-    assetRrMap[t.asset] = (assetRrMap[t.asset] || 0) + rrVal;
-
-    if (t.createdAt >= sevenDaysAgo) {
-      weeklyPnl += p;
-    }
-    if (t.createdAt >= thirtyDaysAgo) {
-      monthlyPnl += p;
-    }
-
-    if (p > 0) {
-      grossWins += p;
-      if (p > largestWin) largestWin = p;
-    } else if (p < 0) {
-      const absLoss = Math.abs(p);
-      grossLosses += absLoss;
-      if (absLoss > largestLoss) largestLoss = absLoss;
-    }
-
-    netR += rrVal;
-    if (rrVal > 0) {
-      grossWinRR += rrVal;
-      if (rrVal > largestWinRR) largestWinRR = rrVal;
-    } else if (rrVal < 0) {
-      const absLossRR = Math.abs(rrVal);
-      grossLossRR += absLossRR;
-      if (absLossRR > largestLossRR) largestLossRR = absLossRR;
-    }
-  }
-
-  const winRate = closedTrades > 0 ? (winningTrades / closedTrades) * 100 : 0;
-
-  const netPnl = totalPnl;
-  const averageWin = winningTrades > 0 ? grossWins / winningTrades : 0;
-  const averageLoss = losingTrades > 0 ? grossLosses / losingTrades : 0;
-
-  const averageWinRR = toRR(winningTrades > 0 ? grossWinRR / winningTrades : 0);
-  const averageLossRR = toRR(losingTrades > 0 ? grossLossRR / losingTrades : 0);
-  
-  // Calculate Profit Factor based on toggle
-  const profitFactorRR = calculateProfitFactor(toRR(grossWinRR), toRR(grossLossRR));
-  const profitFactorCash = calculateProfitFactor(toRR(grossWins), toRR(grossLosses));
-  const profitFactor = isRrMode ? profitFactorRR : profitFactorCash;
-  
-  // Predict Expectancy based on toggle
-  const winRateDecimal = closedTrades > 0 ? (winningTrades / closedTrades) : 0;
-  const lossRateDecimal = closedTrades > 0 ? (losingTrades / closedTrades) : 0;
-  const expectancyRR = calculateExpectancy(winRateDecimal, lossRateDecimal, averageWinRR, averageLossRR);
-  const expectancyCash = (winRateDecimal * averageWin) - (lossRateDecimal * averageLoss);
-
-  let bestAsset = "";
-  let worstAsset = "";
-  let maxPnlValue = -Infinity;
-  let minPnlValue = Infinity;
-
-  const targetMap = isRrMode ? assetRrMap : assetPnlMap;
-
-  Object.entries(targetMap).forEach(([asset, val]) => {
-    if (val > maxPnlValue) {
-      maxPnlValue = val;
-      bestAsset = val > 0 ? asset : "";
-    }
-    if (val < minPnlValue) {
-      minPnlValue = val;
-      worstAsset = val < 0 ? asset : "";
-    }
-  });
-
-  return {
-    totalTrades,
-    closedTrades,
-    winningTrades,
-    losingTrades,
-    breakevenTrades,
-    winRate,
-    totalPnl,
-    netPnl,
-    averageWin,
-    averageLoss,
-    profitFactor, // toggled value
-    largestWin,
-    largestLoss,
-    bestAsset,
-    worstAsset,
-    weeklyPnl,
-    monthlyPnl,
-    netR,
-    averageWinRR,
-    averageLossRR,
-    profitFactorRR,
-    largestWinRR,
-    largestLossRR,
-    expectancyRR,
-    expectancyCash,
-  };
-};
-
-const getMinTimestamp = (limit: string): number => {
-  const now = Date.now();
-  switch (limit) {
-    case "1w":
-      return now - 7 * 24 * 60 * 60 * 1000;
-    case "1m":
-      return now - 30 * 24 * 60 * 60 * 1000;
-    case "3m":
-      return now - 90 * 24 * 60 * 60 * 1000;
-    case "6m":
-      return now - 180 * 24 * 60 * 60 * 1000;
-    case "1y":
-      return now - 365 * 24 * 60 * 60 * 1000;
-    default:
-      return 0; // "all"
-  }
 };
 
 // Yedekteki ayarları yalnızca bilinen alanlarla ve doğrulanmış biçimde alır (bozuk/yabancı alanlar buluta yazılmaz).
@@ -293,53 +238,42 @@ const sanitizeImportedSettings = (raw: any) => {
   };
   const out: Record<string, any> = {};
   const listKeys = [
-    "platforms", "timeframes", "htfTimeframes", "confirmations", "sessions", "assets",
-    "planFidelities", "entryModels", "trendTypes", "tpTargets", "premiumDiscounts", "entryHours", "strategies", "asiaRangeFvgs",
+    "timeframes", "htfTimeframes", "confirmations", "sessions", "assets",
+    "planFidelities", "entryModels", "trendTypes", "tpTargets", "premiumDiscounts", "strategies", "asiaRangeFvgs",
   ];
   listKeys.forEach((k) => {
     const v = strList(raw[k]);
     if (v) out[k] = v;
   });
-  const sweeps = strList(raw.liquiditySweeps) || strList(raw.concepts);
-  if (sweeps) {
-    out.concepts = sweeps;
-    out.liquiditySweeps = sweeps;
-  }
   if (Array.isArray(raw.newsDays)) out.newsDays = normalizeNewsDays(raw.newsDays);
   if (raw.definitionTitles && typeof raw.definitionTitles === "object") {
     out.definitionTitles = sanitizeDefinitionTitles(raw.definitionTitles);
   }
-  if (raw.platformCategories && typeof raw.platformCategories === "object") {
-    const cats: Record<string, string> = {};
-    Object.entries(raw.platformCategories).forEach(([k, v]) => {
-      if (v === "FUNDED" || v === "CHALLENGE" || v === "DEMO") cats[k.trim()] = v as string;
-    });
-    out.platformCategories = cats;
-  }
+  if (Array.isArray(raw.propAccounts)) out.propAccounts = sanitizePropAccounts(raw.propAccounts);
   return Object.keys(out).length > 0 ? out : null;
 };
 
 
 export default function App() {
-  const { isRrMode, setMode } = useMetricMode();
   const isClearingRef = useRef(false);
   // Trade Ledger Database State
-  const [trades, setTrades] = useLocalStorageState<Trade[]>("trading_journal_db", []);
-  const [notes, setNotes] = useLocalStorageState<Note[]>("trading_journal_notes", []);
-  const [journals, setJournals] = useLocalStorageState<JournalEntry[]>("trading_journal_journals", []);
-  const [certificates, setCertificates] = useLocalStorageState<Certificate[]>("trading_journal_certificates", []);
+  const [trades, setTrades] = useLocalStorageState<Trade[]>("trading_journal_db", [], 300, false, null, normalizeTrades);
+  const [notes, setNotes] = useLocalStorageState<Note[]>("trading_journal_notes", [], 300, false, null, reviveNotes);
+  const [journals, setJournals] = useLocalStorageState<JournalEntry[]>("trading_journal_journals", [], 300, false, null, reviveJournals);
 
   // Callback'ler listeye bağımlı olmasın: her zaman güncel listeyi ref'ten okurlar. Böylece kaydet/sil
   // fonksiyonlarının kimliği veri değişince değişmez ve alt ekranlar gereksiz yere yeniden çizilmez.
+  const tradesRef = useRef(trades);
+  tradesRef.current = trades;
   const notesRef = useRef(notes);
   notesRef.current = notes;
   const journalsRef = useRef(journals);
   journalsRef.current = journals;
-  const certificatesRef = useRef(certificates);
-  certificatesRef.current = certificates;
   // Buluta yazımı süren kayıtlar: bu sürede gelen bir snapshot, henüz buluta ulaşmamış yeni kaydı listeden silmesin
   const pendingWriteIdsRef = useRef<Set<string>>(new Set());
   const [user, setUser] = useState<User | null>(null);
+  const [displayNameOverride, setDisplayNameOverride] = useState<string | null>(null);
+  const displayName = displayNameOverride ?? user?.displayName ?? null;
   const [, setIsAuthInitializing] = useState(false);
   const [indexErrorUrl] = useState<string | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -348,7 +282,6 @@ export default function App() {
   const settingsRef = useRef<HTMLDivElement>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
-  const [isCopilotOpen, setIsCopilotOpen] = useState(false);
   const [isEditingUsername, setIsEditingUsername] = useState(false);
   const [tempUsername, setTempUsername] = useState("");
 
@@ -358,7 +291,7 @@ export default function App() {
     | "deep-analysis"
     | "journal"
     | "notes"
-    | "certificates"
+    | "prop"
   >("dashboard");
 
   const handleTabChange = useCallback((tab: typeof currentTab) => {
@@ -366,64 +299,48 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, []);
 
-  // Account Category Switcher State (ALL | FUNDED | CHALLENGE | DEMO)
-  const [activeAccountCategory, setActiveAccountCategory] = useState<AccountCategory>(() => {
+  // Hesap kapsamı (üst çubuk): uygulama her açılışta TÜMÜ (tüm prop hesapları) ile başlar.
+  // Hesapsız işlemler TÜMÜ'ye dahil değildir; yalnızca HESAPSIZ bilinçli seçilince görünür. Seçim oturum içinde tutulur.
+  const [activeAccountCategory, setActiveAccountCategory] = useState<AccountCategory>("ALL");
+  // Challenge / Funded altında tek prop hesabı seçilebilir (yoksa kategorinin tamamı)
+  const [activeAccountId, setActiveAccountId] = useState<string | null>(null);
+  useEffect(() => {
+    // Eski sürümlerin kalıcı kapsam kaydı artık kullanılmıyor
     try {
-      const saved = localStorage.getItem('tj_active_account_category');
-      if (saved === 'DEMO' || saved === 'FUNDED' || saved === 'CHALLENGE' || saved === 'ALL') {
-        return saved as AccountCategory;
-      }
-    } catch (e) {}
-    return 'ALL';
-  });
-
-  const handleAccountCategoryChange = useCallback((category: AccountCategory) => {
-    setActiveAccountCategory(category);
-    try {
-      localStorage.setItem('tj_active_account_category', category);
+      localStorage.removeItem("tj_active_account_category");
+      localStorage.removeItem("tj_active_account_id");
     } catch (e) {}
   }, []);
 
-  const [categoryVersion, setCategoryVersion] = useState(0);
-
-  useEffect(() => {
-    const handleCatUpdate = () => {
-      setCategoryVersion((v) => v + 1);
-    };
-    window.addEventListener('tj_platform_categories_updated', handleCatUpdate);
-    return () => {
-      window.removeEventListener('tj_platform_categories_updated', handleCatUpdate);
-    };
+  const handleAccountScopeChange = useCallback((category: AccountCategory, accountId: string | null = null) => {
+    setActiveAccountCategory(category);
+    setActiveAccountId(accountId);
   }, []);
 
   const accountCategoryCounts = useMemo(() => {
     let funded = 0;
     let challenge = 0;
     let demo = 0;
-    const customCategories = getStoredPlatformCategories();
     trades.forEach((t) => {
-      const cat = getTradeAccountCategory(t, customCategories);
+      const cat = getTradeAccountCategory(t);
       if (cat === 'FUNDED') funded++;
       else if (cat === 'CHALLENGE') challenge++;
       else demo++;
     });
     return {
-      all: trades.length,
+      // TÜMÜ = Challenge + Funded (hesapsızlar ayrı sayılır)
+      all: funded + challenge,
       funded,
       challenge,
       demo,
     };
-  }, [trades, categoryVersion]);
+  }, [trades]);
 
     const {
     globalSelectedConfirmations,
     setGlobalSelectedConfirmations,
-    globalSelectedConcepts,
-    setGlobalSelectedConcepts,
     globalSelectedPlanFidelity,
     setGlobalSelectedPlanFidelity,
-    globalSelectedPlatforms,
-    setGlobalSelectedPlatforms,
     globalSelectedAssets,
     setGlobalSelectedAssets,
     globalSelectedSessions,
@@ -454,30 +371,38 @@ export default function App() {
     setGlobalMinMfePips,
     globalMaxMfePips,
     setGlobalMaxMfePips,
-    setIsQuantMode,
+    globalExtra,
+    setGlobalExtra,
   } = useAppStore();
 
   useEffect(() => {
     document.title = "Trading Journal";
   }, [false]);
 
-  // Custom platforms management state persistent
-  const [platforms, setPlatforms] = useState<string[]>(() => {
-    try {
-      const stored = localStorage.getItem("trading_platforms_list");
-      if (stored) {
-        return JSON.parse(stored);
-      }
-    } catch (e) {
-      console.error(e);
-    }
-    return DEFAULT_PLATFORMS;
-  });
   const [isPlatformMenuOpen, setIsPlatformMenuOpen] = useState(false);
   // Koşullu `{open && <Modal/>}` çıkış animasyonunu keser: kapanış animasyonu bitene kadar bağlı tut
   const platformMenuMounted = useExitMount(isPlatformMenuOpen);
   const authModalMounted = useExitMount(isAuthModalOpen);
-  const copilotMounted = useExitMount(isCopilotOpen);
+  const globalFilterMounted = useExitMount(isGlobalFilterModalOpen);
+
+  // Kalan sekme/pencere parçalarını boşta önden indir
+  useEffect(() => {
+    // İşlem formu ve detay: ilk çizimden hemen sonra indirilir, ilk tıklamada içerik bekletmeden gelir
+    let warm = 0;
+    const t = window.setTimeout(() => {
+      AddTradeForm.preload().then(() => {
+        // Parça indi: formu boşta, gizli olarak kur
+        warm = window.setTimeout(() => startTransition(() => setFormWarm(true)), 300);
+      });
+      TradeDetailModal.preload();
+    }, 0);
+    const cancel = preloadWhenIdle(IDLE_PRELOAD, 600);
+    return () => {
+      window.clearTimeout(t);
+      window.clearTimeout(warm);
+      cancel();
+    };
+  }, []);
 
   // Üst navigasyon çubuğu yüksekliği: pencere katmanları bunun altından başlar, çubuk hep görünür kalır
   const headerRef = useRef<HTMLElement | null>(null);
@@ -496,36 +421,25 @@ export default function App() {
     return () => ro.disconnect();
   }, []);
 
-  const persistPlatforms = useCallback((updated: string[], syncCloud = true) => {
-    setPlatforms(updated);
-    try {
-      localStorage.setItem("trading_platforms_list", JSON.stringify(updated));
-      if (syncCloud && user) {
-        setDoc(doc(db, "settings", user.uid), cleanForFirestore({ platforms: updated, userId: user.uid }), { merge: true })
-          .catch(err => console.error(err));
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  }, [user]);
-
   const [timeframes, setTimeframes] = useState<string[]>(() => {
     try {
       const stored = localStorage.getItem("trading_timeframes_list");
-      if (stored) return JSON.parse(stored);
+      if (stored) { const v = JSON.parse(stored); if (Array.isArray(v)) return titleCaseList(v); }
     } catch (e) {
       console.error(e);
     }
     return DEFAULT_TIMEFRAMES;
   });
 
-  const persistTimeframes = useCallback((updated: string[], syncCloud = true) => {
+  const persistTimeframes = useCallback((incoming: string[], syncCloud = true) => {
+    // Her kelimenin ilk harfi büyük (Asia Range, Entry Model); harf farkıyla tekrar edenler tek kalır
+    const updated = titleCaseList(incoming);
     setTimeframes(updated);
     try {
       localStorage.setItem("trading_timeframes_list", JSON.stringify(updated));
       if (syncCloud && user) {
         setDoc(doc(db, "settings", user.uid), cleanForFirestore({ timeframes: updated, userId: user.uid }), { merge: true })
-          .catch(err => console.error(err));
+          .catch(err => reportCloudError("ayar kaydı", err, "Tanımlamalar buluta kaydedilemedi; cihazda tutuluyor."));
       }
     } catch (e) {
       console.error(e);
@@ -535,20 +449,22 @@ export default function App() {
   const [htfTimeframes, setHtfTimeframes] = useState<string[]>(() => {
     try {
       const stored = localStorage.getItem("trading_htf_timeframes_list");
-      if (stored) return JSON.parse(stored);
+      if (stored) { const v = JSON.parse(stored); if (Array.isArray(v)) return titleCaseList(v); }
     } catch (e) {
       console.error(e);
     }
     return DEFAULT_HTF_TIMEFRAMES;
   });
 
-  const persistHtfTimeframes = useCallback((updated: string[], syncCloud = true) => {
+  const persistHtfTimeframes = useCallback((incoming: string[], syncCloud = true) => {
+    // Her kelimenin ilk harfi büyük (Asia Range, Entry Model); harf farkıyla tekrar edenler tek kalır
+    const updated = titleCaseList(incoming);
     setHtfTimeframes(updated);
     try {
       localStorage.setItem("trading_htf_timeframes_list", JSON.stringify(updated));
       if (syncCloud && user) {
         setDoc(doc(db, "settings", user.uid), cleanForFirestore({ htfTimeframes: updated, userId: user.uid }), { merge: true })
-          .catch(err => console.error(err));
+          .catch(err => reportCloudError("ayar kaydı", err, "Tanımlamalar buluta kaydedilemedi; cihazda tutuluyor."));
       }
     } catch (e) {
       console.error(e);
@@ -558,70 +474,47 @@ export default function App() {
   const [confirmations, setConfirmations] = useState<string[]>(() => {
     try {
       const stored = localStorage.getItem("trading_confirmations_list");
-      if (stored) return JSON.parse(stored);
+      if (stored) { const v = JSON.parse(stored); if (Array.isArray(v)) return titleCaseList(v); }
     } catch (e) {
       console.error(e);
     }
     return DEFAULT_CONFIRMATIONS;
   });
 
-  const persistConfirmations = useCallback((updated: string[], syncCloud = true) => {
+  const persistConfirmations = useCallback((incoming: string[], syncCloud = true) => {
+    // Her kelimenin ilk harfi büyük (Asia Range, Entry Model); harf farkıyla tekrar edenler tek kalır
+    const updated = titleCaseList(incoming);
     setConfirmations(updated);
     try {
       localStorage.setItem("trading_confirmations_list", JSON.stringify(updated));
       if (syncCloud && user) {
         setDoc(doc(db, "settings", user.uid), cleanForFirestore({ confirmations: updated, userId: user.uid }), { merge: true })
-          .catch(err => console.error(err));
+          .catch(err => reportCloudError("ayar kaydı", err, "Tanımlamalar buluta kaydedilemedi; cihazda tutuluyor."));
       }
     } catch (e) {
       console.error(e);
     }
   }, [user]);
-
-  const [liquiditySweeps, setLiquiditySweeps] = useState<string[]>(() => {
-    try {
-      const stored = localStorage.getItem("trading_liquidity_sweeps_list") || localStorage.getItem("trading_concepts_list");
-      if (stored) return JSON.parse(stored);
-    } catch (e) {
-      console.error(e);
-    }
-    return DEFAULT_LIQUIDITY_SWEEPS;
-  });
-
-  const persistLiquiditySweeps = useCallback((updated: string[], syncCloud = true) => {
-    setLiquiditySweeps(updated);
-    try {
-      localStorage.setItem("trading_liquidity_sweeps_list", JSON.stringify(updated));
-      localStorage.setItem("trading_concepts_list", JSON.stringify(updated));
-      if (syncCloud && user) {
-        setDoc(doc(db, "settings", user.uid), cleanForFirestore({ liquiditySweeps: updated, concepts: updated, userId: user.uid }), { merge: true })
-          .catch(err => console.error(err));
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  }, [user]);
-
-  const concepts = liquiditySweeps;
-  const persistConcepts = persistLiquiditySweeps;
 
   const [sessions, setSessions] = useState<string[]>(() => {
     try {
       const stored = localStorage.getItem("trading_sessions_list");
-      if (stored) return JSON.parse(stored);
+      if (stored) { const v = JSON.parse(stored); if (Array.isArray(v)) return titleCaseList(v); }
     } catch (e) {
       console.error(e);
     }
     return DEFAULT_SESSIONS;
   });
 
-  const persistSessions = useCallback((updated: string[], syncCloud = true) => {
+  const persistSessions = useCallback((incoming: string[], syncCloud = true) => {
+    // Her kelimenin ilk harfi büyük (Asia Range, Entry Model); harf farkıyla tekrar edenler tek kalır
+    const updated = titleCaseList(incoming);
     setSessions(updated);
     try {
       localStorage.setItem("trading_sessions_list", JSON.stringify(updated));
       if (syncCloud && user) {
         setDoc(doc(db, "settings", user.uid), cleanForFirestore({ sessions: updated, userId: user.uid }), { merge: true })
-          .catch(err => console.error(err));
+          .catch(err => reportCloudError("ayar kaydı", err, "Tanımlamalar buluta kaydedilemedi; cihazda tutuluyor."));
       }
     } catch (e) {
       console.error(e);
@@ -631,31 +524,44 @@ export default function App() {
   const [assets, setAssets] = useState<string[]>(() => {
     try {
       const stored = localStorage.getItem("trading_assets_list");
-      if (stored) return JSON.parse(stored);
+      // Pariteler tek biçimde (EUR/USD → EURUSD); aynı paritenin iki yazımı tek kayda iner
+      if (stored) return canonicalAssetList(JSON.parse(stored));
     } catch (e) {
       console.error(e);
     }
     return DEFAULT_ASSETS;
   });
 
-  const persistAssets = useCallback((updated: string[], syncCloud = true) => {
+  const persistAssets = useCallback((incoming: string[], syncCloud = true) => {
+    const updated = canonicalAssetList(incoming);
     setAssets(updated);
     try {
       localStorage.setItem("trading_assets_list", JSON.stringify(updated));
       if (syncCloud && user) {
         setDoc(doc(db, "settings", user.uid), cleanForFirestore({ assets: updated, userId: user.uid }), { merge: true })
-          .catch(err => console.error(err));
+          .catch(err => reportCloudError("ayar kaydı", err, "Tanımlamalar buluta kaydedilemedi; cihazda tutuluyor."));
       }
     } catch (e) {
       console.error(e);
     }
   }, [user]);
 
+  // Eski yazımlı (EUR/USD) parite listesi bir kez tek biçimle kayda (ve oturum açıksa buluta) yazılır
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("trading_assets_list");
+      if (!raw) return;
+      const clean = canonicalAssetList(JSON.parse(raw));
+      if (JSON.stringify(clean) !== raw) persistAssets(clean, !!user);
+    } catch (e) { /* bozuk kayıt: varsayılan liste kullanılır */ }
+  }, [persistAssets, user]);
+
   const [planFidelities, setPlanFidelities] = useState<string[]>(() => {
     try {
       const stored = localStorage.getItem("trading_plan_fidelities_list");
       if (stored) {
-        return JSON.parse(stored);
+        const v = JSON.parse(stored);
+        if (Array.isArray(v)) return titleCaseList(v);
       }
     } catch (e) {
       console.error(e);
@@ -663,13 +569,15 @@ export default function App() {
     return DEFAULT_PLAN_FIDELITIES;
   });
 
-  const persistPlanFidelities = useCallback((updated: string[], syncCloud = true) => {
+  const persistPlanFidelities = useCallback((incoming: string[], syncCloud = true) => {
+    // Her kelimenin ilk harfi büyük (Asia Range, Entry Model); harf farkıyla tekrar edenler tek kalır
+    const updated = titleCaseList(incoming);
     setPlanFidelities(updated);
     try {
       localStorage.setItem("trading_plan_fidelities_list", JSON.stringify(updated));
       if (syncCloud && user) {
         setDoc(doc(db, "settings", user.uid), cleanForFirestore({ planFidelities: updated, userId: user.uid }), { merge: true })
-          .catch(err => console.error(err));
+          .catch(err => reportCloudError("ayar kaydı", err, "Tanımlamalar buluta kaydedilemedi; cihazda tutuluyor."));
       }
     } catch (e) {
       console.error(e);
@@ -679,20 +587,22 @@ export default function App() {
   const [entryModels, setEntryModels] = useState<string[]>(() => {
     try {
       const stored = localStorage.getItem("trading_entry_models_list");
-      if (stored) return JSON.parse(stored);
+      if (stored) { const v = JSON.parse(stored); if (Array.isArray(v)) return titleCaseList(v); }
     } catch (e) {
       console.error(e);
     }
     return DEFAULT_ENTRY_MODELS;
   });
 
-  const persistEntryModels = useCallback((updated: string[], syncCloud = true) => {
+  const persistEntryModels = useCallback((incoming: string[], syncCloud = true) => {
+    // Her kelimenin ilk harfi büyük (Asia Range, Entry Model); harf farkıyla tekrar edenler tek kalır
+    const updated = titleCaseList(incoming);
     setEntryModels(updated);
     try {
       localStorage.setItem("trading_entry_models_list", JSON.stringify(updated));
       if (syncCloud && user) {
         setDoc(doc(db, "settings", user.uid), cleanForFirestore({ entryModels: updated, userId: user.uid }), { merge: true })
-          .catch(err => console.error(err));
+          .catch(err => reportCloudError("ayar kaydı", err, "Tanımlamalar buluta kaydedilemedi; cihazda tutuluyor."));
       }
     } catch (e) {
       console.error(e);
@@ -702,20 +612,22 @@ export default function App() {
   const [trendTypes, setTrendTypes] = useState<string[]>(() => {
     try {
       const stored = localStorage.getItem("trading_trend_types_list");
-      if (stored) return JSON.parse(stored);
+      if (stored) { const v = JSON.parse(stored); if (Array.isArray(v)) return titleCaseList(v); }
     } catch (e) {
       console.error(e);
     }
     return DEFAULT_TREND_TYPES;
   });
 
-  const persistTrendTypes = useCallback((updated: string[], syncCloud = true) => {
+  const persistTrendTypes = useCallback((incoming: string[], syncCloud = true) => {
+    // Her kelimenin ilk harfi büyük (Asia Range, Entry Model); harf farkıyla tekrar edenler tek kalır
+    const updated = titleCaseList(incoming);
     setTrendTypes(updated);
     try {
       localStorage.setItem("trading_trend_types_list", JSON.stringify(updated));
       if (syncCloud && user) {
         setDoc(doc(db, "settings", user.uid), cleanForFirestore({ trendTypes: updated, userId: user.uid }), { merge: true })
-          .catch(err => console.error(err));
+          .catch(err => reportCloudError("ayar kaydı", err, "Tanımlamalar buluta kaydedilemedi; cihazda tutuluyor."));
       }
     } catch (e) {
       console.error(e);
@@ -725,20 +637,22 @@ export default function App() {
   const [tpTargets, setTpTargets] = useState<string[]>(() => {
     try {
       const stored = localStorage.getItem("trading_tp_targets_list");
-      if (stored) return JSON.parse(stored);
+      if (stored) { const v = JSON.parse(stored); if (Array.isArray(v)) return titleCaseList(v); }
     } catch (e) {
       console.error(e);
     }
     return DEFAULT_TP_TARGETS;
   });
 
-  const persistTpTargets = useCallback((updated: string[], syncCloud = true) => {
+  const persistTpTargets = useCallback((incoming: string[], syncCloud = true) => {
+    // Her kelimenin ilk harfi büyük (Asia Range, Entry Model); harf farkıyla tekrar edenler tek kalır
+    const updated = titleCaseList(incoming);
     setTpTargets(updated);
     try {
       localStorage.setItem("trading_tp_targets_list", JSON.stringify(updated));
       if (syncCloud && user) {
         setDoc(doc(db, "settings", user.uid), cleanForFirestore({ tpTargets: updated, userId: user.uid }), { merge: true })
-          .catch(err => console.error(err));
+          .catch(err => reportCloudError("ayar kaydı", err, "Tanımlamalar buluta kaydedilemedi; cihazda tutuluyor."));
       }
     } catch (e) {
       console.error(e);
@@ -748,43 +662,22 @@ export default function App() {
   const [premiumDiscounts, setPremiumDiscounts] = useState<string[]>(() => {
     try {
       const stored = localStorage.getItem("trading_premium_discounts_list");
-      if (stored) return JSON.parse(stored);
+      if (stored) { const v = JSON.parse(stored); if (Array.isArray(v)) return titleCaseList(v); }
     } catch (e) {
       console.error(e);
     }
     return DEFAULT_PREMIUM_DISCOUNTS;
   });
 
-  const persistPremiumDiscounts = useCallback((updated: string[], syncCloud = true) => {
+  const persistPremiumDiscounts = useCallback((incoming: string[], syncCloud = true) => {
+    // Her kelimenin ilk harfi büyük (Asia Range, Entry Model); harf farkıyla tekrar edenler tek kalır
+    const updated = titleCaseList(incoming);
     setPremiumDiscounts(updated);
     try {
       localStorage.setItem("trading_premium_discounts_list", JSON.stringify(updated));
       if (syncCloud && user) {
         setDoc(doc(db, "settings", user.uid), cleanForFirestore({ premiumDiscounts: updated, userId: user.uid }), { merge: true })
-          .catch(err => console.error(err));
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  }, [user]);
-
-  const [entryHours, setEntryHours] = useState<string[]>(() => {
-    try {
-      const stored = localStorage.getItem("trading_entry_hours_list");
-      if (stored) return JSON.parse(stored);
-    } catch (e) {
-      console.error(e);
-    }
-    return DEFAULT_ENTRY_HOURS;
-  });
-
-  const persistEntryHours = useCallback((updated: string[], syncCloud = true) => {
-    setEntryHours(updated);
-    try {
-      localStorage.setItem("trading_entry_hours_list", JSON.stringify(updated));
-      if (syncCloud && user) {
-        setDoc(doc(db, "settings", user.uid), cleanForFirestore({ entryHours: updated, userId: user.uid }), { merge: true })
-          .catch(err => console.error(err));
+          .catch(err => reportCloudError("ayar kaydı", err, "Tanımlamalar buluta kaydedilemedi; cihazda tutuluyor."));
       }
     } catch (e) {
       console.error(e);
@@ -794,20 +687,22 @@ export default function App() {
   const [strategies, setStrategies] = useState<string[]>(() => {
     try {
       const stored = localStorage.getItem("trading_strategies_list");
-      if (stored) return JSON.parse(stored);
+      if (stored) { const v = JSON.parse(stored); if (Array.isArray(v)) return titleCaseList(v); }
     } catch (e) {
       console.error(e);
     }
     return DEFAULT_STRATEGIES;
   });
 
-  const persistStrategies = useCallback((updated: string[], syncCloud = true) => {
+  const persistStrategies = useCallback((incoming: string[], syncCloud = true) => {
+    // Her kelimenin ilk harfi büyük (Asia Range, Entry Model); harf farkıyla tekrar edenler tek kalır
+    const updated = titleCaseList(incoming);
     setStrategies(updated);
     try {
       localStorage.setItem("trading_strategies_list", JSON.stringify(updated));
       if (syncCloud && user) {
         setDoc(doc(db, "settings", user.uid), cleanForFirestore({ strategies: updated, userId: user.uid }), { merge: true })
-          .catch(err => console.error(err));
+          .catch(err => reportCloudError("ayar kaydı", err, "Tanımlamalar buluta kaydedilemedi; cihazda tutuluyor."));
       }
     } catch (e) {
       console.error(e);
@@ -824,7 +719,7 @@ export default function App() {
           localStorage.setItem("trading_asia_range_fvgs_list", JSON.stringify(DEFAULT_ASIA_RANGE_FVGS));
           return DEFAULT_ASIA_RANGE_FVGS;
         }
-        return parsed;
+        if (Array.isArray(parsed)) return titleCaseList(parsed);
       }
     } catch (e) {
       console.error(e);
@@ -835,14 +730,14 @@ export default function App() {
   const persistAsiaRangeFvgs = useCallback((incoming: string[], syncCloud = true) => {
     // Eski varsayılan (Bullish/Bearish FVG) yeni varsayılana (Var / Yok) taşınır; bulutta kalan eski kopya geri yazmaz
     const isOldDefault = incoming.length === 2 && incoming[0] === "Bullish FVG" && incoming[1] === "Bearish FVG";
-    const updated = isOldDefault ? DEFAULT_ASIA_RANGE_FVGS : incoming;
+    const updated = isOldDefault ? DEFAULT_ASIA_RANGE_FVGS : titleCaseList(incoming);
     if (isOldDefault) syncCloud = true;
     setAsiaRangeFvgs(updated);
     try {
       localStorage.setItem("trading_asia_range_fvgs_list", JSON.stringify(updated));
       if (syncCloud && user) {
         setDoc(doc(db, "settings", user.uid), cleanForFirestore({ asiaRangeFvgs: updated, userId: user.uid }), { merge: true })
-          .catch(err => console.error(err));
+          .catch(err => reportCloudError("ayar kaydı", err, "Tanımlamalar buluta kaydedilemedi; cihazda tutuluyor."));
       }
     } catch (e) {
       console.error(e);
@@ -867,12 +762,92 @@ export default function App() {
       window.dispatchEvent(new CustomEvent(NEWS_DAYS_EVENT));
       if (syncCloud && user) {
         setDoc(doc(db, "settings", user.uid), cleanForFirestore({ newsDays: normalized, userId: user.uid }), { merge: true })
-          .catch(err => console.error(err));
+          .catch(err => reportCloudError("ayar kaydı", err, "Tanımlamalar buluta kaydedilemedi; cihazda tutuluyor."));
       }
     } catch (e) {
       console.error(e);
     }
   }, [user]);
+
+  // Prop hesapları (Challenge / Funded): yerelde + bulut ayar belgesinde
+  const [propAccounts, setPropAccounts] = useState<PropAccount[]>(loadPropAccounts);
+  const persistPropAccounts = useCallback((updated: PropAccount[], syncCloud = true) => {
+    const clean = sanitizePropAccounts(updated);
+    setPropAccounts(clean);
+    try {
+      localStorage.setItem(PROP_ACCOUNTS_KEY, JSON.stringify(clean));
+    } catch (e) {
+      console.error(e);
+      toast.error("Tarayıcı hafızası doldu; prop fotoğrafları için giriş yapıp buluta kaydetmen gerekiyor.");
+    }
+    if (!syncCloud || !user) return;
+    (async () => {
+      // Girişsizken eklenen ya da yedekten gelen fotoğraflar (data URL) önce Storage'a yüklenir;
+      // ayar belgesine yalnızca kısa URL yazılır (belge boyutu sınırı).
+      const pending = Array.from(new Set(collectAccountImages(clean).filter((i) => i.startsWith("data:"))));
+      let toSave = clean;
+      if (pending.length > 0) {
+        const map = new Map<string, string>();
+        for (const dataUrl of pending) map.set(dataUrl, await uploadImageToStorage(user.uid, dataUrl, "prop"));
+        const swap = (i: string) => map.get(i) || i;
+        const replaceAll = (list: PropAccount[]) =>
+          list.map((a) => ({
+            ...a,
+            images: a.images?.map(swap),
+            certificates: a.certificates?.map((c) => (c.image ? { ...c, image: swap(c.image) } : c)),
+          }));
+        toSave = replaceAll(clean);
+        setPropAccounts((prev) => {
+          const next = replaceAll(prev);
+          try {
+            localStorage.setItem(PROP_ACCOUNTS_KEY, JSON.stringify(next));
+          } catch (e) {}
+          return next;
+        });
+      }
+      await setDoc(doc(db, "settings", user.uid), cleanForFirestore({ propAccounts: toSave, userId: user.uid }), { merge: true });
+    })().catch((err) => {
+      reportCloudError("prop hesapları kaydı", err, "Prop hesapları buluta kaydedilemedi; cihazda tutuluyor.");
+    });
+  }, [user]);
+
+  // Üst çubuktaki hesap kapsamı: silinmiş/uyumsuz hesap seçimi kategori düzeyine düşer
+  const resolvedScope = useMemo(
+    () => resolveScope({ category: activeAccountCategory, accountId: activeAccountId }, propAccounts),
+    [activeAccountCategory, activeAccountId, propAccounts],
+  );
+  const activeAccount = resolvedScope.account;
+  const activeUnlinkedOf = resolvedScope.unlinkedOf;
+  // Kaydedilen işlem seçili kapsamın dışında kalıyorsa kullanıcıya nerede göreceği söylenir
+  const scopeRef = useRef({ category: activeAccountCategory, account: activeAccount, unlinkedOf: activeUnlinkedOf });
+  scopeRef.current = { category: activeAccountCategory, account: activeAccount, unlinkedOf: activeUnlinkedOf };
+  const activeScopeKey = scopeKey(activeAccountCategory, resolvedScope.scope.accountId);
+  const activeScopeName = scopeLabel(activeAccountCategory, activeAccount, !!activeUnlinkedOf);
+  // Günlük ve haftalık değerlendirme yalnızca hesap kapsamına uyar (tarih/parite filtreleri haftayı bozmasın)
+  const scopedTrades = useMemo(
+    () => scopeTrades(trades, activeAccountCategory, activeAccount, activeUnlinkedOf),
+    [trades, activeAccountCategory, activeAccount, activeUnlinkedOf],
+  );
+  // "Son kurulumu kopyala": dizi sırasına güvenmeden en son girilen işlem
+  const latestTrade = useMemo(() => trades.reduce<Trade | null>((m, t) => (!m || t.createdAt > m.createdAt ? t : m), null), [trades]);
+    const scopeAccounts = useMemo(
+    () => ({ CHALLENGE: scopeAccountRows(propAccounts, trades, 'CHALLENGE'), FUNDED: scopeAccountRows(propAccounts, trades, 'FUNDED') }),
+    [propAccounts, trades],
+  );
+  // Fotoğraf: girişliyken Storage'a yüklenir, değilse sıkıştırılmış data URL olarak yerelde kalır
+  const uploadPropImage = useCallback(
+    (dataUrl: string) => (user ? uploadImageToStorage(user.uid, dataUrl, "prop") : Promise.resolve(dataUrl)),
+    [user],
+  );
+  // Hesap değişiklikleri kaydedilir; kaldırılan fotoğraflar Storage'dan da silinir.
+  const handlePropAccountsChange = useCallback((next: PropAccount[]) => {
+    // Kaldırılan fotoğraflar (silinen sertifika / zincir / görsel) Storage'dan da silinir
+    const kept = new Set(collectAccountImages(next));
+    collectAccountImages(propAccounts)
+      .filter((img) => !kept.has(img))
+      .forEach((img) => deleteImageByUrl(img).catch((e) => console.error("Storage delete failed:", e)));
+    persistPropAccounts(next);
+  }, [propAccounts, persistPropAccounts]);
 
   const [definitionTitles, setDefinitionTitles] = useState<DefinitionTitles>(() => {
     try {
@@ -894,7 +869,7 @@ export default function App() {
       localStorage.setItem("trading_definition_titles", JSON.stringify(sanitized));
       if (syncCloud && user) {
         setDoc(doc(db, "settings", user.uid), cleanForFirestore({ definitionTitles: sanitized, userId: user.uid }), { merge: true })
-          .catch(err => console.error(err));
+          .catch(err => reportCloudError("ayar kaydı", err, "Tanımlamalar buluta kaydedilemedi; cihazda tutuluyor."));
       }
     } catch (e) {
       console.error(e);
@@ -903,6 +878,28 @@ export default function App() {
 
   // Synchronize custom inputs revision
   useEffect(() => {
+    try {
+      // Kaldırılan özelliklerin (Liquidity Sweep, Konsept, AI Co-Pilot, sertifikalar, platformlar) eski anahtarları
+      [
+        "trading_concepts_list", "trading_liquidity_sweeps_list",
+        "ai_copilot_persona", "ai_copilot_messages", "ai_copilot_last_cleared", "ai_copilot_last_trades_count",
+        "ai_copilot_last_journals_count", "ai_copilot_saved_notes",
+        "trading_journal_certificates",
+        // R tabanlı model: platform listesi / kategorileri kalktı (hesap seçimi Prop hesaplarından gelir)
+        "trading_platforms_list", "tj_platform_categories", "last_used_trade_platform", "tj_ui_theme",
+        // Entry Time tanım listesi kaldırıldı
+        "trading_entry_hours_list",
+      ].forEach((k) => localStorage.removeItem(k));
+    } catch (e) {}
+    try {
+      // Başlık göçleri (TP Target → Target, Premium / Discount → Confirmations…) kayda da yazılır:
+      // ekran ile kayıt aynı kalır, eski adlar başka cihaza/yedeğe taşınmaz
+      const storedTitles = localStorage.getItem("trading_definition_titles");
+      if (storedTitles) {
+        const clean = JSON.stringify(sanitizeDefinitionTitles(JSON.parse(storedTitles)));
+        if (clean !== storedTitles) localStorage.setItem("trading_definition_titles", clean);
+      }
+    } catch (e) {}
     try {
       const DEFINITIONS_REVISION = "2026_10_inputs_v3";
       const currentRev = localStorage.getItem("trading_definitions_revision");
@@ -921,60 +918,91 @@ export default function App() {
   }, []);
 
   // Settings menu state
-  // Locked to USD per request
-  const currency = "$";
   const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
   const [detailedTrade, setDetailedTrade] = useState<Trade | null>(null);
+  const detailMounted = useExitMount(!!detailedTrade);
 
   // Form visibility state
   const [isFormOpen, setIsFormOpen] = useState(false);
+  // Hızlı kayıt modu (yalnızca temel bilgiler); tercih hatırlanır
+  const [formQuickMode, setFormQuickModeState] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem("trading_form_quick_mode") === "1";
+    } catch (e) {
+      return false;
+    }
+  });
+  const setFormQuickMode = useCallback((v: boolean) => {
+    setFormQuickModeState(v);
+    try {
+      localStorage.setItem("trading_form_quick_mode", v ? "1" : "0");
+    } catch (e) {}
+  }, []);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Authentication & Load database from localStorage or Firestore
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && (e.key === 'q' || e.key === 'Q' || e.key === 'a' || e.key === 'A')) {
-        e.preventDefault();
-        setIsQuantMode(!false);
+  // İşlem formu HAZIR bekler: yeni işlem formu açılıştan kısa süre sonra arka planda (gizli) kurulur,
+  // "İşlem Ekle"ye basınca yalnızca görünür olur — eksiksiz ve beklemeden. Kapanınca bir sonraki için
+  // temiz bir form yine arka planda hazırlanır. Düzenlemede form o işlemle kurulur.
+  const [formWarm, setFormWarm] = useState(false);
+  const [, setFormRecycle] = useState(0);
+  const formSlotRef = useRef<{ seq: number; editing: Trade | null; wasOpen: boolean; needsReset: boolean }>({
+    seq: 0,
+    editing: null,
+    wasOpen: false,
+    needsReset: false,
+  });
+  {
+    const slot = formSlotRef.current;
+    if (isFormOpen && !slot.wasOpen) {
+      slot.wasOpen = true;
+      if (slot.needsReset) {
+        // Kapanıştan hemen sonra yeniden açıldı: önceki formun içeriği kalmasın
+        slot.seq++;
+        slot.needsReset = false;
+        slot.editing = editingTrade;
+      } else if (editingTrade) {
+        slot.editing = editingTrade;
       }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [false, setIsQuantMode]);
+    } else if (isFormOpen && editingTrade && slot.editing?.id !== editingTrade.id) {
+      slot.editing = editingTrade;
+    } else if (!isFormOpen && slot.wasOpen) {
+      slot.wasOpen = false;
+      slot.needsReset = true;
+    }
+  }
+  const formSlot = formSlotRef.current;
+  // Yeni işlem formu üst çubuktaki kapsama göre hesabı önceden seçer (aktif tek hesap ya da Hesapsız)
+  const defaultAccountChoice =
+    activeAccount && activeAccount.status === "ACTIVE" ? activeAccount.id : !activeAccount && activeAccountCategory === "DEMO" ? NO_ACCOUNT : null;
+  const formKey = formSlot.editing ? `edit-${formSlot.editing.id}-${formSlot.seq}` : `new-${formSlot.seq}-${defaultAccountChoice || ""}`;
+  useEffect(() => {
+    if (isFormOpen) return;
+    const slot = formSlotRef.current;
+    if (!slot.needsReset) return;
+    // Kapanış animasyonu bitince temiz yeni form arka planda hazırlanır
+    const t = window.setTimeout(() => {
+      startTransition(() => {
+        slot.seq++;
+        slot.editing = null;
+        slot.needsReset = false;
+        setFormRecycle((x) => x + 1);
+      });
+    }, 320);
+    return () => window.clearTimeout(t);
+  }, [isFormOpen]);
+
+  // Authentication & Load database from localStorage or Firestore
 
   useEffect(() => {
     const loadLocal = () => {
-      try {
-        const storedTrades = localStorage.getItem("trading_journal_db");
-        if (storedTrades) {
-          setTrades(JSON.parse(storedTrades));
-        } else {
-          setTrades([]);
-        }
-
-        const storedNotes = localStorage.getItem("trading_journal_notes");
-        if (storedNotes) {
-          setNotes(JSON.parse(storedNotes));
-        } else {
-          setNotes([]);
-        }
-
-        const storedJournals = localStorage.getItem("trading_journal_journals");
-        if (storedJournals) {
-          setJournals(JSON.parse(storedJournals));
-        } else {
-          setJournals([]);
-        }
-
-        const storedCertificates = localStorage.getItem("trading_journal_certificates");
-        if (storedCertificates) {
-          setCertificates(JSON.parse(storedCertificates));
-        } else {
-          setCertificates([]);
-        }
-      } catch (err) {
-        console.error("Failed to parse from local storage:", err);
-      }
+      // Okunan her yolda aynı model onarımı (parite tek biçim, eski alanlar, bozuk R) uygulanır.
+      // Anahtarlar ayrı okunur: bozuk bir not kaydı işlemlerin yüklenmesini engellemez.
+      const storedTrades = readStoredArray("trading_journal_db");
+      setTrades(storedTrades ? normalizeTrades(storedTrades) : []);
+      const storedNotes = readStoredArray("trading_journal_notes");
+      setNotes(storedNotes ? normalizeNotes(storedNotes) : []);
+      const storedJournals = readStoredArray("trading_journal_journals");
+      setJournals(storedJournals ? normalizeJournals(storedJournals) : []);
       setIsLoading(false);
     };
 
@@ -986,6 +1014,30 @@ export default function App() {
     let unsubscribeSettings: (() => void) | undefined;
 
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
+      if (currentUser) {
+        // Cihazda BAŞKA bir hesabın verisi kaldıysa (çıkış yapılmadan hesap değişti) yeni hesaba aktarılmaz.
+        // Sahibi olmayan veri (misafir modu) ilk girişte bu hesaba aktarılır — bilinçli davranış.
+        let owner: string | null = null;
+        try {
+          owner = localStorage.getItem(DATA_OWNER_KEY);
+        } catch (e) {}
+        if (owner && owner !== currentUser.uid) {
+          try {
+            ["trading_journal_db", "trading_journal_notes", "trading_journal_journals", PROP_ACCOUNTS_KEY].forEach((k) => localStorage.removeItem(k));
+          } catch (e) {}
+          tradesRef.current = [];
+          notesRef.current = [];
+          journalsRef.current = [];
+          setTrades([]);
+          setNotes([]);
+          setJournals([]);
+          setPropAccounts([]);
+        }
+        try {
+          localStorage.setItem(DATA_OWNER_KEY, currentUser.uid);
+        } catch (e) {}
+      }
+      setDisplayNameOverride(null);
       setUser(currentUser);
       setIsAuthInitializing(false);
 
@@ -1004,9 +1056,32 @@ export default function App() {
 
       if (currentUser) {
         // Sync settings
+        let settingsInitialSyncDone = false;
         unsubscribeSettings = onSnapshot(
           doc(db, "settings", currentUser.uid),
           (docSnap) => {
+            // İlk SUNUCU okumasında bulutta hiç olmayan ayarlar (misafirken ya da çevrimdışıyken yapılmış
+            // tanım listeleri, prop hesapları) buluta tamamlanır; böylece diğer cihazlar da görür.
+            if (!settingsInitialSyncDone && !docSnap.metadata.fromCache) {
+              settingsInitialSyncDone = true;
+              const cloudData = docSnap.exists() ? docSnap.data() : {};
+              const missing: Record<string, unknown> = {};
+              SETTINGS_LIST_KEYS.forEach(([field, key]) => {
+                if (Array.isArray(cloudData[field])) return;
+                const local = readStoredArray(key);
+                if (local && local.length) missing[field] = onlyStrings(local).slice(0, field === "newsDays" ? 50 : 500); // bulut kuralı sınırları
+              });
+              if (!Array.isArray(cloudData.propAccounts)) {
+                const localAccounts = loadPropAccounts();
+                // Fotoğrafı henüz yüklenmemiş (data URL) hesaplar ilk değişiklikte Storage üzerinden yazılır
+                if (localAccounts.length && localAccounts.length <= 500 && !collectAccountImages(localAccounts).some((i) => i.startsWith("data:"))) missing.propAccounts = localAccounts;
+              }
+              if (Object.keys(missing).length) {
+                setDoc(doc(db, "settings", currentUser.uid), cleanForFirestore({ ...missing, userId: currentUser.uid }), { merge: true }).catch((e) =>
+                  reportCloudError("yerel ayarları buluta aktarma", e, "Bazı yerel ayarlar buluta aktarılamadı; cihazda tutuluyor."),
+                );
+              }
+            }
             if (docSnap.exists()) {
               const data = docSnap.data();
               // Kendi yazdığımız değişikliklerin yankısı aynı değeri getirir; aynıysa state güncellenmez (gereksiz çizim yok)
@@ -1017,38 +1092,41 @@ export default function App() {
                 } catch (e) {}
                 apply(value as string[], false);
               };
-              applyList(data.platforms, "trading_platforms_list", persistPlatforms);
               applyList(data.timeframes, "trading_timeframes_list", persistTimeframes);
               applyList(data.htfTimeframes, "trading_htf_timeframes_list", persistHtfTimeframes);
               applyList(data.confirmations, "trading_confirmations_list", persistConfirmations);
-              applyList(data.concepts, "trading_concepts_list", persistConcepts);
               applyList(data.sessions, "trading_sessions_list", persistSessions);
-              applyList(data.assets, "trading_assets_list", persistAssets);
+              // Buluttaki eski yazımlar (EUR/USD) tek biçime çevrilip buluta da geri yazılır
+              // (bu dinleyici ilk çizimde kurulduğu için kullanıcıyı persistAssets'ten değil doğrudan currentUser'dan alır)
+              applyList(data.assets, "trading_assets_list", (l) => {
+                persistAssets(l, false);
+                const canon = canonicalAssetList(l);
+                if (JSON.stringify(canon) !== JSON.stringify(l)) {
+                  setDoc(doc(db, "settings", currentUser.uid), cleanForFirestore({ assets: canon, userId: currentUser.uid }), { merge: true }).catch((e) =>
+                    reportCloudError("ayar kaydı", e, "Tanımlamalar buluta kaydedilemedi; cihazda tutuluyor."),
+                  );
+                }
+              });
               applyList(data.planFidelities, "trading_plan_fidelities_list", persistPlanFidelities);
               applyList(data.entryModels, "trading_entry_models_list", persistEntryModels);
               applyList(data.trendTypes, "trading_trend_types_list", persistTrendTypes);
               applyList(data.tpTargets, "trading_tp_targets_list", persistTpTargets);
               applyList(data.premiumDiscounts, "trading_premium_discounts_list", persistPremiumDiscounts);
-              applyList(data.entryHours, "trading_entry_hours_list", persistEntryHours);
               applyList(data.newsDays, "trading_news_days_list", persistNewsDays);
               applyList(data.strategies, "trading_strategies_list", persistStrategies);
               applyList(data.asiaRangeFvgs, "trading_asia_range_fvgs_list", persistAsiaRangeFvgs);
               if (data.definitionTitles) persistDefinitionTitles(data.definitionTitles, false);
-              if (data.displayName) {
-
-                setUser((prevUser) => {
-                  if (prevUser && prevUser.displayName !== data.displayName) {
-                    return {
-                      ...prevUser,
-                      displayName: data.displayName
-                    } as User;
-                  }
-                  return prevUser;
-                });
+              if (Array.isArray(data.propAccounts)) {
+                try {
+                  if (localStorage.getItem(PROP_ACCOUNTS_KEY) !== JSON.stringify(data.propAccounts)) persistPropAccounts(data.propAccounts, false);
+                } catch (e) {}
               }
+              // Ad ayrı tutulur: Firebase User nesnesini kopyalamak (spread) yöntemlerini kaybettirir ve
+              // tüm bulut dinleyicilerini yeniden kurdururdu.
+              if (typeof data.displayName === "string" && data.displayName.trim()) setDisplayNameOverride(data.displayName);
             }
           },
-          (err) => console.error("Firestore read settings error", err)
+          (err) => reportCloudError("ayarları okuma", err, "Ayarlar buluttan okunamadı; cihazdaki kopya kullanılıyor.")
         );
       } else {
         // Not logged in: Just stop showing loading. We keep local data so they can use it offline!
@@ -1075,7 +1153,6 @@ export default function App() {
     let unsubscribeTrades: (() => void) | undefined;
     let unsubscribeNotes: (() => void) | undefined;
     let unsubscribeJournals: (() => void) | undefined;
-    let unsubscribeCertificates: (() => void) | undefined;
 
     if (user) {
       if (trades.length === 0) {
@@ -1098,44 +1175,32 @@ export default function App() {
           const cloudTrades: Trade[] = [];
           querySnapshot.forEach((docSnap) => {
             const data = docSnap.data();
-            cloudTrades.push({ ...data, id: docSnap.id } as Trade);
+            cloudTrades.push(normalizeTrade({ ...data, id: docSnap.id }));
           });
           cloudTrades.sort((a, b) => b.createdAt - a.createdAt);
 
-          setTrades((prevLocal) => {
-            if (isClearingRef.current) return [];
-            if (tradesInitialSyncDone) {
-              const cloudIdSet = new Set(cloudTrades.map((t) => t.id));
-              const stillSaving = prevLocal.filter((t) => !cloudIdSet.has(t.id) && pendingWriteIdsRef.current.has(t.id));
-              const next = stillSaving.length ? [...cloudTrades, ...stillSaving].sort((a, b) => b.createdAt - a.createdAt) : cloudTrades;
-              try {
-                localStorage.setItem("trading_journal_db", JSON.stringify(next));
-              } catch (err) {}
-              return next;
-            }
-            const cloudIds = new Set(cloudTrades.map((t) => t.id));
-            const unsyncedLocal = prevLocal.filter((t) => !cloudIds.has(t.id));
-
-            if (!fromCache) {
-              tradesInitialSyncDone = true;
-              unsyncedLocal.forEach((trade) => {
-                setDoc(doc(db, "trades", trade.id), cleanForFirestore({
-                  ...trade,
-                  userId: user.uid,
-                })).catch((e) => console.error("Sync local trade to cloud error:", e));
+          if (isClearingRef.current) {
+            setTrades([]);
+            return;
+          }
+          // Birleştirme saf fonksiyonla (lib/recordStore); yan etkiler (yükleme) güncelleyicinin dışında
+          const opts = { initial: !tradesInitialSyncDone, pendingIds: pendingWriteIdsRef.current as ReadonlySet<string>, sort: byCreatedDesc<Trade> };
+          if (!fromCache && !tradesInitialSyncDone) {
+            tradesInitialSyncDone = true;
+            mergeCloudSnapshot(cloudTrades, tradesRef.current, opts)
+              .toUpload.filter((t) => isValidTrade(t))
+              .forEach((trade) => {
+                setDoc(doc(db, "trades", trade.id), cleanForFirestore({ ...trade, userId: user.uid })).catch((e) =>
+                  reportCloudError("yerel işlemi buluta aktarma", e, "Bazı yerel işlemler buluta aktarılamadı."),
+                );
               });
-            }
-
-            const merged = [...cloudTrades, ...unsyncedLocal].sort((a, b) => b.createdAt - a.createdAt);
-            try {
-              localStorage.setItem("trading_journal_db", JSON.stringify(merged));
-            } catch (err) {}
-            return merged;
-          });
+          }
+          // Liste güncel durumdan birleştirilir (aynı anda yapılan iyimser ekleme kaybolmasın)
+          setTrades((prev) => mergeCloudSnapshot(cloudTrades, prev, opts).list);
           setIsLoading(false);
         },
         (err) => {
-          console.error("Firestore read error:", err);
+          reportCloudError("işlemleri okuma", err, "İşlemler buluttan okunamadı; cihazdaki kopya gösteriliyor.");
           setIsLoading(false);
         }
       );
@@ -1147,8 +1212,9 @@ export default function App() {
       const watchCollection = <T extends { id: string }>(
         colName: string,
         getLocal: () => T[],
-        setLocal: (next: T[]) => void,
+        setLocal: Dispatch<SetStateAction<T[]>>,
         sortFn: (a: T, b: T) => number,
+        revive: (raw: unknown) => T | null,
         onError?: () => void,
       ) => {
         let initialSyncDone = false;
@@ -1156,39 +1222,34 @@ export default function App() {
           query(collection(db, colName), where("userId", "==", user.uid)),
           (snap) => {
             const cloud: T[] = [];
-            snap.forEach((d) => cloud.push({ ...d.data(), id: d.id } as unknown as T));
+            // Buluttaki bozuk / eksik alanlı kayıt ekranı çökertmez: onarılır ya da atlanır
+            snap.forEach((d) => {
+              const item = revive({ ...d.data(), id: d.id });
+              if (item) cloud.push(item);
+            });
             if (isClearingRef.current) {
               setLocal([]);
               return;
             }
-            const cloudIds = new Set(cloud.map((x) => x.id));
-            const local = getLocal();
-            let extra: T[];
-            if (!initialSyncDone) {
-              extra = local.filter((x) => !cloudIds.has(x.id));
-              if (!snap.metadata.fromCache) {
-                initialSyncDone = true;
-                extra.forEach((item) => {
-                  setDoc(doc(db, colName, item.id), cleanForFirestore({ ...(item as any), userId: user.uid }))
-                    .catch((e) => console.error(`Sync local ${colName} to cloud error:`, e));
-                });
-              }
-            } else {
-              extra = local.filter((x) => !cloudIds.has(x.id) && pendingWriteIdsRef.current.has(x.id));
+            const opts = { initial: !initialSyncDone, pendingIds: pendingWriteIdsRef.current, sort: sortFn };
+            if (!initialSyncDone && !snap.metadata.fromCache) {
+              initialSyncDone = true;
+              mergeCloudSnapshot(cloud, getLocal(), opts).toUpload.forEach((item) => {
+                setDoc(doc(db, colName, item.id), cleanForFirestore({ ...(item as any), userId: user.uid }))
+                  .catch((e) => reportCloudError(`yerel ${colName} aktarımı`, e, "Bazı yerel kayıtlar buluta aktarılamadı."));
+              });
             }
-            setLocal([...cloud, ...extra].sort(sortFn));
+            // Güncel durumdan birleştirilir: aynı anda yapılan iyimser ekleme / silme kaybolmaz
+            setLocal((prev) => mergeCloudSnapshot(cloud, prev, opts).list);
           },
           (err) => {
-            console.error(`Firestore read ${colName} error:`, err);
+            reportCloudError(`${colName} okuma`, err, "Notlar/günlükler buluttan okunamadı; cihazdaki kopya gösteriliyor.");
             onError?.();
           },
         );
       };
-      const byDateDesc = (a: { date: string }, b: { date: string }) => new Date(b.date).getTime() - new Date(a.date).getTime();
-
-      unsubscribeNotes = watchCollection<Note>("notes", () => notesRef.current, setNotes, (a, b) => b.updatedAt - a.updatedAt);
-      unsubscribeJournals = watchCollection<JournalEntry>("journals", () => journalsRef.current, setJournals, byDateDesc);
-      unsubscribeCertificates = watchCollection<Certificate>("certificates", () => certificatesRef.current, setCertificates, byDateDesc);
+      unsubscribeNotes = watchCollection<Note>("notes", () => notesRef.current, setNotes, byUpdatedDesc, normalizeNote);
+      unsubscribeJournals = watchCollection<JournalEntry>("journals", () => journalsRef.current, setJournals, byJournalDateDesc, normalizeJournal);
     } else {
       setIsLoading(false);
     }
@@ -1197,49 +1258,55 @@ export default function App() {
       if (unsubscribeTrades) unsubscribeTrades();
       if (unsubscribeNotes) unsubscribeNotes();
       if (unsubscribeJournals) unsubscribeJournals();
-      if (unsubscribeCertificates) unsubscribeCertificates();
     };
   }, [user]);
 
   // Synchronize state across tabs and local events
   useEffect(() => {
     const handleStorageChange = () => {
+      const tradesRaw = readStoredArray("trading_journal_db");
+      if (tradesRaw) setTrades(normalizeTrades(tradesRaw));
+      const notesRaw = readStoredArray("trading_journal_notes");
+      if (notesRaw) setNotes(normalizeNotes(notesRaw));
+      const journalsRaw = readStoredArray("trading_journal_journals");
+      if (journalsRaw) setJournals(normalizeJournals(journalsRaw));
+      const simple: [string, (v: string[]) => void][] = [
+        ["trading_timeframes_list", setTimeframes],
+        ["trading_htf_timeframes_list", setHtfTimeframes],
+        ["trading_confirmations_list", setConfirmations],
+        ["trading_sessions_list", setSessions],
+        ["trading_assets_list", (v) => setAssets(canonicalAssetList(v))],
+      ];
+      simple.forEach(([key, set]) => {
+        const v = readStoredArray(key);
+        if (v) set(onlyStrings(v));
+      });
+      // Diğer sekmede değişen tanım listeleri, başlıklar ve Prop hesapları da eşitlenir
+      // (aksi halde bu sekme eski listeyle üzerine yazabilir). Her anahtar ayrı korunur.
+      const lists: [string, (v: string[]) => void][] = [
+        ["trading_plan_fidelities_list", setPlanFidelities],
+        ["trading_entry_models_list", setEntryModels],
+        ["trading_trend_types_list", setTrendTypes],
+        ["trading_tp_targets_list", setTpTargets],
+        ["trading_premium_discounts_list", setPremiumDiscounts],
+        ["trading_strategies_list", setStrategies],
+        ["trading_asia_range_fvgs_list", setAsiaRangeFvgs],
+        ["trading_news_days_list", (v) => setNewsDays(normalizeNewsDays(v))],
+      ];
+      lists.forEach(([key, set]) => {
+        try {
+          const raw = localStorage.getItem(key);
+          const v = raw ? JSON.parse(raw) : null;
+          if (Array.isArray(v)) set(v.filter((x) => typeof x === "string"));
+        } catch (e) { /* bozuk kayıt: mevcut liste korunur */ }
+      });
       try {
-        const tradesRaw = localStorage.getItem("trading_journal_db");
-        if (tradesRaw) setTrades(JSON.parse(tradesRaw));
-
-        const notesRaw = localStorage.getItem("trading_journal_notes");
-        if (notesRaw) setNotes(JSON.parse(notesRaw));
-
-        const journalsRaw = localStorage.getItem("trading_journal_journals");
-        if (journalsRaw) setJournals(JSON.parse(journalsRaw));
-
-        const certsRaw = localStorage.getItem("trading_journal_certificates");
-        if (certsRaw) setCertificates(JSON.parse(certsRaw));
-
-        const platformsRaw = localStorage.getItem("trading_platforms_list");
-        if (platformsRaw) setPlatforms(JSON.parse(platformsRaw));
-
-        const timeframesRaw = localStorage.getItem("trading_timeframes_list");
-        if (timeframesRaw) setTimeframes(JSON.parse(timeframesRaw));
-
-        const htfRaw = localStorage.getItem("trading_htf_timeframes_list");
-        if (htfRaw) setHtfTimeframes(JSON.parse(htfRaw));
-
-        const confsRaw = localStorage.getItem("trading_confirmations_list");
-        if (confsRaw) setConfirmations(JSON.parse(confsRaw));
-
-        const conceptsRaw = localStorage.getItem("trading_liquidity_sweeps_list") || localStorage.getItem("trading_concepts_list");
-        if (conceptsRaw) setLiquiditySweeps(JSON.parse(conceptsRaw));
-
-        const sessionsRaw = localStorage.getItem("trading_sessions_list");
-        if (sessionsRaw) setSessions(JSON.parse(sessionsRaw));
-
-        const assetsRaw = localStorage.getItem("trading_assets_list");
-        if (assetsRaw) setAssets(JSON.parse(assetsRaw));
-      } catch (err) {
-        console.error("Storage sync parse error:", err);
-      }
+        const raw = localStorage.getItem("trading_definition_titles");
+        if (raw) setDefinitionTitles(sanitizeDefinitionTitles(JSON.parse(raw)));
+      } catch (e) { /* korunur */ }
+      try {
+        setPropAccounts(loadPropAccounts());
+      } catch (e) { /* korunur */ }
     };
 
     window.addEventListener("storage", handleStorageChange);
@@ -1251,16 +1318,24 @@ export default function App() {
   const handleLogout = useCallback(async () => {
     setIsSettingsOpen(false);
     try {
+      // Buluta henüz ulaşmamış değişiklikler varsa kısa süre beklenir (çevrimdışıysa aynı hesapla girince gönderilir)
+      const flushed = await Promise.race([
+        waitForPendingWrites(db).then(() => true, () => false),
+        new Promise<boolean>((r) => window.setTimeout(() => r(false), 4000)),
+      ]);
+      muteAuthErrors();
+      if (!flushed) toast("Bazı değişiklikler henüz buluta ulaşmadı; aynı hesapla tekrar girince gönderilecek.", { icon: "⚠️" });
       await logout();
       setTrades([]);
       setNotes([]);
       setJournals([]);
-      setCertificates([]);
+      setPropAccounts([]);
       try {
         localStorage.removeItem("trading_journal_db");
         localStorage.removeItem("trading_journal_notes");
         localStorage.removeItem("trading_journal_journals");
-        localStorage.removeItem("trading_journal_certificates");
+        localStorage.removeItem(PROP_ACCOUNTS_KEY);
+        localStorage.removeItem(DATA_OWNER_KEY);
       } catch (e) {}
     } catch (err) {
       console.error("Logout error:", err);
@@ -1276,10 +1351,7 @@ export default function App() {
     }
     try {
       await updateProfile(user, { displayName: trimmed });
-      setUser({
-        ...user,
-        displayName: trimmed
-      } as User);
+      setDisplayNameOverride(trimmed);
       await setDoc(doc(db, "settings", user.uid), cleanForFirestore({
         displayName: trimmed,
         userId: user.uid
@@ -1300,169 +1372,112 @@ export default function App() {
         createdAt?: number;
       },
     ) => {
-      const isNew = !tradeData.id;
-      const finalTradeId = tradeData.id || `trade-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-      
-      let initialTrade: Trade;
-      if (isNew) {
-        initialTrade = {
-          ...tradeData,
-          id: finalTradeId,
-          createdAt: tradeData.createdAt || Date.now(),
-        } as Trade;
-      } else {
-        initialTrade = {
-          ...trades.find((t) => t.id === finalTradeId),
-          ...tradeData,
-        } as Trade;
-        delete (initialTrade as any).entryDate;
-      }
-      delete (initialTrade as any).exitReason; // alan projeden kaldırıldı; eski kayıtlardan da düşer
-
-      const existingTrade = trades.find((t) => t.id === finalTradeId);
+      const prepared = prepareTradeSave(trades, tradeData, Date.now(), () => `trade-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`);
+      const { isNew } = prepared;
+      const finalTradeId = prepared.trade.id;
+      const existingTrade = prepared.previous;
+      // Eski alanlar (Liquidity Sweep, entry metni, bias, spread, çıkış nedeni) temizlenir
+      const initialTrade = normalizeTrade(prepared.trade);
 
       if (user) pendingWriteIdsRef.current.add(finalTradeId);
 
-      // Optimistic update
-      setTrades((prevTrades) => {
-        let updatedTrades: Trade[];
-        if (isNew) {
-          updatedTrades = [initialTrade, ...prevTrades].sort((a, b) => b.createdAt - a.createdAt);
-        } else {
-          updatedTrades = prevTrades
-            .map((t) => (t.id === finalTradeId ? initialTrade : t))
-            .sort((a, b) => b.createdAt - a.createdAt);
-        }
-        
-        if (!user) {
-          try {
-            localStorage.setItem("trading_journal_db", JSON.stringify(updatedTrades));
-          } catch (err) {
-            console.error("Local storage quota exceeded:", err);
-            toast.error("Tarayıcı hafızası dolu! Eski verileri temizleyebilir veya bulut ile senkronize edebilirsiniz.");
-          }
-        }
-        return updatedTrades;
-      });
-
-      let processedTradeData = { ...initialTrade };
-      if (user && processedTradeData.screenshot && processedTradeData.screenshot.startsWith('data:image')) {
-        try {
-          const downloadUrl = await uploadImageToStorage(user.uid, processedTradeData.screenshot, 'trades');
-          processedTradeData.screenshot = downloadUrl;
-        } catch (error) {
-          console.error("Görsel yükleme hatası:", error);
-          toast.error("Görsel yüklenemedi, işlem metin olarak kaydedilecek.");
-          processedTradeData.screenshot = null;
-        }
-      }
+      // İyimser güncelleme (misafirde yerel kayıt useLocalStorageState ile yazılır)
+      setTrades((prevTrades) => upsertById(prevTrades, initialTrade, byCreatedDesc));
 
       if (user) {
-        const finalTradeToCloud = {
-          ...processedTradeData,
-          id: finalTradeId,
-          createdAt: processedTradeData.createdAt || Date.now(),
-          userId: user.uid,
-        };
-        if (!isNew && existingTrade) {
-          Object.assign(finalTradeToCloud, existingTrade, processedTradeData);
-        }
-        delete (finalTradeToCloud as any).entryDate;
-        delete (finalTradeToCloud as any).exitReason;
-
-        setDoc(doc(db, "trades", finalTradeId), cleanForFirestore(finalTradeToCloud)).catch((err) => {
-          console.error("Failed to save to cloud:", err);
-          toast.error("İşlem buluta kaydedilemedi, değişiklik geri alındı.");
-          setTrades((current) => {
-            if (isNew) {
-              return current.filter(t => t.id !== finalTradeId);
-            } else {
-              return current.map(t => t.id === finalTradeId ? (existingTrade as Trade) : t);
+        const uid = user.uid;
+        // Bulut yazımı arka planda: görsel yüklemesi (yavaş/çevrimdışı bağlantı) formu açık tutmaz.
+        // Liste iyimser olarak zaten güncellendi; hata olursa değişiklik geri alınır.
+        void (async () => {
+          const processedTradeData = { ...initialTrade };
+          if (processedTradeData.screenshot && processedTradeData.screenshot.startsWith("data:image")) {
+            try {
+              processedTradeData.screenshot = await uploadImageToStorage(uid, processedTradeData.screenshot, "trades");
+            } catch (error) {
+              reportCloudError("işlem görseli yükleme", error, "Görsel yüklenemedi, işlem görselsiz kaydedildi.");
+              processedTradeData.screenshot = null;
             }
-          });
-        }).finally(() => pendingWriteIdsRef.current.delete(finalTradeId));
-
+          }
+          // processedTradeData mevcut kayıt + yeni değerlerin birleşimidir (kaldırılan alan buluta geri dönmez)
+          const finalTradeToCloud = {
+            ...processedTradeData,
+            id: finalTradeId,
+            createdAt: processedTradeData.createdAt || Date.now(),
+            userId: uid,
+          };
+          await setDoc(doc(db, "trades", finalTradeId), cleanForFirestore(finalTradeToCloud));
+        })()
+          .catch((err) => {
+            reportCloudError("işlem kaydı", err);
+            toast.error("İşlem buluta kaydedilemedi, değişiklik geri alındı.");
+            setTrades((current) => rollbackUpsert(current, finalTradeId, isNew ? undefined : existingTrade));
+          })
+          .finally(() => pendingWriteIdsRef.current.delete(finalTradeId));
       }
 
-      // Auto-sync any newly entered assets, concepts, confirmations, platforms, or sessions into global lists
+      // Yeni girilen parite, seans, PD array vb. değerleri tanımlama listelerine eklenir
       let settingsUpdates: any = null;
 
-      if (tradeData.asset && !assets.some(a => a.toLowerCase() === tradeData.asset.toLowerCase())) {
-        const newAssets = [...assets, tradeData.asset];
+      const tradeAsset = canonicalAsset(tradeData.asset);
+      if (tradeAsset && !assets.some(a => canonicalAsset(a) === tradeAsset)) {
+        const newAssets = [...assets, tradeAsset];
         persistAssets(newAssets, false);
         settingsUpdates = { ...settingsUpdates, assets: newAssets };
-      }
-      if (tradeData.platform && !platforms.includes(tradeData.platform)) {
-        const newPlatforms = [...platforms, tradeData.platform];
-        persistPlatforms(newPlatforms, false);
-        settingsUpdates = { ...settingsUpdates, platforms: newPlatforms };
-      }
-      const sweepsToCheck = Array.isArray(tradeData.liquiditySweeps)
-        ? tradeData.liquiditySweeps
-        : tradeData.liquiditySweep
-        ? [tradeData.liquiditySweep]
-        : tradeData.concept
-        ? [tradeData.concept]
-        : [];
-      
-      const newItems = sweepsToCheck.filter(s => s && !liquiditySweeps.includes(s));
-      if (newItems.length > 0) {
-        const newSweeps = [...liquiditySweeps, ...newItems];
-        persistLiquiditySweeps(newSweeps, false);
-        settingsUpdates = { ...settingsUpdates, liquiditySweeps: newSweeps, concepts: newSweeps };
       }
       if (tradeData.session && !sessions.includes(tradeData.session)) {
         const newSessions = [...sessions, tradeData.session];
         persistSessions(newSessions, false);
-        settingsUpdates = { ...settingsUpdates, sessions: newSessions };
+        settingsUpdates = { ...settingsUpdates, sessions: titleCaseList(newSessions) };
       }
       if (tradeData.timeframe && !timeframes.includes(tradeData.timeframe)) {
         const newTimeframes = [...timeframes, tradeData.timeframe];
         persistTimeframes(newTimeframes, false);
-        settingsUpdates = { ...settingsUpdates, timeframes: newTimeframes };
+        settingsUpdates = { ...settingsUpdates, timeframes: titleCaseList(newTimeframes) };
       }
       if (tradeData.htfTimeframe && !htfTimeframes.includes(tradeData.htfTimeframe)) {
         const newHtfTimeframes = [...htfTimeframes, tradeData.htfTimeframe];
         persistHtfTimeframes(newHtfTimeframes, false);
-        settingsUpdates = { ...settingsUpdates, htfTimeframes: newHtfTimeframes };
+        settingsUpdates = { ...settingsUpdates, htfTimeframes: titleCaseList(newHtfTimeframes) };
       }
       if (tradeData.confirmations && tradeData.confirmations.length > 0) {
         const newConfs = tradeData.confirmations.filter(c => !confirmations.includes(c));
         if (newConfs.length > 0) {
           const mergedConfs = [...confirmations, ...newConfs];
           persistConfirmations(mergedConfs, false);
-          settingsUpdates = { ...settingsUpdates, confirmations: mergedConfs };
+          settingsUpdates = { ...settingsUpdates, confirmations: titleCaseList(mergedConfs) };
         }
       }
       if (tradeData.planFidelity && !planFidelities.includes(tradeData.planFidelity)) {
         const newFidelities = [...planFidelities, tradeData.planFidelity];
         persistPlanFidelities(newFidelities, false);
-        settingsUpdates = { ...settingsUpdates, planFidelities: newFidelities };
+        settingsUpdates = { ...settingsUpdates, planFidelities: titleCaseList(newFidelities) };
       }
       if (tradeData.entryModels && Array.isArray(tradeData.entryModels) && tradeData.entryModels.length > 0) {
         const newEntries = tradeData.entryModels.filter((em: string) => !entryModels.includes(em));
         if (newEntries.length > 0) {
           const mergedEntries = [...entryModels, ...newEntries];
           persistEntryModels(mergedEntries, false);
-          settingsUpdates = { ...settingsUpdates, entryModels: mergedEntries };
+          settingsUpdates = { ...settingsUpdates, entryModels: titleCaseList(mergedEntries) };
         }
-      } else if (tradeData.entry && !entryModels.includes(tradeData.entry)) {
-        const newEntries = [...entryModels, tradeData.entry];
-        persistEntryModels(newEntries, false);
-        settingsUpdates = { ...settingsUpdates, entryModels: newEntries };
       }
       if (tradeData.trend && !trendTypes.includes(tradeData.trend)) {
         const newTrends = [...trendTypes, tradeData.trend];
         persistTrendTypes(newTrends, false);
-        settingsUpdates = { ...settingsUpdates, trendTypes: newTrends };
+        settingsUpdates = { ...settingsUpdates, trendTypes: titleCaseList(newTrends) };
       }
 
       if (user && settingsUpdates) {
         setDoc(doc(db, "settings", user.uid), cleanForFirestore({ ...settingsUpdates, userId: user.uid }), { merge: true })
-          .catch(err => console.error("Batch settings sync error:", err));
+          .catch(err => reportCloudError("tanım listesi güncelleme", err, "Yeni tanımlar buluta kaydedilemedi; cihazda tutuluyor."));
       }
 
-      toast.success(isNew ? "İşlem başarıyla kaydedildi." : "İşlem başarıyla güncellendi.");
+      const sc = scopeRef.current;
+      if (!inScope(initialTrade, sc.category, sc.account, sc.unlinkedOf)) {
+        const where = getTradeAccountCategory(initialTrade) === "DEMO" ? "HESAPSIZ" : "ilgili hesabı";
+        toast.success(`${isNew ? "İşlem kaydedildi" : "İşlem güncellendi"}. Seçili hesap görünümünde değil; görmek için üstten ${where} seçin.`, { duration: 5000 });
+      } else {
+        toast.success(isNew ? "İşlem başarıyla kaydedildi." : "İşlem başarıyla güncellendi.");
+      }
       setEditingTrade(null);
       setIsFormOpen(false);
     },
@@ -1470,8 +1485,6 @@ export default function App() {
       user,
       trades,
       assets,
-      platforms,
-      concepts,
       sessions,
       timeframes,
       htfTimeframes,
@@ -1480,8 +1493,6 @@ export default function App() {
       entryModels,
       trendTypes,
       persistAssets,
-      persistPlatforms,
-      persistConcepts,
       persistSessions,
       persistTimeframes,
       persistHtfTimeframes,
@@ -1509,15 +1520,37 @@ export default function App() {
     setIsFormOpen(false);
   }, []);
 
+  // İşlem formu kapatma koruması: form kaydedilmemiş değişiklik varsa ya da açık menü varsa isteği kendisi karşılar
+  const formCloseGuardRef = useRef<(() => boolean) | null>(null);
+  const registerFormCloseGuard = useCallback((guard: (() => boolean) | null) => {
+    formCloseGuardRef.current = guard;
+  }, []);
+  const requestCloseForm = useCallback(() => {
+    if (formCloseGuardRef.current?.()) return;
+    handleCancelEdit();
+  }, [handleCancelEdit]);
+
   // Kararlı kapatma fonksiyonları: pencereler React.memo ile korunur, her App çiziminde yeniden çizilmez
   const closeGlobalFilter = useCallback(() => setIsGlobalFilterModalOpen(false), []);
   const closePlatformMenu = useCallback(() => setIsPlatformMenuOpen(false), []);
   const closeAuthModal = useCallback(() => setIsAuthModalOpen(false), []);
-  const closeCopilot = useCallback(() => setIsCopilotOpen(false), []);
 
   const handleCloseTradeDetail = useCallback(() => {
     setDetailedTrade(null);
   }, []);
+
+  // İşlem detayında ← / → gezinme: açıldığı listenin sırası (kimlikler) saklanır,
+  // işlemler her zaman güncel kayıttan çözülür.
+  const [detailNavIds, setDetailNavIds] = useState<string[] | null>(null);
+  const openTradeDetail = useCallback((t: Trade, list?: Trade[]) => {
+    setDetailedTrade(t);
+    setDetailNavIds(list ? list.map((x) => x.id) : null);
+  }, []);
+  const detailNavList = useMemo(() => {
+    if (!detailNavIds) return null;
+    const byId = new Map(trades.map((t) => [t.id, t] as const));
+    return detailNavIds.map((id) => byId.get(id)).filter((t): t is Trade => !!t);
+  }, [detailNavIds, trades]);
 
   // ESC key listener for overlays and modals in App
   useEffect(() => {
@@ -1526,11 +1559,12 @@ export default function App() {
         if (isSettingsOpen) {
           setIsSettingsOpen(false);
         } else if (isFormOpen) {
-          handleCancelEdit();
+          requestCloseForm();
         } else if (isPlatformMenuOpen) {
           setIsPlatformMenuOpen(false);
         } else if (detailedTrade) {
-          handleCloseTradeDetail();
+          // İşlem detayı kendi Escape'ini yönetir (önce silme onayı kapanır); burada çift kapatma yapılmaz
+          return;
         } else if (isGlobalFilterModalOpen) {
           setIsGlobalFilterModalOpen(false);
         } else if (isAuthModalOpen) {
@@ -1542,7 +1576,7 @@ export default function App() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isSettingsOpen, isFormOpen, isPlatformMenuOpen, detailedTrade, isGlobalFilterModalOpen, isAuthModalOpen, handleCancelEdit, handleCloseTradeDetail]);
+  }, [isSettingsOpen, isFormOpen, isPlatformMenuOpen, detailedTrade, isGlobalFilterModalOpen, isAuthModalOpen, requestCloseForm, handleCloseTradeDetail]);
 
   // Close settings dropdown when clicking anywhere outside
   useEffect(() => {
@@ -1584,29 +1618,13 @@ export default function App() {
       // ve silinen işlem bir sonraki senkronizasyonda geri geliyordu.
       const deletedTrade = trades.find((t) => t.id === id);
 
-      setTrades((prevTrades) => {
-        const updated = prevTrades.filter((t) => t.id !== id);
-        if (!user) {
-          try {
-            localStorage.setItem("trading_journal_db", JSON.stringify(updated));
-          } catch (err) {
-            console.error(err);
-          }
-        }
-        return updated;
-      });
+      setTrades((prevTrades) => removeById(prevTrades, id));
 
       if (user) {
         deleteDoc(doc(db, "trades", id)).catch((err) => {
           console.error("Failed to delete from cloud", err);
           toast.error("İşlem buluttan silinemedi, geri yüklendi.");
-          if (deletedTrade) {
-            setTrades((current) =>
-              current.some((t) => t.id === id)
-                ? current
-                : [...current, deletedTrade].sort((a, b) => b.createdAt - a.createdAt)
-            );
-          }
+          setTrades((current) => restoreDeleted(current, deletedTrade, byCreatedDesc));
         });
       }
 
@@ -1624,96 +1642,30 @@ export default function App() {
     [user, trades]
   );
 
-  // Delete all trades for a specific platform
-  const handleDeleteTradesByPlatform = useCallback(
-    async (platformName: string) => {
-      const targetPlat = platformName.trim().toLowerCase();
-      // Güncelleyicinin dışında, mevcut listeden hesaplanır (aynı gecikmeli-güncelleyici hatası).
-      const removedTrades = trades.filter(
-        (t) => (t.platform || '').trim().toLowerCase() === targetPlat
-      );
-
-      setTrades((prevTrades) => {
-        const updated = prevTrades.filter(
-          (t) => (t.platform || '').trim().toLowerCase() !== targetPlat
-        );
-        if (!user) {
-          try {
-            localStorage.setItem("trading_journal_db", JSON.stringify(updated));
-          } catch (err) {
-            console.error(err);
-          }
-        }
-        return updated;
-      });
-
-      if (user && removedTrades.length > 0) {
-        removedTrades.forEach((t) => {
-          deleteDoc(doc(db, "trades", t.id)).catch((err) => {
-            console.error("Failed to delete platform trade from cloud", err);
-            setTrades((current) =>
-              current.some((x) => x.id === t.id)
-                ? current
-                : [...current, t].sort((a, b) => b.createdAt - a.createdAt)
-            );
-          });
-        });
-      }
-
-      setDetailedTrade((prev) =>
-        prev && (prev.platform || '').trim().toLowerCase() === targetPlat ? null : prev
-      );
-      setEditingTrade((prev) => {
-        if (prev && (prev.platform || '').trim().toLowerCase() === targetPlat) {
-          setIsFormOpen(false);
-          return null;
-        }
-        return prev;
-      });
-    },
-    [user, trades]
-  );
   // Tanımlamalar'da bir öğe yeniden adlandırılınca, ona bağlı tüm işlemlerdeki değer de güncellenir
   // (aksi halde eski kayıtlar eski adla kalır ve istatistik gruplaması ikiye bölünür).
   const handleRenameDefinition = useCallback(
     (category: string, from: string, to: string): number => {
       const fromKey = from.trim().toLowerCase();
       const same = (v?: string | null) => typeof v === "string" && v.trim().toLowerCase() === fromKey;
-      const mapStr = (v?: string) => (same(v) ? to : v);
       const dedupe = (arr: string[]) => arr.filter((x, i) => arr.findIndex((y) => y.toLowerCase() === x.toLowerCase()) === i);
       const mapArr = (v?: string[]) => (Array.isArray(v) ? dedupe(v.map((x) => (same(x) ? to : x))) : v);
-      const splitJoined = (v?: string) => (typeof v === "string" && v ? v.split(",").map((x) => x.trim()).filter(Boolean) : []);
       const hasInArr = (v?: string[]) => Array.isArray(v) && v.some(same);
 
       const patchFor = (t: Trade): Partial<Trade> | null => {
         switch (category) {
-          case "platforms": return same(t.platform) ? { platform: to } : null;
           case "assets": return same(t.asset) ? { asset: to } : null;
           case "timeframes": return same(t.timeframe) ? { timeframe: to } : null;
           case "htfTimeframes": return same(t.htfTimeframe) ? { htfTimeframe: to } : null;
           case "sessions": return same(t.session) ? { session: to } : null;
           case "planFidelities": return same(t.planFidelity) ? { planFidelity: to } : null;
           case "trendTypes": return same(t.trend) ? { trend: to } : null;
-          case "entryHours": return same(t.entryTime) ? { entryTime: to } : null;
           case "premiumDiscounts": return same(t.premiumDiscount) ? { premiumDiscount: to } : null;
           case "strategies": return same(t.strategy) ? { strategy: to } : null;
           case "asiaRangeFvgs": return same(t.asiaRangeFvg) ? { asiaRangeFvg: to } : null;
           case "confirmations": return hasInArr(t.confirmations) ? { confirmations: mapArr(t.confirmations) } : null;
           case "tpTargets": return hasInArr(t.tpTargets) ? { tpTargets: mapArr(t.tpTargets) } : null;
-          case "concepts": {
-            const base = Array.isArray(t.liquiditySweeps) && t.liquiditySweeps.length > 0
-              ? t.liquiditySweeps
-              : splitJoined(t.liquiditySweep || t.concept);
-            if (!base.some(same)) return null;
-            const next = mapArr(base) as string[];
-            return { liquiditySweeps: next, liquiditySweep: next.join(", "), concept: next.join(", ") };
-          }
-          case "entryModels": {
-            const base = Array.isArray(t.entryModels) && t.entryModels.length > 0 ? t.entryModels : splitJoined(t.entry);
-            if (!base.some(same)) return null;
-            const next = mapArr(base) as string[];
-            return { entryModels: next, entry: next.join(", ") };
-          }
+          case "entryModels": return hasInArr(t.entryModels) ? { entryModels: mapArr(t.entryModels) } : null;
           default: return null;
         }
       };
@@ -1734,7 +1686,7 @@ export default function App() {
           try {
             for (let i = 0; i < changed.length; i += 400) {
               const batch = writeBatch(db);
-              changed.slice(i, i + 400).forEach((t) => {
+              changed.slice(i, i + 400).filter((t) => isValidTrade(t)).forEach((t) => {
                 batch.set(doc(db, "trades", t.id), cleanForFirestore({ ...t, userId: user.uid }));
               });
               await batch.commit();
@@ -1759,42 +1711,22 @@ export default function App() {
       noteData: Note,
       options?: { silent?: boolean }
     ) => {
-      const isNew = !noteData.id;
-      const finalNoteId = noteData.id || `note-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-      const finalNote = { ...noteData, id: finalNoteId };
-      const existingNote = notesRef.current.find((n) => n.id === finalNoteId);
+      const prepared = prepareNoteSave(notesRef.current, noteData, () => `note-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`);
+      const { isNew, note: finalNote, previous: existingNote } = prepared;
+      const finalNoteId = finalNote.id;
 
       if (user) pendingWriteIdsRef.current.add(finalNoteId);
 
-      setNotes((prevNotes) => {
-        let updatedList: Note[];
-        if (isNew) {
-          updatedList = [finalNote, ...prevNotes].sort(
-            (a, b) => b.updatedAt - a.updatedAt,
-          );
-        } else {
-          updatedList = prevNotes
-            .map((n) => (n.id === finalNoteId ? finalNote : n))
-            .sort((a, b) => b.updatedAt - a.updatedAt);
-        }
-
-        return updatedList;
-      });
+      setNotes((prevNotes) => upsertById(prevNotes, finalNote, byUpdatedDesc));
 
       if (user) {
         setDoc(doc(db, "notes", finalNoteId), cleanForFirestore({
           ...finalNote,
           userId: user.uid,
         })).catch((err) => {
-          console.error("Failed to save note to cloud:", err);
+          reportCloudError("not kaydı", err, "Not buluta kaydedilemedi, değişiklik geri alındı.");
           // Rollback optimistic update properly
-          setNotes((current) => {
-             if (isNew) {
-                return current.filter(n => n.id !== finalNoteId);
-             } else {
-                return current.map(n => n.id === finalNoteId ? (existingNote as Note) : n);
-             }
-          });
+          setNotes((current) => rollbackUpsert(current, finalNoteId, existingNote));
         }).finally(() => pendingWriteIdsRef.current.delete(finalNoteId));
 
       }
@@ -1808,13 +1740,11 @@ export default function App() {
     async (id: string) => {
       const deletedNote = notesRef.current.find((n) => n.id === id);
       
-      setNotes((prev) => {
-        return prev.filter((n) => n.id !== id);
-      });
+      setNotes((prev) => removeById(prev, id));
       if (user && deletedNote) {
         deleteDoc(doc(db, "notes", id)).catch((err) => {
-          console.error("Failed to delete note from cloud", err);
-          setNotes(current => [...current, deletedNote!].sort((a,b) => b.updatedAt - a.updatedAt));
+          reportCloudError("not silme", err, "Not buluttan silinemedi, geri yüklendi.");
+          setNotes((current) => restoreDeleted(current, deletedNote, byUpdatedDesc));
         });
       }
       toast.success("Not başarıyla silindi.");
@@ -1830,39 +1760,21 @@ export default function App() {
       }) | JournalEntry,
       options?: { silent?: boolean }
     ) => {
-      const isNew = !entryData.id;
-      const now = Date.now();
-      const finalEntry: JournalEntry = {
-        ...entryData,
-        id: entryData.id || (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function" ? crypto.randomUUID() : `journal-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`),
-        createdAt: (entryData as any).createdAt || now,
-        updatedAt: now,
-      };
-
-      const existingEntry = journalsRef.current.find((j) => j.id === finalEntry.id);
+      const newJournalId = () =>
+        typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+          ? crypto.randomUUID()
+          : `journal-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+      const { entry: finalEntry, isNew, previous: existingEntry } = prepareJournalSave(journalsRef.current, entryData, Date.now(), newJournalId);
       if (user) pendingWriteIdsRef.current.add(finalEntry.id);
 
-      setJournals((prev) => {
-        const updatedList = isNew
-          ? [finalEntry, ...prev]
-          : prev.map((j) => (j.id === finalEntry.id ? finalEntry : j));
-        return updatedList;
-  
-      });
+      setJournals((prev) => upsertById(prev, finalEntry, byJournalDateDesc));
       if (user) {
         setDoc(doc(db, "journals", finalEntry.id), cleanForFirestore({
           ...finalEntry,
           userId: user.uid,
         })).catch((err) => {
-          console.error("Failed to save journal to cloud", err);
-          setJournals(current => {
-             if (isNew) {
-                return current.filter(j => j.id !== finalEntry.id);
-             } else {
-                return current.map(j => j.id === finalEntry.id ? (existingEntry as JournalEntry) : j);
-             }
-       
-          });
+          reportCloudError("günlük kaydı", err, "Günlük buluta kaydedilemedi, değişiklik geri alındı.");
+          setJournals((current) => rollbackUpsert(current, finalEntry.id, existingEntry));
         }).finally(() => pendingWriteIdsRef.current.delete(finalEntry.id));
       }
       if (!options?.silent) {
@@ -1877,96 +1789,14 @@ export default function App() {
     async (id: string) => {
       const deletedJournal = journalsRef.current.find((j) => j.id === id);
 
-      setJournals((prev) => {
-        return prev.filter((j) => j.id !== id);
-      });
+      setJournals((prev) => removeById(prev, id));
       if (user && deletedJournal) {
         deleteDoc(doc(db, "journals", id)).catch((err) => {
-          console.error("Failed to delete journal from cloud", err);
-          setJournals(current => [...current, deletedJournal!].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+          reportCloudError("günlük silme", err, "Günlük buluttan silinemedi, geri yüklendi.");
+          setJournals((current) => restoreDeleted(current, deletedJournal, byJournalDateDesc));
         });
       }
       toast.success("Günlük kaydı başarıyla silindi.");
-    },
-    [user],
-  );
-
-  const handleSaveCertificate = useCallback(
-    async (certData: Certificate | Omit<Certificate, 'id' | 'createdAt'>) => {
-      const isNew = !('id' in certData) || !certData.id;
-      const finalCertId = isNew ? `cert-${Date.now()}-${Math.random().toString(36).slice(2, 6)}` : (certData as Certificate).id;
-      const byDateDesc = (a: Certificate, b: Certificate) => new Date(b.date).getTime() - new Date(a.date).getTime();
-
-      const initialCert = {
-        ...certData,
-        id: finalCertId,
-        createdAt: isNew ? Date.now() : (certData as Certificate).createdAt,
-      } as Certificate;
-
-      if (user) pendingWriteIdsRef.current.add(finalCertId);
-
-      // Anında (iyimser) güncelleme; yerel depolamaya yazmayı useLocalStorageState üstlenir
-      setCertificates((prev) =>
-        (isNew ? [initialCert, ...prev] : prev.map((c) => (c.id === finalCertId ? initialCert : c))).sort(byDateDesc)
-      );
-
-      let processedCert = { ...initialCert };
-      let uploaded = false;
-      if (user && processedCert.image && processedCert.image.startsWith('data:image')) {
-        try {
-          processedCert.image = await uploadImageToStorage(user.uid, processedCert.image, 'certificates');
-          uploaded = true;
-        } catch (error) {
-          console.warn("Storage upload fallback to embedded image:", error);
-          if (processedCert.image.length > 700000) {
-            processedCert.image = null;
-          }
-        }
-        // Yükleme sürerken kayıt silindiyse buluta geri yazılmasın (silinen sertifika geri gelmesin)
-        if (!certificatesRef.current.some((c) => c.id === finalCertId)) {
-          pendingWriteIdsRef.current.delete(finalCertId);
-          return;
-        }
-      }
-
-      // Bulut adresi geldiyse yerel kopyayı da güncelle
-      if (uploaded || processedCert.image !== initialCert.image) {
-        setCertificates((prev) => prev.map((c) => (c.id === finalCertId ? processedCert : c)).sort(byDateDesc));
-      }
-
-      if (user) {
-        setDoc(doc(db, "certificates", finalCertId), cleanForFirestore({
-          ...processedCert,
-          userId: user.uid,
-        }))
-          .catch((err) => {
-            console.error("Failed to save certificate to cloud:", err);
-            toast.error("Bulut kaydında gecikme oluştu, verileriniz yerel olarak korundu.");
-          })
-          .finally(() => pendingWriteIdsRef.current.delete(finalCertId));
-      }
-      toast.success("Sertifika başarıyla kaydedildi.");
-    },
-    [user]
-  );
-
-  const handleDeleteCertificate = useCallback(
-    async (id: string) => {
-      const deletedCert = certificatesRef.current.find((c) => c.id === id);
-      pendingWriteIdsRef.current.delete(id);
-
-      setCertificates((prev) => prev.filter((c) => c.id !== id));
-
-      if (user) {
-        deleteDoc(doc(db, "certificates", id)).catch((err) => {
-          console.error("Failed to delete certificate from cloud", err);
-          toast.error("Buluttan silinirken hata oluştu.");
-          if (deletedCert) {
-            setCertificates(current => [...current, deletedCert].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-          }
-        });
-      }
-      toast.success("Sertifika başarıyla silindi.");
     },
     [user],
   );
@@ -1977,12 +1807,37 @@ export default function App() {
       importedTrades: Trade[],
       importedNotes: Note[] = [],
       importedJournals: any[] = [],
-      importedCertificates: Certificate[] = [],
       rawImportedSettings: any = null
     ): Promise<boolean> => {
       try {
+        importedTrades = normalizeTrades(importedTrades);
+        // Kurallara uymayan kayıtlar (eksik parite, bilinmeyen sonuç, tarihsiz…) atlanır: tek bozuk kayıt
+        // 400'lük toplu yazımın tamamını reddettirmesin
+        const skippedTrades = importedTrades.filter((t) => !isValidTrade(t)).length;
+        if (skippedTrades > 0) {
+          importedTrades = importedTrades.filter((t) => isValidTrade(t));
+          toast.error(`${skippedTrades} işlem eksik/bozuk olduğu için atlandı (parite, yön, sonuç veya tarih).`);
+        }
         const importedSettings = sanitizeImportedSettings(rawImportedSettings);
+        // Not / günlük: kimliği olmayan bozuk öğeler atlanır (bulut yazımı ve liste çökmesin)
+        importedNotes = normalizeNotes(importedNotes);
+        importedJournals = normalizeJournals(importedJournals);
         if (user) {
+          // Eski yedeklerdeki gömülü görseller (data URL) Storage'a yüklenir: Firestore belge sınırı 1 MiB'dir ve
+          // tek büyük belge 400'lük toplu yazımın tamamını düşürür. Yüklenemeyen görsel düşer, işlem yine aktarılır.
+          let droppedImages = 0;
+          importedTrades = await Promise.all(
+            importedTrades.map(async (t) => {
+              if (typeof t.screenshot !== "string" || !t.screenshot.startsWith("data:image")) return t;
+              try {
+                return { ...t, screenshot: await uploadImageToStorage(user.uid, t.screenshot, "trades") };
+              } catch {
+                droppedImages += 1;
+                return { ...t, screenshot: null };
+              }
+            }),
+          );
+          if (droppedImages > 0) toast.error(`${droppedImages} işlemin gömülü görseli yüklenemedi; işlemler görselsiz aktarıldı.`);
           // Prepare Firestore batch write operations in safe chunks of 400
           type WriteOp = { ref: any; data: any };
           const writeOps: WriteOp[] = [];
@@ -2008,13 +1863,6 @@ export default function App() {
             });
           });
 
-          importedCertificates.forEach((cert) => {
-            writeOps.push({
-              ref: doc(db, "certificates", cert.id),
-              data: cleanForFirestore({ ...cert, userId: user.uid }),
-            });
-          });
-
           // Yazımı süren kayıtlar: bu sürede gelen snapshot, henüz buluta ulaşmamış kaydı silmesin
           writeOps.forEach((op) => pendingWriteIdsRef.current.add(op.ref.id));
           try {
@@ -2032,7 +1880,8 @@ export default function App() {
           }
 
           if (importedSettings) {
-            const { platformCategories: _pc, ...cloudSettings } = importedSettings;
+            // Prop hesapları (fotoğraflar Storage'a yüklenerek) aşağıda persistPropAccounts ile yazılır
+            const { propAccounts: _pa, ...cloudSettings } = importedSettings;
             await setDoc(doc(db, "settings", user.uid), cleanForFirestore({ ...cloudSettings, userId: user.uid }), { merge: true });
           }
         }
@@ -2059,20 +1908,11 @@ export default function App() {
           });
         }
 
-        if (importedCertificates.length > 0) {
-          setCertificates((prev) => {
-            const existingIds = new Set(importedCertificates.map((c) => c.id));
-            return [...importedCertificates, ...prev.filter((c) => !existingIds.has(c.id))];
-          });
-        }
-
         if (importedSettings) {
           const sync = !!user;
-          if (importedSettings.platforms) persistPlatforms(importedSettings.platforms, sync);
           if (importedSettings.timeframes) persistTimeframes(importedSettings.timeframes, sync);
           if (importedSettings.htfTimeframes) persistHtfTimeframes(importedSettings.htfTimeframes, sync);
           if (importedSettings.confirmations) persistConfirmations(importedSettings.confirmations, sync);
-          if (importedSettings.concepts) persistConcepts(importedSettings.concepts, sync);
           if (importedSettings.sessions) persistSessions(importedSettings.sessions, sync);
           if (importedSettings.assets) persistAssets(importedSettings.assets, sync);
           if (importedSettings.planFidelities) persistPlanFidelities(importedSettings.planFidelities, sync);
@@ -2080,18 +1920,20 @@ export default function App() {
           if (importedSettings.trendTypes) persistTrendTypes(importedSettings.trendTypes, sync);
           if (importedSettings.tpTargets) persistTpTargets(importedSettings.tpTargets, sync);
           if (importedSettings.premiumDiscounts) persistPremiumDiscounts(importedSettings.premiumDiscounts, sync);
-          if (importedSettings.entryHours) persistEntryHours(importedSettings.entryHours, sync);
           if (importedSettings.newsDays) persistNewsDays(importedSettings.newsDays, sync);
           if (importedSettings.strategies) persistStrategies(importedSettings.strategies, sync);
           if (importedSettings.asiaRangeFvgs) persistAsiaRangeFvgs(importedSettings.asiaRangeFvgs, sync);
           if (importedSettings.definitionTitles) persistDefinitionTitles(importedSettings.definitionTitles, sync);
-          if (importedSettings.platformCategories) {
-            replacePlatformCategories({ ...getStoredPlatformCategories(), ...importedSettings.platformCategories });
+          if (importedSettings.propAccounts) {
+            // id'ye göre birleştir: yedekteki hesap aynı id'li yerel hesabın yerine geçer
+            const incoming: PropAccount[] = importedSettings.propAccounts;
+            const ids = new Set(incoming.map((a) => a.id));
+            persistPropAccounts([...incoming, ...propAccounts.filter((a) => !ids.has(a.id))], sync);
           }
         }
 
         toast.success(
-          `Yedek başarıyla yüklendi: ${importedTrades.length} işlem, ${importedNotes.length} not, ${importedJournals.length} günlük, ${importedCertificates.length} sertifika${importedSettings ? " ve tanımlamalar" : ""}.`
+          `Yedek başarıyla yüklendi: ${importedTrades.length} işlem, ${importedNotes.length} not, ${importedJournals.length} günlük${importedSettings ? " ve tanımlamalar" : ""}.`
         );
         return true;
       } catch (err: any) {
@@ -2102,11 +1944,9 @@ export default function App() {
     },
     [
       user,
-      persistPlatforms,
       persistTimeframes,
       persistHtfTimeframes,
       persistConfirmations,
-      persistConcepts,
       persistSessions,
       persistAssets,
       persistPlanFidelities,
@@ -2114,15 +1954,15 @@ export default function App() {
       persistTrendTypes,
       persistTpTargets,
       persistPremiumDiscounts,
-      persistEntryHours,
       persistNewsDays,
       persistStrategies,
       persistAsiaRangeFvgs,
       persistDefinitionTitles,
+      persistPropAccounts,
+      propAccounts,
       setTrades,
       setNotes,
       setJournals,
-      setCertificates,
     ],
   );
 
@@ -2131,14 +1971,8 @@ export default function App() {
     isClearingRef.current = true;
     try {
       if (user) {
-        // Clear Firebase profile name
-        try {
-          await updateProfile(user, { displayName: "" });
-        } catch (authErr) {
-          console.error("Failed to reset auth profile displayName:", authErr);
-        }
-
-        // 1. Delete all Firestore user documents across all collections in parallel batches
+        // 1. Kullanıcının bulut kayıtları silinir. "certificates" kaldırılan özelliğin eski kayıtları için listede kalır.
+        //    Giriş (Firebase hesabı) ve profil adı korunur.
         const collectionsToClear = [
           "trades",
           "notes",
@@ -2181,90 +2015,52 @@ export default function App() {
           return false;
         }
 
-        // Delete user settings documents in Firestore
+        // Ayar belgesi (tanımlamalar, prop hesapları vb.)
         try {
           await deleteDoc(doc(db, "settings", user.uid));
         } catch (e) {
+          cloudFailed = true;
           console.error("Failed to delete settings doc:", e);
         }
-      }
 
-      // 2. Clear all local storage keys (uygulamanın yazdığı tüm veri ve tanımlama anahtarları)
-      const keysToRemove = [
-        "trading_journal_db",
-        "trading_journal_notes",
-        "trading_journal_journals",
-        "trading_journal_certificates",
-        "trading_platforms_list",
-        "trading_timeframes_list",
-        "trading_htf_timeframes_list",
-        "trading_confirmations_list",
-        "trading_concepts_list",
-        "trading_liquidity_sweeps_list",
-        "trading_sessions_list",
-        "trading_assets_list",
-        "trading_plan_fidelities_list",
-        "trading_entry_models_list",
-        "trading_trend_types_list",
-        "trading_tp_targets_list",
-        "trading_premium_discounts_list",
-        "trading_entry_hours_list",
-        "trading_news_days_list",
-        "trading_strategies_list",
-        "trading_asia_range_fvgs_list",
-        "trading_definition_titles",
-        "trading_definitions_revision",
-        "tj_platform_categories",
-        "tj_active_account_category",
-        "last_used_trade_platform",
-        "trading_journal_filters",
-        "ai_copilot_last_cleared",
-        "ai_copilot_messages",
-        "ai_copilot_saved_notes",
-        "ai_copilot_persona",
-        "ai_copilot_last_trades_count",
-        "ai_copilot_last_journals_count",
-        "tj_app_access_granted",
-        "tj_access_token_v2",
-        "tj_access_token_v3",
-        "tj_app_lockout",
-        "tj_app_attempts"
-      ];
-      keysToRemove.forEach((k) => {
+        // Firebase Storage'daki tüm görseller (işlem görselleri, eski sertifika ve AI görselleri)
         try {
-          localStorage.removeItem(k);
+          await deleteAllUserImages(user.uid);
         } catch (e) {
-          console.error(`Failed to remove ${k} from localStorage`, e);
+          cloudFailed = true;
+          console.error("Failed to delete storage images:", e);
         }
-      });
 
+        if (cloudFailed) {
+          toast.error("Bulut verileri tamamen silinemedi. Bağlantınızı kontrol edip tekrar deneyin; yerel veriler korundu.");
+          return false;
+        }
+      }
+
+      // 2. Tarayıcıdaki tüm uygulama kayıtları silinir. Korunanlar: site şifresi oturumu ve Firebase girişi.
+      const preserveKey = (k: string) => k === SITE_TOKEN_KEY || k === DATA_OWNER_KEY || k.startsWith("firebase:");
       try {
-        sessionStorage.clear();
+        Object.keys(localStorage).forEach((k) => {
+          if (!preserveKey(k)) localStorage.removeItem(k);
+        });
+        Object.keys(sessionStorage).forEach((k) => {
+          if (!preserveKey(k)) sessionStorage.removeItem(k);
+        });
       } catch (e) {
-        console.error("Failed to clear sessionStorage", e);
+        console.error("Failed to clear browser storage", e);
       }
 
-      // 3. Reset all React States to initial default clean state
-      if (user) {
-        setUser({
-          ...user,
-          displayName: ""
-        } as User);
-      }
+      // 3. Uygulama durumu varsayılana döner
       setTrades([]);
       setNotes([]);
       setJournals([]);
-      setCertificates([]);
+      persistPropAccounts([], !!user);
 
-      // Platform kategorileri (Funded / Challenge / Demo) önbelleği de sıfırlanır
-      replacePlatformCategories({});
-      setActiveAccountCategory('ALL');
+      handleAccountScopeChange('ALL');
 
-      persistPlatforms(DEFAULT_PLATFORMS, !!user);
       persistTimeframes(DEFAULT_TIMEFRAMES, !!user);
       persistHtfTimeframes(DEFAULT_HTF_TIMEFRAMES, !!user);
       persistConfirmations(DEFAULT_CONFIRMATIONS, !!user);
-      persistConcepts(DEFAULT_CONCEPTS, !!user);
       persistSessions(DEFAULT_SESSIONS, !!user);
       persistAssets(DEFAULT_ASSETS, !!user);
       persistPlanFidelities(DEFAULT_PLAN_FIDELITIES, !!user);
@@ -2272,16 +2068,13 @@ export default function App() {
       persistTrendTypes(DEFAULT_TREND_TYPES, !!user);
       persistTpTargets(DEFAULT_TP_TARGETS, !!user);
       persistPremiumDiscounts(DEFAULT_PREMIUM_DISCOUNTS, !!user);
-      persistEntryHours(DEFAULT_ENTRY_HOURS, !!user);
       persistNewsDays(DEFAULT_NEWS_DAYS, !!user);
       persistStrategies(DEFAULT_STRATEGIES, !!user);
       persistAsiaRangeFvgs(DEFAULT_ASIA_RANGE_FVGS, !!user);
       persistDefinitionTitles(DEFAULT_DEFINITION_TITLES, !!user);
 
       setGlobalSelectedConfirmations([]);
-      setGlobalSelectedConcepts([]);
       setGlobalSelectedPlanFidelity([]);
-      setGlobalSelectedPlatforms([]);
       setGlobalSelectedAssets([]);
       setGlobalSelectedSessions([]);
       setGlobalSelectedTimeframes([]);
@@ -2290,20 +2083,20 @@ export default function App() {
       setGlobalSelectedTypes([]);
       setGlobalSelectedEntryModels([]);
       setGlobalSelectedTrendTypes([]);
-      setGlobalDateLimit("6m");
+      setGlobalDateLimit(DEFAULT_DATE_LIMIT);
       setGlobalMinAsiaRangePips(undefined);
       setGlobalMaxAsiaRangePips(undefined);
       setGlobalMinMaePips(undefined);
       setGlobalMaxMaePips(undefined);
       setGlobalMinMfePips(undefined);
       setGlobalMaxMfePips(undefined);
+      setGlobalExtra(EMPTY_EXTRA_FILTERS);
 
       setEditingTrade(null);
       setDetailedTrade(null);
       setIsFormOpen(false);
       setIsSettingsOpen(false);
       setIsGlobalFilterModalOpen(false);
-      setIsCopilotOpen(false);
 
       // 4. Dispatch global wipe event
       window.dispatchEvent(new CustomEvent("trading-journal-wipe-all"));
@@ -2320,8 +2113,6 @@ export default function App() {
   }, [
     user,
     setGlobalSelectedConfirmations,
-    setGlobalSelectedConcepts,
-    setGlobalSelectedPlatforms,
     setGlobalSelectedAssets,
     setGlobalSelectedSessions,
     setGlobalSelectedTimeframes,
@@ -2337,15 +2128,14 @@ export default function App() {
     setGlobalMaxMaePips,
     setGlobalMinMfePips,
     setGlobalMaxMfePips,
+    setGlobalExtra,
     setTrades,
     setNotes,
     setJournals,
-    setCertificates,
-    persistPlatforms,
+    persistPropAccounts,
     persistTimeframes,
     persistHtfTimeframes,
     persistConfirmations,
-    persistConcepts,
     persistSessions,
     persistAssets,
     persistPlanFidelities,
@@ -2353,7 +2143,6 @@ export default function App() {
     persistTrendTypes,
     persistTpTargets,
     persistPremiumDiscounts,
-    persistEntryHours,
     persistNewsDays,
     persistStrategies,
     persistAsiaRangeFvgs,
@@ -2361,176 +2150,50 @@ export default function App() {
     setGlobalSelectedPlanFidelity,
   ]);
 
-  const filteredGlobalTrades = useMemo(() => {
-    const minTime = getMinTimestamp(globalDateLimit);
-
-    const hasConfirmations = globalSelectedConfirmations.length > 0;
-    const hasConcepts = globalSelectedConcepts.length > 0;
-    const hasPlanFidelity = globalSelectedPlanFidelity.length > 0;
-    const hasPlatforms = globalSelectedPlatforms.length > 0;
-    const hasAssets = globalSelectedAssets.length > 0;
-    const hasSessions = globalSelectedSessions.length > 0;
-    const hasTimeframes = globalSelectedTimeframes.length > 0;
-    const hasHtfTimeframes = globalSelectedHtfTimeframes.length > 0;
-    const hasStatuses = globalSelectedStatuses.length > 0;
-    const hasTypes = globalSelectedTypes.length > 0;
-    const hasEntryModels = globalSelectedEntryModels.length > 0;
-    const hasTrendTypes = globalSelectedTrendTypes.length > 0;
-    const hasMinAsia = globalMinAsiaRangePips !== undefined;
-    const hasMaxAsia = globalMaxAsiaRangePips !== undefined;
-    const hasMinMae = globalMinMaePips !== undefined;
-    const hasMaxMae = globalMaxMaePips !== undefined;
-    const hasMinMfe = globalMinMfePips !== undefined;
-    const hasMaxMfe = globalMaxMfePips !== undefined;
-    const hasCategory = activeAccountCategory !== 'ALL';
-    const hasMinTime = minTime > 0;
-
-    const hasAnyFilter =
-      hasConfirmations ||
-      hasConcepts ||
-      hasPlanFidelity ||
-      hasPlatforms ||
-      hasAssets ||
-      hasSessions ||
-      hasTimeframes ||
-      hasHtfTimeframes ||
-      hasStatuses ||
-      hasTypes ||
-      hasEntryModels ||
-      hasTrendTypes ||
-      hasMinAsia ||
-      hasMaxAsia ||
-      hasMinMae ||
-      hasMaxMae ||
-      hasMinMfe ||
-      hasMaxMfe ||
-      hasCategory ||
-      hasMinTime;
-
-    if (!hasAnyFilter) {
-      return trades;
-    }
-
-    const confirmationSet = hasConfirmations ? new Set(globalSelectedConfirmations.map(normalizeSearchString)) : null;
-    const conceptSet = hasConcepts ? new Set(globalSelectedConcepts.map(normalizeSearchString)) : null;
-    const planFidelitySet = hasPlanFidelity ? new Set(globalSelectedPlanFidelity.map(normalizeSearchString)) : null;
-    const platformSet = hasPlatforms ? new Set(globalSelectedPlatforms.map(normalizeSearchString)) : null;
-    const assetSet = hasAssets ? new Set(globalSelectedAssets.map(normalizeSearchString)) : null;
-    const sessionSet = hasSessions ? new Set(globalSelectedSessions.map(normalizeSearchString)) : null;
-    const timeframeSet = hasTimeframes ? new Set(globalSelectedTimeframes.map(normalizeSearchString)) : null;
-    const htfTimeframeSet = hasHtfTimeframes ? new Set(globalSelectedHtfTimeframes.map(normalizeSearchString)) : null;
-    const statusSet = hasStatuses ? new Set(globalSelectedStatuses.map(normalizeSearchString)) : null;
-    const typeSet = hasTypes ? new Set(globalSelectedTypes.map(normalizeSearchString)) : null;
-    const entrySet = hasEntryModels ? new Set(globalSelectedEntryModels.map(normalizeSearchString)) : null;
-    const trendSet = hasTrendTypes ? new Set(globalSelectedTrendTypes.map(normalizeSearchString)) : null;
-
-    const customCategories = getStoredPlatformCategories();
-
-    return trades.filter((t: Trade) => {
-      // 1. Numeric and temporal checks first (fastest)
-      if (hasMinTime && (!t.createdAt || t.createdAt < minTime)) {
-        return false;
-      }
-      if (hasMinAsia) {
-        if (t.asiaRangePips === undefined || t.asiaRangePips === null || t.asiaRangePips < globalMinAsiaRangePips!) {
-          return false;
-        }
-      }
-      if (hasMaxAsia) {
-        if (t.asiaRangePips === undefined || t.asiaRangePips === null || t.asiaRangePips > globalMaxAsiaRangePips!) {
-          return false;
-        }
-      }
-      if (hasMinMae) {
-        if (t.maePips === undefined || t.maePips === null || t.maePips < globalMinMaePips!) {
-          return false;
-        }
-      }
-      if (hasMaxMae) {
-        if (t.maePips === undefined || t.maePips === null || t.maePips > globalMaxMaePips!) {
-          return false;
-        }
-      }
-      if (hasMinMfe) {
-        if (t.mfePips === undefined || t.mfePips === null || t.mfePips < globalMinMfePips!) {
-          return false;
-        }
-      }
-      if (hasMaxMfe) {
-        if (t.mfePips === undefined || t.mfePips === null || t.mfePips > globalMaxMfePips!) {
-          return false;
-        }
-      }
-      if (hasCategory) {
-        const cat = getTradeAccountCategory(t, customCategories);
-        if (cat !== activeAccountCategory) {
-          return false;
-        }
-      }
-      // 2. Simple enum string checks
-      if (statusSet && (!t.status || !statusSet.has(normalizeSearchString(t.status)))) {
-        return false;
-      }
-      if (typeSet && (!t.type || !typeSet.has(normalizeSearchString(t.type)))) {
-        return false;
-      }
-      // 3. String & array lookups
-      if (assetSet && (!t.asset || !assetSet.has(normalizeSearchString(t.asset)))) {
-        return false;
-      }
-      if (platformSet && (!t.platform || !platformSet.has(normalizeSearchString(t.platform)))) {
-        return false;
-      }
-      if (sessionSet && (!t.session || !sessionSet.has(normalizeSearchString(t.session)))) {
-        return false;
-      }
-      if (timeframeSet && (!t.timeframe || !timeframeSet.has(normalizeSearchString(t.timeframe)))) {
-        return false;
-      }
-      if (htfTimeframeSet && (!t.htfTimeframe || !htfTimeframeSet.has(normalizeSearchString(t.htfTimeframe)))) {
-        return false;
-      }
-      if (planFidelitySet && (!t.planFidelity || !planFidelitySet.has(normalizeSearchString(t.planFidelity)))) {
-        return false;
-      }
-      if (trendSet && (!t.trend || !trendSet.has(normalizeSearchString(t.trend)))) {
-        return false;
-      }
-      if (confirmationSet && (!t.confirmations || !t.confirmations.some(tc => confirmationSet.has(normalizeSearchString(tc))))) {
-        return false;
-      }
-      if (conceptSet) {
-        const tradeSweeps = Array.isArray(t.liquiditySweeps) && t.liquiditySweeps.length > 0
-          ? t.liquiditySweeps
-          : (t.liquiditySweep || t.concept)
-          ? [t.liquiditySweep || t.concept]
-          : [];
-        if (tradeSweeps.length === 0 || !tradeSweeps.some(s => s && conceptSet.has(normalizeSearchString(s)))) {
-          return false;
-        }
-      }
-      if (entrySet) {
-        const matchEm = t.entryModels && Array.isArray(t.entryModels) && t.entryModels.some(em => entrySet.has(normalizeSearchString(em)));
-        const matchEntryStr = t.entry && t.entry.split(',').some(splitEm => entrySet.has(normalizeSearchString(splitEm.trim())));
-        if (!matchEm && !matchEntryStr) return false;
-      }
-      return true;
-    });
-  }, [trades, activeAccountCategory, categoryVersion, globalSelectedConfirmations, globalSelectedConcepts, globalSelectedPlanFidelity, globalSelectedPlatforms, globalDateLimit, globalSelectedAssets, globalSelectedSessions, globalSelectedTimeframes, globalSelectedHtfTimeframes, globalSelectedStatuses, globalSelectedTypes, globalSelectedEntryModels, globalSelectedTrendTypes, globalMinAsiaRangePips, globalMaxAsiaRangePips, globalMinMaePips, globalMaxMaePips, globalMinMfePips, globalMaxMfePips]);
+  const filteredGlobalTrades = useMemo(
+    () =>
+      applyGlobalFilters(trades, {
+        activeAccountCategory,
+        activeAccount,
+        activeUnlinkedOf,
+        globalSelectedConfirmations,
+        globalSelectedPlanFidelity,
+        globalDateLimit,
+        globalSelectedAssets,
+        globalSelectedSessions,
+        globalSelectedTimeframes,
+        globalSelectedHtfTimeframes,
+        globalSelectedStatuses,
+        globalSelectedTypes,
+        globalSelectedEntryModels,
+        globalSelectedTrendTypes,
+        globalMinAsiaRangePips,
+        globalMaxAsiaRangePips,
+        globalMinMaePips,
+        globalMaxMaePips,
+        globalMinMfePips,
+        globalMaxMfePips,
+        globalExtra,
+      }),
+    [trades, globalExtra, activeAccountCategory, activeAccount, activeUnlinkedOf, globalSelectedConfirmations, globalSelectedPlanFidelity, globalDateLimit, globalSelectedAssets, globalSelectedSessions, globalSelectedTimeframes, globalSelectedHtfTimeframes, globalSelectedStatuses, globalSelectedTypes, globalSelectedEntryModels, globalSelectedTrendTypes, globalMinAsiaRangePips, globalMaxAsiaRangePips, globalMinMaePips, globalMaxMaePips, globalMinMfePips, globalMaxMfePips],
+  );
 
   // Calculate comprehensive statistics (moved outside)
 
   const calculatedStats = useMemo(
-    () => calculateComprehensiveStats(filteredGlobalTrades, isRrMode),
-    [filteredGlobalTrades, isRrMode],
+    () => calculateComprehensiveStats(filteredGlobalTrades),
+    [filteredGlobalTrades],
+  );
+  // Ana panel: beklentinin güven aralığı ve Edge Durumu
+  const overallEdge = useMemo(
+    () => edgeFromR(filteredGlobalTrades.map((t) => (typeof t.rr === "number" && Number.isFinite(t.rr) ? t.rr : 0)), filteredGlobalTrades.map((t) => t.status)),
+    [filteredGlobalTrades],
   );
 
   const activeFilterCount = useMemo(
     () =>
       globalSelectedConfirmations.length +
-      globalSelectedConcepts.length +
       globalSelectedPlanFidelity.length +
-      globalSelectedPlatforms.length +
       globalSelectedAssets.length +
       globalSelectedSessions.length +
       globalSelectedTimeframes.length +
@@ -2539,15 +2202,15 @@ export default function App() {
       globalSelectedTypes.length +
       globalSelectedEntryModels.length +
       globalSelectedTrendTypes.length +
-      (globalDateLimit !== "6m" ? 1 : 0) +
+      (globalDateLimit !== DEFAULT_DATE_LIMIT ? 1 : 0) +
       (globalMinAsiaRangePips !== undefined || globalMaxAsiaRangePips !== undefined ? 1 : 0) +
       (globalMinMaePips !== undefined || globalMaxMaePips !== undefined ? 1 : 0) +
-      (globalMinMfePips !== undefined || globalMaxMfePips !== undefined ? 1 : 0),
+      (globalMinMfePips !== undefined || globalMaxMfePips !== undefined ? 1 : 0) +
+      countExtraFilters(globalExtra),
     [
+      globalExtra,
       globalSelectedConfirmations,
-      globalSelectedConcepts,
       globalSelectedPlanFidelity,
-      globalSelectedPlatforms,
       globalSelectedAssets,
       globalSelectedSessions,
       globalSelectedTimeframes,
@@ -2567,11 +2230,9 @@ export default function App() {
   );
 
   const backupSettings = useMemo(() => ({
-    platforms,
     timeframes,
     htfTimeframes,
     confirmations,
-    concepts,
     sessions,
     assets,
     planFidelities,
@@ -2579,20 +2240,15 @@ export default function App() {
     trendTypes,
     tpTargets,
     premiumDiscounts,
-    entryHours,
     newsDays,
     strategies,
     asiaRangeFvgs,
     definitionTitles,
-    platformCategories: getStoredPlatformCategories(),
-    currency,
-    isRrMode,
+    propAccounts,
   }), [
-    platforms,
     timeframes,
     htfTimeframes,
     confirmations,
-    concepts,
     sessions,
     assets,
     planFidelities,
@@ -2600,26 +2256,56 @@ export default function App() {
     trendTypes,
     tpTargets,
     premiumDiscounts,
-    entryHours,
     newsDays,
     strategies,
     asiaRangeFvgs,
     definitionTitles,
-    categoryVersion,
-    currency,
-    isRrMode,
+    propAccounts,
   ]);
 
   // Ana sayfa panelleri: modal aç/kapa (isFormOpen, filtre penceresi vb.) bu bloğu yeniden çizmez.
+  // Haftalık değerlendirme: Cuma NY kapanışından sonra ve hafta sonu, bu hafta işlem varsa ve yazılmadıysa hatırlatılır.
+  // Saat ilerledikçe (ör. Cuma 17:00 NY) panel kendiliğinden güncellensin diye 5 dakikada bir yeniden değerlendirilir.
+  const [weeklyTick, setWeeklyTick] = useState(0);
+  useEffect(() => {
+    const id = window.setInterval(() => setWeeklyTick((n) => n + 1), 5 * 60 * 1000);
+    return () => window.clearInterval(id);
+  }, []);
+  const weeklyDue = useMemo(() => weeklyReviewDue(scopedTrades, journals, Date.now(), activeScopeKey), [scopedTrades, journals, activeScopeKey, weeklyTick]);
+  const [weeklyRequest, setWeeklyRequest] = useState<{ week: string; nonce: number } | null>(null);
+  const openWeeklyReview = useCallback((week: string) => {
+    setWeeklyRequest({ week, nonce: Date.now() });
+    handleTabChange("journal");
+  }, [handleTabChange]);
+
   // Yalnızca aşağıdaki veriler değişince yeniden hesaplanır; pencereler bu yüzden takılmadan açılır.
   const mainPanes = useMemo(() => (
             <div className="relative">
                   <TabPane active={currentTab === "dashboard"}
                     className="flex flex-col gap-3.5">
+                    {/* Haftalık değerlendirme hatırlatması (yazılınca kaybolur) */}
+                    {weeklyDue && (
+                      <button
+                        type="button"
+                        onClick={() => openWeeklyReview(weeklyDue)}
+                        className="w-full flex items-center gap-3 rounded-2xl border border-violet-500/30 bg-violet-500/10 hover:bg-violet-500/15 px-4 py-2.5 text-left transition-ui cursor-pointer"
+                      >
+                        <span className="p-1.5 rounded-lg bg-violet-500/15 border border-violet-500/30 text-violet-300 shrink-0">
+                          <CalendarRange size={14} />
+                        </span>
+                        <span className="flex-1 min-w-0">
+                          <span className="block text-xs font-bold text-violet-100 truncate">Bu haftanın değerlendirmesi bekliyor{activeScopeKey ? ` · ${activeScopeName}` : ""}</span>
+                          <span className="block text-[11px] text-violet-200/70 truncate">Haftanın istatistikleri hazır; üç kısa soruyu yanıtla, gelecek haftanın odağını belirle.</span>
+                        </span>
+                        <span className="text-[11px] font-bold text-violet-200 shrink-0">Değerlendir →</span>
+                      </button>
+                    )}
+                    <DateLimitNote limit={globalDateLimit} shown={filteredGlobalTrades.length} onReset={() => setGlobalDateLimit(DEFAULT_DATE_LIMIT)} />
                     {/* STATS BENTO ROW */}
                     <SectionErrorBoundary sectionName="İstatistik Panosu">
-                      <StatsDashboard stats={calculatedStats} currency={currency} />
+                      <StatsDashboard stats={calculatedStats} edge={overallEdge} />
                     </SectionErrorBoundary>
+
 
                     {/* 2. DYNAMIC ACTION TRIGGER (YOUTUBE PLUS BOX) */}
                     <div
@@ -2655,24 +2341,22 @@ export default function App() {
                           trades={filteredGlobalTrades}
                           onEdit={handleStartEdit}
                           onDelete={handleDeleteTrade}
-                          onViewDetails={setDetailedTrade}
-                          currency={currency}
+                          onViewDetails={openTradeDetail}
                           definitionTitles={definitionTitles}
-                          planFidelities={planFidelities}
-                          entryModels={entryModels}
-                          trendTypes={trendTypes}
                         />
                       </SectionErrorBoundary>
                     </div>
                   </TabPane>
                   <TabPane active={currentTab === "deep-analysis"}>
+                    <div className="mb-3 empty:hidden">
+                      <DateLimitNote limit={globalDateLimit} shown={filteredGlobalTrades.length} onReset={() => setGlobalDateLimit(DEFAULT_DATE_LIMIT)} />
+                    </div>
                     <SectionErrorBoundary sectionName="Derin Analiz">
                       <DeepAnalysis
                         trades={filteredGlobalTrades}
-                        onViewDetails={setDetailedTrade}
+                        onViewDetails={openTradeDetail}
                         onEdit={handleStartEdit}
                         onDelete={handleDeleteTrade}
-                        currency={currency}
                         sessions={sessions}
                         definitionTitles={definitionTitles}
                         planFidelities={planFidelities}
@@ -2685,20 +2369,18 @@ export default function App() {
                     <SectionErrorBoundary sectionName="Günlükler">
                       <JournalView
                         entries={journals}
-                        trades={filteredGlobalTrades}
-                        currency={currency}
+                        trades={scopedTrades}
+                        weeklyScope={activeScopeKey}
+                        weeklyScopeName={activeScopeName}
                         onSaveEntry={handleSaveJournal}
                         onDeleteEntry={handleDeleteJournal}
+                        weeklyRequest={weeklyRequest}
                       />
                     </SectionErrorBoundary>
                   </TabPane>
-                  <TabPane active={currentTab === "certificates"}>
-                    <SectionErrorBoundary sectionName="Sertifikalar">
-                      <CertificatesView
-                        certificates={certificates}
-                        onSaveCertificate={handleSaveCertificate}
-                        onDeleteCertificate={handleDeleteCertificate}
-                      />
+                  <TabPane active={currentTab === "prop"}>
+                    <SectionErrorBoundary sectionName="Prop">
+                      <PropView accounts={propAccounts} trades={trades} onChange={handlePropAccountsChange} uploadImage={uploadPropImage} />
                     </SectionErrorBoundary>
                   </TabPane>
                   <TabPane active={currentTab === "notes"}>
@@ -2711,9 +2393,10 @@ export default function App() {
                     </SectionErrorBoundary>
                   </TabPane>
             </div>
-  ), [ calculatedStats, certificates, currency, currentTab, definitionTitles, entryModels, filteredGlobalTrades, handleDeleteCertificate, handleDeleteJournal, handleDeleteNote, handleDeleteTrade, handleSaveCertificate, handleSaveJournal, handleSaveNote, handleStartEdit, journals, notes, planFidelities, sessions, setDetailedTrade, setEditingTrade, setIsFormOpen, trades, trendTypes ]);
+  ), [ globalDateLimit, setGlobalDateLimit, weeklyDue, weeklyRequest, openWeeklyReview, scopedTrades, activeScopeKey, activeScopeName, calculatedStats, overallEdge, currentTab, definitionTitles, entryModels, filteredGlobalTrades, handleDeleteJournal, handleDeleteNote, handleDeleteTrade, handleSaveJournal, handleSaveNote, handleStartEdit, journals, notes, planFidelities, propAccounts, handlePropAccountsChange, uploadPropImage, sessions, setDetailedTrade, setEditingTrade, setIsFormOpen, trades, trendTypes ]);
 
   return (
+    <AllTradesContext.Provider value={trades}>
     <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans antialiased selection:bg-blue-400/30 selection:text-white">
       <Toaster 
         position="bottom-right" 
@@ -2725,7 +2408,7 @@ export default function App() {
             border: '1px solid #2A2F3A',
             borderRadius: '12px',
             fontSize: '13px',
-            fontFamily: '"Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif',
+            fontFamily: 'var(--font-sans)',
             fontWeight: 500,
             boxShadow: '0 8px 24px rgba(0, 0, 0, 0.6)',
             padding: '12px 18px',
@@ -2800,45 +2483,12 @@ export default function App() {
             {/* Account Switcher (TÜMÜ / DEMO / FUNDED) */}
             <AccountSwitcher
               activeCategory={activeAccountCategory}
-              onSelectCategory={handleAccountCategoryChange}
+              activeAccount={activeAccount}
+              unlinkedActive={!!activeUnlinkedOf}
+              onSelect={handleAccountScopeChange}
               counts={accountCategoryCounts}
+              accounts={scopeAccounts}
             />
-
-            {/* Global Metric Switch ($ / R) - Compact */}
-            <div className="flex bg-zinc-900 border border-zinc-700/50 rounded-lg p-0.5 shadow-xs shrink-0">
-              <button
-                type="button"
-                className={`relative z-10 flex items-center justify-center px-2.5 h-6 rounded-md transition-colors duration-150 cursor-pointer text-[11px] font-bold ${
-                  isRrMode ? "text-blue-400" : "text-zinc-400 hover:text-zinc-200"
-                }`}
-                onClick={() => setMode('rr')}
-              >
-                {isRrMode && (
-                  <motion.div
-                    layoutId="metricToggleIndicator"
-                    className="absolute inset-0 bg-blue-500/15 border border-blue-500/30 rounded-md shadow-xs"
-                    transition={SPRING.indicator}
-                  />
-                )}
-                <span className="relative z-10">R</span>
-              </button>
-              <button
-                type="button"
-                className={`relative z-10 flex items-center justify-center px-2.5 h-6 rounded-md transition-colors duration-150 cursor-pointer text-[11px] font-bold ${
-                  !isRrMode ? "text-emerald-400" : "text-zinc-400 hover:text-zinc-200"
-                }`}
-                onClick={() => setMode('pnl')}
-              >
-                {!isRrMode && (
-                  <motion.div
-                    layoutId="metricToggleIndicator"
-                    className="absolute inset-0 bg-emerald-500/15 border border-emerald-500/30 rounded-md shadow-xs"
-                    transition={SPRING.indicator}
-                  />
-                )}
-                <span className="relative z-10">$</span>
-              </button>
-            </div>
 
             {/* Ayarlar (Settings) Dropdown Menu - Compact */}
             <div ref={settingsRef} className="relative">
@@ -2868,53 +2518,6 @@ export default function App() {
                     {...POPOVER}
                     className="origin-top-right absolute right-0 top-full mt-2 w-72 max-w-[calc(100vw-24px)] bg-zinc-900 border border-zinc-700/60 rounded-2xl shadow-2xl p-2.5 z-50 flex flex-col gap-1.5 text-xs"
                   >
-                      {/* Platform Selector in Settings */}
-                      <div className="px-2.5 py-2 border-b border-zinc-700/40 bg-zinc-950/40 rounded-xl">
-                        <label className="block text-[10px] font-bold font-sans text-zinc-400 uppercase tracking-widest mb-1.5 flex items-center justify-between">
-                          <span className="flex items-center gap-1.5">
-                            <Monitor size={11} className="text-zinc-400" />
-                            Aktif Platform
-                          </span>
-                          <span className="text-[9px] text-zinc-500 font-sans">
-                            {globalSelectedPlatforms.length === 0 ? "Tümü" : `${globalSelectedPlatforms.length} seçili`}
-                          </span>
-                        </label>
-                        <div className="flex flex-wrap gap-1.5 pt-0.5">
-                          <button
-                            onClick={() => setGlobalSelectedPlatforms([])}
-                            className={`px-2.5 py-1 text-[10px] font-bold font-sans rounded-xl border transition-ui cursor-pointer ${
-                              globalSelectedPlatforms.length === 0
-                                ? "bg-blue-500/20 border-blue-500/40 text-blue-400 shadow-xs"
-                                : "bg-zinc-950/60 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700 hover:bg-zinc-800"
-                            }`}
-                          >
-                            Tümü
-                          </button>
-                          {platforms.map((p, idx) => {
-                            const isSelected = globalSelectedPlatforms.includes(p);
-                            return (
-                              <button
-                                key={`${p}-${idx}`}
-                                onClick={() => {
-                                  if (isSelected) {
-                                    setGlobalSelectedPlatforms(globalSelectedPlatforms.filter(x => x !== p));
-                                  } else {
-                                    setGlobalSelectedPlatforms([p]);
-                                  }
-                                }}
-                                className={`px-2.5 py-1 text-[10px] font-bold font-sans rounded-xl border transition-ui cursor-pointer ${
-                                  isSelected
-                                    ? "bg-blue-500/20 border-blue-500/40 text-blue-400 shadow-xs"
-                                    : "bg-zinc-950/60 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700 hover:bg-zinc-800"
-                                }`}
-                              >
-                                {p}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-
                       {/* Filtreleme Menü Öğesi */}
                       <button
                         type="button"
@@ -2938,6 +2541,7 @@ export default function App() {
                           <span className="text-[10px] text-zinc-500 font-sans">Tümü</span>
                         )}
                       </button>
+
 
                       {/* Tanımlamaları Yönet Öğesi */}
                       <button
@@ -2984,7 +2588,7 @@ export default function App() {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-zinc-800 text-zinc-300 font-bold text-[10px] select-none uppercase">
-                      {user.displayName ? user.displayName.slice(0, 2) : (user.email ? user.email.slice(0, 2) : "U")}
+                      {displayName ? displayName.slice(0, 2) : (user.email ? user.email.slice(0, 2) : "U")}
                     </div>
                   )
                 ) : (
@@ -3030,13 +2634,13 @@ export default function App() {
                               }}
                               autoFocus
                             />
-                            <button
+                            <button aria-label="Onayla" title="Onayla"
                               onClick={() => handleUpdateUsername(tempUsername)}
                               className="p-1 rounded-md bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition border border-emerald-500/20 cursor-pointer"
                             >
                               <Check size={12} />
                             </button>
-                            <button
+                            <button aria-label="Kapat" title="Kapat"
                               onClick={() => setIsEditingUsername(false)}
                               className="p-1 rounded-md bg-zinc-800 text-zinc-400 hover:bg-zinc-700 transition border border-zinc-700 cursor-pointer"
                             >
@@ -3056,12 +2660,12 @@ export default function App() {
                                 <span 
                                   className="text-[10px] text-zinc-400 font-sans truncate max-w-[110px]" 
                                 >
-                                  {user.displayName || user.email || "Bağlı Hesap"}
+                                  {displayName || user.email || "Bağlı Hesap"}
                                 </span>
-                                <button
+                                <button aria-label="Düzenle" title="Düzenle"
                                   type="button"
                                   onClick={() => {
-                                    setTempUsername(user.displayName || "");
+                                    setTempUsername(displayName || "");
                                     setIsEditingUsername(true);
                                   }}
                                   className="p-0.5 rounded text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 shrink-0 transition cursor-pointer"
@@ -3192,7 +2796,7 @@ export default function App() {
               { id: "deep-analysis", label: "DETAYLI ANALİZ", icon: BarChart3 },
               { id: "notes", label: "NOTLAR", icon: FileText },
               { id: "journal", label: "GÜNLÜK", icon: Book },
-              { id: "certificates", label: "SERTİFİKALAR", icon: Award },
+              { id: "prop", label: "PROP", icon: Wallet },
             ].map((tab) => {
               const Icon = tab.icon;
               const isActive = currentTab === tab.id;
@@ -3240,17 +2844,17 @@ export default function App() {
               <div className="h-[380px] bg-zinc-900 rounded-2xl border border-zinc-800 animate-pulse w-full"></div>
             </div>
           ) : (
-          {mainPanes}
+            mainPanes
           )}
           
+            {globalFilterMounted && (
+              <Suspense fallback={null}>
             <GlobalFilterModal
               isOpen={isGlobalFilterModalOpen}
               onClose={closeGlobalFilter}
-              platforms={platforms}
               timeframes={timeframes}
               htfTimeframes={htfTimeframes}
               confirmations={confirmations}
-              concepts={concepts}
               sessions={sessions}
               assets={assets}
               planFidelities={planFidelities}
@@ -3259,12 +2863,8 @@ export default function App() {
               definitionTitles={definitionTitles}
               globalSelectedConfirmations={globalSelectedConfirmations}
               setGlobalSelectedConfirmations={setGlobalSelectedConfirmations}
-              globalSelectedConcepts={globalSelectedConcepts}
-              setGlobalSelectedConcepts={setGlobalSelectedConcepts}
               globalSelectedPlanFidelity={globalSelectedPlanFidelity}
               setGlobalSelectedPlanFidelity={setGlobalSelectedPlanFidelity}
-              globalSelectedPlatforms={globalSelectedPlatforms}
-              setGlobalSelectedPlatforms={setGlobalSelectedPlatforms}
               globalSelectedAssets={globalSelectedAssets}
               setGlobalSelectedAssets={setGlobalSelectedAssets}
               globalSelectedSessions={globalSelectedSessions}
@@ -3295,18 +2895,29 @@ export default function App() {
               setGlobalMinMfePips={setGlobalMinMfePips}
               globalMaxMfePips={globalMaxMfePips}
               setGlobalMaxMfePips={setGlobalMaxMfePips}
+              trades={scopedTrades}
+              strategies={strategies}
+              premiumDiscounts={premiumDiscounts}
+              tpTargets={tpTargets}
+              asiaRangeFvgs={asiaRangeFvgs}
+              globalExtra={globalExtra}
+              setGlobalExtra={setGlobalExtra}
             />
+              </Suspense>
+            )}
 
             {/* RECOVERY BACKUP RESCUE MOD - FOOTNOTE */}
+            <Suspense fallback={null}>
             <BackupRescue
               trades={trades}
               notes={notes}
               journals={journals}
-              certificates={certificates}
               settings={backupSettings}
               onImportTrades={handleImportTrades}
               onClearAll={handleClearAll}
+              onEditTrade={handleStartEdit}
             />
+            </Suspense>
 
           {/* CONTROLS AREA AND CHANNELS */}
           {true && (
@@ -3325,16 +2936,14 @@ export default function App() {
       </main>
 
       {platformMenuMounted && (
+        <Suspense fallback={null}>
         <DefinitionsManagerModal
           isOpen={isPlatformMenuOpen}
           onClose={closePlatformMenu}
           trades={trades}
-          onDeleteTradesByPlatform={handleDeleteTradesByPlatform}
-          platforms={platforms}
           timeframes={timeframes}
           htfTimeframes={htfTimeframes}
           confirmations={confirmations}
-          concepts={concepts}
           sessions={sessions}
           assets={assets}
           planFidelities={planFidelities}
@@ -3342,16 +2951,13 @@ export default function App() {
           trendTypes={trendTypes}
           tpTargets={tpTargets}
           premiumDiscounts={premiumDiscounts}
-          entryHours={entryHours}
           newsDays={newsDays}
           strategies={strategies}
           asiaRangeFvgs={asiaRangeFvgs}
           definitionTitles={definitionTitles}
-          persistPlatforms={persistPlatforms}
           persistTimeframes={persistTimeframes}
           persistHtfTimeframes={persistHtfTimeframes}
           persistConfirmations={persistConfirmations}
-          persistConcepts={persistConcepts}
           persistSessions={persistSessions}
           persistAssets={persistAssets}
           persistPlanFidelities={persistPlanFidelities}
@@ -3359,43 +2965,39 @@ export default function App() {
           persistTrendTypes={persistTrendTypes}
           persistTpTargets={persistTpTargets}
           persistPremiumDiscounts={persistPremiumDiscounts}
-          persistEntryHours={persistEntryHours}
           persistNewsDays={persistNewsDays}
           persistStrategies={persistStrategies}
           persistAsiaRangeFvgs={persistAsiaRangeFvgs}
           onRenameDefinition={handleRenameDefinition}
           persistDefinitionTitles={persistDefinitionTitles}
         />
+        </Suspense>
       )}
 
       {/* OVERLAY MODALS WRAPPER */}
-        {/* OVERLAY MODAL: TRANSACTION FORM (ADD OR EDIT) */}
-        {createPortal(
-          <AnimatePresence>
-            {isFormOpen && (
-              <motion.div
-                key="add-trade-form-modal"
-                {...MODAL_BACKDROP}
-                onClick={handleCancelEdit}
-                className="fixed inset-0 modal-layer modal-dim z-[1500] overflow-hidden  flex items-center justify-center p-2 sm:p-4 cursor-pointer"
+        {/* OVERLAY MODAL: TRANSACTION FORM (ADD OR EDIT) — hep bağlı, CSS ile açılır/kapanır (index.css: .form-modal) */}
+        {(formWarm || isFormOpen || formSlot.needsReset) &&
+          createPortal(
+            <div
+              className="form-modal fixed inset-0 modal-layer modal-dim z-[1500] overflow-hidden flex items-center justify-center p-2 sm:p-4 cursor-pointer"
+              data-open={isFormOpen ? "" : undefined}
+              aria-hidden={!isFormOpen}
+              inert={!isFormOpen}
+              onClick={requestCloseForm}
+            >
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className={`form-modal-panel w-full ${formQuickMode && !formSlot.editing ? "max-w-4xl" : "max-w-6xl xl:max-w-7xl 2xl:max-w-[1440px]"} h-auto max-h-[96vh] overflow-hidden bg-[#0a0a0c] border border-zinc-800/80 rounded-2xl relative shadow-2xl flex flex-col cursor-default my-auto`}
               >
-                <motion.div
-                  key="add-trade-form-modal-content"
-                  {...MODAL_PANEL}
-                  onClick={(e) => e.stopPropagation()}
-                  className="w-full max-w-6xl xl:max-w-7xl 2xl:max-w-[1440px] h-auto max-h-[96vh] overflow-hidden bg-[#0a0a0c] border border-zinc-800/80 rounded-2xl relative shadow-2xl flex flex-col cursor-default my-auto"
-                >
+                <Suspense fallback={<div className="p-4"><PaneLoader minHeight={360} label="Form hazırlanıyor" /></div>}>
                   <AddTradeForm
+                    key={formKey}
                     onSave={handleSaveTradeAndClose}
-                    editingTrade={editingTrade}
+                    editingTrade={formSlot.editing}
                     onCancelEdit={handleCancelEdit}
-                    currency={currency}
-                    platforms={platforms}
-                    defaultPlatform={globalSelectedPlatforms.length > 0 ? globalSelectedPlatforms[0] : undefined}
                     timeframes={timeframes}
                     htfTimeframes={htfTimeframes}
                     sessions={sessions}
-                    concepts={concepts}
                     confirmations={confirmations}
                     assets={assets}
                     planFidelities={planFidelities}
@@ -3403,96 +3005,52 @@ export default function App() {
                     trendTypes={trendTypes}
                     tpTargets={tpTargets}
                     premiumDiscounts={premiumDiscounts}
-                    entryHours={entryHours}
                     newsDays={newsDays}
                     strategies={strategies}
                     asiaRangeFvgs={asiaRangeFvgs}
                     definitionTitles={definitionTitles}
-                    persistPlatforms={persistPlatforms}
+                    lastTrade={latestTrade}
+                    registerCloseGuard={registerFormCloseGuard}
+                    propAccounts={propAccounts}
+                    defaultAccountChoice={defaultAccountChoice}
+                    quickMode={formQuickMode}
+                    onQuickModeChange={setFormQuickMode}
+                    active={isFormOpen}
                   />
-                </motion.div>
-              </motion.div>
-            )}
-          </AnimatePresence>,
-          document.body
-        )}
+                </Suspense>
+              </div>
+            </div>,
+            document.body,
+          )}
 
         {/* LIGHTBOX DETAILS MODAL */}
-        <TradeDetailModal
-          key="trade-detail-modal"
-          trade={detailedTrade}
-          onClose={handleCloseTradeDetail}
-          onEdit={handleStartEdit}
-          onDelete={handleDeleteTrade}
-          currency={currency}
-          definitionTitles={definitionTitles}
-        />
+        {detailMounted && (
+          <Suspense fallback={null}>
+            <TradeDetailModal
+              key="trade-detail-modal"
+              trade={detailedTrade}
+              onClose={handleCloseTradeDetail}
+              onEdit={handleStartEdit}
+              onDelete={handleDeleteTrade}
+              definitionTitles={definitionTitles}
+              navList={detailNavList}
+              onNavigate={setDetailedTrade}
+            />
+          </Suspense>
+        )}
 
 
         {/* AUTH MODAL */}
         {authModalMounted && (
-          <AuthModal
-            isOpen={isAuthModalOpen}
-            onClose={closeAuthModal}
-          />
+          <Suspense fallback={null}>
+            <AuthModal
+              isOpen={isAuthModalOpen}
+              onClose={closeAuthModal}
+            />
+          </Suspense>
         )}
 
-        {/* AI CO-PILOT MODAL */}
-        {copilotMounted && (
-          <AICoPilotModal
-            isOpen={isCopilotOpen}
-            onClose={closeCopilot}
-            allTrades={trades}
-            trades={filteredGlobalTrades}
-            stats={calculatedStats}
-            currency={currency}
-            isRrMode={isRrMode}
-            definitionTitles={definitionTitles}
-            definitions={{
-              platforms,
-              assets,
-              concepts,
-              sessions,
-              timeframes,
-              htfTimeframes,
-              confirmations,
-              entryModels,
-              trendTypes,
-              planFidelities,
-            }}
-            journals={journals}
-            certificates={certificates}
-            notes={notes}
-          />
-        )}
-
-      {/* FLOATING AI CO-PILOT QUICK ACCESS BUTTON */}
-      <div className="fixed bottom-5 right-5 z-30 pointer-events-none">
-        <AnimatePresence>
-          {!isCopilotOpen && (
-            <motion.button
-              key="copilot-fab"
-              type="button"
-              aria-label="AI Co-Pilot'u aç"
-              onClick={() => setIsCopilotOpen(true)}
-              initial={{ opacity: 0, scale: 0.8, y: 8 }}
-              animate={{ opacity: 1, scale: 1, y: 0, transition: SPRING.enter }}
-              exit={{ opacity: 0, scale: 0.85, transition: { duration: 0.12, ease: EASE } }}
-              whileHover={{ scale: 1.08 }}
-              whileTap={{ scale: 0.94 }}
-              className="pointer-events-auto group relative w-11 h-11 flex items-center justify-center bg-bg-card hover:bg-bg-card-hover text-zinc-100 rounded-full shadow-lg cursor-pointer border border-border-card hover:border-blue-500/40 transition-colors duration-200"
-            >
-              <span className="absolute inset-0 rounded-full bg-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-          <div className="relative flex items-center justify-center text-blue-400">
-            <svg viewBox="0 0 24 24" className="w-[16px] h-[16px] fill-current" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 3c.13 4.56 2.44 6.87 7 7-4.56.13-6.87 2.44-7 7-.13-4.56-2.44-6.87-7-7 4.56-.13 6.87-2.44 7-7z" />
-              <path d="M17.5 14c.07 2.28 1.22 3.43 3.5 3.5-2.28.07-3.43 1.22-3.5 3.5-.07-2.28-1.22-3.43-3.5-3.5 2.28-.07 3.43-1.22 3.5-3.5z" opacity="0.8" />
-            </svg>
-          </div>
-            </motion.button>
-          )}
-        </AnimatePresence>
-      </div>
     </div>
+    </AllTradesContext.Provider>
   );
 }

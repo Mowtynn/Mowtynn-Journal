@@ -1,9 +1,9 @@
 import { EASE } from '../lib/motion';
+import { MIN_SAMPLE, EDGE_PROOF_MIN } from '../lib/sampleSize';
 import React from 'react';
 import { motion } from 'motion/react';
 import { TradeStats } from '../types';
-import { useMetricMode } from '../context/MetricContext';
-import { ValueTransition } from './ValueTransition';
+import type { EdgeStats } from '../lib/asiaAnalytics';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -16,20 +16,15 @@ import {
 
 interface StatsDashboardProps {
   stats: TradeStats;
-  currency: string;
+  /** Beklentinin güven aralığı ve Edge Durumu (filtrelenmiş işlemler) */
+  edge?: EdgeStats;
 }
 
-const StatsDashboard = React.memo(function StatsDashboard({ stats, currency }: StatsDashboardProps) {
-  const { isRrMode } = useMetricMode();
-  
-  const isPnlPositive = stats.netPnl > 0;
-  const isPnlNegative = stats.netPnl < 0;
+const fmtR = (v: number, digits = 2) => `${v > 0 ? '+' : ''}${v.toFixed(digits)} R`;
 
-  const pnlColorClass = isPnlPositive 
-    ? 'text-emerald-400'
-    : isPnlNegative 
-      ? 'text-rose-400'
-      : 'text-zinc-400';
+const StatsDashboard = React.memo(function StatsDashboard({ stats, edge }: StatsDashboardProps) {
+  const isPositive = stats.netR > 0;
+  const isNegative = stats.netR < 0;
 
   const rColorClass = stats.netR > 0
     ? 'text-emerald-400'
@@ -59,16 +54,16 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, currency }: S
       variants={containerVariants}
       initial="hidden"
       animate="show"
-      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2.5"
+      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5"
     >
       {/* 1. Net Profit Card */}
       <motion.div 
         variants={itemVariants}
         id="stat-net-pnl" 
         className={`cursor-pointer bg-zinc-900/60 border border-zinc-800/80  rounded-2xl p-4 ${
-          isPnlPositive 
+          isPositive 
             ? 'hover:bg-emerald-950/15 hover:border-emerald-500/40' 
-            : isPnlNegative 
+            : isNegative 
               ? 'hover:bg-rose-950/15 hover:border-rose-500/40' 
               : 'hover:bg-zinc-800/40 hover:border-zinc-700/60'
         } transition-colors duration-200 ease-out flex flex-col justify-between group shadow-xs`}
@@ -76,56 +71,36 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, currency }: S
         <div className="flex items-center justify-between mb-2">
           <p className="heading-3 text-zinc-400 tracking-wider font-sans flex items-center gap-1.5">
             <span className={`p-1.5 rounded-lg border ${
-              isPnlPositive ? 'toggle-item-win' : 
-              isPnlNegative ? 'toggle-item-loss' : 
+              isPositive ? 'toggle-item-win' : 
+              isNegative ? 'toggle-item-loss' : 
               'bg-zinc-800 text-zinc-400 border-zinc-700'
             }`}>
-              {isPnlPositive ? (
+              {isPositive ? (
                 <TrendingUp size={12} />
-              ) : isPnlNegative ? (
+              ) : isNegative ? (
                 <TrendingDown size={12} />
               ) : (
                 <Activity size={12} />
               )}
             </span>
-            {"Net Kâr / Zarar"}
+            {"Net R"}
           </p>
         </div>
 
         <div className="flex flex-col gap-1 mt-auto pt-1">
           <div className="flex items-baseline gap-1">
-            <ValueTransition modeKey={isRrMode}>
-              {isRrMode ? (
-                <>
-                  <span className={`text-lg sm:text-xl font-bold ${rColorClass}`}>
-                    {stats.netR > 0 ? '+' : ''}{stats.netR.toFixed(2)}
-                  </span>
-                  <span className={`text-[10px] font-bold ml-0.5 ${isPnlPositive ? 'text-emerald-400/70' : isPnlNegative ? 'text-rose-400/70' : 'text-zinc-400'}`}>R</span>
-                </>
-              ) : (
-                <>
-                  <span className={`text-lg sm:text-xl font-bold ${pnlColorClass}`}>
-                    {stats.netPnl > 0 ? '+' : ''}{(stats?.netPnl || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </span>
-                  <span className={`text-[10px] font-bold ml-0.5 ${isPnlPositive ? 'text-emerald-400/70' : isPnlNegative ? 'text-rose-400/70' : 'text-zinc-400'}`}>{currency}</span>
-                </>
-              )}
-            </ValueTransition>
+            <span className={`text-lg sm:text-xl font-bold ${rColorClass}`}>
+              {stats.netR > 0 ? '+' : ''}{stats.netR.toFixed(2)}
+            </span>
+            <span className={`text-[10px] font-bold ml-0.5 ${isPositive ? 'text-emerald-400/70' : isNegative ? 'text-rose-400/70' : 'text-zinc-400'}`}>R</span>
           </div>
 
           <div className="flex items-center justify-between gap-1 mt-1">
             <div className="bg-zinc-800/80 border border-zinc-700/60 py-0.5 px-2 rounded-lg flex items-center gap-1.5 overflow-hidden">
-              <span className={`text-[10px] font-bold font-sans ${isPnlPositive ? 'text-emerald-400' : isPnlNegative ? 'text-rose-400' : 'text-zinc-400'}`}>
-                <ValueTransition modeKey={isRrMode}>
-                  {isRrMode 
-                    ? `${stats.netPnl > 0 ? '+' : ''}${(stats?.netPnl || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`
-                    : `${stats.netR > 0 ? '+' : ''}${stats.netR.toFixed(2)} R`
-                  }
-                </ValueTransition>
-              </span>
+              <span className="text-[10px] font-bold font-sans text-zinc-300">Beklenti {fmtR(stats.expectancyRR)}</span>
             </div>
             <span className="text-[10px] text-zinc-400 font-sans flex items-center gap-1">
-              <span className="text-zinc-300 font-bold bg-zinc-800 px-1.5 py-0.5 rounded-lg border border-zinc-700">{stats.closedTrades}</span>
+              <span className="text-zinc-300 font-bold bg-zinc-800 px-1.5 py-0.5 rounded-lg border border-zinc-700">{stats.totalTrades}</span>
               {"İşlem"}
             </span>
           </div>
@@ -162,6 +137,11 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, currency }: S
               <span className="bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[10px] font-bold font-sans py-0.5 px-2 rounded-lg">
                 {stats.losingTrades} {"LOSS"}
               </span>
+              {stats.breakevenTrades > 0 && (
+                <span className="bg-zinc-800/80 border border-zinc-700/60 text-zinc-300 text-[10px] font-bold font-sans py-0.5 px-2 rounded-lg">
+                  {stats.breakevenTrades} {"BE"}
+                </span>
+              )}
             </div>
             
             <div className="p-1 bg-blue-500/10 border border-blue-500/20 rounded-lg flex items-center justify-center text-blue-400">
@@ -209,83 +189,54 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, currency }: S
 
         <div className="flex flex-col gap-1 mt-auto pt-1">
           <div className="flex items-baseline gap-1">
-            <span className={`text-lg sm:text-xl font-bold ${stats.profitFactor > 1.5 ? "text-emerald-400" : "text-blue-400"}`}>
-              {stats.profitFactor === Infinity ? 'Sonsuz' : stats.profitFactor.toFixed(2)}
+            <span className={`text-lg sm:text-xl font-bold ${stats.profitFactorRR > 1.5 ? "text-emerald-400" : "text-blue-400"}`}>
+              {stats.profitFactorRR >= 999 ? '∞' : stats.profitFactorRR.toFixed(2)}
             </span>
           </div>
 
           <div className="flex items-center justify-between gap-1 mt-1">
             <div className="bg-zinc-800/80 border border-zinc-700/60 py-0.5 px-2 rounded-lg flex items-center gap-1.5">
               <span className="text-[10px] font-sans font-bold text-zinc-300">
-                {stats.profitFactor >= 2.0 
+                {stats.profitFactorRR >= 2.0 
                   ? ('⭐ Harika')
-                  : stats.profitFactor >= 1.5 
+                  : stats.profitFactorRR >= 1.5 
                     ? ('🏆 Sürdürülebilir')
-                    : stats.profitFactor >= 1.0 
+                    : stats.profitFactorRR >= 1.0 
                       ? ('📈 Kazançta')
                       : ('🚨 Riskli')}
               </span>
             </div>
+            <span className="text-[10px] font-sans font-bold tabular-nums truncate" title="Brüt kazanç / brüt kayıp (R)">
+              <span className="text-emerald-400">+{stats.grossWinR.toFixed(1)}R</span>
+              <span className="text-zinc-600"> / </span>
+              <span className="text-rose-400">−{stats.grossLossR.toFixed(1)}R</span>
+            </span>
           </div>
         </div>
       </motion.div>
 
-      {/* 4. Win/Loss Ratio & Averages */}
+      {/* 4. Edge durumu — ort. kazanç/kayıp Derin Analiz'de; burada yalnızca beklenti ve kanıt durumu (diğer kartlarla aynı yükseklik) */}
       <motion.div 
         variants={itemVariants}
         id="stat-win-loss-ratio" 
         className="cursor-pointer bg-zinc-900/60 border border-zinc-800/80  hover:bg-zinc-800/50 hover:border-zinc-700/80 rounded-2xl p-4 transition-colors duration-200 ease-out flex flex-col justify-between group shadow-xs"
+        title={edge && edge.n >= 2 ? `Beklenti %95 güven aralığı: [${edge.expLo.toLocaleString('tr-TR', { maximumFractionDigits: 2 })}; ${edge.expHi.toLocaleString('tr-TR', { maximumFractionDigits: 2 })}] R · ${edge.n} işlem` : undefined}
       >
         <div className="flex items-center justify-between mb-2">
           <p className="heading-3 text-zinc-400 tracking-wider font-sans flex items-center gap-1.5">
             <span className="p-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
               <Layers size={12} />
             </span>
-            {"Ortalama Beklenti"}
+            {"Edge Durumu"}
           </p>
         </div>
-
-        <div className="mt-auto space-y-1">
-          <div className="flex justify-between items-center text-[10px] font-sans">
-            <span className="text-zinc-400">{"Ort. WIN:"}</span>
-            <span className="text-emerald-400 font-bold overflow-hidden">
-              <ValueTransition modeKey={isRrMode}>
-                {isRrMode 
-                  ? `+${stats.averageWinRR.toFixed(1)} R`
-                  : `+${stats.averageWin.toFixed(0)} ${currency}`
-                }
-              </ValueTransition>
-            </span>
-          </div>
-          <div className="flex justify-between items-center text-[10px] font-sans">
-            <span className="text-zinc-400">{"Ort. LOSS:"}</span>
-            <span className="text-rose-400 font-bold overflow-hidden">
-              <ValueTransition modeKey={isRrMode}>
-                {isRrMode
-                  ? `-${Math.abs(stats.averageLossRR).toFixed(1)} R`
-                  : `-${Math.abs(stats.averageLoss).toFixed(0)} ${currency}`
-                }
-              </ValueTransition>
-            </span>
-          </div>
-          <div className="flex justify-between items-center text-[10px] font-sans border-t border-zinc-800 pt-1">
-            <span className="text-zinc-400 font-bold">{"Beklenti:"}</span>
-            <span className={`font-black overflow-hidden flex flex-col items-end ${stats.expectancyRR >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-              <ValueTransition modeKey={isRrMode}>
-                {isRrMode
-                   ? `${stats.expectancyRR > 0 ? '+' : ''}${stats.expectancyRR.toFixed(2)} R`
-                   : `${stats.expectancyCash > 0 ? '+' : ''}${(stats.expectancyCash || 0).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} ${currency}`
-                }
-              </ValueTransition>
-            </span>
-          </div>
-        </div>
+        <EdgeProof edge={edge} expectancy={stats.expectancyRR} />
       </motion.div>
 
       {/* Secondary Row: Insights */}
       <motion.div 
         variants={itemVariants}
-        className="relative overflow-hidden col-span-1 md:col-span-2 cursor-pointer hover:bg-zinc-800/50 hover:border-zinc-700/80 bg-zinc-900/60 border border-zinc-800/80  rounded-2xl p-4 shadow-xs transition-colors duration-200 ease-out flex flex-col justify-between group"
+        className="relative overflow-hidden col-span-1 sm:col-span-2 cursor-pointer hover:bg-zinc-800/50 hover:border-zinc-700/80 bg-zinc-900/60 border border-zinc-800/80  rounded-2xl p-4 shadow-xs transition-colors duration-200 ease-out flex flex-col justify-between group"
       >
         <div className="flex justify-between items-center mb-3">
           <p className="heading-3 tracking-wider text-zinc-400 font-sans flex items-center gap-1.5">
@@ -299,17 +250,23 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, currency }: S
           <div className="flex flex-col justify-between transition-colors">
             <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold font-sans">{"En Verimli Parite"}</p>
             <p className="text-xs sm:text-sm font-bold text-emerald-400 mt-1 font-sans truncate">{stats.bestAsset || '—'}</p>
+            <p className="text-[10px] text-zinc-500 font-sans tabular-nums mt-0.5 truncate">
+              {stats.bestAsset ? `${fmtR(stats.bestAssetR)} · ${stats.bestAssetCount} işlem` : 'Pozitif parite yok'}
+            </p>
           </div>
           <div className="flex flex-col justify-between transition-colors border-l border-zinc-800/80 pl-4">
             <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold font-sans">{"En Verimsiz Parite"}</p>
             <p className="text-xs sm:text-sm font-bold text-rose-400 mt-1 font-sans truncate">{stats.worstAsset || '—'}</p>
+            <p className="text-[10px] text-zinc-500 font-sans tabular-nums mt-0.5 truncate">
+              {stats.worstAsset ? `${fmtR(stats.worstAssetR)} · ${stats.worstAssetCount} işlem` : 'Negatif parite yok'}
+            </p>
           </div>
         </div>
       </motion.div>
 
       <motion.div 
         variants={itemVariants}
-        className="relative overflow-hidden col-span-1 md:col-span-2 cursor-pointer hover:bg-zinc-800/50 hover:border-zinc-700/80 bg-zinc-900/60 border border-zinc-800/80  rounded-2xl p-4 shadow-xs transition-colors duration-200 ease-out flex flex-col justify-between group"
+        className="relative overflow-hidden col-span-1 sm:col-span-2 cursor-pointer hover:bg-zinc-800/50 hover:border-zinc-700/80 bg-zinc-900/60 border border-zinc-800/80  rounded-2xl p-4 shadow-xs transition-colors duration-200 ease-out flex flex-col justify-between group"
       >
         <div className="flex justify-between items-center mb-3">
           <p className="heading-3 tracking-wider text-zinc-400 font-sans flex items-center gap-1.5">
@@ -322,21 +279,27 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, currency }: S
         <div className="grid grid-cols-2 gap-4 mt-auto">
           {/* Haftalık Kâr */}
           <div className="font-sans transition-colors">
-            <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold">{"Haftalık Kâr / Zarar"}</p>
+            <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold">{"Son 7 gün"}</p>
             <p className={`text-xs sm:text-sm font-bold mt-1 truncate ${
-              stats.weeklyPnl > 0 ? 'text-emerald-400' : stats.weeklyPnl < 0 ? 'text-rose-400' : 'text-zinc-400'
+              stats.weeklyR > 0 ? 'text-emerald-400' : stats.weeklyR < 0 ? 'text-rose-400' : 'text-zinc-400'
             }`}>
-              {stats.weeklyPnl > 0 ? '+' : ''}{(stats?.weeklyPnl || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {currency}
+              {fmtR(stats.weeklyR)}
+            </p>
+            <p className="text-[10px] text-zinc-500 font-sans tabular-nums mt-0.5 truncate">
+              {stats.weeklyCount > 0 ? `${stats.weeklyCount} işlem · %${((stats.weeklyWins / stats.weeklyCount) * 100).toFixed(0)} WR` : 'İşlem yok'}
             </p>
           </div>
 
           {/* Aylık Kâr */}
           <div className="font-sans transition-colors border-l border-zinc-800/80 pl-4">
-            <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold">{"Aylık Kâr / Zarar"}</p>
+            <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold">{"Son 30 gün"}</p>
             <p className={`text-xs sm:text-sm font-bold mt-1 truncate ${
-              stats.monthlyPnl > 0 ? 'text-emerald-400' : stats.monthlyPnl < 0 ? 'text-rose-400' : 'text-zinc-400'
+              stats.monthlyR > 0 ? 'text-emerald-400' : stats.monthlyR < 0 ? 'text-rose-400' : 'text-zinc-400'
             }`}>
-              {stats.monthlyPnl > 0 ? '+' : ''}{(stats?.monthlyPnl || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {currency}
+              {fmtR(stats.monthlyR)}
+            </p>
+            <p className="text-[10px] text-zinc-500 font-sans tabular-nums mt-0.5 truncate">
+              {stats.monthlyCount > 0 ? `${stats.monthlyCount} işlem · %${((stats.monthlyWins / stats.monthlyCount) * 100).toFixed(0)} WR` : 'İşlem yok'}
             </p>
           </div>
         </div>
@@ -344,6 +307,65 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, currency }: S
     </motion.div>
   );
 });
+
+/**
+ * Edge Durumu: işlem başı beklenti, %95 güven aralığı ve alt sınırın sıfırı geçmesi için gereken ek işlem
+ * (mevcut ortalama ve oynaklık sürerse). Kazanma oranı tek başına yanıltıcıdır; kanıt aralıktadır.
+ */
+function EdgeProof({ edge, expectancy }: { edge?: EdgeStats; expectancy: number }) {
+  const f = (v: number) => v.toLocaleString('tr-TR', { maximumFractionDigits: 2 });
+  let badge = 'text-zinc-300';
+  // Hüküm eşiği proje geneliyle aynı (lib/sampleSize · MIN_SAMPLE)
+  const n = edge?.n ?? 0;
+  let text = `Az örneklem · ${n}/${MIN_SAMPLE} işlem`;
+  let pct = (n / MIN_SAMPLE) * 100 * 0.25;
+  // "Kanıtlandı" için hem güven aralığının alt sınırı sıfırın üstünde olmalı hem de en az EDGE_PROOF_MIN işlem
+  if (edge && edge.n >= MIN_SAMPLE) {
+    if (edge.expLo > 0 && edge.n >= EDGE_PROOF_MIN) {
+      badge = 'text-emerald-300';
+      text = '✓ Kanıtlandı';
+      pct = 100;
+    } else if (edge.expLo > 0) {
+      badge = 'text-blue-300';
+      text = `Umut verici · ${edge.n}/${EDGE_PROOF_MIN} işlem`;
+      pct = (edge.n / EDGE_PROOF_MIN) * 100;
+    } else if (edge.expectancy > 0 && edge.tradesNeeded !== null) {
+      const need = Math.max(edge.tradesNeeded, EDGE_PROOF_MIN - edge.n);
+      badge = 'text-blue-300';
+      text = `~${need} işlem daha`;
+      pct = (edge.n / (edge.n + need)) * 100;
+    } else if (edge.n >= EDGE_PROOF_MIN) {
+      badge = 'text-rose-300';
+      text = 'Edge yok';
+    } else {
+      badge = 'text-rose-300';
+      text = `Şu an negatif · ${edge.n}/${EDGE_PROOF_MIN} işlem`;
+      pct = (edge.n / EDGE_PROOF_MIN) * 100;
+    }
+  }
+  return (
+    <div className="flex flex-col gap-1 mt-auto pt-1">
+      <div className="flex items-baseline gap-1">
+        <span className={`text-lg sm:text-xl font-bold ${expectancy >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{fmtR(expectancy)}</span>
+        <span className="text-[10px] text-zinc-500 font-sans">/işlem</span>
+      </div>
+      <div className="flex items-center justify-between gap-2 mt-1">
+        <div className="bg-zinc-800/80 border border-zinc-700/60 py-0.5 px-2 rounded-lg flex items-center gap-1.5 min-w-0">
+          <span className={`text-[10px] font-sans font-bold truncate ${badge}`}>{text}</span>
+        </div>
+        {edge && edge.n >= MIN_SAMPLE && (
+          <span className="text-[10px] text-zinc-500 font-sans tabular-nums truncate">GA [{f(edge.expLo)}; {f(edge.expHi)}]</span>
+        )}
+      </div>
+      <div className="h-0.5 rounded-full bg-zinc-800 overflow-hidden mt-0.5" aria-hidden="true">
+        <div
+          className={`h-full rounded-full ${pct >= 100 ? 'bg-emerald-500' : edge && edge.expectancy > 0 ? 'bg-blue-500' : 'bg-rose-500/60'}`}
+          style={{ width: `${Math.max(pct > 0 ? 4 : 0, Math.min(100, pct))}%` }}
+        />
+      </div>
+    </div>
+  );
+}
 
 export default StatsDashboard;
 

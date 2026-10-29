@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { nyNow } from '../lib/tradingTime';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { JournalEntry } from '../types';
 import { TURKISH_MONTHS, TURKISH_DAYS_SHORT } from './TurkishDateTimePicker';
@@ -11,10 +12,10 @@ interface JournalCalendarProps {
 
 export function JournalCalendar({ entries, selectedDate, onSelectDate }: JournalCalendarProps) {
   const parsedDate = useMemo(() => {
-    if (!selectedDate) return new Date();
+    if (!selectedDate) return nyNow();
     const [year, month, day] = selectedDate.split('-').map(Number);
     const d = new Date(year, (month || 1) - 1, day || 1);
-    return isNaN(d.getTime()) ? new Date() : d;
+    return isNaN(d.getTime()) ? nyNow() : d;
   }, [selectedDate]);
 
   const [viewYear, setViewYear] = useState(parsedDate.getFullYear());
@@ -47,7 +48,7 @@ export function JournalCalendar({ entries, selectedDate, onSelectDate }: Journal
   };
 
   const handleSetToday = () => {
-    const now = new Date();
+    const now = nyNow();
     const formatted = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
     onSelectDate(formatted);
     setViewYear(now.getFullYear());
@@ -55,7 +56,7 @@ export function JournalCalendar({ entries, selectedDate, onSelectDate }: Journal
   };
 
   const handleSetYesterday = () => {
-    const yesterday = new Date();
+    const yesterday = nyNow();
     yesterday.setDate(yesterday.getDate() - 1);
     const formatted = `${yesterday.getFullYear()}-${pad(yesterday.getMonth() + 1)}-${pad(yesterday.getDate())}`;
     onSelectDate(formatted);
@@ -117,7 +118,7 @@ export function JournalCalendar({ entries, selectedDate, onSelectDate }: Journal
   }, [viewYear, viewMonth]);
 
   const isToday = (date: Date) => {
-    const now = new Date();
+    const now = nyNow();
     return (
       date.getDate() === now.getDate() &&
       date.getMonth() === now.getMonth() &&
@@ -174,18 +175,18 @@ export function JournalCalendar({ entries, selectedDate, onSelectDate }: Journal
           {TURKISH_MONTHS[viewMonth]} {viewYear}
         </span>
         <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-700/50 rounded-xl p-0.5 shadow-xs">
-          <button
+          <button aria-label="Önceki" title="Önceki"
             type="button"
             onClick={handlePrevMonth}
-            className="w-6.5 h-6.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 flex items-center justify-center transition-colors duration-150 cursor-pointer"
+            className="w-7 h-7 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 flex items-center justify-center transition-colors duration-150 cursor-pointer"
           >
             <ChevronLeft size={13} />
           </button>
           <div className="w-px h-3.5 bg-zinc-800" />
-          <button
+          <button aria-label="Sonraki" title="Sonraki"
             type="button"
             onClick={handleNextMonth}
-            className="w-6.5 h-6.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 flex items-center justify-center transition-colors duration-150 cursor-pointer"
+            className="w-7 h-7 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 flex items-center justify-center transition-colors duration-150 cursor-pointer"
           >
             <ChevronRight size={13} />
           </button>

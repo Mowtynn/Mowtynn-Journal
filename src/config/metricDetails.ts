@@ -1,18 +1,8 @@
 import { MetricDetail } from '../components/MetricDetailModal';
-import { Target, TrendingUp, TrendingDown, Activity, AlertTriangle, ShieldCheck, Zap, Scale, LayoutDashboard, Calendar, LineChart, Hash, ArrowUpRight, ArrowDownRight, Clock } from 'lucide-react';
+import { Activity, AlertTriangle, ArrowDownRight, ArrowUpRight, Calendar, LineChart, Scale, Target, TrendingDown, TrendingUp } from 'lucide-react';
 
 export const metricDetailsDict: Record<string, Omit<MetricDetail, 'value' | 'id'>> = {
   // DeepAnalysis
-  totalTradeCount: {
-    title: 'Toplam İşlem Sayısı',
-    description: 'Sisteme kaydedilmiş, sonuçlanmış olan tüm pozisyonların sayısı',
-    type: 'info',
-    icon: Hash,
-    details: [
-      'Geniş bir işlem örneği, istatistiksel güvenilirliğinizi artırır.',
-      'Sadece kapanmış işlemler üzerinden hesaplama yapıldığı için risk/kazanç oranı ve karlılık net bir şekilde analiz edilebilir.'
-    ]
-  },
   winRate: {
     title: 'Kazanma Oranı (WR)',
     description: 'Kârla kapanan işlemlerin toplam kapanan işlemlere oranıdır. Sistemin ne sıklıkla doğru tahmin yaptığını gösterir.',
@@ -20,7 +10,7 @@ export const metricDetailsDict: Record<string, Omit<MetricDetail, 'value' | 'id'
     type: 'neutral',
     icon: Target,
     details: [
-      '%50 altı kazanma oranı, konseptnin zayıf olduğu anlamına gelmez, yüksek kazanç katsayısıyla desteklenebilir.',
+      '%50 altı kazanma oranı, stratejinin zayıf olduğu anlamına gelmez, yüksek kazanç katsayısıyla desteklenebilir.',
       '%70 üzeri kazanma oranları genellikle küçük kazanç, büyük kayıp riskleri taşıyabilir (skalping vs.).'
     ]
   },
@@ -31,34 +21,8 @@ export const metricDetailsDict: Record<string, Omit<MetricDetail, 'value' | 'id'
     type: 'positive',
     icon: TrendingUp,
     details: [
-      'Risk/Ödül konseptsinin sürdürülebilirliğini net olarak ifade eder.',
-      'Pozitif kalması, uzun vadede konseptnin kârlı büyüyeceğini gösterir.'
-    ]
-  },
-  pureProfitFactor: {
-    title: 'Kâr Faktörü (Profit Factor)',
-    description: 'Brüt kârın brüt zarara bölünmesiyle elde edilen kârlılık rasyosudur. Konseptnin verimliliğini değerlendirmek için ideal metriktir.',
-    formula: 'Toplam Brüt Kâr / Toplam Brüt Zarar (Matematiksel Mutlak Değeri ile)',
-    type: 'info',
-    icon: Scale,
-    details: [
-      'Değer < 1: Konsept genel olarak para kaybediyor.',
-      'Değer 1.0 - 1.5: Başarılı ama riskli bir konsept (standart kârlılık).',
-      'Değer > 1.5: Yüksek kaliteli ticaret sistemi.',
-      'Değer 2.0 ve üstü: Olağanüstü performans.'
-    ]
-  },
-  profitFactor: {
-    title: 'Kâr Faktörü (Profit Factor)',
-    description: 'Brüt kârın brüt zarara bölünmesiyle elde edilen kârlılık rasyosudur. Konseptnin verimliliğini değerlendirmek için ideal metriktir.',
-    formula: 'Toplam Brüt Kâr / Toplam Brüt Zarar (Matematiksel Mutlak Değeri ile)',
-    type: 'info',
-    icon: Scale,
-    details: [
-      'Değer < 1: Konsept genel olarak para kaybediyor.',
-      'Değer 1.0 - 1.5: Başarılı ama riskli bir konsept (standart kârlılık).',
-      'Değer > 1.5: Yüksek kaliteli ticaret sistemi.',
-      'Değer 2.0 ve üstü: Olağanüstü performans.'
+      'Risk/Ödül stratejisinin sürdürülebilirliğini net olarak ifade eder.',
+      'Pozitif kalması, uzun vadede stratejinin kârlı büyüyeceğini gösterir.'
     ]
   },
   expectancy: {
@@ -68,74 +32,8 @@ export const metricDetailsDict: Record<string, Omit<MetricDetail, 'value' | 'id'
     type: 'info',
     icon: Activity,
     details: [
-      'Pozitif Beklenti: İstatistiksel olarak bu konseptyi oynamaya devam ederseniz uzun vadede kazanırsınız.',
+      'Pozitif Beklenti: İstatistiksel olarak bu stratejiyi oynamaya devam ederseniz uzun vadede kazanırsınız.',
       'Negatif Beklenti: İşlemlere devam edildikçe sistem kasanızı eritecektir.'
-    ]
-  },
-  kelly: {
-    title: "Kelly Criterion (Kelly Kriteri)",
-    description: "Sermaye yönetimi ve risk yönetimi için kullanılan istatistiksel bir formüldür. Kasa büyümesini maksimize etmek için teorik olarak alınması gereken optimum pozisyon büyüklüğünü (risk yüzdesini) verir.",
-    formula: "K% = W - [(1 - W) / R] \n(W=Kazanma Oranı, R=Risk/Ödül Oranı)",
-    type: 'info',
-    icon: ShieldCheck,
-    details: [
-      "Değer negatif çıkarsa işlemlere kesinlikle girilmemesi (konseptnin çalışmadığı) anlamı çıkar.",
-      "Kelly yüzdesi genellikle oldukça agresiftir. Piyasa pratiğinde bu oranın yarısı (Half-Kelly) veya dörtte biri kullanılarak risk düşürülmektedir.",
-      "0-10% Aralığı: Muhafazakar Büyüme (Güvenli Alan)",
-      ">10% Aralığı: Tehlikeli, Yüksek Volatiliteli Kasalar"
-    ]
-  },
-  maxDrawdown: {
-    title: "Max Drawdown (Maksimum Düşüş)",
-    description: "Kasanızın en yüksek zirve noktasından, en düşük dip noktasına kadar yaşadığı oransal kayıp yüzdesidir veya değeridir.",
-    formula: "(Tepe Noktası - Dip Noktası) / Tepe Noktası * 100",
-    type: 'negative',
-    icon: AlertTriangle,
-    details: [
-      "Sistemin taşıdığı potansiyel riski net biçimde özetler.",
-      "%20 üzeri Drawdown değerleri psikolojiyi ve trade sermayesini sarsabilir.",
-      "Drawdown miktarını geri kazanmak için, aynı yüzdeden çok daha fazla oranda kâr kazanmak gerekir."
-    ]
-  },
-  recoveryFactor: {
-    title: "Toparlanma Faktörü (Recovery Factor)",
-    description: "Sistemin kârının (R cinsinden), maruz kaldığı maksimum kümülatif R düşüşüne (Max Drawdown R) oranıdır. Sistemlerin ne kadar hızlı toparlandığını ölçer.",
-    formula: "Net RR / Max DD R",
-    type: 'info',
-    icon: TrendingUp,
-    details: [
-      "Değer < 1: Sistem henüz toparlanamadı veya riskine göre getirisi düşük.",
-      "Değer > 1.5: Sistem R kayıplarını hızla telafi ediyor."
-    ]
-  },
-  sharpeRatio: {
-    title: "İstikrar Endeksi (Sharpe Oranı Eşdeğeri)",
-    description: "Risk ayarlı getiriyi ölçer. Getirinin riskli mi yoksa istikrarlı bir büyümeyle mi elde edildiğini anlamak için kullanılır.",
-    formula: "Ortalama Günlük Getiri / Getirilerin Standart Sapması",
-    type: 'info',
-    icon: LineChart,
-    details: [
-      "Yüksek Sharpe Oranı, işlemlerin daha stabil ilerlediğini ve sürpriz sert düşüşlerin az olduğunu gösterir.",
-      "Düşük bir oran, kâr elde etse bile bunun çok stresli dalgalanmalarla yaşandığını işaret eder."
-    ]
-  },
-  avgRecoveryTrades: {
-    title: "Drawdown Toparlanma (Ortalama Trade)",
-    description: "Yeni bir zirve (All-Time High) gördükten sonraki düşüşlerden toparlanmak için ortalama kaç trade yapılması gerektiğini simüle eder.",
-    type: 'info',
-    icon: Activity,
-    details: [
-      "Psikolojik hazırlık için iyi bir metriktir. Stop olduğunuzda ortalama kaç işlem daha sabretmeniz gerektiğini belirtir."
-    ]
-  },
-  efficiencyLevel: {
-    title: "Verimlilik Seviyesi (Sistem Yaşlanması)",
-    description: "Son dönemdeki performansınızın (genellikle son 10 veya 20 işlem) eski genel performansınızla kıyaslanmasıdır. Sisteminizin piyasadaki geçerliliğini gösterir.",
-    type: 'info',
-    icon: Target,
-    details: [
-      "Eğer son 10 işlemin PF değeri eskiye göre ciddi bir zayıflama gösteriyorsa piyasa koşulları değişmiş olabilir.",
-      "Sistemin yaşlanıp yaşlanmadığını veya sizin mental yorgunluğunuzu analiz eder."
     ]
   },
   averageWin: {
@@ -156,65 +54,6 @@ export const metricDetailsDict: Record<string, Omit<MetricDetail, 'value' | 'id'
     icon: ArrowDownRight,
     details: [
       "Kayıpların stop loss aracılığıyla kısıtlanıp kısıtlanmadığı incelenmelidir."
-    ]
-  },
-  winStreak: {
-    title: "En Uzun Kazanç Serisi",
-    description: "Arka arkaya alınan kârlı işlemlerin maksimum sayısını gösterir.",
-    type: 'positive',
-    icon: Zap,
-    details: [
-      "Piyasa koşullarının sizin konseptnize en çok uyduğu evreyi işaret eder."
-    ]
-  },
-  lossStreak: {
-    title: "En Uzun Kayıp Serisi",
-    description: "Arka arkaya alınan zararlı işlemlerin maksimum sayısını gösterir.",
-    type: 'negative',
-    icon: AlertTriangle,
-    details: [
-      "Sistemin zayıf kaldığı veya genel bir piyasa daralmasının olduğu riskli dönemi işaret eder.",
-      "Konseptnin en sert stres testlerinden biridir."
-    ]
-  },
-  planFidelityRate: {
-    title: "Plan Sadakati & Disiplin Oranı",
-    description: "Önceden belirlenmiş ticaret planınıza tam sadık kalınarak veya A+ kalitede açılan işlemlerin tüm işlemlere oranıdır.",
-    formula: "(A+ / Tam Sadık İşlem Sayısı / Toplam Değerlendirilen İşlem) × 100",
-    type: 'positive',
-    icon: ShieldCheck,
-    details: [
-      "Yüksek plan sadakati (%70 ve üzeri), trader'ın duygusal dürtüler (FOMO, intikam ticareti) yerine sistem kurallarına bağlı kaldığını kanıtlar.",
-      "A+ setup kalitesine sadık kalındığında genellikle kazanma oranı ve R-beklentisi belirgin şekilde yükselir."
-    ]
-  },
-  highQualitySetups: {
-    title: "Yüksek Kalite / Tam Sadık Setup Performansı",
-    description: "Sadece kusursuz, kuralına uygun ve yüksek puanlı / A+ (Tam Sadık) açılan pozisyonların kazanma oranı ve performansıdır.",
-    type: 'positive',
-    icon: Target,
-    details: [
-      "Kurallara tam uyulduğunda sistemin gerçek kârlılık potansiyelini gösterir.",
-      "Bu oran genel kazanma oranınızdan belirgin şekilde yüksekse, sorun stratejinizde değil disiplinsiz işlemlerdedir."
-    ]
-  },
-  lowQualitySetups: {
-    title: "Düşük Kalite / Kural Dışı / FOMO Setup Performansı",
-    description: "Kısmen sadık, aceleci, FOMO veya düşük kaliteli (B/C Setup) işlemlerin kazanma oranı ve performansıdır.",
-    type: 'negative',
-    icon: AlertTriangle,
-    details: [
-      "Kurallardan sapıldığında veya düşük kaliteli setup'lara girildiğinde kasanın uğradığı hasarı ölçer.",
-      "Bu kategorideki işlemleri tamamen elemek sistem performansınızı doğrudan katlayabilir."
-    ]
-  },
-  breakevenRate: {
-    title: "Başa Baş Oranı (Breakeven)",
-    description: "Girişte kapanan veya sıfır PnL ile sonuçlanan işlemlerin genel yüzdesini gösterir.",
-    type: 'info',
-    icon: Clock,
-    details: [
-      "Risk yönetimi açısından kilit bir metriktir. Stop entry\'e çekme veya erken çıkışları ifade edebilir."
     ]
   },
   longPerformance: {
@@ -254,83 +93,85 @@ export const metricDetailsDict: Record<string, Omit<MetricDetail, 'value' | 'id'
       "Tek bir devasa kayıp, aylarca süren kazancı silebilir. Risk haritasının en iyi göstergesidir."
     ]
   },
-  weeklyPerformance: {
-    title: "Haftalık R Eğilimi",
-    description: "Hafta bazındaki net R-multiple gelişiminin özeti.",
+  pureProfitFactor: {
+    title: 'Kâr Faktörü (Profit Factor)',
+    description: 'Kazanan işlemlerin toplam R\'sinin kaybeden işlemlerin toplam R\'sine oranı. Kayıp yoksa ∞ gösterilir.',
+    formula: 'Brüt kazanç (R) / Brüt kayıp (R, mutlak değer)',
     type: 'info',
+    icon: Scale,
+    details: [
+      '1\'in altı: sistem net R kaybediyor.',
+      '1.0 – 1.5: kârlı ama ince bir kenar.',
+      '1.5 üstü: güçlü; 2.0 ve üstü: çok güçlü.',
+      'Az işlemde tek bir büyük kazanç PF\'yi şişirebilir; örneklemle birlikte okuyun.'
+    ]
+  },
+  maxDrawdown: {
+    title: "Max Drawdown (Maksimum Düşüş)",
+    description: "R sermaye eğrisinin ulaştığı en yüksek noktadan sonraki en derin düşüş. Başlangıç (0R) da bir zirve sayılır.",
+    formula: "max(Zirve R − O anki kümülatif R)",
+    type: 'negative',
+    icon: AlertTriangle,
+    details: [
+      "R cinsindendir: prop hesabının dolar bazlı düşüşü için Prop sekmesindeki hesap kartına bakın.",
+      "Stratejinin taşıdığı en kötü ardışık kaybı özetler; ileride bundan daha derin bir düşüş de yaşanabilir."
+    ]
+  },
+  recoveryFactor: {
+    title: "Toparlanma Faktörü (Recovery Factor)",
+    description: "Net R'nin Max Drawdown'a oranı: en derin düşüşün kaç katı net getiri üretildiği.",
+    formula: "Net R / Max Drawdown R",
+    type: 'info',
+    icon: TrendingUp,
+    details: [
+      "1'in altı: net getiri en derin düşüşü henüz karşılamıyor.",
+      "1.5 üstü: düşüşler getiriye göre küçük kalıyor.",
+      "Hiç düşüş yaşanmadıysa hesaplanmaz (—)."
+    ]
+  },
+  avgRecoveryTrades: {
+    title: "Düşüşten Toparlanma (ortalama işlem)",
+    description: "Zirvenin altına düşülen işlemden, zirvenin yeniden aşıldığı (ya da yakalandığı) işleme kadar geçen işlem sayısının ortalaması. Yalnızca tamamlanmış düşüşler sayılır.",
+    formula: "Toplam toparlanma işlemi / Tamamlanmış düşüş sayısı",
+    type: 'info',
+    icon: Activity,
+    details: [
+      "Stop olduktan sonra eski seviyeye dönmek için genelde kaç işlem gerektiğini gösterir.",
+      "Devam eden (henüz toparlanmamış) düşüş ortalamaya katılmaz; hiç tamamlanmış düşüş yoksa — gösterilir."
+    ]
+  },
+  efficiencyLevel: {
+    title: "Sistem Verimlilik Seviyesi",
+    description: "Son 10 işlemin Profit Factor'ü ile tüm geçmişin Profit Factor'ünün karşılaştırması.",
+    formula: "Son 10 işlem: brüt kazanç R / brüt kayıp R",
+    type: 'info',
+    icon: Target,
+    details: [
+      "Son 10'un PF'si genelin belirgin altındaysa piyasa koşulları ya da uygulama değişmiş olabilir.",
+      "10 işlem küçük bir örneklemdir: tek başına karar verdirmez, eğilim uyarısıdır."
+    ]
+  },
+  last10AvgR: {
+    title: "Son 10 İşlem Ortalaması",
+    description: "Son 10 işlemin işlem başına ortalama R'si (BE dahil).",
+    formula: "Son 10 işlemin R toplamı / 10",
+    type: 'info',
+    icon: LineChart,
+    details: [
+      "Genel beklentiyle (işlem başı ortalama R) karşılaştırarak son dönemin daha iyi mi kötü mü gittiğini görürsünüz.",
+      "10'dan az işlem varsa mevcut işlemlerin ortalamasıdır."
+    ]
+  },
+  profitableDays: {
+    title: "Kârlı / Zararlı Gün",
+    description: "İşlem yapılan New York takvim günlerinin, günün toplam R sonucuna göre dağılımı. Gün içinde birden çok işlem varsa toplamları alınır.",
+    formula: "Kârlı gün = günlük toplam R > 0 · Zararlı gün = günlük toplam R < 0",
+    type: 'neutral',
     icon: Calendar,
     details: [
-      "Haftalık performans takibi ile aylık ana hedeflere olan uzaklık ve sapmalar planlanır."
-    ]
-  },
-  heatmap: {
-    title: "Konsept & Parite Hit Rate Matrisi (Heatmap)",
-    description: "Hangi paritede, hangi teknik kavramda veya modelde daha iyi oranlar yakalandığını gösterir.",
-    type: 'info',
-    icon: LayoutDashboard,
-    details: [
-      "Kırmızı/Siyah alanlar, işlem yapılmaması gereken 'Sıfır Bölge' veya 'Kör Nokta' olarak tasnif edilir.",
-      "Parlak yeşil veya mavi alanlar sizin doğal yetenek alanlarınızdır. Bütün kasayı bu alanlara kaydırmak verimliliği artırır."
-    ]
-  },
-  sortinoRatio: {
-    title: "Sortino Oranı (Bakiye Bağımsız)",
-    description: "Sharpe oranının aksine, sadece aşağı yönlü sapmaları (kayıpların oluşturduğu düzensizliği) standart sapma olarak ele alıp risk ve kazanç kalitesini ölçer.",
-    formula: "Ortalama R Getirisi / Sadece Negatif R'ların Standart Sapması",
-    type: 'positive',
-    icon: LineChart,
-    details: [
-      "Yukarı yönlü aşırı yüksek kazançları negatif sapma olarak cezalandırmaz. Bu yüzden trading sistemleri için Sharpe oranından çok daha adildir.",
-      "Değer > 1.0: Başarılı bir risk-getiri profili.",
-      "Değer > 2.0: Mükemmel seviyede, aşağı yönlü dalgalanması minimize edilmiş kaliteli kazanç istikrarı."
-    ]
-  },
-  kellyR: {
-    title: "Kelly Kriteri (R-Tabanlı)",
-    description: "Mevcut kazanma oranı ve R-katsayısı (ortalama kâr-zarar oranı) değerleriniz doğrultusunda kasa büyümesini maksimize edecek işlem başına optimum R risk miktarını belirtir.",
-    formula: "Kelly % = W - [(1 - W) / R_Payoff] \n(W = Win Rate, R_Payoff = Ortalama Win R / Ortalama Loss R)",
-    type: 'neutral',
-    icon: ShieldCheck,
-    details: [
-      "Kasanın volatiliteye yenik düşmemesi için hesaplanan Kelly oranının 1/4 (Fractional Kelly) veya 1/2'sinin kullanılması tavsiye edilir.",
-      "Pozitif bir oran, sistemin uzun vadede kârlı matematiksel avantaja sahip olduğunu onaylar.",
-      "Eğer bu değer %0 ya da negatif çıkarsa, sisteminizin negatif beklentiye sahip olduğunu veya riskine göre kârlılığın yetersiz kaldığını gösterir."
-    ]
-  },
-  sma10: {
-    title: "Son 10 İşlem Ortalaması",
-    description: "Kümülatif R-multiple eğrisinin son 10 kapanış değerinin aritmetik ortalamasını gösteren bir trend çizgisi.",
-    formula: "Son 10 Kümülatif Değer / 10",
-    type: 'info',
-    icon: LineChart,
-    details: [
-      "Kümülatif eğrinin hareketli ortalamanın üstünde seyretmesi sistemin optimal performans fazında olduğunu doğrular.",
-      "Eğrinin ortalamasını aşağı yönlü kesmesi, geçici bir performans kaybı, drawdown uyarısı veya piyasa fazı uyuşmazlığına işaret edebilir."
-    ]
-  },
-  zScore: {
-    title: "Z-Skoru / Streak Analizi",
-    description: "Pozisyonların kronolojik ardışıklığını analiz ederek, kazanç (Win) ve kayıp (Loss) serilerinin istatistiksel bağımlılığını (Streak eğilimini) ölçer.",
-    formula: "Runs Test standard normal distribution z value calculation",
-    type: 'neutral',
-    icon: Activity,
-    details: [
-      "Z-Skoru < -1.64 (Streak Eğilimli): Bir kazançtan sonra bir başka kazanç, bir kayıptan sonra bir başka kayıp gelme olasılığı çok yüksektir. Sıcak el (Hot-hand) etkisini doğrular.",
-      "Z-Skoru > 1.64 (Kısa Seri): Kazanılan bir işlemden sonra kaybetme, kaybedilen bir işlemden sonra kazanma eylemi yaygındır. Seri yapma ihtimali düşüktür.",
-      "-1.64 ile 1.64 arası: İşlemlerin sonuçları istatistiksel açıdan bağımsızdır, yani tamamen rastgele dağılım gösterir."
-    ]
-  },
-  currentStreak: {
-    title: "Mevcut Seri",
-    description: "Şu anda kesintisiz devam eden aktif kazanma (Win) ya da kaybetme (Loss) serinizi gösterir.",
-    formula: "Son işlemlerden geriye doğru ardışık sonuçların sayılması",
-    type: 'info',
-    icon: Activity,
-    details: [
-      "Seride kalmak psikolojinizi yönetmek için en önemli unsurlardan biridir.",
-      "Pozitif seri (+ Win): Aşırı öz güven ve kuralları esnetme eğilimine karşı uyanık olun.",
-      "Negatif seri (- Loss): İntikam işlemine (revenge trading) girmemek ve sakinleşmek için kendinize mola verin."
-    ]
+      "Toplam R'si tam 0 olan günler (yalnızca başabaş) iki gruba da girmez.",
+      "Kârlı günlerin oranı, kazanma oranından farklıdır: tek bir büyük kazanç birkaç küçük kaybı aynı gün içinde telafi edebilir.",
+    ],
   },
   sqn: {
     title: "Sistem Kalitesi (SQN - System Quality Number)",
@@ -339,7 +180,7 @@ export const metricDetailsDict: Record<string, Omit<MetricDetail, 'value' | 'id'
     type: 'positive',
     icon: Activity,
     details: [
-      "SQN skoru, konseptnizin pazar koşullarında sadece ne kadar kazanç getirdiğini değil, bu kazancı ne kadar stabil ve düşük dalgalanmayla getirdiğini ölçer.",
+      "SQN skoru, stratejinizin pazar koşullarında sadece ne kadar kazanç getirdiğini değil, bu kazancı ne kadar stabil ve düşük dalgalanmayla getirdiğini ölçer.",
       "İşlem sayısı arttıkça aynı R ortalaması ve standart sapmaya sahip bir sistemin güvenilirliği ve SQN puanı artar.",
       "1.6 altı: Geliştirilmeli (Ortalama Altı)",
       "1.6 - 2.49 arası: Ortalama (İyi) - Çoğu kârlı trade sistemi bu aralıktadır.",

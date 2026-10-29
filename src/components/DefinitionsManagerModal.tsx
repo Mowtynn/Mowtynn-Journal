@@ -3,33 +3,66 @@ import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import toast from 'react-hot-toast';
-import { 
-  SlidersHorizontal, X, Monitor, LineChart, Clock, ArrowUpRight, 
-  Lightbulb, Target, Sun, Plus, Search, Edit2, Check, Trash2, 
-  GripVertical, RotateCcw, Download, Upload, AlertCircle,
-  Crosshair, Zap, TrendingUp, Trophy, Shield, Flag, Layers, Timer, Newspaper, Compass, Type
+import {
+  SlidersHorizontal,
+  X,
+  LineChart,
+  Clock,
+  ArrowUpRight,
+  Lightbulb,
+  Sun,
+  Plus,
+  Search,
+  Edit2,
+  Check,
+  Trash2,
+  GripVertical,
+  RotateCcw,
+  Download,
+  Upload,
+  AlertCircle,
+  Crosshair,
+  Zap,
+  TrendingUp,
+  Flag,
+  Layers,
+  Newspaper,
+  Compass,
+  Type,
 } from 'lucide-react';
-import { Trade, DefinitionTitles, PlatformCategory } from '../types';
-import { 
-  DEFAULT_PLATFORMS, DEFAULT_TIMEFRAMES, DEFAULT_HTF_TIMEFRAMES, 
-  DEFAULT_CONFIRMATIONS, DEFAULT_LIQUIDITY_SWEEPS, DEFAULT_SESSIONS, DEFAULT_ASSETS,
-  DEFAULT_PLAN_FIDELITIES, DEFAULT_ENTRY_MODELS, DEFAULT_TREND_TYPES, DEFAULT_TP_TARGETS, DEFAULT_PREMIUM_DISCOUNTS, DEFAULT_ENTRY_HOURS, DEFAULT_NEWS_DAYS, DEFAULT_STRATEGIES, DEFAULT_ASIA_RANGE_FVGS, FORM_LABEL_KEYS, DEFAULT_DEFINITION_TITLES,
-  caseInsensitiveMatch, caseInsensitiveEquals, savePlatformCategory, getTradeAccountCategory,
-  getStoredPlatformCategories, replacePlatformCategories, normalizeNewsDays
+import { Trade, DefinitionTitles } from '../types';
+import {
+  DEFAULT_TIMEFRAMES,
+  DEFAULT_HTF_TIMEFRAMES,
+  DEFAULT_CONFIRMATIONS,
+  DEFAULT_SESSIONS,
+  DEFAULT_ASSETS,
+  DEFAULT_PLAN_FIDELITIES,
+  DEFAULT_ENTRY_MODELS,
+  DEFAULT_TREND_TYPES,
+  DEFAULT_TP_TARGETS,
+  DEFAULT_PREMIUM_DISCOUNTS,
+  DEFAULT_NEWS_DAYS,
+  DEFAULT_STRATEGIES,
+  DEFAULT_ASIA_RANGE_FVGS,
+  FORM_LABEL_KEYS,
+  DEFAULT_DEFINITION_TITLES,
+  caseInsensitiveMatch,
+  caseInsensitiveEquals,
+  normalizeNewsDays,
+  smartUpper,
 } from '../constants/constants';
 import { useAfterPaint } from '../hooks/useAfterPaint';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
+import { localDateKey } from '../utils/math';
 
 interface DefinitionsManagerModalProps {
   isOpen: boolean;
   onClose: () => void;
   trades?: Trade[];
-  onDeleteTradesByPlatform?: (platformName: string) => void;
-  platforms: string[];
   timeframes: string[];
   htfTimeframes: string[];
   confirmations: string[];
-  concepts: string[];
   sessions: string[];
   assets: string[];
   planFidelities: string[];
@@ -37,16 +70,13 @@ interface DefinitionsManagerModalProps {
   trendTypes?: string[];
   tpTargets?: string[];
   premiumDiscounts?: string[];
-  entryHours?: string[];
   newsDays?: string[];
   strategies?: string[];
   asiaRangeFvgs?: string[];
   definitionTitles?: DefinitionTitles;
-  persistPlatforms: (list: string[]) => void;
   persistTimeframes: (list: string[]) => void;
   persistHtfTimeframes: (list: string[]) => void;
   persistConfirmations: (list: string[]) => void;
-  persistConcepts: (list: string[]) => void;
   persistSessions: (list: string[]) => void;
   persistAssets: (list: string[]) => void;
   persistPlanFidelities: (list: string[]) => void;
@@ -54,7 +84,6 @@ interface DefinitionsManagerModalProps {
   persistTrendTypes?: (list: string[]) => void;
   persistTpTargets?: (list: string[]) => void;
   persistPremiumDiscounts?: (list: string[]) => void;
-  persistEntryHours?: (list: string[]) => void;
   persistNewsDays?: (list: string[]) => void;
   persistStrategies?: (list: string[]) => void;
   persistAsiaRangeFvgs?: (list: string[]) => void;
@@ -63,14 +92,15 @@ interface DefinitionsManagerModalProps {
   persistDefinitionTitles?: (updated: DefinitionTitles) => void;
 }
 
-type TabType = 'platforms' | 'assets' | 'timeframes' | 'htfTimeframes' | 'confirmations' | 'concepts' | 'sessions' | 'planFidelities' | 'trendTypes' | 'entryModels' | 'tpTargets' | 'premiumDiscounts' | 'entryHours' | 'newsDays' | 'strategies' | 'asiaRangeFvgs' | 'formLabels';
+type TabType = 'assets' | 'timeframes' | 'htfTimeframes' | 'confirmations' | 'sessions' | 'planFidelities' | 'trendTypes' | 'entryModels' | 'tpTargets' | 'premiumDiscounts' | 'newsDays' | 'strategies' | 'asiaRangeFvgs' | 'formLabels';
 
-/** Sekme kimliği -> DefinitionTitles anahtarı ('concepts' sekmesi 'liquiditySweeps' başlığını kullanır) */
-const titleKeyFor = (tab: TabType): keyof DefinitionTitles => (tab === 'concepts' ? 'liquiditySweeps' : tab);
+/** Sekme kimliği -> DefinitionTitles anahtarı (Form Başlıkları sekmesinin kendi başlığı yok) */
+const titleKeyFor = (tab: TabType): keyof DefinitionTitles =>
+  tab === 'formLabels' ? 'basicInfoCard' : tab;
 
 const FORM_LABEL_HINTS: Record<string, string> = {
   basicInfoCard: 'Kart başlığı: Temel Bilgiler',
-  financialCard: 'Kart başlığı: Finansal Sonuç',
+  financialCard: 'Kart başlığı: Sonuç & Risk',
   notesCard: 'Kart başlığı: Analiz & Notlar',
   direction: 'LONG / SHORT seçimi',
   tradeDate: 'Tarih ve saat seçici',
@@ -80,8 +110,7 @@ const FORM_LABEL_HINTS: Record<string, string> = {
   maePips: 'Aleyhe maksimum sapma',
   mfePips: 'Lehe maksimum sapma',
   asiaRangePips: 'Asia range büyüklüğü',
-  rr: 'Risk / ödül oranı',
-  pnl: 'Kâr / zarar tutarı',
+  rr: 'Sonuç R',
   chartLink: 'Grafik bağlantısı alanı',
 };
 
@@ -153,12 +182,9 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
   isOpen,
   onClose,
   trades = [],
-  onDeleteTradesByPlatform,
-  platforms,
   timeframes,
   htfTimeframes,
   confirmations,
-  concepts,
   sessions,
   assets,
   planFidelities,
@@ -166,16 +192,13 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
   trendTypes = DEFAULT_TREND_TYPES,
   tpTargets = DEFAULT_TP_TARGETS,
   premiumDiscounts = DEFAULT_PREMIUM_DISCOUNTS,
-  entryHours = DEFAULT_ENTRY_HOURS,
   newsDays = DEFAULT_NEWS_DAYS,
   strategies = DEFAULT_STRATEGIES,
   asiaRangeFvgs = DEFAULT_ASIA_RANGE_FVGS,
   definitionTitles = DEFAULT_DEFINITION_TITLES,
-  persistPlatforms,
   persistTimeframes,
   persistHtfTimeframes,
   persistConfirmations,
-  persistConcepts,
   persistSessions,
   persistAssets,
   persistPlanFidelities,
@@ -183,8 +206,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
   persistTrendTypes = () => {},
   persistTpTargets = () => {},
   persistPremiumDiscounts = () => {},
-  persistEntryHours = () => {},
-  persistNewsDays = () => {},
+  persistNewsDays = (_list: string[]) => {},
   persistStrategies = () => {},
   persistAsiaRangeFvgs = () => {},
   onRenameDefinition,
@@ -192,11 +214,9 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
 }) => {
   useBodyScrollLock(isOpen);
   const ready = useAfterPaint(isOpen); // kullanım sayıları açılış animasyonundan sonra hesaplanır
-  const [activeTab, setActiveTab] = useState<TabType>('platforms');
+  const [activeTab, setActiveTab] = useState<TabType>('assets');
   const [searchQuery, setSearchQuery] = useState('');
   const [newItemText, setNewItemText] = useState('');
-  const [newPlatformCategory, setNewPlatformCategory] = useState<PlatformCategory>('FUNDED');
-  const [, setCategoryVersion] = useState(0);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingText, setEditingText] = useState('');
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -211,35 +231,18 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
     if (!ready || !trades || trades.length === 0) return counts;
 
     trades.forEach(t => {
-      if (t.platform) counts[`platforms:${t.platform}`] = (counts[`platforms:${t.platform}`] || 0) + 1;
       if (t.asset) counts[`assets:${t.asset}`] = (counts[`assets:${t.asset}`] || 0) + 1;
       if (t.timeframe) counts[`timeframes:${t.timeframe}`] = (counts[`timeframes:${t.timeframe}`] || 0) + 1;
       if (t.htfTimeframe) counts[`htfTimeframes:${t.htfTimeframe}`] = (counts[`htfTimeframes:${t.htfTimeframe}`] || 0) + 1;
-      const sweepsList = Array.isArray(t.liquiditySweeps)
-        ? t.liquiditySweeps
-        : (t.liquiditySweep || t.concept)
-        ? (t.liquiditySweep || t.concept)!.split(',').map(s => s.trim())
-        : [];
-      sweepsList.forEach(swp => {
-        if (swp) {
-          counts[`concepts:${swp}`] = (counts[`concepts:${swp}`] || 0) + 1;
-          counts[`liquiditySweeps:${swp}`] = (counts[`liquiditySweeps:${swp}`] || 0) + 1;
-        }
-      });
       if (t.session) counts[`sessions:${t.session}`] = (counts[`sessions:${t.session}`] || 0) + 1;
       if (t.planFidelity) counts[`planFidelities:${t.planFidelity}`] = (counts[`planFidelities:${t.planFidelity}`] || 0) + 1;
       if (t.entryModels && Array.isArray(t.entryModels)) {
         t.entryModels.forEach(em => {
           counts[`entryModels:${em}`] = (counts[`entryModels:${em}`] || 0) + 1;
         });
-      } else if (t.entry) {
-        t.entry.split(',').map(s => s.trim()).forEach(em => {
-          if (em) counts[`entryModels:${em}`] = (counts[`entryModels:${em}`] || 0) + 1;
-        });
       }
       if (t.trend) counts[`trendTypes:${t.trend}`] = (counts[`trendTypes:${t.trend}`] || 0) + 1;
       if (t.premiumDiscount) counts[`premiumDiscounts:${t.premiumDiscount}`] = (counts[`premiumDiscounts:${t.premiumDiscount}`] || 0) + 1;
-      if (t.entryTime) counts[`entryHours:${t.entryTime}`] = (counts[`entryHours:${t.entryTime}`] || 0) + 1;
       if (t.strategy) counts[`strategies:${t.strategy}`] = (counts[`strategies:${t.strategy}`] || 0) + 1;
       if (t.asiaRangeFvg) counts[`asiaRangeFvgs:${t.asiaRangeFvg}`] = (counts[`asiaRangeFvgs:${t.asiaRangeFvg}`] || 0) + 1;
       if (typeof t.newsDay === 'boolean') {
@@ -261,19 +264,16 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
   }, [trades, ready, newsDays]);
 
   const tabs: { id: TabType; label: string; icon: React.ComponentType<{ size?: number; className?: string }>; list: string[]; persist: (list: string[]) => void; defaultList: string[]; fixed?: boolean; special?: boolean }[] = [
-    { id: 'platforms', label: definitionTitles.platforms || DEFAULT_DEFINITION_TITLES.platforms, icon: Monitor, list: platforms, persist: persistPlatforms, defaultList: DEFAULT_PLATFORMS },
     { id: 'assets', label: definitionTitles.assets || DEFAULT_DEFINITION_TITLES.assets, icon: LineChart, list: assets, persist: persistAssets, defaultList: DEFAULT_ASSETS },
     { id: 'trendTypes', label: definitionTitles.trendTypes || DEFAULT_DEFINITION_TITLES.trendTypes || "Trend Yapısı", icon: TrendingUp, list: trendTypes, persist: persistTrendTypes, defaultList: DEFAULT_TREND_TYPES },
     { id: 'entryModels', label: definitionTitles.entryModels || DEFAULT_DEFINITION_TITLES.entryModels || "Entry Model", icon: Zap, list: entryModels, persist: persistEntryModels, defaultList: DEFAULT_ENTRY_MODELS },
     { id: 'timeframes', label: definitionTitles.timeframes || DEFAULT_DEFINITION_TITLES.timeframes, icon: Clock, list: timeframes, persist: persistTimeframes, defaultList: DEFAULT_TIMEFRAMES },
     { id: 'htfTimeframes', label: definitionTitles.htfTimeframes || DEFAULT_DEFINITION_TITLES.htfTimeframes, icon: ArrowUpRight, list: htfTimeframes, persist: persistHtfTimeframes, defaultList: DEFAULT_HTF_TIMEFRAMES },
     { id: 'confirmations', label: definitionTitles.confirmations || DEFAULT_DEFINITION_TITLES.confirmations, icon: Lightbulb, list: confirmations, persist: persistConfirmations, defaultList: DEFAULT_CONFIRMATIONS },
-    { id: 'concepts', label: definitionTitles.liquiditySweeps || definitionTitles.concepts || DEFAULT_DEFINITION_TITLES.liquiditySweeps || "Liquidity Sweep", icon: Target, list: concepts, persist: persistConcepts, defaultList: DEFAULT_LIQUIDITY_SWEEPS },
     { id: 'sessions', label: definitionTitles.sessions || DEFAULT_DEFINITION_TITLES.sessions, icon: Sun, list: sessions, persist: persistSessions, defaultList: DEFAULT_SESSIONS },
     { id: 'planFidelities', label: definitionTitles.planFidelities || DEFAULT_DEFINITION_TITLES.planFidelities, icon: Crosshair, list: planFidelities, persist: persistPlanFidelities, defaultList: DEFAULT_PLAN_FIDELITIES },
-    { id: 'entryHours', label: definitionTitles.entryHours || DEFAULT_DEFINITION_TITLES.entryHours || "Entry Time", icon: Timer, list: entryHours, persist: persistEntryHours, defaultList: DEFAULT_ENTRY_HOURS },
-    { id: 'tpTargets', label: definitionTitles.tpTargets || DEFAULT_DEFINITION_TITLES.tpTargets || "TP Target", icon: Flag, list: tpTargets, persist: persistTpTargets, defaultList: DEFAULT_TP_TARGETS },
-    { id: 'premiumDiscounts', label: definitionTitles.premiumDiscounts || DEFAULT_DEFINITION_TITLES.premiumDiscounts || "Premium / Discount", icon: Layers, list: premiumDiscounts, persist: persistPremiumDiscounts, defaultList: DEFAULT_PREMIUM_DISCOUNTS },
+    { id: 'tpTargets', label: definitionTitles.tpTargets || DEFAULT_DEFINITION_TITLES.tpTargets || "Target", icon: Flag, list: tpTargets, persist: persistTpTargets, defaultList: DEFAULT_TP_TARGETS },
+    { id: 'premiumDiscounts', label: definitionTitles.premiumDiscounts || DEFAULT_DEFINITION_TITLES.premiumDiscounts || "Confirmations", icon: Layers, list: premiumDiscounts, persist: persistPremiumDiscounts, defaultList: DEFAULT_PREMIUM_DISCOUNTS },
     { id: 'strategies', label: definitionTitles.strategies || DEFAULT_DEFINITION_TITLES.strategies || "Strateji", icon: Compass, list: strategies, persist: persistStrategies, defaultList: DEFAULT_STRATEGIES },
     { id: 'asiaRangeFvgs', label: definitionTitles.asiaRangeFvgs || DEFAULT_DEFINITION_TITLES.asiaRangeFvgs || "Asia Range FVG", icon: Layers, list: asiaRangeFvgs, persist: persistAsiaRangeFvgs, defaultList: DEFAULT_ASIA_RANGE_FVGS },
     // Sabit iki durumlu alan: yalnızca etiketler (Var / Yok) yeniden adlandırılır, ekleme/silme/sıralama yok
@@ -316,19 +316,15 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
     const val = newItemText.trim();
     if (!val || isFixedTab) return;
     if (activeList.some(i => caseInsensitiveEquals(i, val))) {
-      toast.error(`"${val.toUpperCase()}" zaten listede mevcut!`);
+      toast.error(`"${smartUpper(val)}" zaten listede mevcut!`);
       return;
-    }
-    if (activeTab === 'platforms') {
-      savePlatformCategory(val, newPlatformCategory);
     }
     currentPersist([...activeList, val]);
     setNewItemText('');
     const singularLabel = currentTabObj.label.endsWith('lar') || currentTabObj.label.endsWith('ler')
       ? currentTabObj.label.slice(0, -3)
       : currentTabObj.label;
-    const catSuffix = activeTab === 'platforms' ? ` (${newPlatformCategory})` : '';
-    toast.success(`Yeni ${singularLabel} eklendi: ${val.toUpperCase()}${catSuffix}`);
+    toast.success(`Yeni ${singularLabel} eklendi: ${smartUpper(val)}`);
   };
 
   const handleSaveEdit = (originalIndex: number) => {
@@ -340,7 +336,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
       return;
     }
     if (activeList.some((i, idx) => idx !== originalIndex && caseInsensitiveEquals(i, val))) {
-      toast.error(`"${val.toUpperCase()}" zaten listede mevcut!`);
+      toast.error(`"${smartUpper(val)}" zaten listede mevcut!`);
       return;
     }
     const updated = [...activeList];
@@ -350,11 +346,6 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
       currentPersist(updated);
       toast.success('Etiket güncellendi.');
     } else {
-      if (activeTab === 'platforms') {
-        // Platformun Funded / Challenge / Demo kategorisi yeni adla devam eder
-        const cat = getStoredPlatformCategories()[previous.trim()];
-        if (cat) savePlatformCategory(val, cat);
-      }
       currentPersist(updated);
       const migrated = onRenameDefinition ? onRenameDefinition(activeTab, previous, val) : 0;
       toast.success(migrated > 0 ? `Tanım güncellendi; ${migrated} işlemdeki değer de yeni adla değiştirildi.` : 'Tanım başarıyla güncellendi.');
@@ -413,11 +404,9 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
   const handleExportJSON = () => {
     const data = {
       definitionTitles: definitionTitles || DEFAULT_DEFINITION_TITLES,
-      platforms,
       timeframes,
       htfTimeframes,
       confirmations,
-      concepts,
       sessions,
       assets,
       planFidelities,
@@ -425,20 +414,20 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
       trendTypes,
       tpTargets,
       premiumDiscounts,
-      entryHours,
       newsDays: normalizeNewsDays(newsDays),
       strategies,
       asiaRangeFvgs,
-      platformCategories: getStoredPlatformCategories(),
       exportedAt: new Date().toISOString(),
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `Trading_Journal_Definitions_${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `Trading_Journal_Definitions_${localDateKey()}.json`;
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(url);
+    a.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     toast.success('Tüm tanımlamalar ve başlıklar JSON olarak indirildi.');
   };
 
@@ -470,11 +459,9 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
           persistDefinitionTitles({ ...DEFAULT_DEFINITION_TITLES, ...data.definitionTitles });
           applied++;
         }
-        apply(data.platforms, persistPlatforms);
         apply(data.timeframes, persistTimeframes);
         apply(data.htfTimeframes, persistHtfTimeframes);
         apply(data.confirmations, persistConfirmations);
-        apply(data.concepts ?? data.liquiditySweeps, persistConcepts);
         apply(data.sessions, persistSessions);
         apply(data.assets, persistAssets);
         apply(data.planFidelities, persistPlanFidelities);
@@ -482,16 +469,11 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
         apply(data.trendTypes, persistTrendTypes);
         apply(data.tpTargets, persistTpTargets);
         apply(data.premiumDiscounts, persistPremiumDiscounts);
-        apply(data.entryHours, persistEntryHours);
         apply(data.strategies, persistStrategies);
         apply(data.asiaRangeFvgs, persistAsiaRangeFvgs);
         if (Array.isArray(data.newsDays)) {
           persistNewsDays(normalizeNewsDays(data.newsDays));
           applied++;
-        }
-        if (data.platformCategories && typeof data.platformCategories === 'object') {
-          replacePlatformCategories({ ...getStoredPlatformCategories(), ...data.platformCategories });
-          setCategoryVersion((v) => v + 1);
         }
         if (applied === 0) {
           toast.error('Dosyada içe aktarılabilecek tanımlama bulunamadı.');
@@ -532,7 +514,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
               Tanımlamalar
             </h2>
             <div className="flex items-center gap-2 shrink-0">
-              <button
+              <button aria-label="İndir" title="İndir"
                 type="button"
                 onClick={handleExportJSON}
                 className="btn-icon"
@@ -550,7 +532,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                   className="hidden"
                 />
               </label>
-              <button
+              <button aria-label="Kapat" title="Kapat"
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -577,6 +559,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                   const IconComp = tab.icon;
                   return (
                     <button
+                      lang="en"
                       key={tab.id}
                       type="button"
                       onClick={() => {
@@ -652,7 +635,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                         >
                           <Check size={12} /> Kaydet
                         </button>
-                        <button
+                        <button aria-label="Kapat" title="Kapat"
                           type="button"
                           onClick={() => setIsEditingTitle(false)}
                           className="px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-xs font-sans cursor-pointer transition-colors"
@@ -720,46 +703,6 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
 
                   {/* Add Input */}
                   <div className="flex items-center gap-1.5 flex-1 sm:flex-none">
-                    {activeTab === 'platforms' && (
-                      <div className="flex items-center bg-zinc-900 border border-zinc-700/60 rounded-xl p-0.5 shadow-xs shrink-0 select-none">
-                        <button
-                          type="button"
-                          onClick={() => setNewPlatformCategory('FUNDED')}
-                          className={`px-2 sm:px-2.5 py-1 text-[10px] font-bold rounded-lg uppercase transition-colors cursor-pointer flex items-center gap-1 ${
-                            newPlatformCategory === 'FUNDED'
-                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-xs'
-                              : 'text-zinc-400 hover:text-emerald-400'
-                          }`}
-                        >
-                          <Trophy size={11} />
-                          <span>Funded</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setNewPlatformCategory('CHALLENGE')}
-                          className={`px-2 sm:px-2.5 py-1 text-[10px] font-bold rounded-lg uppercase transition-colors cursor-pointer flex items-center gap-1 ${
-                            newPlatformCategory === 'CHALLENGE'
-                              ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40 shadow-xs'
-                              : 'text-zinc-400 hover:text-blue-400'
-                          }`}
-                        >
-                          <Target size={11} />
-                          <span>Challenge</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setNewPlatformCategory('DEMO')}
-                          className={`px-2 sm:px-2.5 py-1 text-[10px] font-bold rounded-lg uppercase transition-colors cursor-pointer flex items-center gap-1 ${
-                            newPlatformCategory === 'DEMO'
-                              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-xs'
-                              : 'text-zinc-400 hover:text-amber-400'
-                          }`}
-                        >
-                          <Shield size={11} />
-                          <span>Demo</span>
-                        </button>
-                      </div>
-                    )}
                     <input
                       type="text"
                       placeholder={`Yeni ${currentTabObj.label} Ekle...`}
@@ -829,13 +772,13 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                                 autoFocus
                                 className="flex-1 bg-zinc-900 border border-blue-500 rounded-lg px-2.5 py-1 text-xs text-white font-sans uppercase focus:outline-none"
                               />
-                              <button
+                              <button aria-label="Onayla" title="Onayla"
                                 onClick={() => handleSaveEdit(originalIndex)}
                                 className="p-1 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-colors"
                               >
                                 <Check size={14} />
                               </button>
-                              <button
+                              <button aria-label="Kapat" title="Kapat"
                                 onClick={() => setEditingIndex(null)}
                                 className="p-1 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
                               >
@@ -851,36 +794,9 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                                     {originalIndex === 0 ? 'EVET' : 'HAYIR · VARSAYILAN'}
                                   </span>
                                 )}
-                                <span className="font-sans font-bold text-xs text-zinc-200 tracking-wide truncate uppercase">
+                                <span lang="en" className="font-sans font-bold text-xs text-zinc-200 tracking-wide truncate uppercase">
                                   {item}
                                 </span>
-                                {activeTab === 'platforms' && (() => {
-                                  const currentCat = getTradeAccountCategory({ platform: item });
-                                  const nextCat: PlatformCategory = currentCat === 'FUNDED' ? 'CHALLENGE' : (currentCat === 'CHALLENGE' ? 'DEMO' : 'FUNDED');
-                                  const badgeClass = currentCat === 'FUNDED'
-                                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/30'
-                                    : currentCat === 'CHALLENGE'
-                                      ? 'bg-blue-500/20 text-blue-300 border-blue-500/30 hover:bg-blue-500/30'
-                                      : 'bg-amber-500/20 text-amber-300 border-amber-500/30 hover:bg-amber-500/30';
-                                  return (
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        savePlatformCategory(item, nextCat);
-                                        setCategoryVersion(v => v + 1);
-                                        toast.success(`"${item}" kategorisi ${nextCat} olarak güncellendi.`);
-                                      }}
-                                      title="Kategoriyi değiştirmek için tıklayın (FUNDED -> CHALLENGE -> DEMO)"
-                                      className={`text-[8px] sm:text-[9px] px-2 py-0.5 rounded-md font-bold uppercase shrink-0 transition-transform active:scale-95 cursor-pointer flex items-center gap-1 border ${badgeClass}`}
-                                    >
-                                      {currentCat === 'FUNDED' && <Trophy size={10} />}
-                                      {currentCat === 'CHALLENGE' && <Target size={10} />}
-                                      {currentCat === 'DEMO' && <Shield size={10} />}
-                                      <span>{currentCat}</span>
-                                    </button>
-                                  );
-                                })()}
                               </div>
 
                               <div className="flex items-center gap-2 shrink-0">
@@ -894,7 +810,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                                 </span>
 
                                 {/* Edit Button */}
-                                <button
+                                <button aria-label="Düzenle" title="Düzenle"
                                   type="button"
                                   onClick={() => {
                                     setEditingIndex(originalIndex);
@@ -907,7 +823,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
 
                                 {/* Delete Button */}
                                 {!isFixedTab && (
-                                <button
+                                <button aria-label="Sil" title="Sil"
                                   type="button"
                                   onClick={() => handleDeleteItem(item)}
                                   className="p-1.5 rounded-lg text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer opacity-70 group-hover:opacity-100"
@@ -953,67 +869,22 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                     </div>
                     <div className="text-center space-y-2">
                       <h4 className="text-xs font-bold font-sans tracking-wide text-zinc-100 uppercase">
-                        {activeTab === 'platforms' && deleteConfirmItem.count > 0 ? 'Platformu ve İşlemleri Sil' : 'Tanımı Sil'}
+                        Tanımı Sil
                       </h4>
                       <p className="text-xs text-zinc-400 font-sans leading-relaxed">
-                        <span className="font-sans font-bold text-zinc-200">"{deleteConfirmItem.item}"</span> {activeTab === 'platforms' ? 'platformunu' : 'tanımını'} silmek istediğinize emin misiniz?
+                        <span className="font-sans font-bold text-zinc-200">"{deleteConfirmItem.item}"</span> tanımını silmek istediğinize emin misiniz?
                       </p>
                       {deleteConfirmItem.count > 0 && (
                         <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-300 text-[11px] font-sans leading-relaxed text-left flex items-start gap-2">
                           <AlertCircle size={15} className="text-amber-400 shrink-0 mt-0.5" />
-                          {activeTab === 'platforms' ? (
-                            <div>
-                              Bu platforma ait <strong className="text-amber-200 underline">{deleteConfirmItem.count} adet işlem kaydı</strong> bulunmaktadır. Platformu silerken bu işlemleri de silmek istiyor musunuz?
-                            </div>
-                          ) : (
                             <div>
                               Bu tanım <strong className="text-amber-200 underline">{deleteConfirmItem.count} işlemde</strong> kullanılıyor. Silerseniz yalnızca seçim listesinden kalkar; işlemlerdeki kayıtlı değer ve istatistikler korunur.
                             </div>
-                          )}
                         </div>
                       )}
                     </div>
 
-                    {activeTab === 'platforms' && deleteConfirmItem.count > 0 ? (
-                      <div className="flex flex-col gap-2 pt-1">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const updated = activeList.filter(item => item !== deleteConfirmItem.item);
-                            currentPersist(updated);
-                            if (onDeleteTradesByPlatform) {
-                              onDeleteTradesByPlatform(deleteConfirmItem.item);
-                            }
-                            toast.success(`"${deleteConfirmItem.item}" platformu ve ona ait ${deleteConfirmItem.count} işlem silindi.`);
-                            setDeleteConfirmItem(null);
-                          }}
-                          className="w-full py-2.5 px-3 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 font-sans text-xs font-bold transition-ui cursor-pointer flex items-center justify-center gap-2 shadow-xs"
-                        >
-                          <Trash2 size={13} className="text-rose-400" />
-                          <span>Platformu ve {deleteConfirmItem.count} İşlemi Sil</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const updated = activeList.filter(item => item !== deleteConfirmItem.item);
-                            currentPersist(updated);
-                            toast.success(`"${deleteConfirmItem.item}" platform tanımı silindi (işlemler korundu).`);
-                            setDeleteConfirmItem(null);
-                          }}
-                          className="w-full py-2.5 px-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 font-sans text-xs font-bold transition-ui cursor-pointer flex items-center justify-center gap-2 shadow-xs"
-                        >
-                          <Shield size={13} className="text-amber-400" />
-                          <span>Sadece Platformu Sil (İşlemleri Koru)</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setDeleteConfirmItem(null)}
-                          className="w-full py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 font-sans text-xs font-medium transition-colors cursor-pointer border border-zinc-800"
-                        >
-                          Vazgeç
-                        </button>
-                      </div>
-                    ) : (
+                    {(
                       <div className="flex gap-2">
                         <button
                           type="button"

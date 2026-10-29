@@ -1,13 +1,13 @@
 import { MODAL_BACKDROP, MODAL_PANEL } from '../lib/motion';
+import { smartUpper } from '../constants/constants';
 import React, { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Download, RefreshCw, X, ShieldCheck, FileText, Loader2 } from 'lucide-react';
+import { Download, RefreshCw, X, FileText, Loader2, Printer } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { AuditReportModal } from "./AuditReportModal";
 import { Trade } from '../types';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
-import * as htmlToImage from "html-to-image";
+import { nyWallDate, nyNow } from '../lib/tradingTime';
 
 
 
@@ -17,7 +17,6 @@ interface PrintReportModalProps {
   trades: Trade[];
   title: string;
   dateRangeText: string;
-  currency: string;
 }
 
 export const PrintReportModal: React.FC<PrintReportModalProps> = ({
@@ -26,11 +25,9 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
   trades,
   title,
   dateRangeText,
-  currency,
 }) => {
   useBodyScrollLock(isOpen);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
 
   // Preserve displayed state so that content remains intact during exit animation when props are cleared
@@ -72,10 +69,60 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
   const losses = activeTrades.filter((t) => t.status === 'LOSS').length;
   const breakevens = activeTrades.filter((t) => t.status === 'BREAKEVEN').length;
   const winRate = totalTrades > 0 ? (wins / totalTrades) * 100 : 0;
-  const totalPnl = activeTrades.reduce((sum, t) => sum + (t.pnl || 0), 0);
   const totalR = activeTrades.reduce((sum, t) => sum + (t.rr || 0), 0);
   const longs = activeTrades.filter((t) => t.type === 'LONG').length;
+  // Rapordaki gerçek tarih aralığı (NY): "Bu Hafta" gibi etiketin yanında açık tarihler
+  const span = (() => {
+    if (activeTrades.length === 0) return '';
+    let lo = Infinity;
+    let hi = -Infinity;
+    activeTrades.forEach((t) => {
+      if (t.createdAt < lo) lo = t.createdAt;
+      if (t.createdAt > hi) hi = t.createdAt;
+    });
+    const f = (ts: number) => nyWallDate(ts).toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    return f(lo) === f(hi) ? f(lo) : `${f(lo)} – ${f(hi)}`;
+  })();
   const shorts = activeTrades.filter((t) => t.type === 'SHORT').length;
+
+  /**
+   * Gerçek PDF: rapor ayrı bir pencerede uygulamanın stilleriyle açılır ve tarayıcının yazdırma penceresi
+   * gelir ("PDF olarak kaydet"). Metin seçilebilir/aranabilir kalır, uzun tablolar sayfalara bölünür.
+   */
+  const handlePrintPdf = () => {
+    const node = reportRef.current;
+    if (!node) return;
+    const w = window.open('', '_blank', 'width=1200,height=900');
+    if (!w) {
+      toast.error('Açılır pencere engellendi. Bu site için açılır pencerelere izin verip tekrar dene.');
+      return;
+    }
+    const esc = (v: string) => v.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] as string);
+    const styles = Array.from(document.querySelectorAll('link[rel="stylesheet"], style')).map((n) => n.outerHTML).join('\n');
+    w.document.open();
+    w.document.write(`<!doctype html><html lang="tr" class="${esc(document.documentElement.className)}"><head><meta charset="utf-8"><title>${esc(activeTitle)} · İşlem Raporu</title><base href="${esc(window.location.origin)}/">${styles}<style>
+      @page { size: A4 landscape; margin: 10mm; }
+      html, body { background: #09090b !important; margin: 0; }
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      #print-report-root { min-width: 0 !important; overflow: visible !important; }
+      #print-report-root * { overflow: visible !important; }
+      tr { break-inside: avoid; }
+      thead { display: table-header-group; }
+      .no-print { display: none !important; }
+    </style></head><body class="${esc(document.body.className)}">${node.outerHTML}</body></html>`);
+    w.document.close();
+    let printed = false;
+    const go = () => {
+      if (printed || w.closed) return;
+      printed = true;
+      w.focus();
+      w.print();
+    };
+    w.addEventListener('afterprint', () => w.close());
+    // Stiller ve yazı tipi yüklenince yazdır; yükleme olayı gelmezse kısa bir beklemeyle
+    w.addEventListener('load', () => w.setTimeout(go, 250));
+    window.setTimeout(go, 1500);
+  };
 
   const handleDownloadImage = async () => {
     if (!reportRef.current) return;
@@ -84,6 +131,8 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
       // Wait a moment for DOM to update with isGenerating classes and base64 images
       // Ultimate Optimization: Use double requestAnimationFrame to wait for the exact moment the browser paints the new layout, 0ms idle time.
       await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      // Görsel kütüphanesi yalnızca indirme anında yüklenir (açılış paketinde yok)
+      const htmlToImage = await import("html-to-image");
       const dataUrl = await htmlToImage.toPng(reportRef.current, {
         backgroundColor: "#09090b",
         pixelRatio: 2,
@@ -161,20 +210,25 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
             </h2>
             <div className="flex items-center gap-2 shrink-0">
               <button
-                onClick={() => setIsAuditModalOpen(true)}
-                className="flex items-center justify-center w-9 h-9 rounded-xl border transition-colors cursor-pointer shrink-0 text-violet-400 bg-violet-500/10 hover:bg-violet-500/20 border-violet-500/20"
+                onClick={handlePrintPdf}
+                aria-label="PDF olarak kaydet / yazdır"
+                title="PDF olarak kaydet / yazdır"
+                disabled={isGenerating || activeTrades.length === 0}
+                className="flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl border transition-colors cursor-pointer shrink-0 text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 border-blue-500/20 disabled:opacity-50 text-[11px] font-bold uppercase tracking-wide"
               >
-                <ShieldCheck size={16} />
+                <Printer size={15} /> PDF
               </button>
               <button
                 onClick={handleDownloadImage}
+                aria-label="Görsel olarak indir (PNG)"
+                title="Görsel olarak indir (PNG)"
                 disabled={isGenerating}
                 className="flex items-center justify-center w-9 h-9 rounded-xl border transition-colors cursor-pointer shrink-0 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/20 disabled:opacity-50"
               >
                 {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
               </button>
               <div className="w-px h-6 bg-zinc-800 mx-1 hidden sm:block"></div>
-              <button
+              <button aria-label="Kapat" title="Kapat"
                 onClick={onClose}
                 className="btn-icon"
               >
@@ -198,10 +252,10 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                     <h1 className="text-3xl font-black text-white tracking-tight">{activeTitle}</h1>
                     <div className="flex items-center gap-4 mt-2">
                       <p className="text-[10px] text-zinc-400 font-medium">
-                        <span className="text-zinc-500">İşlem Tarihleri:</span> <span className="text-zinc-300 font-semibold">{activeDateRangeText}</span>
+                        <span className="text-zinc-500">İşlem Tarihleri:</span> <span className="text-zinc-300 font-semibold">{activeDateRangeText}{span && activeDateRangeText !== span ? ` · ${span}` : ''}</span>
                       </p>
                       <p className="text-[10px] text-zinc-400 font-medium">
-                        <span className="text-zinc-500">Oluşturulma Tarihi:</span> <span className="text-zinc-300 font-semibold">{new Date().toLocaleDateString('tr-TR')}</span>
+                        <span className="text-zinc-500">Oluşturulma Tarihi:</span> <span className="text-zinc-300 font-semibold">{nyNow().toLocaleDateString('tr-TR')}</span>
                       </p>
                     </div>
                   </div>
@@ -210,7 +264,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                       Trading Journal <span className="text-blue-500 ml-1">by Mowtynn</span>
                     </div>
                     <p className="text-[10px] text-zinc-500 font-medium mt-1 uppercase tracking-widest">
-                      Gelişmiş İşlem Takip ve Analiz Sistemi
+                      {smartUpper("Gelişmiş İşlem Takip ve Analiz Sistemi")}
                     </p>
                   </div>
                 </div>
@@ -235,9 +289,9 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                   </div>
                   {/* Net Profit Card */}
                   <div className="border border-purple-500/20 bg-gradient-to-b from-purple-500/10 to-zinc-900/50 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-1.5 shadow-lg relative overflow-hidden">
-                    <span className="text-[10px] font-bold tracking-wider text-purple-400/90 font-sans uppercase">NET KÂR / ZARAR</span>
-                    <span className={`text-3xl font-black drop-shadow-sm font-sans tracking-tight ${totalPnl >= 0 ? 'text-purple-400' : 'text-rose-400'}`}>{totalPnl >= 0 ? '+' : ''}{totalPnl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {currency}</span>
-                    <span className="text-[11px] text-zinc-400 font-medium mt-1">Toplam Kazanç</span>
+                    <span className="text-[10px] font-bold tracking-wider text-purple-400/90 font-sans uppercase">BEKLENTİ</span>
+                    <span className={`text-3xl font-black drop-shadow-sm font-sans tracking-tight ${totalR >= 0 ? 'text-purple-400' : 'text-rose-400'}`}>{totalR >= 0 ? '+' : ''}{(totalTrades > 0 ? totalR / totalTrades : 0).toFixed(2)} R</span>
+                    <span className="text-[11px] text-zinc-400 font-medium mt-1">İşlem başına</span>
                   </div>
                   {/* Net R multiple Card */}
                   <div className="border border-amber-500/20 bg-gradient-to-b from-amber-500/10 to-zinc-900/50 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-1.5 shadow-lg relative overflow-hidden">
@@ -254,10 +308,10 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-2.5">
                   <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-widest font-sans flex items-center gap-1.5">
-                    İŞLEM GEÇMİŞİ
+                    {smartUpper("İŞLEM GEÇMİŞİ")}
                   </h4>
                   <div className="text-[10px] font-medium text-zinc-500 font-sans tracking-wider">
-                    Toplam <strong className="text-zinc-300">{trades.length}</strong> işlem
+                    Toplam <strong className="text-zinc-300">{activeTrades.length}</strong> işlem
                   </div>
                 </div>
                 
@@ -270,20 +324,20 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                         <th className="py-2.5 px-2 text-center font-bold font-sans">YÖN</th>
                         <th className="py-2.5 px-2 text-center font-bold font-sans">SONUÇ</th>
                         <th className="py-2.5 px-2 text-center font-bold font-sans">R</th>
-                        <th className="py-2.5 px-3 text-right font-bold font-sans">KÂR / ZARAR</th>
-                        <th className="py-2.5 px-3 text-right font-bold font-sans">PLATFORM</th>
+                        <th className="py-2.5 px-3 text-right font-bold font-sans">RİSK</th>
+                        <th className="py-2.5 px-3 text-right font-bold font-sans">HESAP</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-zinc-800/80">
-                      {trades.length === 0 ? (
+                      {activeTrades.length === 0 ? (
                         <tr>
                           <td colSpan={7} className="py-8 text-center text-zinc-500 font-medium">
                             Seçili tarih aralığında kaydedilmiş herhangi bir işlem bulunamadı.
                           </td>
                         </tr>
                       ) : (
-                        trades.map((trade) => {
-                          const dateObj = new Date(trade.createdAt);
+                        activeTrades.map((trade) => {
+                          const dateObj = nyWallDate(trade.createdAt);
                           const dateStr = dateObj.toLocaleString('tr-TR', {
                             day: '2-digit',
                             month: '2-digit',
@@ -306,24 +360,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                               
                               {/* Asset */}
                               <td className="py-2.5 px-2 font-bold text-white uppercase tracking-wide">
-                                <div className="flex flex-col gap-0.5">
-                                  <span>{trade.asset}</span>
-                                  {((trade.entryModels && Array.isArray(trade.entryModels) && trade.entryModels.length > 0) || trade.entry) && (
-                                    <div className="flex items-center gap-1 font-sans text-[8px] font-normal tracking-normal flex-wrap">
-                                      {(trade.entryModels && Array.isArray(trade.entryModels) && trade.entryModels.length > 0) ? (
-                                        trade.entryModels.map((em, idx) => (
-                                          <span key={idx} className="px-1 py-0.2 rounded bg-amber-500/10 text-amber-300 border border-amber-500/30 font-bold uppercase">
-                                            {em}
-                                          </span>
-                                        ))
-                                      ) : trade.entry ? (
-                                        <span className="px-1 py-0.2 rounded bg-amber-500/10 text-amber-300 border border-amber-500/30 font-bold uppercase">
-                                          {trade.entry}
-                                        </span>
-                                      ) : null}
-                                    </div>
-                                  )}
-                                </div>
+                                {trade.asset}
                               </td>
 
                               {/* Direction (Yön) */}
@@ -338,51 +375,29 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                               {/* Result Status */}
                               <td className="py-2.5 px-2 text-center whitespace-nowrap">
                                 {isWin ? (
-                                  <span className="inline-flex items-center justify-center min-w-[45px] px-2 py-0.5 rounded-md border border-emerald-500/20 bg-emerald-500/10 text-[10px] font-black text-emerald-400 uppercase tracking-wider font-sans">WIN</span>
+                                  <span className="inline-flex items-center justify-center min-w-[45px] px-2 py-0.5 rounded-md border border-emerald-500/20 bg-emerald-500/10 text-[10px] font-black text-emerald-400 uppercase tracking-wider font-sans">{smartUpper("WIN")}</span>
                                 ) : isLoss ? (
                                   <span className="inline-flex items-center justify-center min-w-[45px] px-2 py-0.5 rounded-md border border-rose-500/20 bg-rose-500/10 text-[10px] font-black text-rose-400 uppercase tracking-wider font-sans">LOSS</span>
                                 ) : isBe ? (
                                   <span className="inline-flex items-center justify-center min-w-[45px] px-2 py-0.5 rounded-md border border-amber-500/20 bg-amber-500/10 text-[10px] font-black text-amber-400 uppercase tracking-wider font-sans">BE</span>
                                 ) : (
-                                  <span className="inline-flex items-center justify-center min-w-[45px] px-2 py-0.5 rounded-md border border-blue-500/20 bg-blue-500/10 text-[10px] font-black text-blue-400 uppercase tracking-wider font-sans">AÇIK</span>
+                                  <span className="inline-flex items-center justify-center min-w-[45px] px-2 py-0.5 rounded-md border border-blue-500/20 bg-blue-500/10 text-[10px] font-black text-blue-400 uppercase tracking-wider font-sans">{smartUpper("AÇIK")}</span>
                                 )}
                               </td>
 
                               {/* R multiple */}
                               <td className="py-2.5 px-2 text-center font-sans font-bold whitespace-nowrap">
-                                {trade.rr !== undefined && trade.rr !== null && trade.rr !== 0 ? (
-                                  trade.rr > 0 ? (
-                                    <span className="inline-flex items-center justify-center min-w-[48px] px-2 py-0.5 rounded-md border border-emerald-500/20 bg-emerald-500/10 text-[10px] font-black text-emerald-400 tracking-wider font-sans">+{trade.rr}R</span>
-                                  ) : trade.rr < 0 ? (
-                                    <span className="inline-flex items-center justify-center min-w-[48px] px-2 py-0.5 rounded-md border border-rose-500/20 bg-rose-500/10 text-[10px] font-black text-rose-400 tracking-wider font-sans">{trade.rr}R</span>
-                                  ) : (
-                                    <span className="inline-flex items-center justify-center min-w-[48px] px-2 py-0.5 rounded-md border border-amber-500/20 bg-amber-500/10 text-[10px] font-black text-amber-400 tracking-wider font-sans">{trade.rr}R</span>
-                                  )
-                                ) : (
-                                  <span className="text-zinc-600 font-sans">—</span>
-                                )}
+                                {(() => {
+                                  const r = typeof trade.rr === 'number' && Number.isFinite(trade.rr) ? trade.rr : 0;
+                                  const txt = `${r > 0 ? '+' : ''}${r.toLocaleString('tr-TR', { maximumFractionDigits: 2 })}R`;
+                                  const tone = r > 0 ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400' : r < 0 ? 'border-rose-500/20 bg-rose-500/10 text-rose-400' : 'border-amber-500/20 bg-amber-500/10 text-amber-400';
+                                  return <span className={`inline-flex items-center justify-center min-w-[48px] px-2 py-0.5 rounded-md border text-[10px] font-black tracking-wider font-sans ${tone}`}>{txt}</span>;
+                                })()}
                               </td>
 
-                              {/* Profit and Loss */}
-                              <td className="py-2.5 px-3 text-right font-sans font-bold whitespace-nowrap">
-                                <span
-                                  className={
-                                    isWin
-                                      ? 'text-emerald-400 font-bold'
-                                      : isLoss
-                                      ? 'text-rose-400 font-bold'
-                                      : 'text-zinc-400 font-bold'
-                                  }
-                                >
-                                  {isBe ? (
-                                    `0.00 ${currency}`
-                                  ) : (
-                                    <>
-                                      {trade.pnl > 0 ? '+' : ''}
-                                      {(trade.pnl || 0).toLocaleString()} {currency}
-                                    </>
-                                  )}
-                                </span>
+                              {/* Risk */}
+                              <td className="py-2.5 px-3 text-right font-sans font-bold whitespace-nowrap text-zinc-300">
+                                {typeof trade.riskPct === 'number' ? `%${trade.riskPct.toLocaleString('tr-TR', { maximumFractionDigits: 2 })}` : '—'}
                               </td>
 
                               {/* Platform */}
@@ -392,7 +407,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                                     {trade.platform}
                                   </span>
                                 ) : (
-                                  <span className="text-zinc-600">—</span>
+                                  <span className="text-zinc-500 text-[9px] font-bold">HESAPSIZ</span>
                                 )}
                               </td>
                             </tr>
@@ -407,10 +422,10 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
               {/* Quality Guarantee/Report Footer Info */}
               <div className="border-t border-white/10 pt-3 mt-6 flex flex-col sm:flex-row justify-between items-center text-[9px] text-zinc-500 font-medium">
                 <div>
-                  © {new Date().getFullYear()} Trading Journal by Mowtynn. Bu rapor otomatik oluşturulmuştur.
+                  © {nyNow().getFullYear()} Trading Journal by Mowtynn. Bu rapor otomatik oluşturulmuştur.
                 </div>
                 <div className="mt-1 sm:mt-0 italic">
-                  Rapor Güvenliği Kod No: #{Math.random().toString(36).substring(2, 8).toUpperCase()}
+                  {totalTrades} işlem · Oluşturulma: {nyNow().toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                 </div>
               </div>
               
@@ -424,12 +439,6 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
     </AnimatePresence>,
     document.body
   )}
-      <AuditReportModal
-        isOpen={isAuditModalOpen}
-        onClose={() => setIsAuditModalOpen(false)}
-        trades={trades}
-        dateRangeText={dateRangeText}
-      />
     </>
   );
 };

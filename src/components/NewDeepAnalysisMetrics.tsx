@@ -1,18 +1,27 @@
 import { EASE } from '../lib/motion';
+import { smartUpper } from '../constants/constants';
 import React from 'react';
 import { motion } from 'motion/react';
 import { Activity, Target, ArrowDownRight, RefreshCw, TrendingUp, Layers } from 'lucide-react';
-import { ValueTransition } from './ValueTransition';
+import type { DeepMetrics } from '../lib/deepMetrics';
+import { formatPF } from '../lib/statMath';
 
-export const NewDeepAnalysisMetrics = React.memo(({ metrics, currency, isRrMode, onMetricClick }: { metrics: any; currency: string; isRrMode?: boolean; onMetricClick?: (id: string, val: string | number) => void }) => {
+// Projedeki diğer R değerleriyle aynı biçim (nokta, 2 basamak)
+const fmtR = (v: number) => v.toFixed(2);
+const signed = (v: number) => `${v > 0 ? '+' : ''}${fmtR(v)}`;
+
+export const NewDeepAnalysisMetrics = React.memo(({ metrics, onMetricClick }: { metrics: DeepMetrics; onMetricClick?: (id: string, val: string | number) => void }) => {
   const itemVariants = {
     hidden: { opacity: 0 },
     show: { opacity: 1, transition: { duration: 0.15, ease: EASE } }
   };
 
-  const currentMaxDrawdown = isRrMode ? metrics.maxDrawdown : (metrics.maxRealDrawdown ?? metrics.maxDrawdown);
-  const currentRecoveryFactor = isRrMode ? metrics.recoveryFactor : (metrics.realRecoveryFactor ?? metrics.recoveryFactor);
-  const currentProfitFactor = isRrMode ? metrics.pureProfitFactor : (metrics.realPureProfitFactor ?? metrics.pureProfitFactor);
+  const currentMaxDrawdown = metrics.maxDrawdown;
+  const currentRecoveryFactor = metrics.recoveryFactor;
+  const currentProfitFactor = metrics.pureProfitFactor;
+  const { last10 } = metrics;
+  const last10PF = last10.n === 0 ? '—' : formatPF(last10.grossLoss > 0 ? last10.grossProfit / last10.grossLoss : last10.grossProfit > 0 ? 999 : 0);
+  const recoveryText = metrics.avgRecoveryTrades === null ? '—' : metrics.avgRecoveryTrades.toFixed(1);
 
   return (
     <div className="flex flex-col w-full p-3.5 sm:p-5 gap-3.5">
@@ -21,7 +30,7 @@ export const NewDeepAnalysisMetrics = React.memo(({ metrics, currency, isRrMode,
          <motion.div 
            variants={itemVariants} 
            className="bg-zinc-950/60 border border-zinc-800/80 rounded-2xl p-3.5 hover:bg-rose-950/10 hover:border-rose-500/30 transition-ui duration-200 ease-out flex flex-col justify-between cursor-pointer group shadow-xs"
-           onClick={() => onMetricClick && onMetricClick("maxDrawdown", isRrMode ? `-${(currentMaxDrawdown || 0).toLocaleString("en-US", {minimumFractionDigits: 1})} R` : `-${(currentMaxDrawdown || 0).toLocaleString("en-US", {minimumFractionDigits: 1})} ${currency}`)}
+           onClick={() => onMetricClick && onMetricClick("maxDrawdown", `${currentMaxDrawdown > 0 ? "-" : ""}${fmtR(currentMaxDrawdown)} R`)}
          >
            <div className="flex items-center justify-between mb-2">
              <span className="heading-3 text-zinc-400 tracking-wider font-sans flex items-center gap-1.5">
@@ -32,10 +41,8 @@ export const NewDeepAnalysisMetrics = React.memo(({ metrics, currency, isRrMode,
              </span>
            </div>
            <div className="flex items-baseline gap-1 mt-auto pt-1">
-             <ValueTransition modeKey={isRrMode ?? false}>
-               <span className="text-lg sm:text-xl font-bold text-rose-400 font-sans tracking-tight">-{(currentMaxDrawdown || 0).toLocaleString("en-US", { minimumFractionDigits: 1 })}</span>
-               <span className="text-[10px] text-rose-400/70 font-bold font-sans ml-0.5">{isRrMode ? 'R' : currency}</span>
-             </ValueTransition>
+               <span className="text-lg sm:text-xl font-bold text-rose-400 font-sans tracking-tight">{currentMaxDrawdown > 0 ? "-" : ""}{fmtR(currentMaxDrawdown)}</span>
+               <span className="text-[10px] text-rose-400/70 font-bold font-sans ml-0.5">R</span>
            </div>
          </motion.div>
 
@@ -43,7 +50,7 @@ export const NewDeepAnalysisMetrics = React.memo(({ metrics, currency, isRrMode,
          <motion.div 
            variants={itemVariants} 
            className="bg-zinc-950/60 border border-zinc-800/80 rounded-2xl p-3.5 hover:bg-blue-950/10 hover:border-blue-500/30 transition-ui duration-200 ease-out flex flex-col justify-between cursor-pointer group shadow-xs"
-           onClick={() => onMetricClick && onMetricClick("recoveryFactor", currentRecoveryFactor?.toFixed(2) || "0.00")}
+           onClick={() => onMetricClick && onMetricClick("recoveryFactor", currentMaxDrawdown > 0 ? currentRecoveryFactor.toFixed(2) : "—")}
          >
            <div className="flex items-center justify-between mb-2">
              <span className="heading-3 text-zinc-400 tracking-wider font-sans flex items-center gap-1.5">
@@ -54,9 +61,7 @@ export const NewDeepAnalysisMetrics = React.memo(({ metrics, currency, isRrMode,
              </span>
            </div>
            <div className="flex items-baseline gap-1 mt-auto pt-1">
-             <ValueTransition modeKey={isRrMode ?? false}>
-               <span className="text-lg sm:text-xl font-bold text-blue-300 font-sans tracking-tight">{currentRecoveryFactor?.toFixed(2) || '0.00'}</span>
-             </ValueTransition>
+               <span className="text-lg sm:text-xl font-bold text-blue-300 font-sans tracking-tight">{currentMaxDrawdown > 0 ? currentRecoveryFactor.toFixed(2) : '—'}</span>
            </div>
          </motion.div>
 
@@ -64,7 +69,7 @@ export const NewDeepAnalysisMetrics = React.memo(({ metrics, currency, isRrMode,
          <motion.div 
            variants={itemVariants} 
            className="bg-zinc-950/60 border border-zinc-800/80 rounded-2xl p-3.5 hover:bg-emerald-950/10 hover:border-emerald-500/30 transition-ui duration-200 ease-out flex flex-col justify-between cursor-pointer group shadow-xs"
-           onClick={() => onMetricClick && onMetricClick("pureProfitFactor", currentProfitFactor === Infinity ? "Sonsuz" : currentProfitFactor?.toFixed(2) || "0.00")}
+           onClick={() => onMetricClick && onMetricClick("pureProfitFactor", formatPF(currentProfitFactor))}
          >
            <div className="flex items-center justify-between mb-2">
              <span className="heading-3 text-zinc-400 tracking-wider font-sans flex items-center gap-1.5">
@@ -75,11 +80,9 @@ export const NewDeepAnalysisMetrics = React.memo(({ metrics, currency, isRrMode,
              </span>
            </div>
            <div className="flex items-baseline gap-1 mt-auto pt-1">
-             <ValueTransition modeKey={isRrMode ?? false}>
                <span className={`text-lg sm:text-xl font-bold font-sans tracking-tight ${currentProfitFactor > 1.5 ? 'text-emerald-400' : currentProfitFactor >= 1 ? 'text-blue-400' : 'text-rose-400'}`}>
-                 {currentProfitFactor === Infinity ? 'Sonsuz' : currentProfitFactor?.toFixed(2) || '0.00'}
+                 {formatPF(currentProfitFactor)}
                </span>
-             </ValueTransition>
            </div>
          </motion.div>
        
@@ -87,7 +90,7 @@ export const NewDeepAnalysisMetrics = React.memo(({ metrics, currency, isRrMode,
          <motion.div 
            variants={itemVariants} 
            className="bg-zinc-950/60 border border-zinc-800/80 rounded-2xl p-3.5 hover:bg-indigo-950/10 hover:border-indigo-500/30 transition-ui duration-200 ease-out flex flex-col justify-between cursor-pointer group shadow-xs"
-           onClick={() => onMetricClick && onMetricClick("sma10", isRrMode ? `${metrics.equityCurve?.[metrics.equityCurve.length - 1]?.sma10?.toFixed(1) || '0.0'} R` : `${metrics.equityCurve?.[metrics.equityCurve.length - 1]?.realSma10?.toLocaleString("en-US", {minimumFractionDigits: 1}) || '0.0'} ${currency}`)}
+           onClick={() => onMetricClick && onMetricClick("last10AvgR", `${signed(last10.avgR)} R`)}
          >
            <div className="flex items-center justify-between mb-2">
              <span className="heading-3 text-zinc-400 tracking-wider font-sans flex items-center gap-1.5">
@@ -99,16 +102,10 @@ export const NewDeepAnalysisMetrics = React.memo(({ metrics, currency, isRrMode,
            </div>
            <div className="flex flex-col gap-1 mt-auto pt-1">
              <div className="flex items-baseline gap-1">
-               <ValueTransition modeKey={isRrMode ?? false}>
-                 <span className="text-lg sm:text-xl font-bold text-indigo-300 font-sans tracking-tight">
-                   {isRrMode ? (
-                     `${metrics.equityCurve?.[metrics.equityCurve.length - 1]?.sma10?.toFixed(1) || '0.0'}`
-                   ) : (
-                     `${metrics.equityCurve?.[metrics.equityCurve.length - 1]?.realSma10?.toLocaleString("en-US", {minimumFractionDigits: 1}) || '0.0'}`
-                   )}
+                 <span className={`text-lg sm:text-xl font-bold font-sans tracking-tight ${last10.avgR > 0 ? 'text-emerald-400' : last10.avgR < 0 ? 'text-rose-400' : 'text-indigo-300'}`}>
+                   {signed(last10.avgR)}
                  </span>
-                 <span className="text-[10px] text-indigo-300 font-bold font-sans ml-0.5">{isRrMode ? "R" : currency}</span>
-               </ValueTransition>
+                 <span className="text-[10px] text-zinc-400 font-bold font-sans ml-0.5">R / işlem</span>
              </div>
            </div>
          </motion.div>
@@ -120,7 +117,7 @@ export const NewDeepAnalysisMetrics = React.memo(({ metrics, currency, isRrMode,
          <motion.div 
            variants={itemVariants} 
            className="bg-zinc-950/60 border border-zinc-800/80 rounded-2xl p-3.5 hover:bg-blue-950/10 hover:border-blue-500/30 transition-ui duration-200 ease-out flex items-center justify-between cursor-pointer group shadow-xs"
-           onClick={() => onMetricClick && onMetricClick("avgRecoveryTrades", metrics.avgRecoveryTrades?.toFixed(1) || "0")}
+           onClick={() => onMetricClick && onMetricClick("avgRecoveryTrades", recoveryText)}
          >
            <div className="flex items-center gap-2.5">
              <div className="p-2 bg-blue-500/10 border border-blue-500/20 rounded-xl group-hover:bg-blue-500/20 transition-colors text-blue-400">
@@ -128,12 +125,12 @@ export const NewDeepAnalysisMetrics = React.memo(({ metrics, currency, isRrMode,
              </div>
              <div>
                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-200 font-sans">
-                 DD Toparlanma Süresi
+                 {smartUpper("DD Toparlanma Süresi")}
                </h3>
              </div>
            </div>
            <div className="flex items-center gap-1.5">
-             <span className="text-lg font-bold text-blue-300 font-sans">{metrics.avgRecoveryTrades?.toFixed(1) || '0'}</span>
+             <span className="text-lg font-bold text-blue-300 font-sans">{recoveryText}</span>
              <span className="text-[10px] font-sans font-medium text-zinc-400">İşlem</span>
            </div>
          </motion.div>
@@ -142,7 +139,7 @@ export const NewDeepAnalysisMetrics = React.memo(({ metrics, currency, isRrMode,
          <motion.div 
            variants={itemVariants} 
            className="bg-zinc-950/60 border border-zinc-800/80 rounded-2xl p-3.5 hover:bg-emerald-950/10 hover:border-emerald-500/30 transition-ui duration-200 ease-out flex items-center justify-between cursor-pointer group shadow-xs"
-           onClick={() => onMetricClick && onMetricClick("efficiencyLevel", (metrics.last10GrossLoss ? metrics.last10GrossProfit / metrics.last10GrossLoss : 0).toFixed(2))}
+           onClick={() => onMetricClick && onMetricClick("efficiencyLevel", last10PF)}
          >
            <div className="flex items-center gap-2.5">
              <div className="p-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl group-hover:bg-emerald-500/20 transition-colors text-emerald-400">
@@ -150,7 +147,7 @@ export const NewDeepAnalysisMetrics = React.memo(({ metrics, currency, isRrMode,
              </div>
              <div>
                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-200 font-sans">
-                 Sistem Verimlilik Seviyesi
+                 {smartUpper("Sistem Verimlilik Seviyesi")}
                </h3>
              </div>
            </div>
@@ -158,12 +155,12 @@ export const NewDeepAnalysisMetrics = React.memo(({ metrics, currency, isRrMode,
               <div className="bg-zinc-900/70 border border-zinc-700/50  py-1 px-2.5 rounded-xl flex items-center gap-1.5">
                 <span className="text-[9px] uppercase text-zinc-400 font-bold font-sans">Son 10:</span>
                 <span className="text-xs font-bold text-emerald-400 font-sans">
-                  {metrics.last10GrossLoss ? (metrics.last10GrossProfit / metrics.last10GrossLoss).toFixed(2) : "Sonsuz"}
+                  {last10PF}
                 </span>
               </div>
               <div className="bg-zinc-900/70 border border-zinc-700/50  py-1 px-2.5 rounded-xl flex items-center gap-1.5">
                 <span className="text-[9px] uppercase text-zinc-400 font-bold font-sans">Genel:</span>
-                <span className="text-xs font-bold text-zinc-300 font-sans">{currentProfitFactor === Infinity ? "Sonsuz" : currentProfitFactor?.toFixed(2)}</span>
+                <span className="text-xs font-bold text-zinc-300 font-sans">{formatPF(currentProfitFactor)}</span>
               </div>
            </div>
          </motion.div>

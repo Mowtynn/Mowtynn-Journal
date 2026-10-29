@@ -1,5 +1,8 @@
 import React, { useMemo, useState } from 'react';
+import { smartUpper } from '../constants/constants';
+import { FilterChip, FILTER_LABEL, FILTER_SELECT } from './filters/FilterControls';
 import { Trade } from '../types';
+import { MIN_SAMPLE, EDGE_PROOF_MIN } from '../lib/sampleSize';
 import {
   analyzeAsia,
   AsiaLabResult,
@@ -22,7 +25,7 @@ const tone = (v: number) => (v > 0 ? 'text-emerald-400' : v < 0 ? 'text-rose-400
 const Card: React.FC<{ title: string; hint?: string; children: React.ReactNode }> = ({ title, hint, children }) => (
   <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 space-y-3">
     <div className="border-b border-zinc-800 pb-2">
-      <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-100 font-sans">{title}</h4>
+      <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-100 font-sans">{smartUpper(title)}</h4>
       {hint && <p className="text-[10px] text-zinc-500 font-sans mt-0.5 leading-relaxed">{hint}</p>}
     </div>
     {children}
@@ -109,11 +112,14 @@ const SimTable: React.FC<{ rows: SimRow[] }> = ({ rows }) => (
 
 const verdict = (e: EdgeStats): { text: string; cls: string } => {
   if (e.n === 0) return { text: 'Seçili filtrede işlem yok.', cls: 'text-zinc-500' };
-  if (e.n < 30) {
+  if (e.n < MIN_SAMPLE) {
     return {
-      text: `${e.n} işlem: örneklem henüz küçük. Beklenti ${signed(e.expectancy)}R görünse de güven aralığı geniş; karar için en az 30, tercihen 100 işlem biriktir.`,
+      text: `${e.n} işlem: örneklem henüz küçük. Hüküm için en az ${MIN_SAMPLE} işlem gerekir; güven aralığı daraldıkça karar netleşir.`,
       cls: 'text-zinc-300',
     };
+  }
+  if (e.expLo > 0 && e.n < EDGE_PROOF_MIN) {
+    return { text: `Beklenti pozitif görünüyor (alt sınır ${signed(e.expLo)}R) ama ${e.n} işlem az; kanıt için en az ${EDGE_PROOF_MIN} işlem gerekir.`, cls: 'text-blue-300' };
   }
   if (e.expLo > 0) {
     return { text: `Beklenti %95 güvenle pozitif (alt sınır ${signed(e.expLo)}R). Edge istatistiksel olarak destekleniyor.`, cls: 'text-emerald-400' };
@@ -155,7 +161,8 @@ const Sparkline: React.FC<{ points: AsiaLabResult['rolling'] }> = ({ points }) =
 export const AsiaEdgeLab = React.memo(function AsiaEdgeLab({ trades }: AsiaEdgeLabProps) {
   const [dataset, setDataset] = useState<DatasetKey>('ALL');
   const [pair, setPair] = useState<string>('ALL');
-  const [minSample, setMinSample] = useState<number>(8);
+  // Varsayılan eşik proje genelindeki tek örneklem eşiğiyle aynı (lib/sampleSize)
+  const [minSample, setMinSample] = useState<number>(MIN_SAMPLE);
 
   const pairs = useMemo(() => listPairs(trades), [trades]);
   const { version: newsVersion } = useNewsDayLabels();
@@ -172,22 +179,15 @@ export const AsiaEdgeLab = React.memo(function AsiaEdgeLab({ trades }: AsiaEdgeL
       <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-3 flex flex-wrap items-center gap-3">
         <div className="flex flex-wrap gap-1.5">
           {(Object.keys(DATASET_LABELS) as DatasetKey[]).map((k) => (
-            <button
-              key={k}
-              type="button"
-              onClick={() => setDataset(k)}
-              className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold font-sans border transition-colors ${
-                dataset === k ? 'bg-zinc-800 text-zinc-100 border-zinc-600' : 'bg-zinc-900 text-zinc-500 border-zinc-800 hover:text-zinc-300'
-              }`}
-            >
+            <FilterChip key={k} check={false} tone={k === 'ALL' ? 'neutral' : 'brand'} active={dataset === k} onClick={() => setDataset(k)}>
               {DATASET_LABELS[k]}
-            </button>
+            </FilterChip>
           ))}
         </div>
         <select
           value={pair}
           onChange={(e) => setPair(e.target.value)}
-          className="bg-zinc-900 border border-zinc-800 rounded-lg text-[11px] text-zinc-200 px-2 py-1.5 font-sans"
+          className={FILTER_SELECT}
           aria-label="Parite filtresi"
         >
           <option value="ALL">Tüm Pariteler</option>
@@ -197,12 +197,12 @@ export const AsiaEdgeLab = React.memo(function AsiaEdgeLab({ trades }: AsiaEdgeL
             </option>
           ))}
         </select>
-        <label className="flex items-center gap-1.5 text-[11px] text-zinc-500 font-sans">
-          Min. örneklem
+        <label className={`flex items-center gap-1.5 ${FILTER_LABEL}`}>
+          Min. Örneklem
           <select
             value={minSample}
             onChange={(e) => setMinSample(Number(e.target.value))}
-            className="bg-zinc-900 border border-zinc-800 rounded-lg text-[11px] text-zinc-200 px-2 py-1.5"
+            className={FILTER_SELECT}
           >
             {[3, 5, 8, 10, 15, 20, 30].map((n) => (
               <option key={n} value={n}>
@@ -211,7 +211,6 @@ export const AsiaEdgeLab = React.memo(function AsiaEdgeLab({ trades }: AsiaEdgeL
             ))}
           </select>
         </label>
-        <span className="text-[10px] text-zinc-500 font-sans ml-auto">Saatler New York zamanına göre</span>
       </div>
 
       {/* Summary */}
@@ -227,7 +226,7 @@ export const AsiaEdgeLab = React.memo(function AsiaEdgeLab({ trades }: AsiaEdgeL
             { l: 'P(Edge > 0)', val: `%${r.overall.pPositive}`, sub: 'yaklaşık', c: 'text-zinc-100' },
           ].map((c) => (
             <div key={c.l} className="p-2.5 bg-zinc-900 border border-zinc-800/80 rounded-lg">
-              <span className="text-[10px] text-zinc-500 block font-sans uppercase">{c.l}</span>
+              <span className="text-[10px] text-zinc-500 block font-sans uppercase">{smartUpper(c.l)}</span>
               <span className={`text-sm font-bold font-sans ${c.c}`}>{c.val}</span>
               {c.sub && <span className="text-[10px] text-zinc-500 block font-mono">{c.sub}</span>}
             </div>
@@ -262,7 +261,7 @@ export const AsiaEdgeLab = React.memo(function AsiaEdgeLab({ trades }: AsiaEdgeL
               <GroupTable rows={pairRows} minSample={minSample} empty="Parite verisi yok." />
             </Card>
 
-            <Card title="Giriş Saati (NY)" hint="Hesaplanan saat, işlemin tarihinden New York’a çevrilir; elle seçtiğin giriş saati varsa o kullanılır.">
+            <Card title="Giriş Saati">
               <GroupTable rows={toRows(r.hours)} minSample={minSample} empty="Saat verisi yok." />
             </Card>
           </div>
@@ -318,10 +317,6 @@ export const AsiaEdgeLab = React.memo(function AsiaEdgeLab({ trades }: AsiaEdgeL
               <GroupTable rows={toRows(r.pdType)} minSample={minSample} empty="PD array türü girilmemiş." />
             </Card>
 
-            <Card title="Likidite Seviyesi (PDH/PDL, PWH/PWL, PMH/PML …)">
-              <GroupTable rows={toRows(r.levels)} minSample={minSample} empty="Likidite seviyesi girilmemiş." />
-            </Card>
-
             <Card title="Giriş Modeli">
               <GroupTable rows={toRows(r.entryModels)} minSample={minSample} empty="Giriş modeli girilmemiş." />
             </Card>
@@ -348,7 +343,7 @@ export const AsiaEdgeLab = React.memo(function AsiaEdgeLab({ trades }: AsiaEdgeL
               <GroupTable rows={r.rangeSize.map((x) => ({ label: x.label, stats: x.stats }))} minSample={minSample} empty="Asia range (pip) girilmemiş." />
             </Card>
 
-            <Card title="Gün (NY)">
+            <Card title="Gün">
               <GroupTable rows={r.weekdays.filter((d) => d.stats.n > 0).map((d) => ({ label: d.day, stats: d.stats }))} minSample={minSample} empty="Veri yok." />
             </Card>
           </div>
@@ -412,4 +407,3 @@ export const AsiaEdgeLab = React.memo(function AsiaEdgeLab({ trades }: AsiaEdgeL
   );
 });
 
-export default AsiaEdgeLab;

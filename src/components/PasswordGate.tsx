@@ -1,7 +1,8 @@
-import { MODAL_PANEL } from '../lib/motion';
+import { MODAL_PANEL, EASE } from '../lib/motion';
+import { smartUpper } from '../constants/constants';
 import React, { useState, useEffect } from 'react';
 import { Lock, ArrowRight, ShieldCheck, AlertCircle, Loader2 } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 
 interface PasswordGateProps {
   children: React.ReactNode;
@@ -221,7 +222,7 @@ export function PasswordGate({ children }: PasswordGateProps) {
             TRADING JOURNAL
           </h1>
           <p className="text-xs text-zinc-500 font-sans mt-1 uppercase tracking-widest">
-            Kısıtlı Erişim
+            {smartUpper("Kısıtlı Erişim")}
           </p>
         </div>
 
@@ -229,6 +230,7 @@ export function PasswordGate({ children }: PasswordGateProps) {
           <div className="p-5">
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-4">
+                <div>
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                     {isLockedOut ? (
@@ -241,20 +243,34 @@ export function PasswordGate({ children }: PasswordGateProps) {
                     type="password"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      // Enter her ortamda formu göndersin (bazı sanal klavyeler / otomasyonlar örtük gönderimi tetiklemiyor)
+                      if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                        e.preventDefault();
+                        e.currentTarget.form?.requestSubmit();
+                      }
+                    }}
                     placeholder={isLockedOut ? `Kilitli (${remainingTime}s)` : "Erişim Şifresi"}
                     autoFocus
                     disabled={isLockedOut || isProcessing}
                     className={`w-full bg-zinc-950/80 border ${error || isLockedOut ? 'border-rose-500/40 focus:border-rose-500/60' : 'border-zinc-800 focus:border-blue-500/30'} rounded-xl py-3 pl-10 pr-4 text-white font-sans text-sm placeholder:font-sans placeholder:text-zinc-600 focus:outline-none focus:ring-1 ${error || isLockedOut ? 'focus:ring-rose-500/20' : 'focus:ring-blue-500/20'} transition-ui disabled:opacity-50 disabled:cursor-not-allowed`}
                   />
+                </div>
+                {/* Hata metni akış içinde: uzun mesaj alttaki butonların üstüne binmez */}
+                <AnimatePresence initial={false}>
                   {error && !isLockedOut && (
-                    <motion.p 
-                      initial={{ opacity: 0, y: -5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="absolute -bottom-5 left-1 text-[10px] text-rose-400 font-medium font-sans"
+                    <motion.p
+                      key="gate-error"
+                      role="alert"
+                      initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                      animate={{ opacity: 1, height: 'auto', marginTop: 8, transition: { duration: 0.2, ease: EASE } }}
+                      exit={{ opacity: 0, height: 0, marginTop: 0, transition: { duration: 0.15, ease: EASE } }}
+                      className="overflow-hidden px-1 text-[11px] leading-snug text-rose-400 font-medium font-sans"
                     >
                       {errorMessage || `Hatalı şifre. Kalan hak: ${Math.max(0, MAX_ATTEMPTS - attempts)}`}
                     </motion.p>
                   )}
+                </AnimatePresence>
                 </div>
 
                 <div className="bg-zinc-950/80 border border-zinc-800/80 rounded-xl p-1 grid grid-cols-2 gap-1">

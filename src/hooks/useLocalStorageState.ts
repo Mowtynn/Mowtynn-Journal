@@ -20,13 +20,16 @@ export function useLocalStorageState<T>(
   defaultValue: T,
   delay: number = 300,
   skipSaveWhenUserPresent: boolean = false,
-  user: any = null
+  user: any = null,
+  /** Depodan okunan değeri güncel modele dönüştürür (eski alanların temizlenmesi vb.) */
+  revive?: (value: any) => T
 ) {
   const [state, setState] = useState<T>(() => {
     try {
       const stored = localStorage.getItem(key);
       if (stored) {
-        return JSON.parse(stored);
+        const parsed = JSON.parse(stored);
+        return revive ? revive(parsed) : parsed;
       }
     } catch (err) {
       console.error(`Failed to load ${key} from localStorage:`, err);
