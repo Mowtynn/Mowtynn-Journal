@@ -611,7 +611,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                       isExporting 
                         ? 'h-auto max-h-none' 
                         : currentTrade.screenshot 
-                          ? 'min-h-[280px] max-h-[520px]' 
+                          ? 'min-h-[240px] max-h-[min(440px,45vh)]' 
                           : 'h-[180px]'
                     }`}>
                     {currentTrade.screenshot ? (
@@ -640,7 +640,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                           <img decoding="async" 
                             src={resolvedImageUrl} 
                             alt="Trading chart" 
-                            className={`w-auto h-auto max-w-full max-h-[500px] object-contain rounded-lg transition-opacity duration-200 ${isImageLoading ? 'opacity-0' : 'opacity-100'}`}
+                            className={`w-auto h-auto max-w-full max-h-[min(420px,43vh)] object-contain rounded-lg transition-opacity duration-200 ${isImageLoading ? 'opacity-0' : 'opacity-100'}`}
                             crossOrigin="anonymous"
                             referrerPolicy="no-referrer"
                             onLoad={() => {
@@ -668,11 +668,11 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                   </section>
 
                   {/* Trading Journal / Notes */}
-                  <section className="flex-1 flex flex-col shrink-0 min-h-[150px]">
+                  <section className="flex-1 flex flex-col shrink-0 min-h-[120px]">
                     <h4 className="heading-2 mb-2 shrink-0">
                       <FileText size={12}/> GİRİŞ VE ANALİZ NOTLARI
                     </h4>
-                    <div className="bg-zinc-900/40 border border-zinc-800/60 rounded-xl p-4 flex-1 min-h-[110px] max-h-[260px] overflow-y-auto overflow-x-hidden custom-scrollbar">
+                    <div className="bg-zinc-900/40 border border-zinc-800/60 rounded-xl p-4 flex-1 min-h-[80px] max-h-[200px] overflow-y-auto overflow-x-hidden custom-scrollbar">
                       {currentTrade.notes ? (
                         <p className="text-zinc-200 text-sm sm:text-[14px] leading-relaxed whitespace-pre-wrap break-words font-sans">
                           {currentTrade.notes}
