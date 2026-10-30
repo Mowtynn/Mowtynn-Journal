@@ -106,7 +106,6 @@ export const SweepTimePicker = React.memo(function SweepTimePicker({
           <button
             type="button"
             onClick={() => onChange("")}
-            title="Temizle"
             aria-label="Sweep Time'ı temizle"
             className="h-9 w-9 shrink-0 flex items-center justify-center rounded-xl border border-zinc-800 bg-zinc-950/80 text-zinc-500 hover:text-blue-300 hover:border-blue-500/40 transition-ui cursor-pointer"
           >

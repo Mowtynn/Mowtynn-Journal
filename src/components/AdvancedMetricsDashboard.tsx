@@ -837,7 +837,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
                   <h3 className="heading-2">
                     SESSION PERFORMANSI
                   </h3>
-                  <button aria-label="Filtrele" title="Filtrele"
+                  <button aria-label="Filtrele"
                     onClick={() => setIsSessionFilterOpen(!isSessionFilterOpen)}
                     className={`flex items-center justify-center w-7 h-7 ml-1 rounded-lg border transition-colors duration-200 ease-out ${
                       isSessionFilterOpen 
@@ -847,7 +847,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
                   >
                     <Filter size={9} />
                   </button>
-                  <button aria-label="Izgara görünümü" title="Izgara görünümü"
+                  <button aria-label="Izgara görünümü"
                     onClick={() => setIsHeatmapOpen(true)}
                     className="flex items-center justify-center w-7 h-7 rounded-lg border transition-colors duration-200 ease-out bg-zinc-900/50 border-zinc-700/50 text-zinc-300 hover:bg-emerald-500/10 hover:border-emerald-500/30 hover:text-emerald-400 shrink-0"
                   >
@@ -1039,7 +1039,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
                   <h3 className="heading-2">
                     SETUP KALİTESİ PERFORMANSI
                   </h3>
-                  <button aria-label="Filtrele" title="Filtrele"
+                  <button aria-label="Filtrele"
                     onClick={() => setIsPlanFidelityFilterOpen(!isPlanFidelityFilterOpen)}
                     className={`flex items-center justify-center w-7 h-7 ml-1 rounded-lg border transition-colors duration-200 ease-out ${
                       isPlanFidelityFilterOpen 
@@ -1192,7 +1192,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
                 </motion.div>
               )}
             </AnimatePresence>
-            <button aria-label="Filtrele" title="Filtrele"
+            <button aria-label="Filtrele"
               type="button"
               onClick={() => {
                 setIsAssetFilterOpen(!isAssetFilterOpen);
@@ -1292,7 +1292,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
                     Sayfa: {assetsPage}/{Math.max(1, Math.ceil(processedAssets.length / 9))}
                   </span>
                   <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-700/50 rounded-xl p-1 shadow-xs">
-                    <button aria-label="Önceki" title="Önceki"
+                    <button aria-label="Önceki"
                       type="button"
                       onClick={() => setAssetsPage(prev => Math.max(1, prev - 1))}
                       disabled={assetsPage <= 1}
@@ -1301,7 +1301,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
                       <ChevronLeft size={13} />
                     </button>
                     <div className="w-px h-3.5 bg-zinc-800" />
-                    <button aria-label="Sonraki" title="Sonraki"
+                    <button aria-label="Sonraki"
                       type="button"
                       onClick={() => setAssetsPage(prev => Math.min(Math.ceil(processedAssets.length / 9), prev + 1))}
                       disabled={assetsPage >= Math.ceil(processedAssets.length / 9)}
@@ -1393,7 +1393,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
                     <span className="text-xs font-semibold text-zinc-300 flex items-center gap-1.5">
                       <SlidersHorizontal size={13} className="text-blue-400" /> Matris Filtreleri
                     </span>
-                    <button aria-label="Kapat" title="Kapat" 
+                    <button aria-label="Kapat" 
                       onClick={() => setIsDetailedFilterOpen(false)}
                       className="text-zinc-500 hover:text-zinc-300 p-0.5"
                     >
@@ -1412,7 +1412,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
                       className="w-full bg-zinc-950 border border-zinc-800 rounded-lg pl-8 pr-7 py-1.5 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-zinc-700"
                     />
                     {detailedSearch && (
-                      <button aria-label="Kapat" title="Kapat" 
+                      <button aria-label="Kapat" 
                         onClick={() => { setDetailedSearch(''); setDetailedPage(1); }}
                         className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
                       >
@@ -1604,7 +1604,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
                           {/* Asset Name + Expand Toggle */}
                           <td className="py-3 px-3 rounded-l-xl bg-zinc-900/90 group-hover:bg-zinc-800/40 border-y border-l border-zinc-800/80 group-hover:border-zinc-700/60 transition-ui duration-200">
                             <div className="flex items-center gap-2.5">
-                              <button aria-label="Sonraki" title="Sonraki"
+                              <button aria-label="Sonraki"
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -1755,7 +1755,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
                                         {/* 4. ASIA RANGE */}
                                         {child.concept && (
                                           <span 
-                                            title="Asia Range"
+                                           
                                             className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-blue-300 bg-blue-500/10 px-2 py-0.5 border border-blue-500/25 rounded-lg"
                                           >
                                             <Target size={10} className="text-blue-400 shrink-0" />
@@ -1766,7 +1766,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
                                         {/* 1. SEANS / SAAT PENCERESİ (Silver Bullet Zaman Penceresi) */}
                                         {child.session && (
                                           <span 
-                                            title="Seans / Silver Bullet Penceresi"
+                                           
                                             className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-blue-300 bg-blue-500/10 px-2 py-0.5 border border-blue-500/25 rounded-lg shadow-xs"
                                           >
                                             <Clock size={10} className="text-blue-400 shrink-0" />
@@ -1777,7 +1777,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
                                         {/* 2. HTF TIMEFRAME (Üst Zaman Dilimi & Bias) */}
                                         {child.htfTimeframe && (
                                           <span 
-                                            title="Üst Zaman Dilimi (HTF)"
+                                           
                                             className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-blue-300 bg-blue-500/10 px-2 py-0.5 border border-blue-500/25 rounded-lg"
                                           >
                                             <Maximize2 size={10} className="text-blue-400 shrink-0" />
@@ -1789,7 +1789,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
                                         {/* 6. PD ARRAY / ONAY (Merkezi Silver Bullet Alanı: FVG, IFVG, BPR, Sweep, MSS, OB) */}
                                         {child.confirmation && child.confirmation !== 'Diğer' && (
                                           <span 
-                                            title="PD ARRAY / Tetikleyici Onay"
+                                           
                                             className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-blue-300 bg-blue-500/15 px-2.5 py-0.5 border border-blue-500/40 rounded-lg shadow-xs ring-1 ring-blue-500/20"
                                           >
                                             <Layers size={10} className="text-blue-400 shrink-0" />
@@ -1801,7 +1801,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
                                         {/* 3. TREND YAPISI */}
                                         {child.trend && (
                                           <span 
-                                            title="Trend Yapısı"
+                                           
                                             className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-blue-300 bg-blue-500/10 px-2 py-0.5 border border-blue-500/25 rounded-lg"
                                           >
                                             <TrendingUp size={10} className="text-blue-400 shrink-0" />
@@ -1812,7 +1812,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
                                         {/* 5. ENTRY TIMEFRAME (Giriş Zaman Dilimi / Execution TF) */}
                                         {child.timeframe && (
                                           <span 
-                                            title="Giriş Zaman Dilimi (Entry TF)"
+                                           
                                             className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-blue-300 bg-blue-500/10 px-2 py-0.5 border border-blue-500/25 rounded-lg"
                                           >
                                             <Target size={10} className="text-blue-400 shrink-0" />
@@ -1824,7 +1824,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
                                         {/* 7. ENTRY MODEL (Giriş Modeli) */}
                                         {child.entryModel && (
                                           <span 
-                                            title="Giriş Modeli (Entry Model)"
+                                           
                                             className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-blue-300 bg-blue-500/10 px-2 py-0.5 border border-blue-500/25 rounded-lg"
                                           >
                                             <Zap size={10} className="text-blue-400 shrink-0" />
@@ -1835,7 +1835,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
                                         {/* 8. SETUP KALİTESİ / PLANA SADAKAT */}
                                         {child.planFidelity && (
                                           <span 
-                                            title="Plana Sadakat / Setup Kalitesi"
+                                           
                                             className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-blue-300 bg-blue-500/10 px-2 py-0.5 border border-blue-500/25 rounded-lg"
                                           >
                                             {child.planFidelity}
@@ -1915,7 +1915,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
                 Sayfa: {detailedPage}/{Math.max(1, Math.ceil(processedDetailedRows.length / 10))}
               </span>
               <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-700/50 rounded-xl p-1 shadow-xs">
-                <button aria-label="Önceki" title="Önceki"
+                <button aria-label="Önceki"
                   type="button"
                   onClick={() => setDetailedPage(prev => Math.max(1, prev - 1))}
                   disabled={detailedPage <= 1}
@@ -1924,7 +1924,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
                   <ChevronLeft size={13} />
                 </button>
                 <div className="w-px h-3.5 bg-zinc-800" />
-                <button aria-label="Sonraki" title="Sonraki"
+                <button aria-label="Sonraki"
                   type="button"
                   onClick={() => setDetailedPage(prev => Math.min(Math.ceil(processedDetailedRows.length / 10), prev + 1))}
                   disabled={detailedPage >= Math.ceil(processedDetailedRows.length / 10)}
@@ -2022,7 +2022,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
                     </p>
                   </div>
                 </div>
-                <button aria-label="Kapat" title="Kapat"
+                <button aria-label="Kapat"
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
@@ -2150,7 +2150,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
                       Sayfa: {deadZonePage}/{Math.max(1, Math.ceil(processedDeadZone.length / 8))}
                     </span>
                     <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-700/50 rounded-xl p-1 shadow-xs">
-                      <button aria-label="Önceki" title="Önceki"
+                      <button aria-label="Önceki"
                         type="button"
                         onClick={() => setDeadZonePage(prev => Math.max(1, prev - 1))}
                         disabled={deadZonePage <= 1}
@@ -2159,7 +2159,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
                         <ChevronLeft size={13} />
                       </button>
                       <div className="w-px h-3.5 bg-zinc-800" />
-                      <button aria-label="Sonraki" title="Sonraki"
+                      <button aria-label="Sonraki"
                         type="button"
                         onClick={() => setDeadZonePage(prev => Math.min(Math.ceil(processedDeadZone.length / 8), prev + 1))}
                         disabled={deadZonePage >= Math.ceil(processedDeadZone.length / 8)}
@@ -2209,7 +2209,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
                     </p>
                   </div>
                 </div>
-                <button aria-label="Kapat" title="Kapat"
+                <button aria-label="Kapat"
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();

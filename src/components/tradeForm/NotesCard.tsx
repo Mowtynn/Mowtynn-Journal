@@ -118,7 +118,6 @@ export const ChartLinkCard = React.memo(function ChartLinkCard({
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Grafiği yeni sekmede aç"
-            title="Grafiği yeni sekmede aç"
             className="h-9 w-9 bg-zinc-900 hover:bg-zinc-800 hover:text-zinc-100 border border-zinc-700/70 rounded-lg sm:rounded-xl text-zinc-400 transition-colors shrink-0 flex items-center justify-center"
           >
             <ExternalLink size={13} />
@@ -129,7 +128,6 @@ export const ChartLinkCard = React.memo(function ChartLinkCard({
             type="button"
             onClick={() => setScreenshot(null)}
             aria-label="Grafik linkini sil"
-            title="Grafik linkini sil"
             className="h-9 w-9 bg-zinc-900 hover:bg-blue-500/20 hover:text-blue-400 border border-zinc-700/70 rounded-lg sm:rounded-xl text-zinc-400 transition-colors shrink-0 flex items-center justify-center cursor-pointer"
           >
             <X size={13} />
@@ -153,7 +151,7 @@ export const ChartLinkCard = React.memo(function ChartLinkCard({
         ) : (
           <>
             {preview?.src && (
-              <a href={embedded ? preview.src : link} target="_blank" rel="noopener noreferrer" className="absolute inset-0" title="Grafiği yeni sekmede aç">
+              <a href={embedded ? preview.src : link} target="_blank" rel="noopener noreferrer" className="absolute inset-0">
                 <img
                   decoding="async"
                   src={preview.src}

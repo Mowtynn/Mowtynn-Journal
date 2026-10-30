@@ -207,7 +207,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
           >
             <div className="bg-zinc-950/60 border border-zinc-800/80  rounded-2xl p-4 sm:p-5 relative overflow-hidden shadow-sm">
               <div className="flex items-center gap-3">
-                <button aria-label="Geri" title="Geri" 
+                <button aria-label="Geri" 
                   onClick={() => setIsEditing(false)}
                   className="p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-ui cursor-pointer shrink-0"
                 >
@@ -225,7 +225,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   {activeNote && (
-                    <button aria-label="Sil" title="Sil"
+                    <button aria-label="Sil"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
@@ -274,7 +274,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
             <div className="bg-zinc-950/60 border border-zinc-800/80  rounded-2xl p-4 sm:p-5 relative overflow-hidden shadow-sm">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-3 min-w-0">
-                  <button aria-label="Geri" title="Geri" 
+                  <button aria-label="Geri" 
                     onClick={() => setActiveNote(null)}
                     className="p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-ui cursor-pointer shrink-0"
                   >
@@ -300,7 +300,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
-                  <button aria-label="Sabitle" title="Sabitle" 
+                  <button aria-label="Sabitle" 
                     onClick={(e) => handleTogglePin(activeNote, e)}
                     className={`p-2 rounded-xl transition-ui cursor-pointer border ${
                       activeNote.isPinned 
@@ -310,7 +310,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                   >
                     <Pin size={15} className={activeNote.isPinned ? "fill-current" : ""} />
                   </button>
-                  <button aria-label="Sil" title="Sil" 
+                  <button aria-label="Sil" 
                     onClick={() => {
                       setNoteToDelete(activeNote);
                     }}
@@ -422,7 +422,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                       className="w-full h-8 bg-zinc-900 border border-zinc-800 focus:border-zinc-700 rounded-xl pl-7 pr-7 text-xs text-zinc-200 placeholder:text-zinc-500 focus:outline-none transition font-sans"
                     />
                     {searchTerm && (
-                      <button aria-label="Kapat" title="Kapat" 
+                      <button aria-label="Kapat" 
                         onClick={() => setSearchTerm('')}
                         className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 cursor-pointer"
                       >
@@ -441,7 +441,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                           ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
                           : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
                       }`}
-                      title="Notları Dışa Aktar (Excel / CSV)"
+                      aria-label="Notları Dışa Aktar (Excel / CSV)"
                     >
                       <Download size={13} />
                     </button>
@@ -657,7 +657,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                       </h3>
                       
                       <div className="absolute top-3.5 right-3.5 flex items-center gap-1 bg-zinc-900 p-0.5 rounded-lg border border-zinc-800">
-                        <button aria-label="Sabitle" title="Sabitle" 
+                        <button aria-label="Sabitle" 
                           onClick={(e) => handleTogglePin(note, e)}
                           className={`p-1.5 rounded-md transition-ui cursor-pointer ${
                             note.isPinned 
@@ -667,7 +667,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                         >
                           <Pin size={12} className={note.isPinned ? "fill-current" : ""} />
                         </button>
-                        <button aria-label="Sil" title="Sil" 
+                        <button aria-label="Sil" 
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();

@@ -141,7 +141,7 @@ export const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
           </div>
         )}
         <div className="flex items-center justify-end sm:justify-center gap-1 w-full" onClick={(e) => e.stopPropagation()}>
-          <button aria-label="Düzenle" title="Düzenle"
+          <button aria-label="Düzenle"
             type="button"
             onClick={(e) => {
               e.stopPropagation();
@@ -151,7 +151,7 @@ export const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
           >
             <Edit3 size={13} />
           </button>
-          <button aria-label="Sil" title="Sil"
+          <button aria-label="Sil"
             type="button"
             onClick={(e) => {
               e.stopPropagation();

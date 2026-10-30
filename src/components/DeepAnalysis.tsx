@@ -553,7 +553,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
               </h3>
               
               <div className="relative ml-1">
-                <button aria-label="Filtrele" title="Filtrele"
+                <button aria-label="Filtrele"
                   type="button"
                   onClick={(e) => { e.stopPropagation(); setIsEquityFilterOpen(!isEquityFilterOpen); }}
                   className={`flex items-center justify-center w-7 h-7 rounded-lg border transition-ui duration-150 ${

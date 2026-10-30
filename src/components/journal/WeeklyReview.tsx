@@ -94,7 +94,7 @@ export const WeeklyReview = React.memo(function WeeklyReview({
           </div>
         </div>
         <div className="flex items-center gap-1 shrink-0">
-          <button type="button" className="btn-icon" aria-label="Önceki hafta" title="Önceki hafta" onClick={() => onChangeWeek(addDays(weekStart, -7))}>
+          <button type="button" className="btn-icon" aria-label="Önceki hafta" onClick={() => onChangeWeek(addDays(weekStart, -7))}>
             <ChevronLeft size={16} />
           </button>
           {weekStart !== thisWeek && (
@@ -110,14 +110,13 @@ export const WeeklyReview = React.memo(function WeeklyReview({
             type="button"
             className="btn-icon disabled:opacity-30 disabled:cursor-not-allowed"
             aria-label="Sonraki hafta"
-            title="Sonraki hafta"
             disabled={weekStart >= thisWeek}
             onClick={() => onChangeWeek(addDays(weekStart, 7))}
           >
             <ChevronRight size={16} />
           </button>
           <span className="w-px h-6 bg-zinc-800 mx-1" aria-hidden />
-          <button type="button" className="btn-icon" aria-label="Kapat" title="Kapat" onClick={onClose}>
+          <button type="button" className="btn-icon" aria-label="Kapat" onClick={onClose}>
             <X size={16} />
           </button>
         </div>
@@ -131,7 +130,7 @@ export const WeeklyReview = React.memo(function WeeklyReview({
             <div className={tile}>
               <p className="heading-3">Net R</p>
               <p className={`text-lg font-bold tabular-nums leading-tight ${tone(t.netR)}`}>{fmtR(t.netR)}</p>
-              <p className="text-[10px] text-zinc-500 tabular-nums truncate" title="Geçen haftaya göre">
+              <p className="text-[10px] text-zinc-500 tabular-nums truncate">
                 {p.n > 0 ? `geçen hafta ${fmtR(p.netR)} · ${delta >= 0 ? "▲" : "▼"} ${Math.abs(delta).toFixed(2)}R` : "geçen hafta işlem yok"}
               </p>
             </div>

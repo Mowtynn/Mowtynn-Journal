@@ -31,7 +31,6 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
         type="button"
         onClick={install}
         className={`flex items-center gap-1.5 h-6 px-2.5 rounded-lg bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 text-blue-400 hover:text-blue-300 text-[10px] font-bold font-sans uppercase tracking-wider transition-ui duration-150 cursor-pointer shadow-xs ${className}`}
-        title="Uygulamayı Cihazınıza Yükleyin (PWA)"
       >
         <Download size={11} className="text-blue-400" />
         <span>{variant === 'full' ? 'Uygulamayı Yükle' : 'Yükle'}</span>
@@ -47,7 +46,6 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
           type="button"
           onClick={() => setShowIOSGuide(true)}
           className={`flex items-center gap-1.5 h-6 px-2.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-400 hover:text-blue-300 text-[10px] font-bold font-sans uppercase tracking-wider transition-ui duration-150 cursor-pointer shadow-xs ${className}`}
-          title="iPhone / iPad'e Yükle"
         >
           <Smartphone size={11} className="text-blue-400" />
           <span>{variant === 'full' ? 'iOS Uygulama Yükle' : 'iOS Yükle'}</span>
@@ -81,7 +79,7 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
                       </p>
                     </div>
                   </div>
-                  <button aria-label="Kapat" title="Kapat"
+                  <button aria-label="Kapat"
                     type="button"
                     onClick={() => setShowIOSGuide(false)}
                     className="w-7 h-7 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 flex items-center justify-center transition-colors cursor-pointer"

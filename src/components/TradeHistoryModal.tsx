@@ -157,7 +157,7 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                   </div>
                 </div>
                 <div className="flex items-center gap-2 relative" ref={exportRef}>
-                  <button aria-label="İndir" title="İndir"
+                  <button aria-label="İndir"
                     type="button"
                     onClick={() => setIsExportOpen(!isExportOpen)}
                     className={`w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl border transition-colors duration-200 ease-out cursor-pointer group shadow-xs shrink-0 ${
@@ -303,7 +303,7 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                     )}
                   </AnimatePresence>
 
-                  <button aria-label="Kapat" title="Kapat"
+                  <button aria-label="Kapat"
                     type="button"
                     onClick={onClose}
                     className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-zinc-400 hover:text-white bg-zinc-950 hover:bg-zinc-900/70 border border-zinc-700/50 rounded-xl transition-colors duration-200 ease-out cursor-pointer group shadow-xs shrink-0"

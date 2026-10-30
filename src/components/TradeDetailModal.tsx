@@ -320,12 +320,12 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                   {canNav && (
                     <>
                       <div className="flex items-center gap-1">
-                        <button type="button" aria-label="Önceki işlem" title="Önceki işlem (←)" onClick={goPrev} disabled={!prevTrade}
+                        <button type="button" aria-label="Önceki işlem" onClick={goPrev} disabled={!prevTrade}
                           className="btn-icon disabled:opacity-30 disabled:cursor-not-allowed">
                           <ChevronLeft size={16} />
                         </button>
                         <span className="min-w-[3.25rem] text-center overflow-hidden"><span ref={counterRef} className="inline-block text-[11px] font-semibold tabular-nums text-zinc-500">{navIndex + 1} / {navList!.length}</span></span>
-                        <button type="button" aria-label="Sonraki işlem" title="Sonraki işlem (→)" onClick={goNext} disabled={!nextTrade}
+                        <button type="button" aria-label="Sonraki işlem" onClick={goNext} disabled={!nextTrade}
                           className="btn-icon disabled:opacity-30 disabled:cursor-not-allowed">
                           <ChevronRight size={16} />
                         </button>
@@ -333,14 +333,14 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                       <div className="w-px h-6 bg-zinc-800 mx-1 hidden sm:block"></div>
                     </>
                   )}
-                  <button aria-label="Düzenle" title="Düzenle"
+                  <button aria-label="Düzenle"
                     onClick={() => { onEdit(currentTrade); onClose(); }}
                     className="hidden sm:flex items-center justify-center w-9 h-9 rounded-xl border transition-colors cursor-pointer shrink-0 text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 border-blue-500/20"
                   >
                     <Edit3 size={16} />
                   </button>
                   {onDelete && (
-                    <button aria-label="Sil" title="Sil"
+                    <button aria-label="Sil"
                       onClick={() => setShowDeleteConfirm(true)}
                       className="hidden sm:flex items-center justify-center w-9 h-9 rounded-xl border transition-colors cursor-pointer shrink-0 text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border-rose-500/20"
                     >
@@ -350,14 +350,13 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                   <button
                     onClick={handleDownload}
                     aria-label="Görsel olarak indir (PNG)"
-                    title="Görsel olarak indir (PNG)"
                     disabled={isDownloading}
                     className="hidden sm:flex items-center justify-center w-9 h-9 rounded-xl border transition-colors cursor-pointer shrink-0 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/20 disabled:opacity-50"
                   >
                     {isDownloading ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
                   </button>
                   <div className="w-px h-6 bg-zinc-800 mx-1 hidden sm:block"></div>
-                  <button aria-label="Kapat" title="Kapat"
+                  <button aria-label="Kapat"
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
@@ -704,14 +703,14 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
               
               {/* Mobile Actions Footer */}
               <div className="sm:hidden flex items-center gap-2 p-4 border-t border-zinc-800/80 bg-zinc-950/80 shrink-0 no-export">
-                 <button aria-label="Düzenle" title="Düzenle"
+                 <button aria-label="Düzenle"
                     onClick={() => { onEdit(currentTrade); onClose(); }}
                     className="flex items-center justify-center w-9 h-9 rounded-xl border transition-colors cursor-pointer shrink-0 text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 border-blue-500/20 flex-1"
                   >
                     <Edit3 size={16} />
                   </button>
                  {onDelete && (
-                    <button aria-label="Sil" title="Sil"
+                    <button aria-label="Sil"
                       onClick={() => setShowDeleteConfirm(true)}
                       className="flex items-center justify-center w-9 h-9 rounded-xl border transition-colors cursor-pointer shrink-0 text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border-rose-500/20 flex-1"
                     >
@@ -721,7 +720,6 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                   <button
                     onClick={handleDownload}
                     aria-label="Görsel olarak indir (PNG)"
-                    title="Görsel olarak indir (PNG)"
                     disabled={isDownloading}
                     className="flex items-center justify-center w-9 h-9 rounded-xl border transition-colors cursor-pointer shrink-0 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/20 flex-1 disabled:opacity-50"
                   >

@@ -138,13 +138,6 @@ export const AccountSwitcher: React.FC<AccountSwitcherProps> = React.memo(({
       ? catRows?.unlinked ?? 0
       : current.count;
   const triggerLabel = activeAccount ? accountShortName(activeAccount) : unlinkedActive ? `${current.label} · bağsız` : current.label;
-  const triggerTitle = activeAccount
-    ? `Hesap: ${activeAccount.name} (${triggerCount} işlem)`
-    : unlinkedActive
-      ? `${current.label}: hiçbir hesaba bağlı olmayan işlemler (${triggerCount})`
-      : current.id === 'ALL'
-        ? `Tüm prop hesapları (Challenge + Funded) · ${triggerCount} işlem · hesapsız işlemler dahil değil`
-        : `Hesap kapsamı: ${current.label} (${triggerCount} işlem)`;
 
   const select = (category: AccountCategory, accountId: string | null = null) => {
     onSelect(category, accountId);
@@ -223,7 +216,6 @@ export const AccountSwitcher: React.FC<AccountSwitcherProps> = React.memo(({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        title={triggerTitle}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         className={`flex items-center gap-1.5 h-7 px-2 rounded-lg border transition-ui duration-150 cursor-pointer shadow-xs max-w-[7.5rem] sm:max-w-[13rem] ${
@@ -336,7 +328,6 @@ export const AccountSwitcher: React.FC<AccountSwitcherProps> = React.memo(({
                           type="button"
                           role="option"
                           aria-selected={sel}
-                          title="Hiçbir prop hesabına bağlı olmayan işlemler (eski kayıtlar ya da silinmiş hesaplar)"
                           onClick={() => select(opt.id, UNLINKED)}
                           className={`w-full h-7.5 shrink-0 pl-6 pr-2 text-left rounded-lg transition-ui flex items-center justify-between gap-2 cursor-pointer border ${
                             sel ? `${opt.activeBgClass} ${opt.activeBorderClass}` : 'border-transparent hover:bg-zinc-800/80'

@@ -2621,13 +2621,13 @@ export default function App() {
                               }}
                               autoFocus
                             />
-                            <button aria-label="Onayla" title="Onayla"
+                            <button aria-label="Onayla"
                               onClick={() => handleUpdateUsername(tempUsername)}
                               className="p-1 rounded-md bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition border border-emerald-500/20 cursor-pointer"
                             >
                               <Check size={12} />
                             </button>
-                            <button aria-label="Kapat" title="Kapat"
+                            <button aria-label="Kapat"
                               onClick={() => setIsEditingUsername(false)}
                               className="p-1 rounded-md bg-zinc-800 text-zinc-400 hover:bg-zinc-700 transition border border-zinc-700 cursor-pointer"
                             >
@@ -2649,7 +2649,7 @@ export default function App() {
                                 >
                                   {displayName || user.email || "Bağlı Hesap"}
                                 </span>
-                                <button aria-label="Düzenle" title="Düzenle"
+                                <button aria-label="Düzenle"
                                   type="button"
                                   onClick={() => {
                                     setTempUsername(displayName || "");

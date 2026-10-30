@@ -401,7 +401,7 @@ export const TurkishDateTimePicker = React.memo(function TurkishDateTimePicker({
               {TURKISH_MONTHS[viewMonth]} {viewYear}
             </span>
             <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-700/50 rounded-xl p-0.5 shadow-xs">
-              <button aria-label="Önceki" title="Önceki"
+              <button aria-label="Önceki"
                 type="button"
                 onClick={handlePrevMonth}
                 className="w-7 h-7 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 flex items-center justify-center transition-colors duration-150 cursor-pointer"
@@ -409,7 +409,7 @@ export const TurkishDateTimePicker = React.memo(function TurkishDateTimePicker({
                 <ChevronLeft size={13} />
               </button>
               <div className="w-px h-3.5 bg-zinc-800" />
-              <button aria-label="Sonraki" title="Sonraki"
+              <button aria-label="Sonraki"
                 type="button"
                 onClick={handleNextMonth}
                 className="w-7 h-7 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 flex items-center justify-center transition-colors duration-150 cursor-pointer"
@@ -935,7 +935,7 @@ export const TurkishDatePicker = React.memo(function TurkishDatePicker({
               {TURKISH_MONTHS[viewMonth]} {viewYear}
             </span>
             <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-700/50 rounded-xl p-0.5 shadow-xs">
-              <button aria-label="Önceki" title="Önceki"
+              <button aria-label="Önceki"
                 type="button"
                 onClick={handlePrevMonth}
                 className="w-7 h-7 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 flex items-center justify-center transition-colors duration-150 cursor-pointer"
@@ -943,7 +943,7 @@ export const TurkishDatePicker = React.memo(function TurkishDatePicker({
                 <ChevronLeft size={13} />
               </button>
               <div className="w-px h-3.5 bg-zinc-800" />
-              <button aria-label="Sonraki" title="Sonraki"
+              <button aria-label="Sonraki"
                 type="button"
                 onClick={handleNextMonth}
                 className="w-7 h-7 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 flex items-center justify-center transition-colors duration-150 cursor-pointer"

@@ -477,7 +477,7 @@ const BackupRescue = React.memo(function BackupRescue({
                     >
                       {isWiping ? 'Siliniyor...' : 'Sil'}
                     </button>
-                    <button aria-label="Kapat" title="Kapat"
+                    <button aria-label="Kapat"
                       type="button"
                       disabled={isWiping}
                       onClick={() => {

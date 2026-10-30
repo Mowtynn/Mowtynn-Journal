@@ -2,7 +2,6 @@ import { POPOVER } from '../../lib/motion';
 import { smartUpper } from '../../constants/constants';
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { stageLabel, ACCOUNT_STATUS_LABEL } from "../../lib/propAccounts";
 import { canonicalAsset } from "../../lib/tradeModel";
 import { TurkishDateTimePicker } from "../TurkishDateTimePicker";
 import { ScrollStrip } from "../common/ScrollStrip";
@@ -239,7 +238,6 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
             {accountOptions.map((a) => {
               const sel = accountChoice === a.id;
               const funded = a.stage === 0;
-              const sizeLabel = typeof a.size === "number" && a.size > 0 ? (a.size >= 1000 ? `${Math.round(a.size / 1000)}K` : `$${a.size}`) : null;
               return (
                 <button
                   key={a.id}
@@ -252,7 +250,6 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
                     setAccountChoice(a.id);
                     setAccountError(false);
                   }}
-                  title={`${a.label} · ${stageLabel(a)}${sizeLabel ? ` · ${sizeLabel}` : ""}${a.status && a.status !== "ACTIVE" ? ` · ${ACCOUNT_STATUS_LABEL[a.status]}` : ""}`}
                   className={`shrink-0 px-2.5 rounded-lg text-xs font-semibold font-sans flex items-center gap-1.5 whitespace-nowrap transition-ui cursor-pointer ${
                     sel
                       ? funded
@@ -281,7 +278,6 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
               setAccountError(false);
               setRiskError(false);
             }}
-            title="Demo / backtest: risk seçilmez, yalnızca R"
             className={`shrink-0 px-2.5 rounded-lg text-xs font-semibold font-sans flex items-center gap-1 whitespace-nowrap transition-ui cursor-pointer ${
               accountChoice === NO_ACCOUNT
                 ? "bg-blue-500/15 text-amber-50 ring-1 ring-inset ring-blue-500/40"
@@ -380,7 +376,7 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
                     setRiskError(false);
                     window.setTimeout(() => customRiskRef.current?.focus(), 0);
                   }}
-                  title={riskDisabled ? undefined : "Yüzdeyi elle gir"}
+                  aria-label={riskDisabled ? undefined : "Yüzdeyi elle gir"}
                   className={`${chipBase} w-9 shrink-0 ${chipIdle}`}
                 >
                   %
@@ -412,7 +408,6 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
                 type="button"
                 onClick={() => setExitDate("")}
                 aria-label="Çıkış saatini kaldır"
-                title="Çıkış saatini kaldır"
                 className="h-9 w-9 shrink-0 rounded-lg border border-zinc-700/70 bg-zinc-950/80 text-zinc-400 hover:text-white hover:border-zinc-500 flex items-center justify-center cursor-pointer"
               >
                 <X size={13} />

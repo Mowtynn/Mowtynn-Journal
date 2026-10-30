@@ -212,7 +212,6 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
               <button
                 onClick={handlePrintPdf}
                 aria-label="PDF olarak kaydet / yazdır"
-                title="PDF olarak kaydet / yazdır"
                 disabled={isGenerating || activeTrades.length === 0}
                 className="flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl border transition-colors cursor-pointer shrink-0 text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 border-blue-500/20 disabled:opacity-50 text-[11px] font-bold uppercase tracking-wide"
               >
@@ -221,14 +220,13 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
               <button
                 onClick={handleDownloadImage}
                 aria-label="Görsel olarak indir (PNG)"
-                title="Görsel olarak indir (PNG)"
                 disabled={isGenerating}
                 className="flex items-center justify-center w-9 h-9 rounded-xl border transition-colors cursor-pointer shrink-0 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/20 disabled:opacity-50"
               >
                 {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
               </button>
               <div className="w-px h-6 bg-zinc-800 mx-1 hidden sm:block"></div>
-              <button aria-label="Kapat" title="Kapat"
+              <button aria-label="Kapat"
                 onClick={onClose}
                 className="btn-icon"
               >

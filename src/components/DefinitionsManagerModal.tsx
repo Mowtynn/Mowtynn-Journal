@@ -549,7 +549,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
               Tanımlamalar
             </h2>
             <div className="flex items-center gap-2 shrink-0">
-              <button aria-label="İndir" title="İndir"
+              <button aria-label="İndir"
                 type="button"
                 onClick={handleExportJSON}
                 className="btn-icon"
@@ -567,7 +567,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                   className="hidden"
                 />
               </label>
-              <button aria-label="Kapat" title="Kapat"
+              <button aria-label="Kapat"
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -672,7 +672,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                         >
                           <Check size={12} /> Kaydet
                         </button>
-                        <button aria-label="Kapat" title="Kapat"
+                        <button aria-label="Kapat"
                           type="button"
                           onClick={() => setIsEditingTitle(false)}
                           className="px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-xs font-sans cursor-pointer transition-colors"
@@ -809,13 +809,13 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                                 autoFocus
                                 className="flex-1 bg-zinc-900 border border-blue-500 rounded-lg px-2.5 py-1 text-xs text-white font-sans uppercase focus:outline-none"
                               />
-                              <button aria-label="Onayla" title="Onayla"
+                              <button aria-label="Onayla"
                                 onClick={() => handleSaveEdit(originalIndex)}
                                 className="p-1 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-colors"
                               >
                                 <Check size={14} />
                               </button>
-                              <button aria-label="Kapat" title="Kapat"
+                              <button aria-label="Kapat"
                                 onClick={() => setEditingIndex(null)}
                                 className="p-1 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
                               >
@@ -847,7 +847,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                                 </span>
 
                                 {/* Edit Button */}
-                                <button aria-label="Düzenle" title="Düzenle"
+                                <button aria-label="Düzenle"
                                   type="button"
                                   onClick={() => {
                                     setEditingIndex(originalIndex);
@@ -860,7 +860,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
 
                                 {/* Delete Button */}
                                 {!isFixedTab && (
-                                <button aria-label="Sil" title="Sil"
+                                <button aria-label="Sil"
                                   type="button"
                                   onClick={() => handleDeleteItem(item)}
                                   className="p-1.5 rounded-lg text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer opacity-70 group-hover:opacity-100"

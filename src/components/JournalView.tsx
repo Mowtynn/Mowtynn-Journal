@@ -420,7 +420,7 @@ const JournalView = memo(function JournalView({ entries: allEntries, trades = []
                     ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
                     : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
                 }`}
-                title="Günlükleri Dışa Aktar (Excel / CSV)"
+                aria-label="Günlükleri Dışa Aktar (Excel / CSV)"
               >
                 <Download size={13} />
               </button>
@@ -545,7 +545,7 @@ const JournalView = memo(function JournalView({ entries: allEntries, trades = []
               </AnimatePresence>
             </div>
 
-            <button aria-label="Takvim" title="Takvim"
+            <button aria-label="Takvim"
               onClick={() => setShowSearch(!showSearch)}
               className={`w-8 h-8 rounded-lg flex items-center justify-center transition-ui cursor-pointer border ${
                 showSearch || searchDate 
@@ -571,7 +571,7 @@ const JournalView = memo(function JournalView({ entries: allEntries, trades = []
               )}
             </AnimatePresence>
 
-            <button aria-label="Favori" title="Favori"
+            <button aria-label="Favori"
               onClick={() => setShowOnlyFavorites(prev => !prev)}
               className={`w-8 h-8 rounded-lg flex items-center justify-center transition-ui cursor-pointer border ${
                 showOnlyFavorites 
@@ -582,7 +582,7 @@ const JournalView = memo(function JournalView({ entries: allEntries, trades = []
               <Star size={13} className={showOnlyFavorites ? "fill-amber-400 text-amber-400" : ""} />
             </button>
 
-            <button aria-label="Haftalık değerlendirme" title="Haftalık değerlendirme"
+            <button aria-label="Haftalık değerlendirme"
               type="button"
               onClick={() => (weeklyWeek ? setWeeklyWeek(null) : openWeekly(currentWeekStart()))}
               className={`w-8 h-8 rounded-lg flex items-center justify-center transition-ui cursor-pointer border ${
@@ -594,7 +594,7 @@ const JournalView = memo(function JournalView({ entries: allEntries, trades = []
               <CalendarRange size={13} />
             </button>
 
-            <button aria-label="Ekle" title="Ekle"
+            <button aria-label="Ekle"
               onClick={handleCreateNew}
               className="w-8 h-8 rounded-lg bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 border border-blue-500/30 flex items-center justify-center transition-ui cursor-pointer shadow-xs"
             >
@@ -615,7 +615,7 @@ const JournalView = memo(function JournalView({ entries: allEntries, trades = []
               className="w-full h-7.5 bg-zinc-900/90 border border-zinc-800/90 focus:border-zinc-700 rounded-lg pl-7 pr-7 text-[11px] text-zinc-200 placeholder:text-zinc-600 focus:outline-none transition font-sans"
             />
             {searchTerm && (
-              <button aria-label="Kapat" title="Kapat"
+              <button aria-label="Kapat"
                 onClick={() => setSearchTerm('')}
                 className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 cursor-pointer"
               >
@@ -657,13 +657,13 @@ const JournalView = memo(function JournalView({ entries: allEntries, trades = []
               <span className="text-zinc-600 font-normal">({weekRangeStr})</span>
             </span>
             <div className="flex items-center gap-1">
-              <button aria-label="Önceki" title="Önceki" 
+              <button aria-label="Önceki" 
                 onClick={() => setWeekOffset(prev => prev - 1)}
                 className="w-7 h-7 rounded flex items-center justify-center bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors border border-zinc-800"
               >
                 <ChevronLeft size={11} />
               </button>
-              <button aria-label="Sonraki" title="Sonraki" 
+              <button aria-label="Sonraki" 
                 onClick={() => setWeekOffset(prev => prev + 1)}
                 className="w-7 h-7 rounded flex items-center justify-center bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors border border-zinc-800"
               >
@@ -750,7 +750,7 @@ const JournalView = memo(function JournalView({ entries: allEntries, trades = []
                       </div>
                       
                       <div className="flex items-center gap-1">
-                        <button aria-label="Favori" title="Favori"
+                        <button aria-label="Favori"
                           type="button"
                           onClick={(e) => {
                             e.preventDefault();
@@ -772,7 +772,7 @@ const JournalView = memo(function JournalView({ entries: allEntries, trades = []
                           <Star size={11} className={entry.isFavorite ? "fill-amber-400" : ""} />
                         </button>
                         
-                        <button aria-label="Sil" title="Sil"
+                        <button aria-label="Sil"
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
@@ -857,7 +857,7 @@ const JournalView = memo(function JournalView({ entries: allEntries, trades = []
             >
               <div className="px-5 py-3 shrink-0 border-b border-zinc-800/80 flex items-center justify-between bg-zinc-950/30">
                 <div className="flex items-center gap-3">
-                  <button aria-label="Geri" title="Geri"
+                  <button aria-label="Geri"
                     onClick={() => setIsEditing(false)}
                     className="md:hidden p-1.5 bg-zinc-900 border border-zinc-800 rounded-lg hover:bg-zinc-800 text-zinc-400"
                   >
@@ -885,7 +885,7 @@ const JournalView = memo(function JournalView({ entries: allEntries, trades = []
                   </button>
 
                   {activeEntry && (
-                    <button aria-label="Sil" title="Sil"
+                    <button aria-label="Sil"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
@@ -990,7 +990,7 @@ const JournalView = memo(function JournalView({ entries: allEntries, trades = []
             >
               <div className="px-5 py-3.5 shrink-0 border-b border-zinc-800/80 flex items-center justify-between bg-zinc-950/30">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <button aria-label="Geri" title="Geri"
+                  <button aria-label="Geri"
                     onClick={() => setActiveEntry(null)}
                     className="md:hidden p-1.5 bg-zinc-900 border border-zinc-800 rounded-lg hover:bg-zinc-800 text-zinc-400"
                   >
@@ -1010,7 +1010,7 @@ const JournalView = memo(function JournalView({ entries: allEntries, trades = []
                 </div>
                 
                 <div className="flex items-center gap-2 shrink-0">
-                  <button aria-label="Favori" title="Favori"
+                  <button aria-label="Favori"
                     onClick={() => {
                       if (activeEntry) {
                         const nextFav = !activeEntry.isFavorite;
@@ -1030,13 +1030,13 @@ const JournalView = memo(function JournalView({ entries: allEntries, trades = []
                   >
                     <Star size={16} className={activeEntry!.isFavorite ? "fill-amber-400 text-amber-400" : ""} />
                   </button>
-                  <button aria-label="Düzenle" title="Düzenle"
+                  <button aria-label="Düzenle"
                     onClick={() => activeEntry && handleEdit(activeEntry)}
                     className="flex items-center justify-center w-9 h-9 rounded-xl border transition-colors cursor-pointer shrink-0 text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 border-blue-500/20"
                   >
                     <Edit3 size={16} />
                   </button>
-                  <button aria-label="Sil" title="Sil"
+                  <button aria-label="Sil"
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();

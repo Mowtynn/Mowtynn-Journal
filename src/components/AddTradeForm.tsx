@@ -414,7 +414,6 @@ const AddTradeForm = React.memo(function AddTradeForm({
               type="button"
               onClick={() => onQuickModeChange(!quickMode)}
               aria-pressed={quickMode}
-              title={quickMode ? "Tam forma geç" : "Yalnızca temel bilgiler ve sonuç; ayrıntıları sonra tamamla"}
               className={`flex items-center gap-1.5 h-8 px-3 rounded-xl border text-[11px] font-bold transition-ui cursor-pointer ${
                 quickMode
                   ? "border-blue-500/40 bg-blue-500/15 text-blue-200 hover:bg-blue-500/25"
@@ -429,7 +428,6 @@ const AddTradeForm = React.memo(function AddTradeForm({
             <button
               type="button"
               onClick={applyLastSetup}
-              title="Son işlemdeki parite, hesap ve kurulum seçimlerini uygular"
               className="hidden sm:flex items-center gap-1.5 h-8 px-3 rounded-xl border border-zinc-700/70 bg-zinc-900/80 text-[11px] font-bold text-zinc-300 hover:text-white hover:border-zinc-500 hover:bg-zinc-800 transition-ui cursor-pointer"
             >
               <Copy size={13} className="text-blue-400" />
@@ -439,7 +437,6 @@ const AddTradeForm = React.memo(function AddTradeForm({
           <button lang="en"
             type="button"
             aria-label="Kapat"
-            title="Kapat (Esc)"
             onClick={(e) => {
               e.stopPropagation();
               requestClose();

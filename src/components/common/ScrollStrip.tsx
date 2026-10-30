@@ -80,7 +80,7 @@ export function ScrollStrip({
   return (
     <div className={`flex items-stretch min-w-0 ${className}`}>
       {overflowing && (
-        <button type="button" aria-label="Sola kaydır" title="Sola kaydır" onClick={() => step(-1)} disabled={!edges.left} className={arrow}>
+        <button type="button" aria-label="Sola kaydır" onClick={() => step(-1)} disabled={!edges.left} className={arrow}>
           <ChevronLeft size={15} />
         </button>
       )}
@@ -95,7 +95,7 @@ export function ScrollStrip({
         {children}
       </div>
       {overflowing && (
-        <button type="button" aria-label="Sağa kaydır" title="Sağa kaydır" onClick={() => step(1)} disabled={!edges.right} className={arrow}>
+        <button type="button" aria-label="Sağa kaydır" onClick={() => step(1)} disabled={!edges.right} className={arrow}>
           <ChevronRight size={15} />
         </button>
       )}

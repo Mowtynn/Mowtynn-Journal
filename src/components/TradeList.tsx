@@ -347,7 +347,7 @@ const TradeList = React.memo(function TradeList({
           
           {/* EXPORT DROP-DOWN */}
           <div className="relative" ref={exportRef}>
-            <button aria-label="İndir" title="İndir"
+            <button aria-label="İndir"
               onClick={() => setIsExportOpen(!isExportOpen)}
               className={`flex items-center justify-center w-9 sm:w-8 h-9 sm:h-8 rounded-xl border transition-ui duration-200 shrink-0 cursor-pointer ${
                 isExportOpen
@@ -901,7 +901,6 @@ const TradeList = React.memo(function TradeList({
       <PrintReportModal title={printModalState.title || "İşlem Raporu"} isOpen={printModalState.isOpen}
         onClose={() => setPrintModalState(prev => ({ ...prev, isOpen: false }))}
         trades={printModalState.trades}
-        
         dateRangeText={printModalState.dateRangeText}
       />
     </div>

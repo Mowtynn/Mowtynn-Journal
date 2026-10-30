@@ -211,7 +211,7 @@ export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], o
                  Bugün
                </button>
                <div className="flex items-center gap-1.5 bg-zinc-900 border border-zinc-700/50 rounded-xl p-1 shadow-xs">
-                 <button aria-label="Önceki" title="Önceki" 
+                 <button aria-label="Önceki" 
                    type="button"
                    onClick={prevMonth} 
                    className="w-7 h-7 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 flex items-center justify-center transition-colors duration-150 cursor-pointer"
@@ -221,7 +221,7 @@ export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], o
                  <span className="min-w-[110px] text-center font-sans font-semibold text-xs text-zinc-100 tracking-wide select-none">
                    {monthNames[month]} {year}
                  </span>
-                 <button aria-label="Sonraki" title="Sonraki" 
+                 <button aria-label="Sonraki" 
                    type="button"
                    onClick={nextMonth} 
                    className="w-7 h-7 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 flex items-center justify-center transition-colors duration-150 cursor-pointer"

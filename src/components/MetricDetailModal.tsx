@@ -97,7 +97,7 @@ export function MetricDetailModal({
               Metrik Detayları
             </h2>
             <div className="flex items-center gap-2 shrink-0">
-              <button aria-label="Kapat" title="Kapat"
+              <button aria-label="Kapat"
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();

@@ -127,7 +127,7 @@ export const ResultCard = React.memo(function ResultCard({
           <div>
             <label className="text-[10px] sm:text-[11px] font-bold text-rose-400 uppercase tracking-wide font-sans flex items-center gap-1 mb-2 min-w-0 whitespace-nowrap">
               <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-              <span className="truncate" title={L("stopPips")}>{L("stopPips")}</span>
+              <span className="truncate">{L("stopPips")}</span>
             </label>
             <input
               type="number"
@@ -144,7 +144,7 @@ export const ResultCard = React.memo(function ResultCard({
           <div>
             <label className="text-[10px] sm:text-[11px] font-bold text-emerald-400 uppercase tracking-wide font-sans flex items-center gap-1 mb-2 min-w-0 whitespace-nowrap">
               <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-              <span className="truncate" title={L("tpPips")}>{L("tpPips")}</span>
+              <span className="truncate">{L("tpPips")}</span>
             </label>
             <input
               type="number"
@@ -197,7 +197,7 @@ export const ResultCard = React.memo(function ResultCard({
           <div>
           <label className="text-[10px] sm:text-[11px] font-bold text-amber-400 uppercase tracking-wide font-sans flex items-center gap-1 mb-2 min-w-0 whitespace-nowrap">
               <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-              <span className="truncate" title={L("asiaRangePips")}>{L("asiaRangePips")}</span>
+              <span className="truncate">{L("asiaRangePips")}</span>
             </label>
             <input
               type="number"

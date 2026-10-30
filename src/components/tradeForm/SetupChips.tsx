@@ -168,7 +168,7 @@ export const SetupChips = React.memo(function SetupChips({
                   type="button"
                   data-selected={isSelected}
                   onClick={() => setSelectedTrend(isSelected ? "" : tr)}
-                  title={tr}
+                  aria-label={tr}
                   className={`min-w-0 h-full flex items-center justify-center px-1 rounded-lg text-[11px] font-sans font-bold tracking-normal uppercase transition-ui duration-150 select-none border cursor-pointer ${
                     isSelected
                       ? activeStyle
@@ -508,7 +508,7 @@ export const SetupChips = React.memo(function SetupChips({
           </span>
           {afterExitTpAsked(tradeStatus, management) && (
             <span className="flex items-center gap-1.5 min-w-0">
-              <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide font-sans truncate" title="Çıkıştan sonra fiyat TP'ye ulaştı mı?">
+              <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide font-sans truncate">
                 Sonra TP'ye Gitti mi?
               </span>
               <span className="flex items-center bg-zinc-950/80 border border-zinc-800/90 rounded-lg p-0.5 gap-0.5 shrink-0">

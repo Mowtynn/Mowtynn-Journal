@@ -416,14 +416,14 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
               >
                 {isAnyOpen ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
-              <button aria-label="Sıfırla" title="Sıfırla"
+              <button aria-label="Sıfırla"
                 type="button"
                 onClick={handleReset}
                 className="btn-icon"
               >
                 <RotateCcw size={16} />
               </button>
-              <button aria-label="Kapat" title="Kapat"
+              <button aria-label="Kapat"
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -443,7 +443,6 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
               {/* 1. ZAMAN ARALIĞI */}
               <FilterAccordionRow title="Zaman Aralığı" 
                 icon={<Calendar size={14} className="text-amber-400" />}
-                
                 summaryText={getDateLabel(globalDateLimit)}
                 badgeCount={globalDateLimit !== DEFAULT_DATE_LIMIT ? 1 : 0}
                 isOpen={!!openSections.date}
@@ -461,7 +460,6 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
               {/* 2. PARİTE (ASSET) */}
               <FilterAccordionRow title={definitionTitles.assets || "Parite"} 
                 icon={<Coins size={14} className="text-yellow-400" />}
-                
                 summaryText={globalSelectedAssets.length > 0 ? globalSelectedAssets.join(', ') : 'Tümü'}
                 badgeCount={globalSelectedAssets.length}
                 isOpen={!!openSections.asset}
@@ -477,7 +475,6 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
               {/* 3. İŞLEM YÖNÜ (TYPE) */}
               <FilterAccordionRow title="İşlem Yönü" 
                 icon={<ArrowUpRight size={14} className="text-blue-400" />}
-                
                 summaryText={globalSelectedTypes.length > 0 ? globalSelectedTypes.join(', ') : 'Tümü'}
                 badgeCount={globalSelectedTypes.length}
                 isOpen={!!openSections.type}
@@ -492,7 +489,6 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
               {/* 4. SESSION */}
               <FilterAccordionRow title={definitionTitles.sessions || "Session"} 
                 icon={<Flame size={14} className="text-blue-400" />}
-                
                 summaryText={globalSelectedSessions.length > 0 ? globalSelectedSessions.join(', ') : 'Tümü'}
                 badgeCount={globalSelectedSessions.length}
                 isOpen={!!openSections.session}
@@ -697,7 +693,6 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
               {/* 5. TIMEFRAME */}
               <FilterAccordionRow title={definitionTitles.htfTimeframes || "Timeframe"} 
                 icon={<Clock size={14} className="text-blue-400" />}
-                
                 summaryText={globalSelectedHtfTimeframes.length > 0 ? globalSelectedHtfTimeframes.join(', ') : 'Tümü'}
                 badgeCount={globalSelectedHtfTimeframes.length}
                 isOpen={!!openSections.htfTf}
@@ -713,7 +708,6 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
               {/* 6. ENTRY TIMEFRAME */}
               <FilterAccordionRow title={definitionTitles.timeframes || "Entry Timeframe"} 
                 icon={<Clock size={14} className="text-blue-400" />}
-                
                 summaryText={globalSelectedTimeframes.length > 0 ? globalSelectedTimeframes.join(', ') : 'Tümü'}
                 badgeCount={globalSelectedTimeframes.length}
                 isOpen={!!openSections.entryTf}
@@ -768,7 +762,6 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
               {/* 8. PD ARRAY */}
               <FilterAccordionRow title={definitionTitles.confirmations || "PD ARRAY"} 
                 icon={<Sparkles size={14} className="text-purple-400" />}
-                
                 summaryText={globalSelectedConfirmations.length > 0 ? globalSelectedConfirmations.join(', ') : 'Tümü'}
                 badgeCount={globalSelectedConfirmations.length}
                 isOpen={!!openSections.confirmation}
@@ -949,7 +942,6 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
               {/* 18. İŞLEM SONUCU */}
               <FilterAccordionRow title="İşlem Sonucu" 
                 icon={<Activity size={14} className="text-emerald-400" />}
-                
                 summaryText={globalSelectedStatuses.length > 0 ? globalSelectedStatuses.join(', ') : 'Tümü'}
                 badgeCount={globalSelectedStatuses.length}
                 isOpen={!!openSections.status}

@@ -524,7 +524,7 @@ export const DisciplineCard = React.memo(function DisciplineCard({ trades, onSho
             <p className="text-[11px] text-zinc-500">Kural ihlalleri ve "uysaydın" simülasyonu</p>
           </div>
         </div>
-        <span className="shrink-0 px-2 py-1 rounded-lg border border-zinc-800 bg-zinc-950/40 text-[10px] font-semibold text-zinc-400" title="Günlük işlem sınırı">
+        <span className="shrink-0 px-2 py-1 rounded-lg border border-zinc-800 bg-zinc-950/40 text-[10px] font-semibold text-zinc-400">
           Günde en fazla {rep.options.maxTradesPerDay} işlem
         </span>
       </header>

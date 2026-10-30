@@ -181,7 +181,7 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
                 ))}
               </div>
 
-              <button aria-label="Kapat" title="Kapat"
+              <button aria-label="Kapat"
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
