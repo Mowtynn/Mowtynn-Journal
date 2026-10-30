@@ -345,7 +345,6 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
                   <span className="flex items-center gap-1.5">
                     <span
                       className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-md border ${goldenSetup.confirmed ? 'text-emerald-300 border-emerald-500/30 bg-emerald-500/10' : 'text-zinc-400 border-zinc-700 bg-zinc-800/60'}`}
-                      title={goldenSetup.confirmed ? 'En az ' + EDGE_PROOF_MIN + ' işlem ve %95 güven aralığı sıfırın üstünde' : 'Henüz kesin değil: kanıt için en az ' + EDGE_PROOF_MIN + ' işlem ve sıfırın üstünde güven aralığı gerekir'}
                     >
                       {goldenSetup.confirmed ? 'Kanıtlı' : `Erken${goldenSetup.sampleSize < EDGE_PROOF_MIN ? ` · ${goldenSetup.sampleSize}/${EDGE_PROOF_MIN}` : ''}`}
                     </span>

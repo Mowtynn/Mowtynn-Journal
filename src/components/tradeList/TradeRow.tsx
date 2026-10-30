@@ -51,7 +51,7 @@ export const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
     >
       <td className="w-1/2 min-w-[130px] flex justify-start items-center sm:table-cell order-1 py-1 px-0 sm:px-3 text-zinc-400 font-sans sm:bg-transparent sm:rounded-l-xl sm:border-y sm:border-l sm:border-zinc-800/80 align-middle sm:w-[18%] group-hover:text-zinc-100">
         <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-center sm:w-full gap-0.5 sm:gap-1.5">
-          <span className="sm:hidden flex items-center gap-1.5"><span className="text-white font-bold text-xs uppercase">{trade.asset}</span>{trade.quickEntry === true && <span title="Hızlı kayıt · ayrıntılar tamamlanmadı" className="px-1 py-px rounded text-[8px] font-bold uppercase border border-amber-500/30 bg-amber-500/10 text-amber-300 leading-none">{smartUpper("Hızlı")}</span>}</span>
+          <span className="sm:hidden flex items-center gap-1.5"><span className="text-white font-bold text-xs uppercase">{trade.asset}</span>{trade.quickEntry === true && <span className="px-1 py-px rounded text-[8px] font-bold uppercase border border-amber-500/30 bg-amber-500/10 text-amber-300 leading-none">{smartUpper("Hızlı")}</span>}</span>
           <span className="text-[10px] sm:text-[10px] flex items-center gap-1.5">
             <span className="text-zinc-400 font-medium">{formattedDateOnly}</span>
             <span className="text-zinc-600 font-bold">•</span>
@@ -62,7 +62,7 @@ export const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
       <td className="hidden sm:table-cell min-w-[90px] py-1 px-0 sm:px-3 sm:bg-transparent sm:border-y sm:border-zinc-800/80 text-left sm:text-center align-middle sm:w-[14%]">
         <div className="flex flex-col items-center gap-0.5">
           <span className="text-white font-bold text-[10px] uppercase">{trade.asset}</span>
-          {trade.quickEntry === true && <span title="Hızlı kayıt · ayrıntılar tamamlanmadı" className="px-1 py-px rounded text-[8px] font-bold uppercase border border-amber-500/30 bg-amber-500/10 text-amber-300 leading-none">{smartUpper("Hızlı")}</span>}
+          {trade.quickEntry === true && <span className="px-1 py-px rounded text-[8px] font-bold uppercase border border-amber-500/30 bg-amber-500/10 text-amber-300 leading-none">{smartUpper("Hızlı")}</span>}
         </div>
       </td>
       <td className="w-1/2 min-w-[65px] flex justify-end sm:justify-center items-center sm:table-cell order-2 py-1 px-0 sm:px-2 text-center sm:bg-transparent sm:border-y sm:border-zinc-800/80 align-middle sm:w-[10%]">

@@ -162,7 +162,7 @@ export const ResultCard = React.memo(function ResultCard({
         <div className={`grid grid-cols-[1fr_1fr_1.4fr] gap-2 items-end pt-1.5 border-t border-zinc-800/60 ${isQuick ? "hidden" : ""}`}>
           {/* MAE PİP */}
           <div>
-            <label className="text-[10px] sm:text-[11px] font-bold text-orange-400 uppercase tracking-wide font-sans flex items-center gap-1 mb-2 min-w-0 whitespace-nowrap" title="Maximum Adverse Excursion - Aleyhe maksimum sapma">
+            <label className="text-[10px] sm:text-[11px] font-bold text-orange-400 uppercase tracking-wide font-sans flex items-center gap-1 mb-2 min-w-0 whitespace-nowrap">
               <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-orange-500"></span>
               <span className="truncate">{L("maePips")}</span>
             </label>
@@ -179,7 +179,7 @@ export const ResultCard = React.memo(function ResultCard({
 
           {/* MFE PİP */}
           <div>
-            <label className="text-[10px] sm:text-[11px] font-bold text-cyan-400 uppercase tracking-wide font-sans flex items-center gap-1 mb-2 min-w-0 whitespace-nowrap" title="Maximum Favorable Excursion - Lehe maksimum potansiyel">
+            <label className="text-[10px] sm:text-[11px] font-bold text-cyan-400 uppercase tracking-wide font-sans flex items-center gap-1 mb-2 min-w-0 whitespace-nowrap">
               <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
               <span className="truncate">{L("mfePips")}</span>
             </label>
@@ -216,7 +216,7 @@ export const ResultCard = React.memo(function ResultCard({
       {(() => {
         const t = RESULT_TONE[tradeStatus];
         const plan = typeof stopPips === "number" && stopPips > 0 && typeof tpPips === "number" && tpPips > 0 ? tpPips / stopPips : null;
-        const [hint, hintTitle] =
+        const [hint] =
           tradeStatus === "BREAKEVEN"
             ? ["Her zaman 0R", "Breakeven işlem her zaman 0R kaydedilir."]
             : tradeStatus === "LOSS"
@@ -230,7 +230,7 @@ export const ResultCard = React.memo(function ResultCard({
               <label htmlFor="tf-result-r" className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-wide block font-sans ${t.text}`}>
                 {L("rr")}
               </label>
-              <p className="text-[10px] text-zinc-400 font-sans leading-snug mt-0.5 truncate" title={hintTitle}>{hint}</p>
+              <p className="text-[10px] text-zinc-400 font-sans leading-snug mt-0.5 truncate">{hint}</p>
             </div>
             {/* İşaret, değer ve "R" tek bir okunuş olarak ortada durur (+2.5R); kutunun her yerine tıklamak alana odaklar */}
             <label

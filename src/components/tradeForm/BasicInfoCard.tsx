@@ -312,12 +312,10 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
             <div
               role="radiogroup"
               aria-invalid={riskError || undefined}
-              title={riskDisabled ? (accountChoice === NO_ACCOUNT ? "Hesapsız işlemde risk seçilmez; yalnızca R girilir" : "Önce bir prop hesabı seçin") : undefined}
               className={`flex flex-nowrap items-center gap-1.5 rounded-xl transition-ui ${riskError && !riskDisabled ? "ring-1 ring-rose-500/60 ring-offset-2 ring-offset-zinc-900" : ""}`}
             >
               <span
                 className={`h-9 flex-[1.35] min-w-0 px-2 rounded-lg border border-dashed text-[11px] font-bold font-sans tabular-nums flex items-center justify-center gap-1 truncate ${riskDisabled ? "border-zinc-800 bg-zinc-950/30 text-zinc-600" : riskDollar !== null ? "border-blue-500/30 bg-blue-500/5 text-blue-200" : "border-zinc-700/70 bg-zinc-900/60 text-zinc-400"}`}
-                title={selectedAccount?.size ? `Başlangıç bakiyesi $${selectedAccount.size.toLocaleString("en-US")} · riskin $ karşılığı` : "Riskin $ karşılığı"}
                 aria-live="polite"
               >
                 {riskDollar !== null ? `$${riskDollar.toLocaleString("en-US", { maximumFractionDigits: 2 })}` : "$ —"}

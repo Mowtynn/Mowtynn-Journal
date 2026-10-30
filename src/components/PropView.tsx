@@ -313,7 +313,7 @@ function NewChainForm({ draft, setDraft, onCreate, onCancel }: { draft: Draft; s
               <label className="text-[9px] font-bold uppercase text-zinc-500 block mb-0.5">Max DD %</label>
               <input className={inputCls} type="number" min="0" step="any" value={draft.fundedMaxDdPct} onChange={(e) => set('fundedMaxDdPct', e.target.value)} />
             </div>
-            <div title="Tüm aşamalarda geçerli günlük kayıp limiti; boş bırakılırsa uygulanmaz">
+            <div>
               <label className="text-[9px] font-bold uppercase text-zinc-500 block mb-0.5">Günlük Kayıp %</label>
               <input className={inputCls} type="number" min="0" step="any" placeholder="Yok" value={draft.dailyLossPct} onChange={(e) => set('dailyLossPct', e.target.value)} />
             </div>

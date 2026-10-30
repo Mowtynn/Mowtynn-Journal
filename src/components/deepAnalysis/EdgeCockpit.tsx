@@ -74,7 +74,6 @@ export function SignalBadge({ edge }: { edge: EdgeStats }) {
   return (
     <span
       className="shrink-0 px-1.5 py-px rounded-md border border-zinc-700 bg-zinc-800/60 text-[9px] font-bold uppercase text-zinc-400 tabular-nums"
-      title={neg ? 'Ortalama negatif ama %95 güven aralığı sıfırı da kapsıyor: yeni veriyle doğrula' : `Kanıt için en az ${EDGE_PROOF_MIN} işlem ve sıfırın üstünde güven aralığı gerekir`}
     >
       Erken{edge.n < EDGE_PROOF_MIN ? ` · ${edge.n}/${EDGE_PROOF_MIN}` : ''}
     </span>
@@ -231,7 +230,6 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
                   type="button"
                   onClick={() => onShowTrades(`Risk %${fmt(r.riskPct, 3)}`, trades.filter((t) => typeof t.riskPct === 'number' && Math.round(t.riskPct * 1000) / 1000 === r.riskPct))}
                   className="px-2.5 py-1.5 rounded-lg border border-zinc-800 bg-zinc-950/40 hover:border-zinc-600 text-[11px] tabular-nums transition-ui cursor-pointer"
-                  title={e2s(r.edge)}
                 >
                   <span className="text-zinc-400 font-semibold">%{fmt(r.riskPct, 3)}</span>{' '}
                   <span className={`font-bold ${tone(r.edge.expectancy)}`}>{sR(r.edge.expectancy)}</span>{' '}
@@ -256,7 +254,6 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
                   disabled={!e.n}
                   onClick={() => onShowTrades(`News Day: ${label}`, trades.filter((t) => t.newsDay === flag))}
                   className="px-2.5 py-1.5 rounded-lg border border-zinc-800 bg-zinc-950/40 hover:border-zinc-600 disabled:opacity-50 disabled:cursor-default text-[11px] tabular-nums transition-ui cursor-pointer"
-                  title={e.n ? e2s(e) : 'İşlem yok'}
                 >
                   <span className="text-zinc-400 font-semibold">{label}</span>{' '}
                   <span className={`font-bold ${tone(e.expectancy)}`}>{e.n ? sR(e.expectancy) : '—'}</span>{' '}
@@ -312,7 +309,6 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
                   <span className="text-xs font-bold text-zinc-200 truncate">{r.title}</span>
                   {r.halves && r.halves.status !== 'THIN' && (
                     <span
-                      title={`İlk yarı ${sR(r.halves.first.expectancy)}/işlem (${r.halves.first.n}) · ikinci yarı ${sR(r.halves.second.expectancy)}/işlem (${r.halves.second.n})`}
                       className={`shrink-0 px-1.5 py-0.5 rounded-md border text-[10px] font-bold ${r.halves.status === 'CONSISTENT' ? 'text-emerald-300 border-emerald-500/30' : 'text-amber-300 border-amber-500/30'}`}
                     >
                       {r.halves.status === 'CONSISTENT' ? 'İki Yarıda Tutarlı' : 'Şans Olabilir'}
@@ -326,7 +322,7 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
                     if (!after.length) return null;
                     const ar = after.reduce((sum, t) => sum + (typeof t.rr === 'number' && Number.isFinite(t.rr) ? t.rr : 0), 0);
                     return (
-                      <span className={`mr-1.5 ${ar >= 0 ? 'text-emerald-300' : 'text-rose-300'}`} title="Kural oluştuktan sonraki işlemler: kuralın gerçekten işe yarayıp yaramadığı">
+                      <span className={`mr-1.5 ${ar >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>
                         kural sonrası {after.length} işlem {sR(ar)} ·
                       </span>
                     );
@@ -481,7 +477,6 @@ function RuleRow({ r, onClick }: { r: RuleResult; onClick: () => void }) {
       type="button"
       disabled={!r.measurable || r.violations === 0}
       onClick={onClick}
-      title={r.hint}
       className={`group w-full flex items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-ui ${
         muted ? 'border-zinc-800/60 bg-transparent cursor-default' : 'border-zinc-800/80 bg-zinc-950/40 hover:bg-zinc-900 hover:border-zinc-700 cursor-pointer'
       }`}

@@ -8,7 +8,7 @@ export function StoredImage({ src, alt = '', className = '', ...rest }: Omit<Rea
   if (url === undefined) return <div className={`${className} bg-zinc-800/60 animate-pulse`} aria-hidden />;
   if (url === null)
     return (
-      <div className={`${className} flex items-center justify-center bg-zinc-900 text-zinc-600`} title="Görsel bulunamadı">
+      <div className={`${className} flex items-center justify-center bg-zinc-900 text-zinc-600`}>
         <ImageOff size={16} />
       </div>
     );

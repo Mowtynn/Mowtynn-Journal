@@ -7,9 +7,9 @@ import { computeAccountRInsights, MAX_BUST_PCT, MIN_SURVIVE_PCT } from '../../li
 const r1 = (v: number) => v.toLocaleString('en-US', { maximumFractionDigits: 1 });
 const sR = (v: number) => `${v > 0 ? '+' : ''}${r1(v)}R`;
 
-function Stat({ label, value, tone = 'text-zinc-100', hint }: { label: string; value: string; tone?: string; hint?: string }) {
+function Stat({ label, value, tone = 'text-zinc-100' }: { label: string; value: string; tone?: string; hint?: string }) {
   return (
-    <div className="flex flex-col gap-0.5 min-w-0 rounded-xl border border-zinc-800/80 bg-zinc-950/40 px-2.5 py-2" title={hint}>
+    <div className="flex flex-col gap-0.5 min-w-0 rounded-xl border border-zinc-800/80 bg-zinc-950/40 px-2.5 py-2">
       <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wide text-zinc-500 truncate">{smartUpper(label)}</span>
       <span className={`text-xs sm:text-sm font-extrabold tabular-nums truncate ${tone}`}>{value}</span>
     </div>
@@ -98,7 +98,6 @@ export const PropRSummary = memo(function PropRSummary({ account, trades }: { ac
               return (
                 <div
                   key={l.pct}
-                  title={sim.kind === 'PASS' ? `%${l.pct} risk: geçme %${Math.round(l.probability)} · hesabı yakma %${Math.round(l.bustProbability)}${l.medianTrades ? ` · geçenlerde medyan ${Math.round(l.medianTrades)} işlem` : ''}` : `%${l.pct} risk: sonraki ${sim.horizon} işlemde ayakta kalma %${Math.round(l.probability)}`}
                   className={`rounded-lg border px-1.5 py-1 text-center tabular-nums ${rec ? 'border-blue-500/50 bg-blue-500/10' : 'border-zinc-800 bg-zinc-950/40'}`}
                 >
                   <div className={`text-[10px] font-bold ${rec ? 'text-blue-300' : 'text-zinc-300'}`}>%{l.pct}{cur ? ' ·' : ''}</div>

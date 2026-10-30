@@ -303,7 +303,7 @@ function EdgePanel({ edge, expectancy, drift }: { edge?: EdgeStats; expectancy: 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-2.5 font-sans">
       {/* Sol: beklenti + hüküm + ilerleme */}
-      <div className="flex flex-col gap-1.5 min-w-0" title={v.hint}>
+      <div className="flex flex-col gap-1.5 min-w-0">
         <div className="flex items-baseline gap-1.5">
           <span className={`text-lg sm:text-xl font-bold tabular-nums ${expectancy >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{fmtR(expectancy)}</span>
           <span className="text-[10px] text-zinc-500">/işlem</span>
@@ -321,11 +321,11 @@ function EdgePanel({ edge, expectancy, drift }: { edge?: EdgeStats; expectancy: 
       <div className="flex flex-col justify-between gap-2 min-w-0 sm:border-l sm:border-zinc-800/80 sm:pl-5">
         <div className="flex flex-col gap-1">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-[10px] font-bold uppercase tracking-wide text-zinc-500 truncate" title="Gerçek beklentinin %95 olasılıkla bulunduğu aralık">%95 Beklenti Aralığı</span>
+            <span className="text-[10px] font-bold uppercase tracking-wide text-zinc-500 truncate">%95 Beklenti Aralığı</span>
             {hasCI && <span className="text-[11px] text-zinc-300 tabular-nums whitespace-nowrap shrink-0">{f(lo)} – {f(hi)} R</span>}
           </div>
           {hasCI ? (
-            <div className="relative h-2.5 rounded-full bg-zinc-800/80" title={`Gerçek beklenti %95 olasılıkla ${f(lo)} R ile ${f(hi)} R arasında. Aralık sıfırın tamamen üstüne çıkınca edge kanıtlanır.`}>
+            <div className="relative h-2.5 rounded-full bg-zinc-800/80">
               <div className={`absolute top-0 h-full rounded-full ${lo > 0 ? 'bg-emerald-500/50' : hi < 0 ? 'bg-rose-500/50' : 'bg-blue-500/40'}`} style={{ left: pos(lo), width: `calc(${pos(hi)} - ${pos(lo)})` }} />
               <div className="absolute -top-0.5 h-3.5 w-px bg-zinc-400" style={{ left: pos(0) }} />
               <div className="absolute top-0.5 h-1.5 w-1.5 -ml-[3px] rounded-full bg-white" style={{ left: pos(expectancy) }} />
@@ -364,7 +364,6 @@ function DriftRow({ drift }: { drift: EdgeDrift }) {
   return (
     <span
       className="flex items-center gap-1.5 text-[10px] tabular-nums min-w-0 truncate"
-      title={`Son ${r.n} işlem: ${fmtR(r.expectancy)}/işlem · Önceki ${b.n} işlem: ${fmtR(b.expectancy)}/işlem`}
     >
       <b className={tone}>{fmtR(r.expectancy)}</b>
       <span className="text-zinc-500">← {fmtR(b.expectancy)}</span>

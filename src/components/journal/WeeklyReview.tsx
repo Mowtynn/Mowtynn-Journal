@@ -156,7 +156,7 @@ export const WeeklyReview = React.memo(function WeeklyReview({
           {/* Gün gün R şeridi */}
           <div className="mt-2 grid gap-1.5" style={{ gridTemplateColumns: `repeat(${shownDays.length}, minmax(0, 1fr))` }}>
             {shownDays.map((d) => (
-              <div key={d.key} className="rounded-lg border border-zinc-800/70 bg-zinc-950/40 px-2 py-1.5 min-w-0" title={`${d.key} · ${d.n} işlem`}>
+              <div key={d.key} className="rounded-lg border border-zinc-800/70 bg-zinc-950/40 px-2 py-1.5 min-w-0">
                 <div className="flex items-baseline justify-between gap-1">
                   <span className="text-[10px] font-bold text-zinc-500">{DAY_SHORT[d.index]}</span>
                   <span className="text-[10px] text-zinc-600 tabular-nums">{d.n || ""}</span>

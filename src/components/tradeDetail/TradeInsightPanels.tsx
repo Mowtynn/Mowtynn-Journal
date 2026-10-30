@@ -34,7 +34,7 @@ export function ResultPanel({ trade, path }: { trade: Trade; path: PricePath }) 
           <span className={`${statValue} ${tone(path.realizedR)}`}>{formatR(path.realizedR)}</span>
         </div>
         {path.plannedRR !== null && (
-          <div className={statCard} title={`TP ${trade.tpPips} pip ÷ stop ${trade.stopPips} pip`}>
+          <div className={statCard}>
             <span className={statLabel}>Plan R:R</span>
             <span className={`${statValue} text-zinc-200`}>1:{fmt(path.plannedRR)}</span>
           </div>
@@ -55,9 +55,8 @@ export function ResultPanel({ trade, path }: { trade: Trade; path: PricePath }) 
 function ExitRow({ trade }: { trade: Trade }) {
   const hasExit = typeof trade.exitAt === 'number' && trade.exitAt >= trade.createdAt;
   if (!hasExit) return null;
-  const exitLabel = nyWallDate(trade.exitAt as number).toLocaleString('tr-TR', { hour: '2-digit', minute: '2-digit', hour12: false });
   return (
-    <div className={statCard} title={`Çıkış ${exitLabel}`}>
+    <div className={statCard}>
       <span className={statLabel}>Süre</span>
       <span className={`${statValue} text-zinc-200`}>{formatDuration((trade.exitAt as number) - trade.createdAt)}</span>
     </div>
@@ -153,10 +152,10 @@ function Tick({ at, label, cls }: { at: string; label: string; cls: string }) {
   );
 }
 
-function Chip({ label, value, sub, cls }: { label: string; value: string; sub?: string; cls: string }) {
+function Chip({ label, value, cls }: { label: string; value: string; sub?: string; cls: string }) {
   // Küçük metrik: etiket + değer; açıklama ipucunda
   return (
-    <div className="min-w-0" title={sub ? `${label}: ${value} · ${sub}` : undefined}>
+    <div className="min-w-0">
       <div className="text-[8px] leading-3 font-bold uppercase tracking-normal text-zinc-500 truncate">{smartUpper(label)}</div>
       <div className={`text-xs leading-4 font-bold tabular-nums truncate ${cls}`}>{value}</div>
     </div>
@@ -221,7 +220,6 @@ export function RuleBadges({ insight }: { insight: TradeInsight }) {
           {insight.violations.map((v) => (
             <span
               key={v.id}
-              title={v.hint}
               className="inline-flex items-center gap-1.5 rounded-lg border border-rose-500/30 bg-rose-500/10 px-2.5 py-1.5 text-[11px] font-semibold text-rose-200"
             >
               <ShieldAlert size={12} className="shrink-0 text-rose-300" />
