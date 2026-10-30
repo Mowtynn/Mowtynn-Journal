@@ -135,7 +135,7 @@ const RequiredFieldsPanel: React.FC = () => {
               type="button"
               data-selected={on}
               onClick={() => update(on ? req.filter((x) => x !== f.id) : [...req, f.id])}
-              className={`flex items-center justify-between gap-2 px-3 py-2 rounded-xl border text-xs font-bold transition-ui cursor-pointer ${on ? 'bg-sky-500/15 text-sky-200 border-sky-500/40' : 'bg-zinc-950/60 text-zinc-400 border-zinc-800 hover:text-zinc-200 hover:border-zinc-700'}`}
+              className={`flex items-center justify-between gap-2 px-3 py-2 rounded-xl border text-xs font-bold transition-ui cursor-pointer ${on ? 'bg-blue-500/15 text-blue-200 border-blue-500/40' : 'bg-zinc-950/60 text-zinc-400 border-zinc-800 hover:text-zinc-200 hover:border-zinc-700'}`}
             >
               <span className="truncate">{f.label}</span>
               <span className="text-[10px] font-semibold shrink-0">{on ? 'Zorunlu' : 'İsteğe Bağlı'}</span>

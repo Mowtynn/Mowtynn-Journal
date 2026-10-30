@@ -87,7 +87,7 @@ export const PropRSummary = memo(function PropRSummary({ account, trades }: { ac
         <div className="flex flex-col gap-1.5 pt-1.5 border-t border-zinc-800/70">
           <div className="flex items-center justify-between gap-2 text-[10px] font-bold uppercase tracking-wide text-zinc-400">
             <span>Önerilen risk</span>
-            <span className={`tabular-nums ${ins.riskAdvice.recommendedPct !== undefined ? 'text-sky-300' : 'text-rose-300'}`}>
+            <span className={`tabular-nums ${ins.riskAdvice.recommendedPct !== undefined ? 'text-blue-300' : 'text-rose-300'}`}>
               {ins.riskAdvice.recommendedPct !== undefined ? `%${ins.riskAdvice.recommendedPct}` : 'Uygun seviye yok'}
             </span>
           </div>
@@ -99,9 +99,9 @@ export const PropRSummary = memo(function PropRSummary({ account, trades }: { ac
                 <div
                   key={l.pct}
                   title={sim.kind === 'PASS' ? `%${l.pct} risk: geçme %${Math.round(l.probability)} · hesabı yakma %${Math.round(l.bustProbability)}${l.medianTrades ? ` · geçenlerde medyan ${Math.round(l.medianTrades)} işlem` : ''}` : `%${l.pct} risk: sonraki ${sim.horizon} işlemde ayakta kalma %${Math.round(l.probability)}`}
-                  className={`rounded-lg border px-1.5 py-1 text-center tabular-nums ${rec ? 'border-sky-500/50 bg-sky-500/10' : 'border-zinc-800 bg-zinc-950/40'}`}
+                  className={`rounded-lg border px-1.5 py-1 text-center tabular-nums ${rec ? 'border-blue-500/50 bg-blue-500/10' : 'border-zinc-800 bg-zinc-950/40'}`}
                 >
-                  <div className={`text-[10px] font-bold ${rec ? 'text-sky-300' : 'text-zinc-300'}`}>%{l.pct}{cur ? ' ·' : ''}</div>
+                  <div className={`text-[10px] font-bold ${rec ? 'text-blue-300' : 'text-zinc-300'}`}>%{l.pct}{cur ? ' ·' : ''}</div>
                   <div className="text-[10px] text-zinc-400">{sim.kind === 'PASS' ? `%${Math.round(l.probability)}` : `%${Math.round(l.probability)}`}</div>
                   {sim.kind === 'PASS' && <div className={`text-[9px] ${l.bustProbability > MAX_BUST_PCT ? 'text-rose-400' : 'text-zinc-500'}`}>yakma %{Math.round(l.bustProbability)}</div>}
                 </div>

@@ -719,7 +719,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
 
   if (!metrics || !customMetrics || trades.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center p-12 text-center bg-zinc-900/70 border border-zinc-700/50  rounded-xl transition-ui duration-300 shadow-sm mt-4">
+      <div className="flex flex-col items-center justify-center p-12 text-center bg-zinc-900/70 border border-zinc-700/50  rounded-xl transition-ui duration-200 shadow-sm mt-4">
         <Target size={32} className="text-zinc-600 mb-4 opacity-50" />
         <h3 className="text-sm font-bold text-zinc-300 font-sans mb-2">Henüz Yeterli Veri Yok</h3>
         <p className="text-xs text-zinc-500 max-w-sm">Gelişmiş metriklerin hesaplanabilmesi için sisteme tamamlanmış (WIN/LOSS) işlemler eklemelisiniz.</p>
@@ -742,7 +742,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
     1);
 
   return (
-    <div className="mt-4 mb-4 flex flex-col bg-zinc-900/70 border border-zinc-700/50  rounded-xl transition-ui duration-300 shadow-sm overflow-hidden divide-y divide-zinc-800/80 w-full">
+    <div className="mt-4 mb-4 flex flex-col bg-zinc-900/70 border border-zinc-700/50  rounded-xl transition-ui duration-200 shadow-sm overflow-hidden divide-y divide-zinc-800/80 w-full">
       
       {/* SEKSIYON BAŞLIĞI */}
       
@@ -1236,14 +1236,14 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
                       lang="en"
                       key={ar.asset}
                       onClick={() => setSelectedAsset(isSelected ? null : ar.asset)}
-                      className={`text-left p-2.5 rounded-lg border transition-ui duration-300 cursor-pointer flex flex-col justify-between relative overflow-hidden group ${
+                      className={`text-left p-2.5 rounded-lg border transition-ui duration-200 cursor-pointer flex flex-col justify-between relative overflow-hidden group ${
                         isSelected 
                           ? (isProfit ? 'bg-emerald-500/10 border-emerald-500/40' : 'bg-rose-500/10 border-rose-500/40')
                           : 'bg-zinc-950 border-zinc-800 hover:border-zinc-700/80'
                       }`}
                     >
                       {/* Decorative background flare depending on the profitability */}
-                      <div className={`absolute -top-10 -right-10 w-28 h-28 rounded-full opacity-[0.05] group-hover:opacity-[0.16] group-hover:scale-105 ${isProfit ? 'bg-emerald-500' : 'bg-rose-500'} transition-ui duration-300`} />
+                      <div className={`absolute -top-10 -right-10 w-28 h-28 rounded-full opacity-[0.05] group-hover:opacity-[0.16] group-hover:scale-105 ${isProfit ? 'bg-emerald-500' : 'bg-rose-500'} transition-ui duration-200`} />
                       
                       <div className="w-full">
                         <div className="flex justify-between items-center z-10 mb-1">
@@ -1323,7 +1323,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
         </Deferred>
       </motion.div>
 
-      <motion.div variants={itemVariants} className="bg-zinc-900/70 border border-zinc-700/50  rounded-xl transition-ui duration-300 p-4 sm:p-5 shadow-sm transition-colors duration-200 mb-2 relative overflow-visible mt-1 flex flex-col justify-between">
+      <motion.div variants={itemVariants} className="bg-zinc-900/70 border border-zinc-700/50  rounded-xl transition-ui duration-200 p-4 sm:p-5 shadow-sm transition-colors duration-200 mb-2 relative overflow-visible mt-1 flex flex-col justify-between">
         {/* Header & Filter Controls */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3 relative z-30 w-full border-b border-zinc-800 pb-3.5">
           <div className="flex items-center gap-2.5">
@@ -1364,7 +1364,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
             {/* Filter Toggle Button */}
             <button
               onClick={() => setIsDetailedFilterOpen(!isDetailedFilterOpen)}
-              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-lg border transition-ui duration-300 ${
+              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-lg border transition-ui duration-200 ${
                 isDetailedFilterOpen || detailedFilter !== 'all' || detailedSearch
                   ? 'bg-blue-500/15 border-blue-500/30 text-blue-300 shadow-xs' 
                   : 'bg-zinc-950 border-zinc-800 text-zinc-300 hover:bg-transparent hover:text-zinc-100'
@@ -1635,34 +1635,34 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
                                 <>
                                   {/* 0. Asia Range */}
                                   {parentAsia.map((a: any, idx) => (
-                                    <span key={`asia-${idx}`} className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-sky-300 bg-sky-500/10 px-2 py-0.5 border border-sky-500/25 rounded-lg">
-                                      <Target size={9} className="text-sky-400" />
+                                    <span key={`asia-${idx}`} className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-blue-300 bg-blue-500/10 px-2 py-0.5 border border-blue-500/25 rounded-lg">
+                                      <Target size={9} className="text-blue-400" />
                                       {a}
                                     </span>
                                   ))}
 
                                   {/* 1. Seans / Silver Bullet Penceresi */}
                                   {parentSessions.map((sess: any, idx) => (
-                                    <span key={`sess-${idx}`} className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-sky-300 bg-sky-500/10 border border-sky-500/20 px-2 py-0.5 rounded-lg">
-                                      <Clock size={9} className="text-sky-400" />
+                                    <span key={`sess-${idx}`} className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-blue-300 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-lg">
+                                      <Clock size={9} className="text-blue-400" />
                                       {sess}
                                     </span>
                                   ))}
 
                                   {/* 2. Üst Zaman Dilimi (HTF) */}
                                   {parentHtfTfs.map((htf: any, idx) => (
-                                    <span key={`htf-${idx}`} className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-sky-300 bg-sky-500/10 border border-sky-500/20 px-2 py-0.5 rounded-lg">
-                                      <Maximize2 size={9} className="text-sky-400" />
-                                      <span className="text-[10px] text-sky-400/80 font-bold">HTF:</span>
+                                    <span key={`htf-${idx}`} className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-blue-300 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-lg">
+                                      <Maximize2 size={9} className="text-blue-400" />
+                                      <span className="text-[10px] text-blue-400/80 font-bold">HTF:</span>
                                       {htf}
                                     </span>
                                   ))}
 
                                   {/* 3. PD ARRAY / Onay (Öne Çıkan Vurgu) */}
                                   {parentConfs.map((conf: any, idx) => (
-                                    <span key={`conf-${idx}`} className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-sky-300 bg-sky-500/15 border border-sky-500/35 group-hover:border-sky-500/45 group-hover:bg-sky-500/20 px-2.5 py-0.5 rounded-lg shadow-xs transition-colors">
-                                      <Layers size={9} className="text-sky-400" />
-                                      <span className="text-[10px] text-sky-400/80 font-bold">PD:</span>
+                                    <span key={`conf-${idx}`} className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-blue-300 bg-blue-500/15 border border-blue-500/35 group-hover:border-blue-500/45 group-hover:bg-blue-500/20 px-2.5 py-0.5 rounded-lg shadow-xs transition-colors">
+                                      <Layers size={9} className="text-blue-400" />
+                                      <span className="text-[10px] text-blue-400/80 font-bold">PD:</span>
                                       {conf}
                                     </span>
                                   ))}
@@ -1755,9 +1755,9 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
                                         {child.concept && (
                                           <span 
                                             title="Asia Range"
-                                            className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-sky-300 bg-sky-500/10 px-2 py-0.5 border border-sky-500/25 rounded-lg"
+                                            className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-blue-300 bg-blue-500/10 px-2 py-0.5 border border-blue-500/25 rounded-lg"
                                           >
-                                            <Target size={10} className="text-sky-400 shrink-0" />
+                                            <Target size={10} className="text-blue-400 shrink-0" />
                                             {child.concept}
                                           </span>
                                         )}
@@ -1766,9 +1766,9 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
                                         {child.session && (
                                           <span 
                                             title="Seans / Silver Bullet Penceresi"
-                                            className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-sky-300 bg-sky-500/10 px-2 py-0.5 border border-sky-500/25 rounded-lg shadow-xs"
+                                            className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-blue-300 bg-blue-500/10 px-2 py-0.5 border border-blue-500/25 rounded-lg shadow-xs"
                                           >
-                                            <Clock size={10} className="text-sky-400 shrink-0" />
+                                            <Clock size={10} className="text-blue-400 shrink-0" />
                                             {child.session}
                                           </span>
                                         )}
@@ -1777,10 +1777,10 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
                                         {child.htfTimeframe && (
                                           <span 
                                             title="Üst Zaman Dilimi (HTF)"
-                                            className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-sky-300 bg-sky-500/10 px-2 py-0.5 border border-sky-500/25 rounded-lg"
+                                            className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-blue-300 bg-blue-500/10 px-2 py-0.5 border border-blue-500/25 rounded-lg"
                                           >
-                                            <Maximize2 size={10} className="text-sky-400 shrink-0" />
-                                            <span className="text-[10px] text-sky-400/80 font-bold">HTF:</span>
+                                            <Maximize2 size={10} className="text-blue-400 shrink-0" />
+                                            <span className="text-[10px] text-blue-400/80 font-bold">HTF:</span>
                                             {child.htfTimeframe}
                                           </span>
                                         )}
@@ -1789,10 +1789,10 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
                                         {child.confirmation && child.confirmation !== 'Diğer' && (
                                           <span 
                                             title="PD ARRAY / Tetikleyici Onay"
-                                            className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-sky-300 bg-sky-500/15 px-2.5 py-0.5 border border-sky-500/40 rounded-lg shadow-xs ring-1 ring-sky-500/20"
+                                            className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-blue-300 bg-blue-500/15 px-2.5 py-0.5 border border-blue-500/40 rounded-lg shadow-xs ring-1 ring-blue-500/20"
                                           >
-                                            <Layers size={10} className="text-sky-400 shrink-0" />
-                                            <span className="text-[10px] text-sky-400/80 font-bold">PD:</span>
+                                            <Layers size={10} className="text-blue-400 shrink-0" />
+                                            <span className="text-[10px] text-blue-400/80 font-bold">PD:</span>
                                             {child.confirmation}
                                           </span>
                                         )}
@@ -1801,9 +1801,9 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
                                         {child.trend && (
                                           <span 
                                             title="Trend Yapısı"
-                                            className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-sky-300 bg-sky-500/10 px-2 py-0.5 border border-sky-500/25 rounded-lg"
+                                            className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-blue-300 bg-blue-500/10 px-2 py-0.5 border border-blue-500/25 rounded-lg"
                                           >
-                                            <TrendingUp size={10} className="text-sky-400 shrink-0" />
+                                            <TrendingUp size={10} className="text-blue-400 shrink-0" />
                                             {child.trend}
                                           </span>
                                         )}
@@ -1812,10 +1812,10 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
                                         {child.timeframe && (
                                           <span 
                                             title="Giriş Zaman Dilimi (Entry TF)"
-                                            className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-sky-300 bg-sky-500/10 px-2 py-0.5 border border-sky-500/25 rounded-lg"
+                                            className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-blue-300 bg-blue-500/10 px-2 py-0.5 border border-blue-500/25 rounded-lg"
                                           >
-                                            <Target size={10} className="text-sky-400 shrink-0" />
-                                            <span className="text-[10px] text-sky-400/80 font-bold">TF:</span>
+                                            <Target size={10} className="text-blue-400 shrink-0" />
+                                            <span className="text-[10px] text-blue-400/80 font-bold">TF:</span>
                                             {child.timeframe}
                                           </span>
                                         )}
@@ -1824,9 +1824,9 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
                                         {child.entryModel && (
                                           <span 
                                             title="Giriş Modeli (Entry Model)"
-                                            className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-sky-300 bg-sky-500/10 px-2 py-0.5 border border-sky-500/25 rounded-lg"
+                                            className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-blue-300 bg-blue-500/10 px-2 py-0.5 border border-blue-500/25 rounded-lg"
                                           >
-                                            <Zap size={10} className="text-sky-400 shrink-0" />
+                                            <Zap size={10} className="text-blue-400 shrink-0" />
                                             {child.entryModel}
                                           </span>
                                         )}
@@ -1835,7 +1835,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
                                         {child.planFidelity && (
                                           <span 
                                             title="Plana Sadakat / Setup Kalitesi"
-                                            className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-sky-300 bg-sky-500/10 px-2 py-0.5 border border-sky-500/25 rounded-lg"
+                                            className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-blue-300 bg-blue-500/10 px-2 py-0.5 border border-blue-500/25 rounded-lg"
                                           >
                                             {child.planFidelity}
                                           </span>

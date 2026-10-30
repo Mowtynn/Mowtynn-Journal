@@ -2448,7 +2448,7 @@ export default function App() {
                 }
               }}
             >
-              <div className="h-7 w-7 rounded-lg bg-blue-500/10 border border-blue-500/25 flex items-center justify-center font-bold text-blue-400 text-xs select-none transition-ui duration-300 ease-out group-hover:bg-blue-500/15 group-hover:scale-105">
+              <div className="h-7 w-7 rounded-lg bg-blue-500/10 border border-blue-500/25 flex items-center justify-center font-bold text-blue-400 text-xs select-none transition-ui duration-200 ease-out group-hover:bg-blue-500/15 group-hover:scale-105">
                 TJ
               </div>
               <div className="flex items-baseline gap-2">

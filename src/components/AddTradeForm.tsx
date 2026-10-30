@@ -403,7 +403,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
       {/* Header */}
       <div className="tf-head flex items-center justify-between px-4 sm:px-5 py-3 sm:py-3.5 border-b border-zinc-800/80 bg-zinc-950/80 shrink-0 select-none">
         <div className="flex items-center gap-3">
-          <div className={`h-2.5 w-2.5 rounded-full ${editingTrade ? "bg-sky-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]" : "bg-sky-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]"}`} />
+          <div className={`h-2.5 w-2.5 rounded-full ${editingTrade ? "bg-blue-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]" : "bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]"}`} />
           <h2 className="heading-1 text-sm sm:text-base tracking-wider">
             {editingTrade ? (editingTrade.quickEntry ? "İşlemi Tamamla" : "İşlemi Düzenle") : isQuick ? "Hızlı Kayıt" : "Yeni İşlem Ekle"}
           </h2>
@@ -417,11 +417,11 @@ const AddTradeForm = React.memo(function AddTradeForm({
               title={quickMode ? "Tam forma geç" : "Yalnızca temel bilgiler ve sonuç; ayrıntıları sonra tamamla"}
               className={`flex items-center gap-1.5 h-8 px-3 rounded-xl border text-[11px] font-bold transition-ui cursor-pointer ${
                 quickMode
-                  ? "border-sky-500/40 bg-sky-500/15 text-sky-200 hover:bg-sky-500/25"
+                  ? "border-blue-500/40 bg-blue-500/15 text-blue-200 hover:bg-blue-500/25"
                   : "border-zinc-700/70 bg-zinc-900/80 text-zinc-300 hover:text-white hover:border-zinc-500 hover:bg-zinc-800"
               }`}
             >
-              <Zap size={13} className={quickMode ? "text-sky-300" : "text-sky-400"} />
+              <Zap size={13} className={quickMode ? "text-blue-300" : "text-blue-400"} />
               {quickMode ? "Hızlı Kayıt: Açık" : "Hızlı Kayıt"}
             </button>
           )}
@@ -432,7 +432,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
               title="Son işlemdeki parite, hesap ve kurulum seçimlerini uygular"
               className="hidden sm:flex items-center gap-1.5 h-8 px-3 rounded-xl border border-zinc-700/70 bg-zinc-900/80 text-[11px] font-bold text-zinc-300 hover:text-white hover:border-zinc-500 hover:bg-zinc-800 transition-ui cursor-pointer"
             >
-              <Copy size={13} className="text-sky-400" />
+              <Copy size={13} className="text-blue-400" />
               Son Kurulumu Kopyala
             </button>
           )}

@@ -284,7 +284,7 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
 
       {/* Kural kartı: kesinleşmiş bulgulardan "Al / Alma" kuralları; Alma kurallarında son 7 günün ihlalleri */}
       <div className="flex flex-col gap-2 pt-3 border-t border-zinc-800/70">
-        <span className={`${sectionTitle} text-sky-300`}>
+        <span className={`${sectionTitle} text-blue-300`}>
           <ShieldCheck size={12} /> Kurallarım
         </span>
         {s.rules.length ? (
@@ -331,7 +331,7 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
 
       {/* Güçlü / zayıf kombinasyonlar: iki giriş alanı birlikte, tek başlarına olduğundan belirgin farklı */}
       <div className="flex flex-col gap-2 pt-3 border-t border-zinc-800/70">
-        <span className={`${sectionTitle} text-sky-300`}>
+        <span className={`${sectionTitle} text-blue-300`}>
           <Compass size={12} /> Kombinasyonlar
         </span>
         <p className="text-[10px] text-zinc-500 -mt-1">
@@ -356,7 +356,7 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
 
       {/* Yönetim edge'i: girişten sonra belirlenen alanlar (giriş önerilerinden ayrı) */}
       <div className="flex flex-col gap-2 pt-3 border-t border-zinc-800/70">
-        <span className={`${sectionTitle} text-sky-300`}>
+        <span className={`${sectionTitle} text-blue-300`}>
           <Clock size={12} /> Yönetim edge'i
         </span>
         <p className="text-[10px] text-zinc-500 -mt-1">
@@ -382,7 +382,7 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
 
       {/* Hedefe ulaşma süresi: kazananların girişten çıkışa süresi → zaman stop'u */}
       <div className="flex flex-col gap-2 pt-3 border-t border-zinc-800/70">
-        <span className={`${sectionTitle} text-sky-300`}>
+        <span className={`${sectionTitle} text-blue-300`}>
           <Clock size={12} /> Hedefe ulaşma süresi
         </span>
         {s.timeToTarget.overall ? (
@@ -395,7 +395,7 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
                 <div key={`ttt:${r.title}`} className="flex items-center justify-between gap-2 rounded-xl border border-zinc-800 bg-zinc-950/40 px-3 py-1.5 text-[11px] tabular-nums min-w-0">
                   <span className="font-bold text-zinc-200 truncate">{r.title}</span>
                   <span className="shrink-0 text-zinc-400">
-                    medyan <b className="text-zinc-200">{formatDuration(r.medianMs)}</b> · %90 <b className="text-sky-300">{formatDuration(r.p90Ms)}</b>
+                    medyan <b className="text-zinc-200">{formatDuration(r.medianMs)}</b> · %90 <b className="text-blue-300">{formatDuration(r.p90Ms)}</b>
                     {r.loserMedianMs !== null && <> · kaybeden <b className="text-rose-300">{formatDuration(r.loserMedianMs)}</b></>}
                     <span className="text-zinc-600"> · {r.winners} kazanan</span>
                   </span>

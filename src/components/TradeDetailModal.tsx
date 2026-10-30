@@ -554,12 +554,12 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                           <ContextRow
                             label={smartUpper(cleanDefinitionTitleString(definitionTitles.management) || "İŞLEM YÖNETİMİ")}
                             value={currentTrade.management?.length ? currentTrade.management.join(', ') : undefined}
-                            icon={<Zap size={14} className="text-sky-400"/>}
+                            icon={<Zap size={14} className="text-blue-400"/>}
                           />
                           <ContextRow
                             label="ÇIKIŞ SONRASI TP"
                             value={typeof currentTrade.afterExitTp === 'boolean' ? (currentTrade.afterExitTp ? 'Evet' : 'Hayır') : undefined}
-                            icon={<Target size={14} className="text-sky-400"/>}
+                            icon={<Target size={14} className="text-blue-400"/>}
                           />
                           {/* MAE / MFE (pip): fiyat yolu panelinde R olarak gösterilmiyorsa; ikisi birlikte satır olur */}
                           {(() => {

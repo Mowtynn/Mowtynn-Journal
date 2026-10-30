@@ -32,7 +32,7 @@ export const NotesCard = React.memo(function NotesCard({
         placeholder="Setup kurgusu, destek/direnç, psikolojik etkenler veya FOMO notlarınız..."
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
-        className="w-full flex-1 min-h-[96px] bg-zinc-950/80 border border-zinc-700/70 hover:border-zinc-500 focus:border-sky-500 focus:ring-1 focus:ring-sky-500/30 rounded-lg sm:rounded-xl p-2.5 sm:p-3 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none transition-ui resize-none leading-relaxed font-sans font-medium shadow-inner"
+        className="w-full flex-1 min-h-[96px] bg-zinc-950/80 border border-zinc-700/70 hover:border-zinc-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 rounded-lg sm:rounded-xl p-2.5 sm:p-3 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none transition-ui resize-none leading-relaxed font-sans font-medium shadow-inner"
       />
     </div>
   );
@@ -83,7 +83,7 @@ export const ChartLinkCard = React.memo(function ChartLinkCard({
           <span className="text-xs font-bold text-zinc-200 uppercase tracking-wider font-sans">{L("chartLink")}</span>
         </div>
         {valid && (
-          <span className="text-[11px] text-sky-400 font-sans flex items-center gap-1 font-bold">
+          <span className="text-[11px] text-blue-400 font-sans flex items-center gap-1 font-bold">
             <Check size={11} /> Eklendi
           </span>
         )}
@@ -109,7 +109,7 @@ export const ChartLinkCard = React.memo(function ChartLinkCard({
           placeholder={embedded ? "Kayıtlı görsel var · yerine link yapıştırabilirsin" : "https://... TradingView veya grafik linki"}
           aria-invalid={!!link && !valid}
           className={`flex-1 min-w-0 h-9 bg-zinc-950/80 border hover:border-zinc-500 focus:ring-1 rounded-lg sm:rounded-xl px-2.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none transition-ui font-sans font-medium shadow-inner truncate ${
-            link && !valid ? "border-sky-500/60 focus:border-sky-500 focus:ring-sky-500/30" : "border-zinc-700/70 focus:border-sky-500 focus:ring-sky-500/30"
+            link && !valid ? "border-blue-500/60 focus:border-blue-500 focus:ring-blue-500/30" : "border-zinc-700/70 focus:border-blue-500 focus:ring-blue-500/30"
           }`}
         />
         {valid && !embedded && (
@@ -130,7 +130,7 @@ export const ChartLinkCard = React.memo(function ChartLinkCard({
             onClick={() => setScreenshot(null)}
             aria-label="Grafik linkini sil"
             title="Grafik linkini sil"
-            className="h-9 w-9 bg-zinc-900 hover:bg-sky-500/20 hover:text-sky-400 border border-zinc-700/70 rounded-lg sm:rounded-xl text-zinc-400 transition-colors shrink-0 flex items-center justify-center cursor-pointer"
+            className="h-9 w-9 bg-zinc-900 hover:bg-blue-500/20 hover:text-blue-400 border border-zinc-700/70 rounded-lg sm:rounded-xl text-zinc-400 transition-colors shrink-0 flex items-center justify-center cursor-pointer"
           >
             <X size={13} />
           </button>
@@ -147,7 +147,7 @@ export const ChartLinkCard = React.memo(function ChartLinkCard({
             Link eklenince grafik önizlemesi burada görünür
           </p>
         ) : !valid ? (
-          <p className="absolute inset-0 flex items-center justify-center text-[11px] text-sky-400/90 font-sans text-center px-3">
+          <p className="absolute inset-0 flex items-center justify-center text-[11px] text-blue-400/90 font-sans text-center px-3">
             Geçerli bir bağlantı değil (https://… ile başlamalı)
           </p>
         ) : (

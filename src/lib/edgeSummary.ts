@@ -118,6 +118,7 @@ const SCAN_DIMENSIONS: SetupDimension[] = [
   'trend',
   'tpTargets',
   'asiaRangeFvg',
+  'newsDay',
   'type',
   'asset',
 ];
@@ -170,6 +171,16 @@ export function computeEdgeSummary(trades: Trade[], minSample = SETUP_MIN_SAMPLE
     .slice(0, 4);
 
   // Birbirine bağlı alanlar: bulgu başka bir alanla büyük ölçüde örtüşüyorsa aynı etkiyi iki kez okumamak için not düşülür
+  const overallShare = new Map<string, number>();
+  const shareOf = (d: SetupDimension, v: string) => {
+    const k = `${d}=${v}`;
+    let x = overallShare.get(k);
+    if (x === undefined) {
+      x = sorted.filter((t) => dimensionValue(t, d) === v).length / sorted.length;
+      overallShare.set(k, x);
+    }
+    return x;
+  };
   const overlapOf = (x: DimensionSlice): DimensionSlice['overlap'] => {
     const list = sorted.filter((t) => dimensionValue(t, x.dimension) === x.value);
     let best: DimensionSlice['overlap'];
@@ -182,7 +193,7 @@ export function computeEdgeSummary(trades: Trade[], minSample = SETUP_MIN_SAMPLE
       }
       counts.forEach((c, v) => {
         const pct = c / list.length;
-        const overall = sorted.filter((t) => dimensionValue(t, d) === v).length / sorted.length;
+        const overall = shareOf(d, v);
         if (pct >= 0.7 && pct - overall >= 0.2 && (!best || pct > best.pct)) best = { label: `${labelOf(d)}: ${v}`, pct };
       });
     }

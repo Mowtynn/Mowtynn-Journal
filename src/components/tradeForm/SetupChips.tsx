@@ -8,9 +8,9 @@ import { CHIP_BASE, SetState, withSelected, Titles, SlideBg, afterExitTpAsked } 
 
 /* Asia Range seçeneklerinin görünümü */
 const ASIA_RANGE_META: Record<(typeof ASIA_RANGE_TYPES)[number], { icon: typeof Compass; active: string }> = {
-  Range: { icon: MoveHorizontal, active: "bg-sky-500/20 text-sky-300 border-sky-500/40" },
-  Trend: { icon: TrendingUp, active: "bg-sky-500/20 text-sky-300 border-sky-500/40" },
-  Swept: { icon: Waves, active: "bg-sky-500/20 text-sky-300 border-sky-500/40" },
+  Range: { icon: MoveHorizontal, active: "bg-blue-500/20 text-blue-300 border-blue-500/40" },
+  Trend: { icon: TrendingUp, active: "bg-blue-500/20 text-blue-300 border-blue-500/40" },
+  Swept: { icon: Waves, active: "bg-blue-500/20 text-blue-300 border-blue-500/40" },
 };
 
 /* ================= 2. SÜTUN: KURULUM ÇİPLERİ ================= */
@@ -118,16 +118,16 @@ export const SetupChips = React.memo(function SetupChips({
         {/* 1. SETUP KALİTESİ */}
         <div>
           <label lang="en" className="text-[10px] sm:text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-2 flex items-center gap-1.5 font-sans">
-            <ShieldCheck size={13} className="text-sky-400" />
+            <ShieldCheck size={13} className="text-blue-400" />
             {H("planFidelities", "SETUP KALİTESİ")}
           </label>
           <div className="w-full grid grid-flow-col auto-cols-fr bg-zinc-950/80 border border-zinc-800/90 rounded-xl p-1 gap-1.5 h-9 sm:h-10 shadow-inner">
             {planFidelities.map((item) => {
               const isSelected = planFidelity === item;
               const tier = setupQualityTier(item);
-              const activeStyle = tier === "high" ? "bg-sky-500/20 text-sky-300 border-sky-500/40 font-bold shadow-xs"
-                : tier === "low" ? "bg-sky-500/20 text-sky-300 border-sky-500/40 font-bold shadow-xs"
-                : "bg-sky-500/20 text-sky-300 border-sky-500/40 font-bold shadow-xs";
+              const activeStyle = tier === "high" ? "bg-blue-500/20 text-blue-300 border-blue-500/40 font-bold shadow-xs"
+                : tier === "low" ? "bg-blue-500/20 text-blue-300 border-blue-500/40 font-bold shadow-xs"
+                : "bg-blue-500/20 text-blue-300 border-blue-500/40 font-bold shadow-xs";
               return (
                 <button lang="en"
                   key={item}
@@ -148,7 +148,7 @@ export const SetupChips = React.memo(function SetupChips({
         {/* 2. TREND YAPISI */}
         <div>
           <label lang="en" className="text-[10px] sm:text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-2 flex items-center gap-1.5 font-sans">
-            <TrendingUp size={13} className="text-sky-400" />
+            <TrendingUp size={13} className="text-blue-400" />
             {H("trendTypes", "TREND")}
           </label>
           <div className="w-full grid grid-flow-col auto-cols-fr bg-zinc-950/80 border border-zinc-800/90 rounded-xl p-1 gap-1 h-9 sm:h-10 shadow-inner">
@@ -159,8 +159,8 @@ export const SetupChips = React.memo(function SetupChips({
               const isReversal = lower.includes("reversal") || lower.includes("dönüş") || lower.includes("ters");
 
               const activeStyle = (isReversal || (!isContinuation && idx === 1))
-                ? "bg-sky-500/20 text-sky-300 border-sky-500/40 font-bold shadow-xs"
-                : "bg-sky-500/20 text-sky-300 border-sky-500/40 font-bold shadow-xs";
+                ? "bg-blue-500/20 text-blue-300 border-blue-500/40 font-bold shadow-xs"
+                : "bg-blue-500/20 text-blue-300 border-blue-500/40 font-bold shadow-xs";
 
               return (
                 <button lang="en"
@@ -187,13 +187,13 @@ export const SetupChips = React.memo(function SetupChips({
       <div className="grid grid-cols-2 gap-x-4 gap-y-4">
         <div id="news-day-field">
           <label lang="en" className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-wide mb-2 flex items-center gap-1.5 font-sans ${newsDayError ? "text-rose-400" : "text-zinc-300"}`}>
-            <Newspaper size={13} className="text-sky-400" />
+            <Newspaper size={13} className="text-blue-400" />
             {H("newsDays", "NEWS DAY/BANK HOLIDAY")}
           </label>
           <div className={`w-full grid grid-flow-col auto-cols-fr bg-zinc-950/80 border rounded-xl p-1 gap-1.5 h-9 sm:h-10 shadow-inner ${newsDayError ? "border-rose-500/60" : "border-zinc-800/90"}`}>
             {([
-              { value: true, label: newsYesLabel, active: "bg-sky-500/20 text-sky-300 border-sky-500/40" },
-              { value: false, label: newsNoLabel, active: "bg-sky-500/20 text-sky-300 border-sky-500/40" },
+              { value: true, label: newsYesLabel, active: "bg-blue-500/20 text-blue-300 border-blue-500/40" },
+              { value: false, label: newsNoLabel, active: "bg-blue-500/20 text-blue-300 border-blue-500/40" },
             ] as const).map((opt) => {
               const isSelected = newsDay === opt.value;
               return (
@@ -219,7 +219,7 @@ export const SetupChips = React.memo(function SetupChips({
         </div>
         <div>
           <label lang="en" className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wide mb-2 flex items-center gap-1.5 font-sans text-zinc-300">
-            <Layers size={13} className="text-sky-400" />
+            <Layers size={13} className="text-blue-400" />
             {L("asiaRangeFvgs")}
           </label>
           <div className="w-full grid grid-flow-col auto-cols-fr bg-zinc-950/80 border border-zinc-800/90 rounded-xl p-1 gap-1.5 h-9 sm:h-10 shadow-inner">
@@ -233,7 +233,7 @@ export const SetupChips = React.memo(function SetupChips({
                   onClick={() => setSelectedAsiaFvg(isSelected ? "" : fv)}
                   className={`min-w-0 h-full flex items-center justify-center px-2 rounded-lg text-xs font-sans font-bold tracking-wide uppercase transition-ui duration-150 select-none border cursor-pointer ${
                     isSelected
-                      ? "bg-sky-500/20 text-sky-300 border-sky-500/40 font-bold shadow-xs"
+                      ? "bg-blue-500/20 text-blue-300 border-blue-500/40 font-bold shadow-xs"
                       : "border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
                   }`}
                 >
@@ -248,7 +248,7 @@ export const SetupChips = React.memo(function SetupChips({
       {/* ASIA RANGE: Range · Trend · Swept (geniş, rahat butonlar) */}
       <div>
         <label lang="en" className="text-[10px] sm:text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-2 flex items-center gap-1.5 font-sans">
-          <Compass size={13} className="text-sky-400" />
+          <Compass size={13} className="text-blue-400" />
           {L("asiaRange")}
         </label>
         <div role="radiogroup" className="w-full grid grid-cols-3 bg-zinc-950/80 border border-zinc-800/90 rounded-xl p-1 gap-1.5 h-10 sm:h-11 shadow-inner">
@@ -283,7 +283,7 @@ export const SetupChips = React.memo(function SetupChips({
         {/* SWEEP TIME (NY) */}
         <div className="flex flex-col">
           <span lang="en" className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
-            <Timer size={12} className="text-sky-400 shrink-0" />
+            <Timer size={12} className="text-blue-400 shrink-0" />
             {L("sweepTime")}
           </span>
           <SweepTimePicker value={sweepTime} onChange={setSweepTime} />
@@ -292,7 +292,7 @@ export const SetupChips = React.memo(function SetupChips({
         {/* SESSION */}
         <div className="flex flex-col">
           <span lang="en" className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
-            <Clock size={12} className="text-sky-400 shrink-0" />
+            <Clock size={12} className="text-blue-400 shrink-0" />
             {H("sessions", "SESSION")}
           </span>
           <div className="flex flex-wrap gap-1.5">
@@ -304,11 +304,11 @@ export const SetupChips = React.memo(function SetupChips({
                 onClick={() => setSelectedSession(sess === selectedSession ? "" : sess)}
                 className={`${CHIP_BASE} ${
                   sess === selectedSession
-                    ? "text-sky-300 border-transparent"
+                    ? "text-blue-300 border-transparent"
                     : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
                 }`}
               >
-                {sess === selectedSession && <SlideBg id="sessionSlide" rounded="rounded-xl" className="bg-sky-500/20 border-sky-500/60 shadow-xs" />}
+                {sess === selectedSession && <SlideBg id="sessionSlide" rounded="rounded-xl" className="bg-blue-500/20 border-blue-500/60 shadow-xs" />}
                 <span className="relative z-10">{sess}</span>
               </button>
             ))}
@@ -318,7 +318,7 @@ export const SetupChips = React.memo(function SetupChips({
         {/* TIMEFRAME (HTF) */}
         <div className="flex flex-col">
           <span lang="en" className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
-            <Maximize2 size={12} className="text-sky-400 shrink-0" />
+            <Maximize2 size={12} className="text-blue-400 shrink-0" />
             {H("htfTimeframes", "TIMEFRAME")}
           </span>
           <div className="flex flex-wrap gap-1.5">
@@ -330,11 +330,11 @@ export const SetupChips = React.memo(function SetupChips({
                 onClick={() => setSelectedHtfTimeframe(tf === selectedHtfTimeframe ? "" : tf)}
                 className={`${CHIP_BASE} ${
                   tf === selectedHtfTimeframe
-                    ? "text-sky-300 border-transparent"
+                    ? "text-blue-300 border-transparent"
                     : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
                 }`}
               >
-                {tf === selectedHtfTimeframe && <SlideBg id="htfSlide" rounded="rounded-xl" className="bg-sky-500/20 border-sky-500/60 shadow-xs" />}
+                {tf === selectedHtfTimeframe && <SlideBg id="htfSlide" rounded="rounded-xl" className="bg-blue-500/20 border-blue-500/60 shadow-xs" />}
                 <span className="relative z-10">{tf}</span>
               </button>
             ))}
@@ -344,7 +344,7 @@ export const SetupChips = React.memo(function SetupChips({
         {/* PD ARRAY */}
         <div className="flex flex-col">
           <span lang="en" className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
-            <Layers size={12} className="text-sky-400 shrink-0" />
+            <Layers size={12} className="text-blue-400 shrink-0" />
             {H("confirmations", "PD ARRAY")}
           </span>
           <div className="flex flex-wrap gap-1.5">
@@ -364,7 +364,7 @@ export const SetupChips = React.memo(function SetupChips({
                   }
                   className={`px-3 py-1.5 text-[11px] rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
                     isActive
-                      ? "bg-sky-500/20 text-sky-300 border-sky-500/60 shadow-xs"
+                      ? "bg-blue-500/20 text-blue-300 border-blue-500/60 shadow-xs"
                       : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
                   }`}
                 >
@@ -378,7 +378,7 @@ export const SetupChips = React.memo(function SetupChips({
         {/* ENTRY TIMEFRAME */}
         <div className="flex flex-col">
           <span lang="en" className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
-            <Target size={12} className="text-sky-400 shrink-0" />
+            <Target size={12} className="text-blue-400 shrink-0" />
             {H("timeframes", "ENTRY TIMEFRAME")}
           </span>
           <div className="flex flex-wrap gap-1.5">
@@ -390,11 +390,11 @@ export const SetupChips = React.memo(function SetupChips({
                 onClick={() => setSelectedTimeframe(tf === selectedTimeframe ? "" : tf)}
                 className={`${CHIP_BASE} ${
                   tf === selectedTimeframe
-                    ? "text-sky-300 border-transparent"
+                    ? "text-blue-300 border-transparent"
                     : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
                 }`}
               >
-                {tf === selectedTimeframe && <SlideBg id="ltfSlide" rounded="rounded-xl" className="bg-sky-500/20 border-sky-500/60 shadow-xs" />}
+                {tf === selectedTimeframe && <SlideBg id="ltfSlide" rounded="rounded-xl" className="bg-blue-500/20 border-blue-500/60 shadow-xs" />}
                 <span className="relative z-10">{tf}</span>
               </button>
             ))}
@@ -404,7 +404,7 @@ export const SetupChips = React.memo(function SetupChips({
         {/* ENTRY MODEL (çoklu) */}
         <div className="flex flex-col">
           <span lang="en" className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
-            <Zap size={12} className="text-sky-400 shrink-0" />
+            <Zap size={12} className="text-blue-400 shrink-0" />
             {H("entryModels", "ENTRY MODEL")}
           </span>
           <div className="flex flex-wrap gap-1.5">
@@ -424,7 +424,7 @@ export const SetupChips = React.memo(function SetupChips({
                   }
                   className={`px-3 py-1.5 text-[11px] rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
                     isActive
-                      ? "bg-sky-500/20 text-sky-300 border-sky-500/60 shadow-xs"
+                      ? "bg-blue-500/20 text-blue-300 border-blue-500/60 shadow-xs"
                       : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
                   }`}
                 >
@@ -438,7 +438,7 @@ export const SetupChips = React.memo(function SetupChips({
         {/* TARGET — çıkış hedefi (çoklu) */}
         <div className="flex flex-col">
           <span lang="en" className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
-            <Flag size={12} className="text-sky-400 shrink-0" />
+            <Flag size={12} className="text-blue-400 shrink-0" />
             {H("tpTargets", "TARGET")}
           </span>
           <div className="flex flex-wrap gap-1.5">
@@ -458,7 +458,7 @@ export const SetupChips = React.memo(function SetupChips({
                   }
                   className={`px-3 py-1.5 text-[11px] rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
                     isActive
-                      ? "bg-sky-500/20 text-sky-300 border-sky-500/60 shadow-xs"
+                      ? "bg-blue-500/20 text-blue-300 border-blue-500/60 shadow-xs"
                       : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
                   }`}
                 >
@@ -472,7 +472,7 @@ export const SetupChips = React.memo(function SetupChips({
         {/* CONFIRMATIONS (eski adı Premium / Discount) */}
         <div className="flex flex-col">
           <span lang="en" className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
-            <ShieldCheck size={12} className="text-sky-400 shrink-0" />
+            <ShieldCheck size={12} className="text-blue-400 shrink-0" />
             {H("premiumDiscounts", "CONFIRMATIONS")}
           </span>
           <div className="flex flex-wrap gap-1.5">
@@ -486,7 +486,7 @@ export const SetupChips = React.memo(function SetupChips({
                   onClick={() => setPremiumDiscount(isSelected ? "" : zone)}
                   className={`${CHIP_BASE} ${
                     isSelected
-                      ? "bg-sky-500/20 text-sky-300 border-sky-500/60 shadow-xs"
+                      ? "bg-blue-500/20 text-blue-300 border-blue-500/60 shadow-xs"
                       : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
                   }`}
                 >
@@ -503,7 +503,7 @@ export const SetupChips = React.memo(function SetupChips({
       <div className="pt-3 border-t border-zinc-800/60 flex flex-col">
         <div className="flex items-center justify-between gap-2 mb-1 h-6">
           <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide flex items-center gap-1.5 font-sans">
-            <Zap size={12} className="text-sky-400 shrink-0" />
+            <Zap size={12} className="text-blue-400 shrink-0" />
             {L("management")}
           </span>
           {afterExitTpAsked(tradeStatus, management) && (
@@ -522,7 +522,7 @@ export const SetupChips = React.memo(function SetupChips({
                       onClick={() => setAfterExitTp(isSelected ? null : v)}
                       className={`h-5 px-2 rounded-md text-[10px] font-sans font-bold uppercase transition-ui select-none border cursor-pointer ${
                         isSelected
-                          ? "bg-sky-500/20 text-sky-300 border-sky-500/40"
+                          ? "bg-blue-500/20 text-blue-300 border-blue-500/40"
                           : "border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
                       }`}
                     >
@@ -550,7 +550,7 @@ export const SetupChips = React.memo(function SetupChips({
                 }}
                 className={`${CHIP_BASE} ${
                   isActive
-                    ? "bg-sky-500/20 text-sky-300 border-sky-500/60 shadow-xs"
+                    ? "bg-blue-500/20 text-blue-300 border-blue-500/60 shadow-xs"
                     : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
                 }`}
               >

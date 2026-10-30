@@ -824,7 +824,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                 const sel = globalExtra.dims?.[d] || [];
                 return (
                   <FilterAccordionRow key={d} title={dimLabel(d)}
-                    icon={<SlidersHorizontal size={14} className="text-sky-400" />}
+                    icon={<SlidersHorizontal size={14} className="text-blue-400" />}
                     summaryText={sel.length > 0 ? sel.join(', ') : 'Tümü'}
                     badgeCount={sel.length}
                     isOpen={!!openSections[`dim:${d}`]}

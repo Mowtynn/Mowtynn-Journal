@@ -729,3 +729,5 @@ Klasik tasarım korunarak, son eklenen alanlar (risk %, hesap bağı, strateji, 
 - Global filtre: Sweep Saati, Sweep → Giriş, Planlanan R:R, Stop / Asia Range, Günün İşlemi, İşlem Yönetimi (seçilenlerden herhangi biri), Çıkış Sonrası TP ve İşlem Süresi; değerler kurulum karnesiyle aynı tanımdan, doğal sıralarıyla. Kıyaslama sekmesi kurulum karnesinin tüm boyutlarını iki eksende de sunar (çoklu alanlar tek tek değerlere ayrılır).
 - İşlem dışa aktarımına analizdeki türetilmiş değerler eklendi: Planlanan R:R, Stop / Asia Range (%), Sweep Saati (30 dk), Sweep → Giriş (dk), Günün İşlemi, Kaçırılan R.
 - İşlem dışa aktarımı (Excel ve CSV): sütunlar mantıksal gruplarda (kimlik ve zaman → sonuç ve hesap → kurulum (form sırası) → pip ölçümleri → türetilmiş analiz değerleri → notlar); tüm girdiler ve türetilmiş değerler test ile güvence altında.
+- Edge Özeti taraması ve ikili kombinasyonlara News Day eklendi (ör. "Swept + News Day: Yok"); örtüşme hesabında genel oranlar önbelleğe alındı (çok işlemde hız).
+- Tutarlılık: vurgu rengi proje genelinde tek mavi (sky tonları ana mavi palete çekildi); etkileşim geçişleri 150–200 ms'de birleştirildi.
