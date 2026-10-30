@@ -404,7 +404,6 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
         <div className="min-w-0">
           <label className="text-[10px] sm:text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-2 flex items-center gap-1.5 font-sans">
             Çıkış
-            <span className="text-[9px] text-zinc-500 normal-case tracking-normal font-medium">isteğe bağlı</span>
           </label>
           {exitDate ? (
             <div className="h-9 flex items-center gap-1.5">

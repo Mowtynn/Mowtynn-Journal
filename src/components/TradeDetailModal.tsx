@@ -256,7 +256,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
             key="trade-detail-backdrop"
             {...MODAL_BACKDROP}
             onClick={onClose}
-             className="modal-overlay modal-layer modal-dim"
+             className="modal-overlay modal-layer modal-dim !p-2 sm:!p-4"
           >
             <motion.div 
               key="trade-detail-content"
@@ -267,10 +267,11 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                 ...(isExporting ? { margin: 0, padding: 0, boxShadow: 'none', borderRadius: 0, border: 'none', transform: 'none' } : {}) 
               }}
               onClick={(e) => e.stopPropagation()}
-              className={`w-full max-w-6xl modal-content detail-soft relative ${
+              // İşlem ekleme penceresiyle aynı boyut: aynı genişlik basamakları ve ekranın %96'sına kadar yükseklik
+              className={`w-full modal-content detail-soft relative ${
                 isExporting 
-                  ? 'h-auto max-h-none overflow-visible shadow-none rounded-none border-0 m-0 p-0 bg-[#0a0a0c]' 
-                  : 'h-[92vh] sm:h-[88vh] max-h-[900px] overflow-hidden'
+                  ? 'max-w-6xl h-auto max-h-none overflow-visible shadow-none rounded-none border-0 m-0 p-0 bg-[#0a0a0c]' 
+                  : 'max-w-6xl xl:max-w-7xl 2xl:max-w-[1440px] h-[96vh] max-h-[96vh] overflow-hidden'
               }`}
             >
               {/* Header */}
@@ -369,10 +370,10 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                 </div>
               </div>
               {/* Main Content Layout */}
-              <div ref={bodyRef} className="flex flex-col lg:flex-row flex-1 overflow-hidden min-h-0">
+              <div ref={bodyRef} className={`flex flex-col lg:flex-row flex-1 min-h-0 ${isExporting ? 'overflow-hidden' : 'overflow-y-auto lg:overflow-hidden custom-scrollbar'}`}>
                 
                 {/* Left Sidebar - Meta & Context (approx 35%) */}
-                <div className={`w-full lg:w-[40%] bg-zinc-950/30 border-r border-zinc-800/60 p-5 space-y-5 shrink-0 ${isExporting ? 'overflow-visible' : 'overflow-y-auto custom-scrollbar'}`}>
+                <div className={`w-full lg:w-[40%] bg-zinc-950/30 border-r border-zinc-800/60 p-5 space-y-5 shrink-0 ${isExporting ? 'overflow-visible' : 'lg:overflow-y-auto custom-scrollbar'}`}>
                   
                   {/* Hızlı kayıt: ayrıntılar eksik */}
                   {currentTrade.quickEntry === true && !isExporting && (() => {
@@ -592,7 +593,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                 </div>
 
                 {/* Sağ panel: görsel → notlar → fiyat yolu · kurulum geçmişi */}
-                <div className={`w-full lg:w-[60%] min-w-0 bg-[#0a0a0c] flex flex-col p-5 space-y-4 min-h-0 ${isExporting ? 'overflow-visible' : 'overflow-y-auto custom-scrollbar'}`}>
+                <div className={`w-full lg:w-[60%] min-w-0 bg-[#0a0a0c] flex flex-col p-5 space-y-4 lg:min-h-0 ${isExporting ? 'overflow-visible' : 'lg:overflow-y-auto custom-scrollbar'}`}>
                   
                   {/* Technical Chart */}
                   <section className="flex-shrink-0">
