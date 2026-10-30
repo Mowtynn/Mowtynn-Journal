@@ -176,7 +176,7 @@ export function SetupHistoryPanel({ insight }: { insight: TradeInsight }) {
   const e = s.others;
   const v = VERDICT[s.verdict];
   // Kurulum değerleri işlem bağlamında zaten görünür; burada yalnızca ipucu olarak
-  const setupTitle = s.labels.map((l) => `${l.dimension}: ${l.value === UNSPECIFIED ? '—' : l.value}`).join(' · ');
+  return (
     <section className="h-full flex flex-col gap-1">
       <h4 className="heading-2">
         <History size={12} /> KURULUM GEÇMİŞİ
