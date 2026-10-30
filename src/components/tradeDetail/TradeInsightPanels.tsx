@@ -3,7 +3,7 @@ import { smartUpper } from '../../constants/constants';
 import type { Trade } from '../../types';
 import type { TradeInsight, PricePath } from '../../lib/tradeInsight';
 import { UNSPECIFIED } from '../../lib/setupScorecard';
-import { formatDuration, nyWallDate } from '../../lib/tradingTime';
+import { formatDuration } from '../../lib/tradingTime';
 
 /**
  * İşlem detayı · içgörü bölümleri (klasik detay penceresi stilinde):
