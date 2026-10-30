@@ -68,3 +68,22 @@ test('günlük dışa aktarımı: kayıt saati yoksa 1970 saati yazılmaz', () =
   assert.equal(row['Kayıt Saati'], '-');
   assert.equal(row['Son Güncelleme'], '-');
 });
+
+test('dışa aktarım: yeni girdiler ve türetilmiş analiz sütunları eksiksiz', async () => {
+  const { prepareTradeExportRows } = await import('../src/utils/exportTrades');
+  const { trade } = await import('./fixtures');
+  const t = trade({
+    status: 'BREAKEVEN', rr: 0, stopPips: 10, tpPips: 30, asiaRangePips: 40, asiaRange: 'Swept', sweepTime: '02:40',
+    management: ['BE Çekildi'], afterExitTp: true, createdAt: Date.UTC(2026, 9, 20, 7, 10), exitAt: Date.UTC(2026, 9, 20, 7, 55),
+  });
+  const row = prepareTradeExportRows([t])[0] as Record<string, unknown>;
+  for (const k of ['Asia Range', 'Sweep Time', 'İşlem Yönetimi', "Çıkış Sonrası TP'ye Ulaştı", 'Planlanan R:R', 'Stop / Asia Range (%)', 'Sweep Saati (30 dk)', 'Sweep → Giriş (dk)', 'Günün İşlemi', 'Kaçırılan R', 'Süre']) {
+    assert.ok(k in row, `sütun yok: ${k}`);
+  }
+  assert.equal(row['Planlanan R:R'], 3);
+  assert.equal(row['Stop / Asia Range (%)'], 25);
+  assert.equal(row['Sweep Saati (30 dk)'], '02:30–03:00');
+  assert.equal(row['Sweep → Giriş (dk)'], 30);
+  assert.equal(row['Kaçırılan R'], 3);
+  assert.equal(row["Çıkış Sonrası TP'ye Ulaştı"], 'Evet');
+});
