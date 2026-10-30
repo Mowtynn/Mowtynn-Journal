@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAfterPaint } from '../hooks/useAfterPaint';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import {
+import { SlidersHorizontal,
   Filter,
   RotateCcw,
   Check,
@@ -36,7 +36,10 @@ import {
   DEFAULT_DEFINITION_TITLES,
 } from '../constants/constants';
 import { ASIA_RANGE_TYPES, DefinitionTitles } from '../types';
-import { DEFAULT_DATE_LIMIT, EMPTY_EXTRA_FILTERS, countExtraFilters, type ExtraTradeFilters } from '../lib/tradeFilters';
+import { DEFAULT_DATE_LIMIT, EMPTY_EXTRA_FILTERS, countExtraFilters, FILTER_DIMENSIONS, type ExtraTradeFilters, type FilterDimension } from '../lib/tradeFilters';
+import { dimensionValue, SETUP_DIMENSIONS, UNSPECIFIED } from '../lib/setupScorecard';
+import { HOLD_BUCKETS, PLANNED_RR_BUCKETS, STOP_RANGE_BUCKETS, SWEEP_DELAY_BUCKETS, sweepBucketOrder } from '../lib/asiaAnalytics';
+import { MANAGEMENT_TYPES } from '../types';
 import { setupQualityTier } from '../lib/discipline';
 import { useNewsDayLabels } from '../hooks/useNewsDayLabels';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
@@ -208,6 +211,34 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
     return Array.from(set);
   }, [ready, trendTypes, trades]);
 
+  // Türetilmiş boyut filtrelerinin seçenekleri: işlemlerde görülen değerler, kendi doğal sıralarıyla
+  const dimOptions = React.useMemo(() => {
+    const out = {} as Record<FilterDimension, string[]>;
+    const orderBy = (list: readonly string[]) => (a: string, b: string) => list.indexOf(a) - list.indexOf(b);
+    FILTER_DIMENSIONS.forEach((d) => {
+      const set = new Set<string>();
+      if (ready) {
+        if (d === 'management') trades.forEach((t) => (t.management || []).forEach((m: string) => set.add(m)));
+        else trades.forEach((t) => {
+          const v = dimensionValue(t, d);
+          if (v !== UNSPECIFIED) set.add(v);
+        });
+      }
+      const vals = [...set];
+      if (d === 'sweepHour') vals.sort((a, b) => sweepBucketOrder(a) - sweepBucketOrder(b));
+      else if (d === 'sweepDelay') vals.sort(orderBy(SWEEP_DELAY_BUCKETS));
+      else if (d === 'plannedRR') vals.sort(orderBy(PLANNED_RR_BUCKETS));
+      else if (d === 'stopToRange') vals.sort(orderBy(STOP_RANGE_BUCKETS));
+      else if (d === 'holdTime') vals.sort(orderBy(HOLD_BUCKETS));
+      else if (d === 'management') vals.sort(orderBy(MANAGEMENT_TYPES));
+      else vals.sort((a, b) => a.localeCompare(b, 'tr'));
+      out[d] = vals;
+    });
+    return out;
+  }, [ready, trades]);
+  const dimLabel = (d: FilterDimension) => SETUP_DIMENSIONS.find((x) => x.id === d)?.label || d;
+  const patchDim = (d: FilterDimension, vals: string[]) => patchExtra({ dims: { ...(globalExtra.dims || {}), [d]: vals } });
+
   // Ek alanların seçenekleri: Tanımlamalar + işlemlerde görülen değerler
   const extraOptions = React.useMemo(() => {
     const pd = new Set(premiumDiscounts);
@@ -263,6 +294,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
       session: true,
       asiaRange: true,
       asiaRangeType: true,
+      ...Object.fromEntries(FILTER_DIMENSIONS.map((d) => [`dim:${d}`, true])),
       pd: true,
       tpTarget: true,
       asiaFvg: true,
@@ -786,6 +818,26 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                   onChange={(vals) => patchExtra({ asiaRanges: vals })}
                 />
               </FilterAccordionRow>
+
+              {/* Türetilmiş / yeni girdiler: Sweep Saati, Sweep → Giriş, Planlanan R:R, Stop / Asia Range, Günün İşlemi, İşlem Yönetimi, Çıkış Sonrası TP, İşlem Süresi */}
+              {FILTER_DIMENSIONS.map((d) => {
+                const sel = globalExtra.dims?.[d] || [];
+                return (
+                  <FilterAccordionRow key={d} title={dimLabel(d)}
+                    icon={<SlidersHorizontal size={14} className="text-sky-400" />}
+                    summaryText={sel.length > 0 ? sel.join(', ') : 'Tümü'}
+                    badgeCount={sel.length}
+                    isOpen={!!openSections[`dim:${d}`]}
+                    onToggle={() => toggleSection(`dim:${d}`)}
+                  >
+                    {dimOptions[d].length ? (
+                      <PillMultiSelect options={dimOptions[d]} selectedValues={sel} onChange={(vals) => patchDim(d, vals)} />
+                    ) : (
+                      <p className="text-[11px] text-zinc-500 px-1">Bu alanın girildiği işlem yok.</p>
+                    )}
+                  </FilterAccordionRow>
+                );
+              })}
 
               {/* 12. PREMIUM / DISCOUNT */}
               <FilterAccordionRow title={definitionTitles.premiumDiscounts || "Confirmations"}

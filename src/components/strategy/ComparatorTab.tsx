@@ -2,43 +2,36 @@ import React, { useMemo, useState } from 'react';
 import { FILTER_LABEL, FILTER_SELECT } from '../filters/FilterControls';
 import { Sliders } from 'lucide-react';
 import { Trade } from '../../types';
-import { getNewsDayLabels } from '../../constants/constants';
+import { dimensionValue, SETUP_DIMENSIONS, UNSPECIFIED, type SetupDimension } from '../../lib/setupScorecard';
 import { useNewsDayLabels } from '../../hooks/useNewsDayLabels';
 
 /** Strateji laboratuvarı · Kıyaslama sekmesi (kendi durumu burada; seçim değişince yalnızca bu sekme yeniden çizilir) */
 export const ComparatorTab = React.memo(function ComparatorTab({ trades }: { trades: Trade[] }) {
   // Interactive Comparator States
-  const [compDimensionX, setCompDimensionX] = useState<'session' | 'tpTarget' | 'premiumDiscount' | 'planFidelity' | 'trend' | 'htfTimeframe' | 'newsDay' | 'asiaRange' | 'asiaRangeFvg'>('session');
-  const [compDimensionY, setCompDimensionY] = useState<'type' | 'entryModels' | 'timeframe'>('type');
+  // Kurulum karnesiyle aynı boyut listesi: yeni bir boyut eklenince burada da otomatik seçilebilir
+  const [compDimensionX, setCompDimensionX] = useState<SetupDimension>('session');
+  const [compDimensionY, setCompDimensionY] = useState<SetupDimension>('type');
 
   const { version: newsLabelsVersion } = useNewsDayLabels();
 
   // Comparator dynamic matrix computation
   const comparatorMatrix = useMemo(() => {
-    const getValuesX = (t: Trade): string[] => {
-      if (compDimensionX === 'session') return [t.session || 'Belirtilmemiş'];
-      if (compDimensionX === 'tpTarget') return t.tpTargets && t.tpTargets.length > 0 ? t.tpTargets : ['Belirtilmemiş'];
-      if (compDimensionX === 'premiumDiscount') return [t.premiumDiscount || 'Belirtilmemiş'];
-      if (compDimensionX === 'planFidelity') return [t.planFidelity || 'Belirtilmemiş'];
-      if (compDimensionX === 'trend') return [t.trend || 'Belirtilmemiş'];
-      if (compDimensionX === 'htfTimeframe') return [t.htfTimeframe || 'Belirtilmemiş'];
-      if (compDimensionX === 'asiaRange') return [t.asiaRange || 'Belirtilmemiş'];
-      if (compDimensionX === 'asiaRangeFvg') return [t.asiaRangeFvg || 'Belirtilmemiş'];
-      if (compDimensionX === 'newsDay') {
-        const nl = getNewsDayLabels();
-        return [typeof t.newsDay === 'boolean' ? (t.newsDay ? nl.yes : nl.no) : 'Belirtilmemiş'];
+    // Çoklu alanlar (Entry Model, Target, PD Array, İşlem Yönetimi) tek tek değerlere ayrılır
+    const valuesOf = (t: Trade, d: SetupDimension): string[] => {
+      const multi: Partial<Record<SetupDimension, string[] | undefined>> = {
+        entryModels: t.entryModels,
+        tpTargets: t.tpTargets,
+        confirmations: t.confirmations,
+        management: t.management,
+      };
+      if (d in multi) {
+        const list = multi[d];
+        return list && list.length ? list : [UNSPECIFIED];
       }
-      return ['Genel'];
+      return [dimensionValue(t, d)];
     };
-
-    const getValuesY = (t: Trade): string[] => {
-      if (compDimensionY === 'type') return [t.type];
-      if (compDimensionY === 'timeframe') return [t.timeframe || 'Belirtilmemiş'];
-      if (compDimensionY === 'entryModels') {
-        return Array.isArray(t.entryModels) && t.entryModels.length > 0 ? t.entryModels : ['Belirtilmemiş'];
-      }
-      return ['Genel'];
-    };
+    const getValuesX = (t: Trade) => valuesOf(t, compDimensionX);
+    const getValuesY = (t: Trade) => valuesOf(t, compDimensionY);
 
     const crossMap: Record<string, { total: number; wins: number; netR: number; valX: string; valY: string }> = {};
 
@@ -86,15 +79,7 @@ export const ComparatorTab = React.memo(function ComparatorTab({ trades }: { tra
                     onChange={(e: any) => setCompDimensionX(e.target.value)}
                     className={FILTER_SELECT}
                   >
-                    <option value="session">Seans (Session)</option>
-                    <option value="tpTarget">Target (Çıkış Hedefi)</option>
-                    <option value="premiumDiscount">Confirmations</option>
-                    <option value="planFidelity">Setup Kalitesi</option>
-                    <option value="trend">Trend Yapısı</option>
-                    <option value="htfTimeframe">Timeframe (HTF)</option>
-                    <option value="newsDay">News Day / Bank Holiday</option>
-                    <option value="asiaRange">Asia Range</option>
-                    <option value="asiaRangeFvg">Asia Range FVG</option>
+                    {SETUP_DIMENSIONS.map((d) => <option key={d.id} value={d.id}>{d.label}</option>)}
                   </select>
                 </div>
                 <div className="flex items-center gap-1">
@@ -104,9 +89,7 @@ export const ComparatorTab = React.memo(function ComparatorTab({ trades }: { tra
                     onChange={(e: any) => setCompDimensionY(e.target.value)}
                     className={FILTER_SELECT}
                   >
-                    <option value="type">İşlem Yönü (Long/Short)</option>
-                    <option value="entryModels">Giriş Modeli</option>
-                    <option value="timeframe">Entry Timeframe</option>
+                    {SETUP_DIMENSIONS.map((d) => <option key={d.id} value={d.id}>{d.label}</option>)}
                   </select>
                 </div>
               </div>

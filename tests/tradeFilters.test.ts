@@ -88,3 +88,13 @@ test('ek alan filtreleri: strateji, News day, P/D, TP target, Asia FVG, risk %, 
   assert.equal(countExtraFilters({ ...EMPTY_EXTRA_FILTERS, newsDay: 'NO', riskPcts: [1], onlyIncomplete: true }), 3);
   assert.deepEqual(sanitizeExtraFilters({ newsDay: 'X', riskPcts: [1, 'a', -2], asiaRanges: ['A', 3] }), { ...EMPTY_EXTRA_FILTERS, riskPcts: [1], asiaRanges: ['A'] });
 });
+
+test('türetilmiş boyut filtreleri: işlem yönetimi (herhangi biri) ve planlanan R:R', async () => {
+  const { EMPTY_EXTRA_FILTERS } = await import('../src/lib/tradeFilters');
+  const a = trade({ id: 'fa', status: 'WIN', rr: 2, management: ['BE Çekildi', 'Kısmi Kâr'], stopPips: 10, tpPips: 25 });
+  const b = trade({ id: 'fb', status: 'LOSS', rr: -1, management: ['Plana Göre'], stopPips: 10, tpPips: 45 });
+  const run = (dims: any) => ids(applyGlobalFilters([a, b], f({ activeAccountCategory: 'DEMO', globalExtra: { ...EMPTY_EXTRA_FILTERS, dims } }), NOW));
+  assert.deepEqual(run({ management: ['Kısmi Kâr'] }), ['fa']);
+  assert.deepEqual(run({ plannedRR: ['1:4+'] }), ['fb']);
+  assert.deepEqual(run({}), ['fa', 'fb']);
+});

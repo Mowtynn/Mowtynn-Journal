@@ -2,6 +2,11 @@ import { Trade, AccountCategory, PropAccount } from '../types';
 import { inScope } from './accountScope';
 import { normalizeSearchString } from '../constants/constants';
 import { canonicalAsset } from './tradeModel';
+import { dimensionValue, type SetupDimension } from './setupScorecard';
+
+/** Global filtrede türetilmiş / yeni girdiler: değer, kurulum karnesindeki boyut değeriyle aynı (tek tanım) */
+export const FILTER_DIMENSIONS = ['sweepHour', 'sweepDelay', 'plannedRR', 'stopToRange', 'tradeOfDay', 'management', 'afterExitTp', 'holdTime'] as const;
+export type FilterDimension = (typeof FILTER_DIMENSIONS)[number] & SetupDimension;
 
 /** Varsayılan tarih aralığı: tüm zamanlar (sayılar üst menüdeki hesap sayılarıyla tutarlı kalsın) */
 export const DEFAULT_DATE_LIMIT = "all";
@@ -36,6 +41,8 @@ export interface ExtraTradeFilters {
   riskPcts: number[];
   /** Yalnızca hızlı kayıtla girilip ayrıntısı tamamlanmamış işlemler */
   onlyIncomplete: boolean;
+  /** Türetilmiş boyut filtreleri (Sweep Saati, Planlanan R:R, İşlem Yönetimi …) */
+  dims: Partial<Record<FilterDimension, string[]>>;
 }
 
 export const EMPTY_EXTRA_FILTERS: ExtraTradeFilters = {
@@ -46,6 +53,7 @@ export const EMPTY_EXTRA_FILTERS: ExtraTradeFilters = {
   newsDay: 'ALL',
   riskPcts: [],
   onlyIncomplete: false,
+  dims: {},
 };
 
 /** Kalıcı depodan gelen değeri güvenli hale getirir */
@@ -59,6 +67,9 @@ export function sanitizeExtraFilters(v: any): ExtraTradeFilters {
     newsDay: v?.newsDay === 'YES' || v?.newsDay === 'NO' ? v.newsDay : 'ALL',
     riskPcts: Array.isArray(v?.riskPcts) ? v.riskPcts.filter((n: any) => typeof n === 'number' && Number.isFinite(n) && n > 0) : [],
     onlyIncomplete: v?.onlyIncomplete === true,
+    dims: Object.fromEntries(
+      FILTER_DIMENSIONS.map((d) => [d, strs(v?.dims?.[d])]).filter(([, list]) => (list as string[]).length),
+    ) as ExtraTradeFilters['dims'],
   };
 }
 
@@ -72,7 +83,8 @@ export function countExtraFilters(e: ExtraTradeFilters | undefined): number {
     (e.asiaRangeFvgs.length ? 1 : 0) +
     (e.newsDay !== 'ALL' ? 1 : 0) +
     (e.riskPcts.length ? 1 : 0) +
-    (e.onlyIncomplete ? 1 : 0)
+    (e.onlyIncomplete ? 1 : 0) +
+    Object.values(e.dims || {}).filter((l) => l && l.length).length
   );
 }
 
@@ -198,6 +210,9 @@ export function applyGlobalFilters(trades: Trade[], filters: GlobalTradeFilters,
     const tpSet = extra.tpTargets.length ? new Set(extra.tpTargets.map(normalizeSearchString)) : null;
     const fvgSet = extra.asiaRangeFvgs.length ? new Set(extra.asiaRangeFvgs.map(normalizeSearchString)) : null;
     const riskSet = extra.riskPcts.length ? new Set(extra.riskPcts.map(riskKey)) : null;
+    const dimSets = Object.entries(extra.dims || {})
+      .filter(([, l]) => l && l.length)
+      .map(([d, l]) => [d as FilterDimension, new Set(l as string[])] as const);
 
     return trades.filter((t: Trade) => {
       // 1. Numeric and temporal checks first (fastest)
@@ -277,6 +292,12 @@ export function applyGlobalFilters(trades: Trade[], filters: GlobalTradeFilters,
       if (fvgSet && (!t.asiaRangeFvg || !fvgSet.has(normalizeSearchString(t.asiaRangeFvg)))) return false;
       if (tpSet && (!t.tpTargets || !t.tpTargets.some((x) => tpSet.has(normalizeSearchString(x))))) return false;
       if (riskSet && (typeof t.riskPct !== 'number' || !riskSet.has(riskKey(t.riskPct)))) return false;
+      // İşlem Yönetimi çoklu: seçilen adımlardan herhangi biri işlemde varsa eşleşir; diğerleri tek değer
+      for (const [d, set] of dimSets) {
+        if (d === 'management') {
+          if (!t.management || !t.management.some((m) => set.has(m))) return false;
+        } else if (!set.has(dimensionValue(t, d))) return false;
+      }
       return true;
     });
 }
