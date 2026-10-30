@@ -58,6 +58,8 @@ export function buildInitial(t: Trade | null) {
     newsDay: (typeof t?.newsDay === "boolean" ? t.newsDay : null) as boolean | null,
     asiaRange: (t?.asiaRange || "") as string,
     sweepTime: t?.sweepTime || "",
+    management: (Array.isArray(t?.management) ? t!.management : []) as string[],
+    afterExitTp: (typeof t?.afterExitTp === "boolean" ? t.afterExitTp : null) as boolean | null,
     asiaFvg: t?.asiaRangeFvg || "",
     stopPips: numOr(t?.stopPips),
     tpPips: numOr(t?.tpPips),
@@ -112,3 +114,7 @@ export function SlideBg({ id, className, rounded = "rounded-lg" }: { id: string;
     />
   );
 }
+
+/** "Çıkış sonrası TP'ye ulaştı mı?" sorusu: BE kapanan, erken kapatılan ya da stop'u BE'ye çekilen işlemlerde sorulur */
+export const afterExitTpAsked = (status: string, management: string[]) =>
+  status === "BREAKEVEN" || management.includes("Erken Kapatıldı") || management.includes("BE'ye Çekildi");

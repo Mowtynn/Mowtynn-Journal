@@ -2,6 +2,7 @@ import type { JournalEntry, Trade, WeeklyAnswers } from '../types';
 import { nyDateKey, getNyParts } from './tradingTime';
 import { analyzeDiscipline, type DisciplineRuleId } from './discipline';
 import { dimensionValue, DEFAULT_SETUP_DIMENSIONS, UNSPECIFIED } from './setupScorecard';
+import { computeEdgeSummary } from './edgeSummary';
 
 /**
  * Haftalık değerlendirme — saf hesaplar (arayüzden bağımsız, test edilebilir).
@@ -103,7 +104,8 @@ export interface WeekSetup {
 }
 
 export interface WeekViolation {
-  id: DisciplineRuleId;
+  /** Disiplin kuralı ya da "edge:<başlık>" (Kurallarım'daki ALMA kuralı) */
+  id: DisciplineRuleId | `edge:${string}`;
   title: string;
   count: number;
   costR: number;
@@ -124,7 +126,7 @@ export interface WeekReview {
 }
 
 const setupLabel = (t: Trade) => {
-  // Asia Range değeri tek başına ("Range") belirsiz kalmasın: "Asia Range", "Asia Sweept"
+  // Asia Range değeri tek başına ("Range") belirsiz kalmasın: "Asia Range", "Asia Swept"
   const parts = DEFAULT_SETUP_DIMENSIONS.map((d) => {
     const v = dimensionValue(t, d);
     return d === 'asiaRange' && v !== UNSPECIFIED ? `Asia ${v}` : v;
@@ -172,6 +174,19 @@ export function computeWeekReview(allTrades: Trade[], weekStart: string): WeekRe
       return { id: r.id, title: r.title, count: ids.length, costR, tradeIds: ids };
     })
     .filter((v) => v.count > 0);
+
+  // Kurallarım: haftadan ÖNCEKİ işlemlerle kesinleşmiş ALMA kuralları (geriye dönük bilgi kullanılmaz)
+  const before = allTrades.filter((t) => nyDateKey(t.createdAt) < weekStart);
+  if (before.length) {
+    computeEdgeSummary(before)
+      .rules.filter((r) => r.kind === 'AVOID')
+      .forEach((r) => {
+        const hit = trades.filter(r.match);
+        if (!hit.length) return;
+        hit.forEach((t) => violatingIds.add(t.id));
+        violations.push({ id: `edge:${r.title}`, title: `Kural: ${r.title} alma`, count: hit.length, costR: hit.reduce((s, t) => s + rOf(t), 0), tradeIds: hit.map((t) => t.id) });
+      });
+  }
 
   return {
     weekStart,

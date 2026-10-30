@@ -91,7 +91,7 @@ test('Asia Range ve Sweep Time: yalnızca geçerli değerler kalır', async () =
   const { normalizeTrade, isValidTrade, normalizeClock } = await import('../src/lib/tradeModel');
   const base = { id: 'a', asset: 'EURUSD', type: 'LONG', status: 'WIN', rr: 1, createdAt: 1, notes: '', screenshot: null };
   const ok = normalizeTrade({ ...base, asiaRange: 'sweept', sweepTime: '2:05' } as any);
-  assert.equal(ok.asiaRange, 'Sweept');
+  assert.equal(ok.asiaRange, 'Swept');
   assert.equal(ok.sweepTime, '02:05');
   assert.equal(isValidTrade(ok), true);
   const bad = normalizeTrade({ ...base, asiaRange: 'Silver Bullet', sweepTime: '25:00' } as any);

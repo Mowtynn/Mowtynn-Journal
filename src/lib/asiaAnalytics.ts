@@ -1,5 +1,6 @@
+import { getNyParts } from './tradingTime';
 import { Trade } from '../types';
-import { getTradeAccountCategory, getNewsDayLabels } from '../constants/constants';
+import { getTradeAccountCategory, getNewsDayLabels, getTradeStageLabel } from '../constants/constants';
 import { calculateProfitFactor, toRR } from './statMath';
 import {
   getSweepSide,
@@ -375,11 +376,126 @@ export interface CoverageRow {
 }
 
 /** "HH:mm" → "HH:00–HH+1:00" (NY); geçersizse null */
+/** Sweep saati (NY) 30 dakikalık dönemlere: 02:15 → "02:00–02:30", 02:40 → "02:30–03:00"; geçersizse null */
 export function sweepHourBucket(v?: string): string | null {
-  const m = typeof v === 'string' ? v.match(/^(\d{2}):\d{2}$/) : null;
+  const m = typeof v === 'string' ? v.match(/^(\d{2}):(\d{2})$/) : null;
   if (!m) return null;
-  const h = Number(m[1]);
-  return `${m[1]}:00–${String((h + 1) % 24).padStart(2, '0')}:00`;
+  const start = Number(m[1]) * 60 + (Number(m[2]) < 30 ? 0 : 30);
+  const fmt = (x: number) => `${String(Math.floor((x % 1440) / 60)).padStart(2, '0')}:${String(x % 60).padStart(2, '0')}`;
+  return `${fmt(start)}–${fmt(start + 30)}`;
+}
+
+/** Dönemleri işlem günü akışına göre sıralar: Asia akşamı (18:00 NY) → London → NY */
+export function sweepBucketOrder(key: string): number {
+  const m = key.match(/^(\d{2}):(\d{2})/);
+  if (!m) return 9999;
+  return (Number(m[1]) * 60 + Number(m[2]) - 18 * 60 + 1440) % 1440;
+}
+
+/** Sweep'ten girişe geçen süre (dk, NY; gece yarısını aşabilir: Asia'daki sweep → London/NY girişi). 18 saatten uzaksa null. */
+export function sweepToEntryMinutes(t: Pick<Trade, 'createdAt' | 'sweepTime'>): number | null {
+  const m = typeof t.sweepTime === 'string' ? t.sweepTime.match(/^(\d{2}):(\d{2})$/) : null;
+  const p = getNyParts(t.createdAt);
+  if (!m || !p) return null;
+  const d = p.hour * 60 + p.minute - (Number(m[1]) * 60 + Number(m[2]));
+  const diff = d < 0 ? d + 1440 : d;
+  return diff <= 1080 ? diff : null;
+}
+
+export const SWEEP_DELAY_BUCKETS = ['0–15 dk', '15–30 dk', '30–60 dk', '1–2 sa', '2–4 sa', '4–8 sa', '8 sa+'] as const;
+export function sweepDelayBucket(t: Pick<Trade, 'createdAt' | 'sweepTime'>): string | null {
+  const d = sweepToEntryMinutes(t);
+  if (d === null) return null;
+  return SWEEP_DELAY_BUCKETS[d < 15 ? 0 : d < 30 ? 1 : d < 60 ? 2 : d < 120 ? 3 : d < 240 ? 4 : d < 480 ? 5 : 6];
+}
+
+/** İşlemde kalma süresi dilimi (çıkış saati girilmiş işlemler) */
+export const HOLD_BUCKETS = ['<15 dk', '15–30 dk', '30–60 dk', '1–2 sa', '2–4 sa', '4 sa+'] as const;
+export function holdBucket(t: Pick<Trade, 'createdAt' | 'exitAt'>): string | null {
+  if (typeof t.exitAt !== 'number' || !Number.isFinite(t.exitAt) || t.exitAt < t.createdAt) return null;
+  const m = (t.exitAt - t.createdAt) / 60000;
+  return HOLD_BUCKETS[m < 15 ? 0 : m < 30 ? 1 : m < 60 ? 2 : m < 120 ? 3 : m < 240 ? 4 : 5];
+}
+
+/** Hesap aşaması: Phase 1 / Phase 2 / Funded; hesapsız işlemler bu boyutta yer almaz */
+export function stageBucket(t: Pick<Trade, 'accountId' | 'accountStage'>): string | null {
+  return getTradeStageLabel(t) || null;
+}
+
+/** Planlanan R:R = TP pip ÷ Stop pip */
+export const PLANNED_RR_BUCKETS = ['< 1:1.5', '1:1.5–2', '1:2–3', '1:3–4', '1:4+'] as const;
+export function plannedRR(t: Pick<Trade, 'tpPips' | 'stopPips'>): number | null {
+  return typeof t.tpPips === 'number' && typeof t.stopPips === 'number' && t.tpPips > 0 && t.stopPips > 0 ? t.tpPips / t.stopPips : null;
+}
+export function plannedRRBucket(t: Pick<Trade, 'tpPips' | 'stopPips'>): string | null {
+  const r = plannedRR(t);
+  if (r === null) return null;
+  return PLANNED_RR_BUCKETS[r < 1.5 ? 0 : r < 2 ? 1 : r < 3 ? 2 : r < 4 ? 3 : 4];
+}
+
+/** Stop büyüklüğü ÷ o günün Asia Range büyüklüğü (%) */
+export const STOP_RANGE_BUCKETS = ['< %20', '%20–35', '%35–50', '%50–75', '%75+'] as const;
+export function stopToRangeBucket(t: Pick<Trade, 'stopPips' | 'asiaRangePips'>): string | null {
+  if (!(typeof t.stopPips === 'number' && t.stopPips > 0 && typeof t.asiaRangePips === 'number' && t.asiaRangePips > 0)) return null;
+  const p = (t.stopPips / t.asiaRangePips) * 100;
+  return STOP_RANGE_BUCKETS[p < 20 ? 0 : p < 35 ? 1 : p < 50 ? 2 : p < 75 ? 3 : 4];
+}
+
+/**
+ * Günün kaçıncı işlemi (NY takvim günü). İşlem sırası, analiz edilen listeye göre bir kez indekslenir
+ * (indexTradeOrder); indekslenmemiş işlem için boyut boş kalır.
+ */
+const tradeOrder = new Map<string, number>();
+// Uygulamada sıra, hesaptan bağımsız olarak tüm işlemler üzerinden bir kez kurulur (setGlobalTradeOrder);
+// analiz fonksiyonları o zaman yeniden indekslemez. Testlerde / tek başına kullanımda liste üzerinden indekslenir.
+let globalOrder = false;
+export function setGlobalTradeOrder(all: Trade[]): void {
+  buildOrder(all);
+  globalOrder = true;
+}
+export function indexTradeOrder(trades: Trade[]): void {
+  if (globalOrder) return;
+  buildOrder(trades);
+}
+function buildOrder(trades: Trade[]): void {
+  tradeOrder.clear();
+  const byDay = new Map<string, Trade[]>();
+  for (const t of trades) {
+    const k = nyDateKey(t.createdAt);
+    (byDay.get(k) || byDay.set(k, []).get(k)!).push(t);
+  }
+  byDay.forEach((list) => list.sort((x, y) => x.createdAt - y.createdAt).forEach((t, i) => tradeOrder.set(t.id, i + 1)));
+}
+export function tradeOfDayBucket(t: Pick<Trade, 'id'>): string | null {
+  const n = tradeOrder.get(t.id);
+  return n === undefined ? null : n === 1 ? '1. İşlem' : n === 2 ? '2. İşlem' : '3.+ İşlem';
+}
+
+/** İşlem yönetimi: seçilen yönetim adımları birleşik ("BE'ye Çekildi + Kısmi Kâr") */
+export function managementBucket(t: Pick<Trade, 'management'>): string | null {
+  return Array.isArray(t.management) && t.management.length ? [...t.management].join(' + ') : null;
+}
+export function afterExitBucket(t: Pick<Trade, 'afterExitTp'>): string | null {
+  return typeof t.afterExitTp === 'boolean' ? (t.afterExitTp ? "Çıkış Sonrası TP'ye Gitti" : "Çıkış Sonrası TP'ye Gitmedi") : null;
+}
+
+/**
+ * Yönetimle kaçırılan R: çıkıştan sonra TP'ye ulaşan işlemlerde planlanan R ile gerçekleşen R farkı.
+ * Planlanan R yoksa (TP / stop pip girilmemiş) işlem sayılır ama R'ı hesaba katılmaz.
+ */
+export function managementMissedR(trades: Trade[]): { n: number; measured: number; missedR: number } {
+  let n = 0;
+  let measured = 0;
+  let missedR = 0;
+  for (const t of trades) {
+    if (t.afterExitTp !== true) continue;
+    n++;
+    const p = plannedRR(t);
+    if (p === null) continue;
+    measured++;
+    missedR += Math.max(0, p - (typeof t.rr === 'number' && Number.isFinite(t.rr) ? t.rr : 0));
+  }
+  return { n, measured, missedR };
 }
 
 export function computeCoverage(trades: Trade[]): CoverageRow[] {
@@ -392,7 +508,7 @@ export function computeCoverage(trades: Trade[]): CoverageRow[] {
     { field: 'asiaRangePips', label: 'Asia range (pip)', unlocks: 'Range büyüklüğü edge analizi (parite bazlı)', ok: (t) => hasNum(t.asiaRangePips) && t.asiaRangePips > 0 },
     { field: 'htfTimeframe', label: 'PD array zaman dilimi', unlocks: '1H / 4H / D kıyası', ok: (t) => !!t.htfTimeframe },
     { field: 'confirmations', label: 'PD array türü', unlocks: 'FVG / OB / seviye kıyası', ok: (t) => Array.isArray(t.confirmations) && t.confirmations.length > 0 },
-    { field: 'asiaRange', label: 'Asia Range', unlocks: 'Range / Trend / Sweept edge kıyası', ok: (t) => !!t.asiaRange },
+    { field: 'asiaRange', label: 'Asia Range', unlocks: 'Range / Trend / Swept edge kıyası', ok: (t) => !!t.asiaRange },
     { field: 'sweepTime', label: 'Sweep Time', unlocks: 'Sweep saatine göre edge kıyası', ok: (t) => !!t.sweepTime },
     { field: 'asiaRangeFvg', label: 'Asia Range FVG', unlocks: 'Asia Range FVG türü kıyası', ok: (t) => !!t.asiaRangeFvg },
     { field: 'newsDay', label: 'News Day / Bank Holiday', unlocks: 'Haber günü – normal gün edge kıyası', ok: (t) => typeof t.newsDay === 'boolean' },
@@ -433,6 +549,15 @@ export interface AsiaLabResult {
   newsDay: { rows: GroupRow[]; unknown: number };
   asiaRanges: GroupRow[];
   sweepHours: GroupRow[];
+  sweepDelay: GroupRow[];
+  holdTime: GroupRow[];
+  plannedRR: GroupRow[];
+  stopToRange: GroupRow[];
+  tradeOfDay: GroupRow[];
+  management: GroupRow[];
+  afterExit: GroupRow[];
+  missedByManagement: { n: number; measured: number; missedR: number };
+  stages: GroupRow[];
   asiaRangeFvgs: GroupRow[];
   rangeSize: Array<{ key: RangeBucket; label: string; stats: EdgeStats }>;
   targetReach: { usable: number; buckets: Array<{ label: string; count: number; pct: number }>; reachedPct: number } | null;
@@ -467,6 +592,7 @@ export function analyzeAsia(allTrades: Trade[], opts: AsiaLabOptions): AsiaLabRe
     return true;
   });
 
+  indexTradeOrder(trades);
   const overall = computeEdge(trades);
 
   const pairRows = groupTrades(trades, (t) => normalizePair(t.asset));
@@ -507,8 +633,17 @@ export function analyzeAsia(allTrades: Trade[], opts: AsiaLabOptions): AsiaLabRe
   };
 
   const asiaRanges = groupTrades(trades, (t) => t.asiaRange || null);
-  // Sweep saati (NY) saatlik dilimlere: 02:15 → "02:00–03:00"
-  const sweepHours = groupTrades(trades, (t) => sweepHourBucket(t.sweepTime)).sort((x, y) => x.key.localeCompare(y.key));
+  // Sweep saati (NY) 30 dakikalık dönemlere, Asia → London → NY sırasıyla
+  const order = (list: readonly string[]) => (x: GroupRow, y: GroupRow) => list.indexOf(x.key) - list.indexOf(y.key);
+  const plannedRRRows = groupTrades(trades, (t) => plannedRRBucket(t)).sort(order(PLANNED_RR_BUCKETS));
+  const stopToRange = groupTrades(trades, (t) => stopToRangeBucket(t)).sort(order(STOP_RANGE_BUCKETS));
+  const tradeOfDay = groupTrades(trades, (t) => tradeOfDayBucket(t)).sort((x, y) => x.key.localeCompare(y.key));
+  const management = groupTrades(trades, (t) => managementBucket(t));
+  const afterExit = groupTrades(trades, (t) => afterExitBucket(t));
+  const holdTime = groupTrades(trades, (t) => holdBucket(t)).sort((x, y) => HOLD_BUCKETS.indexOf(x.key as any) - HOLD_BUCKETS.indexOf(y.key as any));
+  const stages = groupTrades(trades, (t) => stageBucket(t));
+  const sweepDelay = groupTrades(trades, (t) => sweepDelayBucket(t)).sort((x, y) => SWEEP_DELAY_BUCKETS.indexOf(x.key as any) - SWEEP_DELAY_BUCKETS.indexOf(y.key as any));
+  const sweepHours = groupTrades(trades, (t) => sweepHourBucket(t.sweepTime)).sort((x, y) => sweepBucketOrder(x.key) - sweepBucketOrder(y.key));
   const asiaRangeFvgs = groupTrades(trades, (t) => t.asiaRangeFvg || null);
 
   // Range size (pair-normalised)
@@ -562,6 +697,15 @@ export function analyzeAsia(allTrades: Trade[], opts: AsiaLabOptions): AsiaLabRe
     { name: 'Yön', get: (t) => (getSweepSide(t) === 'HIGH' ? 'High→Short' : 'Low→Long') },
     { name: 'Gün', get: (t) => WEEKDAY_NAMES_TR[getTradeNyWeekday(t)] },
     { name: 'Asia Range', get: (t) => t.asiaRange || null },
+    { name: 'Sweep Saati', get: (t) => sweepHourBucket(t.sweepTime) },
+    { name: 'Sweep→Giriş', get: (t) => sweepDelayBucket(t) },
+    { name: 'Setup Kalitesi', get: (t) => t.planFidelity || null },
+    { name: 'İşlem Süresi', get: (t) => holdBucket(t) },
+    { name: 'Planlanan R:R', get: (t) => plannedRRBucket(t) },
+    { name: 'Stop / Asia Range', get: (t) => stopToRangeBucket(t) },
+    { name: 'Günün İşlemi', get: (t) => tradeOfDayBucket(t) },
+    { name: 'İşlem Yönetimi', get: (t) => managementBucket(t) },
+    { name: 'Hesap Aşaması', get: (t) => stageBucket(t) },
     { name: 'News Day', get: (t) => (typeof t.newsDay === 'boolean' ? (t.newsDay ? nl.yes : nl.no) : null) },
   ];
   const comboMap = new Map<string, Trade[]>();
@@ -598,6 +742,15 @@ export function analyzeAsia(allTrades: Trade[], opts: AsiaLabOptions): AsiaLabRe
     newsDay,
     asiaRanges,
     sweepHours,
+    sweepDelay,
+    holdTime,
+    plannedRR: plannedRRRows,
+    stopToRange,
+    tradeOfDay,
+    management,
+    afterExit,
+    missedByManagement: managementMissedR(trades),
+    stages,
     asiaRangeFvgs,
     rangeSize,
     targetReach,

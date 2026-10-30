@@ -122,7 +122,7 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowIOSGuide(false)}
-                  className="w-full py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-sans text-xs font-bold transition-colors cursor-pointer shadow-xs"
+                  className="w-full py-2 rounded-xl bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 border border-blue-500/30 font-sans text-xs font-bold transition-colors cursor-pointer shadow-xs"
                 >
                   Anladım, Kapat
                 </button>

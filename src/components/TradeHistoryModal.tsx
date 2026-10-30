@@ -375,7 +375,7 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                       const isWin = t.status === "WIN";
                       const isLoss = t.status === "LOSS";
                       const isBe = t.status === "BREAKEVEN";
-                      const pnlText = typeof t.riskPct === "number" ? `%${t.riskPct.toLocaleString("tr-TR", { maximumFractionDigits: 2 })}` : "—";
+                      const pnlText = typeof t.riskPct === "number" ? `%${t.riskPct.toLocaleString("en-US", { maximumFractionDigits: 2 })}` : "—";
                       const pnlColor = "text-zinc-300 font-bold";
 
                       return (

@@ -10,7 +10,7 @@ import { formatDuration, nyWallDate } from '../../lib/tradingTime';
  * Sonuç (plan ↔ gerçekleşen), fiyat yolu, kurulum geçmişi, disiplin rozetleri.
  */
 
-const fmt = (v: number, d = 2) => v.toLocaleString('tr-TR', { maximumFractionDigits: d });
+const fmt = (v: number, d = 2) => v.toLocaleString('en-US', { maximumFractionDigits: d });
 export const formatR = (v: number, d = 2) => `${v > 0 ? '+' : ''}${fmt(v, d)}R`;
 const tone = (v: number) => (v > 0 ? 'text-emerald-400' : v < 0 ? 'text-rose-400' : 'text-zinc-300');
 
@@ -193,7 +193,7 @@ export function SetupHistoryPanel({ insight }: { insight: TradeInsight }) {
               <div className={`text-base font-bold tabular-nums leading-tight ${tone(e.expectancy)}`}>{formatR(e.expectancy)}<span className="text-[11px] font-medium text-zinc-500"> /işlem</span></div>
               <div className="text-[10px] text-zinc-500 tabular-nums mt-0.5">
                 diğer {e.n} işlem · %{fmt(e.winRate, 0)} kazanma · net {formatR(e.netR, 1)}
-                {e.n > 1 ? ` · GA [${fmt(e.expLo)}; ${fmt(e.expHi)}]` : ''}
+                {e.n > 1 ? ` · GA ${fmt(e.expLo)} – ${fmt(e.expHi)}` : ''}
               </div>
             </div>
             <span className={`shrink-0 px-2 py-1 rounded-lg border text-[10px] font-bold uppercase ${v.cls}`}>{v.label}</span>

@@ -15,8 +15,9 @@ import {
   DEFAULT_ASIA_RANGE_FVGS,
 } from "../constants/constants";
 import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
+import { missingRequired } from "../lib/requiredFields";
 import { Plus, X, Zap, Copy } from "lucide-react";
-import { NO_ACCOUNT, Num, Status, AccountOption, buildInitial, useTitles } from './tradeForm/shared';
+import { NO_ACCOUNT, Num, Status, AccountOption, buildInitial, useTitles, afterExitTpAsked } from './tradeForm/shared';
 import { toNyInput, nyInputToTs } from '../lib/tradingTime';
 import { BasicInfoCard } from './tradeForm/BasicInfoCard';
 import { ResultCard } from './tradeForm/ResultCard';
@@ -123,6 +124,8 @@ const AddTradeForm = React.memo(function AddTradeForm({
   const [newsDayError, setNewsDayError] = useState(false);
   const [asiaRange, setAsiaRange] = useState(init.asiaRange);
   const [sweepTime, setSweepTime] = useState(init.sweepTime);
+  const [management, setManagement] = useState<string[]>(init.management);
+  const [afterExitTp, setAfterExitTp] = useState<boolean | null>(init.afterExitTp);
   const [selectedAsiaFvg, setSelectedAsiaFvg] = useState(init.asiaFvg);
 
   const [stopPips, setStopPips] = useState<Num>(init.stopPips);
@@ -243,7 +246,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
       return;
     }
 
-    onSave({
+    const record: Partial<Trade> = {
       ...(editingTrade?.id ? { id: editingTrade.id } : {}),
       createdAt: safeCreatedAt,
       asset: finalAsset,
@@ -269,6 +272,9 @@ const AddTradeForm = React.memo(function AddTradeForm({
       strategy: editingTrade?.strategy || undefined,
       asiaRange: (asiaRange || undefined) as Trade["asiaRange"],
       sweepTime: sweepTime || undefined,
+      management: management.length ? (management as Trade["management"]) : undefined,
+      // Çıkış sonrası TP sorusu yalnızca BE / erken kapama / BE'ye çekilen işlemlerde anlamlı
+      afterExitTp: afterExitTpAsked(tradeStatus, management) ? afterExitTp ?? undefined : undefined,
       asiaRangeFvg: selectedAsiaFvg || undefined,
       notes: safeNotes || undefined,
       screenshot: screenshot || undefined,
@@ -277,7 +283,16 @@ const AddTradeForm = React.memo(function AddTradeForm({
       // Hızlı kayıt işareti; tam formla kaydedilince kalkar. Hızlı kayıtta girilmeyen alanlar düzenlemede korunur.
       quickEntry: isQuick ? true : undefined,
       exitAt: exitTs ?? undefined,
-    });
+    };
+    // Zorunlu alanlar (Tanımlamalar > Zorunlu Alanlar): tam kayıtta boş bırakılamaz; Hızlı Kayıt muaf
+    if (!isQuick) {
+      const missing = missingRequired(record);
+      if (missing.length) {
+        toast.error(`Zorunlu alanlar eksik: ${missing.join(", ")}. Ayrıntıları sonra girmek için Hızlı Kayıt kullan.`, { duration: 6000 });
+        return;
+      }
+    }
+    onSave(record as any);
   };
 
   function accountSnapshot(): Pick<Trade, "platform" | "accountId" | "accountStage" | "accountCategory" | "riskPct" | "riskAmount"> {
@@ -302,7 +317,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
     asset, type, accountChoice, riskChoice, customRiskPct, tradeDate, exitDate, tradeStatus, stopPips, tpPips, asiaRangePips,
     maePips, mfePips, rrValue, notes, screenshot, selectedTimeframe, selectedHtfTimeframe, selectedSession,
     selectedConfirmations, selectedEntries, selectedTrend, planFidelity,
-    selectedTpTargets, premiumDiscount, newsDay, asiaRange, sweepTime, selectedAsiaFvg,
+    selectedTpTargets, premiumDiscount, newsDay, asiaRange, sweepTime, management, afterExitTp, selectedAsiaFvg,
   ]);
   const baselineRef = useRef(snapshot);
   // Hazır bekleyen form açılınca tarih "şimdi"ye çekilir; bu değişiklik kirli sayılmasın diye taban yenilenir
@@ -388,7 +403,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
       {/* Header */}
       <div className="tf-head flex items-center justify-between px-4 sm:px-5 py-3 sm:py-3.5 border-b border-zinc-800/80 bg-zinc-950/80 shrink-0 select-none">
         <div className="flex items-center gap-3">
-          <div className={`h-2.5 w-2.5 rounded-full ${editingTrade ? "bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]" : "bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]"}`} />
+          <div className={`h-2.5 w-2.5 rounded-full ${editingTrade ? "bg-sky-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]" : "bg-sky-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]"}`} />
           <h2 className="heading-1 text-sm sm:text-base tracking-wider">
             {editingTrade ? (editingTrade.quickEntry ? "İşlemi Tamamla" : "İşlemi Düzenle") : isQuick ? "Hızlı Kayıt" : "Yeni İşlem Ekle"}
           </h2>
@@ -402,11 +417,11 @@ const AddTradeForm = React.memo(function AddTradeForm({
               title={quickMode ? "Tam forma geç" : "Yalnızca temel bilgiler ve sonuç; ayrıntıları sonra tamamla"}
               className={`flex items-center gap-1.5 h-8 px-3 rounded-xl border text-[11px] font-bold transition-ui cursor-pointer ${
                 quickMode
-                  ? "border-amber-500/40 bg-amber-500/15 text-amber-200 hover:bg-amber-500/25"
+                  ? "border-sky-500/40 bg-sky-500/15 text-sky-200 hover:bg-sky-500/25"
                   : "border-zinc-700/70 bg-zinc-900/80 text-zinc-300 hover:text-white hover:border-zinc-500 hover:bg-zinc-800"
               }`}
             >
-              <Zap size={13} className={quickMode ? "text-amber-300" : "text-amber-400"} />
+              <Zap size={13} className={quickMode ? "text-sky-300" : "text-sky-400"} />
               {quickMode ? "Hızlı Kayıt: Açık" : "Hızlı Kayıt"}
             </button>
           )}
@@ -417,7 +432,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
               title="Son işlemdeki parite, hesap ve kurulum seçimlerini uygular"
               className="hidden sm:flex items-center gap-1.5 h-8 px-3 rounded-xl border border-zinc-700/70 bg-zinc-900/80 text-[11px] font-bold text-zinc-300 hover:text-white hover:border-zinc-500 hover:bg-zinc-800 transition-ui cursor-pointer"
             >
-              <Copy size={13} className="text-blue-400" />
+              <Copy size={13} className="text-sky-400" />
               Son Kurulumu Kopyala
             </button>
           )}
@@ -515,6 +530,11 @@ const AddTradeForm = React.memo(function AddTradeForm({
                   setAsiaRange={setAsiaRange}
                   sweepTime={sweepTime}
                   setSweepTime={setSweepTime}
+                  management={management}
+                  setManagement={setManagement}
+                  afterExitTp={afterExitTp}
+                  setAfterExitTp={setAfterExitTp}
+                  tradeStatus={tradeStatus}
                   asiaRangeFvgs={asiaRangeFvgs}
                   selectedAsiaFvg={selectedAsiaFvg}
                   setSelectedAsiaFvg={setSelectedAsiaFvg}
@@ -593,11 +613,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                   </button>
                   <button
                     type="submit"
-                    className={`px-7 h-10 text-xs font-black font-sans tracking-wider rounded-xl uppercase transition-ui flex items-center justify-center gap-1.5 cursor-pointer shadow-lg ${
-                      editingTrade
-                        ? "bg-amber-500 hover:bg-amber-400 text-zinc-950 shadow-amber-500/20"
-                        : "bg-blue-600 hover:bg-blue-500 text-white shadow-blue-500/25"
-                    }`}
+                    className="px-6 h-10 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 font-bold text-xs rounded-xl transition-ui duration-200 ease-out flex items-center justify-center gap-2 shadow-xs border border-blue-500/30 tracking-wide cursor-pointer font-sans uppercase"
                   >
                     {editingTrade ? "Değişiklikleri Kaydet" : <><Plus size={14} /> İşlemi Ekle</>}
                   </button>

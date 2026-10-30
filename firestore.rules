@@ -51,7 +51,8 @@ service cloud.firestore {
         && optNum(d, 'exitAt')
         && optNum(d, 'riskPct') && optNum(d, 'riskAmount') && optNum(d, 'accountStage')
         && optNum(d, 'stopPips') && optNum(d, 'tpPips') && optNum(d, 'maePips') && optNum(d, 'mfePips') && optNum(d, 'asiaRangePips')
-        && optBool(d, 'newsDay') && optBool(d, 'quickEntry')
+        && optBool(d, 'newsDay') && optBool(d, 'quickEntry') && optBool(d, 'afterExitTp')
+        && optList(d, 'management', 4)
         && optList(d, 'confirmations', 50) && optList(d, 'entryModels', 50) && optList(d, 'tpTargets', 50)
         && optStr(d, 'notes', 50000)
         && optStr(d, 'screenshot', 1000000)
@@ -59,7 +60,7 @@ service cloud.firestore {
         && optStr(d, 'timeframe', 200) && optStr(d, 'htfTimeframe', 200) && optStr(d, 'session', 200)
         && optStr(d, 'planFidelity', 200) && optStr(d, 'trend', 200) && optStr(d, 'premiumDiscount', 200)
         && optStr(d, 'strategy', 200) && optStr(d, 'asiaRangeFvg', 200)
-        && (!('asiaRange' in d) || d.asiaRange == null || d.asiaRange in ['Range', 'Trend', 'Sweept'])
+        && (!('asiaRange' in d) || d.asiaRange == null || d.asiaRange in ['Range', 'Trend', 'Swept'])
         && (!('sweepTime' in d) || d.sweepTime == null || (d.sweepTime is string && d.sweepTime.matches('^([01][0-9]|2[0-3]):[0-5][0-9]$')))
         && (!('accountCategory' in d) || d.accountCategory == null || d.accountCategory in ['FUNDED', 'CHALLENGE', 'DEMO']);
     }
@@ -143,7 +144,7 @@ service cloud.firestore {
         && optList(d, 'htfTimeframes', 500) && optList(d, 'confirmations', 500) && optList(d, 'planFidelities', 500)
         && optList(d, 'entryModels', 500) && optList(d, 'trendTypes', 500) && optList(d, 'tpTargets', 500)
         && optList(d, 'premiumDiscounts', 500) && optList(d, 'newsDays', 50) && optList(d, 'strategies', 500)
-        && optList(d, 'asiaRangeFvgs', 500)
+        && optList(d, 'asiaRangeFvgs', 500) && optList(d, 'requiredFields', 50)
         && optStr(d, 'displayName', 200);
     }
 

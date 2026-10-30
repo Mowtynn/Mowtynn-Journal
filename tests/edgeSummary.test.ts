@@ -9,17 +9,24 @@ const t = (rr: number, p: Partial<Trade> = {}, i = 0) =>
 
 test('sızıntı ve güç: yeterli örneklemli tekil alan değerleri', () => {
   const list = [
-    ...Array.from({ length: 8 }, (_, i) => t(i % 4 === 0 ? -1 : 2, { session: 'London', riskPct: 0.5 }, i)),
+    ...Array.from({ length: 10 }, (_, i) => t(i % 4 === 0 ? -1 : 2, { session: 'London', riskPct: 0.5 }, i - 2)),
     ...Array.from({ length: 8 }, (_, i) => t(i === 0 ? 1 : -1, { session: 'NY PM', riskPct: 1 }, i + 10)),
     t(5, { session: 'Asia' }, 30), // az örneklem: listede yok
   ];
   const s = computeEdgeSummary(list);
-  assert.equal(s.total, 17);
+  assert.equal(s.total, 19);
   assert.equal(s.leaks[0].value, 'NY PM');
   assert.equal(s.leaks[0].edge.netR, -6);
   assert.equal(s.strengths[0].value, 'London');
   assert.ok(!s.leaks.concat(s.strengths).some((x) => x.value === 'Asia'));
-  assert.deepEqual(s.riskSlices.map((r) => [r.riskPct, r.edge.n]), [[0.5, 8], [1, 8]]);
+  // olumlu bulguya yüksek eşik: kanıtlanmamış 8 işlemli pozitif alan "daha çok yap"a girmez
+  const few = computeEdgeSummary(list.filter((x) => x.session !== 'London' || x.createdAt > NOW - 200 * DAY));
+  assert.ok(!few.strengths.some((x) => x.value === 'London'));
+  // yönetim boyutları giriş önerilerine karışmaz
+  const m = computeEdgeSummary(Array.from({ length: 12 }, (_, i) => t(i % 3 ? 2 : -1, { management: ["BE'ye Çekildi"] }, i)).concat(Array.from({ length: 12 }, (_, i) => t(-1, { management: ['Plana Göre'] }, i + 20))));
+  assert.ok(!m.strengths.concat(m.leaks).some((x) => x.dimension === 'management'));
+  assert.ok(m.managementSlices.some((x) => x.dimension === 'management'));
+  assert.deepEqual(s.riskSlices.map((r) => [r.riskPct, r.edge.n]), [[0.5, 10], [1, 8]]);
 });
 
 test('News day etkisi ve bilinmeyenler', () => {

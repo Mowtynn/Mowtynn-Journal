@@ -27,6 +27,9 @@ import {
   titleCaseList,
 } from "./constants/constants";
 
+import { computeEdgeDrift } from "./lib/edgeDrift";
+import { loadRequiredFields, applyRequiredFieldsFromCloud, REQUIRED_FIELDS_EVENT } from "./lib/requiredFields";
+import { setGlobalTradeOrder } from "./lib/asiaAnalytics";
 import StatsDashboard from "./components/StatsDashboard";
 import TradeList from "./components/TradeList";
 import { lazyWithPreload, named, preloadWhenIdle } from "./lib/lazyWithPreload";
@@ -191,6 +194,7 @@ const SETTINGS_LIST_KEYS: [string, string][] = [
   ["premiumDiscounts", "trading_premium_discounts_list"],
   ["newsDays", "trading_news_days_list"],
   ["asiaRangeFvgs", "trading_asia_range_fvgs_list"],
+  ["requiredFields", "tj_required_fields"],
 ];
 /** Cihazdaki işlem/not/günlük verisinin hangi hesaba ait olduğu (hesaplar arası karışmayı önler) */
 const DATA_OWNER_KEY = "tj_data_owner";
@@ -700,6 +704,17 @@ export default function App() {
     return DEFAULT_ASIA_RANGE_FVGS;
   });
 
+  // Zorunlu alan ayarı değişince buluta yazılır (Tanımlamalar > Zorunlu Alanlar)
+  useEffect(() => {
+    if (!user) return;
+    const onChange = () => {
+      setDoc(doc(db, "settings", user.uid), cleanForFirestore({ requiredFields: loadRequiredFields(), userId: user.uid }), { merge: true })
+        .catch(err => reportCloudError("ayar kaydı", err, "Zorunlu alan ayarı buluta kaydedilemedi; cihazda tutuluyor."));
+    };
+    window.addEventListener(REQUIRED_FIELDS_EVENT, onChange);
+    return () => window.removeEventListener(REQUIRED_FIELDS_EVENT, onChange);
+  }, [user]);
+
   const persistAsiaRangeFvgs = useCallback((incoming: string[], syncCloud = true) => {
     // Eski varsayılan (Bullish/Bearish FVG) yeni varsayılana (Var / Yok) taşınır; bulutta kalan eski kopya geri yazmaz
     const isOldDefault = incoming.length === 2 && incoming[0] === "Bullish FVG" && incoming[1] === "Bearish FVG";
@@ -1089,6 +1104,8 @@ export default function App() {
               applyList(data.premiumDiscounts, "trading_premium_discounts_list", persistPremiumDiscounts);
               applyList(data.newsDays, "trading_news_days_list", persistNewsDays);
               applyList(data.asiaRangeFvgs, "trading_asia_range_fvgs_list", persistAsiaRangeFvgs);
+              // Zorunlu alanlar: buluttaki ayar cihaza yazılır (olay tetiklenmez; döngü olmasın)
+              if (Array.isArray(data.requiredFields)) applyRequiredFieldsFromCloud(data.requiredFields);
               if (data.definitionTitles) persistDefinitionTitles(data.definitionTitles, false);
               if (Array.isArray(data.propAccounts)) {
                 try {
@@ -2153,6 +2170,9 @@ export default function App() {
     [filteredGlobalTrades],
   );
   // Ana panel: beklentinin güven aralığı ve Edge Durumu
+  // "Günün kaçıncı işlemi" hesaplardan bağımsız, tüm işlemler üzerinden sayılır
+  useMemo(() => setGlobalTradeOrder(trades), [trades]);
+  const edgeDrift = useMemo(() => computeEdgeDrift(filteredGlobalTrades), [filteredGlobalTrades]);
   const overallEdge = useMemo(
     () => edgeFromR(filteredGlobalTrades.map((t) => (typeof t.rr === "number" && Number.isFinite(t.rr) ? t.rr : 0)), filteredGlobalTrades.map((t) => t.status)),
     [filteredGlobalTrades],
@@ -2269,7 +2289,7 @@ export default function App() {
                     <DateLimitNote limit={globalDateLimit} shown={filteredGlobalTrades.length} onReset={() => setGlobalDateLimit(DEFAULT_DATE_LIMIT)} />
                     {/* STATS BENTO ROW */}
                     <SectionErrorBoundary sectionName="İstatistik Panosu">
-                      <StatsDashboard stats={calculatedStats} edge={overallEdge} />
+                      <StatsDashboard stats={calculatedStats} edge={overallEdge} drift={edgeDrift} />
                     </SectionErrorBoundary>
 
 
@@ -2359,7 +2379,7 @@ export default function App() {
                     </SectionErrorBoundary>
                   </TabPane>
             </div>
-  ), [ globalDateLimit, setGlobalDateLimit, weeklyDue, weeklyRequest, openWeeklyReview, scopedTrades, activeScopeKey, activeScopeName, calculatedStats, overallEdge, currentTab, definitionTitles, entryModels, filteredGlobalTrades, handleDeleteJournal, handleDeleteNote, handleDeleteTrade, handleSaveJournal, handleSaveNote, handleStartEdit, journals, notes, planFidelities, propAccounts, handlePropAccountsChange, uploadPropImage, sessions, setDetailedTrade, setEditingTrade, setIsFormOpen, trades, trendTypes ]);
+  ), [ globalDateLimit, setGlobalDateLimit, weeklyDue, weeklyRequest, openWeeklyReview, scopedTrades, activeScopeKey, activeScopeName, calculatedStats, overallEdge, edgeDrift, currentTab, definitionTitles, entryModels, filteredGlobalTrades, handleDeleteJournal, handleDeleteNote, handleDeleteTrade, handleSaveJournal, handleSaveNote, handleStartEdit, journals, notes, planFidelities, propAccounts, handlePropAccountsChange, uploadPropImage, sessions, setDetailedTrade, setEditingTrade, setIsFormOpen, trades, trendTypes ]);
 
   return (
     <AllTradesContext.Provider value={trades}>

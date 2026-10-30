@@ -77,7 +77,7 @@ export const SweepTimePicker = React.memo(function SweepTimePicker({
   const cell = (active: boolean) =>
     `h-8 rounded-lg text-xs font-sans font-bold tabular-nums transition-ui border cursor-pointer ${
       active
-        ? "bg-cyan-500/20 text-cyan-200 border-cyan-500/50 shadow-xs"
+        ? "bg-sky-500/20 text-sky-200 border-sky-500/50 shadow-xs"
         : "bg-zinc-950/70 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-600 hover:bg-zinc-800/60"
     }`;
 
@@ -91,15 +91,15 @@ export const SweepTimePicker = React.memo(function SweepTimePicker({
           aria-expanded={open}
           onClick={() => setOpen((o) => !o)}
           className={`flex-1 min-w-0 h-9 bg-zinc-950/80 hover:bg-zinc-900 border rounded-xl px-3 text-xs font-sans font-bold flex items-center justify-between gap-2 cursor-pointer transition-ui shadow-inner ${
-            open ? "border-cyan-500/60 ring-1 ring-cyan-500/25" : cur ? "border-cyan-500/40" : "border-zinc-800 hover:border-zinc-600"
+            open ? "border-sky-500/60 ring-1 ring-sky-500/25" : cur ? "border-sky-500/40" : "border-zinc-800 hover:border-zinc-600"
           }`}
         >
-          <span className={`tabular-nums tracking-wide truncate ${cur ? "text-cyan-200" : "text-zinc-500"}`}>
+          <span className={`tabular-nums tracking-wide truncate ${cur ? "text-sky-200" : "text-zinc-500"}`}>
             {cur ? value : "Saat Seç"}
           </span>
           <span className="flex items-center gap-1.5 shrink-0">
             <span className="text-[9px] font-bold text-zinc-500 border border-zinc-800 rounded-md px-1 py-px">NY</span>
-            <Clock size={13} className={cur ? "text-cyan-400" : "text-zinc-500"} />
+            <Clock size={13} className={cur ? "text-sky-400" : "text-zinc-500"} />
           </span>
         </button>
         {cur && (
@@ -108,7 +108,7 @@ export const SweepTimePicker = React.memo(function SweepTimePicker({
             onClick={() => onChange("")}
             title="Temizle"
             aria-label="Sweep Time'ı temizle"
-            className="h-9 w-9 shrink-0 flex items-center justify-center rounded-xl border border-zinc-800 bg-zinc-950/80 text-zinc-500 hover:text-rose-300 hover:border-rose-500/40 transition-ui cursor-pointer"
+            className="h-9 w-9 shrink-0 flex items-center justify-center rounded-xl border border-zinc-800 bg-zinc-950/80 text-zinc-500 hover:text-sky-300 hover:border-sky-500/40 transition-ui cursor-pointer"
           >
             <X size={13} />
           </button>
@@ -170,11 +170,11 @@ export const SweepTimePicker = React.memo(function SweepTimePicker({
 
                 <div className="flex items-center justify-end gap-1.5 pt-1 border-t border-zinc-800/80">
                   {cur && (
-                    <button type="button" onClick={() => { onChange(""); setOpen(false); }} className="h-7 px-2.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-rose-300 border border-transparent hover:border-rose-500/30 cursor-pointer transition-ui">
+                    <button type="button" onClick={() => { onChange(""); setOpen(false); }} className="h-7 px-2.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-sky-300 border border-transparent hover:border-sky-500/30 cursor-pointer transition-ui">
                       Temizle
                     </button>
                   )}
-                  <button type="button" onClick={() => setOpen(false)} className="h-7 px-2.5 bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-200 border border-cyan-500/40 rounded-lg text-xs font-medium cursor-pointer flex items-center gap-1 transition-ui">
+                  <button type="button" onClick={() => setOpen(false)} className="h-7 px-2.5 bg-sky-500/15 hover:bg-sky-500/25 text-sky-200 border border-sky-500/40 rounded-lg text-xs font-medium cursor-pointer flex items-center gap-1 transition-ui">
                     <Check size={11} /> Tamam
                   </button>
                 </div>

@@ -282,6 +282,8 @@ const BackupRescue = React.memo(function BackupRescue({
             strategy: typeof item.strategy === 'string' && item.strategy.trim() ? item.strategy.trim() : undefined,
             asiaRange: typeof item.asiaRange === 'string' ? item.asiaRange : undefined,
             sweepTime: typeof item.sweepTime === 'string' ? item.sweepTime : undefined,
+            management: Array.isArray(item.management) ? item.management : undefined,
+            afterExitTp: typeof item.afterExitTp === 'boolean' ? item.afterExitTp : undefined,
             asiaRangeFvg: typeof item.asiaRangeFvg === 'string' && item.asiaRangeFvg.trim() ? item.asiaRangeFvg.trim() : undefined,
             accountId: typeof item.accountId === 'string' && item.accountId ? item.accountId : undefined,
             accountStage: num(item.accountStage),

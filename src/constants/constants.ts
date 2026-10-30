@@ -61,7 +61,7 @@ export const DEFAULT_ASIA_RANGE_FVGS = ["Var", "Yok"];
 /** Listesi olmayan form alanlarının başlıkları: Tanımlamalar > Form Başlıkları'ndan değiştirilir. */
 export const FORM_LABEL_KEYS = [
   "basicInfoCard", "financialCard", "notesCard", "direction", "tradeDate", "tradeStatus",
-  "stopPips", "tpPips", "maePips", "mfePips", "asiaRangePips", "rr", "chartLink", "asiaRange", "sweepTime",
+  "stopPips", "tpPips", "maePips", "mfePips", "asiaRangePips", "rr", "chartLink", "asiaRange", "sweepTime", "management",
 ] as const;
 
 export const DEFAULT_NEWS_DAYS = ["Var", "Yok"];
@@ -117,6 +117,7 @@ export const DEFAULT_DEFINITION_TITLES: DefinitionTitles = {
   chartLink: "Grafik Linki",
   asiaRange: "Asia Range",
   sweepTime: "Sweep Time",
+  management: "İşlem Yönetimi",
 };
 
 /**

@@ -26,7 +26,7 @@ export const getMinTimestamp = (limit: string, now: number = Date.now()): number
 
 /** Sonradan eklenen alanların filtreleri (Asia Range, News day, P/D, TP target, Asia FVG, risk %, hızlı kayıt) */
 export interface ExtraTradeFilters {
-  /** Range / Trend / Sweept */
+  /** Range / Trend / Swept */
   asiaRanges: string[];
   premiumDiscounts: string[];
   tpTargets: string[];

@@ -233,7 +233,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
       incomplete,
     };
   }, [ready, trades, premiumDiscounts, tpTargets, asiaRangeFvgs]);
-  const riskLabel = (n: number) => `%${n.toLocaleString('tr-TR', { maximumFractionDigits: 3 })}`;
+  const riskLabel = (n: number) => `%${n.toLocaleString('en-US', { maximumFractionDigits: 3 })}`;
   const newsSummary = globalExtra.newsDay === 'YES' ? newsLabels.yes : globalExtra.newsDay === 'NO' ? newsLabels.no : 'Tümü';
 
   // Keep track of which accordion categories are expanded
@@ -772,7 +772,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                 />
               </FilterAccordionRow>
 
-              {/* 11. ASIA RANGE (Range / Trend / Sweept) */}
+              {/* 11. ASIA RANGE (Range / Trend / Swept) */}
               <FilterAccordionRow title={definitionTitles.asiaRange || "Asia Range"}
                 icon={<BookOpen size={14} className="text-cyan-400" />}
                 summaryText={globalExtra.asiaRanges.length > 0 ? globalExtra.asiaRanges.join(', ') : 'Tümü'}

@@ -98,7 +98,7 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
   return (
     <div className="tf-card bg-zinc-900/50 border border-zinc-800/80 rounded-2xl p-4 flex flex-col gap-3.5 shadow-sm">
       <div className="flex items-center gap-2 pb-2.5 border-b border-zinc-800/60">
-        <Layers size={14} className="text-blue-400" />
+        <Layers size={14} className="text-sky-400" />
         <span className="text-xs font-bold text-zinc-200 uppercase tracking-wider font-sans">{L("basicInfoCard")}</span>
       </div>
 
@@ -110,7 +110,7 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
             {H("assets", "PARİTE")}
           </label>
           <div className="relative group">
-            <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-zinc-500 group-focus-within:text-blue-400 transition-colors">
+            <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-zinc-500 group-focus-within:text-sky-400 transition-colors">
               <Search size={12} />
             </span>
             <input
@@ -178,11 +178,11 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
                           }}
                           lang="en"
                           className={`dd-option px-2.5 py-1.5 rounded-lg text-xs font-sans font-bold uppercase cursor-pointer flex items-center justify-between gap-2 border ${
-                            isSel ? "bg-blue-500/15 text-blue-300 border-blue-500/30" : isActive ? "bg-zinc-800/90 text-white border-transparent" : "text-zinc-200 border-transparent"
+                            isSel ? "bg-sky-500/15 text-sky-300 border-sky-500/30" : isActive ? "bg-zinc-800/90 text-white border-transparent" : "text-zinc-200 border-transparent"
                           }`}
                         >
                           <span className="truncate">{a}</span>
-                          {isSel && <Check size={12} className="dd-check text-blue-400 shrink-0" strokeWidth={2.5} />}
+                          {isSel && <Check size={12} className="dd-check text-sky-400 shrink-0" strokeWidth={2.5} />}
                         </div>
                       );
                     });
@@ -256,14 +256,14 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
                   className={`shrink-0 px-2.5 rounded-lg text-xs font-semibold font-sans flex items-center gap-1.5 whitespace-nowrap transition-ui cursor-pointer ${
                     sel
                       ? funded
-                        ? "bg-emerald-500/15 text-emerald-50 ring-1 ring-inset ring-emerald-500/40"
-                        : "bg-blue-500/15 text-blue-50 ring-1 ring-inset ring-blue-500/40"
+                        ? "bg-sky-500/15 text-emerald-50 ring-1 ring-inset ring-sky-500/40"
+                        : "bg-sky-500/15 text-blue-50 ring-1 ring-inset ring-sky-500/40"
                       : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
                   }`}
                 >
-                  <span aria-hidden className={`w-1.5 h-1.5 rounded-full shrink-0 ${funded ? "bg-emerald-400" : "bg-blue-400"}`} />
+                  <span aria-hidden className={`w-1.5 h-1.5 rounded-full shrink-0 ${funded ? "bg-sky-400" : "bg-sky-400"}`} />
                   <span className="max-w-[9rem] truncate">{a.label}</span>
-                  <span className={`shrink-0 text-[10px] font-bold px-1 rounded ${sel ? (funded ? "bg-emerald-500/25 text-emerald-200" : "bg-blue-500/25 text-blue-200") : "bg-zinc-800 text-zinc-400"}`}>
+                  <span className={`shrink-0 text-[10px] font-bold px-1 rounded ${sel ? (funded ? "bg-sky-500/25 text-sky-200" : "bg-sky-500/25 text-sky-200") : "bg-zinc-800 text-zinc-400"}`}>
                     {funded ? "F" : `P${a.stage}`}
                   </span>
                 </button>
@@ -284,11 +284,11 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
             title="Demo / backtest: risk seçilmez, yalnızca R"
             className={`shrink-0 px-2.5 rounded-lg text-xs font-semibold font-sans flex items-center gap-1 whitespace-nowrap transition-ui cursor-pointer ${
               accountChoice === NO_ACCOUNT
-                ? "bg-amber-500/15 text-amber-50 ring-1 ring-inset ring-amber-500/40"
+                ? "bg-sky-500/15 text-amber-50 ring-1 ring-inset ring-sky-500/40"
                 : "text-zinc-500 hover:text-white hover:bg-zinc-800/60"
             }`}
           >
-            <Shield size={12} className="text-amber-400 shrink-0" />
+            <Shield size={12} className="text-sky-400 shrink-0" />
             Hesapsız
           </button>
         </div>
@@ -305,7 +305,7 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
         const chipIdle = riskDisabled
           ? "bg-zinc-950/40 border-zinc-800/70 text-zinc-600 cursor-not-allowed"
           : "bg-zinc-950/80 border-zinc-700/70 text-zinc-300 hover:border-zinc-500 hover:text-white cursor-pointer";
-        const chipOn = "bg-violet-500/15 border-violet-500/45 text-violet-100 cursor-pointer";
+        const chipOn = "bg-sky-500/15 border-sky-500/45 text-sky-100 cursor-pointer";
         const showCustom = !riskDisabled && riskChoice === "CUSTOM";
         return (
           <div id="risk-field" aria-disabled={riskDisabled || undefined}>
@@ -320,7 +320,7 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
               className={`flex flex-nowrap items-center gap-1.5 rounded-xl transition-ui ${riskError && !riskDisabled ? "ring-1 ring-rose-500/60 ring-offset-2 ring-offset-zinc-900" : ""}`}
             >
               <span
-                className={`h-9 flex-[1.35] min-w-0 px-2 rounded-lg border border-dashed text-[11px] font-bold font-sans tabular-nums flex items-center justify-center gap-1 truncate ${riskDisabled ? "border-zinc-800 bg-zinc-950/30 text-zinc-600" : riskDollar !== null ? "border-violet-500/30 bg-violet-500/5 text-violet-200" : "border-zinc-700/70 bg-zinc-900/60 text-zinc-400"}`}
+                className={`h-9 flex-[1.35] min-w-0 px-2 rounded-lg border border-dashed text-[11px] font-bold font-sans tabular-nums flex items-center justify-center gap-1 truncate ${riskDisabled ? "border-zinc-800 bg-zinc-950/30 text-zinc-600" : riskDollar !== null ? "border-sky-500/30 bg-sky-500/5 text-sky-200" : "border-zinc-700/70 bg-zinc-900/60 text-zinc-400"}`}
                 title={selectedAccount?.size ? `Başlangıç bakiyesi $${selectedAccount.size.toLocaleString("en-US")} · riskin $ karşılığı` : "Riskin $ karşılığı"}
                 aria-live="polite"
               >
@@ -364,9 +364,9 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
                       setCustomRiskPct(v !== "" && Number.isFinite(Number(v)) ? Math.abs(Number(v)) : "");
                       setRiskError(false);
                     }}
-                    className="h-9 w-full bg-violet-500/10 border border-violet-500/45 focus:border-violet-400 focus:ring-1 focus:ring-violet-500/30 rounded-lg pl-2 pr-5 text-xs text-violet-100 focus:outline-none placeholder-violet-300/40 font-sans font-bold tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="h-9 w-full bg-sky-500/10 border border-sky-500/45 focus:border-sky-400 focus:ring-1 focus:ring-sky-500/30 rounded-lg pl-2 pr-5 text-xs text-sky-100 focus:outline-none placeholder-sky-300/40 font-sans font-bold tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
-                  <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[11px] font-bold text-violet-300/70">%</span>
+                  <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[11px] font-bold text-sky-300/70">%</span>
                 </div>
               ) : (
                 <button
@@ -442,7 +442,7 @@ function DstNote({ label, value }: { label: string; value: string }) {
   const ts = nyInputToTs(value);
   const fixed = ts !== null ? toNyInput(ts).slice(11, 16) : '—';
   return (
-    <p className="-mt-1 text-[10px] text-amber-300/90 font-sans">
+    <p className="-mt-1 text-[10px] text-sky-300/90 font-sans">
       {label}: {value.slice(11, 16)} yaz saati geçişinde yok (saat ileri alındı); {fixed} olarak kaydedilir.
     </p>
   );

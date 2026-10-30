@@ -1,6 +1,7 @@
 import { PropAccount, Trade } from '../types';
 import { computeAccountMetrics, defaultRiskAmount } from './propAccounts';
 import { getTradeAccountCategory } from '../constants/constants';
+import { nyDateKey } from './tradingTime';
 
 /**
  * Prop hesabı için R tabanlı canlı özet: hesabın kendi işlemlerinden istatistik,
@@ -38,7 +39,22 @@ export interface AccountRInsights {
     sampleSource: 'ACCOUNT' | 'ALL';
     medianTrades?: number;  // hedefe ulaşanlarda medyan işlem sayısı
   };
+  /** Risk seviyelerine göre aynı simülasyon ve önerilen risk % (hesabın drawdown ve hedef kurallarına göre) */
+  /** Simülasyonda günlük kayıp limiti uygulandı mı ve günlük işlem varsayımı */
+  dailyLimitApplied?: { pct: number; tradesPerDay: number };
+  riskAdvice?: {
+    levels: { pct: number; probability: number; bustProbability: number; medianTrades?: number }[];
+    recommendedPct?: number;
+    currentPct?: number;
+  };
 }
+
+/** Karşılaştırılan risk seviyeleri (hesap boyutunun %'si) */
+export const RISK_LEVELS = [0.25, 0.5, 0.75, 1, 1.5, 2];
+/** Değerlendirmede kabul edilen en yüksek hesabı yakma olasılığı (%); bu sınırın altında, geçme olasılığı en yükseğe yakın olan en hızlı seviye önerilir */
+export const MAX_BUST_PCT = 15;
+/** Funded'da önerilecek seviyenin en az ayakta kalma olasılığı (%) */
+export const MIN_SURVIVE_PCT = 90;
 
 const finiteR = (t: Trade) => (typeof t.rr === 'number' && Number.isFinite(t.rr) ? t.rr : null);
 
@@ -120,43 +136,86 @@ export function computeAccountRInsights(
   const trailing = account.drawdownMode === 'TRAILING';
   const isPass = m.targetRemaining !== undefined;
   const horizon = options.horizon ?? (isPass ? 300 : 20);
-  const rand = rng(seed);
+  // Günlük kayıp limiti: gün başı bakiyeden hesap boyutunun %'si. Günlük işlem sayısı geçmişindeki medyandan (en az 1).
+  const dailyLimit = account.dailyLossPct && account.dailyLossPct > 0 ? (account.size * account.dailyLossPct) / 100 : 0;
+  const dayCounts = new Map<string, number>();
+  (useOwn ? m.trades : allTrades.filter((t) => getTradeAccountCategory(t) !== 'DEMO')).forEach((t) => {
+    const k = nyDateKey(t.createdAt);
+    dayCounts.set(k, (dayCounts.get(k) || 0) + 1);
+  });
+  const tradesPerDay = Math.max(1, Math.round(median([...dayCounts.values()])));
 
-  let success = 0;
-  const tradesToPass: number[] = [];
-  for (let run = 0; run < runs; run++) {
-    let balance = m.balance;
-    let peak = m.peak;
-    let progress = m.netPnl;
-    let failed = false;
-    let passedAt = -1;
-    for (let i = 0; i < horizon; i++) {
-      const r = sample[Math.floor(rand() * sample.length)];
-      const amt = r * unit;
-      balance += amt;
-      progress += amt;
-      if (balance > peak) peak = balance;
-      const floor = trailing ? Math.min(account.size, peak - maxDdAmount) : account.size - maxDdAmount;
-      if (maxDdAmount > 0 && balance <= floor) {
-        failed = true;
-        break;
+  // Tek simülasyon: verilen 1R ($) ile; aynı tohum → aynı sonuç (risk seviyeleri adil karşılaştırılır)
+  const simulate = (unitAmt: number) => {
+    const rand = rng(seed);
+    let ok = 0;
+    let busted = 0;
+    const passed: number[] = [];
+    for (let run = 0; run < runs; run++) {
+      let balance = m.balance;
+      let peak = m.peak;
+      let progress = m.netPnl;
+      let failed = false;
+      let passedAt = -1;
+      let dayStart = balance;
+      for (let i = 0; i < horizon; i++) {
+        if (i % tradesPerDay === 0) dayStart = balance;
+        const r = sample[Math.floor(rand() * sample.length)];
+        const amt = r * unitAmt;
+        balance += amt;
+        progress += amt;
+        if (balance > peak) peak = balance;
+        const floor = trailing ? Math.min(account.size, peak - maxDdAmount) : account.size - maxDdAmount;
+        if ((maxDdAmount > 0 && balance <= floor) || (dailyLimit > 0 && balance <= dayStart - dailyLimit)) {
+          failed = true;
+          break;
+        }
+        if (isPass && m.target !== undefined && progress >= m.target) {
+          passedAt = i + 1;
+          break;
+        }
       }
-      if (isPass && m.target !== undefined && progress >= m.target) {
-        passedAt = i + 1;
-        break;
-      }
+      if (failed) busted++;
+      if (isPass ? passedAt > 0 : !failed) ok++;
+      if (passedAt > 0) passed.push(passedAt);
     }
-    if (isPass ? passedAt > 0 : !failed) success++;
-    if (passedAt > 0) tradesToPass.push(passedAt);
+    return { probability: (ok / runs) * 100, bustProbability: (busted / runs) * 100, medianTrades: passed.length ? median(passed) : undefined };
+  };
+
+  const main = simulate(unit);
+
+  // Risk önerisi: hesap boyutuna göre risk seviyeleri; drawdown sınırı ve hedef gerçek hesap kurallarından.
+  // Değerlendirmede: hesabı yakma olasılığı ≤ %15 kalırken geçme olasılığı en yüksek olan seviye (eşitlikte düşük risk).
+  // Funded'da: ufuk boyunca ayakta kalma ≥ %90 olan en yüksek seviye.
+  if (account.size > 0) {
+    const levels = RISK_LEVELS.map((pct) => ({ pct, ...simulate((account.size * pct) / 100) }));
+    let best: (typeof levels)[number] | undefined;
+    if (isPass) {
+      // Yakma ≤ eşik olanlar içinde geçme olasılığı en yükseğe en fazla 2 puan yakın olanlardan en HIZLI geçeni (medyan işlem)
+      const safe = levels.filter((l) => l.bustProbability <= MAX_BUST_PCT);
+      const top = Math.max(0, ...safe.map((l) => l.probability));
+      for (const l of safe) {
+        if (l.probability < top - 2) continue;
+        if (!best || (l.medianTrades ?? Infinity) < (best.medianTrades ?? Infinity)) best = l;
+      }
+    } else {
+      for (const l of levels) if (l.probability >= MIN_SURVIVE_PCT) best = l;
+    }
+    result.riskAdvice = {
+      levels: levels.map((l) => ({ pct: l.pct, probability: l.probability, bustProbability: l.bustProbability, medianTrades: l.medianTrades })),
+      recommendedPct: best?.pct,
+      currentPct: account.size > 0 ? (unit / account.size) * 100 : undefined,
+    };
   }
 
+  if (dailyLimit > 0) result.dailyLimitApplied = { pct: account.dailyLossPct as number, tradesPerDay };
   result.simulation = {
-    probability: (success / runs) * 100,
+    probability: main.probability,
     kind: isPass ? 'PASS' : 'SURVIVE',
     horizon,
     sampleSize: sample.length,
     sampleSource: useOwn ? 'ACCOUNT' : 'ALL',
-    medianTrades: tradesToPass.length ? median(tradesToPass) : undefined,
+    medianTrades: main.medianTrades,
   };
   return result;
 }

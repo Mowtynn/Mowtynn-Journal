@@ -2,6 +2,7 @@ import { Trade, JournalEntry, Note } from '../types';
 import { getNyParts, getSweepSide, getTradeHourBucket, WEEKDAY_NAMES_TR, nyWallDate, formatDuration } from '../lib/tradingTime';
 import { getNewsDayLabels, getTradeAccountCategory, getTradeStageLabel, ACCOUNT_CATEGORY_LABELS } from '../constants/constants';
 import { DATASET_LABELS, getTradeDataset } from '../lib/asiaAnalytics';
+import { edgeReportRows } from '../lib/edgeSummary';
 
 // Excel kütüphanesi (xlsx, ~400 kB) yalnızca Excel'e aktarırken indirilir; uygulama açılışını yavaşlatmaz.
 // PWA önbelleği ilk ziyaretten sonra dosyayı arka planda saklar, sonraki aktarımlar anında olur.
@@ -180,6 +181,8 @@ export const prepareTradeExportRows = (trades: Trade[], titles: Record<string, s
       'Hedef Tamamlama (MFE/TP %)': hasNum(t.mfePips) && hasNum(t.tpPips) && t.tpPips > 0 ? Math.round(((t.mfePips as number) / t.tpPips) * 100) : '-',
       [T('asiaRange', 'Asia Range')]: t.asiaRange || '-',
       [T('sweepTime', 'Sweep Time')]: t.sweepTime || '-',
+      [T('management', 'İşlem Yönetimi')]: Array.isArray(t.management) && t.management.length ? t.management.join(', ') : '-',
+      "Çıkış Sonrası TP'ye Ulaştı": typeof t.afterExitTp === 'boolean' ? (t.afterExitTp ? 'Evet' : 'Hayır') : '-',
       [T('planFidelities', 'Setup Kalitesi')]: t.planFidelity || '-',
       [T('trendTypes', 'Trend Yapısı')]: t.trend || '-',
       [T('newsDays', 'News Day/Bank Holiday')]: typeof t.newsDay === 'boolean' ? (t.newsDay ? news.yes : news.no) : '-',
@@ -207,6 +210,8 @@ export const exportTradesToExcel = async (trades: Trade[], filename: string, opt
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, sheetFromRows(XLSX, prepareTradeExportRows(trades, options?.definitionTitles), 10), 'İşlem Geçmişi');
   XLSX.utils.book_append_sheet(workbook, summarySheet(XLSX, tradeSummaryRows(trades, options?.title)), 'Özet İstatistikler');
+  const edgeRows = edgeReportRows(trades);
+  if (edgeRows.length) XLSX.utils.book_append_sheet(workbook, sheetFromRows(XLSX, edgeRows, 1), 'Edge Raporu');
   XLSX.writeFile(workbook, xlsxName(filename));
 };
 

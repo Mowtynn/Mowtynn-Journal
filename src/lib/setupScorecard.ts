@@ -1,7 +1,8 @@
 import { Trade } from '../types';
-import { edgeFromR, EdgeStats } from './asiaAnalytics';
+import { edgeFromR, EdgeStats, sweepHourBucket, sweepDelayBucket, holdBucket, stageBucket, plannedRRBucket, stopToRangeBucket, tradeOfDayBucket, managementBucket, afterExitBucket, indexTradeOrder } from './asiaAnalytics';
 import { getNewsDayLabels } from '../constants/constants';
 import { EDGE_PROOF_MIN, MIN_SAMPLE } from './sampleSize';
+import { driftFromR, type EdgeDrift } from './edgeDrift';
 
 /**
  * Kurulum karnesi: işlemleri seçilen boyutların birleşimine (ör. Asia Range + seans + giriş modeli)
@@ -10,8 +11,19 @@ import { EDGE_PROOF_MIN, MIN_SAMPLE } from './sampleSize';
 
 export type SetupDimension =
   | 'asiaRange'
+  | 'sweepHour'
+  | 'sweepDelay'
+  | 'planFidelity'
+  | 'holdTime'
+  | 'plannedRR'
+  | 'stopToRange'
+  | 'tradeOfDay'
+  | 'management'
+  | 'afterExitTp'
+  | 'accountStage'
   | 'session'
   | 'entryModels'
+  | 'confirmations'
   | 'premiumDiscount'
   | 'trend'
   | 'timeframe'
@@ -24,15 +36,26 @@ export type SetupDimension =
 
 export const SETUP_DIMENSIONS: { id: SetupDimension; label: string }[] = [
   { id: 'asiaRange', label: 'Asia Range' },
-  { id: 'session', label: 'Seans' },
-  { id: 'entryModels', label: 'Giriş modeli' },
+  { id: 'sweepHour', label: 'Sweep Saati (NY, 30 dk)' },
+  { id: 'sweepDelay', label: 'Sweep→Giriş' },
+  { id: 'planFidelity', label: 'Setup Kalitesi' },
+  { id: 'holdTime', label: 'İşlem Süresi' },
+  { id: 'plannedRR', label: 'Planlanan R:R' },
+  { id: 'stopToRange', label: 'Stop / Asia Range' },
+  { id: 'tradeOfDay', label: 'Günün İşlemi' },
+  { id: 'management', label: 'İşlem Yönetimi' },
+  { id: 'afterExitTp', label: 'Çıkış Sonrası TP' },
+  { id: 'accountStage', label: 'Hesap Aşaması' },
+  { id: 'session', label: 'Session' },
+  { id: 'entryModels', label: 'Entry Model' },
+  { id: 'confirmations', label: 'PD Array' },
   { id: 'premiumDiscount', label: 'Confirmations' },
   { id: 'trend', label: 'Trend' },
   { id: 'timeframe', label: 'Entry TF' },
   { id: 'htfTimeframe', label: 'HTF' },
-  { id: 'tpTargets', label: 'Target (çıkış)' },
-  { id: 'asiaRangeFvg', label: 'Asia range FVG' },
-  { id: 'newsDay', label: 'News day' },
+  { id: 'tpTargets', label: 'Target' },
+  { id: 'asiaRangeFvg', label: 'Asia Range FVG' },
+  { id: 'newsDay', label: 'News Day' },
   { id: 'type', label: 'Yön' },
   { id: 'asset', label: 'Parite' },
 ];
@@ -52,6 +75,8 @@ export interface SetupRow {
   /** Sıralama puanı: beklenti, örneklem küçükse sıfıra doğru çekilir */
   score: number;
   lastAt: number;
+  /** Son 10 işlem ↔ öncesi (en az 20 işlemli kurulumlarda) */
+  drift: EdgeDrift;
 }
 
 const joinList = (xs?: string[]) => {
@@ -65,6 +90,26 @@ export function dimensionValue(t: Trade, d: SetupDimension): string {
       return joinList(t.entryModels);
     case 'tpTargets':
       return joinList(t.tpTargets);
+    case 'confirmations':
+      return joinList(t.confirmations);
+    case 'sweepHour':
+      return sweepHourBucket(t.sweepTime) ?? UNSPECIFIED;
+    case 'sweepDelay':
+      return sweepDelayBucket(t) ?? UNSPECIFIED;
+    case 'plannedRR':
+      return plannedRRBucket(t) ?? UNSPECIFIED;
+    case 'stopToRange':
+      return stopToRangeBucket(t) ?? UNSPECIFIED;
+    case 'tradeOfDay':
+      return tradeOfDayBucket(t) ?? UNSPECIFIED;
+    case 'management':
+      return managementBucket(t) ?? UNSPECIFIED;
+    case 'afterExitTp':
+      return afterExitBucket(t) ?? UNSPECIFIED;
+    case 'holdTime':
+      return holdBucket(t) ?? UNSPECIFIED;
+    case 'accountStage':
+      return stageBucket(t) ?? UNSPECIFIED;
     case 'newsDay': {
       if (typeof t.newsDay !== 'boolean') return UNSPECIFIED;
       const nl = getNewsDayLabels();
@@ -119,6 +164,7 @@ export function buildSetupScorecard(trades: Trade[], dims: SetupDimension[], opt
 
   // R sırası için kronolojik
   const sorted = [...trades].sort((a, b) => a.createdAt - b.createdAt);
+  if (useDims.includes('tradeOfDay')) indexTradeOrder(sorted);
   for (const t of sorted) {
     if (typeof t.rr !== 'number' || !Number.isFinite(t.rr)) continue;
     const labels = useDims.map((d) => dimensionValue(t, d));
@@ -139,7 +185,7 @@ export function buildSetupScorecard(trades: Trade[], dims: SetupDimension[], opt
   const rows: SetupRow[] = [...groups.entries()].map(([key, g]) => {
     const edge = edgeFromR(g.rs, g.st);
     const score = (edge.expectancy * edge.n) / (edge.n + minSample);
-    return { key, labels: g.labels, edge, verdict: verdictFor(edge, minSample), score, lastAt: g.lastAt };
+    return { key, labels: g.labels, edge, verdict: verdictFor(edge, minSample), score, lastAt: g.lastAt, drift: driftFromR(g.rs, g.st, 10, 20) };
   });
   rows.sort((a, b) => b.score - a.score || b.edge.n - a.edge.n || a.key.localeCompare(b.key, 'tr'));
   return { rows, total, unspecifiedCount };

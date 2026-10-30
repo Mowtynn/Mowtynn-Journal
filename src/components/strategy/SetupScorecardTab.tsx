@@ -19,7 +19,7 @@ const VERDICT: Record<SetupVerdict, { label: string; cls: string; hint: string }
   LOW_SAMPLE: { label: 'Az örneklem', cls: 'text-zinc-400 border-zinc-700 bg-zinc-800/60', hint: `En az ${SETUP_MIN_SAMPLE} işlem gerekli` },
 };
 
-const fmt = (v: number, d = 2) => v.toLocaleString('tr-TR', { maximumFractionDigits: d });
+const fmt = (v: number, d = 2) => v.toLocaleString('en-US', { maximumFractionDigits: d });
 const sR = (v: number) => `${v > 0 ? '+' : ''}${fmt(v)}R`;
 
 function loadDims(): SetupDimension[] {
@@ -177,12 +177,20 @@ export const SetupScorecardTab = React.memo(function SetupScorecardTab({ trades 
                   <span className="text-right text-zinc-300 tabular-nums">%{fmt(e.winRate, 0)}</span>
                   <span className={`md:text-right tabular-nums font-bold ${e.expectancy > 0 ? 'text-emerald-300' : e.expectancy < 0 ? 'text-rose-300' : 'text-zinc-400'}`}>
                     {sR(e.expectancy)}
-                    {e.n > 1 && <span className="text-[10px] font-normal text-zinc-500"> [{fmt(e.expLo)}; {fmt(e.expHi)}]</span>}
+                    {e.n > 1 && <span className="text-[10px] font-normal text-zinc-500"> {fmt(e.expLo)} – {fmt(e.expHi)}</span>}
                   </span>
                   <span className={`text-right tabular-nums ${e.netR >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>{sR(e.netR)}</span>
                   <span className="md:text-right text-zinc-400 tabular-nums"><span className="md:hidden text-zinc-500">PF </span>{e.profitFactor >= 999 ? '∞' : fmt(e.profitFactor)}</span>
                   <span className="text-right">
                     <span title={v.hint} className={`inline-block px-2 py-0.5 rounded-lg border text-[10px] font-bold uppercase ${v.cls}`}>{v.label}</span>
+                    {r.drift.ready && r.drift.direction !== 'STABLE' && (
+                      <span
+                        title={`Son ${r.drift.recent!.n} işlem: ${sR(r.drift.recent!.expectancy)}/işlem · önceki ${r.drift.before!.n}: ${sR(r.drift.before!.expectancy)}/işlem${r.drift.strength === 'EARLY' ? ' · erken sinyal' : ''}`}
+                        className={`block mt-0.5 text-[10px] font-bold tabular-nums ${r.drift.direction === 'WEAKENING' ? 'text-rose-300' : 'text-emerald-300'}`}
+                      >
+                        Son 10 {r.drift.direction === 'WEAKENING' ? '↓' : '↑'} {sR(r.drift.recent!.expectancy)}
+                      </span>
+                    )}
                   </span>
                 </div>
               );

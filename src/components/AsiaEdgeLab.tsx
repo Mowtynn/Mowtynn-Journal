@@ -219,7 +219,7 @@ export const AsiaEdgeLab = React.memo(function AsiaEdgeLab({ trades }: AsiaEdgeL
           {[
             { l: 'İşlem', val: String(r.overall.n), c: 'text-zinc-100' },
             { l: 'Win Rate', val: `%${r.overall.winRate}`, sub: `%${r.overall.wrLo} – %${r.overall.wrHi}`, c: 'text-zinc-100' },
-            { l: 'Beklenti', val: `${signed(r.overall.expectancy)} R`, sub: `${signed(r.overall.expLo)} / ${signed(r.overall.expHi)}`, c: tone(r.overall.expectancy) },
+            { l: 'Beklenti', val: `${signed(r.overall.expectancy)} R`, sub: `${signed(r.overall.expLo)} – ${signed(r.overall.expHi)}`, c: tone(r.overall.expectancy) },
             { l: 'Net R', val: `${signed(r.overall.netR)} R`, c: tone(r.overall.netR) },
             { l: 'Profit Factor', val: r.overall.profitFactor >= 999 ? '∞' : String(r.overall.profitFactor), c: 'text-zinc-100' },
             { l: 'Maks. DD', val: `${r.overall.maxDrawdownR} R`, sub: `Şu an ${r.overall.currentDrawdownR} R`, c: 'text-zinc-100' },
@@ -321,12 +321,51 @@ export const AsiaEdgeLab = React.memo(function AsiaEdgeLab({ trades }: AsiaEdgeL
               <GroupTable rows={toRows(r.entryModels)} minSample={minSample} empty="Giriş modeli girilmemiş." />
             </Card>
 
-            <Card title="Asia Range (Range / Trend / Sweept)">
+            <Card title="Asia Range (Range / Trend / Swept)">
               <GroupTable rows={toRows(r.asiaRanges)} minSample={minSample} empty="Asia Range girilmemiş." />
             </Card>
 
-            <Card title="Sweep Time (NY)">
+            <Card title="Sweep Time (NY, 30 dk)">
               <GroupTable rows={toRows(r.sweepHours)} minSample={minSample} empty="Sweep Time girilmemiş." />
+            </Card>
+
+            <Card title="İşlem Süresi (Giriş → Çıkış)">
+              <GroupTable rows={toRows(r.holdTime)} minSample={minSample} empty="Çıkış saati girilmiş işlem yok." />
+            </Card>
+
+            <Card title="Hesap Aşaması">
+              <GroupTable rows={toRows(r.stages)} minSample={minSample} empty="Prop hesabına bağlı işlem yok." />
+            </Card>
+
+            <Card title="Planlanan R:R (TP ÷ Stop)">
+              <GroupTable rows={toRows(r.plannedRR)} minSample={minSample} empty="TP ve Stop pip girilmiş işlem yok." />
+            </Card>
+
+            <Card title="Stop / Asia Range">
+              <GroupTable rows={toRows(r.stopToRange)} minSample={minSample} empty="Stop ve Asia Range pip girilmiş işlem yok." />
+            </Card>
+
+            <Card title="Günün Kaçıncı İşlemi">
+              <GroupTable rows={toRows(r.tradeOfDay)} minSample={minSample} empty="İşlem yok." />
+            </Card>
+
+            <Card title="İşlem Yönetimi">
+              <GroupTable rows={toRows(r.management)} minSample={minSample} empty="İşlem yönetimi girilmemiş." />
+              {r.missedByManagement.n > 0 && (
+                <p className="mt-2 text-xs text-zinc-400">
+                  Çıkıştan sonra TP'ye giden {r.missedByManagement.n} işlem
+                  {r.missedByManagement.measured > 0 && <> · yönetimle kaçırılan <span className="font-bold text-rose-300">{r.missedByManagement.missedR.toFixed(2)}R</span></>}
+                  {r.missedByManagement.measured < r.missedByManagement.n && <> ({r.missedByManagement.n - r.missedByManagement.measured} işlemde TP / Stop pip eksik)</>}
+                </p>
+              )}
+            </Card>
+
+            <Card title="Çıkış Sonrası TP">
+              <GroupTable rows={toRows(r.afterExit)} minSample={minSample} empty="BE / erken kapanan işlemlerde girilmemiş." />
+            </Card>
+
+            <Card title="Sweep → Giriş Gecikmesi">
+              <GroupTable rows={toRows(r.sweepDelay)} minSample={minSample} empty="Sweep Time girilmiş işlem yok." />
             </Card>
 
             <Card title="Asia Range FVG">

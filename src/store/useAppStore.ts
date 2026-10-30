@@ -102,7 +102,7 @@ export const useAppStore = create<AppState>()(
       // v3: Liquidity Sweep filtresi düştü · v4: ek alan filtreleri (globalExtra)
       // v5: Hesap ve Aşama filtreleri üst çubuktaki hesap seçicisine taşındı (eski seçimler gizli filtre olarak kalmasın);
       //     varsayılan tarih aralığı "6 ay"dan "tüm zamanlar"a geçti (dokunulmamış eski varsayılan da taşınır)
-      // v7: Strateji filtresi kaldırıldı, yerine Asia Range (Range / Trend / Sweept)
+      // v7: Strateji filtresi kaldırıldı, yerine Asia Range (Range / Trend / Swept)
       migrate: (persisted: any, version: number) => {
         if (persisted && typeof persisted === 'object') {
           delete persisted.globalSelectedConcepts;

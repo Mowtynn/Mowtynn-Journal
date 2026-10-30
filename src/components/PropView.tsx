@@ -29,11 +29,11 @@ interface PropViewProps {
 }
 
 /* ---------- biçim yardımcıları ---------- */
-const money = (v: number) => `${v < 0 ? '-' : ''}$${Math.abs(v).toLocaleString('tr-TR', { maximumFractionDigits: 2 })}`;
+const money = (v: number) => `${v < 0 ? '-' : ''}$${Math.abs(v).toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
 const signedMoney = (v: number) => `${v > 0 ? '+' : ''}${money(v)}`;
 /** "Phase 2'yi", "Phase 3'ü" gibi doğru Türkçe ek */
 const phaseAcc = (n: number) => `Phase ${n}${({ 1: "'i", 2: "'yi", 3: "'ü", 4: "'ü", 5: "'i" } as Record<number, string>)[n] || "'i"}`;
-const fmtR = (v: number) => `${v.toLocaleString('tr-TR', { maximumFractionDigits: 1 })}R`;
+const fmtR = (v: number) => `${v.toLocaleString('en-US', { maximumFractionDigits: 1 })}R`;
 const todayInput = () => {
   const d = nyNow();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -180,6 +180,7 @@ type Draft = {
   phaseCount: number;
   phases: { targetPct: string; maxDdPct: string }[];
   fundedMaxDdPct: string;
+  dailyLossPct: string;
   riskPct: string;
   fee: string;
   startDate: string;
@@ -199,6 +200,7 @@ const emptyDraft = (): Draft => ({
   phaseCount: 2,
   phases: DEFAULT_PHASES.map((p) => ({ ...p })),
   fundedMaxDdPct: '10',
+  dailyLossPct: '',
   riskPct: '1',
   fee: '',
   startDate: todayInput(),
@@ -214,6 +216,7 @@ const draftFromAccount = (a: PropAccount): Draft => ({
     a.phaseRules[i] ? { targetPct: String(a.phaseRules[i].targetPct), maxDdPct: String(a.phaseRules[i].maxDdPct) } : { ...DEFAULT_PHASES[i] },
   ),
   fundedMaxDdPct: String(a.fundedMaxDdPct),
+  dailyLossPct: a.dailyLossPct ? String(a.dailyLossPct) : '',
   riskPct: String(a.riskPct),
   fee: '',
   startDate: todayInput(),
@@ -309,6 +312,10 @@ function NewChainForm({ draft, setDraft, onCreate, onCancel }: { draft: Draft; s
             <div>
               <label className="text-[9px] font-bold uppercase text-zinc-500 block mb-0.5">Max DD %</label>
               <input className={inputCls} type="number" min="0" step="any" value={draft.fundedMaxDdPct} onChange={(e) => set('fundedMaxDdPct', e.target.value)} />
+            </div>
+            <div title="Tüm aşamalarda geçerli günlük kayıp limiti; boş bırakılırsa uygulanmaz">
+              <label className="text-[9px] font-bold uppercase text-zinc-500 block mb-0.5">Günlük Kayıp %</label>
+              <input className={inputCls} type="number" min="0" step="any" placeholder="Yok" value={draft.dailyLossPct} onChange={(e) => set('dailyLossPct', e.target.value)} />
             </div>
           </div>
         </div>
@@ -816,6 +823,8 @@ export function PropView({ accounts, trades, onChange, uploadImage }: PropViewPr
     const risk = Number(draft.riskPct);
     const fundedDd = Number(draft.fundedMaxDdPct);
     const fee = draft.fee.trim() === '' ? 0 : Number(draft.fee);
+    const daily = draft.dailyLossPct.trim() === '' ? 0 : Number(draft.dailyLossPct);
+    if (!(daily >= 0 && daily < 100)) return toast.error('Günlük kayıp yüzdesi geçersiz.');
     if (!chainName) return toast.error('Hesap adını gir.');
     if (!(size > 0)) return toast.error('Hesap boyutunu gir.');
     if (!(risk > 0 && risk <= 10)) return toast.error('1R risk yüzdesi 0–10 arasında olmalı.');
@@ -845,6 +854,7 @@ export function PropView({ accounts, trades, onChange, uploadImage }: PropViewPr
       stage,
       phaseRules,
       fundedMaxDdPct: fundedDd,
+      dailyLossPct: daily > 0 ? daily : undefined,
       riskPct: risk,
       fee: fee > 0 ? fee : undefined,
       status: 'ACTIVE',
@@ -873,6 +883,7 @@ export function PropView({ accounts, trades, onChange, uploadImage }: PropViewPr
       stage: nextStage,
       phaseRules: cur.phaseRules,
       fundedMaxDdPct: cur.fundedMaxDdPct,
+      dailyLossPct: cur.dailyLossPct,
       riskPct: cur.riskPct,
       status: 'ACTIVE',
       createdAt: now,

@@ -84,6 +84,7 @@ export function sanitizePropAccounts(raw: any): PropAccount[] {
       stage,
       phaseRules,
       fundedMaxDdPct: Math.max(0, num(a.fundedMaxDdPct, maxDd)) || maxDd,
+      dailyLossPct: num(a.dailyLossPct) > 0 && num(a.dailyLossPct) < 100 ? num(a.dailyLossPct) : undefined,
       riskPct: num(a.riskPct) > 0 ? num(a.riskPct) : 1,
       fee: num(a.fee) > 0 ? num(a.fee) : undefined,
       status: ['ACTIVE', 'PASSED', 'BLOWN', 'ARCHIVED'].includes(a.status) ? a.status : 'ACTIVE',

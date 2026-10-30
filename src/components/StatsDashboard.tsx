@@ -4,6 +4,7 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { TradeStats } from '../types';
 import type { EdgeStats } from '../lib/asiaAnalytics';
+import type { EdgeDrift } from '../lib/edgeDrift';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -18,11 +19,13 @@ interface StatsDashboardProps {
   stats: TradeStats;
   /** Beklentinin güven aralığı ve Edge Durumu (filtrelenmiş işlemler) */
   edge?: EdgeStats;
+  /** Son 20 işlem ↔ öncesi */
+  drift?: EdgeDrift;
 }
 
 const fmtR = (v: number, digits = 2) => `${v > 0 ? '+' : ''}${v.toFixed(digits)} R`;
 
-const StatsDashboard = React.memo(function StatsDashboard({ stats, edge }: StatsDashboardProps) {
+const StatsDashboard = React.memo(function StatsDashboard({ stats, edge, drift }: StatsDashboardProps) {
   const isPositive = stats.netR > 0;
   const isNegative = stats.netR < 0;
 
@@ -96,9 +99,7 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, edge }: Stats
           </div>
 
           <div className="flex items-center justify-between gap-1 mt-1">
-            <div className="bg-zinc-800/80 border border-zinc-700/60 py-0.5 px-2 rounded-lg flex items-center gap-1.5 overflow-hidden">
-              <span className="text-[10px] font-bold font-sans text-zinc-300">Beklenti {fmtR(stats.expectancyRR)}</span>
-            </div>
+            <span className="text-[10px] text-zinc-500 font-sans truncate">Toplam sonuç</span>
             <span className="text-[10px] text-zinc-400 font-sans flex items-center gap-1">
               <span className="text-zinc-300 font-bold bg-zinc-800 px-1.5 py-0.5 rounded-lg border border-zinc-700">{stats.totalTrades}</span>
               {"İşlem"}
@@ -172,65 +173,19 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, edge }: Stats
         </div>
       </motion.div>
 
-      {/* 3. Profit Factor Card */}
+      {/* 3. Edge Durumu — iki sütun genişliğinde: beklenti + kanıt durumu + güven aralığı + zamanla değişim */}
       <motion.div 
         variants={itemVariants}
-        id="stat-profit-factor" 
-        className="cursor-pointer bg-zinc-900/60 border border-zinc-800/80  hover:bg-zinc-800/50 hover:border-zinc-700/80 rounded-2xl p-4 transition-colors duration-200 ease-out flex flex-col justify-between group shadow-xs"
+        id="stat-edge" 
+        className="col-span-1 sm:col-span-2 bg-zinc-900/60 border border-zinc-800/80 hover:bg-zinc-800/50 hover:border-zinc-700/80 rounded-2xl p-4 transition-colors duration-200 ease-out flex flex-col justify-between gap-2 shadow-xs"
       >
-        <div className="flex items-center justify-between mb-2">
-          <p className="heading-3 text-zinc-400 tracking-wider font-sans flex items-center gap-1.5">
-            <span className="p-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-              <TrendingUp size={12} />
-            </span>
-            {"PROFIT FACTOR"}
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-1 mt-auto pt-1">
-          <div className="flex items-baseline gap-1">
-            <span className={`text-lg sm:text-xl font-bold ${stats.profitFactorRR > 1.5 ? "text-emerald-400" : "text-blue-400"}`}>
-              {stats.profitFactorRR >= 999 ? '∞' : stats.profitFactorRR.toFixed(2)}
-            </span>
-          </div>
-
-          <div className="flex items-center justify-between gap-1 mt-1">
-            <div className="bg-zinc-800/80 border border-zinc-700/60 py-0.5 px-2 rounded-lg flex items-center gap-1.5">
-              <span className="text-[10px] font-sans font-bold text-zinc-300">
-                {stats.profitFactorRR >= 2.0 
-                  ? ('⭐ Harika')
-                  : stats.profitFactorRR >= 1.5 
-                    ? ('🏆 Sürdürülebilir')
-                    : stats.profitFactorRR >= 1.0 
-                      ? ('📈 Kazançta')
-                      : ('🚨 Riskli')}
-              </span>
-            </div>
-            <span className="text-[10px] font-sans font-bold tabular-nums truncate" title="Brüt kazanç / brüt kayıp (R)">
-              <span className="text-emerald-400">+{stats.grossWinR.toFixed(1)}R</span>
-              <span className="text-zinc-600"> / </span>
-              <span className="text-rose-400">−{stats.grossLossR.toFixed(1)}R</span>
-            </span>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* 4. Edge durumu — ort. kazanç/kayıp Derin Analiz'de; burada yalnızca beklenti ve kanıt durumu (diğer kartlarla aynı yükseklik) */}
-      <motion.div 
-        variants={itemVariants}
-        id="stat-win-loss-ratio" 
-        className="cursor-pointer bg-zinc-900/60 border border-zinc-800/80  hover:bg-zinc-800/50 hover:border-zinc-700/80 rounded-2xl p-4 transition-colors duration-200 ease-out flex flex-col justify-between group shadow-xs"
-        title={edge && edge.n >= 2 ? `Beklenti %95 güven aralığı: [${edge.expLo.toLocaleString('tr-TR', { maximumFractionDigits: 2 })}; ${edge.expHi.toLocaleString('tr-TR', { maximumFractionDigits: 2 })}] R · ${edge.n} işlem` : undefined}
-      >
-        <div className="flex items-center justify-between mb-2">
-          <p className="heading-3 text-zinc-400 tracking-wider font-sans flex items-center gap-1.5">
-            <span className="p-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
-              <Layers size={12} />
-            </span>
-            {"Edge Durumu"}
-          </p>
-        </div>
-        <EdgeProof edge={edge} expectancy={stats.expectancyRR} />
+        <p className="heading-3 text-zinc-400 tracking-wider font-sans flex items-center gap-1.5">
+          <span className="p-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+            <Layers size={12} />
+          </span>
+          {"Edge Durumu"}
+        </p>
+        <EdgePanel edge={edge} expectancy={stats.expectancyRR} drift={drift} />
       </motion.div>
 
       {/* Secondary Row: Insights */}
@@ -309,61 +264,112 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, edge }: Stats
 });
 
 /**
- * Edge Durumu: işlem başı beklenti, %95 güven aralığı ve alt sınırın sıfırı geçmesi için gereken ek işlem
- * (mevcut ortalama ve oynaklık sürerse). Kazanma oranı tek başına yanıltıcıdır; kanıt aralıktadır.
+ * Edge Durumu paneli. Sol: işlem başı beklenti, hüküm ve kanıta ilerleme.
+ * Sağ: gerçek beklentinin %95 olasılıkla bulunduğu aralık (sıfır çizgisine göre) ve son 20 işlem ↔ öncesi.
  */
-function EdgeProof({ edge, expectancy }: { edge?: EdgeStats; expectancy: number }) {
-  const f = (v: number) => v.toLocaleString('tr-TR', { maximumFractionDigits: 2 });
-  let badge = 'text-zinc-300';
-  // Hüküm eşiği proje geneliyle aynı (lib/sampleSize · MIN_SAMPLE)
+function verdictOf(edge?: EdgeStats) {
   const n = edge?.n ?? 0;
-  let text = `Az örneklem · ${n}/${MIN_SAMPLE} işlem`;
-  let pct = (n / MIN_SAMPLE) * 100 * 0.25;
-  // "Kanıtlandı" için hem güven aralığının alt sınırı sıfırın üstünde olmalı hem de en az EDGE_PROOF_MIN işlem
-  if (edge && edge.n >= MIN_SAMPLE) {
-    if (edge.expLo > 0 && edge.n >= EDGE_PROOF_MIN) {
-      badge = 'text-emerald-300';
-      text = '✓ Kanıtlandı';
-      pct = 100;
-    } else if (edge.expLo > 0) {
-      badge = 'text-blue-300';
-      text = `Umut verici · ${edge.n}/${EDGE_PROOF_MIN} işlem`;
-      pct = (edge.n / EDGE_PROOF_MIN) * 100;
-    } else if (edge.expectancy > 0 && edge.tradesNeeded !== null) {
-      const need = Math.max(edge.tradesNeeded, EDGE_PROOF_MIN - edge.n);
-      badge = 'text-blue-300';
-      text = `~${need} işlem daha`;
-      pct = (edge.n / (edge.n + need)) * 100;
-    } else if (edge.n >= EDGE_PROOF_MIN) {
-      badge = 'text-rose-300';
-      text = 'Edge yok';
-    } else {
-      badge = 'text-rose-300';
-      text = `Şu an negatif · ${edge.n}/${EDGE_PROOF_MIN} işlem`;
-      pct = (edge.n / EDGE_PROOF_MIN) * 100;
-    }
+  if (!edge || n < MIN_SAMPLE) {
+    return { label: 'Az Veri', tone: 'text-zinc-300 border-zinc-700 bg-zinc-800/60', hint: `Hüküm için en az ${MIN_SAMPLE} işlem gerekli.`, pct: (n / EDGE_PROOF_MIN) * 100, bar: 'bg-zinc-600' };
   }
+  if (edge.expLo > 0 && n >= EDGE_PROOF_MIN) {
+    return { label: 'Kanıtlı Edge', tone: 'text-emerald-300 border-emerald-500/30 bg-emerald-500/10', hint: 'Beklenti %95 güvenle pozitif ve yeterli işlem var.', pct: 100, bar: 'bg-emerald-500' };
+  }
+  if (edge.expectancy > 0) {
+    const need = Math.max(edge.tradesNeeded ?? 0, EDGE_PROOF_MIN - n);
+    return {
+      label: 'Umut Verici',
+      tone: 'text-blue-300 border-blue-500/30 bg-blue-500/10',
+      hint: need > 0 ? `Pozitif ama henüz kanıtlı değil · kanıt için ~${need} işlem daha.` : 'Pozitif ama aralık hâlâ sıfırı kapsıyor.',
+      pct: (n / (n + Math.max(need, 0) || 1)) * 100,
+      bar: 'bg-blue-500',
+    };
+  }
+  if (edge.expHi < 0) return { label: 'Sızıntı', tone: 'text-rose-300 border-rose-500/30 bg-rose-500/10', hint: 'Beklenti %95 güvenle negatif: bu haliyle sistem kaybettiriyor.', pct: 100, bar: 'bg-rose-500' };
+  return { label: n >= EDGE_PROOF_MIN ? 'Edge Yok' : 'Şu An Negatif', tone: 'text-rose-300 border-rose-500/30 bg-rose-500/10', hint: 'Beklenti sıfır ya da negatif, henüz kesin değil.', pct: (n / EDGE_PROOF_MIN) * 100, bar: 'bg-rose-500/60' };
+}
+
+function EdgePanel({ edge, expectancy, drift }: { edge?: EdgeStats; expectancy: number; drift?: EdgeDrift }) {
+  const f = (v: number) => v.toLocaleString('en-US', { maximumFractionDigits: 2 });
+  const v = verdictOf(edge);
+  const n = edge?.n ?? 0;
+  const hasCI = !!edge && n >= MIN_SAMPLE;
+  // Aralık görseli: sıfır ve aralık uçları aynı ölçekte
+  const lo = hasCI ? edge!.expLo : 0;
+  const hi = hasCI ? edge!.expHi : 0;
+  const span = Math.max(Math.abs(lo), Math.abs(hi), Math.abs(expectancy), 0.5) * 1.15;
+  const pos = (x: number) => `${((x + span) / (2 * span)) * 100}%`;
+
   return (
-    <div className="flex flex-col gap-1 mt-auto pt-1">
-      <div className="flex items-baseline gap-1">
-        <span className={`text-lg sm:text-xl font-bold ${expectancy >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{fmtR(expectancy)}</span>
-        <span className="text-[10px] text-zinc-500 font-sans">/işlem</span>
-      </div>
-      <div className="flex items-center justify-between gap-2 mt-1">
-        <div className="bg-zinc-800/80 border border-zinc-700/60 py-0.5 px-2 rounded-lg flex items-center gap-1.5 min-w-0">
-          <span className={`text-[10px] font-sans font-bold truncate ${badge}`}>{text}</span>
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-2.5 font-sans">
+      {/* Sol: beklenti + hüküm + ilerleme */}
+      <div className="flex flex-col gap-1.5 min-w-0" title={v.hint}>
+        <div className="flex items-baseline gap-1.5">
+          <span className={`text-lg sm:text-xl font-bold tabular-nums ${expectancy >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{fmtR(expectancy)}</span>
+          <span className="text-[10px] text-zinc-500">/işlem</span>
         </div>
-        {edge && edge.n >= MIN_SAMPLE && (
-          <span className="text-[10px] text-zinc-500 font-sans tabular-nums truncate">GA [{f(edge.expLo)}; {f(edge.expHi)}]</span>
+        <div className="flex items-center gap-2 min-w-0">
+          <span className={`px-2 py-0.5 rounded-lg border text-[10px] font-bold uppercase shrink-0 ${v.tone}`}>{v.label}</span>
+          <span className="text-[10px] text-zinc-400 tabular-nums truncate">{Math.min(n, EDGE_PROOF_MIN)}/{EDGE_PROOF_MIN} işlem</span>
+        </div>
+        <div className="h-1 rounded-full bg-zinc-800 overflow-hidden" aria-hidden="true">
+          <div className={`h-full rounded-full ${v.bar}`} style={{ width: `${Math.max(n > 0 ? 4 : 0, Math.min(100, v.pct))}%` }} />
+        </div>
+      </div>
+
+      {/* Sağ: güven aralığı + zamanla değişim */}
+      <div className="flex flex-col justify-between gap-2 min-w-0 sm:border-l sm:border-zinc-800/80 sm:pl-5">
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] font-bold uppercase tracking-wide text-zinc-500 truncate" title="Gerçek beklentinin %95 olasılıkla bulunduğu aralık">%95 Beklenti Aralığı</span>
+            {hasCI && <span className="text-[11px] text-zinc-300 tabular-nums whitespace-nowrap shrink-0">{f(lo)} – {f(hi)} R</span>}
+          </div>
+          {hasCI ? (
+            <div className="relative h-2.5 rounded-full bg-zinc-800/80" title={`Gerçek beklenti %95 olasılıkla ${f(lo)} R ile ${f(hi)} R arasında. Aralık sıfırın tamamen üstüne çıkınca edge kanıtlanır.`}>
+              <div className={`absolute top-0 h-full rounded-full ${lo > 0 ? 'bg-emerald-500/50' : hi < 0 ? 'bg-rose-500/50' : 'bg-blue-500/40'}`} style={{ left: pos(lo), width: `calc(${pos(hi)} - ${pos(lo)})` }} />
+              <div className="absolute -top-0.5 h-3.5 w-px bg-zinc-400" style={{ left: pos(0) }} />
+              <div className="absolute top-0.5 h-1.5 w-1.5 -ml-[3px] rounded-full bg-white" style={{ left: pos(expectancy) }} />
+            </div>
+          ) : (
+            <p className="text-[10px] text-zinc-600">{MIN_SAMPLE} işlemden sonra görünür.</p>
+          )}
+        </div>
+
+        {drift && (
+          <div className="flex items-center justify-between gap-2 min-w-0">
+            <span className="text-[10px] font-bold uppercase tracking-wide text-zinc-500 truncate shrink-0">Son 20 İşlem</span>
+            {!drift.ready ? (
+              <span className="text-[10px] text-zinc-600 tabular-nums truncate">{drift.need} işlemde açılır ({drift.n}/{drift.need})</span>
+            ) : (
+              <DriftRow drift={drift} />
+            )}
+          </div>
         )}
       </div>
-      <div className="h-0.5 rounded-full bg-zinc-800 overflow-hidden mt-0.5" aria-hidden="true">
-        <div
-          className={`h-full rounded-full ${pct >= 100 ? 'bg-emerald-500' : edge && edge.expectancy > 0 ? 'bg-blue-500' : 'bg-rose-500/60'}`}
-          style={{ width: `${Math.max(pct > 0 ? 4 : 0, Math.min(100, pct))}%` }}
-        />
-      </div>
     </div>
+  );
+}
+
+function DriftRow({ drift }: { drift: EdgeDrift }) {
+  const r = drift.recent!;
+  const b = drift.before!;
+  const tone = drift.direction === 'WEAKENING' ? 'text-rose-300' : drift.direction === 'IMPROVING' ? 'text-emerald-300' : 'text-zinc-300';
+  const arrow = drift.direction === 'WEAKENING' ? '↓' : drift.direction === 'IMPROVING' ? '↑' : '→';
+  const label =
+    drift.direction === 'STABLE'
+      ? 'Stabil'
+      : drift.direction === 'WEAKENING'
+        ? drift.strength === 'CONFIRMED' ? 'Edge zayıflıyor' : 'Zayıflama sinyali'
+        : drift.strength === 'CONFIRMED' ? 'Edge güçleniyor' : 'Güçlenme sinyali';
+  return (
+    <span
+      className="flex items-center gap-1.5 text-[10px] tabular-nums min-w-0 truncate"
+      title={`Son ${r.n} işlem: ${fmtR(r.expectancy)}/işlem · Önceki ${b.n} işlem: ${fmtR(b.expectancy)}/işlem`}
+    >
+      <b className={tone}>{fmtR(r.expectancy)}</b>
+      <span className="text-zinc-500">← {fmtR(b.expectancy)}</span>
+      <b className={tone}>{arrow} {label}</b>
+    </span>
   );
 }
 

@@ -5,7 +5,7 @@ import { trade } from './fixtures';
 
 const complete = {
   stopPips: 10, tpPips: 30, maePips: 3, mfePips: 35, asiaRangePips: 20,
-  asiaRange: 'Sweept' as const, trend: 'Continuation', newsDay: false, entryModels: ['Breaker'],
+  asiaRange: 'Swept' as const, trend: 'Continuation', newsDay: false, entryModels: ['Breaker'],
 };
 
 test('tam kayıtta eksik yok', () => {

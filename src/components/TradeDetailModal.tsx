@@ -236,7 +236,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
   };
 
   const riskFormatted = typeof currentTrade.riskPct === 'number'
-    ? `%${currentTrade.riskPct.toLocaleString('tr-TR', { maximumFractionDigits: 2 })}`
+    ? `%${currentTrade.riskPct.toLocaleString('en-US', { maximumFractionDigits: 2 })}`
     : '—';
 
   const rrFormatted = currentTrade.rr !== undefined && currentTrade.rr !== null ? formatR(currentTrade.rr) : `—`;
@@ -551,7 +551,15 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                             value={currentTrade.planFidelity} 
                             icon={<ShieldCheck size={14} className="text-blue-400"/>} 
                             valueColor={planColor}
-                            wide
+                          />
+                          <ContextRow
+                            label={smartUpper(cleanDefinitionTitleString(definitionTitles.management) || "İŞLEM YÖNETİMİ")}
+                            value={
+                              currentTrade.management?.length
+                                ? `${currentTrade.management.join(', ')}${typeof currentTrade.afterExitTp === 'boolean' ? ` · Çıkış Sonrası TP: ${currentTrade.afterExitTp ? 'Evet' : 'Hayır'}` : ''}`
+                                : typeof currentTrade.afterExitTp === 'boolean' ? `Çıkış Sonrası TP: ${currentTrade.afterExitTp ? 'Evet' : 'Hayır'}` : undefined
+                            }
+                            icon={<Zap size={14} className="text-sky-400"/>}
                           />
                           {/* 3c. MAE (PİP) */}
                           {currentTrade.maePips !== undefined && currentTrade.maePips !== null && !(insight && insight.path.maeR !== null) && (

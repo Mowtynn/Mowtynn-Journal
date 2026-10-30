@@ -2,8 +2,11 @@
 export type PlatformCategory = 'FUNDED' | 'CHALLENGE' | 'DEMO';
 export type AccountCategory = 'ALL' | 'FUNDED' | 'CHALLENGE' | 'DEMO';
 
-export const ASIA_RANGE_TYPES = ['Range', 'Trend', 'Sweept'] as const;
+export const ASIA_RANGE_TYPES = ['Range', 'Trend', 'Swept'] as const;
 export type AsiaRangeType = (typeof ASIA_RANGE_TYPES)[number];
+
+export const MANAGEMENT_TYPES = ['Plana Göre', "BE'ye Çekildi", 'Kısmi Kâr', 'Erken Kapatıldı'] as const;
+export type ManagementType = (typeof MANAGEMENT_TYPES)[number];
 
 export interface Trade {
   id: string;
@@ -33,8 +36,10 @@ export interface Trade {
   premiumDiscount?: string; // Premium / Discount zone (e.g. Premium, Discount, Equilibrium / OTE)
   /** Eski sürümün strateji alanı: artık formda, filtrelerde ve analizlerde yok; eski kayıtlarda saklı kalır. */
   strategy?: string;
-  asiaRange?: AsiaRangeType; // Asia Range davranışı: Range / Trend / Sweept
-  sweepTime?: string;       // Asia sweep saati, New York saatiyle "HH:mm"
+  asiaRange?: AsiaRangeType; // Asia Range davranışı: Range / Trend / Swept
+  management?: ManagementType[]; // İşlem yönetimi: Plana Göre / BE'ye Çekildi / Kısmi Kâr / Erken Kapatıldı
+  afterExitTp?: boolean;    // Çıkıştan sonra fiyat TP'ye ulaştı mı (BE / erken kapanan işlemlerde)
+  sweepTime?: string;       // Sweep saati, New York saatiyle "HH:mm" (Asia Range seçiminden tamamen bağımsız)
   asiaRangeFvg?: string;    // Asia Range FVG (Tanımlamalar'dan yönetilir)
   newsDay?: boolean;        // News Day / Bank Holiday: true = Var, false = Yok. Girilmemişse tanımsız (bilinmiyor)
   accountId?: string;       // Prop hesap kimliği (PropAccount.id)
@@ -85,6 +90,8 @@ export interface PropAccount {
   stage: number;                // 1..phaseRules.length = değerlendirme aşaması, 0 = Funded
   phaseRules: PropStageRule[];  // zincirin aşama kuralları (aşama sayısı = uzunluk)
   fundedMaxDdPct: number;
+  /** Günlük kayıp limiti (% hesap boyutu, gün başı bakiyeden); yoksa uygulanmaz */
+  dailyLossPct?: number;
   riskPct: number;              // kartta R gösterimi için 1R = boyut × risk %
   fee?: number;                 // challenge ücreti; yalnızca zincirin ilk hesabında
   status: PropAccountStatus;
@@ -194,6 +201,7 @@ export interface DefinitionTitles {
   chartLink?: string;
   asiaRange?: string;
   sweepTime?: string;
+  management?: string;
   notesCard?: string;
 }
 

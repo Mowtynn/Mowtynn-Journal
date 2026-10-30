@@ -30,6 +30,7 @@ import {
   Type,
 } from 'lucide-react';
 import { Trade, DefinitionTitles } from '../types';
+import { REQUIRABLE_FIELDS, DEFAULT_REQUIRED_FIELDS, loadRequiredFields, saveRequiredFields, type RequirableField } from '../lib/requiredFields';
 import {
   DEFAULT_TIMEFRAMES,
   DEFAULT_HTF_TIMEFRAMES,
@@ -88,11 +89,11 @@ interface DefinitionsManagerModalProps {
   persistDefinitionTitles?: (updated: DefinitionTitles) => void;
 }
 
-type TabType = 'assets' | 'timeframes' | 'htfTimeframes' | 'confirmations' | 'sessions' | 'planFidelities' | 'trendTypes' | 'entryModels' | 'tpTargets' | 'premiumDiscounts' | 'newsDays' | 'asiaRangeFvgs' | 'formLabels';
+type TabType = 'assets' | 'timeframes' | 'htfTimeframes' | 'confirmations' | 'sessions' | 'planFidelities' | 'trendTypes' | 'entryModels' | 'tpTargets' | 'premiumDiscounts' | 'newsDays' | 'asiaRangeFvgs' | 'formLabels' | 'requiredFields';
 
 /** Sekme kimliği -> DefinitionTitles anahtarı (Form Başlıkları sekmesinin kendi başlığı yok) */
 const titleKeyFor = (tab: TabType): keyof DefinitionTitles =>
-  tab === 'formLabels' ? 'basicInfoCard' : tab;
+  tab === 'formLabels' || tab === 'requiredFields' ? 'basicInfoCard' : tab;
 
 const FORM_LABEL_HINTS: Record<string, string> = {
   basicInfoCard: 'Kart başlığı: Temel Bilgiler',
@@ -108,8 +109,49 @@ const FORM_LABEL_HINTS: Record<string, string> = {
   asiaRangePips: 'Asia range büyüklüğü',
   rr: 'Sonuç R',
   chartLink: 'Grafik bağlantısı alanı',
-  asiaRange: 'Range / Trend / Sweept seçimi',
+  asiaRange: 'Range / Trend / Swept seçimi',
   sweepTime: 'Sweep saati (NY)',
+  management: 'BE / kısmi kâr / erken kapama',
+};
+
+/** Zorunlu alanlar: tam kayıtta boş bırakılamayacak alanlar (Hızlı Kayıt muaf) */
+const RequiredFieldsPanel: React.FC = () => {
+  const [req, setReq] = useState<RequirableField[]>(loadRequiredFields);
+  const update = (next: RequirableField[]) => {
+    setReq(next);
+    saveRequiredFields(next);
+  };
+  return (
+    <div className="flex flex-col gap-3 min-h-0">
+      <p className="text-[11px] text-zinc-400 leading-snug">
+        Seçili alanlar boşken tam kayıt yapılamaz; Hızlı Kayıt muaftır, ayrıntıları sonra "Tamamla" ile girersin. Parite, yön, sonuç, hesap ve News Day her zaman zorunludur. Girişliyken ayar buluta da kaydedilir.
+      </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 overflow-y-auto custom-scrollbar">
+        {REQUIRABLE_FIELDS.map((f) => {
+          const on = req.includes(f.id);
+          return (
+            <button
+              key={f.id}
+              type="button"
+              data-selected={on}
+              onClick={() => update(on ? req.filter((x) => x !== f.id) : [...req, f.id])}
+              className={`flex items-center justify-between gap-2 px-3 py-2 rounded-xl border text-xs font-bold transition-ui cursor-pointer ${on ? 'bg-sky-500/15 text-sky-200 border-sky-500/40' : 'bg-zinc-950/60 text-zinc-400 border-zinc-800 hover:text-zinc-200 hover:border-zinc-700'}`}
+            >
+              <span className="truncate">{f.label}</span>
+              <span className="text-[10px] font-semibold shrink-0">{on ? 'Zorunlu' : 'İsteğe Bağlı'}</span>
+            </button>
+          );
+        })}
+      </div>
+      <button
+        type="button"
+        onClick={() => update(DEFAULT_REQUIRED_FIELDS)}
+        className="self-start px-3 py-1.5 rounded-xl border border-zinc-700/70 bg-zinc-900 text-[11px] font-bold text-zinc-300 hover:text-white hover:border-zinc-500 cursor-pointer transition-ui"
+      >
+        Önerilen Ayara Dön
+      </button>
+    </div>
+  );
 };
 
 const FormLabelsPanel: React.FC<{
@@ -274,6 +316,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
     { id: 'newsDays', label: definitionTitles.newsDays || DEFAULT_DEFINITION_TITLES.newsDays || "News Day/Bank Holiday", icon: Newspaper, list: normalizeNewsDays(newsDays), persist: persistNewsDays, defaultList: DEFAULT_NEWS_DAYS, fixed: true },
     // Listesi olmayan form alanlarının (Yön, Stop, R:R, Notlar...) başlıkları
     { id: 'formLabels', label: 'Form Başlıkları', icon: Type, list: [...FORM_LABEL_KEYS], persist: () => {}, defaultList: [], special: true },
+    { id: 'requiredFields', label: 'Zorunlu Alanlar', icon: Type, list: [], persist: () => {}, defaultList: [], special: true },
   ];
 
   const currentTabObj = tabs.find(t => t.id === activeTab) || tabs[0];
@@ -593,7 +636,9 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
               {/* Active Tab Panel */}
               <div className="flex-1 flex flex-col min-h-0 bg-zinc-900/80 rounded-2xl border border-zinc-700/50 p-4 sm:p-5 shadow-inner">
                 
-                {isSpecialTab ? (
+                {isSpecialTab && activeTab === 'requiredFields' ? (
+                  <RequiredFieldsPanel />
+                ) : isSpecialTab ? (
                   <FormLabelsPanel
                     definitionTitles={definitionTitles}
                     persistDefinitionTitles={persistDefinitionTitles}
@@ -623,7 +668,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                         <button
                           type="button"
                           onClick={handleSaveCategoryTitle}
-                          className="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-sans font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-xs"
+                          className="px-2.5 py-1 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 border border-blue-500/30 rounded-lg text-xs font-sans font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-xs"
                         >
                           <Check size={12} /> Kaydet
                         </button>
@@ -707,7 +752,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                       type="button"
                       onClick={handleAddItem}
                       disabled={!newItemText.trim()}
-                      className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:hover:bg-blue-600 text-white font-sans text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer shrink-0 shadow-xs"
+                      className="px-3.5 py-2 rounded-xl bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 border border-blue-500/30 disabled:opacity-40 disabled:hover:bg-blue-500/15 font-sans text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer shrink-0 shadow-xs"
                     >
                       <Plus size={14} />
                       <span className="hidden sm:inline">Ekle</span>

@@ -32,7 +32,7 @@ export const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
       : 'bg-amber-500/10 text-amber-300 border-amber-500/30 group-hover:border-amber-500/60';
 
   // Risk sütunu: hesaplı işlemde işlem başı risk yüzdesi, hesapsızda boş
-  const riskText = typeof trade.riskPct === 'number' ? `%${trade.riskPct.toLocaleString('tr-TR', { maximumFractionDigits: 2 })}` : '—';
+  const riskText = typeof trade.riskPct === 'number' ? `%${trade.riskPct.toLocaleString('en-US', { maximumFractionDigits: 2 })}` : '—';
   const accountLabel = trade.platform || (category === 'DEMO' ? 'Hesapsız' : '');
 
   const { formattedDateOnly, formattedTimeOnly } = useMemo(() => {

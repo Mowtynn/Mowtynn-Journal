@@ -389,7 +389,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                               <td className="py-2.5 px-2 text-center font-sans font-bold whitespace-nowrap">
                                 {(() => {
                                   const r = typeof trade.rr === 'number' && Number.isFinite(trade.rr) ? trade.rr : 0;
-                                  const txt = `${r > 0 ? '+' : ''}${r.toLocaleString('tr-TR', { maximumFractionDigits: 2 })}R`;
+                                  const txt = `${r > 0 ? '+' : ''}${r.toLocaleString('en-US', { maximumFractionDigits: 2 })}R`;
                                   const tone = r > 0 ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400' : r < 0 ? 'border-rose-500/20 bg-rose-500/10 text-rose-400' : 'border-amber-500/20 bg-amber-500/10 text-amber-400';
                                   return <span className={`inline-flex items-center justify-center min-w-[48px] px-2 py-0.5 rounded-md border text-[10px] font-black tracking-wider font-sans ${tone}`}>{txt}</span>;
                                 })()}
@@ -397,7 +397,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
 
                               {/* Risk */}
                               <td className="py-2.5 px-3 text-right font-sans font-bold whitespace-nowrap text-zinc-300">
-                                {typeof trade.riskPct === 'number' ? `%${trade.riskPct.toLocaleString('tr-TR', { maximumFractionDigits: 2 })}` : '—'}
+                                {typeof trade.riskPct === 'number' ? `%${trade.riskPct.toLocaleString('en-US', { maximumFractionDigits: 2 })}` : '—'}
                               </td>
 
                               {/* Platform */}

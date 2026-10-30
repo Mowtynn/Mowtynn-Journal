@@ -1,4 +1,4 @@
-import { ASIA_RANGE_TYPES, Trade } from '../types';
+import { ASIA_RANGE_TYPES, MANAGEMENT_TYPES, Trade } from '../types';
 import { canonicalAsset } from './tradingTime';
 import { titleCase } from '../constants/constants';
 
@@ -82,13 +82,23 @@ export function normalizeTrade<T extends Partial<Trade> & Record<string, any>>(r
   else if (t.status === 'WIN' && t.rr < 0) t.rr = -t.rr;
   else if (t.status === 'LOSS' && t.rr > 0) t.rr = -t.rr;
   if (t.newsDay !== true && t.newsDay !== false) delete t.newsDay;
-  // Asia Range: yalnızca Range / Trend / Sweept (harf farkı onarılır); Sweep Time: NY saati "HH:mm"
+  // Asia Range: yalnızca Range / Trend / Swept (harf farkı onarılır); Sweep Time: NY saati "HH:mm"
   if (t.asiaRange !== undefined) {
     const v = typeof t.asiaRange === 'string' ? t.asiaRange.trim().toLowerCase() : '';
-    const hit = ASIA_RANGE_TYPES.find((x) => x.toLowerCase() === v || (x === 'Sweept' && v === 'sweep'));
+    const hit = ASIA_RANGE_TYPES.find((x) => x.toLowerCase() === v || (x === 'Swept' && (v === 'sweep' || v === 'sweept')));
     if (hit) t.asiaRange = hit;
     else delete t.asiaRange;
   }
+  // İşlem yönetimi: yalnızca tanımlı seçenekler; "Plana Göre" diğerleriyle birlikte olamaz
+  if (t.management !== undefined) {
+    const list = Array.isArray(t.management)
+      ? MANAGEMENT_TYPES.filter((x) => (t.management as unknown[]).some((v) => typeof v === 'string' && v.trim().toLocaleLowerCase('tr-TR') === x.toLocaleLowerCase('tr-TR')))
+      : [];
+    const clean = list.includes('Plana Göre') && list.length > 1 ? list.filter((x) => x !== 'Plana Göre') : list;
+    if (clean.length) t.management = clean;
+    else delete t.management;
+  }
+  if (t.afterExitTp !== undefined && typeof t.afterExitTp !== 'boolean') delete t.afterExitTp;
   if (t.sweepTime !== undefined) t.sweepTime = normalizeClock(t.sweepTime);
   if (t.sweepTime === undefined) delete t.sweepTime;
   // Çıkış anı: sonlu ve girişten önce olmayan bir zaman damgası; değilse düşer
@@ -151,6 +161,8 @@ export function isValidTrade(t: unknown): t is Trade {
     (x.accountCategory === undefined || x.accountCategory === null || ['FUNDED', 'CHALLENGE', 'DEMO'].includes(x.accountCategory)) &&
     (x.accountId === undefined || x.accountId === null || (typeof x.accountId === 'string' && x.accountId.length <= 128)) &&
     (x.asiaRange === undefined || x.asiaRange === null || (ASIA_RANGE_TYPES as readonly string[]).includes(x.asiaRange)) &&
+    (x.management === undefined || x.management === null || (Array.isArray(x.management) && x.management.every((v: unknown) => (MANAGEMENT_TYPES as readonly unknown[]).includes(v)))) &&
+    (x.afterExitTp === undefined || x.afterExitTp === null || typeof x.afterExitTp === 'boolean') &&
     (x.sweepTime === undefined || x.sweepTime === null || (typeof x.sweepTime === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(x.sweepTime)))
   );
 }
