@@ -1,4 +1,4 @@
-import { Trade } from '../types';
+import { ASIA_RANGE_TYPES, Trade } from '../types';
 import { canonicalAsset } from './tradingTime';
 import { titleCase } from '../constants/constants';
 
@@ -39,6 +39,17 @@ export function canonicalAssetList(list: unknown): string[] {
   return out;
 }
 
+/** "9:5", "09:05", "0905" → "09:05"; geçersizse undefined */
+export function normalizeClock(v: unknown): string | undefined {
+  if (typeof v !== 'string') return undefined;
+  const m = v.trim().match(/^(\d{1,2}):?(\d{2})$/);
+  if (!m) return undefined;
+  const h = Number(m[1]);
+  const min = Number(m[2]);
+  if (h > 23 || min > 59) return undefined;
+  return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+}
+
 export function normalizeTrade<T extends Partial<Trade> & Record<string, any>>(raw: T): Trade {
   const t: Record<string, any> = { ...raw };
   const models = cleanList(t.entryModels) ?? cleanList(splitList(t.entry));
@@ -71,6 +82,15 @@ export function normalizeTrade<T extends Partial<Trade> & Record<string, any>>(r
   else if (t.status === 'WIN' && t.rr < 0) t.rr = -t.rr;
   else if (t.status === 'LOSS' && t.rr > 0) t.rr = -t.rr;
   if (t.newsDay !== true && t.newsDay !== false) delete t.newsDay;
+  // Asia Range: yalnızca Range / Trend / Sweept (harf farkı onarılır); Sweep Time: NY saati "HH:mm"
+  if (t.asiaRange !== undefined) {
+    const v = typeof t.asiaRange === 'string' ? t.asiaRange.trim().toLowerCase() : '';
+    const hit = ASIA_RANGE_TYPES.find((x) => x.toLowerCase() === v || (x === 'Sweept' && v === 'sweep'));
+    if (hit) t.asiaRange = hit;
+    else delete t.asiaRange;
+  }
+  if (t.sweepTime !== undefined) t.sweepTime = normalizeClock(t.sweepTime);
+  if (t.sweepTime === undefined) delete t.sweepTime;
   // Çıkış anı: sonlu ve girişten önce olmayan bir zaman damgası; değilse düşer
   if (typeof t.exitAt !== 'number' || !Number.isFinite(t.exitAt) || (typeof t.createdAt === 'number' && t.exitAt < t.createdAt)) delete t.exitAt;
   // İsteğe bağlı alanların türü (Firestore kuralı bunları denetler; bozuk eski kayıt toplu yazımı düşürmesin)
@@ -129,7 +149,9 @@ export function isValidTrade(t: unknown): t is Trade {
     OPTIONAL_TEXT_KEYS.every((k) => x[k] === undefined || x[k] === null || (typeof x[k] === 'string' && x[k].length <= TEXT_MAX)) &&
     OPTIONAL_NUMBER_KEYS.every((k) => x[k] === undefined || x[k] === null || typeof x[k] === 'number') &&
     (x.accountCategory === undefined || x.accountCategory === null || ['FUNDED', 'CHALLENGE', 'DEMO'].includes(x.accountCategory)) &&
-    (x.accountId === undefined || x.accountId === null || (typeof x.accountId === 'string' && x.accountId.length <= 128))
+    (x.accountId === undefined || x.accountId === null || (typeof x.accountId === 'string' && x.accountId.length <= 128)) &&
+    (x.asiaRange === undefined || x.asiaRange === null || (ASIA_RANGE_TYPES as readonly string[]).includes(x.asiaRange)) &&
+    (x.sweepTime === undefined || x.sweepTime === null || (typeof x.sweepTime === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(x.sweepTime)))
   );
 }
 

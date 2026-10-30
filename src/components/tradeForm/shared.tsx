@@ -23,7 +23,7 @@ export const withSelected = (list: string[], selected: string[]) => {
   return extra.length > 0 ? [...list, ...extra] : list;
 };
 
-/** Kurulum çiplerinin ortak ölçüsü (Strateji, Session, Timeframe, PD Array, Entry, Target, Confirmations hepsi aynı) */
+/** Kurulum çiplerinin ortak ölçüsü (Sweep Time, Session, Timeframe, PD Array, Entry, Target, Confirmations hepsi aynı) */
 export const CHIP_BASE = "relative px-3 py-1.5 text-[11px] rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase";
 
 export const numOr = (v: unknown): Num => (typeof v === "number" && Number.isFinite(v) ? v : "");
@@ -56,7 +56,8 @@ export function buildInitial(t: Trade | null) {
     tpTargets: Array.isArray(t?.tpTargets) ? (t!.tpTargets as string[]) : [],
     premiumDiscount: t?.premiumDiscount || "",
     newsDay: (typeof t?.newsDay === "boolean" ? t.newsDay : null) as boolean | null,
-    strategy: t?.strategy || "",
+    asiaRange: (t?.asiaRange || "") as string,
+    sweepTime: t?.sweepTime || "",
     asiaFvg: t?.asiaRangeFvg || "",
     stopPips: numOr(t?.stopPips),
     tpPips: numOr(t?.tpPips),

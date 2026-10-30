@@ -27,7 +27,7 @@ test('stop yoksa oranlar hesaplanmaz; kayıpta masada bırakılan negatif olmaz'
 });
 
 test('kurulum geçmişi bu işlemi hariç tutar; ihlaller işlem bazında', () => {
-  const setup = { strategy: 'SB', session: 'London', entryModels: ['FVG'] };
+  const setup = { asiaRange: 'Range' as const, session: 'London', entryModels: ['FVG'] };
   const hist = Array.from({ length: 6 }, (_, i) => t(i % 3 === 0 ? -1 : 2, { ...setup, createdAt: NOW - (20 - i) * DAY }));
   const me = t(-1, { ...setup, planFidelity: 'B-C', createdAt: NOW - DAY });
   const ins = computeTradeInsight(me, [...hist, me]);
@@ -42,7 +42,7 @@ test('kurulum geçmişi bu işlemi hariç tutar; ihlaller işlem bazında', () =
 });
 
 test('işlem içgörüsü: hesapsız işlemler prop işleminin kurulum geçmişine ve günlük sayaçlarına karışmaz', () => {
-  const base = { strategy: 'S1', session: 'London', entryModels: ['FVG'] } as any;
+  const base = { asiaRange: 'Trend', session: 'London', entryModels: ['FVG'] } as any;
   const prop = trade({ id: 'p', status: 'WIN', rr: 2, accountCategory: 'FUNDED', accountId: 'f1', accountStage: 0, ...base });
   const demos = [1, 2, 3, 4, 5].map((i) => trade({ id: 'd' + i, status: 'LOSS', rr: -1, accountCategory: 'DEMO', createdAt: prop.createdAt - i * 60000, ...base }));
   const ins = computeTradeInsight(prop, [prop, ...demos]);

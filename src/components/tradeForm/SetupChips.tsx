@@ -1,8 +1,17 @@
 import React, { useMemo } from "react";
 import { setupQualityTier } from "../../lib/discipline";
 import { normalizeNewsDays } from "../../constants/constants";
-import { Layers, ShieldCheck, Zap, TrendingUp, Clock, Maximize2, Target, Flag, Newspaper, Compass } from "lucide-react";
+import { Layers, ShieldCheck, Zap, TrendingUp, Clock, Maximize2, Target, Flag, Newspaper, Compass, MoveHorizontal, Waves, Timer } from "lucide-react";
+import { ASIA_RANGE_TYPES } from "../../types";
+import { SweepTimePicker } from "./SweepTimePicker";
 import { CHIP_BASE, SetState, withSelected, Titles, SlideBg } from './shared';
+
+/* Asia Range seçeneklerinin görünümü */
+const ASIA_RANGE_META: Record<(typeof ASIA_RANGE_TYPES)[number], { icon: typeof Compass; active: string }> = {
+  Range: { icon: MoveHorizontal, active: "bg-amber-500/20 text-amber-300 border-amber-500/40" },
+  Trend: { icon: TrendingUp, active: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40" },
+  Sweept: { icon: Waves, active: "bg-cyan-500/20 text-cyan-300 border-cyan-500/40" },
+};
 
 /* ================= 2. SÜTUN: KURULUM ÇİPLERİ ================= */
 export const SetupChips = React.memo(function SetupChips({
@@ -18,9 +27,10 @@ export const SetupChips = React.memo(function SetupChips({
   setNewsDay,
   newsDayError,
   setNewsDayError,
-  strategies,
-  selectedStrategy,
-  setSelectedStrategy,
+  asiaRange,
+  setAsiaRange,
+  sweepTime,
+  setSweepTime,
   asiaRangeFvgs,
   selectedAsiaFvg,
   setSelectedAsiaFvg,
@@ -58,9 +68,10 @@ export const SetupChips = React.memo(function SetupChips({
   setNewsDay: SetState<boolean | null>;
   newsDayError: boolean;
   setNewsDayError: SetState<boolean>;
-  strategies: string[];
-  selectedStrategy: string;
-  setSelectedStrategy: SetState<string>;
+  asiaRange: string;
+  setAsiaRange: SetState<string>;
+  sweepTime: string;
+  setSweepTime: SetState<string>;
   asiaRangeFvgs: string[];
   selectedAsiaFvg: string;
   setSelectedAsiaFvg: SetState<string>;
@@ -224,32 +235,48 @@ export const SetupChips = React.memo(function SetupChips({
         </div>
       </div>
 
-      {/* KURULUM SIRASI: Strateji · Session · Timeframe · PD Array · Entry Timeframe · Entry Model · Target · Confirmations */}
-      <div className="grid grid-cols-2 gap-x-4 gap-y-4 pt-1 border-t border-zinc-800/60">
-        {/* STRATEJİ */}
-        <div className="flex flex-col">
-          <span lang="en" className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
-            <Compass size={12} className="text-cyan-400 shrink-0" />
-            {L("strategies")}
-          </span>
-          <div className="flex flex-wrap gap-1.5">
-            {withSelected(strategies, selectedStrategy ? [selectedStrategy] : []).map((st) => (
+      {/* ASIA RANGE: Range · Trend · Sweept (geniş, rahat butonlar) */}
+      <div>
+        <label lang="en" className="text-[10px] sm:text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-2 flex items-center gap-1.5 font-sans">
+          <Compass size={13} className="text-cyan-400" />
+          {L("asiaRange")}
+        </label>
+        <div role="radiogroup" className="w-full grid grid-cols-3 bg-zinc-950/80 border border-zinc-800/90 rounded-xl p-1 gap-1.5 h-10 sm:h-11 shadow-inner">
+          {ASIA_RANGE_TYPES.map((opt) => {
+            const isSelected = asiaRange === opt;
+            const meta = ASIA_RANGE_META[opt];
+            const Icon = meta.icon;
+            return (
               <button lang="en"
-                key={st}
+                key={opt}
                 type="button"
-                data-selected={st === selectedStrategy}
-                onClick={() => setSelectedStrategy(st === selectedStrategy ? "" : st)}
-                className={`${CHIP_BASE} ${
-                  st === selectedStrategy
-                    ? "text-cyan-300 border-transparent"
-                    : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
+                role="radio"
+                aria-checked={isSelected}
+                data-selected={isSelected}
+                onClick={() => setAsiaRange(isSelected ? "" : opt)}
+                className={`min-w-0 h-full flex items-center justify-center gap-1.5 px-2 rounded-lg text-xs font-sans font-bold tracking-wide uppercase transition-ui duration-150 select-none border cursor-pointer ${
+                  isSelected
+                    ? `${meta.active} shadow-xs`
+                    : "border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
                 }`}
               >
-                {st === selectedStrategy && <SlideBg id="strategySlide" rounded="rounded-xl" className="bg-cyan-500/20 border-cyan-500/60 shadow-xs" />}
-                <span className="relative z-10">{st}</span>
+                <Icon size={13} className="shrink-0" />
+                <span className="truncate">{opt}</span>
               </button>
-            ))}
-          </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* KURULUM SIRASI: Sweep Time · Session · Timeframe · PD Array · Entry Timeframe · Entry Model · Target · Confirmations */}
+      <div className="grid grid-cols-2 gap-x-4 gap-y-4 pt-1 border-t border-zinc-800/60">
+        {/* SWEEP TIME (NY) */}
+        <div className="flex flex-col">
+          <span lang="en" className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
+            <Timer size={12} className="text-cyan-400 shrink-0" />
+            {L("sweepTime")}
+          </span>
+          <SweepTimePicker value={sweepTime} onChange={setSweepTime} />
         </div>
 
         {/* SESSION */}

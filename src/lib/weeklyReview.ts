@@ -124,7 +124,11 @@ export interface WeekReview {
 }
 
 const setupLabel = (t: Trade) => {
-  const parts = DEFAULT_SETUP_DIMENSIONS.map((d) => dimensionValue(t, d)).filter((v) => v && v !== UNSPECIFIED);
+  // Asia Range değeri tek başına ("Range") belirsiz kalmasın: "Asia Range", "Asia Sweept"
+  const parts = DEFAULT_SETUP_DIMENSIONS.map((d) => {
+    const v = dimensionValue(t, d);
+    return d === 'asiaRange' && v !== UNSPECIFIED ? `Asia ${v}` : v;
+  }).filter((v) => v && v !== UNSPECIFIED);
   return parts.length ? parts.join(' · ') : '';
 };
 
@@ -141,7 +145,7 @@ export function computeWeekReview(allTrades: Trade[], weekStart: string): WeekRe
     return { key, index, n: list.length, netR: list.reduce((s, t) => s + rOf(t), 0) };
   });
 
-  // Kurulumlar (strateji · seans · giriş modeli) — haftalık R'ye göre en iyi / en kötü
+  // Kurulumlar (Asia Range · seans · giriş modeli) — haftalık R'ye göre en iyi / en kötü
   const groups = new Map<string, WeekSetup>();
   trades.forEach((t) => {
     const label = setupLabel(t);

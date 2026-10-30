@@ -374,6 +374,14 @@ export interface CoverageRow {
   unlocks: string;
 }
 
+/** "HH:mm" → "HH:00–HH+1:00" (NY); geçersizse null */
+export function sweepHourBucket(v?: string): string | null {
+  const m = typeof v === 'string' ? v.match(/^(\d{2}):\d{2}$/) : null;
+  if (!m) return null;
+  const h = Number(m[1]);
+  return `${m[1]}:00–${String((h + 1) % 24).padStart(2, '0')}:00`;
+}
+
 export function computeCoverage(trades: Trade[]): CoverageRow[] {
   const n = trades.length;
   const defs: Array<{ field: string; label: string; unlocks: string; ok: (t: Trade) => boolean }> = [
@@ -384,7 +392,8 @@ export function computeCoverage(trades: Trade[]): CoverageRow[] {
     { field: 'asiaRangePips', label: 'Asia range (pip)', unlocks: 'Range büyüklüğü edge analizi (parite bazlı)', ok: (t) => hasNum(t.asiaRangePips) && t.asiaRangePips > 0 },
     { field: 'htfTimeframe', label: 'PD array zaman dilimi', unlocks: '1H / 4H / D kıyası', ok: (t) => !!t.htfTimeframe },
     { field: 'confirmations', label: 'PD array türü', unlocks: 'FVG / OB / seviye kıyası', ok: (t) => Array.isArray(t.confirmations) && t.confirmations.length > 0 },
-    { field: 'strategy', label: 'Strateji', unlocks: 'Strateji bazında edge kıyası', ok: (t) => !!t.strategy },
+    { field: 'asiaRange', label: 'Asia Range', unlocks: 'Range / Trend / Sweept edge kıyası', ok: (t) => !!t.asiaRange },
+    { field: 'sweepTime', label: 'Sweep Time', unlocks: 'Sweep saatine göre edge kıyası', ok: (t) => !!t.sweepTime },
     { field: 'asiaRangeFvg', label: 'Asia Range FVG', unlocks: 'Asia Range FVG türü kıyası', ok: (t) => !!t.asiaRangeFvg },
     { field: 'newsDay', label: 'News Day / Bank Holiday', unlocks: 'Haber günü – normal gün edge kıyası', ok: (t) => typeof t.newsDay === 'boolean' },
     { field: 'entryModels', label: 'Giriş modeli', unlocks: 'MSS / Breaker / IFVG kıyası', ok: (t) => Array.isArray(t.entryModels) && t.entryModels.length > 0 },
@@ -422,7 +431,8 @@ export interface AsiaLabResult {
   pdType: GroupRow[];
   entryModels: GroupRow[];
   newsDay: { rows: GroupRow[]; unknown: number };
-  strategies: GroupRow[];
+  asiaRanges: GroupRow[];
+  sweepHours: GroupRow[];
   asiaRangeFvgs: GroupRow[];
   rangeSize: Array<{ key: RangeBucket; label: string; stats: EdgeStats }>;
   targetReach: { usable: number; buckets: Array<{ label: string; count: number; pct: number }>; reachedPct: number } | null;
@@ -496,7 +506,9 @@ export function analyzeAsia(allTrades: Trade[], opts: AsiaLabOptions): AsiaLabRe
     unknown: trades.filter((t) => typeof t.newsDay !== 'boolean').length,
   };
 
-  const strategies = groupTrades(trades, (t) => t.strategy || null);
+  const asiaRanges = groupTrades(trades, (t) => t.asiaRange || null);
+  // Sweep saati (NY) saatlik dilimlere: 02:15 → "02:00–03:00"
+  const sweepHours = groupTrades(trades, (t) => sweepHourBucket(t.sweepTime)).sort((x, y) => x.key.localeCompare(y.key));
   const asiaRangeFvgs = groupTrades(trades, (t) => t.asiaRangeFvg || null);
 
   // Range size (pair-normalised)
@@ -549,7 +561,7 @@ export function analyzeAsia(allTrades: Trade[], opts: AsiaLabOptions): AsiaLabRe
     { name: 'PD TF', get: (t) => t.htfTimeframe || null },
     { name: 'Yön', get: (t) => (getSweepSide(t) === 'HIGH' ? 'High→Short' : 'Low→Long') },
     { name: 'Gün', get: (t) => WEEKDAY_NAMES_TR[getTradeNyWeekday(t)] },
-    { name: 'Strateji', get: (t) => t.strategy || null },
+    { name: 'Asia Range', get: (t) => t.asiaRange || null },
     { name: 'News Day', get: (t) => (typeof t.newsDay === 'boolean' ? (t.newsDay ? nl.yes : nl.no) : null) },
   ];
   const comboMap = new Map<string, Trade[]>();
@@ -584,7 +596,8 @@ export function analyzeAsia(allTrades: Trade[], opts: AsiaLabOptions): AsiaLabRe
     pdType,
     entryModels,
     newsDay,
-    strategies,
+    asiaRanges,
+    sweepHours,
     asiaRangeFvgs,
     rangeSize,
     targetReach,

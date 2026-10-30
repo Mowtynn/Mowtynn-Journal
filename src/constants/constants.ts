@@ -56,13 +56,12 @@ export const DEFAULT_PREMIUM_DISCOUNTS = [
  * [0] = "Var" (true), [1] = "Yok" (false, varsayılan). Tanımlamalar'dan yalnızca etiketleri yeniden adlandırılır;
  * işlemde etiket değil boolean saklanır, böylece yeniden adlandırma geçmiş kayıtları bozmaz.
  */
-export const DEFAULT_STRATEGIES = ["Asia Range"];
 export const DEFAULT_ASIA_RANGE_FVGS = ["Var", "Yok"];
 
 /** Listesi olmayan form alanlarının başlıkları: Tanımlamalar > Form Başlıkları'ndan değiştirilir. */
 export const FORM_LABEL_KEYS = [
   "basicInfoCard", "financialCard", "notesCard", "direction", "tradeDate", "tradeStatus",
-  "stopPips", "tpPips", "maePips", "mfePips", "asiaRangePips", "rr", "chartLink",
+  "stopPips", "tpPips", "maePips", "mfePips", "asiaRangePips", "rr", "chartLink", "asiaRange", "sweepTime",
 ] as const;
 
 export const DEFAULT_NEWS_DAYS = ["Var", "Yok"];
@@ -102,7 +101,6 @@ export const DEFAULT_DEFINITION_TITLES: DefinitionTitles = {
   tpTargets: "Target",
   premiumDiscounts: "Confirmations",
   newsDays: "News Day/Bank Holiday",
-  strategies: "Strateji",
   asiaRangeFvgs: "Asia Range FVG",
   basicInfoCard: "Temel Bilgiler",
   financialCard: "Sonuç",
@@ -117,6 +115,8 @@ export const DEFAULT_DEFINITION_TITLES: DefinitionTitles = {
   asiaRangePips: "Asia Range Pip",
   rr: "Sonuç R",
   chartLink: "Grafik Linki",
+  asiaRange: "Asia Range",
+  sweepTime: "Sweep Time",
 };
 
 /**

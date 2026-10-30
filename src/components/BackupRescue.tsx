@@ -57,7 +57,6 @@ interface BackupRescueProps {
     tpTargets?: string[];
     premiumDiscounts?: string[];
     newsDays?: string[];
-    strategies?: string[];
     asiaRangeFvgs?: string[];
     definitionTitles?: DefinitionTitles;
     propAccounts?: PropAccount[];
@@ -281,6 +280,8 @@ const BackupRescue = React.memo(function BackupRescue({
             premiumDiscount: typeof item.premiumDiscount === 'string' && item.premiumDiscount.trim() ? item.premiumDiscount.trim() : undefined,
             newsDay: typeof item.newsDay === 'boolean' ? item.newsDay : undefined,
             strategy: typeof item.strategy === 'string' && item.strategy.trim() ? item.strategy.trim() : undefined,
+            asiaRange: typeof item.asiaRange === 'string' ? item.asiaRange : undefined,
+            sweepTime: typeof item.sweepTime === 'string' ? item.sweepTime : undefined,
             asiaRangeFvg: typeof item.asiaRangeFvg === 'string' && item.asiaRangeFvg.trim() ? item.asiaRangeFvg.trim() : undefined,
             accountId: typeof item.accountId === 'string' && item.accountId ? item.accountId : undefined,
             accountStage: num(item.accountStage),

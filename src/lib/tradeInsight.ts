@@ -73,7 +73,7 @@ export function computeTradeInsight(trade: Trade, everyTrade: Trade[], disciplin
   const path = computePricePath(trade);
   const allTrades = insightPool(trade, everyTrade);
 
-  // Kurulum: Strateji · Seans · Giriş modeli (kurulum karnesiyle aynı tanım)
+  // Kurulum: Asia Range · Seans · Giriş modeli (kurulum karnesiyle aynı tanım)
   const values = DEFAULT_SETUP_DIMENSIONS.map((d) => dimensionValue(trade, d));
   let setup: SetupHistory | null = null;
   if (!values.every((v) => v === UNSPECIFIED)) {

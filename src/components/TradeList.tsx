@@ -237,7 +237,7 @@ const TradeList = React.memo(function TradeList({
         const matchesSearch = !deferredFilter.search || 
           caseInsensitiveMatch(trade.asset, deferredFilter.search) || 
           caseInsensitiveMatch(trade.notes, deferredFilter.search) ||
-          caseInsensitiveMatch(trade.strategy, deferredFilter.search) ||
+          caseInsensitiveMatch(trade.asiaRange, deferredFilter.search) ||
           caseInsensitiveMatch(trade.session, deferredFilter.search) ||
           caseInsensitiveMatch(trade.platform, deferredFilter.search) ||
           caseInsensitiveMatch(trade.planFidelity, deferredFilter.search) ||

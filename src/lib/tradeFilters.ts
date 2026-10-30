@@ -24,9 +24,10 @@ export const getMinTimestamp = (limit: string, now: number = Date.now()): number
   }
 };
 
-/** Sonradan eklenen alanların filtreleri (strateji, News day, P/D, TP target, Asia FVG, risk %, hızlı kayıt) */
+/** Sonradan eklenen alanların filtreleri (Asia Range, News day, P/D, TP target, Asia FVG, risk %, hızlı kayıt) */
 export interface ExtraTradeFilters {
-  strategies: string[];
+  /** Range / Trend / Sweept */
+  asiaRanges: string[];
   premiumDiscounts: string[];
   tpTargets: string[];
   asiaRangeFvgs: string[];
@@ -38,7 +39,7 @@ export interface ExtraTradeFilters {
 }
 
 export const EMPTY_EXTRA_FILTERS: ExtraTradeFilters = {
-  strategies: [],
+  asiaRanges: [],
   premiumDiscounts: [],
   tpTargets: [],
   asiaRangeFvgs: [],
@@ -51,7 +52,7 @@ export const EMPTY_EXTRA_FILTERS: ExtraTradeFilters = {
 export function sanitizeExtraFilters(v: any): ExtraTradeFilters {
   const strs = (x: any) => (Array.isArray(x) ? x.filter((s) => typeof s === 'string' && s.trim()) : []);
   return {
-    strategies: strs(v?.strategies),
+    asiaRanges: strs(v?.asiaRanges),
     premiumDiscounts: strs(v?.premiumDiscounts),
     tpTargets: strs(v?.tpTargets),
     asiaRangeFvgs: strs(v?.asiaRangeFvgs),
@@ -65,7 +66,7 @@ export function sanitizeExtraFilters(v: any): ExtraTradeFilters {
 export function countExtraFilters(e: ExtraTradeFilters | undefined): number {
   if (!e) return 0;
   return (
-    (e.strategies.length ? 1 : 0) +
+    (e.asiaRanges.length ? 1 : 0) +
     (e.premiumDiscounts.length ? 1 : 0) +
     (e.tpTargets.length ? 1 : 0) +
     (e.asiaRangeFvgs.length ? 1 : 0) +
@@ -192,7 +193,7 @@ export function applyGlobalFilters(trades: Trade[], filters: GlobalTradeFilters,
     const typeSet = hasTypes ? new Set(globalSelectedTypes.map(normalizeSearchString)) : null;
     const entrySet = hasEntryModels ? new Set(globalSelectedEntryModels.map(normalizeSearchString)) : null;
     const trendSet = hasTrendTypes ? new Set(globalSelectedTrendTypes.map(normalizeSearchString)) : null;
-    const strategySet = extra.strategies.length ? new Set(extra.strategies.map(normalizeSearchString)) : null;
+    const asiaRangeSet = extra.asiaRanges.length ? new Set(extra.asiaRanges.map(normalizeSearchString)) : null;
     const pdSet = extra.premiumDiscounts.length ? new Set(extra.premiumDiscounts.map(normalizeSearchString)) : null;
     const tpSet = extra.tpTargets.length ? new Set(extra.tpTargets.map(normalizeSearchString)) : null;
     const fvgSet = extra.asiaRangeFvgs.length ? new Set(extra.asiaRangeFvgs.map(normalizeSearchString)) : null;
@@ -271,7 +272,7 @@ export function applyGlobalFilters(trades: Trade[], filters: GlobalTradeFilters,
       // 4. Sonradan eklenen alanlar
       if (extra.onlyIncomplete && t.quickEntry !== true) return false;
       if (extra.newsDay !== 'ALL' && t.newsDay !== (extra.newsDay === 'YES')) return false;
-      if (strategySet && (!t.strategy || !strategySet.has(normalizeSearchString(t.strategy)))) return false;
+      if (asiaRangeSet && (!t.asiaRange || !asiaRangeSet.has(normalizeSearchString(t.asiaRange)))) return false;
       if (pdSet && (!t.premiumDiscount || !pdSet.has(normalizeSearchString(t.premiumDiscount)))) return false;
       if (fvgSet && (!t.asiaRangeFvg || !fvgSet.has(normalizeSearchString(t.asiaRangeFvg)))) return false;
       if (tpSet && (!t.tpTargets || !t.tpTargets.some((x) => tpSet.has(normalizeSearchString(x))))) return false;

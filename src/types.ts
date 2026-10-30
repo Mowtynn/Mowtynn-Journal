@@ -2,6 +2,9 @@
 export type PlatformCategory = 'FUNDED' | 'CHALLENGE' | 'DEMO';
 export type AccountCategory = 'ALL' | 'FUNDED' | 'CHALLENGE' | 'DEMO';
 
+export const ASIA_RANGE_TYPES = ['Range', 'Trend', 'Sweept'] as const;
+export type AsiaRangeType = (typeof ASIA_RANGE_TYPES)[number];
+
 export interface Trade {
   id: string;
   asset: string;            // e.g., BTC/USDT, ETH/USDT, AAPL
@@ -28,7 +31,10 @@ export interface Trade {
   trend?: string;           // Trend Yapısı (Trend Type e.g. Continuation, Reversal)
   tpTargets?: string[];     // Target — çıkış hedefi / seviye (e.g. PDH / PDL, Asia High / Low)
   premiumDiscount?: string; // Premium / Discount zone (e.g. Premium, Discount, Equilibrium / OTE)
-  strategy?: string;        // Strateji (Tanımlamalar'dan yönetilir)
+  /** Eski sürümün strateji alanı: artık formda, filtrelerde ve analizlerde yok; eski kayıtlarda saklı kalır. */
+  strategy?: string;
+  asiaRange?: AsiaRangeType; // Asia Range davranışı: Range / Trend / Sweept
+  sweepTime?: string;       // Asia sweep saati, New York saatiyle "HH:mm"
   asiaRangeFvg?: string;    // Asia Range FVG (Tanımlamalar'dan yönetilir)
   newsDay?: boolean;        // News Day / Bank Holiday: true = Var, false = Yok. Girilmemişse tanımsız (bilinmiyor)
   accountId?: string;       // Prop hesap kimliği (PropAccount.id)
@@ -172,7 +178,6 @@ export interface DefinitionTitles {
   tpTargets?: string;
   premiumDiscounts?: string;
   newsDays?: string;
-  strategies?: string;
   asiaRangeFvgs?: string;
   // Listesi olmayan form alanlarının başlıkları (Tanımlamalar > Form Başlıkları)
   basicInfoCard?: string;
@@ -187,6 +192,8 @@ export interface DefinitionTitles {
   asiaRangePips?: string;
   rr?: string;
   chartLink?: string;
+  asiaRange?: string;
+  sweepTime?: string;
   notesCard?: string;
 }
 

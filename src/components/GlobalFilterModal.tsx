@@ -35,7 +35,7 @@ import {
   DEFAULT_TREND_TYPES,
   DEFAULT_DEFINITION_TITLES,
 } from '../constants/constants';
-import { DefinitionTitles } from '../types';
+import { ASIA_RANGE_TYPES, DefinitionTitles } from '../types';
 import { DEFAULT_DATE_LIMIT, EMPTY_EXTRA_FILTERS, countExtraFilters, type ExtraTradeFilters } from '../lib/tradeFilters';
 import { setupQualityTier } from '../lib/discipline';
 import { useNewsDayLabels } from '../hooks/useNewsDayLabels';
@@ -92,7 +92,6 @@ interface GlobalFilterModalProps {
   globalMaxMfePips?: number;
   setGlobalMaxMfePips?: (v?: number) => void;
   // Sonradan eklenen alanlar
-  strategies?: string[];
   premiumDiscounts?: string[];
   tpTargets?: string[];
   asiaRangeFvgs?: string[];
@@ -131,7 +130,6 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
   globalMaxMaePips, setGlobalMaxMaePips,
   globalMinMfePips, setGlobalMinMfePips,
   globalMaxMfePips, setGlobalMaxMfePips,
-  strategies = [],
   premiumDiscounts = [],
   tpTargets = [],
   asiaRangeFvgs = [],
@@ -212,7 +210,6 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
 
   // Ek alanların seçenekleri: Tanımlamalar + işlemlerde görülen değerler
   const extraOptions = React.useMemo(() => {
-    const strat = new Set(strategies);
     const pd = new Set(premiumDiscounts);
     const tp = new Set(tpTargets);
     const fvg = new Set(asiaRangeFvgs);
@@ -220,7 +217,6 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
     let incomplete = 0;
     if (ready) {
       trades.forEach((t) => {
-        if (t.strategy) strat.add(t.strategy);
         if (t.premiumDiscount) pd.add(t.premiumDiscount);
         if (Array.isArray(t.tpTargets)) t.tpTargets.forEach((x: string) => x && tp.add(x));
         if (t.asiaRangeFvg) fvg.add(t.asiaRangeFvg);
@@ -229,14 +225,14 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
       });
     }
     return {
-      strategies: Array.from(strat),
+      asiaRanges: [...ASIA_RANGE_TYPES] as string[],
       premiumDiscounts: Array.from(pd),
       tpTargets: Array.from(tp),
       asiaRangeFvgs: Array.from(fvg),
       riskPcts: Array.from(risk).sort((a, b) => a - b),
       incomplete,
     };
-  }, [ready, trades, strategies, premiumDiscounts, tpTargets, asiaRangeFvgs]);
+  }, [ready, trades, premiumDiscounts, tpTargets, asiaRangeFvgs]);
   const riskLabel = (n: number) => `%${n.toLocaleString('tr-TR', { maximumFractionDigits: 3 })}`;
   const newsSummary = globalExtra.newsDay === 'YES' ? newsLabels.yes : globalExtra.newsDay === 'NO' ? newsLabels.no : 'Tümü';
 
@@ -266,7 +262,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
       htfTf: true,
       session: true,
       asiaRange: true,
-      strategy: true,
+      asiaRangeType: true,
       pd: true,
       tpTarget: true,
       asiaFvg: true,
@@ -776,18 +772,18 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                 />
               </FilterAccordionRow>
 
-              {/* 11. STRATEJİ */}
-              <FilterAccordionRow title={definitionTitles.strategies || "Strateji"}
+              {/* 11. ASIA RANGE (Range / Trend / Sweept) */}
+              <FilterAccordionRow title={definitionTitles.asiaRange || "Asia Range"}
                 icon={<BookOpen size={14} className="text-cyan-400" />}
-                summaryText={globalExtra.strategies.length > 0 ? globalExtra.strategies.join(', ') : 'Tümü'}
-                badgeCount={globalExtra.strategies.length}
-                isOpen={!!openSections.strategy}
-                onToggle={() => toggleSection('strategy')}
+                summaryText={globalExtra.asiaRanges.length > 0 ? globalExtra.asiaRanges.join(', ') : 'Tümü'}
+                badgeCount={globalExtra.asiaRanges.length}
+                isOpen={!!openSections.asiaRangeType}
+                onToggle={() => toggleSection('asiaRangeType')}
               >
                 <PillMultiSelect
-                  options={extraOptions.strategies}
-                  selectedValues={globalExtra.strategies}
-                  onChange={(vals) => patchExtra({ strategies: vals })}
+                  options={extraOptions.asiaRanges}
+                  selectedValues={globalExtra.asiaRanges}
+                  onChange={(vals) => patchExtra({ asiaRanges: vals })}
                 />
               </FilterAccordionRow>
 

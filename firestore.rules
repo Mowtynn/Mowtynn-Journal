@@ -59,6 +59,8 @@ service cloud.firestore {
         && optStr(d, 'timeframe', 200) && optStr(d, 'htfTimeframe', 200) && optStr(d, 'session', 200)
         && optStr(d, 'planFidelity', 200) && optStr(d, 'trend', 200) && optStr(d, 'premiumDiscount', 200)
         && optStr(d, 'strategy', 200) && optStr(d, 'asiaRangeFvg', 200)
+        && (!('asiaRange' in d) || d.asiaRange == null || d.asiaRange in ['Range', 'Trend', 'Sweept'])
+        && (!('sweepTime' in d) || d.sweepTime == null || (d.sweepTime is string && d.sweepTime.matches('^([01][0-9]|2[0-3]):[0-5][0-9]$')))
         && (!('accountCategory' in d) || d.accountCategory == null || d.accountCategory in ['FUNDED', 'CHALLENGE', 'DEMO']);
     }
 

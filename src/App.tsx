@@ -18,7 +18,6 @@ import {
   DEFAULT_TP_TARGETS,
   DEFAULT_PREMIUM_DISCOUNTS,
   DEFAULT_NEWS_DAYS,
-  DEFAULT_STRATEGIES,
   DEFAULT_ASIA_RANGE_FVGS,
   NEWS_DAYS_EVENT,
   normalizeNewsDays,
@@ -191,7 +190,6 @@ const SETTINGS_LIST_KEYS: [string, string][] = [
   ["tpTargets", "trading_tp_targets_list"],
   ["premiumDiscounts", "trading_premium_discounts_list"],
   ["newsDays", "trading_news_days_list"],
-  ["strategies", "trading_strategies_list"],
   ["asiaRangeFvgs", "trading_asia_range_fvgs_list"],
 ];
 /** Cihazdaki işlem/not/günlük verisinin hangi hesaba ait olduğu (hesaplar arası karışmayı önler) */
@@ -239,7 +237,7 @@ const sanitizeImportedSettings = (raw: any) => {
   const out: Record<string, any> = {};
   const listKeys = [
     "timeframes", "htfTimeframes", "confirmations", "sessions", "assets",
-    "planFidelities", "entryModels", "trendTypes", "tpTargets", "premiumDiscounts", "strategies", "asiaRangeFvgs",
+    "planFidelities", "entryModels", "trendTypes", "tpTargets", "premiumDiscounts", "asiaRangeFvgs",
   ];
   listKeys.forEach((k) => {
     const v = strList(raw[k]);
@@ -684,31 +682,6 @@ export default function App() {
     }
   }, [user]);
 
-  const [strategies, setStrategies] = useState<string[]>(() => {
-    try {
-      const stored = localStorage.getItem("trading_strategies_list");
-      if (stored) { const v = JSON.parse(stored); if (Array.isArray(v)) return titleCaseList(v); }
-    } catch (e) {
-      console.error(e);
-    }
-    return DEFAULT_STRATEGIES;
-  });
-
-  const persistStrategies = useCallback((incoming: string[], syncCloud = true) => {
-    // Her kelimenin ilk harfi büyük (Asia Range, Entry Model); harf farkıyla tekrar edenler tek kalır
-    const updated = titleCaseList(incoming);
-    setStrategies(updated);
-    try {
-      localStorage.setItem("trading_strategies_list", JSON.stringify(updated));
-      if (syncCloud && user) {
-        setDoc(doc(db, "settings", user.uid), cleanForFirestore({ strategies: updated, userId: user.uid }), { merge: true })
-          .catch(err => reportCloudError("ayar kaydı", err, "Tanımlamalar buluta kaydedilemedi; cihazda tutuluyor."));
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  }, [user]);
-
   const [asiaRangeFvgs, setAsiaRangeFvgs] = useState<string[]>(() => {
     try {
       const stored = localStorage.getItem("trading_asia_range_fvgs_list");
@@ -1115,7 +1088,6 @@ export default function App() {
               applyList(data.tpTargets, "trading_tp_targets_list", persistTpTargets);
               applyList(data.premiumDiscounts, "trading_premium_discounts_list", persistPremiumDiscounts);
               applyList(data.newsDays, "trading_news_days_list", persistNewsDays);
-              applyList(data.strategies, "trading_strategies_list", persistStrategies);
               applyList(data.asiaRangeFvgs, "trading_asia_range_fvgs_list", persistAsiaRangeFvgs);
               if (data.definitionTitles) persistDefinitionTitles(data.definitionTitles, false);
               if (Array.isArray(data.propAccounts)) {
@@ -1291,7 +1263,6 @@ export default function App() {
         ["trading_trend_types_list", setTrendTypes],
         ["trading_tp_targets_list", setTpTargets],
         ["trading_premium_discounts_list", setPremiumDiscounts],
-        ["trading_strategies_list", setStrategies],
         ["trading_asia_range_fvgs_list", setAsiaRangeFvgs],
         ["trading_news_days_list", (v) => setNewsDays(normalizeNewsDays(v))],
       ];
@@ -1663,7 +1634,6 @@ export default function App() {
           case "planFidelities": return same(t.planFidelity) ? { planFidelity: to } : null;
           case "trendTypes": return same(t.trend) ? { trend: to } : null;
           case "premiumDiscounts": return same(t.premiumDiscount) ? { premiumDiscount: to } : null;
-          case "strategies": return same(t.strategy) ? { strategy: to } : null;
           case "asiaRangeFvgs": return same(t.asiaRangeFvg) ? { asiaRangeFvg: to } : null;
           case "confirmations": return hasInArr(t.confirmations) ? { confirmations: mapArr(t.confirmations) } : null;
           case "tpTargets": return hasInArr(t.tpTargets) ? { tpTargets: mapArr(t.tpTargets) } : null;
@@ -1923,7 +1893,6 @@ export default function App() {
           if (importedSettings.tpTargets) persistTpTargets(importedSettings.tpTargets, sync);
           if (importedSettings.premiumDiscounts) persistPremiumDiscounts(importedSettings.premiumDiscounts, sync);
           if (importedSettings.newsDays) persistNewsDays(importedSettings.newsDays, sync);
-          if (importedSettings.strategies) persistStrategies(importedSettings.strategies, sync);
           if (importedSettings.asiaRangeFvgs) persistAsiaRangeFvgs(importedSettings.asiaRangeFvgs, sync);
           if (importedSettings.definitionTitles) persistDefinitionTitles(importedSettings.definitionTitles, sync);
           if (importedSettings.propAccounts) {
@@ -1957,7 +1926,6 @@ export default function App() {
       persistTpTargets,
       persistPremiumDiscounts,
       persistNewsDays,
-      persistStrategies,
       persistAsiaRangeFvgs,
       persistDefinitionTitles,
       persistPropAccounts,
@@ -2071,7 +2039,6 @@ export default function App() {
       persistTpTargets(DEFAULT_TP_TARGETS, !!user);
       persistPremiumDiscounts(DEFAULT_PREMIUM_DISCOUNTS, !!user);
       persistNewsDays(DEFAULT_NEWS_DAYS, !!user);
-      persistStrategies(DEFAULT_STRATEGIES, !!user);
       persistAsiaRangeFvgs(DEFAULT_ASIA_RANGE_FVGS, !!user);
       persistDefinitionTitles(DEFAULT_DEFINITION_TITLES, !!user);
 
@@ -2146,7 +2113,6 @@ export default function App() {
     persistTpTargets,
     persistPremiumDiscounts,
     persistNewsDays,
-    persistStrategies,
     persistAsiaRangeFvgs,
     persistDefinitionTitles,
     setGlobalSelectedPlanFidelity,
@@ -2243,7 +2209,6 @@ export default function App() {
     tpTargets,
     premiumDiscounts,
     newsDays,
-    strategies,
     asiaRangeFvgs,
     definitionTitles,
     propAccounts,
@@ -2259,7 +2224,6 @@ export default function App() {
     tpTargets,
     premiumDiscounts,
     newsDays,
-    strategies,
     asiaRangeFvgs,
     definitionTitles,
     propAccounts,
@@ -2898,7 +2862,6 @@ export default function App() {
               globalMaxMfePips={globalMaxMfePips}
               setGlobalMaxMfePips={setGlobalMaxMfePips}
               trades={scopedTrades}
-              strategies={strategies}
               premiumDiscounts={premiumDiscounts}
               tpTargets={tpTargets}
               asiaRangeFvgs={asiaRangeFvgs}
@@ -2954,7 +2917,6 @@ export default function App() {
           tpTargets={tpTargets}
           premiumDiscounts={premiumDiscounts}
           newsDays={newsDays}
-          strategies={strategies}
           asiaRangeFvgs={asiaRangeFvgs}
           definitionTitles={definitionTitles}
           persistTimeframes={persistTimeframes}
@@ -2968,7 +2930,6 @@ export default function App() {
           persistTpTargets={persistTpTargets}
           persistPremiumDiscounts={persistPremiumDiscounts}
           persistNewsDays={persistNewsDays}
-          persistStrategies={persistStrategies}
           persistAsiaRangeFvgs={persistAsiaRangeFvgs}
           onRenameDefinition={handleRenameDefinition}
           persistDefinitionTitles={persistDefinitionTitles}
@@ -3008,7 +2969,6 @@ export default function App() {
                     tpTargets={tpTargets}
                     premiumDiscounts={premiumDiscounts}
                     newsDays={newsDays}
-                    strategies={strategies}
                     asiaRangeFvgs={asiaRangeFvgs}
                     definitionTitles={definitionTitles}
                     lastTrade={latestTrade}

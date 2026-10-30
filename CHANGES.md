@@ -695,3 +695,10 @@ Klasik tasarım korunarak, son eklenen alanlar (risk %, hesap bağı, strateji, 
 - JSON yedek kayıtlı görselleri gömer; yedekten yüklemede gömülü görseller yeniden kaydedilir.
 - `firestore.rules`: `images` koleksiyonu (yalnızca sahibi okur/siler; boyut ve alan denetimi). `firebase.json`, `storage.rules`, `storage.cors.json` ve Storage SDK kaldırıldı.
 - Yayın: `firebase deploy --only firestore:rules,firestore:indexes`
+
+## Asia Range + Sweep Time (Strateji kaldırıldı)
+- İşlem formu: Strateji çipleri kaldırıldı. Yerine geniş, üç seçenekli **Asia Range** buton grubu (Range · Trend · Sweept) ve Strateji'nin yerinde **Sweep Time** saat seçici (New York saati, "HH:mm"; saat ızgarası, 5'er dakika, ±1 dk ince ayar, temizle).
+- Veri: işlemde `asiaRange` ('Range' | 'Trend' | 'Sweept') ve `sweepTime` ("HH:mm", NY). Okurken onarılır (harf farkı, "2:05" → "02:05"), geçersiz değer düşer; Firestore kuralı iki alanı da denetler. Eski işlemlerdeki `strategy` değeri silinmez (düzenlemede de korunur), yalnızca hiçbir yerde gösterilmez.
+- Strateji her yerden kaldırıldı: Tanımlamalar sekmesi, ayar listesi / bulut senkronu / yedek, global filtre, kıyaslama seçeneği, işlem detayı, dışa aktarma sütunu, Asia Edge Lab, kapsama ve eksik alan kontrolü.
+- Analizler Asia Range'e geçti: Kurulum Karnesi varsayılanı (Asia Range · Seans · Giriş Modeli), Edge Özeti taraması, en iyi kombinasyon, işlem içgörüsü, haftalık özet, kombinasyon bulucu, Detaylı Analiz kurulum çipleri. Asia Edge Lab'e "Asia Range" ve "Sweep Time (NY, saatlik)" tabloları; global filtreye Asia Range seçimi; dışa aktarmaya Asia Range ve Sweep Time sütunları; Form Başlıkları'nda iki yeni başlık.
+- Yayın: kural değişti → `firebase deploy --only firestore:rules,firestore:indexes`

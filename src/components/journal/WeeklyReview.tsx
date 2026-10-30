@@ -213,7 +213,7 @@ export const WeeklyReview = React.memo(function WeeklyReview({
                 <section className={`${card} flex flex-col gap-2`}>
                   <h4 className="heading-2">
                     <Trophy size={12} /> Kurulumlar
-                    <span className="ml-auto text-[10px] font-bold text-zinc-500 normal-case tracking-normal truncate">strateji · seans · giriş modeli</span>
+                    <span className="ml-auto text-[10px] font-bold text-zinc-500 normal-case tracking-normal truncate">Asia Range · seans · giriş modeli</span>
                   </h4>
                   {[
                     { label: "En iyi", row: review.best, icon: <Trophy size={13} className="text-emerald-300 shrink-0" />, empty: "Kazandıran kurulum yok" },

@@ -5,7 +5,7 @@ import { trade } from './fixtures';
 
 const complete = {
   stopPips: 10, tpPips: 30, maePips: 3, mfePips: 35, asiaRangePips: 20,
-  strategy: 'Asia Range', trend: 'Continuation', newsDay: false, entryModels: ['Breaker'],
+  asiaRange: 'Sweept' as const, trend: 'Continuation', newsDay: false, entryModels: ['Breaker'],
 };
 
 test('tam kayıtta eksik yok', () => {
@@ -25,7 +25,7 @@ test('prop hesabındaki işlemde risk yüzdesi zorunlu; hesapsızda aranmaz', ()
 
 test('analiz alanları eksikse listelenir', () => {
   const m = missingFields(trade({ status: 'WIN', rr: 2, accountCategory: 'DEMO' }));
-  for (const k of ['Stop pip', 'TP pip', 'MAE', 'MFE', 'Asia range', 'Strateji', 'Trend', 'News Day', 'Entry model']) assert.ok(m.includes(k), k);
+  for (const k of ['Stop pip', 'TP pip', 'MAE', 'MFE', 'Asia Range Pip', 'Asia Range', 'Trend', 'News Day', 'Entry model']) assert.ok(m.includes(k), k);
 });
 
 test('mantık hataları: durum ile R işareti çelişirse', () => {

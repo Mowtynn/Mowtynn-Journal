@@ -20,7 +20,7 @@ interface AppState {
   globalMaxMaePips?: number;
   globalMinMfePips?: number;
   globalMaxMfePips?: number;
-  /** Strateji, News day, P/D, TP target, Asia FVG, risk %, hızlı kayıt filtreleri */
+  /** Asia Range, News day, P/D, TP target, Asia FVG, risk %, hızlı kayıt filtreleri */
   globalExtra: ExtraTradeFilters;
   isQuantMode: boolean;
   setGlobalSelectedConfirmations: (val: string[]) => void;
@@ -89,13 +89,20 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: 'trading_journal_filters',
-      version: 6,
+      version: 7,
       // Zaman aralığı kalıcı değildir: uygulama her açılışta "Tüm zamanlar" ile başlar (üst çubuktaki TÜMÜ gibi)
       partialize: ({ globalDateLimit: _omit, ...rest }) => rest,
-      merge: (persisted, current) => ({ ...current, ...(persisted as object), globalDateLimit: DEFAULT_DATE_LIMIT }),
+      // Ek filtreler her açılışta onarılır (eksik alan / eski biçim ekranı çökertmesin)
+      merge: (persisted, current) => ({
+        ...current,
+        ...(persisted as object),
+        globalExtra: sanitizeExtraFilters((persisted as any)?.globalExtra),
+        globalDateLimit: DEFAULT_DATE_LIMIT,
+      }),
       // v3: Liquidity Sweep filtresi düştü · v4: ek alan filtreleri (globalExtra)
       // v5: Hesap ve Aşama filtreleri üst çubuktaki hesap seçicisine taşındı (eski seçimler gizli filtre olarak kalmasın);
       //     varsayılan tarih aralığı "6 ay"dan "tüm zamanlar"a geçti (dokunulmamış eski varsayılan da taşınır)
+      // v7: Strateji filtresi kaldırıldı, yerine Asia Range (Range / Trend / Sweept)
       migrate: (persisted: any, version: number) => {
         if (persisted && typeof persisted === 'object') {
           delete persisted.globalSelectedConcepts;

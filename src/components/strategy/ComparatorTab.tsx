@@ -8,7 +8,7 @@ import { useNewsDayLabels } from '../../hooks/useNewsDayLabels';
 /** Strateji laboratuvarı · Kıyaslama sekmesi (kendi durumu burada; seçim değişince yalnızca bu sekme yeniden çizilir) */
 export const ComparatorTab = React.memo(function ComparatorTab({ trades }: { trades: Trade[] }) {
   // Interactive Comparator States
-  const [compDimensionX, setCompDimensionX] = useState<'session' | 'tpTarget' | 'premiumDiscount' | 'planFidelity' | 'trend' | 'htfTimeframe' | 'newsDay' | 'strategy' | 'asiaRangeFvg'>('session');
+  const [compDimensionX, setCompDimensionX] = useState<'session' | 'tpTarget' | 'premiumDiscount' | 'planFidelity' | 'trend' | 'htfTimeframe' | 'newsDay' | 'asiaRange' | 'asiaRangeFvg'>('session');
   const [compDimensionY, setCompDimensionY] = useState<'type' | 'entryModels' | 'timeframe'>('type');
 
   const { version: newsLabelsVersion } = useNewsDayLabels();
@@ -22,7 +22,7 @@ export const ComparatorTab = React.memo(function ComparatorTab({ trades }: { tra
       if (compDimensionX === 'planFidelity') return [t.planFidelity || 'Belirtilmemiş'];
       if (compDimensionX === 'trend') return [t.trend || 'Belirtilmemiş'];
       if (compDimensionX === 'htfTimeframe') return [t.htfTimeframe || 'Belirtilmemiş'];
-      if (compDimensionX === 'strategy') return [t.strategy || 'Belirtilmemiş'];
+      if (compDimensionX === 'asiaRange') return [t.asiaRange || 'Belirtilmemiş'];
       if (compDimensionX === 'asiaRangeFvg') return [t.asiaRangeFvg || 'Belirtilmemiş'];
       if (compDimensionX === 'newsDay') {
         const nl = getNewsDayLabels();
@@ -93,7 +93,7 @@ export const ComparatorTab = React.memo(function ComparatorTab({ trades }: { tra
                     <option value="trend">Trend Yapısı</option>
                     <option value="htfTimeframe">Timeframe (HTF)</option>
                     <option value="newsDay">News Day / Bank Holiday</option>
-                    <option value="strategy">Strateji</option>
+                    <option value="asiaRange">Asia Range</option>
                     <option value="asiaRangeFvg">Asia Range FVG</option>
                   </select>
                 </div>

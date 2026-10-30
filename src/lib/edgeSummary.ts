@@ -46,7 +46,7 @@ export interface EdgeSummary {
 
 /** Sızıntı / güç taramasında bakılan tekil alanlar */
 const SCAN_DIMENSIONS: SetupDimension[] = [
-  'strategy',
+  'asiaRange',
   'session',
   'entryModels',
   'premiumDiscount',

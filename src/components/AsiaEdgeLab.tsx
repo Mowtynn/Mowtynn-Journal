@@ -321,8 +321,12 @@ export const AsiaEdgeLab = React.memo(function AsiaEdgeLab({ trades }: AsiaEdgeL
               <GroupTable rows={toRows(r.entryModels)} minSample={minSample} empty="Giriş modeli girilmemiş." />
             </Card>
 
-            <Card title="Strateji">
-              <GroupTable rows={toRows(r.strategies)} minSample={minSample} empty="Strateji girilmemiş." />
+            <Card title="Asia Range (Range / Trend / Sweept)">
+              <GroupTable rows={toRows(r.asiaRanges)} minSample={minSample} empty="Asia Range girilmemiş." />
+            </Card>
+
+            <Card title="Sweep Time (NY)">
+              <GroupTable rows={toRows(r.sweepHours)} minSample={minSample} empty="Sweep Time girilmemiş." />
             </Card>
 
             <Card title="Asia Range FVG">

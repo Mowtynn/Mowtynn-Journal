@@ -4,12 +4,12 @@ import { getNewsDayLabels } from '../constants/constants';
 import { EDGE_PROOF_MIN, MIN_SAMPLE } from './sampleSize';
 
 /**
- * Kurulum karnesi: işlemleri seçilen boyutların birleşimine (ör. strateji + seans + giriş modeli)
+ * Kurulum karnesi: işlemleri seçilen boyutların birleşimine (ör. Asia Range + seans + giriş modeli)
  * göre "kurulum" olarak gruplar; her kurulumun R karnesini ve güven aralığına dayalı hükmünü verir.
  */
 
 export type SetupDimension =
-  | 'strategy'
+  | 'asiaRange'
   | 'session'
   | 'entryModels'
   | 'premiumDiscount'
@@ -23,7 +23,7 @@ export type SetupDimension =
   | 'asset';
 
 export const SETUP_DIMENSIONS: { id: SetupDimension; label: string }[] = [
-  { id: 'strategy', label: 'Strateji' },
+  { id: 'asiaRange', label: 'Asia Range' },
   { id: 'session', label: 'Seans' },
   { id: 'entryModels', label: 'Giriş modeli' },
   { id: 'premiumDiscount', label: 'Confirmations' },
@@ -37,7 +37,7 @@ export const SETUP_DIMENSIONS: { id: SetupDimension; label: string }[] = [
   { id: 'asset', label: 'Parite' },
 ];
 
-export const DEFAULT_SETUP_DIMENSIONS: SetupDimension[] = ['strategy', 'session', 'entryModels'];
+export const DEFAULT_SETUP_DIMENSIONS: SetupDimension[] = ['asiaRange', 'session', 'entryModels'];
 /** Bu sayıdan az işlemli kurulumlara hüküm verilmez */
 export const SETUP_MIN_SAMPLE = MIN_SAMPLE;
 export const UNSPECIFIED = 'Belirtilmemiş';

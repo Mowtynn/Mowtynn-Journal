@@ -464,7 +464,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
         session: string;
         htfTimeframe?: string;
         trend?: string;
-        concept: string; // strateji
+        concept: string; // Asia Range (Range / Trend / Sweept)
         timeframe: string;
         confirmation: string;
         entryModel?: string;
@@ -481,10 +481,10 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
         const session = t.session || '';
         const htfTimeframe = t.htfTimeframe || '';
         const timeframe = t.timeframe || '';
-        const concept = t.strategy || '';
+        const concept = t.asiaRange ? `Asia ${t.asiaRange}` : '';
         const planFidelity = t.planFidelity || '';
 
-        // Hiyerarşi: Seans -> HTF -> Trend -> Strateji -> Entry TF -> PD Array -> Entry Model -> Setup Kalitesi
+        // Hiyerarşi: Seans -> HTF -> Trend -> Asia Range -> Entry TF -> PD Array -> Entry Model -> Setup Kalitesi
         const key = `${session}|${htfTimeframe}|${trend}|${concept}|${timeframe}|${confirmation}|${entryModel}|${planFidelity}`;
         if (!comboMap[key]) {
           comboMap[key] = { session, htfTimeframe, trend, concept, timeframe, confirmation, entryModel, planFidelity, trades: [] };
@@ -1774,10 +1774,10 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
                                           </span>
                                         )}
 
-                                        {/* 4. STRATEJİ */}
+                                        {/* 4. ASIA RANGE */}
                                         {child.concept && (
                                           <span 
-                                            title="Strateji"
+                                            title="Asia Range"
                                             className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-amber-300 bg-amber-500/10 px-2 py-0.5 border border-amber-500/25 rounded-lg"
                                           >
                                             <Target size={10} className="text-amber-400 shrink-0" />

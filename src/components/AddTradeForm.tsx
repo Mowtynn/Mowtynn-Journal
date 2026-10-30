@@ -12,7 +12,6 @@ import {
   DEFAULT_TP_TARGETS,
   DEFAULT_PREMIUM_DISCOUNTS,
   DEFAULT_NEWS_DAYS,
-  DEFAULT_STRATEGIES,
   DEFAULT_ASIA_RANGE_FVGS,
 } from "../constants/constants";
 import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
@@ -44,7 +43,6 @@ interface AddTradeFormProps {
   tpTargets?: string[];
   premiumDiscounts?: string[];
   newsDays?: string[];
-  strategies?: string[];
   asiaRangeFvgs?: string[];
   definitionTitles?: DefinitionTitles;
   /** En son kaydedilen işlem: "Son kurulumu kopyala" için */
@@ -81,7 +79,6 @@ const AddTradeForm = React.memo(function AddTradeForm({
   tpTargets = DEFAULT_TP_TARGETS,
   premiumDiscounts = DEFAULT_PREMIUM_DISCOUNTS,
   newsDays = DEFAULT_NEWS_DAYS,
-  strategies = DEFAULT_STRATEGIES,
   asiaRangeFvgs = DEFAULT_ASIA_RANGE_FVGS,
   definitionTitles = DEFAULT_DEFINITION_TITLES,
   lastTrade = null,
@@ -124,7 +121,8 @@ const AddTradeForm = React.memo(function AddTradeForm({
   // News Day / Bank Holiday: varsayılan yok; tam kayıtta seçilmesi zorunlu (yanlışlıkla "Yok" kalıp istatistiği kaydırmasın)
   const [newsDay, setNewsDay] = useState<boolean | null>(init.newsDay);
   const [newsDayError, setNewsDayError] = useState(false);
-  const [selectedStrategy, setSelectedStrategy] = useState(init.strategy);
+  const [asiaRange, setAsiaRange] = useState(init.asiaRange);
+  const [sweepTime, setSweepTime] = useState(init.sweepTime);
   const [selectedAsiaFvg, setSelectedAsiaFvg] = useState(init.asiaFvg);
 
   const [stopPips, setStopPips] = useState<Num>(init.stopPips);
@@ -267,7 +265,10 @@ const AddTradeForm = React.memo(function AddTradeForm({
       tpTargets: selectedTpTargets.length > 0 ? selectedTpTargets : undefined,
       premiumDiscount: premiumDiscount || undefined,
       newsDay: newsDay ?? undefined,
-      strategy: selectedStrategy || undefined,
+      // Eski sürümün strateji alanı formda yok; düzenlemede eski değer silinmeden korunur
+      strategy: editingTrade?.strategy || undefined,
+      asiaRange: (asiaRange || undefined) as Trade["asiaRange"],
+      sweepTime: sweepTime || undefined,
       asiaRangeFvg: selectedAsiaFvg || undefined,
       notes: safeNotes || undefined,
       screenshot: screenshot || undefined,
@@ -301,7 +302,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
     asset, type, accountChoice, riskChoice, customRiskPct, tradeDate, exitDate, tradeStatus, stopPips, tpPips, asiaRangePips,
     maePips, mfePips, rrValue, notes, screenshot, selectedTimeframe, selectedHtfTimeframe, selectedSession,
     selectedConfirmations, selectedEntries, selectedTrend, planFidelity,
-    selectedTpTargets, premiumDiscount, newsDay, selectedStrategy, selectedAsiaFvg,
+    selectedTpTargets, premiumDiscount, newsDay, asiaRange, sweepTime, selectedAsiaFvg,
   ]);
   const baselineRef = useRef(snapshot);
   // Hazır bekleyen form açılınca tarih "şimdi"ye çekilir; bu değişiklik kirli sayılmasın diye taban yenilenir
@@ -367,7 +368,6 @@ const AddTradeForm = React.memo(function AddTradeForm({
     setSelectedTrend(t.trend || "");
     setSelectedTpTargets(Array.isArray(t.tpTargets) ? t.tpTargets : []);
     setPremiumDiscount(t.premiumDiscount || "");
-    setSelectedStrategy(t.strategy || "");
     setSelectedAsiaFvg(t.asiaRangeFvg || "");
     toast.success("Son işlemin kurulumu uygulandı. Riski, sonucu ve pip değerlerini girin.");
   };
@@ -414,7 +414,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
             <button
               type="button"
               onClick={applyLastSetup}
-              title="Son işlemdeki parite, hesap ve strateji seçimlerini uygular"
+              title="Son işlemdeki parite, hesap ve kurulum seçimlerini uygular"
               className="hidden sm:flex items-center gap-1.5 h-8 px-3 rounded-xl border border-zinc-700/70 bg-zinc-900/80 text-[11px] font-bold text-zinc-300 hover:text-white hover:border-zinc-500 hover:bg-zinc-800 transition-ui cursor-pointer"
             >
               <Copy size={13} className="text-blue-400" />
@@ -511,9 +511,10 @@ const AddTradeForm = React.memo(function AddTradeForm({
                   setNewsDay={setNewsDay}
                   newsDayError={newsDayError}
                   setNewsDayError={setNewsDayError}
-                  strategies={strategies}
-                  selectedStrategy={selectedStrategy}
-                  setSelectedStrategy={setSelectedStrategy}
+                  asiaRange={asiaRange}
+                  setAsiaRange={setAsiaRange}
+                  sweepTime={sweepTime}
+                  setSweepTime={setSweepTime}
                   asiaRangeFvgs={asiaRangeFvgs}
                   selectedAsiaFvg={selectedAsiaFvg}
                   setSelectedAsiaFvg={setSelectedAsiaFvg}

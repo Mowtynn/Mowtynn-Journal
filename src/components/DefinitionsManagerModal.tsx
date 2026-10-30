@@ -27,7 +27,6 @@ import {
   Flag,
   Layers,
   Newspaper,
-  Compass,
   Type,
 } from 'lucide-react';
 import { Trade, DefinitionTitles } from '../types';
@@ -43,7 +42,6 @@ import {
   DEFAULT_TP_TARGETS,
   DEFAULT_PREMIUM_DISCOUNTS,
   DEFAULT_NEWS_DAYS,
-  DEFAULT_STRATEGIES,
   DEFAULT_ASIA_RANGE_FVGS,
   FORM_LABEL_KEYS,
   DEFAULT_DEFINITION_TITLES,
@@ -71,7 +69,6 @@ interface DefinitionsManagerModalProps {
   tpTargets?: string[];
   premiumDiscounts?: string[];
   newsDays?: string[];
-  strategies?: string[];
   asiaRangeFvgs?: string[];
   definitionTitles?: DefinitionTitles;
   persistTimeframes: (list: string[]) => void;
@@ -85,14 +82,13 @@ interface DefinitionsManagerModalProps {
   persistTpTargets?: (list: string[]) => void;
   persistPremiumDiscounts?: (list: string[]) => void;
   persistNewsDays?: (list: string[]) => void;
-  persistStrategies?: (list: string[]) => void;
   persistAsiaRangeFvgs?: (list: string[]) => void;
   /** Bir öğe yeniden adlandırılınca işlemlerdeki değeri de günceller; güncellenen işlem sayısını döndürür. */
   onRenameDefinition?: (category: string, from: string, to: string) => number;
   persistDefinitionTitles?: (updated: DefinitionTitles) => void;
 }
 
-type TabType = 'assets' | 'timeframes' | 'htfTimeframes' | 'confirmations' | 'sessions' | 'planFidelities' | 'trendTypes' | 'entryModels' | 'tpTargets' | 'premiumDiscounts' | 'newsDays' | 'strategies' | 'asiaRangeFvgs' | 'formLabels';
+type TabType = 'assets' | 'timeframes' | 'htfTimeframes' | 'confirmations' | 'sessions' | 'planFidelities' | 'trendTypes' | 'entryModels' | 'tpTargets' | 'premiumDiscounts' | 'newsDays' | 'asiaRangeFvgs' | 'formLabels';
 
 /** Sekme kimliği -> DefinitionTitles anahtarı (Form Başlıkları sekmesinin kendi başlığı yok) */
 const titleKeyFor = (tab: TabType): keyof DefinitionTitles =>
@@ -112,6 +108,8 @@ const FORM_LABEL_HINTS: Record<string, string> = {
   asiaRangePips: 'Asia range büyüklüğü',
   rr: 'Sonuç R',
   chartLink: 'Grafik bağlantısı alanı',
+  asiaRange: 'Range / Trend / Sweept seçimi',
+  sweepTime: 'Sweep saati (NY)',
 };
 
 const FormLabelsPanel: React.FC<{
@@ -193,7 +191,6 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
   tpTargets = DEFAULT_TP_TARGETS,
   premiumDiscounts = DEFAULT_PREMIUM_DISCOUNTS,
   newsDays = DEFAULT_NEWS_DAYS,
-  strategies = DEFAULT_STRATEGIES,
   asiaRangeFvgs = DEFAULT_ASIA_RANGE_FVGS,
   definitionTitles = DEFAULT_DEFINITION_TITLES,
   persistTimeframes,
@@ -207,7 +204,6 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
   persistTpTargets = () => {},
   persistPremiumDiscounts = () => {},
   persistNewsDays = (_list: string[]) => {},
-  persistStrategies = () => {},
   persistAsiaRangeFvgs = () => {},
   onRenameDefinition,
   persistDefinitionTitles,
@@ -243,7 +239,6 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
       }
       if (t.trend) counts[`trendTypes:${t.trend}`] = (counts[`trendTypes:${t.trend}`] || 0) + 1;
       if (t.premiumDiscount) counts[`premiumDiscounts:${t.premiumDiscount}`] = (counts[`premiumDiscounts:${t.premiumDiscount}`] || 0) + 1;
-      if (t.strategy) counts[`strategies:${t.strategy}`] = (counts[`strategies:${t.strategy}`] || 0) + 1;
       if (t.asiaRangeFvg) counts[`asiaRangeFvgs:${t.asiaRangeFvg}`] = (counts[`asiaRangeFvgs:${t.asiaRangeFvg}`] || 0) + 1;
       if (typeof t.newsDay === 'boolean') {
         const nk = `newsDays:${t.newsDay ? newsYes : newsNo}`;
@@ -274,7 +269,6 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
     { id: 'planFidelities', label: definitionTitles.planFidelities || DEFAULT_DEFINITION_TITLES.planFidelities, icon: Crosshair, list: planFidelities, persist: persistPlanFidelities, defaultList: DEFAULT_PLAN_FIDELITIES },
     { id: 'tpTargets', label: definitionTitles.tpTargets || DEFAULT_DEFINITION_TITLES.tpTargets || "Target", icon: Flag, list: tpTargets, persist: persistTpTargets, defaultList: DEFAULT_TP_TARGETS },
     { id: 'premiumDiscounts', label: definitionTitles.premiumDiscounts || DEFAULT_DEFINITION_TITLES.premiumDiscounts || "Confirmations", icon: Layers, list: premiumDiscounts, persist: persistPremiumDiscounts, defaultList: DEFAULT_PREMIUM_DISCOUNTS },
-    { id: 'strategies', label: definitionTitles.strategies || DEFAULT_DEFINITION_TITLES.strategies || "Strateji", icon: Compass, list: strategies, persist: persistStrategies, defaultList: DEFAULT_STRATEGIES },
     { id: 'asiaRangeFvgs', label: definitionTitles.asiaRangeFvgs || DEFAULT_DEFINITION_TITLES.asiaRangeFvgs || "Asia Range FVG", icon: Layers, list: asiaRangeFvgs, persist: persistAsiaRangeFvgs, defaultList: DEFAULT_ASIA_RANGE_FVGS },
     // Sabit iki durumlu alan: yalnızca etiketler (Var / Yok) yeniden adlandırılır, ekleme/silme/sıralama yok
     { id: 'newsDays', label: definitionTitles.newsDays || DEFAULT_DEFINITION_TITLES.newsDays || "News Day/Bank Holiday", icon: Newspaper, list: normalizeNewsDays(newsDays), persist: persistNewsDays, defaultList: DEFAULT_NEWS_DAYS, fixed: true },
@@ -415,7 +409,6 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
       tpTargets,
       premiumDiscounts,
       newsDays: normalizeNewsDays(newsDays),
-      strategies,
       asiaRangeFvgs,
       exportedAt: new Date().toISOString(),
     };
@@ -469,7 +462,6 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
         apply(data.trendTypes, persistTrendTypes);
         apply(data.tpTargets, persistTpTargets);
         apply(data.premiumDiscounts, persistPremiumDiscounts);
-        apply(data.strategies, persistStrategies);
         apply(data.asiaRangeFvgs, persistAsiaRangeFvgs);
         if (Array.isArray(data.newsDays)) {
           persistNewsDays(normalizeNewsDays(data.newsDays));

@@ -10,7 +10,7 @@ test('dışa aktarım: formdaki her girdi bir sütunda, değerler eksiksiz', () 
     createdAt: nyInputToTs('2026-10-19T09:30')!, exitAt: nyInputToTs('2026-10-19T10:45')!,
     platform: 'FTMO 10K · Phase 1', accountId: 'acc1', accountCategory: 'CHALLENGE', accountStage: 1,
     riskPct: 0.5, riskAmount: 50, stopPips: 10, tpPips: 30, maePips: 4, mfePips: 28, asiaRangePips: 18,
-    strategy: 'Silver Bullet', planFidelity: 'A+', trend: 'Continuation', newsDay: false, asiaRangeFvg: 'Var',
+    asiaRange: 'Trend', sweepTime: '02:15', planFidelity: 'A+', trend: 'Continuation', newsDay: false, asiaRangeFvg: 'Var',
     session: 'London', htfTimeframe: '1H', timeframe: '5M', confirmations: ['FVG', 'OB'], entryModels: ['Breaker'],
     tpTargets: ['PDH / PDL'], premiumDiscount: 'Discount', quickEntry: true,
     notes: 'satır 1\nsatır 2', screenshot: 'https://www.tradingview.com/x/abc/',
@@ -18,7 +18,7 @@ test('dışa aktarım: formdaki her girdi bir sütunda, değerler eksiksiz', () 
   const row = prepareTradeExportRows([t])[0] as Record<string, unknown>;
   const values = Object.values(row).map(String);
   for (const expected of ['XAUUSD', 'SHORT', 'WIN', '2.5', 'FTMO 10K · Phase 1', 'acc1', '0.5', '50', '10', '30', '4', '28', '18',
-    'Silver Bullet', 'A+', 'Continuation', 'Var', 'London', '1H', '5M', 'FVG, OB', 'Breaker', 'PDH / PDL', 'Discount',
+    'Trend', '02:15', 'A+', 'Continuation', 'Var', 'London', '1H', '5M', 'FVG, OB', 'Breaker', 'PDH / PDL', 'Discount',
     'satır 1\nsatır 2', 'https://www.tradingview.com/x/abc/', '19.10.2026', '09:30']) {
     assert.ok(values.includes(expected), `eksik: ${expected}`);
   }

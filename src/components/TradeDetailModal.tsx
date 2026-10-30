@@ -378,7 +378,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                   {currentTrade.quickEntry === true && !isExporting && (() => {
                     const missing = [
                       !currentTrade.session && (cleanDefinitionTitleString(definitionTitles.sessions) || "Seans"),
-                      !currentTrade.strategy && (cleanDefinitionTitleString(definitionTitles.strategies) || "Strateji"),
+                      !currentTrade.asiaRange && (cleanDefinitionTitleString(definitionTitles.asiaRange) || "Asia Range"),
                       !(currentTrade.entryModels && currentTrade.entryModels.length) && (cleanDefinitionTitleString(definitionTitles.entryModels) || "Giriş modeli"),
                       !currentTrade.timeframe && (cleanDefinitionTitleString(definitionTitles.timeframes) || "Entry TF"),
                       !currentTrade.planFidelity && (cleanDefinitionTitleString(definitionTitles.planFidelities) || "Setup kalitesi"),
@@ -465,9 +465,14 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                             wide
                           />
                           <ContextRow
-                            label={smartUpper(cleanDefinitionTitleString(definitionTitles.strategies) || "STRATEJİ")}
-                            value={currentTrade.strategy ? smartUpper(currentTrade.strategy) : undefined}
+                            label={smartUpper(cleanDefinitionTitleString(definitionTitles.asiaRange) || "ASIA RANGE")}
+                            value={currentTrade.asiaRange}
                             icon={<Target size={14} className="text-cyan-400"/>}
+                          />
+                          <ContextRow
+                            label={smartUpper(cleanDefinitionTitleString(definitionTitles.sweepTime) || "SWEEP TIME")}
+                            value={currentTrade.sweepTime ? `${currentTrade.sweepTime} NY` : undefined}
+                            icon={<Clock size={14} className="text-cyan-400"/>}
                           />
                           {/* 3. SESSION */}
                           <ContextRow 
@@ -546,6 +551,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                             value={currentTrade.planFidelity} 
                             icon={<ShieldCheck size={14} className="text-blue-400"/>} 
                             valueColor={planColor}
+                            wide
                           />
                           {/* 3c. MAE (PİP) */}
                           {currentTrade.maePips !== undefined && currentTrade.maePips !== null && !(insight && insight.path.maeR !== null) && (

@@ -937,15 +937,15 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
     ));
   pushFlag('wide_asia_filter', 'Geniş Asia Range (parite medyanının >1.25 katı) günleri', wideTrades, 'Geniş Asia range günlerinde net getiri negatif');
 
-  // 21. En iyi kombinasyon: parite + seans + strateji + giriş modeli; en az MIN_SAMPLE işlem, güven aralığı alt sınırına göre
+  // 21. En iyi kombinasyon: parite + seans + Asia Range + giriş modeli; en az MIN_SAMPLE işlem, güven aralığı alt sınırına göre
   const comboMap: Record<string, { list: Trade[]; sampleDesc: string }> = {};
   trades.forEach(t => {
     const asset = t.asset || 'Genel';
     const session = t.session || 'Genel';
-    const strategy = t.strategy || 'Strateji yok';
+    const asiaRange = t.asiaRange || 'Asia Range yok';
     const model = Array.isArray(t.entryModels) && t.entryModels.length > 0 ? t.entryModels.join(' + ') : 'Model yok';
-    const key = `${asset} | ${session} | ${strategy} | ${model}`;
-    if (!comboMap[key]) comboMap[key] = { list: [], sampleDesc: `${asset} · ${session} · ${strategy} · ${model}` };
+    const key = `${asset} | ${session} | ${asiaRange} | ${model}`;
+    if (!comboMap[key]) comboMap[key] = { list: [], sampleDesc: `${asset} · ${session} · ${asiaRange} · ${model}` };
     comboMap[key].list.push(t);
   });
 
