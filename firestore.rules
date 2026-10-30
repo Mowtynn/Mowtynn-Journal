@@ -39,7 +39,7 @@ service cloud.firestore {
 
     // ---------- İşlem ----------
     // İstemcideki isValidTrade (src/lib/tradeModel.ts) ile birebir aynı zorunlu alanlar.
-    // screenshot: Storage URL'si; eski yedeklerden gelen gömülü görsel (data URL) de kabul edilir (belge sınırı 1 MiB).
+    // screenshot: grafik linki ya da görsel referansı (fsimg:…); eski yedeklerden gelen gömülü görsel (data URL) de kabul edilir (belge sınırı 1 MiB).
     function validTrade(d, docId) {
       return d.keys().size() <= 60
         && idMatches(d, docId)
@@ -110,6 +110,19 @@ service cloud.firestore {
       allow read, delete: if ownsExisting();
       allow create: if ownsIncoming() && validJournal(request.resource.data, docId);
       allow update: if ownsExisting() && ownsIncoming() && validJournal(request.resource.data, docId);
+    }
+
+    // ---------- Görseller ----------
+    // Prop fotoğrafları / sertifikalar (ve eski kayıtlardan gelen işlem görselleri) sıkıştırılmış data URL olarak,
+    // kullanıcı başına ayrı belgelerde. Kayıtlarda yalnızca "fsimg:<kimlik>" referansı tutulur. Değiştirilemez; silinebilir.
+    match /images/{docId} {
+      allow read, delete: if ownsExisting();
+      allow create: if ownsIncoming()
+                    && request.resource.data.keys().hasOnly(['userId', 'data', 'kind', 'createdAt'])
+                    && request.resource.data.data is string
+                    && request.resource.data.data.size() <= 950000
+                    && request.resource.data.kind in ['prop', 'trade']
+                    && request.resource.data.createdAt is number;
     }
 
     // Sertifikalar kaldırıldı: eski kayıtlar yalnızca okunup silinebilir (Verileri sıfırla bunları temizler)

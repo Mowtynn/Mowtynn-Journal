@@ -97,7 +97,17 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
     
     setIsImageLoading(true);
     let alive = true;
-    resolveChartImage(screenshot).then((url) => alive && setResolvedImageUrl(url));
+    resolveChartImage(screenshot).then((url) => {
+      if (!alive) return;
+      if (!url) {
+        // Kayıtlı görsel bulunamadı (silinmiş / erişim yok): sonsuz yükleniyor yerine hata göster
+        setResolvedImageUrl(null);
+        setIsImageLoading(false);
+        setImageError(true);
+        return;
+      }
+      setResolvedImageUrl(url);
+    });
     return () => {
       alive = false;
     };
@@ -629,10 +639,10 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                     ) : (
                       <div className="flex flex-col items-center justify-center p-6 text-center text-zinc-600">
                         <Monitor size={32} className="mb-3 opacity-20" />
-                        <p className="text-sm font-bold font-sans text-zinc-400">Ekran görüntüsü bulunmuyor</p>
-                        <p className="text-xs text-zinc-500 mt-2 font-sans max-w-xs">Bu işlem için bir teknik analiz grafiği eklenmemiş.</p>
+                        <p className="text-sm font-bold font-sans text-zinc-400">Grafik Linki Yok</p>
+                        <p className="text-xs text-zinc-500 mt-2 font-sans max-w-xs">Bu işleme TradingView ya da başka bir grafik linki eklenmemiş.</p>
                         <button onClick={() => { onEdit(currentTrade); onClose(); }} className="mt-4 text-xs font-sans font-bold text-blue-400 bg-blue-500/10 px-4 py-2 rounded-lg hover:bg-blue-500/20 transition-colors uppercase cursor-pointer">
-                          Görsel Ekle
+                          Grafik Linki Ekle
                         </button>
                       </div>
                     )}

@@ -1,3 +1,4 @@
+import { isImageRef, loadImage } from './imageStore';
 import { authFetch } from './api';
 
 /**
@@ -22,6 +23,8 @@ const cache = new Map<string, Promise<string>>();
 
 /** Önizlenecek görsel adresi (TradingView linki çözülür; sonuç bellekte tutulur, hata olursa link aynen döner) */
 export function resolveChartImage(url: string): Promise<string> {
+  // Kayıtlı görsel (eski kayıtlardan) Firestore'dan okunur
+  if (isImageRef(url)) return loadImage(url).then((v) => v || '');
   if (!isTradingViewShare(url)) return Promise.resolve(url);
   let p = cache.get(url);
   if (!p) {

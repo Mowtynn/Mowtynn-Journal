@@ -12,14 +12,14 @@ React + Vite + Express + Firebase işlem günlüğü (Asia Range edge analizi da
 - `npm run lint`: tip denetimi + testler. Bir hesaplama formülü değişirse burada kırmızıya döner.
 
 ## Yayına alma
-1. Firebase kuralları ve indeksler: `firebase deploy --only firestore:rules,firestore:indexes,storage`
-2. Storage CORS (yedeğe prop fotoğraflarının gömülebilmesi için, bir kez): `gsutil cors set storage.cors.json gs://gen-lang-client-0855080637.firebasestorage.app`
+1. Firebase kuralları ve indeksler (kurallar değiştiğinde, proje klasöründe): `firebase deploy --only firestore:rules,firestore:indexes`
+2. Firebase Storage kullanılmaz (ücretsiz planda açılamıyor): prop fotoğrafları sıkıştırılıp Firestore'daki `images` koleksiyonunda saklanır; işlem grafikleri link olarak tutulur.
 3. Render: repo'yu bağla, `render.yaml` otomatik algılanır. Ortam değişkenleri: `SITE_PASSWORD` (zorunlu), `TOKEN_SECRET` (isteğe bağlı). Başka değişken gerekmez.
 4. Firebase Console > Authentication > Settings > Authorized domains listesine yayın alan adını ekle (Google ile giriş için).
 5. Kontrol: `npm run lint && npm run build` (lint testleri de çalıştırır), ardından `/api/health` 200 dönmeli.
 
 ## Notlar
-- `firebase-applet-config.json` içindeki web apiKey gizli değildir; koruma Firestore/Storage kurallarıdır.
+- `firebase-applet-config.json` içindeki web apiKey gizli değildir; koruma Firestore kurallarıdır.
 - Sunucu sırları (SITE_PASSWORD, TOKEN_SECRET) asla repoya girmez (`.env*` gitignore'da).
 
 ## Veri ve senkron davranışı

@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { normalizeTrade, normalizeTrades, isValidTrade, canonicalAssetList } from '../src/lib/tradeModel';
+import { trade } from './fixtures';
 
 test('dolar sonucu (pnl) kayıttan düşer', () => {
   const t = normalizeTrade({ id: '1', asset: 'EURUSD', type: 'LONG', status: 'WIN', rr: 2, pnl: 500, notes: '', screenshot: null, createdAt: 1 } as any);
@@ -76,4 +77,9 @@ test('grafik linki: yalnızca http(s) ya da gömülü görsel; tehlikeli şema d
   assert.equal(n({ ...base, screenshot: 'www.tradingview.com/x/abc/' }).screenshot, 'https://www.tradingview.com/x/abc/');
   assert.equal(n({ ...base, screenshot: 'data:image/png;base64,AAA' }).screenshot, 'data:image/png;base64,AAA');
   assert.equal(n({ ...base, screenshot: '' }).screenshot, null);
+});
+
+test('görsel referansı (fsimg:) kabul edilir; bozuk referans düşer', () => {
+  assert.equal(normalizeTrade({ ...trade({ id: 'g', status: 'WIN', rr: 1 }), screenshot: 'fsimg:img_abc_123' } as any).screenshot, 'fsimg:img_abc_123');
+  assert.equal(normalizeTrade({ ...trade({ id: 'h', status: 'WIN', rr: 1 }), screenshot: 'fsimg:../x y' } as any).screenshot, null);
 });

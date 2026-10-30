@@ -79,7 +79,7 @@ import {
   waitForPendingWrites,
 } from "firebase/firestore";
 import { onAuthStateChanged, User, updateProfile } from "firebase/auth";
-import { uploadImageToStorage, deleteAllUserImages, deleteImageByUrl } from "./lib/storage";
+import { saveImage, deleteAllUserImages, deleteImages } from "./lib/imageStore";
 import { reportCloudError, muteAuthErrors } from "./lib/cloudErrors";
 import { weeklyReviewDue } from "./lib/weeklyReview";
 import { NO_ACCOUNT } from "./components/tradeForm/shared";
@@ -782,13 +782,13 @@ export default function App() {
     }
     if (!syncCloud || !user) return;
     (async () => {
-      // Girişsizken eklenen ya da yedekten gelen fotoğraflar (data URL) önce Storage'a yüklenir;
-      // ayar belgesine yalnızca kısa URL yazılır (belge boyutu sınırı).
+      // Girişsizken eklenen ya da yedekten gelen fotoğraflar (data URL) önce "images" koleksiyonuna kaydedilir;
+      // ayar belgesine yalnızca kısa referans (fsimg:…) yazılır (belge boyutu sınırı).
       const pending = Array.from(new Set(collectAccountImages(clean).filter((i) => i.startsWith("data:"))));
       let toSave = clean;
       if (pending.length > 0) {
         const map = new Map<string, string>();
-        for (const dataUrl of pending) map.set(dataUrl, await uploadImageToStorage(user.uid, dataUrl, "prop"));
+        for (const dataUrl of pending) map.set(dataUrl, await saveImage(user.uid, dataUrl, "prop", (e) => reportCloudError("prop fotoğrafı kaydı", e, "Bir fotoğraf buluta kaydedilemedi.")));
         const swap = (i: string) => map.get(i) || i;
         const replaceAll = (list: PropAccount[]) =>
           list.map((a) => ({
@@ -834,18 +834,20 @@ export default function App() {
     () => ({ CHALLENGE: scopeAccountRows(propAccounts, trades, 'CHALLENGE'), FUNDED: scopeAccountRows(propAccounts, trades, 'FUNDED') }),
     [propAccounts, trades],
   );
-  // Fotoğraf: girişliyken Storage'a yüklenir, değilse sıkıştırılmış data URL olarak yerelde kalır
+  // Fotoğraf: girişliyken Firestore'daki "images" koleksiyonuna kaydedilir (ücretsiz plan; Storage gerekmez),
+  // değilse sıkıştırılmış data URL olarak yerelde kalır
   const uploadPropImage = useCallback(
-    (dataUrl: string) => (user ? uploadImageToStorage(user.uid, dataUrl, "prop") : Promise.resolve(dataUrl)),
+    (dataUrl: string) =>
+      user
+        ? saveImage(user.uid, dataUrl, "prop", (e) => reportCloudError("prop fotoğrafı kaydı", e, "Fotoğraf buluta kaydedilemedi."))
+        : Promise.resolve(dataUrl),
     [user],
   );
-  // Hesap değişiklikleri kaydedilir; kaldırılan fotoğraflar Storage'dan da silinir.
+  // Hesap değişiklikleri kaydedilir; kaldırılan fotoğraflar (silinen sertifika / zincir / görsel) buluttan da silinir
   const handlePropAccountsChange = useCallback((next: PropAccount[]) => {
-    // Kaldırılan fotoğraflar (silinen sertifika / zincir / görsel) Storage'dan da silinir
     const kept = new Set(collectAccountImages(next));
-    collectAccountImages(propAccounts)
-      .filter((img) => !kept.has(img))
-      .forEach((img) => deleteImageByUrl(img).catch((e) => console.error("Storage delete failed:", e)));
+    const removed = collectAccountImages(propAccounts).filter((img) => !kept.has(img));
+    if (removed.length) deleteImages(removed).catch((e) => console.error("Image delete failed:", e));
     persistPropAccounts(next);
   }, [propAccounts, persistPropAccounts]);
 
@@ -1073,7 +1075,7 @@ export default function App() {
               });
               if (!Array.isArray(cloudData.propAccounts)) {
                 const localAccounts = loadPropAccounts();
-                // Fotoğrafı henüz yüklenmemiş (data URL) hesaplar ilk değişiklikte Storage üzerinden yazılır
+                // Fotoğrafı henüz buluta kaydedilmemiş (data URL) hesaplar ilk değişiklikte görsel koleksiyonu üzerinden yazılır
                 if (localAccounts.length && localAccounts.length <= 500 && !collectAccountImages(localAccounts).some((i) => i.startsWith("data:"))) missing.propAccounts = localAccounts;
               }
               if (Object.keys(missing).length) {
@@ -1392,7 +1394,7 @@ export default function App() {
           const processedTradeData = { ...initialTrade };
           if (processedTradeData.screenshot && processedTradeData.screenshot.startsWith("data:image")) {
             try {
-              processedTradeData.screenshot = await uploadImageToStorage(uid, processedTradeData.screenshot, "trades");
+              processedTradeData.screenshot = await saveImage(uid, processedTradeData.screenshot, "trade");
             } catch (error) {
               reportCloudError("işlem görseli yükleme", error, "Görsel yüklenemedi, işlem görselsiz kaydedildi.");
               processedTradeData.screenshot = null;
@@ -1823,14 +1825,14 @@ export default function App() {
         importedNotes = normalizeNotes(importedNotes);
         importedJournals = normalizeJournals(importedJournals);
         if (user) {
-          // Eski yedeklerdeki gömülü görseller (data URL) Storage'a yüklenir: Firestore belge sınırı 1 MiB'dir ve
+          // Eski yedeklerdeki gömülü görseller (data URL) görsel koleksiyonuna kaydedilir: Firestore belge sınırı 1 MiB'dir ve
           // tek büyük belge 400'lük toplu yazımın tamamını düşürür. Yüklenemeyen görsel düşer, işlem yine aktarılır.
           let droppedImages = 0;
           importedTrades = await Promise.all(
             importedTrades.map(async (t) => {
               if (typeof t.screenshot !== "string" || !t.screenshot.startsWith("data:image")) return t;
               try {
-                return { ...t, screenshot: await uploadImageToStorage(user.uid, t.screenshot, "trades") };
+                return { ...t, screenshot: await saveImage(user.uid, t.screenshot, "trade") };
               } catch {
                 droppedImages += 1;
                 return { ...t, screenshot: null };
@@ -1880,7 +1882,7 @@ export default function App() {
           }
 
           if (importedSettings) {
-            // Prop hesapları (fotoğraflar Storage'a yüklenerek) aşağıda persistPropAccounts ile yazılır
+            // Prop hesapları (fotoğraflar görsel koleksiyonuna kaydedilerek) aşağıda persistPropAccounts ile yazılır
             const { propAccounts: _pa, ...cloudSettings } = importedSettings;
             await setDoc(doc(db, "settings", user.uid), cleanForFirestore({ ...cloudSettings, userId: user.uid }), { merge: true });
           }
@@ -2023,7 +2025,7 @@ export default function App() {
           console.error("Failed to delete settings doc:", e);
         }
 
-        // Firebase Storage'daki tüm görseller (işlem görselleri, eski sertifika ve AI görselleri)
+        // Kullanıcının tüm görselleri (Firestore "images" koleksiyonu)
         try {
           await deleteAllUserImages(user.uid);
         } catch (e) {

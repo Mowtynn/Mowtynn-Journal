@@ -1,10 +1,11 @@
+import { fitDataUrl } from './imageStore';
 /**
  * Fotoğrafı okunabilir kalacak şekilde küçültüp sıkıştırır: uzun kenar en fazla 1800 px, WebP (desteklenmezse JPEG).
- * Sertifika ve ekran görüntülerinde yazıların okunması için kalite yüksek tutulur; tipik çıktı 150–500 KB.
+ * Sertifika ve ekran görüntülerinde yazıların okunması için kalite yüksek tutulur; tipik çıktı 150–500 KB,
+ * en fazla ~900 KB (Firestore'da tek belgeye sığar).
  */
 const MAX_EDGE = 1800;
 const QUALITY = 0.82;
-const MAX_OUTPUT_BYTES = 4.5 * 1024 * 1024; // Storage kuralı 5 MB
 
 const loadImage = (file: Blob) =>
   new Promise<HTMLImageElement>((resolve, reject) => {
@@ -37,8 +38,6 @@ export async function compressImage(file: Blob): Promise<string> {
   ctx.drawImage(img, 0, 0, w, h);
   let data = canvas.toDataURL('image/webp', QUALITY);
   if (!data.startsWith('data:image/webp')) data = canvas.toDataURL('image/jpeg', QUALITY);
-  // Çok büyükse kaliteyi düşürerek bir kez daha dene
-  if (data.length * 0.75 > MAX_OUTPUT_BYTES) data = canvas.toDataURL('image/jpeg', 0.7);
-  if (data.length * 0.75 > MAX_OUTPUT_BYTES) throw new Error('Görsel çok büyük.');
-  return data;
+  // Firestore belge sınırına sığdır (gerekirse boyut / kalite kademeli düşer)
+  return fitDataUrl(data);
 }

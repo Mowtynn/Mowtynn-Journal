@@ -194,8 +194,8 @@ export const prepareTradeExportRows = (trades: Trade[], titles: Record<string, s
       'Veri Seti': DATASET_LABELS[getTradeDataset(t)],
       'Hızlı Kayıt': t.quickEntry ? 'Evet (eksik alan olabilir)' : 'Hayır',
       [T('notesCard', 'Analiz & Notlar')]: t.notes ? t.notes : '-',
-      // Gömülü görsel (eski yedeklerden data URL) hücreye sığmaz; bağlantı ise aynen yazılır
-      [T('chartLink', 'Grafik Linki')]: !shot ? '-' : shot.startsWith('data:') ? 'Gömülü görsel (uygulamada görüntülenir)' : shot,
+      // Kayıtlı / gömülü görsel hücreye sığmaz; bağlantı ise aynen yazılır
+      [T('chartLink', 'Grafik Linki')]: !shot ? '-' : shot.startsWith('data:') || shot.startsWith('fsimg:') ? 'Kayıtlı görsel (uygulamada görüntülenir)' : shot,
     };
   });
 };

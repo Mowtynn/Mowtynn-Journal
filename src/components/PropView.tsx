@@ -16,13 +16,15 @@ import {
   ACCOUNT_STATUS_LABEL, type PropChain,
 } from '../lib/propAccounts';
 import { compressImage } from '../lib/imageCompress';
+import { StoredImage } from './common/StoredImage';
+import { useImageSrc } from '../hooks/useImageSrc';
 import { PropRSummary } from './prop/PropRSummary';
 
 interface PropViewProps {
   accounts: PropAccount[];
   trades: Trade[];
   onChange: (accounts: PropAccount[]) => void;
-  /** Sıkıştırılmış data URL'yi kalıcı adrese çevirir (girişliyken Storage URL'si, değilse aynı data URL) */
+  /** Sıkıştırılmış data URL'yi kalıcı adrese çevirir (girişliyken Firestore görsel referansı, değilse aynı data URL) */
   uploadImage: (dataUrl: string) => Promise<string>;
 }
 
@@ -128,7 +130,9 @@ function useImagePicker(uploadImage: PropViewProps['uploadImage']) {
   return { busy, pick };
 }
 
-function Lightbox({ src, onClose }: { src: string | null; onClose: () => void }) {
+function Lightbox({ src: ref, onClose }: { src: string | null; onClose: () => void }) {
+  const resolved = useImageSrc(ref);
+  const src = ref ? resolved || null : null;
   useEffect(() => {
     if (!src) return;
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
@@ -151,7 +155,7 @@ function Thumb({ src, onOpen, onRemove }: { src: string; onOpen: () => void; onR
   return (
     <div className="relative group w-20 h-20 rounded-xl overflow-hidden border border-zinc-700/70 bg-zinc-950 shrink-0">
       <button type="button" onClick={onOpen} className="w-full h-full cursor-zoom-in">
-        <img src={src} alt="" loading="lazy" className="w-full h-full object-cover" />
+        <StoredImage src={src} alt="" loading="lazy" className="w-full h-full object-cover" />
       </button>
       {onRemove && (
         <button
@@ -408,7 +412,7 @@ function CertificateDialog({
               />
               {image ? (
                 <div className="flex items-center gap-2">
-                  <img src={image} alt="" className="w-24 h-24 rounded-xl object-cover border border-zinc-700" />
+                  <StoredImage src={image} alt="" className="w-24 h-24 rounded-xl object-cover border border-zinc-700" />
                   <button type="button" onClick={() => fileRef.current?.click()} className={btnGhost} disabled={busy}>
                     Değiştir
                   </button>
@@ -772,7 +776,7 @@ function CertRow({ c, onOpen, onDelete, canDelete }: { c: PropCertificate; onOpe
     <div className="flex items-center gap-2.5 rounded-xl border border-zinc-800 bg-zinc-950/40 p-2">
       {c.image ? (
         <button type="button" onClick={() => onOpen(c.image!)} className="w-12 h-12 rounded-lg overflow-hidden border border-zinc-700 shrink-0 cursor-zoom-in">
-          <img src={c.image} alt="" loading="lazy" className="w-full h-full object-cover" />
+          <StoredImage src={c.image} alt="" loading="lazy" className="w-full h-full object-cover" />
         </button>
       ) : (
         <div className="w-12 h-12 rounded-lg border border-zinc-800 shrink-0" />

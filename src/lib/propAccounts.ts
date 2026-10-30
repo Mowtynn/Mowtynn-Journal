@@ -270,7 +270,7 @@ export function computeBalanceSheet(chains: PropChain[]): PropBalanceSheet {
   };
 }
 
-/** Hesaplardaki tüm görseller (Storage temizliği ve yedek için) */
+/** Hesaplardaki tüm görseller (görsel temizliği ve yedek için) */
 export function collectAccountImages(accounts: PropAccount[]): string[] {
   const out: string[] = [];
   accounts.forEach((a) => {
@@ -280,7 +280,7 @@ export function collectAccountImages(accounts: PropAccount[]): string[] {
   return out;
 }
 
-/** Hesaplardaki her görseli dönüştürür (yedekte URL → data URL, içe aktarmada data URL → Storage URL) */
+/** Hesaplardaki her görseli dönüştürür (yedekte referans → data URL, içe aktarmada data URL → referans) */
 export async function mapAccountImages(
   accounts: PropAccount[],
   fn: (img: string) => Promise<string>,

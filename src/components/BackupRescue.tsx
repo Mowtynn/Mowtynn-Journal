@@ -9,7 +9,7 @@ import { missingFields, logicProblem } from '../lib/integrity';
 import { localDateKey } from '../utils/math';
 import { mapAccountImages } from '../lib/propAccounts';
 import { ACCOUNT_CATEGORY_LABELS, getTradeAccountCategory } from '../constants/constants';
-import { isStorageUrl, storageUrlToDataUrl } from '../lib/storage';
+import { isImageRef, loadImage } from '../lib/imageStore';
 import { nyWallDate, nyNow } from '../lib/tradingTime';
 
 function getLocalStorageUsage() {
@@ -112,34 +112,28 @@ const BackupRescue = React.memo(function BackupRescue({
   const handleExport = async () => {
     const toastId = toast.loading('Yedek hazırlanıyor…');
     try {
-      // Prop fotoğrafları yedeğe gömülür (Storage URL'si → data URL); böylece yedek tek başına eksiksizdir
+      // Prop fotoğrafları yedeğe gömülür (referans → data URL); böylece yedek tek başına eksiksizdir
       let exportSettings = settings;
       let missingImages = 0;
       if (settings?.propAccounts?.length) {
         const propAccounts = await mapAccountImages(settings.propAccounts, async (img) => {
-          if (!isStorageUrl(img)) return img;
-          try {
-            return await storageUrlToDataUrl(img);
-          } catch (e) {
-            console.error('Backup image fetch failed:', e);
-            missingImages++;
-            return img;
-          }
+          if (!isImageRef(img)) return img;
+          const data = await loadImage(img);
+          if (data) return data;
+          missingImages++;
+          return img;
         });
         exportSettings = { ...settings, propAccounts };
       }
-      // İşlemlere yüklenmiş görseller (Firebase Storage) de gömülür; TradingView vb. dış bağlantılar olduğu gibi kalır
+      // Kayıtlı görseller (Firestore) yedeğe gömülür; TradingView vb. dış bağlantılar olduğu gibi kalır
       const embed = new Map<string, string>();
-      const storageShots = Array.from(new Set(trades.map((t) => t.screenshot).filter((u): u is string => !!u && isStorageUrl(u))));
-      for (let i = 0; i < storageShots.length; i += 4) {
+      const storedShots = Array.from(new Set(trades.map((t) => t.screenshot).filter((u): u is string => isImageRef(u))));
+      for (let i = 0; i < storedShots.length; i += 8) {
         await Promise.all(
-          storageShots.slice(i, i + 4).map(async (u) => {
-            try {
-              embed.set(u, await storageUrlToDataUrl(u));
-            } catch (e) {
-              console.error('Backup trade image fetch failed:', e);
-              missingImages++;
-            }
+          storedShots.slice(i, i + 8).map(async (u) => {
+            const data = await loadImage(u);
+            if (data) embed.set(u, data);
+            else missingImages++;
           }),
         );
       }
@@ -174,7 +168,7 @@ const BackupRescue = React.memo(function BackupRescue({
 
       if (missingImages > 0) {
         toast.error(
-          `${missingImages} görsel (prop / işlem) yedeğe gömülemedi (yalnızca bağlantısı yazıldı). Firebase Storage için CORS ayarı gerekiyor; README'deki komutu bir kez çalıştır.`,
+          `${missingImages} görsel (prop / işlem) bulunamadı ya da okunamadı; yedeğe yalnızca referansı yazıldı. Bağlantını kontrol edip tekrar dene.`,
           { id: toastId, duration: 9000 },
         );
       } else {
@@ -401,7 +395,7 @@ const BackupRescue = React.memo(function BackupRescue({
           </div>
 
           <p className="text-[9px] text-zinc-500 mt-3 leading-relaxed">
-            * Firebase entegrasyonu ile tüm verileriniz bulutta şifreli olarak saklanır ve kotalara takılmaz.
+            * Giriş yapınca tüm verilerin (fotoğraflar dahil) Firebase bulutunda saklanır; ücretsiz kota bu günlük için fazlasıyla yeterli.
           </p>
         </div>
 

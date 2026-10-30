@@ -99,7 +99,7 @@ export function normalizeTrade<T extends Partial<Trade> & Record<string, any>>(r
   if (typeof t.screenshot === 'string') {
     const v = t.screenshot.trim();
     if (!v) t.screenshot = null;
-    else if (/^https?:\/\//i.test(v) || /^data:image\//i.test(v)) t.screenshot = v;
+    else if (/^https?:\/\//i.test(v) || /^data:image\//i.test(v) || /^fsimg:[A-Za-z0-9_-]{1,100}$/.test(v)) t.screenshot = v;
     else if (/^(www\.)?[a-z0-9-]+(\.[a-z0-9-]+)+\//i.test(v)) t.screenshot = `https://${v}`;
     else t.screenshot = null;
   }

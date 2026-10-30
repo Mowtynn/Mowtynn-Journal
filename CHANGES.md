@@ -687,3 +687,11 @@ Klasik tasarım korunarak, son eklenen alanlar (risk %, hesap bağı, strateji, 
 - Arayüzde küçük harfle kalan düğme ve etiketler (Yeni Hesap Ekle, Payout Ekle, Hızlı Kayıt, Çıkış Saati Ekle, Hesap Adı, Başlangıç Tarihi, Kapanmış Hesaplar, Bağlı Hesabı Yok, Tüm Prop Hesapları…) aynı biçime getirildi.
 
 **Kontrol:** Ana panel ve detaylı analiz sayıları ham veriden bağımsız yeniden hesaplandı (Net R, WR, PF, beklenti, max DD, recovery factor) ve birebir tuttu. 1440 px ve 375 px genişlikte tüm sekmeler, strateji alt sekmeleri, form, işlem detayı, rapor ve hesap menüsü taşma / üst üste binme / kesilme için tarandı: sorun yok. Konsol hatası yok.
+
+## Görseller Firestore'da (Firebase Storage kaldırıldı)
+- Ücretsiz planda Storage açılamadığı için görseller artık Firestore'daki `images` koleksiyonunda: sıkıştırılmış (en fazla ~900 KB) data URL, kullanıcı başına ayrı belge. Kayıtlarda yalnızca `fsimg:<kimlik>` referansı tutulur (`lib/imageStore.ts`).
+- Prop fotoğrafları ve sertifikalar eskisi gibi dosyadan eklenir; yazım beklenmez (çevrimdışı da çalışır), görseller önbellekli yüklenir (`StoredImage`, `useImageSrc`). Kaldırılan fotoğraflar buluttan da silinir; "Verileri sıfırla" tüm görselleri siler.
+- İşlem grafikleri yalnızca link (TradingView vb.). Eski kayıtlardaki gömülü görseller görüntülenmeye devam eder; formda ham veri yerine "Kayıtlı görsel var" yazar, link yapıştırınca yerini alır. Detaydaki düğme "Grafik Linki Ekle" oldu.
+- JSON yedek kayıtlı görselleri gömer; yedekten yüklemede gömülü görseller yeniden kaydedilir.
+- `firestore.rules`: `images` koleksiyonu (yalnızca sahibi okur/siler; boyut ve alan denetimi). `firebase.json`, `storage.rules`, `storage.cors.json` ve Storage SDK kaldırıldı.
+- Yayın: `firebase deploy --only firestore:rules,firestore:indexes`

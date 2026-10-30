@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { X, FileText, Image as ImageIcon, ExternalLink, Check } from "lucide-react";
 import { SetState, Titles } from './shared';
 import { isHttpLink, normalizeChartLink, resolveChartImage } from '../../lib/chartLink';
+import { isImageRef } from '../../lib/imageStore';
 
 /*
  * Analiz notları ve grafik bağlantısı iki ayrı kart: form sütunları dengeli dağılır, kaydırma gerekmez.
@@ -48,7 +49,9 @@ export const ChartLinkCard = React.memo(function ChartLinkCard({
 }) {
   const { L } = titles;
   const link = (screenshot || "").trim();
-  const valid = isHttpLink(link) || link.startsWith("data:image");
+  // Eski kayıtlardaki gömülü / kayıtlı görsel: kutuda ham veri yerine açıklama gösterilir; link yapıştırınca yerini alır
+  const embedded = link.startsWith("data:image") || isImageRef(link);
+  const valid = isHttpLink(link) || embedded;
   // Önizleme: TradingView paylaşım linki görsele çözülür; yazarken her tuşta istek atılmasın diye kısa gecikme
   const [preview, setPreview] = useState<{ src: string; state: "loading" | "ok" | "error" } | null>(null);
   useEffect(() => {
@@ -90,7 +93,7 @@ export const ChartLinkCard = React.memo(function ChartLinkCard({
         <input
           type="url"
           inputMode="url"
-          value={screenshot || ""}
+          value={embedded ? "" : screenshot || ""}
           onChange={(e) => setScreenshot(e.target.value || null)}
           onPaste={(e) => {
             const text = e.clipboardData.getData("text");
@@ -98,14 +101,18 @@ export const ChartLinkCard = React.memo(function ChartLinkCard({
             e.preventDefault();
             commit(text);
           }}
-          onBlur={(e) => commit(e.target.value)}
-          placeholder="https://... TradingView veya grafik linki"
+          onBlur={(e) => {
+            // Kayıtlı görsel varken boş kutudan çıkmak onu silmez (silmek için ✕)
+            if (embedded && !e.target.value.trim()) return;
+            commit(e.target.value);
+          }}
+          placeholder={embedded ? "Kayıtlı görsel var · yerine link yapıştırabilirsin" : "https://... TradingView veya grafik linki"}
           aria-invalid={!!link && !valid}
           className={`flex-1 min-w-0 h-9 bg-zinc-950/80 border hover:border-zinc-500 focus:ring-1 rounded-lg sm:rounded-xl px-2.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none transition-ui font-sans font-medium shadow-inner truncate ${
             link && !valid ? "border-amber-500/60 focus:border-amber-500 focus:ring-amber-500/30" : "border-zinc-700/70 focus:border-blue-500 focus:ring-blue-500/30"
           }`}
         />
-        {valid && (
+        {valid && !embedded && (
           <a
             href={link}
             target="_blank"
@@ -146,7 +153,7 @@ export const ChartLinkCard = React.memo(function ChartLinkCard({
         ) : (
           <>
             {preview?.src && (
-              <a href={link} target="_blank" rel="noopener noreferrer" className="absolute inset-0" title="Grafiği yeni sekmede aç">
+              <a href={embedded ? preview.src : link} target="_blank" rel="noopener noreferrer" className="absolute inset-0" title="Grafiği yeni sekmede aç">
                 <img
                   decoding="async"
                   src={preview.src}
