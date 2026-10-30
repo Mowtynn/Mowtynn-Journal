@@ -2,7 +2,6 @@ import { Activity, Route, History, ShieldCheck, ShieldAlert, Info } from 'lucide
 import { smartUpper } from '../../constants/constants';
 import type { Trade } from '../../types';
 import type { TradeInsight, PricePath } from '../../lib/tradeInsight';
-import { UNSPECIFIED } from '../../lib/setupScorecard';
 import { formatDuration } from '../../lib/tradingTime';
 
 /**
