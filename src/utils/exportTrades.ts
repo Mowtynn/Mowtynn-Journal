@@ -1,7 +1,7 @@
 import { Trade, JournalEntry, Note } from '../types';
 import { getNyParts, getSweepSide, getTradeHourBucket, WEEKDAY_NAMES_TR, nyWallDate, formatDuration } from '../lib/tradingTime';
 import { getNewsDayLabels, getTradeAccountCategory, getTradeStageLabel, ACCOUNT_CATEGORY_LABELS } from '../constants/constants';
-import { DATASET_LABELS, getTradeDataset } from '../lib/asiaAnalytics';
+import { DATASET_LABELS, getTradeDataset, plannedRR, sweepHourBucket, sweepToEntryMinutes, tradeOfDayBucket } from '../lib/asiaAnalytics';
 import { edgeReportRows } from '../lib/edgeSummary';
 
 // Excel kütüphanesi (xlsx, ~400 kB) yalnızca Excel'e aktarırken indirilir; uygulama açılışını yavaşlatmaz.
@@ -132,7 +132,7 @@ const numOr = (v: unknown): number | '-' => (typeof v === 'number' && Number.isF
 export const prepareTradeExportRows = (trades: Trade[], titles: Record<string, string> = {}) => {
   // Kullanıcının verdiği başlık başka bir sütunla aynıysa (ör. iki alana da "Timeframe" denmiş) sütun EZİLMEZ:
   // ikinci sütun "(Alan adı)" ekiyle ayrışır. Sabit sütun adları da (Saat, Gün…) korunur.
-  const FIXED = new Set(['Sıra', 'İşlem ID', 'Saat', 'Gün', 'Giriş Saati (saatlik)', 'Çıkış', 'Süre', 'Hesap ID', 'Hesap Türü', 'Aşama', 'Risk (%)', 'Risk ($)', 'Potansiyel R (MFE/Stop)', 'Hedef Tamamlama (MFE/TP %)', 'Süpürülen Asia Tarafı', 'Veri Seti', 'Hızlı Kayıt']);
+  const FIXED = new Set(['Sıra', 'İşlem ID', 'Saat', 'Gün', 'Giriş Saati (saatlik)', 'Çıkış', 'Süre', 'Hesap ID', 'Hesap Türü', 'Aşama', 'Risk (%)', 'Risk ($)', 'Potansiyel R (MFE/Stop)', 'Hedef Tamamlama (MFE/TP %)', 'Süpürülen Asia Tarafı', 'Veri Seti', 'Hızlı Kayıt', 'Planlanan R:R', 'Stop / Asia Range (%)', 'Sweep Saati (30 dk)', 'Sweep → Giriş (dk)', 'Günün İşlemi', 'Kaçırılan R']);
   const usedLabels = new Map<string, string>();
   const T = (key: string, fallback: string) => {
     const want = (titles[key] && String(titles[key]).trim()) || fallback;
@@ -181,6 +181,13 @@ export const prepareTradeExportRows = (trades: Trade[], titles: Record<string, s
       'Hedef Tamamlama (MFE/TP %)': hasNum(t.mfePips) && hasNum(t.tpPips) && t.tpPips > 0 ? Math.round(((t.mfePips as number) / t.tpPips) * 100) : '-',
       [T('asiaRange', 'Asia Range')]: t.asiaRange || '-',
       [T('sweepTime', 'Sweep Time')]: t.sweepTime || '-',
+      // Analizlerde kullanılan türetilmiş değerler (Excel'de ayrıca süzülüp pivotlanabilsin)
+      'Planlanan R:R': plannedRR(t) !== null ? Number((plannedRR(t) as number).toFixed(2)) : '-',
+      'Stop / Asia Range (%)': stopOk && hasNum(t.asiaRangePips) && (t.asiaRangePips as number) > 0 ? Math.round(((t.stopPips as number) / (t.asiaRangePips as number)) * 100) : '-',
+      'Sweep Saati (30 dk)': sweepHourBucket(t.sweepTime) || '-',
+      'Sweep → Giriş (dk)': sweepToEntryMinutes(t) ?? '-',
+      'Günün İşlemi': tradeOfDayBucket(t) || '-',
+      'Kaçırılan R': t.afterExitTp === true && plannedRR(t) !== null ? Number(Math.max(0, (plannedRR(t) as number) - (typeof t.rr === 'number' ? t.rr : 0)).toFixed(2)) : '-',
       [T('management', 'İşlem Yönetimi')]: Array.isArray(t.management) && t.management.length ? t.management.join(', ') : '-',
       "Çıkış Sonrası TP'ye Ulaştı": typeof t.afterExitTp === 'boolean' ? (t.afterExitTp ? 'Evet' : 'Hayır') : '-',
       [T('planFidelities', 'Setup Kalitesi')]: t.planFidelity || '-',
