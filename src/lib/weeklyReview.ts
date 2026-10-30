@@ -147,7 +147,7 @@ export function computeWeekReview(allTrades: Trade[], weekStart: string): WeekRe
     return { key, index, n: list.length, netR: list.reduce((s, t) => s + rOf(t), 0) };
   });
 
-  // Kurulumlar (Asia Range · seans · giriş modeli) — haftalık R'ye göre en iyi / en kötü
+  // Kurulumlar (Asia Range · seans · Entry Model) — haftalık R'ye göre en iyi / en kötü
   const groups = new Map<string, WeekSetup>();
   trades.forEach((t) => {
     const label = setupLabel(t);

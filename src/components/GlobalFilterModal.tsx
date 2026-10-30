@@ -38,7 +38,7 @@ import {
 import { ASIA_RANGE_TYPES, DefinitionTitles } from '../types';
 import { DEFAULT_DATE_LIMIT, EMPTY_EXTRA_FILTERS, countExtraFilters, FILTER_DIMENSIONS, type ExtraTradeFilters, type FilterDimension } from '../lib/tradeFilters';
 import { dimensionValue, SETUP_DIMENSIONS, UNSPECIFIED } from '../lib/setupScorecard';
-import { HOLD_BUCKETS, PLANNED_RR_BUCKETS, RANGE_SIZE_BUCKETS, STOP_RANGE_BUCKETS, SWEEP_DELAY_BUCKETS, sweepBucketOrder } from '../lib/asiaAnalytics';
+import { HOLD_BUCKETS, PLANNED_RR_BUCKETS, PREV_TRADE_BUCKETS, RANGE_SIZE_BUCKETS, STOP_RANGE_BUCKETS, SWEEP_DELAY_BUCKETS, sweepBucketOrder } from '../lib/asiaAnalytics';
 import { WEEKDAY_NAMES_TR } from '../lib/tradingTime';
 
 /** Gün filtresi seçenekleri Pazartesi'den başlar */
@@ -236,6 +236,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
       else if (d === 'holdTime') vals.sort(orderBy(HOLD_BUCKETS));
       else if (d === 'management') vals.sort(orderBy(MANAGEMENT_TYPES));
       else if (d === 'rangeSize') vals.sort(orderBy(RANGE_SIZE_BUCKETS));
+      else if (d === 'prevTrade') vals.sort(orderBy(PREV_TRADE_BUCKETS));
       else if (d === 'weekday') vals.sort(orderBy(WEEKDAY_ORDER));
       else vals.sort((a, b) => a.localeCompare(b, 'tr'));
       out[d] = vals;
@@ -475,7 +476,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
 
               {/* 3. İŞLEM YÖNÜ (TYPE) */}
               <FilterAccordionRow title="İşlem Yönü" 
-                icon={<ArrowUpRight size={14} className="text-indigo-400" />}
+                icon={<ArrowUpRight size={14} className="text-blue-400" />}
                 
                 summaryText={globalSelectedTypes.length > 0 ? globalSelectedTypes.join(', ') : 'Tümü'}
                 badgeCount={globalSelectedTypes.length}
@@ -490,7 +491,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
 
               {/* 4. SESSION */}
               <FilterAccordionRow title={definitionTitles.sessions || "Session"} 
-                icon={<Flame size={14} className="text-orange-400" />}
+                icon={<Flame size={14} className="text-blue-400" />}
                 
                 summaryText={globalSelectedSessions.length > 0 ? globalSelectedSessions.join(', ') : 'Tümü'}
                 badgeCount={globalSelectedSessions.length}
@@ -632,7 +633,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
 
               {/* 4d. MFE (LEHTE PİP) */}
               <FilterAccordionRow title="MFE (Maks. Lehte Pip)" 
-                icon={<Activity size={14} className="text-cyan-400" />}
+                icon={<Activity size={14} className="text-blue-400" />}
                 summaryText={
                   (globalMinMfePips !== undefined || globalMaxMfePips !== undefined)
                     ? `${globalMinMfePips ?? '0'} - ${globalMaxMfePips ?? '∞'} Pip`
@@ -711,7 +712,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
 
               {/* 6. ENTRY TIMEFRAME */}
               <FilterAccordionRow title={definitionTitles.timeframes || "Entry Timeframe"} 
-                icon={<Clock size={14} className="text-cyan-400" />}
+                icon={<Clock size={14} className="text-blue-400" />}
                 
                 summaryText={globalSelectedTimeframes.length > 0 ? globalSelectedTimeframes.join(', ') : 'Tümü'}
                 badgeCount={globalSelectedTimeframes.length}
@@ -727,7 +728,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
 
               {/* 7. SETUP KALİTESİ */}
               <FilterAccordionRow title={definitionTitles.planFidelities || "SETUP KALİTESİ"} 
-                icon={<Target size={14} className="text-indigo-400" />}
+                icon={<Target size={14} className="text-blue-400" />}
                 summaryText={globalSelectedPlanFidelity.length > 0 ? globalSelectedPlanFidelity.join(', ') : 'Tümü'}
                 badgeCount={globalSelectedPlanFidelity.length}
                 isOpen={!!openSections.planFidelity}
@@ -782,7 +783,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
 
               {/* 9. TREND YAPISI */}
               <FilterAccordionRow title={definitionTitles.trendTypes || "Trend Yapısı"} 
-                icon={<TrendingUp size={14} className="text-cyan-400" />}
+                icon={<TrendingUp size={14} className="text-blue-400" />}
                 summaryText={globalSelectedTrendTypes.length > 0 ? globalSelectedTrendTypes.join(', ') : 'Tümü'}
                 badgeCount={globalSelectedTrendTypes.length}
                 isOpen={!!openSections.trend}
@@ -812,7 +813,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
 
               {/* 11. ASIA RANGE (Range / Trend / Swept) */}
               <FilterAccordionRow title={definitionTitles.asiaRange || "Asia Range"}
-                icon={<BookOpen size={14} className="text-cyan-400" />}
+                icon={<BookOpen size={14} className="text-blue-400" />}
                 summaryText={globalExtra.asiaRanges.length > 0 ? globalExtra.asiaRanges.join(', ') : 'Tümü'}
                 badgeCount={globalExtra.asiaRanges.length}
                 isOpen={!!openSections.asiaRangeType}
@@ -825,7 +826,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                 />
               </FilterAccordionRow>
 
-              {/* Türetilmiş / yeni girdiler: Sweep Saati, Sweep → Giriş, Asia Range Büyüklüğü, Planlanan R:R, Stop / Asia Range, Günün İşlemi, Gün, Giriş Saati, İşlem Yönetimi, Çıkış Sonrası TP, İşlem Süresi */}
+              {/* Türetilmiş / yeni girdiler: Sweep Saati, Sweep → Giriş, Asia Range Büyüklüğü, Planlanan R:R, Stop / Asia Range, Günün İşlemi, Gün İçi Önceki İşlem, Gün, Giriş Saati, İşlem Yönetimi, Çıkış Sonrası TP, İşlem Süresi */}
               {FILTER_DIMENSIONS.map((d) => {
                 const sel = globalExtra.dims?.[d] || [];
                 return (
@@ -922,7 +923,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                     onChange={(vals) => patchExtra({ riskPcts: extraOptions.riskPcts.filter((n) => vals.includes(riskLabel(n))) })}
                   />
                 ) : (
-                  <p className="text-[11px] text-zinc-500 p-1">Risk yüzdesi girilmiş işlem yok. Prop hesabına bağlı işlemlerde risk % formda kaydedilir.</p>
+                  <p className="text-[11px] text-zinc-500 p-1">Risk % girilmiş işlem yok. Prop hesabına bağlı işlemlerde risk % formda kaydedilir.</p>
                 )}
               </FilterAccordionRow>
 

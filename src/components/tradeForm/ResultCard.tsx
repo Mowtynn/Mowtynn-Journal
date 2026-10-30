@@ -45,7 +45,7 @@ export const ResultCard = React.memo(function ResultCard({
   setAsiaRangePips: SetState<Num>;
 }) {
   const { L } = titles;
-  // Stop ve TP pip girilince WIN işlemde R önerilir (TP ÷ Stop)
+  // Stop ve TP Pip girilince WIN işlemde R önerilir (TP ÷ Stop)
   const handleStopPipsChange = (val: string) => {
     const num = parsePip(val);
     setStopPips(num);
@@ -222,7 +222,7 @@ export const ResultCard = React.memo(function ResultCard({
             : tradeStatus === "LOSS"
               ? ["Pozitif yaz", "Kaybı pozitif sayı olarak yaz; eksi işareti durumdan gelir."]
               : plan !== null
-                ? [`Plan 1:${plan.toFixed(2)}`, "Stop ve TP piplerinden hesaplanan plan R:R"]
+                ? [`Plan 1:${plan.toFixed(2)}`, "Stop ve TP Piplerinden hesaplanan plan R:R"]
                 : ["Kazanç, R olarak", "Kazancı R cinsinden yaz."];
         return (
           <div className={`rounded-xl border px-3 py-2.5 flex items-center gap-3 transition-ui ${t.box}`}>

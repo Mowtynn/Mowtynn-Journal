@@ -71,7 +71,7 @@ export const MemoizedEquityChart = React.memo(function MemoizedEquityChart({
     return (
       <div className="space-y-2 flex-1 flex flex-col relative">
         <div className="relative bg-zinc-900/70 border border-zinc-700/50  rounded-2xl overflow-visible flex-1 min-h-[180px]">
-          <svg viewBox="0 0 600 180" className="absolute inset-0 w-full h-full text-cyan-500 p-2" preserveAspectRatio="none">
+          <svg viewBox="0 0 600 180" className="absolute inset-0 w-full h-full text-blue-500 p-2" preserveAspectRatio="none">
             <line x1="0" y1="20" x2="600" y2="20" stroke="#0f172a" strokeWidth="1" strokeDasharray="3,3" />
             <line x1="0" y1="90" x2="600" y2="90" stroke="#1e293b" strokeWidth="1" strokeDasharray="3,3" />
             <line x1="0" y1="160" x2="600" y2="160" stroke="#1f1f1f" strokeWidth="1" strokeDasharray="3,3" />

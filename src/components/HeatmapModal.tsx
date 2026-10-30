@@ -259,7 +259,7 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
                                 <span className="font-bold text-blue-400 border-b border-zinc-800 pb-1 mb-1">{day} — {session}</span>
                                 <div className="space-y-0.5 text-zinc-300">
                                   <div>İşlem: <span className="text-white font-bold">{cell?.count || 0}</span></div>
-                                  <div>Net R: <span className="text-indigo-300 font-bold">{(cell?.r || 0).toFixed(1)} R</span></div>
+                                  <div>Net R: <span className="text-blue-300 font-bold">{(cell?.r || 0).toFixed(1)} R</span></div>
                                   <div>Başarı Oranı: <span className="text-amber-300 font-bold">%{winRatePercent}</span></div>
                                   {cell?.planFidelityCounts && Object.keys(cell.planFidelityCounts).length > 0 && (
                                     <div className="pt-0.5 text-[11px] text-purple-300 border-t border-zinc-800/80 mt-1 uppercase font-bold">

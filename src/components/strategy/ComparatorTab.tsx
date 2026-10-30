@@ -66,7 +66,7 @@ export const ComparatorTab = React.memo(function ComparatorTab({ trades }: { tra
           <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-3">
               <div className="flex items-center gap-2">
-                <Sliders size={16} className="text-orange-400" />
+                <Sliders size={16} className="text-blue-400" />
                 <h4 className="text-xs font-bold text-zinc-100 font-sans uppercase tracking-wider">
                   Dinamik Çok Boyutlu Kıyaslama Motoru
                 </h4>

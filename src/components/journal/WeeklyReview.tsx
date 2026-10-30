@@ -82,7 +82,7 @@ export const WeeklyReview = React.memo(function WeeklyReview({
       {/* Başlık + hafta gezinme */}
       <div className="px-4 sm:px-5 py-3 border-b border-zinc-800/80 flex items-center justify-between gap-3 shrink-0">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-8 h-8 rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-300 flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-300 flex items-center justify-center shrink-0">
             <CalendarRange size={16} />
           </div>
           <div className="min-w-0">
@@ -213,7 +213,7 @@ export const WeeklyReview = React.memo(function WeeklyReview({
                 <section className={`${card} flex flex-col gap-2`}>
                   <h4 className="heading-2">
                     <Trophy size={12} /> Kurulumlar
-                    <span className="ml-auto text-[10px] font-bold text-zinc-500 normal-case tracking-normal truncate">Asia Range · seans · giriş modeli</span>
+                    <span className="ml-auto text-[10px] font-bold text-zinc-500 normal-case tracking-normal truncate">Asia Range · seans · Entry Model</span>
                   </h4>
                   {[
                     { label: "En iyi", row: review.best, icon: <Trophy size={13} className="text-emerald-300 shrink-0" />, empty: "Kazandıran kurulum yok" },
@@ -241,9 +241,9 @@ export const WeeklyReview = React.memo(function WeeklyReview({
           {/* Sağ: üç soru — kutular kalan yüksekliği paylaşır */}
           <section className={`${card} flex flex-col gap-2.5 lg:min-h-0`}>
             {prevFocus && (
-              <div className="flex items-center gap-2 rounded-xl border border-violet-500/25 bg-violet-500/5 px-3 py-1.5 min-w-0 shrink-0" title={prevFocus}>
-                <Target size={13} className="text-violet-300 shrink-0" />
-                <span className="text-[10px] font-bold uppercase tracking-wider text-violet-300 shrink-0">{smartUpper("Bu haftanın odağı")}</span>
+              <div className="flex items-center gap-2 rounded-xl border border-blue-500/25 bg-blue-500/5 px-3 py-1.5 min-w-0 shrink-0" title={prevFocus}>
+                <Target size={13} className="text-blue-300 shrink-0" />
+                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-300 shrink-0">{smartUpper("Bu haftanın odağı")}</span>
                 <span className="text-xs text-zinc-200 truncate">{prevFocus}</span>
               </div>
             )}
@@ -262,7 +262,7 @@ export const WeeklyReview = React.memo(function WeeklyReview({
                   placeholder={q.placeholder}
                   rows={q.key === "focus" ? 2 : 3}
                   maxLength={5000}
-                  className="w-full min-h-[3rem] lg:flex-1 bg-zinc-950/80 border border-zinc-700/70 hover:border-zinc-500 focus:border-violet-500 focus:ring-1 focus:ring-violet-500/30 rounded-xl px-2.5 py-2 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none transition-ui resize-y lg:resize-none leading-relaxed custom-scrollbar"
+                  className="w-full min-h-[3rem] lg:flex-1 bg-zinc-950/80 border border-zinc-700/70 hover:border-zinc-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 rounded-xl px-2.5 py-2 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none transition-ui resize-y lg:resize-none leading-relaxed custom-scrollbar"
                 />
               </label>
             ))}
@@ -272,7 +272,7 @@ export const WeeklyReview = React.memo(function WeeklyReview({
                 type="button"
                 onClick={save}
                 disabled={!dirty}
-                className="h-9 px-4 shrink-0 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-ui cursor-pointer bg-violet-500/15 border border-violet-500/40 text-violet-100 hover:bg-violet-500/25 disabled:opacity-50 disabled:cursor-default disabled:hover:bg-violet-500/15"
+                className="h-9 px-4 shrink-0 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-ui cursor-pointer bg-blue-500/15 border border-blue-500/40 text-blue-100 hover:bg-blue-500/25 disabled:opacity-50 disabled:cursor-default disabled:hover:bg-blue-500/15"
               >
                 {dirty ? <Save size={13} /> : <Check size={13} />}
                 {dirty ? "Kaydet" : isAnswered(entry?.weekly) ? "Kaydedildi" : "Kaydet"}

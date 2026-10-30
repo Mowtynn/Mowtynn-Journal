@@ -381,7 +381,7 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
       disciplineAlphaR: 0,
     },
     dayOfWeekStats: [],
-    stopSizeStats: { hasData: false, brackets: [], insight: 'Stop pip verisi yok.' },
+    stopSizeStats: { hasData: false, brackets: [], insight: 'Stop Pip verisi yok.' },
     streakStats: {
       currentStreak: { type: 'NONE', count: 0 },
       maxWinStreak: 0,
@@ -428,10 +428,12 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
     ? tradesWithStop.reduce((s, t) => s + (t.stopPips || 0), 0) / tradesWithStop.length 
     : 0;
 
-  let stopCushionEfficiency = 0;
-  if (avgStopPips > 0 && avgMaeWins > 0 && avgStopPips >= avgMaeWins) {
-    stopCushionEfficiency = ((avgStopPips - avgMaeWins) / avgStopPips) * 100;
-  }
+  // Stop tamponu: kazananlarda stop'un kullanılmayan kısmı. Aynı işlemler üzerinden (MAE ve stop'u girilmiş kazananlar);
+  // eskiden tüm işlemlerin stop ortalaması ile yalnızca kazananların MAE ortalaması karşılaştırılıyordu.
+  const cushionWins = maeWins.filter(t => typeof t.stopPips === 'number' && t.stopPips > 0);
+  const cushionStop = cushionWins.reduce((s, t) => s + (t.stopPips || 0), 0);
+  const cushionMae = cushionWins.reduce((s, t) => s + Math.min(t.maePips || 0, t.stopPips || 0), 0);
+  const stopCushionEfficiency = cushionStop > 0 ? ((cushionStop - cushionMae) / cushionStop) * 100 : 0;
 
   let earlyEntryCount = 0;
   tradesWithMae.forEach(t => {
@@ -487,7 +489,7 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
     return { label, count, total: count, wins, winRate: Math.round(winRate * 10) / 10, netR, avgR, profitFactor: Math.round(profitFactor * 100) / 100 };
   };
 
-  // Brackets are relative to each pair's own median Asia range (EURCAD and EURUSD ranges differ structurally)
+  // Brackets are relative to each pair's own median Asia Range (EURCAD and EURUSD ranges differ structurally)
   const asiaBucketMap = bucketAsiaRanges(tradesWithAsia);
   const tightTrades = tradesWithAsia.filter(t => asiaBucketMap.get(t.id) === 'NARROW');
   const mediumTrades = tradesWithAsia.filter(t => asiaBucketMap.get(t.id) === 'NORMAL');
@@ -938,9 +940,9 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
       trades.filter(t => (t.session || 'Genel') === sd.session && t.type === sd.direction),
       `${sd.session} seansında ${sd.direction} yönlü işlemlerin net getirisi negatif`,
     ));
-  pushFlag('wide_asia_filter', 'Geniş Asia Range (parite medyanının >1.25 katı) günleri', wideTrades, 'Geniş Asia range günlerinde net getiri negatif');
+  pushFlag('wide_asia_filter', 'Geniş Asia Range (parite medyanının >1.25 katı) günleri', wideTrades, 'Geniş Asia Range günlerinde net getiri negatif');
 
-  // 21. En iyi kombinasyon: parite + seans + Asia Range + giriş modeli; en az MIN_SAMPLE işlem, güven aralığı alt sınırına göre
+  // 21. En iyi kombinasyon: parite + seans + Asia Range + Entry Model; en az MIN_SAMPLE işlem, güven aralığı alt sınırına göre
   const comboMap: Record<string, { list: Trade[]; sampleDesc: string }> = {};
   trades.forEach(t => {
     const asset = t.asset || 'Genel';
@@ -959,7 +961,7 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
 
   let goldenSetup = {
     hasFormula: false,
-    description: `Aynı parite, seans, Asia Range ve giriş modeliyle en az ${MIN_SAMPLE} işlem biriktiğinde en güçlü kombinasyon burada görünür.`,
+    description: `Aynı parite, seans, Asia Range ve Entry Modelyle en az ${MIN_SAMPLE} işlem biriktiğinde en güçlü kombinasyon burada görünür.`,
     winRate: 0,
     netR: 0,
     sampleSize: 0,
@@ -1007,7 +1009,7 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
     actionableInsights.push({
       type: 'opportunity',
       title: 'Düşük kalite setupların maliyeti',
-      description: `B-C / plan dışı ${lowQualityCount} işlemin net sonucu -${disciplineAlphaR.toFixed(1)} R. Setup kalitesini girişten ÖNCE işaretliyorsan bu filtre gerçek bir kazanç; sonradan işaretliyorsan sonuç yanlıdır.`,
+      description: `B-C / plan dışı ${lowQualityCount} işlemin net sonucu -${disciplineAlphaR.toFixed(1)} R. Setup Kalitesini girişten ÖNCE işaretliyorsan bu filtre gerçek bir kazanç; sonradan işaretliyorsan sonuç yanlıdır.`,
       metricTag: `-${disciplineAlphaR.toFixed(1)} R`,
     });
   }

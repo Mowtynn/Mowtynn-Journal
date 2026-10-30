@@ -25,6 +25,7 @@ import {
   Flag,
   Newspaper,
   ClipboardList,
+  FlaskConical,
 } from 'lucide-react';
 import { Trade } from '../types';
 import { useNewsDayLabels } from '../hooks/useNewsDayLabels';
@@ -34,6 +35,7 @@ import { SetupScorecardTab } from './strategy/SetupScorecardTab';
 import { EdgeSummaryCard, DisciplineCard } from './deepAnalysis/EdgeCockpit';
 import { TradeHistoryModal } from './TradeHistoryModal';
 import { ComparatorTab } from './strategy/ComparatorTab';
+import { RuleSimulatorTab } from './strategy/RuleSimulatorTab';
 import { setupQualityTier } from '../lib/discipline';
 import { EDGE_PROOF_MIN } from '../lib/sampleSize';
 import { formatPF } from '../lib/statMath';
@@ -140,6 +142,7 @@ interface StrategyOptimizerHubProps {
 type LabTab = 
   | 'overview' 
   | 'edge_summary'
+  | 'rule_sim'
   | 'discipline'
   | 'setup_scorecard'
   | 'asia_lab'
@@ -154,20 +157,21 @@ type LabTab =
   | 'matrix_comparator' ;
 
 const SUBTABS: Array<{ id: LabTab; label: string; icon: React.ComponentType<{ size?: number; className?: string }>; activeColor: string }> = [
-  { id: 'overview', label: 'Genel Bakış', icon: Award, activeColor: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40' },
-  { id: 'edge_summary', label: 'Edge Özeti', icon: Sparkles, activeColor: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40' },
-  { id: 'discipline', label: 'Disiplin', icon: ShieldCheck, activeColor: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40' },
-  { id: 'setup_scorecard', label: 'Kurulum Karnesi', icon: ClipboardList, activeColor: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40' },
-  { id: 'asia_lab', label: 'Asia Edge Lab', icon: Compass, activeColor: 'bg-zinc-500/20 text-zinc-200 border-zinc-500/40' },
-  { id: 'psychology', label: 'Psikoloji & Tilt', icon: Brain, activeColor: 'bg-purple-500/20 text-purple-300 border-purple-500/40' },
+  { id: 'overview', label: 'Genel Bakış', icon: Award, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
+  { id: 'edge_summary', label: 'Edge Özeti', icon: Sparkles, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
+  { id: 'rule_sim', label: 'Kural Simülatörü', icon: FlaskConical, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
+  { id: 'discipline', label: 'Disiplin', icon: ShieldCheck, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
+  { id: 'setup_scorecard', label: 'Kurulum Karnesi', icon: ClipboardList, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
+  { id: 'asia_lab', label: 'Asia Edge Lab', icon: Compass, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
+  { id: 'psychology', label: 'Psikoloji & Tilt', icon: Brain, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
   { id: 'day_of_week', label: 'Günlük Edge', icon: Calendar, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
-  { id: 'tp_zone', label: 'Target & Confirmations', icon: Flag, activeColor: 'bg-purple-500/20 text-purple-300 border-purple-500/40' },
+  { id: 'tp_zone', label: 'Target & Confirmations', icon: Flag, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
   { id: 'mae_mfe', label: 'MAE, MFE & Stop', icon: Target, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
-  { id: 'ict_concepts', label: 'Likidite & Modeller', icon: Layers, activeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' },
-  { id: 'trend_time', label: 'HTF, Entry TF & Saatler', icon: Clock, activeColor: 'bg-rose-500/20 text-rose-300 border-rose-500/40' },
-  { id: 'setup_quality', label: 'A+ Kalite & Disiplin', icon: ShieldCheck, activeColor: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40' },
-  { id: 'asset_account', label: 'Parite & Hesap Türü', icon: Scale, activeColor: 'bg-teal-500/20 text-teal-300 border-teal-500/40' },
-  { id: 'matrix_comparator', label: 'Kıyaslama', icon: BarChart3, activeColor: 'bg-orange-500/20 text-orange-300 border-orange-500/40' },
+  { id: 'ict_concepts', label: 'Likidite & Modeller', icon: Layers, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
+  { id: 'trend_time', label: 'HTF, Entry TF & Saatler', icon: Clock, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
+  { id: 'setup_quality', label: 'A+ Kalite & Disiplin', icon: ShieldCheck, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
+  { id: 'asset_account', label: 'Parite & Hesap Türü', icon: Scale, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
+  { id: 'matrix_comparator', label: 'Kıyaslama', icon: BarChart3, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
 ];
 
 export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
@@ -236,7 +240,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
       {/* 1. Header Banner & Health Score */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-zinc-800">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500/20 via-blue-500/20 to-purple-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0 shadow-inner">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500/20 via-blue-500/20 to-purple-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0 shadow-inner">
             <Compass size={20} />
           </div>
           <div>
@@ -244,7 +248,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
               <h3 className="text-sm sm:text-base font-bold text-zinc-100 font-sans tracking-tight">
                 Strateji & Edge Geliştirme Laboratuvarı
               </h3>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-indigo-500/10 border border-indigo-500/30 text-indigo-300">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-blue-500/10 border border-blue-500/30 text-blue-300">
                 {trades.length} İşlem İncelendi
               </span>
             </div>
@@ -318,6 +322,8 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
       {/* SUBTAB 0: ASIA EDGE LAB */}
       {activeSubTab === 'edge_summary' && <EdgeSummaryCard trades={trades} onShowTrades={showTrades} />}
 
+      {activeSubTab === 'rule_sim' && <RuleSimulatorTab trades={trades} />}
+
       {activeSubTab === 'discipline' && <DisciplineCard trades={trades} onShowTrades={showTrades} />}
 
       {activeSubTab === 'setup_scorecard' && <SetupScorecardTab trades={trades} />}
@@ -367,12 +373,12 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
             </div>
 
             {/* Discipline Delta Card */}
-            <div className="bg-gradient-to-br from-indigo-950/20 via-zinc-900/60 to-zinc-950 border border-indigo-500/30 rounded-xl p-4 flex flex-col justify-between relative overflow-hidden">
+            <div className="bg-gradient-to-br from-blue-950/20 via-zinc-900/60 to-zinc-950 border border-blue-500/30 rounded-xl p-4 flex flex-col justify-between relative overflow-hidden">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[11px] font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5 font-sans">
+                <span className="text-[11px] font-bold text-blue-400 uppercase tracking-wider flex items-center gap-1.5 font-sans">
                   <Scale size={14} /> Disiplin Deltası (kaliteye göre)
                 </span>
-                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-300 border border-blue-500/20">
                   Potansiyel Kurtarma
                 </span>
               </div>
@@ -381,7 +387,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
                   ? `Plan dışı (B-C / FOMO) işlemleri tamamen elerseniz portföyünüze net +${disciplineStats.disciplineAlphaR} R eklenmiş olacaktı.`
                   : 'B-C / FOMO işlemlerinizin hesaba net bir negatif etkisi tespit edilmedi. Disiplininizi koruyun!'}
               </p>
-              <div className="grid grid-cols-3 gap-2 pt-2 border-t border-indigo-500/15 text-xs">
+              <div className="grid grid-cols-3 gap-2 pt-2 border-t border-blue-500/15 text-xs">
                 <div className="min-w-0">
                   <span className="text-zinc-500 text-[10px] block font-sans">Yüksek (A+)</span>
                   <span className={`${disciplineStats.highQualityNetR >= 0 ? 'text-emerald-400' : 'text-rose-400'} font-bold font-sans`}>{signedR(disciplineStats.highQualityNetR)} R</span>
@@ -432,7 +438,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
           {/* Actionable Insights List */}
           <div className="space-y-2">
             <h4 className="text-xs font-bold text-zinc-300 uppercase tracking-wide flex items-center gap-1.5 font-sans">
-              <Sparkles size={13} className="text-indigo-400" />
+              <Sparkles size={13} className="text-blue-400" />
               Sana Özel Matematiksel Edge Önerileri
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
@@ -1029,7 +1035,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
             <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 space-y-3">
               <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5">
                 <div className="flex items-center gap-2">
-                  <Scale size={16} className="text-indigo-400" />
+                  <Scale size={16} className="text-blue-400" />
                   <h4 className="text-xs font-bold text-zinc-100 font-sans uppercase tracking-wider">
                     {smartUpper("Seans x İşlem Yönü (Long / Short) Kesişimi")}
                   </h4>
@@ -1139,7 +1145,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
             <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 space-y-3">
               <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5">
                 <div className="flex items-center gap-2">
-                  <Scale size={16} className="text-teal-400" />
+                  <Scale size={16} className="text-blue-400" />
                   <h4 className="text-xs font-bold text-zinc-100 font-sans uppercase tracking-wider">
                     {smartUpper("Parite Bazında Performans & Kârlılık")}
                   </h4>
@@ -1243,7 +1249,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
         isOpen={!!shownTrades}
         onClose={() => setShownTrades(null)}
         title={shownTrades?.title || ''}
-        icon={<Compass size={16} className="mr-1.5 text-indigo-400 shrink-0" />}
+        icon={<Compass size={16} className="mr-1.5 text-blue-400 shrink-0" />}
         trades={shownTrades?.trades || []}
         onEdit={onEdit ? (t) => { onEdit(t); setShownTrades(null); } : undefined}
       />

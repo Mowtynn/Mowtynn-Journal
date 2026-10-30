@@ -40,11 +40,18 @@ const T_CRIT_95 = [
   Infinity, 12.706, 4.303, 3.182, 2.776, 2.571, 2.447, 2.365, 2.306, 2.262, 2.228, 2.201, 2.179, 2.16, 2.145, 2.131,
   2.12, 2.11, 2.101, 2.093, 2.086, 2.08, 2.074, 2.069, 2.064, 2.06, 2.056, 2.052, 2.048, 2.045, 2.042,
 ];
-const tCrit95 = (df: number): number => {
+/**
+ * Student-t %95 (iki yönlü) kritik değeri. 30 serbestlik derecesine kadar tablo, üstünde Cornish–Fisher açılımı
+ * (hata < 0.001). Eskiden 31–60 arası sabit 2.0, 60 üstü 1.96 kullanılıyordu: aralıklar olduğundan dar çıkıyordu
+ * (ör. 40 işlemde t = 2.023, 100 işlemde 1.984).
+ */
+export const tCrit95 = (df: number): number => {
   if (df <= 0) return Infinity;
   if (df <= 30) return T_CRIT_95[df];
-  if (df <= 60) return 2.0;
-  return 1.96;
+  const z = 1.959964;
+  const z3 = z * z * z;
+  const z5 = z3 * z * z;
+  return z + (z3 + z) / (4 * df) + (5 * z5 + 16 * z3 + 3 * z) / (96 * df * df);
 };
 
 const normCdf = (x: number): number => {
@@ -324,6 +331,72 @@ export function simulateStopFactor(trades: Trade[]): { rows: SimRow[]; usable: n
 }
 
 /* ------------------------------------------------------------------ */
+/* Range katı cinsinden hedef                                          */
+/* ------------------------------------------------------------------ */
+
+export const RANGE_MULTIPLE_BUCKETS = ['< 0.5×', '0.5–1×', '1–1.5×', '1.5–2×', '2×+'] as const;
+export const RANGE_TP_MULTIPLES = [0.5, 0.75, 1, 1.25, 1.5, 2] as const;
+
+export interface RangeMultipleResult {
+  /** MFE ve Asia Range Pip'i girilmiş işlem sayısı */
+  usable: number;
+  /** Fiyatın girişten sonra lehe gittiği en uzak mesafe, o günün Asia Range'inin katı olarak (medyan) */
+  medianMultiple: number;
+  distribution: Array<{ label: string; count: number; pct: number }>;
+  /** k × range'e ulaşan işlemlerin oranı */
+  reach: Array<{ multiple: number; pct: number }>;
+  /** TP k × range'e konsaydı (Stop Pip'i de girilmiş işlemler) */
+  sim: { rows: SimRow[]; usable: number; best: number | null };
+}
+
+/**
+ * Hedefi Asia Range cinsinden okur: MFE ÷ Asia Range. "TP'yi karşı uca mı, 1× range'e mi, 1.5×'e mi koymalıyım"
+ * sorusunun cevabı. Simülasyon sabit R simülatörüyle aynı varsayımla: MFE hedefe ulaştıysa hedef R'ı yazılır,
+ * ulaşmadıysa gerçek sonuç kalır (MAE stop'a değmiş kazanan / BE işlem -1R sayılır).
+ */
+export function analyzeRangeMultiples(trades: Trade[]): RangeMultipleResult | null {
+  const usable = trades.filter((t) => hasNum(t.mfePips) && t.mfePips >= 0 && hasNum(t.asiaRangePips) && t.asiaRangePips > 0);
+  if (usable.length === 0) return null;
+  const mult = usable.map((t) => (t.mfePips as number) / (t.asiaRangePips as number));
+  const idx = (m: number) => (m < 0.5 ? 0 : m < 1 ? 1 : m < 1.5 ? 2 : m < 2 ? 3 : 4);
+  const counts = RANGE_MULTIPLE_BUCKETS.map(() => 0);
+  mult.forEach((m) => counts[idx(m)]++);
+
+  const withStop = usable.filter((t) => hasNum(t.stopPips) && t.stopPips > 0);
+  const rows: SimRow[] = [];
+  let best: number | null = null;
+  if (withStop.length > 0) {
+    const actual = withStop.map((t) => t.rr || 0);
+    const actualExp = actual.reduce((s, r) => s + r, 0) / actual.length;
+    rows.push(simRow('Gerçekleşen (mevcut çıkış)', actual, actualExp));
+    let bestExp = -Infinity;
+    RANGE_TP_MULTIPLES.forEach((k) => {
+      const rs = withStop.map((t) => {
+        const target = k * (t.asiaRangePips as number);
+        const stop = t.stopPips as number;
+        if ((t.mfePips as number) >= target) return target / stop;
+        if (t.status !== 'LOSS' && hasNum(t.maePips) && t.maePips >= stop) return -1;
+        return t.rr || 0;
+      });
+      const row = simRow(`TP ${k}× Asia Range`, rs, actualExp);
+      rows.push(row);
+      if (row.expectancy > bestExp) {
+        bestExp = row.expectancy;
+        best = k;
+      }
+    });
+  }
+
+  return {
+    usable: usable.length,
+    medianMultiple: round(median(mult), 2),
+    distribution: RANGE_MULTIPLE_BUCKETS.map((label, i) => ({ label, count: counts[i], pct: Math.round((counts[i] / usable.length) * 100) })),
+    reach: RANGE_TP_MULTIPLES.map((k) => ({ multiple: k, pct: Math.round((mult.filter((m) => m >= k).length / mult.length) * 100) })),
+    sim: { rows, usable: withStop.length, best },
+  };
+}
+
+/* ------------------------------------------------------------------ */
 /* Range size normalisation (per pair)                                 */
 /* ------------------------------------------------------------------ */
 
@@ -342,7 +415,7 @@ export const RANGE_BUCKET_LABELS: Record<RangeBucket, string> = {
   WIDE: 'Geniş (> 1.25×)',
 };
 
-/** Classifies each trade's Asia range relative to that pair's own median, so EURCAD and EURUSD are not judged by one pip scale. */
+/** Classifies each trade's Asia Range relative to that pair's own median, so EURCAD and EURUSD are not judged by one pip scale. */
 export function bucketAsiaRanges(trades: Trade[]): Map<string, RangeBucket> {
   const withRange = trades.filter((t) => hasNum(t.asiaRangePips) && t.asiaRangePips > 0);
   const byPair = new Map<string, number[]>();
@@ -418,12 +491,12 @@ export function holdBucket(t: Pick<Trade, 'createdAt' | 'exitAt'>): string | nul
   return HOLD_BUCKETS[m < 15 ? 0 : m < 30 ? 1 : m < 60 ? 2 : m < 120 ? 3 : m < 240 ? 4 : 5];
 }
 
-/** Hesap aşaması: Phase 1 / Phase 2 / Funded; hesapsız işlemler bu boyutta yer almaz */
+/** Hesap Aşaması: Phase 1 / Phase 2 / Funded; hesapsız işlemler bu boyutta yer almaz */
 export function stageBucket(t: Pick<Trade, 'accountId' | 'accountStage'>): string | null {
   return getTradeStageLabel(t) || null;
 }
 
-/** Planlanan R:R = TP pip ÷ Stop pip */
+/** Planlanan R:R = TP Pip ÷ Stop Pip */
 export const PLANNED_RR_BUCKETS = ['< 1:1.5', '1:1.5–2', '1:2–3', '1:3–4', '1:4+'] as const;
 export function plannedRR(t: Pick<Trade, 'tpPips' | 'stopPips'>): number | null {
   return typeof t.tpPips === 'number' && typeof t.stopPips === 'number' && t.tpPips > 0 && t.stopPips > 0 ? t.tpPips / t.stopPips : null;
@@ -465,13 +538,32 @@ function buildOrder(trades: Trade[]): void {
     const k = nyDateKey(t.createdAt);
     (byDay.get(k) || byDay.set(k, []).get(k)!).push(t);
   }
-  byDay.forEach((list) => list.sort((x, y) => x.createdAt - y.createdAt).forEach((t, i) => tradeOrder.set(t.id, i + 1)));
+  prevResult.clear();
+  byDay.forEach((list) =>
+    list
+      .sort((x, y) => x.createdAt - y.createdAt)
+      .forEach((t, i) => {
+        tradeOrder.set(t.id, i + 1);
+        const prev = i > 0 ? list[i - 1] : null;
+        prevResult.set(t.id, !prev ? PREV_TRADE_BUCKETS[0] : prev.status === 'WIN' ? PREV_TRADE_BUCKETS[1] : prev.status === 'LOSS' ? PREV_TRADE_BUCKETS[2] : PREV_TRADE_BUCKETS[3]);
+      }),
+  );
   // Asia Range büyüklüğü de aynı listeye göre (paritenin kendi medyanına oranla) bir kez sınıflanır
   rangeIndex = bucketAsiaRanges(trades);
 }
 export function tradeOfDayBucket(t: Pick<Trade, 'id'>): string | null {
   const n = tradeOrder.get(t.id);
   return n === undefined ? null : n === 1 ? '1. İşlem' : n === 2 ? '2. İşlem' : '3.+ İşlem';
+}
+
+/**
+ * Gün içi önceki işlemin sonucu (NY günü, hesaplardan bağımsız): kayıptan / kazançtan sonraki işlemin edge'i.
+ * "Kayıptan sonra dur" kuralının veriye dayanıp dayanmadığını gösterir.
+ */
+export const PREV_TRADE_BUCKETS = ['Günün İlk İşlemi', 'Önceki Kazandı', 'Önceki Kaybetti', 'Önceki BE'] as const;
+const prevResult = new Map<string, (typeof PREV_TRADE_BUCKETS)[number]>();
+export function prevTradeBucket(t: Pick<Trade, 'id'>): string | null {
+  return prevResult.get(t.id) ?? null;
 }
 
 /** Asia Range büyüklüğü (paritenin medyanına göre): kurulum karnesi, Edge Özeti ve filtrelerde tek tanım */
@@ -487,7 +579,7 @@ export function rangeSizeBucket(t: Pick<Trade, 'id'>): string | null {
   return b ? RANGE_SIZE_LABEL[b] : null;
 }
 
-/** İşlem yönetimi: seçilen yönetim adımları birleşik ("BE Çekildi + Kısmi Kâr") */
+/** İşlem Yönetimi: seçilen yönetim adımları birleşik ("BE Çekildi + Kısmi Kâr") */
 export function managementBucket(t: Pick<Trade, 'management'>): string | null {
   return Array.isArray(t.management) && t.management.length ? [...t.management].join(' + ') : null;
 }
@@ -497,7 +589,7 @@ export function afterExitBucket(t: Pick<Trade, 'afterExitTp'>): string | null {
 
 /**
  * Yönetimle kaçırılan R: çıkıştan sonra TP'ye ulaşan işlemlerde planlanan R ile gerçekleşen R farkı.
- * Planlanan R yoksa (TP / stop pip girilmemiş) işlem sayılır ama R'ı hesaba katılmaz.
+ * Planlanan R yoksa (TP / Stop Pip girilmemiş) işlem sayılır ama R'ı hesaba katılmaz.
  */
 export function managementMissedR(trades: Trade[]): { n: number; measured: number; missedR: number } {
   let n = 0;
@@ -586,6 +678,7 @@ export interface AsiaLabResult {
   plannedRR: GroupRow[];
   stopToRange: GroupRow[];
   tradeOfDay: GroupRow[];
+  prevTrade: GroupRow[];
   management: GroupRow[];
   afterExit: GroupRow[];
   missedByManagement: { n: number; measured: number; missedR: number };
@@ -593,6 +686,7 @@ export interface AsiaLabResult {
   asiaRangeFvgs: GroupRow[];
   rangeSize: Array<{ key: RangeBucket; label: string; stats: EdgeStats }>;
   targetReach: { usable: number; buckets: Array<{ label: string; count: number; pct: number }>; reachedPct: number } | null;
+  rangeMultiples: RangeMultipleResult | null;
   tpSim: { rows: SimRow[]; usable: number };
   stopSim: { rows: SimRow[]; usable: number };
   rolling: Array<{ index: number; date: string; expectancy: number }>;
@@ -670,6 +764,7 @@ export function analyzeAsia(allTrades: Trade[], opts: AsiaLabOptions): AsiaLabRe
   const plannedRRRows = groupTrades(trades, (t) => plannedRRBucket(t)).sort(order(PLANNED_RR_BUCKETS));
   const stopToRange = groupTrades(trades, (t) => stopToRangeBucket(t)).sort(order(STOP_RANGE_BUCKETS));
   const tradeOfDay = groupTrades(trades, (t) => tradeOfDayBucket(t)).sort((x, y) => x.key.localeCompare(y.key));
+  const prevTrade = groupTrades(trades, (t) => prevTradeBucket(t)).sort(order(PREV_TRADE_BUCKETS));
   const management = groupTrades(trades, (t) => managementBucket(t));
   const afterExit = groupTrades(trades, (t) => afterExitBucket(t));
   const holdTime = groupTrades(trades, (t) => holdBucket(t)).sort((x, y) => HOLD_BUCKETS.indexOf(x.key as any) - HOLD_BUCKETS.indexOf(y.key as any));
@@ -750,6 +845,7 @@ export function analyzeAsia(allTrades: Trade[], opts: AsiaLabOptions): AsiaLabRe
     { name: 'Planlanan R:R', get: (t) => plannedRRBucket(t) },
     { name: 'Stop / Asia Range', get: (t) => stopToRangeBucket(t) },
     { name: 'Günün İşlemi', get: (t) => tradeOfDayBucket(t) },
+    { name: 'Önceki İşlem', get: (t) => prevTradeBucket(t) },
     { name: 'Hesap Aşaması', get: (t) => stageBucket(t) },
   ];
   const comboMap = new Map<string, { a: string; b: string; list: Trade[] }>();
@@ -799,6 +895,7 @@ export function analyzeAsia(allTrades: Trade[], opts: AsiaLabOptions): AsiaLabRe
     plannedRR: plannedRRRows,
     stopToRange,
     tradeOfDay,
+    prevTrade,
     management,
     afterExit,
     missedByManagement: managementMissedR(trades),
@@ -806,6 +903,7 @@ export function analyzeAsia(allTrades: Trade[], opts: AsiaLabOptions): AsiaLabRe
     asiaRangeFvgs,
     rangeSize,
     targetReach,
+    rangeMultiples: analyzeRangeMultiples(trades),
     tpSim,
     stopSim,
     rolling: rolling.slice(-80),

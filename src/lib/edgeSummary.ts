@@ -2,6 +2,7 @@ import { Trade } from '../types';
 import { edgeFromR, EdgeStats, indexTradeOrder, managementMissedR } from './asiaAnalytics';
 import { computeEdgeDrift, DRIFT_RECENT } from './edgeDrift';
 import { formatDuration } from './tradingTime';
+import { halfStatus, HALF_MIN, type HalfStatus } from './ruleSimulator';
 import {
   buildSetupScorecard,
   signalStrength,
@@ -17,7 +18,7 @@ import {
 
 /**
  * Edge özeti: Derin Analiz'in en üstünde tek bakışta "neyi daha çok, neyi hiç yapmamalıyım".
- * Kurulum karnesi + tek boyutlu sızıntı/güç taraması + risk % ve News day etkisi.
+ * Kurulum karnesi + tek boyutlu sızıntı/güç taraması + risk % ve News Day etkisi.
  */
 
 export interface DimensionSlice {
@@ -56,6 +57,8 @@ export interface EdgeRule {
   match: (t: Trade) => boolean;
   /** Alma kuralı: son 7 günde bu kurala uymayan işlemler ve toplam R'ı */
   recentViolations?: { n: number; r: number };
+  /** İki yarı testi: kuralın işlemlerin ilk ve ikinci yarısındaki sonucu (zamana göre) */
+  halves?: { first: EdgeStats; second: EdgeStats; status: HalfStatus };
 }
 
 /** Hedefe ulaşma süresi: kurulum bazında kazananların girişten çıkışa süresi */
@@ -77,7 +80,7 @@ export interface EdgeSummary {
   /** Pozitif beklentili, yeterli örneklemli tekil alan değerleri (en güçlü önce) */
   strengths: DimensionSlice[];
   riskSlices: RiskSlice[];
-  /** Yönetim edge'i: işlem yönetimi, çıkış sonrası TP, işlem süresi (en az minSample işlemli değerler) */
+  /** Yönetim edge'i: İşlem Yönetimi, Çıkış Sonrası TP, işlem süresi (en az minSample işlemli değerler) */
   managementSlices: DimensionSlice[];
   /** Çıkıştan sonra TP'ye giden işlemlerde kaçırılan R */
   missed: { n: number; measured: number; missedR: number };
@@ -94,13 +97,13 @@ export interface EdgeSummary {
 }
 
 /**
- * Yönetim / sonuç boyutları: işleme girdikten sonra belirlenir (süre, yönetim, çıkış sonrası TP).
+ * Yönetim / sonuç boyutları: işleme girdikten sonra belirlenir (süre, yönetim, Çıkış Sonrası TP).
  * Giriş kararlarıyla aynı listede "daha çok yap" önerisi üretmezler; ayrı bölümde gösterilir.
  */
 export const MANAGEMENT_DIMENSIONS: SetupDimension[] = ['management', 'afterExitTp', 'holdTime'];
 
 /** Sızıntı / güç taramasında bakılan tekil alanlar (yalnızca işleme girmeden önce bilinenler) */
-const SCAN_DIMENSIONS: SetupDimension[] = [
+export const SCAN_DIMENSIONS: SetupDimension[] = [
   'asiaRange',
   'rangeSize',
   'sweepHour',
@@ -109,6 +112,7 @@ const SCAN_DIMENSIONS: SetupDimension[] = [
   'plannedRR',
   'stopToRange',
   'tradeOfDay',
+  'prevTrade',
   'accountStage',
   'session',
   'entryModels',
@@ -285,6 +289,15 @@ function buildRules(sorted: Trade[], setupRows: SetupRow[], slices: DimensionSli
     const match = (t: Trade) => dimensionValue(t, p.dims[0]) === p.values[0] && dimensionValue(t, p.dims[1]) === p.values[1];
     add(p.edge.expectancy > 0 ? 'TAKE' : 'AVOID', p.title, 'Kombinasyon', p.edge, match);
   });
+  // İki yarı testi: tüm işlemler zamana göre ortadan bölünür; kural iki yarıda da aynı yönde mi?
+  const mid = Math.floor(sorted.length / 2);
+  const firstHalf = sorted.slice(0, mid);
+  const secondHalf = sorted.slice(mid);
+  rules.forEach((r) => {
+    const first = edgeOf(firstHalf.filter(r.match));
+    const second = edgeOf(secondHalf.filter(r.match));
+    r.halves = { first, second, status: halfStatus(first, second, r.kind === 'TAKE' ? 1 : -1) };
+  });
   // Alma kuralları: son 7 günde kurala uymayan işlemler
   const last = sorted.length ? sorted[sorted.length - 1].createdAt : 0;
   const recent = sorted.filter((t) => t.createdAt > last - 7 * DAY_MS);
@@ -426,12 +439,13 @@ export function edgeReportRows(trades: Trade[], minSample = SETUP_MIN_SAMPLE): R
   // Yönetimle kaçırılan R (çıkıştan sonra TP'ye giden işlemler)
   const miss = managementMissedR(valid);
   if (miss.n) {
-    rows.push({ Tür: 'Yönetim', Girdi: 'İşlem Yönetimi', Değer: "Kaçırılan R (Çıkış Sonrası TP'ye Giden)", 'İşlem': miss.n, 'Net R': -round(miss.missedR), 'Hüküm': miss.measured < miss.n ? `${miss.n - miss.measured} işlemde TP/Stop pip yok` : '-' });
+    rows.push({ Tür: 'Yönetim', Girdi: 'İşlem Yönetimi', Değer: "Kaçırılan R (Çıkış Sonrası TP'ye Giden)", 'İşlem': miss.n, 'Net R': -round(miss.missedR), 'Hüküm': miss.measured < miss.n ? `${miss.n - miss.measured} işlemde TP/Stop Pip yok` : '-' });
   }
   // Kurallarım ve hedefe ulaşma süresi (ekrandaki Edge Özeti ile aynı)
   const summary = computeEdgeSummary(valid, minSample);
   summary.rules.forEach((r) => {
     push(r.kind === 'TAKE' ? 'Kural · AL' : 'Kural · ALMA', r.title, valid.filter(r.match), 'Kural');
+    if (r.halves && r.halves.status !== 'THIN') rows[rows.length - 1]['Hüküm'] = `${rows[rows.length - 1]['Hüküm']} · ${r.halves.status === 'CONSISTENT' ? 'iki yarıda tutarlı' : 'şans olabilir'}`;
     if (r.recentViolations?.n) rows[rows.length - 1]['Hüküm'] = `${rows[rows.length - 1]['Hüküm']} · son 7 gün ${r.recentViolations.n} ihlal (${round(r.recentViolations.r)}R)`;
   });
   [summary.timeToTarget.overall, ...summary.timeToTarget.setups].forEach((r) => {
@@ -462,10 +476,92 @@ export function edgeReportRows(trades: Trade[], minSample = SETUP_MIN_SAMPLE): R
   };
   pairs.filter((p) => p.lift > 0).sort((a, b) => b.edge.expectancy - a.edge.expectancy).forEach((p) => pushPair(p, 'Kombinasyon · En İyi'));
   pairs.filter((p) => p.lift < 0).sort((a, b) => a.edge.netR - b.edge.netR).forEach((p) => pushPair(p, 'Kombinasyon · En Kötü'));
+  // Tesadüf testi: ilk yarıda bulunan bulgular, ikinci yarıdaki sonuçlarıyla
+  const oos = validateOutOfSample(valid, minSample);
+  const OOS_TEXT: Record<OosStatus, string> = { HELD: 'Tuttu', FAILED: 'Tutmadı', UNTESTED: 'Az Veri' };
+  const testHalf = [...valid].sort((a, b) => a.createdAt - b.createdAt).slice(Math.floor(valid.length / 2));
+  oos.findings.forEach((f) => {
+    push(`Tesadüf Testi · ${f.kind === 'TAKE' ? 'AL' : 'ALMA'}`, f.title, testHalf.filter(f.match), 'Tesadüf Testi');
+    rows[rows.length - 1]['Hüküm'] = `${OOS_TEXT[f.status]} (ilk yarı ${round(f.discovery.expectancy, 3)}R/işlem, ${f.discovery.n} işlem → ikinci yarı)`;
+  });
   // Kurulumlar (varsayılan boyutların birleşimi)
   buildSetupScorecard(valid, DEFAULT_SETUP_DIMENSIONS, { minSample }).rows.forEach((r) => {
     const list = valid.filter((t) => DEFAULT_SETUP_DIMENSIONS.map((d) => dimensionValue(t, d)).join(' | ') === r.key);
     push('Kurulum (Asia Range · Session · Entry Model)', r.labels.join(' · '), list, 'Kurulum');
   });
   return rows;
+}
+
+/* ------------------------------------------------------------------ */
+/* Tesadüf testi (out-of-sample)                                       */
+/* ------------------------------------------------------------------ */
+
+export const OOS_MIN_TOTAL = 40;
+export type OosStatus = 'HELD' | 'FAILED' | 'UNTESTED';
+export interface OosFinding {
+  title: string;
+  kind: 'TAKE' | 'AVOID';
+  source: 'Kurulum' | 'Alan' | 'Kombinasyon';
+  /** İlk yarıda (keşif) */
+  discovery: EdgeStats;
+  /** İkinci yarıda (sınama): keşifte hiç kullanılmamış işlemler */
+  test: EdgeStats;
+  status: OosStatus;
+  match: (t: Trade) => boolean;
+}
+export interface OosResult {
+  ready: boolean;
+  need: number;
+  /** İkinci yarının ilk işleminin zamanı */
+  splitAt: number | null;
+  findings: OosFinding[];
+  held: number;
+  failed: number;
+  untested: number;
+}
+
+/**
+ * Tesadüf testi: bulgular işlemlerin yalnızca ilk yarısında aranır (Edge Özeti'yle aynı tarama), sonra hiç görülmemiş
+ * ikinci yarıda sınanır. Çok sayıda alan / birleşim tarandığında bazı "parlak" sonuçlar şans eseri çıkar; ikinci yarıda
+ * aynı yönde tutan bulgu gerçek olma olasılığı yüksek olandır. Tutma oranı, taramanın genel güvenilirliğini gösterir.
+ */
+export function validateOutOfSample(trades: Trade[], minSample = SETUP_MIN_SAMPLE): OosResult {
+  const sorted = trades.filter((t) => typeof t.rr === 'number' && Number.isFinite(t.rr)).sort((a, b) => a.createdAt - b.createdAt);
+  const base: OosResult = { ready: false, need: OOS_MIN_TOTAL, splitAt: null, findings: [], held: 0, failed: 0, untested: 0 };
+  if (sorted.length < OOS_MIN_TOTAL) return base;
+  indexTradeOrder(sorted);
+  const mid = Math.floor(sorted.length / 2);
+  const discovery = sorted.slice(0, mid);
+  const testSet = sorted.slice(mid);
+  const s = computeEdgeSummary(discovery, minSample);
+  indexTradeOrder(sorted); // keşif kendi listesini indekslemiş olabilir (uygulamada global sıra varken etkisiz)
+
+  const cands: Array<Omit<OosFinding, 'test' | 'status'>> = [];
+  const setupMatch = (labels: string[]) => (t: Trade) => DEFAULT_SETUP_DIMENSIONS.every((d, i) => dimensionValue(t, d) === labels[i]);
+  s.bestSetups.forEach((r) => cands.push({ title: r.labels.join(' · '), kind: 'TAKE', source: 'Kurulum', discovery: r.edge, match: setupMatch(r.labels) }));
+  s.worstSetups.forEach((r) => cands.push({ title: r.labels.join(' · '), kind: 'AVOID', source: 'Kurulum', discovery: r.edge, match: setupMatch(r.labels) }));
+  const sliceMatch = (x: DimensionSlice) => (t: Trade) => dimensionValue(t, x.dimension) === x.value;
+  s.strengths.forEach((x) => cands.push({ title: `${x.dimensionLabel}: ${x.value}`, kind: 'TAKE', source: 'Alan', discovery: x.edge, match: sliceMatch(x) }));
+  s.leaks.forEach((x) => cands.push({ title: `${x.dimensionLabel}: ${x.value}`, kind: 'AVOID', source: 'Alan', discovery: x.edge, match: sliceMatch(x) }));
+  const pairMatch = (p: PairSlice) => (t: Trade) => dimensionValue(t, p.dims[0]) === p.values[0] && dimensionValue(t, p.dims[1]) === p.values[1];
+  s.bestPairs.forEach((p) => cands.push({ title: p.title, kind: 'TAKE', source: 'Kombinasyon', discovery: p.edge, match: pairMatch(p) }));
+  s.worstPairs.forEach((p) => cands.push({ title: p.title, kind: 'AVOID', source: 'Kombinasyon', discovery: p.edge, match: pairMatch(p) }));
+
+  const findings: OosFinding[] = cands.map((c) => {
+    const test = edgeOf(testSet.filter(c.match));
+    const sign = c.kind === 'TAKE' ? 1 : -1;
+    const status: OosStatus = test.n < HALF_MIN ? 'UNTESTED' : Math.sign(test.expectancy) === sign ? 'HELD' : 'FAILED';
+    return { ...c, test, status };
+  });
+  const order: Record<OosStatus, number> = { FAILED: 0, HELD: 1, UNTESTED: 2 };
+  findings.sort((a, b) => order[a.status] - order[b.status] || b.test.n - a.test.n);
+  return {
+    ready: true,
+    need: OOS_MIN_TOTAL,
+    splitAt: testSet[0]?.createdAt ?? null,
+    findings,
+    held: findings.filter((f) => f.status === 'HELD').length,
+    failed: findings.filter((f) => f.status === 'FAILED').length,
+    untested: findings.filter((f) => f.status === 'UNTESTED').length,
+  };
 }

@@ -10,9 +10,11 @@ import {
   ChevronRight,
   Info,
   Clock,
+  Shuffle,
 } from 'lucide-react';
 import { Trade } from '../../types';
-import { computeEdgeSummary, PAIR_MIN_LIFT, type DimensionSlice } from '../../lib/edgeSummary';
+import { computeEdgeSummary, validateOutOfSample, PAIR_MIN_LIFT, type DimensionSlice, type OosStatus } from '../../lib/edgeSummary';
+import { HALF_MIN } from '../../lib/ruleSimulator';
 import { dimensionValue, verdictFor, signalStrength, DEFAULT_SETUP_DIMENSIONS, SETUP_MIN_SAMPLE, type SetupRow } from '../../lib/setupScorecard';
 import { EDGE_PROOF_MIN } from '../../lib/sampleSize';
 import { analyzeDiscipline, type RuleResult } from '../../lib/discipline';
@@ -105,6 +107,11 @@ function InsightRow({ title, sub, edge, onClick }: { title: string; sub?: string
     </button>
   );
 }
+const OOS_PILL: Record<OosStatus, { label: string; cls: string }> = {
+  HELD: { label: 'Tuttu', cls: 'text-emerald-300 border-emerald-500/30 bg-emerald-500/10' },
+  FAILED: { label: 'Tutmadı', cls: 'text-rose-300 border-rose-500/30 bg-rose-500/10' },
+  UNTESTED: { label: 'Az Veri', cls: 'text-zinc-400 border-zinc-700 bg-zinc-800/60' },
+};
 const e2s = (e: EdgeStats) => `${e.n} işlem · %${fmt(e.winRate, 0)} kazanma`;
 
 /* ---------- Edge Özeti ---------- */
@@ -112,6 +119,8 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
   const { labels: news, version } = useNewsDayLabels();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const s = useMemo(() => computeEdgeSummary(trades), [trades, version]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const oos = useMemo(() => validateOutOfSample(trades), [trades, version]);
   // Kuralın oluştuğu an: ilk görüldüğü son işlem zamanı (sonraki işlemler kural sonrası performans)
   const ruleSince = useMemo(() => {
     const map = loadRuleSince();
@@ -153,7 +162,7 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
     <section className={card} aria-label="Edge Özeti">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-center gap-2.5 min-w-0">
-          <span className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/25 text-indigo-300 flex items-center justify-center shrink-0">
+          <span className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/25 text-blue-300 flex items-center justify-center shrink-0">
             <Compass size={17} />
           </span>
           <div className="min-w-0">
@@ -208,7 +217,7 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
         </p>
       )}
 
-      {/* Risk %, News day etkisi ve işlemde kalma süresi */}
+      {/* Risk %, News Day etkisi ve işlemde kalma süresi */}
       <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4 pt-3 border-t border-zinc-800/70">
         <div className="flex flex-col gap-2 min-w-0">
           <span className={`${sectionTitle} text-blue-300`}>
@@ -231,12 +240,12 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
               ))}
             </div>
           ) : (
-            <p className="text-[11px] text-zinc-500">Risk yüzdesi girilmiş işlem yok (prop hesabına bağlı işlemlerde formdan seçilir).</p>
+            <p className="text-[11px] text-zinc-500">Risk % girilmiş işlem yok (prop hesabına bağlı işlemlerde formdan seçilir).</p>
           )}
         </div>
         <div className="flex flex-col gap-2 min-w-0">
           <span className={`${sectionTitle} text-amber-300`}>
-            <Newspaper size={12} /> News day etkisi
+            <Newspaper size={12} /> News Day etkisi
           </span>
           {s.news.yes.n + s.news.no.n > 0 ? (
             <div className="flex flex-wrap gap-1.5">
@@ -245,7 +254,7 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
                   key={k}
                   type="button"
                   disabled={!e.n}
-                  onClick={() => onShowTrades(`News day: ${label}`, trades.filter((t) => t.newsDay === flag))}
+                  onClick={() => onShowTrades(`News Day: ${label}`, trades.filter((t) => t.newsDay === flag))}
                   className="px-2.5 py-1.5 rounded-lg border border-zinc-800 bg-zinc-950/40 hover:border-zinc-600 disabled:opacity-50 disabled:cursor-default text-[11px] tabular-nums transition-ui cursor-pointer"
                   title={e.n ? e2s(e) : 'İşlem yok'}
                 >
@@ -257,11 +266,11 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
               {s.news.unknown > 0 && <span className="px-2 py-1.5 text-[11px] text-zinc-600">{s.news.unknown} işlemde girilmemiş</span>}
             </div>
           ) : (
-            <p className="text-[11px] text-zinc-500">News day girilmiş işlem yok.</p>
+            <p className="text-[11px] text-zinc-500">News Day girilmiş işlem yok.</p>
           )}
         </div>
         <div className="flex flex-col gap-2 min-w-0">
-          <span className={`${sectionTitle} text-cyan-300`}>
+          <span className={`${sectionTitle} text-blue-300`}>
             <Clock size={12} /> İşlemde kalma süresi
           </span>
           {s.holding.n > 0 ? (
@@ -301,6 +310,14 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
                     {r.kind === 'TAKE' ? 'AL' : 'ALMA'}
                   </span>
                   <span className="text-xs font-bold text-zinc-200 truncate">{r.title}</span>
+                  {r.halves && r.halves.status !== 'THIN' && (
+                    <span
+                      title={`İlk yarı ${sR(r.halves.first.expectancy)}/işlem (${r.halves.first.n}) · ikinci yarı ${sR(r.halves.second.expectancy)}/işlem (${r.halves.second.n})`}
+                      className={`shrink-0 px-1.5 py-0.5 rounded-md border text-[10px] font-bold ${r.halves.status === 'CONSISTENT' ? 'text-emerald-300 border-emerald-500/30' : 'text-amber-300 border-amber-500/30'}`}
+                    >
+                      {r.halves.status === 'CONSISTENT' ? 'İki Yarıda Tutarlı' : 'Şans Olabilir'}
+                    </span>
+                  )}
                 </span>
                 <span className="shrink-0 text-[10px] tabular-nums text-zinc-400">
                   {(() => {
@@ -326,6 +343,51 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
           <p className="text-[11px] text-zinc-500">
             Henüz kesinleşmiş bulgu yok. Bir kurulum ya da alan "Kanıtlı Edge" (en az {EDGE_PROOF_MIN} işlem) veya kesin sızıntı olunca burada kurala dönüşür.
           </p>
+        )}
+      </div>
+
+      {/* Tesadüf testi: bulgular ilk yarıda aranır, görülmemiş ikinci yarıda sınanır */}
+      <div className="flex flex-col gap-2 pt-3 border-t border-zinc-800/70">
+        <span className={`${sectionTitle} text-blue-300`}>
+          <Shuffle size={12} /> Tesadüf Testi
+        </span>
+        <p className="text-[10px] text-zinc-500 -mt-1">
+          Bulgular işlemlerinin yalnızca ilk yarısında aranır, sonra hiç görülmemiş ikinci yarıda sınanır. İkinci yarıda da aynı yönde tutan bulgu gerçek olma olasılığı yüksek olandır; tutmayan şans eseri çıkmış olabilir.
+        </p>
+        {oos.ready ? (
+          oos.findings.length ? (
+            <>
+              <p className="text-[11px] text-zinc-300">
+                İlk yarıda bulunan <b>{oos.findings.length}</b> bulgudan <b className="text-emerald-300">{oos.held}</b> tanesi ikinci yarıda tuttu,{' '}
+                <b className="text-rose-300">{oos.failed}</b> tanesi tutmadı
+                {oos.untested > 0 && <>, {oos.untested} tanesi için ikinci yarıda yeterli işlem yok (en az {HALF_MIN})</>}.
+                {oos.held + oos.failed > 0 && <> Tutma oranı <b>%{Math.round((oos.held / (oos.held + oos.failed)) * 100)}</b>.</>}
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
+                {oos.findings.slice(0, 10).map((f) => (
+                  <button
+                    key={`oos:${f.kind}:${f.title}`}
+                    type="button"
+                    onClick={() => onShowTrades(f.title, trades.filter(f.match))}
+                    className="flex items-center justify-between gap-2 rounded-xl border border-zinc-800 bg-zinc-950/40 px-3 py-2 text-left hover:border-zinc-700 cursor-pointer transition-ui min-w-0"
+                  >
+                    <span className="flex items-center gap-2 min-w-0">
+                      <span className={`shrink-0 px-1.5 py-0.5 rounded-md border text-[10px] font-bold ${OOS_PILL[f.status].cls}`}>{OOS_PILL[f.status].label}</span>
+                      <span className="text-xs font-bold text-zinc-200 truncate" title={f.title}>{f.title}</span>
+                    </span>
+                    <span className="shrink-0 text-[10px] tabular-nums text-zinc-400">
+                      {sR(f.discovery.expectancy)} → <b className={tone(f.test.expectancy)}>{f.test.n ? sR(f.test.expectancy) : '-'}</b>
+                      <span className="text-zinc-600"> · {f.test.n} işlem</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            <p className="text-[11px] text-zinc-500">İlk yarıda yeterli örneklemli bulgu çıkmadı.</p>
+          )
+        ) : (
+          <p className="text-[11px] text-zinc-500">En az {oos.need} işlem gerekli (şu an {trades.length}).</p>
         )}
       </div>
 
@@ -360,7 +422,7 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
           <Clock size={12} /> Yönetim edge'i
         </span>
         <p className="text-[10px] text-zinc-500 -mt-1">
-          İşlem yönetimi, çıkış sonrası TP ve işlem süresi: işleme girdikten sonra belirlenir, bu yüzden giriş önerilerine karışmaz. Süre sonucun bir parçasıdır (kaybedenler stop'a hızlı değebilir); neden değil, ipucu olarak oku.
+          İşlem Yönetimi, Çıkış Sonrası TP ve işlem süresi: işleme girdikten sonra belirlenir, bu yüzden giriş önerilerine karışmaz. Süre sonucun bir parçasıdır (kaybedenler stop'a hızlı değebilir); neden değil, ipucu olarak oku.
         </p>
         {s.managementSlices.length ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -375,7 +437,7 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
           <p className="text-[11px] text-zinc-400">
             Çıkıştan sonra TP'ye giden {s.missed.n} işlem
             {s.missed.measured > 0 && <> · yönetimle kaçırılan <span className="font-bold text-rose-300 tabular-nums">{s.missed.missedR.toFixed(2)}R</span></>}
-            {s.missed.measured < s.missed.n && <> ({s.missed.n - s.missed.measured} işlemde TP / Stop pip eksik)</>}
+            {s.missed.measured < s.missed.n && <> ({s.missed.n - s.missed.measured} işlemde TP / Stop Pip eksik)</>}
           </p>
         )}
       </div>
@@ -454,7 +516,7 @@ export const DisciplineCard = React.memo(function DisciplineCard({ trades, onSho
     <section className={card} aria-label="Disiplin ve kural simülasyonu">
       <header className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2.5 min-w-0">
-          <span className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/25 text-cyan-300 flex items-center justify-center shrink-0">
+          <span className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/25 text-blue-300 flex items-center justify-center shrink-0">
             <ShieldCheck size={17} />
           </span>
           <div className="min-w-0">

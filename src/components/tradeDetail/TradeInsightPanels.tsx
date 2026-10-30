@@ -93,7 +93,7 @@ function PricePathCard({ trade, path }: { trade: Trade; path: PricePath }) {
     return (
       <p className="text-[11px] text-zinc-500 flex items-start gap-1.5 px-1">
         <Info size={12} className="shrink-0 mt-px" />
-        Stop pip girilirse MAE/MFE R'ye çevrilir ve fiyat yolu çizilir.
+        Stop Pip girilirse MAE/MFE R'ye çevrilir ve fiyat yolu çizilir.
       </p>
     );
   }

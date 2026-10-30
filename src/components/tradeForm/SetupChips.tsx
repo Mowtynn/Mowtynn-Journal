@@ -499,7 +499,7 @@ export const SetupChips = React.memo(function SetupChips({
 
       </div>
 
-      {/* İŞLEM YÖNETİMİ (çoklu) + çıkış sonrası TP sorusu aynı satırda: soru açılınca kart uzamaz */}
+      {/* İŞLEM YÖNETİMİ (çoklu) + Çıkış Sonrası TP sorusu aynı satırda: soru açılınca kart uzamaz */}
       <div className="pt-3 border-t border-zinc-800/60 flex flex-col">
         <div className="flex items-center justify-between gap-2 mb-1 h-6">
           <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide flex items-center gap-1.5 font-sans">

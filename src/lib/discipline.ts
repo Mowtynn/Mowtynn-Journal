@@ -31,7 +31,7 @@ export function isLowQualitySetup(planFidelity?: string | null): boolean {
   return pf === 'b-c' || pf === 'b' || pf === 'c' || pf === 'fomo' || pf.includes('ihlal') || pf.includes('disiplinsiz') || pf.includes('intikam') || pf.includes('düşük');
 }
 
-/** Setup kalitesi kademesi — renkler ve rozetler için TEK kaynak (düşük kademe = isLowQualitySetup) */
+/** Setup Kalitesi kademesi — renkler ve rozetler için TEK kaynak (düşük kademe = isLowQualitySetup) */
 export type SetupQualityTier = 'high' | 'mid' | 'low';
 export function setupQualityTier(planFidelity?: string | null): SetupQualityTier | null {
   const pf = (planFidelity || '').trim().toLocaleLowerCase('tr');
@@ -43,8 +43,8 @@ export function setupQualityTier(planFidelity?: string | null): SetupQualityTier
 }
 
 export const RULE_META: Record<DisciplineRuleId, { title: string; hint: (o: Required<DisciplineOptions>) => string }> = {
-  LOW_QUALITY: { title: 'Düşük kalite setup', hint: () => 'Setup kalitesi B-C / FOMO (plan dışı) olan işlemler' },
-  NEWS_DAY: { title: 'Haber günü işlemi', hint: () => 'News day / bank holiday olarak işaretlenen günlerdeki işlemler' },
+  LOW_QUALITY: { title: 'Düşük kalite setup', hint: () => 'Setup Kalitesi B-C / FOMO (plan dışı) olan işlemler' },
+  NEWS_DAY: { title: 'Haber günü işlemi', hint: () => 'News Day / Bank Holiday olarak işaretlenen günlerdeki işlemler' },
   OVER_RISK: { title: 'Normalden yüksek risk', hint: () => 'Risk %\'si senin en sık kullandığın riskin üstünde olan işlemler' },
   OVERTRADING: { title: 'Günlük işlem sınırı', hint: (o) => `NY günü içinde ${o.maxTradesPerDay}. işlemden sonra açılanlar` },
   AFTER_DAILY_STOP: { title: 'Günlük stop sonrası', hint: (o) => `Gün içi toplam ${o.dailyStopR}R'ye inince açılmaya devam eden işlemler` },

@@ -115,6 +115,6 @@ export function SlideBg({ id, className, rounded = "rounded-lg" }: { id: string;
   );
 }
 
-/** "Çıkış sonrası TP'ye ulaştı mı?" sorusu: BE kapanan, erken kapatılan ya da stop'u BE'ye çekilen işlemlerde sorulur */
+/** "Çıkış Sonrası TP'ye ulaştı mı?" sorusu: BE kapanan, erken kapatılan ya da stop'u BE'ye çekilen işlemlerde sorulur */
 export const afterExitTpAsked = (status: string, management: string[]) =>
   status === "BREAKEVEN" || management.includes("Erken Kapatıldı") || management.includes("BE Çekildi");

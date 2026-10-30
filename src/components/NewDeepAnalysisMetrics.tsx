@@ -89,12 +89,12 @@ export const NewDeepAnalysisMetrics = React.memo(({ metrics, onMetricClick }: { 
          {/* Kümülatif SMA(10) Bilgisi */}
          <motion.div 
            variants={itemVariants} 
-           className="bg-zinc-950/60 border border-zinc-800/80 rounded-2xl p-3.5 hover:bg-indigo-950/10 hover:border-indigo-500/30 transition-ui duration-200 ease-out flex flex-col justify-between cursor-pointer group shadow-xs"
+           className="bg-zinc-950/60 border border-zinc-800/80 rounded-2xl p-3.5 hover:bg-blue-950/10 hover:border-blue-500/30 transition-ui duration-200 ease-out flex flex-col justify-between cursor-pointer group shadow-xs"
            onClick={() => onMetricClick && onMetricClick("last10AvgR", `${signed(last10.avgR)} R`)}
          >
            <div className="flex items-center justify-between mb-2">
              <span className="heading-3 text-zinc-400 tracking-wider font-sans flex items-center gap-1.5">
-               <span className="p-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+               <span className="p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400">
                  <Layers size={11} className="transition-colors" />
                </span>
                Son 10 İşlem Ortalaması
@@ -102,7 +102,7 @@ export const NewDeepAnalysisMetrics = React.memo(({ metrics, onMetricClick }: { 
            </div>
            <div className="flex flex-col gap-1 mt-auto pt-1">
              <div className="flex items-baseline gap-1">
-                 <span className={`text-lg sm:text-xl font-bold font-sans tracking-tight ${last10.avgR > 0 ? 'text-emerald-400' : last10.avgR < 0 ? 'text-rose-400' : 'text-indigo-300'}`}>
+                 <span className={`text-lg sm:text-xl font-bold font-sans tracking-tight ${last10.avgR > 0 ? 'text-emerald-400' : last10.avgR < 0 ? 'text-rose-400' : 'text-blue-300'}`}>
                    {signed(last10.avgR)}
                  </span>
                  <span className="text-[10px] text-zinc-400 font-bold font-sans ml-0.5">R / işlem</span>

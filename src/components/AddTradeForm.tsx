@@ -200,7 +200,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
     }
     if (selectedAccount && effectiveRiskPct && effectiveRiskPct > 10) {
       setRiskError(true);
-      toast.error("Risk yüzdesi gerçekçi değil (en fazla %10).");
+      toast.error("Risk % gerçekçi değil (en fazla %10).");
       return;
     }
     if (!isQuick && newsDay === null) {
@@ -273,7 +273,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
       asiaRange: (asiaRange || undefined) as Trade["asiaRange"],
       sweepTime: sweepTime || undefined,
       management: management.length ? (management as Trade["management"]) : undefined,
-      // Çıkış sonrası TP sorusu yalnızca BE / erken kapama / BE'ye çekilen işlemlerde anlamlı
+      // Çıkış Sonrası TP sorusu yalnızca BE / erken kapama / BE'ye çekilen işlemlerde anlamlı
       afterExitTp: afterExitTpAsked(tradeStatus, management) ? afterExitTp ?? undefined : undefined,
       asiaRangeFvg: selectedAsiaFvg || undefined,
       notes: safeNotes || undefined,

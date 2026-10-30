@@ -310,15 +310,15 @@ export const AsiaEdgeLab = React.memo(function AsiaEdgeLab({ trades }: AsiaEdgeL
             </Card>
 
             <Card title="PD Array Zaman Dilimi (1H / 4H / D)">
-              <GroupTable rows={toRows(r.pdTimeframe)} minSample={minSample} empty="PD array zaman dilimi girilmemiş." />
+              <GroupTable rows={toRows(r.pdTimeframe)} minSample={minSample} empty="PD Array zaman dilimi girilmemiş." />
             </Card>
 
             <Card title="PD Array Türü (FVG / OB …)">
-              <GroupTable rows={toRows(r.pdType)} minSample={minSample} empty="PD array türü girilmemiş." />
+              <GroupTable rows={toRows(r.pdType)} minSample={minSample} empty="PD Array türü girilmemiş." />
             </Card>
 
             <Card title="Giriş Modeli">
-              <GroupTable rows={toRows(r.entryModels)} minSample={minSample} empty="Giriş modeli girilmemiş." />
+              <GroupTable rows={toRows(r.entryModels)} minSample={minSample} empty="Entry Model girilmemiş." />
             </Card>
 
             <Card title="Asia Range (Range / Trend / Swept)">
@@ -338,24 +338,28 @@ export const AsiaEdgeLab = React.memo(function AsiaEdgeLab({ trades }: AsiaEdgeL
             </Card>
 
             <Card title="Planlanan R:R (TP ÷ Stop)">
-              <GroupTable rows={toRows(r.plannedRR)} minSample={minSample} empty="TP ve Stop pip girilmiş işlem yok." />
+              <GroupTable rows={toRows(r.plannedRR)} minSample={minSample} empty="TP ve Stop Pip girilmiş işlem yok." />
             </Card>
 
             <Card title="Stop / Asia Range">
-              <GroupTable rows={toRows(r.stopToRange)} minSample={minSample} empty="Stop ve Asia Range pip girilmiş işlem yok." />
+              <GroupTable rows={toRows(r.stopToRange)} minSample={minSample} empty="Stop ve Asia Range Pip girilmiş işlem yok." />
             </Card>
 
             <Card title="Günün Kaçıncı İşlemi">
               <GroupTable rows={toRows(r.tradeOfDay)} minSample={minSample} empty="İşlem yok." />
             </Card>
 
+            <Card title="Gün İçi Önceki İşlem" hint="Aynı NY günündeki bir önceki işlemin sonucuna göre (hesaplardan bağımsız). Kayıptan sonraki işlemlerin edge'i düşükse 'kayıptan sonra dur' kuralı veriye dayanır.">
+              <GroupTable rows={toRows(r.prevTrade)} minSample={minSample} empty="İşlem yok." />
+            </Card>
+
             <Card title="İşlem Yönetimi">
-              <GroupTable rows={toRows(r.management)} minSample={minSample} empty="İşlem yönetimi girilmemiş." />
+              <GroupTable rows={toRows(r.management)} minSample={minSample} empty="İşlem Yönetimi girilmemiş." />
               {r.missedByManagement.n > 0 && (
                 <p className="mt-2 text-xs text-zinc-400">
                   Çıkıştan sonra TP'ye giden {r.missedByManagement.n} işlem
                   {r.missedByManagement.measured > 0 && <> · yönetimle kaçırılan <span className="font-bold text-rose-300">{r.missedByManagement.missedR.toFixed(2)}R</span></>}
-                  {r.missedByManagement.measured < r.missedByManagement.n && <> ({r.missedByManagement.n - r.missedByManagement.measured} işlemde TP / Stop pip eksik)</>}
+                  {r.missedByManagement.measured < r.missedByManagement.n && <> ({r.missedByManagement.n - r.missedByManagement.measured} işlemde TP / Stop Pip eksik)</>}
                 </p>
               )}
             </Card>
@@ -383,7 +387,7 @@ export const AsiaEdgeLab = React.memo(function AsiaEdgeLab({ trades }: AsiaEdgeL
             </Card>
 
             <Card title="Asia Range Büyüklüğü (parite medyanına göre)" hint="Her parite kendi medyanıyla kıyaslanır; EURCAD ve EURUSD aynı pip eşiğiyle yargılanmaz.">
-              <GroupTable rows={r.rangeSize.map((x) => ({ label: x.label, stats: x.stats }))} minSample={minSample} empty="Asia range (pip) girilmemiş." />
+              <GroupTable rows={r.rangeSize.map((x) => ({ label: x.label, stats: x.stats }))} minSample={minSample} empty="Asia Range (pip) girilmemiş." />
             </Card>
 
             <Card title="Gün">
@@ -415,6 +419,50 @@ export const AsiaEdgeLab = React.memo(function AsiaEdgeLab({ trades }: AsiaEdgeL
               )}
             </Card>
           </div>
+
+          <Card
+            title="Asia Range Katı Cinsinden Hedef"
+            hint="MFE ÷ o günün Asia Range'i: fiyat girişten sonra range'in kaç katı lehe gitti? Simülasyonda TP, her işlemin kendi range'inin k katına konur; MFE hedefe ulaştıysa hedef R'ı, ulaşmadıysa gerçek sonuç yazılır."
+          >
+            {r.rangeMultiples ? (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <div className="text-[10px] text-zinc-500 font-sans uppercase">Lehe Gidilen Mesafe (Range Katı)</div>
+                    {r.rangeMultiples.distribution.map((b) => (
+                      <div key={b.label} className="text-xs font-sans">
+                        <div className="flex justify-between text-zinc-300">
+                          <span>{b.label}</span>
+                          <span className="text-zinc-500">{b.count} işlem · %{b.pct}</span>
+                        </div>
+                        <div className="h-1 bg-zinc-800 rounded mt-1">
+                          <div className="h-1 bg-zinc-500 rounded" style={{ width: `${b.pct}%` }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="space-y-1.5">
+                    <div className="text-[10px] text-zinc-500 font-sans uppercase">Hedefe Ulaşma Oranı</div>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {r.rangeMultiples.reach.map((x) => (
+                        <div key={x.multiple} className="p-2 bg-zinc-900 border border-zinc-800/80 rounded-lg text-center">
+                          <span className="text-[10px] text-zinc-500 block font-sans">{x.multiple}× Range</span>
+                          <span className="text-sm font-bold text-zinc-100 font-sans tabular-nums">%{x.pct}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-zinc-500 font-sans pt-1">
+                      {r.rangeMultiples.usable} işlemde MFE ve Asia Range Pip var · medyan {r.rangeMultiples.medianMultiple}× range
+                      {r.rangeMultiples.sim.best !== null && <> · en yüksek beklenti <span className="text-zinc-300 font-bold">TP {r.rangeMultiples.sim.best}× range</span></>}
+                    </p>
+                  </div>
+                </div>
+                {r.rangeMultiples.sim.rows.length > 0 ? <SimTable rows={r.rangeMultiples.sim.rows} /> : <Empty text="Simülasyon için Stop Pip de gerekli." />}
+              </div>
+            ) : (
+              <Empty text="MFE ve Asia Range Pip girilmiş işlem yok." />
+            )}
+          </Card>
 
           <Card
             title="TP Simülatörü"

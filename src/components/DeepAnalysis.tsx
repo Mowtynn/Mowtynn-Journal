@@ -1,6 +1,7 @@
 import { EASE } from '../lib/motion';
 import { smartUpper } from '../constants/constants';
 import React, { useState, useMemo, useEffect } from "react";
+import { nyIsoWeekKey } from "../lib/advancedMetrics";
 import { motion, AnimatePresence } from "motion/react";
 import { computeDeepMetrics } from "../lib/deepMetrics";
 import { Trade, DefinitionTitles } from "../types";
@@ -128,12 +129,11 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
         label = date.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
         fullTitle = date.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
       } else if (equityFilter === 'weekly') {
-        const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
-        const pastDaysOfYear = (date.getTime() - firstDayOfYear.getTime()) / 86400000;
-        const weekNum = Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
-        key = `${date.getFullYear()}-W${weekNum}`;
-        label = `Hafta ${weekNum}`;
-        fullTitle = `${date.getFullYear()} Hafta ${weekNum}`;
+        // ISO hafta (Pazartesi–Pazar, NY günü): projedeki diğer haftalık hesaplarla aynı tanım
+        key = nyIsoWeekKey(pt.timestamp);
+        const [wy, wn] = key.split('-W');
+        label = `Hafta ${wn}`;
+        fullTitle = `${wy} Hafta ${wn}`;
       } else if (equityFilter === 'monthly') {
         key = `${date.getFullYear()}-${date.getMonth()}`;
         label = date.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' });
@@ -377,7 +377,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
                           `Kümülatif Getiri: ${opt.totalR > 0 ? '+' : ''}${opt.totalR.toFixed(2)} R`,
                           hasTrades 
                             ? `İşlem Başı Ortalama: ${(opt.totalR / opt.count).toFixed(2)} R`
-                            : 'Henüz bu setup kalitesinde kapatılmış işlem bulunmamaktadır.'
+                            : 'Henüz bu Setup Kalitesinde kapatılmış işlem bulunmamaktadır.'
                         ]
                       }
                     );
@@ -472,7 +472,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
           <motion.div variants={itemVariants} className="bg-transparent p-4 sm:p-5 transition-colors duration-200 ease-out flex flex-col justify-center flex-1">
             <div className="flex items-center justify-between mb-3">
               <p className="text-[10px] font-bold uppercase text-zinc-400 tracking-wider font-sans flex items-center gap-1.5">
-                <span className="p-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+                <span className="p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400">
                   <Activity size={11} />
                 </span>
                 Sistem Statüsü & Kalitesi
@@ -511,7 +511,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
               </div>
 
               <div 
-                className="bg-zinc-950/60 border border-zinc-800/80 rounded-2xl p-3.5 flex flex-col justify-between cursor-pointer hover:bg-indigo-950/10 hover:border-indigo-500/30 transition-ui duration-200 ease-out group shadow-xs" 
+                className="bg-zinc-950/60 border border-zinc-800/80 rounded-2xl p-3.5 flex flex-col justify-between cursor-pointer hover:bg-blue-950/10 hover:border-blue-500/30 transition-ui duration-200 ease-out group shadow-xs" 
                 onClick={() => handleMetricClick("expectancy", (metrics.expectancy > 0 ? "+" : "") + metrics.expectancy.toFixed(2) + " R")}
               >
                 <div className="flex items-center justify-between mb-1">
@@ -631,7 +631,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
         >
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2.5">
-              <div className="p-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center">
+              <div className="p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center">
                 <CalendarIcon size={15} />
               </div>
               <div>
@@ -771,7 +771,7 @@ const optionTheme = (name: string): OptionTheme => {
 };
 
 /**
- * Setup kalitesi kartları: tanımlı seçenekler + işlemlerde geçen diğer değerler.
+ * Setup Kalitesi kartları: tanımlı seçenekler + işlemlerde geçen diğer değerler.
  * Büyük/küçük harf farkı aynı seçenek sayılır ("a+" ile "A+" tek satırda toplanır).
  */
 function buildPlanFidelityStats(trades: Trade[], planFidelities: string[]) {

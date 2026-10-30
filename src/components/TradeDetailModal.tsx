@@ -379,9 +379,9 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                     const missing = [
                       !currentTrade.session && (cleanDefinitionTitleString(definitionTitles.sessions) || "Seans"),
                       !currentTrade.asiaRange && (cleanDefinitionTitleString(definitionTitles.asiaRange) || "Asia Range"),
-                      !(currentTrade.entryModels && currentTrade.entryModels.length) && (cleanDefinitionTitleString(definitionTitles.entryModels) || "Giriş modeli"),
+                      !(currentTrade.entryModels && currentTrade.entryModels.length) && (cleanDefinitionTitleString(definitionTitles.entryModels) || "Entry Model"),
                       !currentTrade.timeframe && (cleanDefinitionTitleString(definitionTitles.timeframes) || "Entry TF"),
-                      !currentTrade.planFidelity && (cleanDefinitionTitleString(definitionTitles.planFidelities) || "Setup kalitesi"),
+                      !currentTrade.planFidelity && (cleanDefinitionTitleString(definitionTitles.planFidelities) || "Setup Kalitesi"),
                       !currentTrade.premiumDiscount && (cleanDefinitionTitleString(definitionTitles.premiumDiscounts) || "Confirmations"),
                     ].filter(Boolean) as string[];
                     return (
@@ -427,7 +427,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
 
                   {/* Execution Context */}
                   {(() => {
-                    // Setup kalitesi sırası renge yansır: A+ yeşil · A mavi · B-C (ve FOMO / ihlal) kırmızı
+                    // Setup Kalitesi sırası renge yansır: A+ yeşil · A mavi · B-C (ve FOMO / ihlal) kırmızı
                     const tier = setupQualityTier(currentTrade.planFidelity);
                     const planColor = tier === 'high' ? "text-emerald-400 font-bold" : tier === 'mid' ? "text-blue-300 font-bold" : tier === 'low' ? "text-rose-400 font-bold" : undefined;
                     // Trend bir kurulum tipidir, hata değil: değer yargısı içeren renk verilmez
@@ -466,12 +466,12 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                           <ContextRow
                             label={smartUpper(cleanDefinitionTitleString(definitionTitles.asiaRange) || "ASIA RANGE")}
                             value={currentTrade.asiaRange}
-                            icon={<Target size={14} className="text-cyan-400"/>}
+                            icon={<Target size={14} className="text-blue-400"/>}
                           />
                           <ContextRow
                             label={smartUpper(cleanDefinitionTitleString(definitionTitles.sweepTime) || "SWEEP TIME")}
                             value={currentTrade.sweepTime ? `${currentTrade.sweepTime} NY` : undefined}
-                            icon={<Clock size={14} className="text-cyan-400"/>}
+                            icon={<Clock size={14} className="text-blue-400"/>}
                           />
                           {/* 3. SESSION */}
                           <ContextRow 
@@ -489,7 +489,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                           <ContextRow
                             label={smartUpper(cleanDefinitionTitleString(definitionTitles.asiaRangeFvgs) || "ASIA RANGE FVG")}
                             value={(() => {
-                              // Asia range genişliği (pip) önce, ardından FVG var/yok
+                              // Asia Range genişliği (pip) önce, ardından FVG var/yok
                               const fvg = currentTrade.asiaRangeFvg ? smartUpper(currentTrade.asiaRangeFvg) : undefined;
                               const pips = currentTrade.asiaRangePips !== undefined && currentTrade.asiaRangePips !== null ? `${currentTrade.asiaRangePips} PIP` : undefined;
                               return fvg && pips ? `${pips} · ${fvg}` : (fvg ?? pips);

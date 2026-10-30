@@ -5,7 +5,7 @@ import { canonicalAsset } from './tradeModel';
 import { dimensionValue, type SetupDimension } from './setupScorecard';
 
 /** Global filtrede türetilmiş / yeni girdiler: değer, kurulum karnesindeki boyut değeriyle aynı (tek tanım) */
-export const FILTER_DIMENSIONS = ['sweepHour', 'sweepDelay', 'rangeSize', 'plannedRR', 'stopToRange', 'tradeOfDay', 'weekday', 'entryHour', 'management', 'afterExitTp', 'holdTime'] as const;
+export const FILTER_DIMENSIONS = ['sweepHour', 'sweepDelay', 'rangeSize', 'plannedRR', 'stopToRange', 'tradeOfDay', 'prevTrade', 'weekday', 'entryHour', 'management', 'afterExitTp', 'holdTime'] as const;
 export type FilterDimension = (typeof FILTER_DIMENSIONS)[number] & SetupDimension;
 
 /** Varsayılan tarih aralığı: tüm zamanlar (sayılar üst menüdeki hesap sayılarıyla tutarlı kalsın) */
@@ -29,7 +29,7 @@ export const getMinTimestamp = (limit: string, now: number = Date.now()): number
   }
 };
 
-/** Sonradan eklenen alanların filtreleri (Asia Range, News day, P/D, TP target, Asia FVG, risk %, hızlı kayıt) */
+/** Sonradan eklenen alanların filtreleri (Asia Range, News Day, P/D, TP target, Asia FVG, risk %, hızlı kayıt) */
 export interface ExtraTradeFilters {
   /** Range / Trend / Swept */
   asiaRanges: string[];

@@ -20,7 +20,7 @@ interface AppState {
   globalMaxMaePips?: number;
   globalMinMfePips?: number;
   globalMaxMfePips?: number;
-  /** Asia Range, News day, P/D, TP target, Asia FVG, risk %, hızlı kayıt filtreleri */
+  /** Asia Range, News Day, P/D, TP target, Asia FVG, risk %, hızlı kayıt filtreleri */
   globalExtra: ExtraTradeFilters;
   isQuantMode: boolean;
   setGlobalSelectedConfirmations: (val: string[]) => void;

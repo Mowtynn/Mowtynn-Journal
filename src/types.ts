@@ -29,7 +29,7 @@ export interface Trade {
   htfTimeframe?: string;    // Higher Timeframe (HTF)
   session?: string;         // Trading session (e.g., London, New York)
   confirmations?: string[];      // Array of trading confirmations used (e.g., FVG, Orderblock)
-  planFidelity?: string | null; // Setup kalitesi (Plan fidelity)
+  planFidelity?: string | null; // Setup Kalitesi (Plan fidelity)
   entryModels?: string[];   // Birden fazla Giriş Modeli (Multiple Entry Models)
   trend?: string;           // Trend Yapısı (Trend Type e.g. Continuation, Reversal)
   tpTargets?: string[];     // Target — çıkış hedefi / seviye (e.g. PDH / PDL, Asia High / Low)
@@ -37,7 +37,7 @@ export interface Trade {
   /** Eski sürümün strateji alanı: artık formda, filtrelerde ve analizlerde yok; eski kayıtlarda saklı kalır. */
   strategy?: string;
   asiaRange?: AsiaRangeType; // Asia Range davranışı: Range / Trend / Swept
-  management?: ManagementType[]; // İşlem yönetimi: Plana Göre / BE Çekildi / Kısmi Kâr / Erken Kapatıldı
+  management?: ManagementType[]; // İşlem Yönetimi: Plana Göre / BE Çekildi / Kısmi Kâr / Erken Kapatıldı
   afterExitTp?: boolean;    // Çıkıştan sonra fiyat TP'ye ulaştı mı (BE / erken kapanan işlemlerde)
   sweepTime?: string;       // Sweep saati, New York saatiyle "HH:mm" (Asia Range seçiminden tamamen bağımsız)
   asiaRangeFvg?: string;    // Asia Range FVG (Tanımlamalar'dan yönetilir)

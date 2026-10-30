@@ -1,12 +1,12 @@
 import { Trade } from '../types';
-import { edgeFromR, EdgeStats, sweepHourBucket, sweepDelayBucket, holdBucket, stageBucket, plannedRRBucket, stopToRangeBucket, tradeOfDayBucket, managementBucket, afterExitBucket, indexTradeOrder, rangeSizeBucket } from './asiaAnalytics';
+import { edgeFromR, EdgeStats, sweepHourBucket, sweepDelayBucket, holdBucket, stageBucket, plannedRRBucket, stopToRangeBucket, tradeOfDayBucket, managementBucket, afterExitBucket, indexTradeOrder, rangeSizeBucket, prevTradeBucket } from './asiaAnalytics';
 import { getTradeHourBucket, getTradeNyWeekday, WEEKDAY_NAMES_TR } from './tradingTime';
 import { getNewsDayLabels } from '../constants/constants';
 import { EDGE_PROOF_MIN, MIN_SAMPLE } from './sampleSize';
 import { driftFromR, type EdgeDrift } from './edgeDrift';
 
 /**
- * Kurulum karnesi: işlemleri seçilen boyutların birleşimine (ör. Asia Range + seans + giriş modeli)
+ * Kurulum karnesi: işlemleri seçilen boyutların birleşimine (ör. Asia Range + seans + Entry Model)
  * göre "kurulum" olarak gruplar; her kurulumun R karnesini ve güven aralığına dayalı hükmünü verir.
  */
 
@@ -19,6 +19,7 @@ export type SetupDimension =
   | 'plannedRR'
   | 'stopToRange'
   | 'tradeOfDay'
+  | 'prevTrade'
   | 'management'
   | 'afterExitTp'
   | 'accountStage'
@@ -47,6 +48,7 @@ export const SETUP_DIMENSIONS: { id: SetupDimension; label: string }[] = [
   { id: 'plannedRR', label: 'Planlanan R:R' },
   { id: 'stopToRange', label: 'Stop / Asia Range' },
   { id: 'tradeOfDay', label: 'Günün İşlemi' },
+  { id: 'prevTrade', label: 'Gün İçi Önceki İşlem' },
   { id: 'management', label: 'İşlem Yönetimi' },
   { id: 'afterExitTp', label: 'Çıkış Sonrası TP' },
   { id: 'accountStage', label: 'Hesap Aşaması' },
@@ -109,6 +111,8 @@ export function dimensionValue(t: Trade, d: SetupDimension): string {
       return stopToRangeBucket(t) ?? UNSPECIFIED;
     case 'tradeOfDay':
       return tradeOfDayBucket(t) ?? UNSPECIFIED;
+    case 'prevTrade':
+      return prevTradeBucket(t) ?? UNSPECIFIED;
     case 'management':
       return managementBucket(t) ?? UNSPECIFIED;
     case 'afterExitTp':
@@ -181,7 +185,7 @@ export function buildSetupScorecard(trades: Trade[], dims: SetupDimension[], opt
 
   // R sırası için kronolojik
   const sorted = [...trades].sort((a, b) => a.createdAt - b.createdAt);
-  if (useDims.includes('tradeOfDay') || useDims.includes('rangeSize')) indexTradeOrder(sorted);
+  if (useDims.some((d) => d === 'tradeOfDay' || d === 'prevTrade' || d === 'rangeSize')) indexTradeOrder(sorted);
   for (const t of sorted) {
     if (typeof t.rr !== 'number' || !Number.isFinite(t.rr)) continue;
     const labels = useDims.map((d) => dimensionValue(t, d));

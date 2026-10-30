@@ -686,7 +686,8 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
       warnings.push("Kazanma oranınız çok yüksek (>95%). Girilen verilerde hatalı WIN işlemleri olabilir.");
     }
     
-    if (profitFactor > 50) {
+    // Az işlemde (ör. henüz kayıp yokken) yüksek PF doğaldır; uyarı yalnızca yeterli örneklemde
+    if (closedTrades.length >= 20 && profitFactor > 50) {
       hasIntegrityIssue = true;
       warnings.push("Kâr Faktörü (Profit Factor) çok yüksek. Zarar (Loss) işlemlerinin eksik veya hatalı girilmediğinden emin olun.");
     }
@@ -961,7 +962,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
                   </h3>
                   <button
                     onClick={() => setIsOptimalFreqModalOpen(true)}
-                    className="flex items-center justify-center w-7 h-7 ml-1 rounded-lg border transition-colors duration-200 ease-out bg-zinc-900/50 border-zinc-700/50 text-zinc-300 hover:bg-pink-500/10 hover:border-pink-500/30 hover:text-pink-400 shrink-0"
+                    className="flex items-center justify-center w-7 h-7 ml-1 rounded-lg border transition-colors duration-200 ease-out bg-zinc-900/50 border-zinc-700/50 text-zinc-300 hover:bg-blue-500/10 hover:border-blue-500/30 hover:text-blue-400 shrink-0"
                   >
                     <Crosshair size={10} />
                   </button>
@@ -1034,7 +1035,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
             <div className="flex flex-col h-full justify-between">
               <div className="flex justify-between items-center h-6 mb-2.5">
                 <div className="flex items-center gap-1.5">
-                  <Target size={13} className="text-indigo-400" />
+                  <Target size={13} className="text-blue-400" />
                   <h3 className="heading-2">
                     SETUP KALİTESİ PERFORMANSI
                   </h3>
@@ -1146,7 +1147,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
       >
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 relative z-20 w-full border-b border-zinc-800 pb-3">
           <div className="flex items-center gap-2">
-            <Layers size={16} className="text-indigo-400" />
+            <Layers size={16} className="text-blue-400" />
             <h3 className="heading-2">
               Parite İstatistikleri
             </h3>
@@ -2196,7 +2197,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
               {/* Header */}
               <div className="flex items-center justify-between p-4 sm:p-5 border-b border-zinc-800 bg-transparent">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-400">
+                  <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
                     <Crosshair size={18} />
                   </div>
                   <div>

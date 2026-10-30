@@ -89,7 +89,7 @@ export function normalizeTrade<T extends Partial<Trade> & Record<string, any>>(r
     if (hit) t.asiaRange = hit;
     else delete t.asiaRange;
   }
-  // İşlem yönetimi: yalnızca tanımlı seçenekler; "Plana Göre" diğerleriyle birlikte olamaz
+  // İşlem Yönetimi: yalnızca tanımlı seçenekler; "Plana Göre" diğerleriyle birlikte olamaz
   if (t.management !== undefined) {
     // Eski adı "BE'ye Çekildi" → "BE Çekildi"
     const norm = (v: string) => v.trim().toLocaleLowerCase('tr-TR').replace("be'ye çekildi", 'be çekildi');

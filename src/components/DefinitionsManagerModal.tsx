@@ -106,7 +106,7 @@ const FORM_LABEL_HINTS: Record<string, string> = {
   tpPips: 'Take profit mesafesi',
   maePips: 'Aleyhe maksimum sapma',
   mfePips: 'Lehe maksimum sapma',
-  asiaRangePips: 'Asia range büyüklüğü',
+  asiaRangePips: 'Asia Range büyüklüğü',
   rr: 'Sonuç R',
   chartLink: 'Grafik bağlantısı alanı',
   asiaRange: 'Range / Trend / Swept seçimi',
@@ -543,7 +543,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
           {/* Header */}
           <div className="modal-header">
             <h2 className="heading-1 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-400 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(249,115,22,0.15)]">
+              <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(59,130,246,0.15)]">
                 <SlidersHorizontal size={16} />
               </div>
               Tanımlamalar

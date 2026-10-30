@@ -87,14 +87,14 @@ export const SetupScorecardTab = React.memo(function SetupScorecardTab({ trades 
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
             <h3 className="text-sm font-bold text-zinc-100 font-sans flex items-center gap-2">
-              <ClipboardList size={16} className="text-cyan-400" /> Kurulum Karnesi
+              <ClipboardList size={16} className="text-blue-400" /> Kurulum Karnesi
             </h3>
             <p className="text-[11px] text-zinc-500 mt-0.5 max-w-xl">
               İşlemlerini seçtiğin alanların birleşimine göre kurulumlara ayırır. Hüküm, beklentinin %95 güven aralığına göre verilir; {SETUP_MIN_SAMPLE} işlemden azına hüküm yok.
             </p>
           </div>
           <label className="flex items-center gap-2 text-[11px] font-bold text-zinc-400 cursor-pointer select-none">
-            <input type="checkbox" className="accent-cyan-500" checked={hideLowSample} onChange={(e) => setHideLowSample(e.target.checked)} />
+            <input type="checkbox" className="accent-blue-500" checked={hideLowSample} onChange={(e) => setHideLowSample(e.target.checked)} />
             Az Örneklemi Gizle
           </label>
         </div>
@@ -116,7 +116,7 @@ export const SetupScorecardTab = React.memo(function SetupScorecardTab({ trades 
             onChange={(e) => setQuery(e.target.value)}
             placeholder="İşlem öncesi kontrol: kurulumu yaz (ör. London FVG)"
             aria-label="Kurulum ara"
-            className="w-full h-9 bg-zinc-950/70 border border-zinc-800 hover:border-zinc-600 focus:border-cyan-500/60 focus:ring-1 focus:ring-cyan-500/20 rounded-xl pl-8 pr-3 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none"
+            className="w-full h-9 bg-zinc-950/70 border border-zinc-800 hover:border-zinc-600 focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 rounded-xl pl-8 pr-3 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none"
           />
         </div>
         <p className="text-[10px] text-zinc-500">

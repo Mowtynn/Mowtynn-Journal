@@ -587,7 +587,7 @@ const JournalView = memo(function JournalView({ entries: allEntries, trades = []
               onClick={() => (weeklyWeek ? setWeeklyWeek(null) : openWeekly(currentWeekStart()))}
               className={`w-8 h-8 rounded-lg flex items-center justify-center transition-ui cursor-pointer border ${
                 weeklyWeek
-                  ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
+                  ? 'bg-blue-500/20 border-blue-500/40 text-blue-300'
                   : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
               }`}
             >
@@ -784,7 +784,7 @@ const JournalView = memo(function JournalView({ entries: allEntries, trades = []
                         </button>
 
                         {isWeeklyEntry(entry) ? (
-                          <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md border border-violet-500/30 bg-violet-500/10 text-violet-300 ml-0.5">{smartUpper("Haftalık")}</span>
+                          <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md border border-blue-500/30 bg-blue-500/10 text-blue-300 ml-0.5">{smartUpper("Haftalık")}</span>
                         ) : entry.mood && (
                           <div className="text-xs shrink-0 ml-0.5">
                             {moodEmojis[entry.mood]}

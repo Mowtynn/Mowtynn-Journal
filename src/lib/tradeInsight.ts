@@ -10,7 +10,7 @@ import { analyzeDiscipline, type DisciplineOptions, type DisciplineRuleId } from
  */
 
 export interface PricePath {
-  /** Planlanan R:R = TP pip / stop pip */
+  /** Planlanan R:R = TP Pip / Stop Pip */
   plannedRR: number | null;
   realizedR: number;
   /** MAE stop'un yüzde kaçı (100 = stop'a değdi) */
@@ -73,7 +73,7 @@ export function computeTradeInsight(trade: Trade, everyTrade: Trade[], disciplin
   const path = computePricePath(trade);
   const allTrades = insightPool(trade, everyTrade);
 
-  // Kurulum: Asia Range · Seans · Giriş modeli (kurulum karnesiyle aynı tanım)
+  // Kurulum: Asia Range · Seans · Entry Model (kurulum karnesiyle aynı tanım)
   const values = DEFAULT_SETUP_DIMENSIONS.map((d) => dimensionValue(trade, d));
   let setup: SetupHistory | null = null;
   if (!values.every((v) => v === UNSPECIFIED)) {

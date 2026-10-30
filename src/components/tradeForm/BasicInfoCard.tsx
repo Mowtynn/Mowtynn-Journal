@@ -357,7 +357,7 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
                     max="10"
                     inputMode="decimal"
                     placeholder="0.4"
-                    aria-label="Risk yüzdesi"
+                    aria-label="Risk %"
                     value={customRiskPct}
                     onChange={(e) => {
                       const v = e.target.value;

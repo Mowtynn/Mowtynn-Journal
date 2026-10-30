@@ -1405,7 +1405,7 @@ export default function App() {
           .finally(() => pendingWriteIdsRef.current.delete(finalTradeId));
       }
 
-      // Yeni girilen parite, seans, PD array vb. değerleri tanımlama listelerine eklenir
+      // Yeni girilen parite, seans, PD Array vb. değerleri tanımlama listelerine eklenir
       let settingsUpdates: any = null;
 
       const tradeAsset = canonicalAsset(tradeData.asset);
@@ -2275,16 +2275,16 @@ export default function App() {
                       <button
                         type="button"
                         onClick={() => openWeeklyReview(weeklyDue)}
-                        className="w-full flex items-center gap-3 rounded-2xl border border-violet-500/30 bg-violet-500/10 hover:bg-violet-500/15 px-4 py-2.5 text-left transition-ui cursor-pointer"
+                        className="w-full flex items-center gap-3 rounded-2xl border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/15 px-4 py-2.5 text-left transition-ui cursor-pointer"
                       >
-                        <span className="p-1.5 rounded-lg bg-violet-500/15 border border-violet-500/30 text-violet-300 shrink-0">
+                        <span className="p-1.5 rounded-lg bg-blue-500/15 border border-blue-500/30 text-blue-300 shrink-0">
                           <CalendarRange size={14} />
                         </span>
                         <span className="flex-1 min-w-0">
-                          <span className="block text-xs font-bold text-violet-100 truncate">Bu haftanın değerlendirmesi bekliyor{activeScopeKey ? ` · ${activeScopeName}` : ""}</span>
-                          <span className="block text-[11px] text-violet-200/70 truncate">Haftanın istatistikleri hazır; üç kısa soruyu yanıtla, gelecek haftanın odağını belirle.</span>
+                          <span className="block text-xs font-bold text-blue-100 truncate">Bu haftanın değerlendirmesi bekliyor{activeScopeKey ? ` · ${activeScopeName}` : ""}</span>
+                          <span className="block text-[11px] text-blue-200/70 truncate">Haftanın istatistikleri hazır; üç kısa soruyu yanıtla, gelecek haftanın odağını belirle.</span>
                         </span>
-                        <span className="text-[11px] font-bold text-violet-200 shrink-0">Değerlendir →</span>
+                        <span className="text-[11px] font-bold text-blue-200 shrink-0">Değerlendir →</span>
                       </button>
                     )}
                     <DateLimitNote limit={globalDateLimit} shown={filteredGlobalTrades.length} onReset={() => setGlobalDateLimit(DEFAULT_DATE_LIMIT)} />

@@ -180,7 +180,7 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, edge, drift }
         className="col-span-1 sm:col-span-2 bg-zinc-900/60 border border-zinc-800/80 hover:bg-zinc-800/50 hover:border-zinc-700/80 rounded-2xl p-4 transition-colors duration-200 ease-out flex flex-col justify-between gap-2 shadow-xs"
       >
         <p className="heading-3 text-zinc-400 tracking-wider font-sans flex items-center gap-1.5">
-          <span className="p-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+          <span className="p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400">
             <Layers size={12} />
           </span>
           {"Edge Durumu"}

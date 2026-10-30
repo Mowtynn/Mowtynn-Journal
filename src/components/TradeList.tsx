@@ -458,7 +458,7 @@ const TradeList = React.memo(function TradeList({
                         onClick={() => handleExport('excel', 'monthly')}
                         className="w-full px-2.5 py-2 text-left text-xs text-zinc-200 hover:bg-zinc-800/80 hover:text-emerald-300 font-medium rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
                       >
-                        <Calendar size={13} className="text-indigo-400" />
+                        <Calendar size={13} className="text-blue-400" />
                         <span>Bu Ayın İşlemleri</span>
                       </button>
 
@@ -536,7 +536,7 @@ const TradeList = React.memo(function TradeList({
                         onClick={() => handleExport('csv', 'monthly')}
                         className="w-full px-2.5 py-2 text-left text-xs text-zinc-200 hover:bg-zinc-800/80 hover:text-blue-300 font-medium rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
                       >
-                        <Calendar size={13} className="text-indigo-400" />
+                        <Calendar size={13} className="text-blue-400" />
                         <span>Bu Ayın İşlemleri</span>
                       </button>
 
@@ -600,7 +600,7 @@ const TradeList = React.memo(function TradeList({
                         onClick={handleDownloadMonthly}
                         className="w-full px-2.5 py-2 text-left text-xs text-zinc-200 hover:bg-zinc-800/80 hover:text-purple-300 font-medium rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
                       >
-                        <Calendar size={13} className="text-indigo-400" />
+                        <Calendar size={13} className="text-blue-400" />
                         <span>Bu Ay Raporu İndir</span>
                       </button>
 
