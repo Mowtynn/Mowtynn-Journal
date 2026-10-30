@@ -104,3 +104,12 @@ test('stop tamponu aynı işlemler üzerinden: MAE ve stop girilmiş kazananlar'
   ]).maeStats;
   assert.equal(s.stopCushionEfficiency, 67); // 1 − 10/30
 });
+
+test('P(Edge > 0) küçük örneklemde t dağılımıyla (normal dağılım kadar iyimser değil)', async () => {
+  const { edgeFromR } = await import('../src/lib/asiaAnalytics');
+  const small = edgeFromR([2, -1, 2, 1.5, -1]);
+  // ortalama 0.7, se 0.7 → t = 1.0, df = 4: gerçek olasılık %81.3 (normal yaklaşım %84 verirdi)
+  assert.ok(small.pPositive >= 80 && small.pPositive <= 82, String(small.pPositive));
+  const big = edgeFromR(Array.from({ length: 200 }, (_, i) => (i % 2 ? 2 : -1)));
+  assert.equal(big.pPositive, 100);
+});

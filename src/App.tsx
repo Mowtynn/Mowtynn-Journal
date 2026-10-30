@@ -2439,7 +2439,7 @@ export default function App() {
           <div className="flex items-center gap-3 z-10">
             {/* Brand */}
             <div 
-              className="flex items-center gap-2 cursor-pointer group select-none transition-transform duration-300 ease-out active:scale-[0.98]"
+              className="flex items-center gap-2 cursor-pointer group select-none transition-transform duration-150 ease-out active:scale-[0.98]"
               onClick={() => {
                 if (currentTab === "dashboard") {
                   window.scrollTo({ top: 0, behavior: "smooth" });

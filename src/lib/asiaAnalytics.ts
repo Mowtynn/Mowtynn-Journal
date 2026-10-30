@@ -154,8 +154,16 @@ export function edgeFromR(rs: number[], statuses?: Array<Trade['status']>): Edge
     if (peak - equity > maxDD) maxDD = peak - equity;
   });
 
+  // Gerçek beklentinin sıfırdan büyük olma olasılığı: t dağılımıyla (n − 1 serbestlik derecesi). Eskiden normal
+  // dağılım kullanılıyordu; küçük örneklemde fazla iyimserdi (ör. 5 işlemde t = 2.78 için %99.7 yerine ≈%97).
   let pPositive = 0;
-  if (n > 1 && se > 0) pPositive = normCdf(mean / se) * 100;
+  if (n > 1 && se > 0) {
+    const tStat = mean / se;
+    const df = n - 1;
+    // Abramowitz & Stegun 26.7.8: t → yaklaşık standart normal
+    const zEq = (tStat * (1 - 1 / (4 * df))) / Math.sqrt(1 + (tStat * tStat) / (2 * df));
+    pPositive = normCdf(zEq) * 100;
+  }
   else if (n > 1) pPositive = mean > 0 ? 100 : 0;
 
   // Güven aralığının alt sınırı sıfırı geçsin diye gereken toplam işlem: aralıkla AYNI t-değeriyle aranır
@@ -733,15 +741,16 @@ export function analyzeAsia(allTrades: Trade[], opts: AsiaLabOptions): AsiaLabRe
   // Hour x pair matrix
   const pairKeys = pairRows.map((p) => p.key);
   const hourKeys = hours.map((h) => h.key);
+  // Saat × parite: tek geçişte gruplanır (eskiden her hücre için tüm işlemler yeniden süzülüyordu)
   const cells: Record<string, HourPairCell> = {};
-  hourKeys.forEach((h) => {
-    pairKeys.forEach((p) => {
-      const list = trades.filter((t) => getTradeHourBucket(t) === h && normalizePair(t.asset) === p);
-      if (list.length > 0) {
-        const e = computeEdge(list);
-        cells[`${h}|${p}`] = { n: e.n, expectancy: e.expectancy, netR: e.netR };
-      }
-    });
+  const cellLists = new Map<string, Trade[]>();
+  trades.forEach((t) => {
+    const k = `${getTradeHourBucket(t)}|${normalizePair(t.asset)}`;
+    (cellLists.get(k) || cellLists.set(k, []).get(k)!).push(t);
+  });
+  cellLists.forEach((list, k) => {
+    const e = computeEdge(list);
+    cells[k] = { n: e.n, expectancy: e.expectancy, netR: e.netR };
   });
 
   const sweepSide = groupTrades(trades, (t) => (getSweepSide(t) === 'HIGH' ? 'Asia High süpürüldü → SHORT' : 'Asia Low süpürüldü → LONG'));
@@ -848,33 +857,73 @@ export function analyzeAsia(allTrades: Trade[], opts: AsiaLabOptions): AsiaLabRe
     { name: 'Önceki İşlem', get: (t) => prevTradeBucket(t) },
     { name: 'Hesap Aşaması', get: (t) => stageBucket(t) },
   ];
-  const comboMap = new Map<string, { a: string; b: string; list: Trade[] }>();
-  const singleCount = new Map<string, number>();
-  trades.forEach((t) => {
-    const vals = dims.map((d) => d.get(t));
-    vals.forEach((v, i) => {
-      if (v) singleCount.set(`${i}=${v}`, (singleCount.get(`${i}=${v}`) || 0) + 1);
+  // Değerler alan başına sayıya çevrilir; her alan çifti için sayım tipli dizide, sıralama ölçüsü (güven aralığı
+  // alt sınırı) toplamlar üzerinden. Tam istatistik yalnızca ilk 12 birleşim için hesaplanır.
+  const N = trades.length;
+  const minN = Math.max(3, opts.minSample);
+  const rs = trades.map((t) => (typeof t.rr === 'number' && Number.isFinite(t.rr) ? t.rr : 0));
+  const dict: string[][] = dims.map(() => []);
+  const codes: Int32Array[] = dims.map((d, di) => {
+    const index = new Map<string, number>();
+    const arr = new Int32Array(N);
+    trades.forEach((t, ti) => {
+      const v = d.get(t);
+      if (!v) {
+        arr[ti] = -1;
+        return;
+      }
+      let c = index.get(v);
+      if (c === undefined) {
+        c = dict[di].length;
+        dict[di].push(v);
+        index.set(v, c);
+      }
+      arr[ti] = c;
     });
-    for (let a = 0; a < dims.length; a++) {
-      const va = vals[a];
-      if (!va) continue;
-      for (let b = a + 1; b < dims.length; b++) {
-        const vb = vals[b];
-        if (!vb) continue;
-        const key = `${dims[a].name}: ${va}  +  ${dims[b].name}: ${vb}`;
-        const g = comboMap.get(key);
-        if (g) g.list.push(t);
-        else comboMap.set(key, { a: `${a}=${va}`, b: `${b}=${vb}`, list: [t] });
+    return arr;
+  });
+  const singleN = codes.map((arr, di) => {
+    const cnt = new Uint32Array(dict[di].length);
+    arr.forEach((c) => c >= 0 && cnt[c]++);
+    return cnt;
+  });
+  const cands: Array<{ a: number; b: number; k: number; vb: number; lo: number; exp: number }> = [];
+  for (let a = 0; a < dims.length; a++) {
+    for (let b = a + 1; b < dims.length; b++) {
+      const vb = dict[b].length;
+      if (!dict[a].length || !vb) continue;
+      const size = dict[a].length * vb;
+      const n = new Uint32Array(size);
+      const sum = new Float64Array(size);
+      const sq = new Float64Array(size);
+      const ca = codes[a];
+      const cb = codes[b];
+      for (let t = 0; t < N; t++) {
+        if (ca[t] < 0 || cb[t] < 0) continue;
+        const k = ca[t] * vb + cb[t];
+        n[k]++;
+        sum[k] += rs[t];
+        sq[k] += rs[t] * rs[t];
+      }
+      for (let k = 0; k < size; k++) {
+        const c = n[k];
+        // Birleşim, alanlardan birinin tüm işlemleriyle aynıysa yeni bilgi taşımaz (ör. tek parite süzülmüşken "Parite + X")
+        if (c < minN || c === singleN[a][Math.floor(k / vb)] || c === singleN[b][k % vb]) continue;
+        const mean = sum[k] / c;
+        const sd = c > 1 ? Math.sqrt(Math.max(0, (sq[k] - c * mean * mean) / (c - 1))) : 0;
+        cands.push({ a, b, k, vb, lo: round(c > 1 ? mean - tCrit95(c - 1) * (sd / Math.sqrt(c)) : mean, 3), exp: round(mean, 3) });
       }
     }
-  });
-  const combos: ComboRow[] = Array.from(comboMap.entries())
-    .filter(([, g]) => g.list.length >= Math.max(3, opts.minSample))
-    // Birleşim, alanlardan birinin tüm işlemleriyle aynıysa yeni bilgi taşımaz (ör. tek parite süzülmüşken "Parite + X")
-    .filter(([, g]) => g.list.length !== singleCount.get(g.a) && g.list.length !== singleCount.get(g.b))
-    .map(([label, g]) => ({ label, stats: computeEdge(g.list) }))
-    .sort((a, b) => b.stats.expLo - a.stats.expLo || b.stats.expectancy - a.stats.expectancy)
-    .slice(0, 12);
+  }
+  const combos: ComboRow[] = cands
+    .sort((x, y) => y.lo - x.lo || y.exp - x.exp)
+    .slice(0, 12)
+    .map(({ a, b, k, vb }) => {
+      const ia = Math.floor(k / vb);
+      const ib = k % vb;
+      const list = trades.filter((_, t) => codes[a][t] === ia && codes[b][t] === ib);
+      return { label: `${dims[a].name}: ${dict[a][ia]}  +  ${dims[b].name}: ${dict[b][ib]}`, stats: computeEdge(list) };
+    });
 
   return {
     trades,

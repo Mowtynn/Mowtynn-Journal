@@ -130,6 +130,22 @@ export const SCAN_DIMENSIONS: SetupDimension[] = [
   'asset',
 ];
 
+type ValueOf = (t: Trade, d: SetupDimension) => string;
+
+/**
+ * Boyut değeri tablosu: her işlemin taranan alan değerleri bir kez hesaplanır. Tarama, örtüşme ve ikili birleşimler
+ * aynı değeri onlarca kez istediği için (çoklu alanlarda sıralama + birleştirme) bu, Edge Özeti'ni birkaç kat hızlandırır.
+ */
+function valueTable(trades: Trade[], dims: SetupDimension[]): ValueOf {
+  const table = new Map<Trade, Map<SetupDimension, string>>();
+  for (const t of trades) {
+    const m = new Map<SetupDimension, string>();
+    for (const d of dims) m.set(d, dimensionValue(t, d));
+    table.set(t, m);
+  }
+  return (t, d) => table.get(t)?.get(d) ?? dimensionValue(t, d);
+}
+
 const rOf = (t: Trade) => (typeof t.rr === 'number' && Number.isFinite(t.rr) ? t.rr : 0);
 const edgeOf = (list: Trade[]) => edgeFromR(list.map(rOf), list.map((t) => t.status));
 const labelOf = (d: SetupDimension) => SETUP_DIMENSIONS.find((x) => x.id === d)?.label || d;
@@ -138,6 +154,7 @@ export function computeEdgeSummary(trades: Trade[], minSample = SETUP_MIN_SAMPLE
   const valid = trades.filter((t) => typeof t.rr === 'number' && Number.isFinite(t.rr));
   const sorted = [...valid].sort((a, b) => a.createdAt - b.createdAt);
   indexTradeOrder(sorted);
+  const val = valueTable(sorted, [...SCAN_DIMENSIONS, ...MANAGEMENT_DIMENSIONS]);
 
   const card = buildSetupScorecard(sorted, DEFAULT_SETUP_DIMENSIONS, { minSample });
   const judged = card.rows.filter((r) => r.verdict !== 'LOW_SAMPLE');
@@ -149,7 +166,7 @@ export function computeEdgeSummary(trades: Trade[], minSample = SETUP_MIN_SAMPLE
   for (const d of dims) {
     const groups = new Map<string, Trade[]>();
     for (const t of sorted) {
-      const v = dimensionValue(t, d);
+      const v = val(t, d);
       if (v === UNSPECIFIED) continue;
       const g = groups.get(v);
       if (g) g.push(t);
@@ -183,32 +200,33 @@ export function computeEdgeSummary(trades: Trade[], minSample = SETUP_MIN_SAMPLE
     const k = `${d}=${v}`;
     let x = overallShare.get(k);
     if (x === undefined) {
-      x = sorted.filter((t) => dimensionValue(t, d) === v).length / sorted.length;
+      x = sorted.filter((t) => val(t, d) === v).length / sorted.length;
       overallShare.set(k, x);
     }
     return x;
   };
   const overlapOf = (x: DimensionSlice): DimensionSlice['overlap'] => {
-    const list = sorted.filter((t) => dimensionValue(t, x.dimension) === x.value);
+    const list = sorted.filter((t) => val(t, x.dimension) === x.value);
     let best: DimensionSlice['overlap'];
     for (const d of SCAN_DIMENSIONS) {
       if (d === x.dimension) continue;
       const counts = new Map<string, number>();
       for (const t of list) {
-        const v = dimensionValue(t, d);
+        const v = val(t, d);
         if (v !== UNSPECIFIED) counts.set(v, (counts.get(v) || 0) + 1);
       }
       counts.forEach((c, v) => {
         const pct = c / list.length;
-        const overall = shareOf(d, v);
-        if (pct >= 0.7 && pct - overall >= 0.2 && (!best || pct > best.pct)) best = { label: `${labelOf(d)}: ${v}`, pct };
+        // Genel oran yalnızca aday değerler için (eskiden her değer için tüm işlemler süzülüyordu)
+        if (pct < 0.7 || (best && pct <= best.pct)) return;
+        if (pct - shareOf(d, v) >= 0.2) best = { label: `${labelOf(d)}: ${v}`, pct };
       });
     }
     return best;
   };
   [...leaks, ...strengths].forEach((x) => (x.overlap = overlapOf(x)));
 
-  const pairs = scanPairs(sorted, minSample);
+  const pairs = scanPairs(sorted, minSample, val, PAIR_MIN_LIFT);
   const bestPairs = pairs
     .filter((p) => p.edge.expectancy > 0 && p.lift >= PAIR_MIN_LIFT)
     .sort((a, b) => b.edge.expLo - a.edge.expLo || b.lift - a.lift)
@@ -249,12 +267,12 @@ export function computeEdgeSummary(trades: Trade[], minSample = SETUP_MIN_SAMPLE
     strengths,
     riskSlices,
     managementSlices,
-    rules: buildRules(sorted, card.rows, slices, pairs),
+    rules: buildRules(sorted, card.rows, slices, pairs, val),
     timeToTarget: computeTimeToTarget(sorted),
     bestPairs,
     worstPairs,
     missed: managementMissedR(sorted),
-    testedSlices: slices.length + pairs.length,
+    testedSlices: slices.length + pairs.tested,
     news: { yes: edgeOf(yes), no: edgeOf(no), unknown: sorted.length - yes.length - no.length },
   };
 }
@@ -270,32 +288,39 @@ const round = (v: number, d = 2) => (Number.isFinite(v) ? Number(v.toFixed(d)) :
 
 const DAY_MS = 86_400_000;
 
-function buildRules(sorted: Trade[], setupRows: SetupRow[], slices: DimensionSlice[], pairs: PairSlice[]): EdgeRule[] {
+function buildRules(sorted: Trade[], setupRows: SetupRow[], slices: DimensionSlice[], pairs: PairSlice[], val: ValueOf = dimensionValue): EdgeRule[] {
   const rules: EdgeRule[] = [];
-  const add = (kind: EdgeRule['kind'], title: string, source: EdgeRule['source'], edge: EdgeStats, match: (t: Trade) => boolean) =>
-    rules.push({ kind, title, source, edge, match });
+  // Dışarıya verilen eşleştirici dimensionValue ile (her işlemde çalışır); iç hesaplar önceden hesaplanmış tabloyla
+  const fast = new Map<EdgeRule, (t: Trade) => boolean>();
+  const add = (kind: EdgeRule['kind'], title: string, source: EdgeRule['source'], edge: EdgeStats, match: (t: Trade) => boolean, quick?: (t: Trade) => boolean) => {
+    const r: EdgeRule = { kind, title, source, edge, match };
+    rules.push(r);
+    fast.set(r, quick || match);
+  };
   setupRows.forEach((r) => {
     const match = (t: Trade) => DEFAULT_SETUP_DIMENSIONS.every((d, i) => dimensionValue(t, d) === r.labels[i]);
-    if (r.verdict === 'EDGE') add('TAKE', r.labels.join(' · '), 'Kurulum', r.edge, match);
-    else if (r.verdict === 'LEAK') add('AVOID', r.labels.join(' · '), 'Kurulum', r.edge, match);
+    const quick = (t: Trade) => DEFAULT_SETUP_DIMENSIONS.every((d, i) => val(t, d) === r.labels[i]);
+    if (r.verdict === 'EDGE') add('TAKE', r.labels.join(' · '), 'Kurulum', r.edge, match, quick);
+    else if (r.verdict === 'LEAK') add('AVOID', r.labels.join(' · '), 'Kurulum', r.edge, match, quick);
   });
   slices.forEach((x) => {
     if (signalStrength(x.edge) !== 'CONFIRMED') return;
     const match = (t: Trade) => dimensionValue(t, x.dimension) === x.value;
-    add(x.edge.expectancy > 0 ? 'TAKE' : 'AVOID', `${x.dimensionLabel}: ${x.value}`, 'Alan', x.edge, match);
+    add(x.edge.expectancy > 0 ? 'TAKE' : 'AVOID', `${x.dimensionLabel}: ${x.value}`, 'Alan', x.edge, match, (t) => val(t, x.dimension) === x.value);
   });
   pairs.forEach((p) => {
     if (Math.abs(p.lift) < PAIR_MIN_LIFT || signalStrength(p.edge) !== 'CONFIRMED') return;
     const match = (t: Trade) => dimensionValue(t, p.dims[0]) === p.values[0] && dimensionValue(t, p.dims[1]) === p.values[1];
-    add(p.edge.expectancy > 0 ? 'TAKE' : 'AVOID', p.title, 'Kombinasyon', p.edge, match);
+    add(p.edge.expectancy > 0 ? 'TAKE' : 'AVOID', p.title, 'Kombinasyon', p.edge, match, (t) => val(t, p.dims[0]) === p.values[0] && val(t, p.dims[1]) === p.values[1]);
   });
   // İki yarı testi: tüm işlemler zamana göre ortadan bölünür; kural iki yarıda da aynı yönde mi?
   const mid = Math.floor(sorted.length / 2);
   const firstHalf = sorted.slice(0, mid);
   const secondHalf = sorted.slice(mid);
   rules.forEach((r) => {
-    const first = edgeOf(firstHalf.filter(r.match));
-    const second = edgeOf(secondHalf.filter(r.match));
+    const m = fast.get(r)!;
+    const first = edgeOf(firstHalf.filter(m));
+    const second = edgeOf(secondHalf.filter(m));
     r.halves = { first, second, status: halfStatus(first, second, r.kind === 'TAKE' ? 1 : -1) };
   });
   // Alma kuralları: son 7 günde kurala uymayan işlemler
@@ -303,7 +328,7 @@ function buildRules(sorted: Trade[], setupRows: SetupRow[], slices: DimensionSli
   const recent = sorted.filter((t) => t.createdAt > last - 7 * DAY_MS);
   rules.forEach((r) => {
     if (r.kind !== 'AVOID') return;
-    const hit = recent.filter(r.match);
+    const hit = recent.filter(fast.get(r)!);
     r.recentViolations = { n: hit.length, r: hit.reduce((s, t) => s + rOf(t), 0) };
   });
   return rules.sort((a, b) => (a.kind === b.kind ? b.edge.n - a.edge.n : a.kind === 'TAKE' ? -1 : 1));
@@ -350,47 +375,101 @@ export function computeTimeToTarget(sorted: Trade[]): EdgeSummary['timeToTarget'
  * (işlemleri alanlardan biriyle aynı) atlanır. lift = birleşim beklentisi − alanların tek başına beklentisi
  * (pozitifse iki alanın iyisi, negatifse kötüsüyle kıyaslanır).
  */
-export function scanPairs(trades: Trade[], minSample = SETUP_MIN_SAMPLE): PairSlice[] {
+export function scanPairs(trades: Trade[], minSample = SETUP_MIN_SAMPLE, val: ValueOf = dimensionValue, minLift = 0): PairSlice[] & { tested: number } {
   const need = minSample * 2;
+  // Alanların tek başına sonucu tek geçişte (eskiden her yeni değer için tüm işlemler yeniden süzülüyordu)
   const singles = new Map<string, { n: number; exp: number }>();
-  const single = (d: SetupDimension, v: string) => {
-    const k = `${d}=${v}`;
-    let x = singles.get(k);
-    if (!x) {
-      const list = trades.filter((t) => dimensionValue(t, d) === v);
-      const e = edgeOf(list);
-      x = { n: e.n, exp: e.expectancy };
-      singles.set(k, x);
+  {
+    const acc = new Map<string, { n: number; sum: number }>();
+    for (const t of trades) {
+      const r = rOf(t);
+      for (const d of SCAN_DIMENSIONS) {
+        const k = `${d}=${val(t, d)}`;
+        const x = acc.get(k);
+        if (x) {
+          x.n++;
+          x.sum += r;
+        } else acc.set(k, { n: 1, sum: r });
+      }
     }
-    return x;
-  };
+    acc.forEach((x, k) => singles.set(k, { n: x.n, exp: Math.round((x.sum / x.n) * 1000) / 1000 }));
+  }
+  const single = (d: SetupDimension, v: string) => singles.get(`${d}=${v}`) || { n: 0, exp: 0 };
+  // Değerler alan başına sayıya çevrilir; her alan çifti için önce sayım (tipli dizi), yalnızca eşiği geçen
+  // birleşimlerin işlemleri toplanır. Eskiden her işlem × her çift için metin anahtarlı harita kuruluyordu.
+  const D = SCAN_DIMENSIONS.length;
+  const N = trades.length;
+  const rs = trades.map(rOf);
+  let tested = 0;
+  const dict: string[][] = SCAN_DIMENSIONS.map(() => []);
+  const codes: Int32Array[] = SCAN_DIMENSIONS.map(() => new Int32Array(N));
+  SCAN_DIMENSIONS.forEach((d, di) => {
+    const index = new Map<string, number>();
+    trades.forEach((t, ti) => {
+      const v = val(t, d);
+      if (v === UNSPECIFIED) {
+        codes[di][ti] = -1;
+        return;
+      }
+      let c = index.get(v);
+      if (c === undefined) {
+        c = dict[di].length;
+        dict[di].push(v);
+        index.set(v, c);
+      }
+      codes[di][ti] = c;
+    });
+  });
   const out: PairSlice[] = [];
-  for (let i = 0; i < SCAN_DIMENSIONS.length; i++) {
-    for (let j = i + 1; j < SCAN_DIMENSIONS.length; j++) {
+  for (let i = 0; i < D; i++) {
+    for (let j = i + 1; j < D; j++) {
       const a = SCAN_DIMENSIONS[i];
       const b = SCAN_DIMENSIONS[j];
-      const groups = new Map<string, { va: string; vb: string; list: Trade[] }>();
-      for (const t of trades) {
-        const va = dimensionValue(t, a);
-        const vb = dimensionValue(t, b);
-        if (va === UNSPECIFIED || vb === UNSPECIFIED) continue;
-        const k = `${va}\u0000${vb}`;
-        const g = groups.get(k);
-        if (g) g.list.push(t);
-        else groups.set(k, { va, vb, list: [t] });
+      const ca = codes[i];
+      const cb = codes[j];
+      const vb = dict[j].length;
+      if (!dict[i].length || !vb) continue;
+      const counts = new Uint32Array(dict[i].length * vb);
+      const sums = new Float64Array(dict[i].length * vb);
+      for (let t = 0; t < N; t++) {
+        if (ca[t] < 0 || cb[t] < 0) continue;
+        const k = ca[t] * vb + cb[t];
+        counts[k]++;
+        sums[k] += rs[t];
       }
-      groups.forEach(({ va, vb, list }) => {
-        if (list.length < need) return;
+      const keep = new Map<number, Trade[]>();
+      counts.forEach((c, k) => {
+        if (c < need) return;
+        const va = dict[i][Math.floor(k / vb)];
+        const vbv = dict[j][k % vb];
         const sa = single(a, va);
-        const sb = single(b, vb);
-        if (list.length === sa.n || list.length === sb.n) return; // birleşim alanlardan biriyle aynı işlemler
+        const sb = single(b, vbv);
+        if (c === sa.n || c === sb.n) return; // birleşim alanlardan biriyle aynı işlemler
+        tested++;
+        // Fark eşiğinin altındaki birleşimler hiçbir yerde gösterilmez: tam istatistik hesaplanmaz
+        const exp = Math.round((sums[k] / c) * 1000) / 1000;
+        const lift = exp >= 0 ? exp - Math.max(sa.exp, sb.exp) : exp - Math.min(sa.exp, sb.exp);
+        if (Math.abs(lift) + 1e-9 < minLift) return;
+        keep.set(k, []);
+      });
+      if (!keep.size) continue;
+      for (let t = 0; t < N; t++) {
+        if (ca[t] < 0 || cb[t] < 0) continue;
+        const list = keep.get(ca[t] * vb + cb[t]);
+        if (list) list.push(trades[t]);
+      }
+      keep.forEach((list, k) => {
+        const va = dict[i][Math.floor(k / vb)];
+        const vbv = dict[j][k % vb];
+        const sa = single(a, va);
+        const sb = single(b, vbv);
         const edge = edgeOf(list);
         const lift = edge.expectancy >= 0 ? edge.expectancy - Math.max(sa.exp, sb.exp) : edge.expectancy - Math.min(sa.exp, sb.exp);
-        out.push({ dims: [a, b], values: [va, vb], title: `${labelOf(a)}: ${va} + ${labelOf(b)}: ${vb}`, edge, lift });
+        out.push({ dims: [a, b], values: [va, vbv], title: `${labelOf(a)}: ${va} + ${labelOf(b)}: ${vbv}`, edge, lift });
       });
     }
   }
-  return out;
+  return Object.assign(out, { tested });
 }
 
 /**
@@ -418,16 +497,19 @@ export function edgeReportRows(trades: Trade[], minSample = SETUP_MIN_SAMPLE): R
       'Hüküm': VERDICT_TEXT[v] + (v !== 'LOW_SAMPLE' && signalStrength(e) === 'EARLY' ? ' (Erken Sinyal)' : ''),
     });
   };
+  const val = valueTable(valid, SETUP_DIMENSIONS.map((d) => d.id));
   for (const d of SETUP_DIMENSIONS) {
     const groups = new Map<string, Trade[]>();
     for (const t of valid) {
-      const v = dimensionValue(t, d.id);
+      const v = val(t, d.id);
       if (v === UNSPECIFIED) continue;
       (groups.get(v) || groups.set(v, []).get(v)!).push(t);
     }
+    // Sıralama için beklenti bir kez hesaplanır (karşılaştırıcıda her seferinde yeniden hesaplanıyordu)
     [...groups.entries()]
-      .sort((a, b) => edgeOf(b[1]).expectancy - edgeOf(a[1]).expectancy)
-      .forEach(([value, list]) => push(d.label, value, list, MANAGEMENT_DIMENSIONS.includes(d.id) ? 'Yönetim' : d.id === 'accountStage' ? 'Bağlam' : 'Giriş'));
+      .map(([value, list]) => ({ value, list, exp: edgeOf(list).expectancy }))
+      .sort((a, b) => b.exp - a.exp)
+      .forEach(({ value, list }) => push(d.label, value, list, MANAGEMENT_DIMENSIONS.includes(d.id) ? 'Yönetim' : d.id === 'accountStage' ? 'Bağlam' : 'Giriş'));
   }
   const byRisk = new Map<number, Trade[]>();
   for (const t of valid) {
@@ -468,11 +550,11 @@ export function edgeReportRows(trades: Trade[], minSample = SETUP_MIN_SAMPLE): R
   }
   // İkili birleşimler: alanların tek başına sonucundan belirgin farklı olanlar
   // İyi ve kötü kombinasyonlar ayrı bölümler: önce en iyiler (beklentiye göre), sonra en kötüler (en çok R kaybettiren önce)
-  const pairs = scanPairs(valid, minSample).filter((p) => Math.abs(p.lift) >= PAIR_MIN_LIFT);
+  const pairs = scanPairs(valid, minSample, val, PAIR_MIN_LIFT).filter((p) => Math.abs(p.lift) >= PAIR_MIN_LIFT);
   const pushPair = (p: PairSlice, label: string) => {
     const [a, b] = p.dims;
     const [va, vb] = p.values;
-    push(label, p.title, valid.filter((t) => dimensionValue(t, a) === va && dimensionValue(t, b) === vb), 'Kombinasyon');
+    push(label, p.title, valid.filter((t) => val(t, a) === va && val(t, b) === vb), 'Kombinasyon');
   };
   pairs.filter((p) => p.lift > 0).sort((a, b) => b.edge.expectancy - a.edge.expectancy).forEach((p) => pushPair(p, 'Kombinasyon · En İyi'));
   pairs.filter((p) => p.lift < 0).sort((a, b) => a.edge.netR - b.edge.netR).forEach((p) => pushPair(p, 'Kombinasyon · En Kötü'));
@@ -486,7 +568,7 @@ export function edgeReportRows(trades: Trade[], minSample = SETUP_MIN_SAMPLE): R
   });
   // Kurulumlar (varsayılan boyutların birleşimi)
   buildSetupScorecard(valid, DEFAULT_SETUP_DIMENSIONS, { minSample }).rows.forEach((r) => {
-    const list = valid.filter((t) => DEFAULT_SETUP_DIMENSIONS.map((d) => dimensionValue(t, d)).join(' | ') === r.key);
+    const list = valid.filter((t) => DEFAULT_SETUP_DIMENSIONS.map((d) => val(t, d)).join(' | ') === r.key);
     push('Kurulum (Asia Range · Session · Entry Model)', r.labels.join(' · '), list, 'Kurulum');
   });
   return rows;

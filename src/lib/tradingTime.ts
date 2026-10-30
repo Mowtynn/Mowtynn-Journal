@@ -36,12 +36,44 @@ export interface NyParts {
 
 const nyCache = new Map<number, NyParts | null>();
 
+/**
+ * Hızlı yol: ABD yaz saati kuralı (2007'den beri) — Mart'ın 2. Pazarı 02:00 yerel (07:00 UTC) başlar,
+ * Kasım'ın 1. Pazarı 02:00 yerel (06:00 UTC) biter. Intl.formatToParts işlem başına pahalı olduğu için
+ * 2007–2099 arası aritmetikle çözülür (Intl ile birebir aynı sonuç, testte doğrulanır); diğer yıllar Intl'e düşer.
+ */
+const pad2f = (n: number) => (n < 10 ? `0${n}` : String(n));
+const dstBounds = new Map<number, [number, number]>();
+function fastNyParts(ts: number): NyParts | null {
+  const year = new Date(ts).getUTCFullYear();
+  if (year < 2007 || year > 2099) return null;
+  let b = dstBounds.get(year);
+  if (!b) {
+    const marDow = new Date(Date.UTC(year, 2, 1)).getUTCDay();
+    const novDow = new Date(Date.UTC(year, 10, 1)).getUTCDay();
+    b = [Date.UTC(year, 2, 1 + ((7 - marDow) % 7) + 7, 7), Date.UTC(year, 10, 1 + ((7 - novDow) % 7), 6)];
+    dstBounds.set(year, b);
+  }
+  const offsetH = ts >= b[0] && ts < b[1] ? 4 : 5;
+  const d = new Date(ts - offsetH * 3_600_000);
+  return {
+    date: `${d.getUTCFullYear()}-${pad2f(d.getUTCMonth() + 1)}-${pad2f(d.getUTCDate())}`,
+    hour: d.getUTCHours(),
+    minute: d.getUTCMinutes(),
+    weekday: d.getUTCDay(),
+  };
+}
+
 export function getNyParts(timestamp: number): NyParts | null {
   if (typeof timestamp !== 'number' || !Number.isFinite(timestamp)) return null;
   const cached = nyCache.get(timestamp);
   if (cached !== undefined) return cached;
 
-  let result: NyParts | null = null;
+  let result: NyParts | null = fastNyParts(timestamp);
+  if (result) {
+    if (nyCache.size > 5000) nyCache.clear();
+    nyCache.set(timestamp, result);
+    return result;
+  }
   try {
     const parts = getNyFormatter().formatToParts(new Date(timestamp));
     const get = (type: string) => parts.find((p) => p.type === type)?.value || '';

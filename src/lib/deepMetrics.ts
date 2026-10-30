@@ -55,6 +55,13 @@ export interface DeepMetrics {
   last10: { n: number; grossProfit: number; grossLoss: number; avgR: number };
 }
 
+const MONTHS_TR = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+/** "5 Eki" (NY günü). toLocaleDateString işlem başına pahalı; aynı biçim elle üretilir. */
+const dayLabel = (ts: number) => {
+  const d = nyWallDate(ts);
+  return `${d.getDate()} ${MONTHS_TR[d.getMonth()]}`;
+};
+
 const rOf = (t: Trade) => (typeof t.rr === 'number' && Number.isFinite(t.rr) ? t.rr : 0);
 
 const side = (list: Trade[]): SideStats => {
@@ -85,7 +92,7 @@ export function computeDeepMetrics(trades: Trade[]): DeepMetrics {
     }
     return {
       timestamp: t.createdAt,
-      label: nyWallDate(t.createdAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }),
+      label: dayLabel(t.createdAt),
       cumulativePnl: equity,
       drawdown: equity - peak,
       trade: t,

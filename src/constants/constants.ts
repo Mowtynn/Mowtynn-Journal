@@ -77,15 +77,29 @@ export const normalizeNewsDays = (list?: unknown): string[] => {
 export const NEWS_DAYS_EVENT = "tj_news_days_updated";
 
 /** Analiz ekranları için güncel Var / Yok etiketleri (localStorage'dan okunur). */
+// Analizler bu etiketi işlem başına defalarca ister: ham değer değişmedikçe ayrıştırma tekrarlanmaz
+let newsLabelCache: { raw: string | null; value: { yes: string; no: string } } | null = null;
+let newsStorageMissing = false;
 export function getNewsDayLabels(): { yes: string; no: string } {
-  try {
-    const raw = localStorage.getItem("trading_news_days_list");
-    if (raw) {
-      const [yes, no] = normalizeNewsDays(JSON.parse(raw));
-      return { yes, no };
+  let raw: string | null = null;
+  if (!newsStorageMissing) {
+    try {
+      raw = localStorage.getItem("trading_news_days_list");
+    } catch (e) {
+      // localStorage yok (sunucu / test ortamı): her çağrıda yeniden denenmez
+      newsStorageMissing = typeof localStorage === "undefined";
     }
-  } catch (e) {}
-  return { yes: DEFAULT_NEWS_DAYS[0], no: DEFAULT_NEWS_DAYS[1] };
+  }
+  if (newsLabelCache && newsLabelCache.raw === raw) return newsLabelCache.value;
+  let value = { yes: DEFAULT_NEWS_DAYS[0], no: DEFAULT_NEWS_DAYS[1] };
+  if (raw) {
+    try {
+      const [yes, no] = normalizeNewsDays(JSON.parse(raw));
+      value = { yes, no };
+    } catch (e) {}
+  }
+  newsLabelCache = { raw, value };
+  return value;
 }
 
 export const DEFAULT_DEFINITION_TITLES: DefinitionTitles = {

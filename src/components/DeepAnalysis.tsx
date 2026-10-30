@@ -2,6 +2,11 @@ import { EASE } from '../lib/motion';
 import { smartUpper } from '../constants/constants';
 import React, { useState, useMemo, useEffect } from "react";
 import { nyIsoWeekKey } from "../lib/advancedMetrics";
+
+// Sermaye eğrisi her noktada tarih yazar: biçimleyiciler bir kez kurulur (toLocaleDateString her çağrıda yenisini kurar)
+const TR_LONG = new Intl.DateTimeFormat("tr-TR", { day: "numeric", month: "long", year: "numeric" });
+const TR_SHORT = new Intl.DateTimeFormat("tr-TR", { day: "numeric", month: "short" });
+const TR_MONTH = new Intl.DateTimeFormat("tr-TR", { month: "long", year: "numeric" });
 import { motion, AnimatePresence } from "motion/react";
 import { computeDeepMetrics } from "../lib/deepMetrics";
 import { Trade, DefinitionTitles } from "../types";
@@ -111,7 +116,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
       return metrics.equityCurve.map((pt) => ({
         ...pt,
         fullTitle: pt.trade 
-          ? nyWallDate(pt.trade.createdAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })
+          ? TR_LONG.format(nyWallDate(pt.trade.createdAt))
           : pt.label || 'İşlem Detayı',
         trades: pt.trade ? [pt.trade] : []
       }));
@@ -126,8 +131,8 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
       
       if (equityFilter === 'daily') {
         key = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
-        label = date.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
-        fullTitle = date.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
+        label = TR_SHORT.format(date);
+        fullTitle = TR_LONG.format(date);
       } else if (equityFilter === 'weekly') {
         // ISO hafta (Pazartesi–Pazar, NY günü): projedeki diğer haftalık hesaplarla aynı tanım
         key = nyIsoWeekKey(pt.timestamp);
@@ -136,7 +141,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
         fullTitle = `${wy} Hafta ${wn}`;
       } else if (equityFilter === 'monthly') {
         key = `${date.getFullYear()}-${date.getMonth()}`;
-        label = date.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' });
+        label = TR_MONTH.format(date);
         fullTitle = label;
       }
 

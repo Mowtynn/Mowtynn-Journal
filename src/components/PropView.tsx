@@ -102,7 +102,7 @@ function Bar({ pct, tone }: { pct: number; tone: 'blue' | 'risk' }) {
   const color = tone === 'blue' ? 'bg-blue-500' : p >= 80 ? 'bg-rose-500' : p >= 50 ? 'bg-amber-500' : 'bg-emerald-500';
   return (
     <div className="h-1.5 rounded-full bg-zinc-800 overflow-hidden">
-      <div className={`h-full ${color} transition-all`} style={{ width: `${p}%` }} />
+      <div className={`h-full ${color} transition-[width] duration-300`} style={{ width: `${p}%` }} />
     </div>
   );
 }
