@@ -310,7 +310,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                     </div>
                   </div>
                   <div className="hidden xl:block w-px h-8 bg-zinc-800"></div>
-                  <div className="flex items-center gap-2 text-zinc-400 text-xs xl:text-sm font-sans min-w-0" title={formatDate(currentTrade.createdAt)}>
+                  <div className="flex items-center gap-2 text-zinc-400 text-xs xl:text-sm font-sans min-w-0">
                     <Calendar size={14} className="text-zinc-500 shrink-0"/>
                     <span className="truncate whitespace-nowrap">{formatDate(currentTrade.createdAt)}</span>
                   </div>
@@ -452,7 +452,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                                     ? 'bg-blue-500/20 text-blue-300 border-blue-500/30'
                                     : 'bg-amber-500/20 text-amber-300 border-amber-500/30';
                                 return (
-                                  <span className="flex items-center gap-1.5 min-w-0 max-w-full" title={currentTrade.platform || 'Hesapsız'}>
+                                  <span className="flex items-center gap-1.5 min-w-0 max-w-full">
                                     <span className="truncate min-w-0">{currentTrade.platform || 'Hesapsız'}</span>
                                     <span className={`shrink-0 text-[9px] px-1.5 py-0.2 rounded-md font-bold uppercase border ${catClass}`}>
                                       {getTradeStageLabel(currentTrade) || ACCOUNT_CATEGORY_LABELS[cat]}
@@ -808,7 +808,7 @@ function ContextRow({
         {icon}
         <span className="text-[9px] font-bold uppercase tracking-wider font-sans truncate">{smartUpper(label)}</span>
       </div>
-      <div className={`text-[11px] font-bold font-sans uppercase truncate ${valueColor || 'text-zinc-300'}`} title={typeof displayValue === 'string' ? displayValue : undefined}>
+      <div className={`text-[11px] font-bold font-sans uppercase truncate ${valueColor || 'text-zinc-300'}`}>
         {text}
       </div>
     </div>

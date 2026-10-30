@@ -124,7 +124,6 @@ function PricePathCard({ trade, path }: { trade: Trade; path: PricePath }) {
         <div
           className={`absolute top-2 -translate-x-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full border-2 border-zinc-950 shadow ${exit > 0 ? 'bg-emerald-400' : exit < 0 ? 'bg-rose-400' : 'bg-zinc-300'}`}
           style={{ left: x(exit) }}
-          title={`Çıkış ${formatR(exit)}`}
         />
       </div>
 
@@ -178,12 +177,11 @@ export function SetupHistoryPanel({ insight }: { insight: TradeInsight }) {
   const v = VERDICT[s.verdict];
   // Kurulum değerleri işlem bağlamında zaten görünür; burada yalnızca ipucu olarak
   const setupTitle = s.labels.map((l) => `${l.dimension}: ${l.value === UNSPECIFIED ? '—' : l.value}`).join(' · ');
-  return (
     <section className="h-full flex flex-col gap-1">
       <h4 className="heading-2">
         <History size={12} /> KURULUM GEÇMİŞİ
       </h4>
-      <div className="flex-1 bg-zinc-900/40 border border-zinc-800/60 rounded-xl px-3 py-2 flex flex-col justify-center gap-2" title={setupTitle}>
+      <div className="flex-1 bg-zinc-900/40 border border-zinc-800/60 rounded-xl px-3 py-2 flex flex-col justify-center gap-2">
         {e.n === 0 ? (
           <p className="text-[11px] text-zinc-500">Bu kurulumla başka işlem yok — ilk örnek.</p>
         ) : (
