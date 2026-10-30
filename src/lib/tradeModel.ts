@@ -91,8 +91,10 @@ export function normalizeTrade<T extends Partial<Trade> & Record<string, any>>(r
   }
   // İşlem yönetimi: yalnızca tanımlı seçenekler; "Plana Göre" diğerleriyle birlikte olamaz
   if (t.management !== undefined) {
+    // Eski adı "BE'ye Çekildi" → "BE Çekildi"
+    const norm = (v: string) => v.trim().toLocaleLowerCase('tr-TR').replace("be'ye çekildi", 'be çekildi');
     const list = Array.isArray(t.management)
-      ? MANAGEMENT_TYPES.filter((x) => (t.management as unknown[]).some((v) => typeof v === 'string' && v.trim().toLocaleLowerCase('tr-TR') === x.toLocaleLowerCase('tr-TR')))
+      ? MANAGEMENT_TYPES.filter((x) => (t.management as unknown[]).some((v) => typeof v === 'string' && norm(v) === x.toLocaleLowerCase('tr-TR')))
       : [];
     const clean = list.includes('Plana Göre') && list.length > 1 ? list.filter((x) => x !== 'Plana Göre') : list;
     if (clean.length) t.management = clean;

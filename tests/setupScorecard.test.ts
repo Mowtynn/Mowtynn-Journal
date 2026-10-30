@@ -106,8 +106,8 @@ test('planlanan R:R, stop / Asia range, günün işlemi, işlem yönetimi', asyn
   assert.equal(dimensionValue(a, 'tradeOfDay'), '1. İşlem');
   assert.equal(dimensionValue(b, 'tradeOfDay'), '2. İşlem');
   const n = normalizeTrade({ ...x, management: ['Plana Göre', "be'ye çekildi", 'x'] } as any);
-  assert.deepEqual(n.management, ["BE'ye Çekildi"]);
-  const be = t(0, { status: 'BREAKEVEN', stopPips: 10, tpPips: 30, afterExitTp: true, management: ["BE'ye Çekildi"] });
+  assert.deepEqual(n.management, ["BE Çekildi"]);
+  const be = t(0, { status: 'BREAKEVEN', stopPips: 10, tpPips: 30, afterExitTp: true, management: ["BE Çekildi"] });
   assert.deepEqual(managementMissedR([be, x]), { n: 1, measured: 1, missedR: 3 });
   assert.equal(dimensionValue(be, 'afterExitTp'), "Çıkış Sonrası TP'ye Gitti");
 });

@@ -5,7 +5,7 @@ export type AccountCategory = 'ALL' | 'FUNDED' | 'CHALLENGE' | 'DEMO';
 export const ASIA_RANGE_TYPES = ['Range', 'Trend', 'Swept'] as const;
 export type AsiaRangeType = (typeof ASIA_RANGE_TYPES)[number];
 
-export const MANAGEMENT_TYPES = ['Plana Göre', "BE'ye Çekildi", 'Kısmi Kâr', 'Erken Kapatıldı'] as const;
+export const MANAGEMENT_TYPES = ['Plana Göre', "BE Çekildi", 'Kısmi Kâr', 'Erken Kapatıldı'] as const;
 export type ManagementType = (typeof MANAGEMENT_TYPES)[number];
 
 export interface Trade {
@@ -37,7 +37,7 @@ export interface Trade {
   /** Eski sürümün strateji alanı: artık formda, filtrelerde ve analizlerde yok; eski kayıtlarda saklı kalır. */
   strategy?: string;
   asiaRange?: AsiaRangeType; // Asia Range davranışı: Range / Trend / Swept
-  management?: ManagementType[]; // İşlem yönetimi: Plana Göre / BE'ye Çekildi / Kısmi Kâr / Erken Kapatıldı
+  management?: ManagementType[]; // İşlem yönetimi: Plana Göre / BE Çekildi / Kısmi Kâr / Erken Kapatıldı
   afterExitTp?: boolean;    // Çıkıştan sonra fiyat TP'ye ulaştı mı (BE / erken kapanan işlemlerde)
   sweepTime?: string;       // Sweep saati, New York saatiyle "HH:mm" (Asia Range seçiminden tamamen bağımsız)
   asiaRangeFvg?: string;    // Asia Range FVG (Tanımlamalar'dan yönetilir)

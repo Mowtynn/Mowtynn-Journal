@@ -23,7 +23,7 @@ test('sızıntı ve güç: yeterli örneklemli tekil alan değerleri', () => {
   const few = computeEdgeSummary(list.filter((x) => x.session !== 'London' || x.createdAt > NOW - 200 * DAY));
   assert.ok(!few.strengths.some((x) => x.value === 'London'));
   // yönetim boyutları giriş önerilerine karışmaz
-  const m = computeEdgeSummary(Array.from({ length: 12 }, (_, i) => t(i % 3 ? 2 : -1, { management: ["BE'ye Çekildi"] }, i)).concat(Array.from({ length: 12 }, (_, i) => t(-1, { management: ['Plana Göre'] }, i + 20))));
+  const m = computeEdgeSummary(Array.from({ length: 12 }, (_, i) => t(i % 3 ? 2 : -1, { management: ["BE Çekildi"] }, i)).concat(Array.from({ length: 12 }, (_, i) => t(-1, { management: ['Plana Göre'] }, i + 20))));
   assert.ok(!m.strengths.concat(m.leaks).some((x) => x.dimension === 'management'));
   assert.ok(m.managementSlices.some((x) => x.dimension === 'management'));
   assert.deepEqual(s.riskSlices.map((r) => [r.riskPct, r.edge.n]), [[0.5, 10], [1, 8]]);

@@ -499,68 +499,66 @@ export const SetupChips = React.memo(function SetupChips({
 
       </div>
 
-      {/* İŞLEM YÖNETİMİ (çoklu) + çıkış sonrası TP sorusu */}
-      <div className="pt-3 border-t border-zinc-800/60 flex flex-col gap-3">
-        <div className="flex flex-col">
-          <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
+      {/* İŞLEM YÖNETİMİ (çoklu) + çıkış sonrası TP sorusu aynı satırda: soru açılınca kart uzamaz */}
+      <div className="pt-3 border-t border-zinc-800/60 flex flex-col">
+        <div className="flex items-center justify-between gap-2 mb-1 h-6">
+          <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide flex items-center gap-1.5 font-sans">
             <Zap size={12} className="text-sky-400 shrink-0" />
             {L("management")}
           </span>
-          <div className="flex flex-wrap gap-1.5">
-            {MANAGEMENT_TYPES.map((m) => {
-              const isActive = management.includes(m);
-              return (
-                <button
-                  key={m}
-                  type="button"
-                  data-selected={isActive}
-                  onClick={() => {
-                    if (isActive) setManagement(management.filter((x) => x !== m));
-                    // "Plana Göre" tek başına; diğerleri seçilince kalkar
-                    else if (m === "Plana Göre") setManagement([m]);
-                    else setManagement([...management.filter((x) => x !== "Plana Göre"), m]);
-                  }}
-                  className={`${CHIP_BASE} ${
-                    isActive
-                      ? "bg-sky-500/20 text-sky-300 border-sky-500/60 shadow-xs"
-                      : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
-                  }`}
-                >
-                  {m}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {afterExitTpAsked(tradeStatus, management) && (
-          <div className="flex flex-col">
-            <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
-              <Target size={12} className="text-sky-400 shrink-0" />
-              Çıkış Sonrası TP'ye Ulaştı mı?
+          {afterExitTpAsked(tradeStatus, management) && (
+            <span className="flex items-center gap-1.5 min-w-0">
+              <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide font-sans truncate" title="Çıkıştan sonra fiyat TP'ye ulaştı mı?">
+                Sonra TP'ye Gitti mi?
+              </span>
+              <span className="flex items-center bg-zinc-950/80 border border-zinc-800/90 rounded-lg p-0.5 gap-0.5 shrink-0">
+                {([true, false] as const).map((v) => {
+                  const isSelected = afterExitTp === v;
+                  return (
+                    <button
+                      key={String(v)}
+                      type="button"
+                      data-selected={isSelected}
+                      onClick={() => setAfterExitTp(isSelected ? null : v)}
+                      className={`h-5 px-2 rounded-md text-[10px] font-sans font-bold uppercase transition-ui select-none border cursor-pointer ${
+                        isSelected
+                          ? "bg-sky-500/20 text-sky-300 border-sky-500/40"
+                          : "border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
+                      }`}
+                    >
+                      {v ? "Evet" : "Hayır"}
+                    </button>
+                  );
+                })}
+              </span>
             </span>
-            <div className="w-full grid grid-cols-2 bg-zinc-950/80 border border-zinc-800/90 rounded-xl p-1 gap-1.5 h-9 sm:h-10 shadow-inner max-w-xs">
-              {([true, false] as const).map((v) => {
-                const isSelected = afterExitTp === v;
-                return (
-                  <button
-                    key={String(v)}
-                    type="button"
-                    data-selected={isSelected}
-                    onClick={() => setAfterExitTp(isSelected ? null : v)}
-                    className={`min-w-0 h-full flex items-center justify-center px-2 rounded-lg text-xs font-sans font-bold tracking-wide uppercase transition-ui duration-150 select-none border cursor-pointer ${
-                      isSelected
-                        ? "bg-sky-500/20 text-sky-300 border-sky-500/40 shadow-xs"
-                        : "border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
-                    }`}
-                  >
-                    {v ? "Evet" : "Hayır"}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
+          )}
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {MANAGEMENT_TYPES.map((m) => {
+            const isActive = management.includes(m);
+            return (
+              <button
+                key={m}
+                type="button"
+                data-selected={isActive}
+                onClick={() => {
+                  if (isActive) setManagement(management.filter((x) => x !== m));
+                  // "Plana Göre" tek başına; diğerleri seçilince kalkar
+                  else if (m === "Plana Göre") setManagement([m]);
+                  else setManagement([...management.filter((x) => x !== "Plana Göre"), m]);
+                }}
+                className={`${CHIP_BASE} ${
+                  isActive
+                    ? "bg-sky-500/20 text-sky-300 border-sky-500/60 shadow-xs"
+                    : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
+                }`}
+              >
+                {m}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
     </div>

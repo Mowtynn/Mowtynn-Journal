@@ -471,7 +471,7 @@ export function tradeOfDayBucket(t: Pick<Trade, 'id'>): string | null {
   return n === undefined ? null : n === 1 ? '1. İşlem' : n === 2 ? '2. İşlem' : '3.+ İşlem';
 }
 
-/** İşlem yönetimi: seçilen yönetim adımları birleşik ("BE'ye Çekildi + Kısmi Kâr") */
+/** İşlem yönetimi: seçilen yönetim adımları birleşik ("BE Çekildi + Kısmi Kâr") */
 export function managementBucket(t: Pick<Trade, 'management'>): string | null {
   return Array.isArray(t.management) && t.management.length ? [...t.management].join(' + ') : null;
 }

@@ -452,9 +452,9 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                                     ? 'bg-blue-500/20 text-blue-300 border-blue-500/30'
                                     : 'bg-amber-500/20 text-amber-300 border-amber-500/30';
                                 return (
-                                  <span className="inline-flex items-center gap-1.5">
-                                    <span>{currentTrade.platform || 'Hesapsız'}</span>
-                                    <span className={`text-[9px] px-1.5 py-0.2 rounded-md font-bold uppercase border ${catClass}`}>
+                                  <span className="flex items-center gap-1.5 min-w-0 max-w-full" title={currentTrade.platform || 'Hesapsız'}>
+                                    <span className="truncate min-w-0">{currentTrade.platform || 'Hesapsız'}</span>
+                                    <span className={`shrink-0 text-[9px] px-1.5 py-0.2 rounded-md font-bold uppercase border ${catClass}`}>
                                       {getTradeStageLabel(currentTrade) || ACCOUNT_CATEGORY_LABELS[cat]}
                                     </span>
                                   </span>
@@ -462,7 +462,6 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                               })()
                             } 
                             icon={<Monitor size={14} className="text-zinc-400"/>} 
-                            wide
                           />
                           <ContextRow
                             label={smartUpper(cleanDefinitionTitleString(definitionTitles.asiaRange) || "ASIA RANGE")}
@@ -554,29 +553,34 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                           />
                           <ContextRow
                             label={smartUpper(cleanDefinitionTitleString(definitionTitles.management) || "İŞLEM YÖNETİMİ")}
-                            value={
-                              currentTrade.management?.length
-                                ? `${currentTrade.management.join(', ')}${typeof currentTrade.afterExitTp === 'boolean' ? ` · Çıkış Sonrası TP: ${currentTrade.afterExitTp ? 'Evet' : 'Hayır'}` : ''}`
-                                : typeof currentTrade.afterExitTp === 'boolean' ? `Çıkış Sonrası TP: ${currentTrade.afterExitTp ? 'Evet' : 'Hayır'}` : undefined
-                            }
+                            value={currentTrade.management?.length ? currentTrade.management.join(', ') : undefined}
                             icon={<Zap size={14} className="text-sky-400"/>}
                           />
-                          {/* 3c. MAE (PİP) */}
-                          {currentTrade.maePips !== undefined && currentTrade.maePips !== null && !(insight && insight.path.maeR !== null) && (
-                            <ContextRow 
-                              label="MAE (PİP)" 
-                              value={`${currentTrade.maePips} Pip`} 
-                              icon={<TrendingDown size={14} className="text-orange-400"/>} 
-                            />
-                          )}
-                          {/* 3d. MFE (PİP) */}
-                          {currentTrade.mfePips !== undefined && currentTrade.mfePips !== null && !(insight && insight.path.mfeR !== null) && (
-                            <ContextRow 
-                              label="MFE (PİP)" 
-                              value={`${currentTrade.mfePips} Pip`} 
-                              icon={<TrendingUp size={14} className="text-cyan-400"/>} 
-                            />
-                          )}
+                          <ContextRow
+                            label="ÇIKIŞ SONRASI TP"
+                            value={typeof currentTrade.afterExitTp === 'boolean' ? (currentTrade.afterExitTp ? 'Evet' : 'Hayır') : undefined}
+                            icon={<Target size={14} className="text-sky-400"/>}
+                          />
+                          {/* MAE / MFE (pip): fiyat yolu panelinde R olarak gösterilmiyorsa; ikisi birlikte satır olur */}
+                          {(() => {
+                            const showMae = currentTrade.maePips !== undefined && currentTrade.maePips !== null && !(insight && insight.path.maeR !== null);
+                            const showMfe = currentTrade.mfePips !== undefined && currentTrade.mfePips !== null && !(insight && insight.path.mfeR !== null);
+                            if (!showMae && !showMfe) return null;
+                            return (
+                              <>
+                                <ContextRow
+                                  label="MAE (PİP)"
+                                  value={typeof currentTrade.maePips === 'number' ? `${currentTrade.maePips} Pip` : undefined}
+                                  icon={<TrendingDown size={14} className="text-orange-400"/>}
+                                />
+                                <ContextRow
+                                  label="MFE (PİP)"
+                                  value={typeof currentTrade.mfePips === 'number' ? `${currentTrade.mfePips} Pip` : undefined}
+                                  icon={<TrendingUp size={14} className="text-cyan-400"/>}
+                                />
+                              </>
+                            );
+                          })()}
                         </div>
                       </section>
                     );
