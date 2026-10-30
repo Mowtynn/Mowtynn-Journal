@@ -2135,6 +2135,9 @@ export default function App() {
     setGlobalSelectedPlanFidelity,
   ]);
 
+  // "Günün kaçıncı işlemi" ve Asia Range büyüklüğü hesaplardan bağımsız, tüm işlemler üzerinden bir kez indekslenir.
+  // Filtreden ÖNCE kurulur: Günün İşlemi / Asia Range Büyüklüğü filtreleri yeni eklenen işlemi de doğru görsün.
+  useMemo(() => setGlobalTradeOrder(trades), [trades]);
   const filteredGlobalTrades = useMemo(
     () =>
       applyGlobalFilters(trades, {
@@ -2170,8 +2173,6 @@ export default function App() {
     [filteredGlobalTrades],
   );
   // Ana panel: beklentinin güven aralığı ve Edge Durumu
-  // "Günün kaçıncı işlemi" hesaplardan bağımsız, tüm işlemler üzerinden sayılır
-  useMemo(() => setGlobalTradeOrder(trades), [trades]);
   const edgeDrift = useMemo(() => computeEdgeDrift(filteredGlobalTrades), [filteredGlobalTrades]);
   const overallEdge = useMemo(
     () => edgeFromR(filteredGlobalTrades.map((t) => (typeof t.rr === "number" && Number.isFinite(t.rr) ? t.rr : 0)), filteredGlobalTrades.map((t) => t.status)),

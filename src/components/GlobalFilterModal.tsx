@@ -38,7 +38,11 @@ import {
 import { ASIA_RANGE_TYPES, DefinitionTitles } from '../types';
 import { DEFAULT_DATE_LIMIT, EMPTY_EXTRA_FILTERS, countExtraFilters, FILTER_DIMENSIONS, type ExtraTradeFilters, type FilterDimension } from '../lib/tradeFilters';
 import { dimensionValue, SETUP_DIMENSIONS, UNSPECIFIED } from '../lib/setupScorecard';
-import { HOLD_BUCKETS, PLANNED_RR_BUCKETS, STOP_RANGE_BUCKETS, SWEEP_DELAY_BUCKETS, sweepBucketOrder } from '../lib/asiaAnalytics';
+import { HOLD_BUCKETS, PLANNED_RR_BUCKETS, RANGE_SIZE_BUCKETS, STOP_RANGE_BUCKETS, SWEEP_DELAY_BUCKETS, sweepBucketOrder } from '../lib/asiaAnalytics';
+import { WEEKDAY_NAMES_TR } from '../lib/tradingTime';
+
+/** Gün filtresi seçenekleri Pazartesi'den başlar */
+const WEEKDAY_ORDER = [...WEEKDAY_NAMES_TR.slice(1), WEEKDAY_NAMES_TR[0]];
 import { MANAGEMENT_TYPES } from '../types';
 import { setupQualityTier } from '../lib/discipline';
 import { useNewsDayLabels } from '../hooks/useNewsDayLabels';
@@ -231,6 +235,8 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
       else if (d === 'stopToRange') vals.sort(orderBy(STOP_RANGE_BUCKETS));
       else if (d === 'holdTime') vals.sort(orderBy(HOLD_BUCKETS));
       else if (d === 'management') vals.sort(orderBy(MANAGEMENT_TYPES));
+      else if (d === 'rangeSize') vals.sort(orderBy(RANGE_SIZE_BUCKETS));
+      else if (d === 'weekday') vals.sort(orderBy(WEEKDAY_ORDER));
       else vals.sort((a, b) => a.localeCompare(b, 'tr'));
       out[d] = vals;
     });
@@ -819,7 +825,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                 />
               </FilterAccordionRow>
 
-              {/* Türetilmiş / yeni girdiler: Sweep Saati, Sweep → Giriş, Planlanan R:R, Stop / Asia Range, Günün İşlemi, İşlem Yönetimi, Çıkış Sonrası TP, İşlem Süresi */}
+              {/* Türetilmiş / yeni girdiler: Sweep Saati, Sweep → Giriş, Asia Range Büyüklüğü, Planlanan R:R, Stop / Asia Range, Günün İşlemi, Gün, Giriş Saati, İşlem Yönetimi, Çıkış Sonrası TP, İşlem Süresi */}
               {FILTER_DIMENSIONS.map((d) => {
                 const sel = globalExtra.dims?.[d] || [];
                 return (

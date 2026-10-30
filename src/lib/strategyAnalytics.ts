@@ -456,12 +456,15 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
     ? tradesWithTp.reduce((s, t) => s + (t.tpPips || 0), 0) / tradesWithTp.length 
     : 0;
 
-  let mfeRealizationRate = 0;
-  if (avgMfeWins > 0 && avgTpPips > 0) {
-    mfeRealizationRate = Math.min(100, Math.round((avgTpPips / avgMfeWins) * 100));
-  }
-
-  const leftOnTheTablePips = Math.max(0, Math.round((avgMfeWins - avgTpPips) * 10) / 10);
+  // Yakalama oranı ve masada kalan kâr aynı işlemler üzerinden: hem MFE hem TP'si girilmiş kazananlar.
+  // (Eskiden tüm işlemlerin TP ortalaması, yalnızca kazananların MFE ortalamasına bölünüyordu; iki farklı küme.)
+  const pairedWins = mfeWins.filter(t => typeof t.tpPips === 'number' && t.tpPips > 0 && (t.mfePips || 0) > 0);
+  const pairedMfe = pairedWins.reduce((s, t) => s + (t.mfePips || 0), 0);
+  const pairedTp = pairedWins.reduce((s, t) => s + Math.min(t.tpPips || 0, t.mfePips || 0), 0);
+  const mfeRealizationRate = pairedMfe > 0 ? Math.min(100, Math.round((pairedTp / pairedMfe) * 100)) : 0;
+  const leftOnTheTablePips = pairedWins.length > 0
+    ? Math.round((pairedWins.reduce((s, t) => s + Math.max(0, (t.mfePips || 0) - (t.tpPips || 0)), 0) / pairedWins.length) * 10) / 10
+    : 0;
 
   // Kârsız kapanan ama en az 1R (kendi stop mesafesi kadar) lehte gitmiş işlemler. Sabit pip eşiği pariteler arasında anlamsızdı.
   const missedProfitTrades = tradesWithMfe.filter(t => {
@@ -956,7 +959,7 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
 
   let goldenSetup = {
     hasFormula: false,
-    description: `Aynı parite, seans, strateji ve giriş modeliyle en az ${MIN_SAMPLE} işlem biriktiğinde en güçlü kombinasyon burada görünür.`,
+    description: `Aynı parite, seans, Asia Range ve giriş modeliyle en az ${MIN_SAMPLE} işlem biriktiğinde en güçlü kombinasyon burada görünür.`,
     winRate: 0,
     netR: 0,
     sampleSize: 0,
@@ -967,7 +970,7 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
     const top = comboList[0];
     goldenSetup = {
       hasFormula: true,
-      description: `${top.sampleDesc} — işlem başına ${top.edge.expectancy} R (%95 aralık ${top.edge.expLo} / ${top.edge.expHi})`,
+      description: `${top.sampleDesc} — işlem başına ${top.edge.expectancy} R (%95 aralık ${top.edge.expLo} – ${top.edge.expHi})`,
       winRate: top.edge.winRate,
       netR: top.edge.netR,
       sampleSize: top.edge.n,

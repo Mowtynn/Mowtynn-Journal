@@ -371,11 +371,12 @@ export interface CoverageRow {
   field: string;
   label: string;
   filled: number;
+  /** Payda: alanın sorulduğu işlem sayısı (çoğu alanda tüm işlemler) */
+  base: number;
   pct: number;
   unlocks: string;
 }
 
-/** "HH:mm" → "HH:00–HH+1:00" (NY); geçersizse null */
 /** Sweep saati (NY) 30 dakikalık dönemlere: 02:15 → "02:00–02:30", 02:40 → "02:30–03:00"; geçersizse null */
 export function sweepHourBucket(v?: string): string | null {
   const m = typeof v === 'string' ? v.match(/^(\d{2}):(\d{2})$/) : null;
@@ -465,10 +466,25 @@ function buildOrder(trades: Trade[]): void {
     (byDay.get(k) || byDay.set(k, []).get(k)!).push(t);
   }
   byDay.forEach((list) => list.sort((x, y) => x.createdAt - y.createdAt).forEach((t, i) => tradeOrder.set(t.id, i + 1)));
+  // Asia Range büyüklüğü de aynı listeye göre (paritenin kendi medyanına oranla) bir kez sınıflanır
+  rangeIndex = bucketAsiaRanges(trades);
 }
 export function tradeOfDayBucket(t: Pick<Trade, 'id'>): string | null {
   const n = tradeOrder.get(t.id);
   return n === undefined ? null : n === 1 ? '1. İşlem' : n === 2 ? '2. İşlem' : '3.+ İşlem';
+}
+
+/** Asia Range büyüklüğü (paritenin medyanına göre): kurulum karnesi, Edge Özeti ve filtrelerde tek tanım */
+let rangeIndex = new Map<string, RangeBucket>();
+export const RANGE_SIZE_BUCKETS = ['Dar (< 0.8×)', 'Normal (0.8–1.25×)', 'Geniş (> 1.25×)'] as const;
+const RANGE_SIZE_LABEL: Record<RangeBucket, (typeof RANGE_SIZE_BUCKETS)[number]> = {
+  NARROW: RANGE_SIZE_BUCKETS[0],
+  NORMAL: RANGE_SIZE_BUCKETS[1],
+  WIDE: RANGE_SIZE_BUCKETS[2],
+};
+export function rangeSizeBucket(t: Pick<Trade, 'id'>): string | null {
+  const b = rangeIndex.get(t.id);
+  return b ? RANGE_SIZE_LABEL[b] : null;
 }
 
 /** İşlem yönetimi: seçilen yönetim adımları birleşik ("BE Çekildi + Kısmi Kâr") */
@@ -498,25 +514,41 @@ export function managementMissedR(trades: Trade[]): { n: number; measured: numbe
   return { n, measured, missedR };
 }
 
+/**
+ * Veri eksiği panosu: formdaki her girdinin doluluk oranı (form sırasıyla) ve o girdinin açtığı analiz.
+ * Yalnızca belirli işlemlerde sorulan alanlar kendi paydasıyla ölçülür (ör. Risk % hesaplı işlemlerde,
+ * Çıkış Sonrası TP yalnızca BE / erken kapanış / BE Çekildi işlemlerinde).
+ */
 export function computeCoverage(trades: Trade[]): CoverageRow[] {
-  const n = trades.length;
-  const defs: Array<{ field: string; label: string; unlocks: string; ok: (t: Trade) => boolean }> = [
-    { field: 'stopPips', label: 'Stop (pip)', unlocks: 'TP & stop simülatörü', ok: (t) => hasNum(t.stopPips) && t.stopPips > 0 },
-    { field: 'tpPips', label: 'TP mesafesi (pip)', unlocks: 'Hedefe ulaşma oranı, karşı Asia ucu simülasyonu', ok: (t) => hasNum(t.tpPips) && t.tpPips > 0 },
-    { field: 'maePips', label: 'MAE (pip)', unlocks: 'Stop daraltma simülatörü', ok: (t) => hasNum(t.maePips) },
-    { field: 'mfePips', label: 'MFE (pip)', unlocks: 'TP simülatörü, hedef tamamlama dağılımı', ok: (t) => hasNum(t.mfePips) },
-    { field: 'asiaRangePips', label: 'Asia range (pip)', unlocks: 'Range büyüklüğü edge analizi (parite bazlı)', ok: (t) => hasNum(t.asiaRangePips) && t.asiaRangePips > 0 },
-    { field: 'htfTimeframe', label: 'PD array zaman dilimi', unlocks: '1H / 4H / D kıyası', ok: (t) => !!t.htfTimeframe },
-    { field: 'confirmations', label: 'PD array türü', unlocks: 'FVG / OB / seviye kıyası', ok: (t) => Array.isArray(t.confirmations) && t.confirmations.length > 0 },
-    { field: 'asiaRange', label: 'Asia Range', unlocks: 'Range / Trend / Swept edge kıyası', ok: (t) => !!t.asiaRange },
-    { field: 'sweepTime', label: 'Sweep Time', unlocks: 'Sweep saatine göre edge kıyası', ok: (t) => !!t.sweepTime },
-    { field: 'asiaRangeFvg', label: 'Asia Range FVG', unlocks: 'Asia Range FVG türü kıyası', ok: (t) => !!t.asiaRangeFvg },
-    { field: 'newsDay', label: 'News Day / Bank Holiday', unlocks: 'Haber günü – normal gün edge kıyası', ok: (t) => typeof t.newsDay === 'boolean' },
-    { field: 'entryModels', label: 'Giriş modeli', unlocks: 'MSS / Breaker / IFVG kıyası', ok: (t) => Array.isArray(t.entryModels) && t.entryModels.length > 0 },
+  const list = (v?: string[]) => Array.isArray(v) && v.length > 0;
+  const defs: Array<{ field: string; label: string; unlocks: string; ok: (t: Trade) => boolean; asked?: (t: Trade) => boolean }> = [
+    { field: 'planFidelity', label: 'Setup Kalitesi', unlocks: 'A+ / A / B-C kıyası, düşük kalitenin maliyeti', ok: (t) => !!t.planFidelity },
+    { field: 'trend', label: 'Trend', unlocks: 'Trend kıyası, reversal maliyeti', ok: (t) => !!t.trend },
+    { field: 'newsDay', label: 'News Day', unlocks: 'Haber günü – normal gün kıyası', ok: (t) => typeof t.newsDay === 'boolean' },
+    { field: 'asiaRangeFvg', label: 'Asia Range FVG', unlocks: 'Asia Range FVG kıyası', ok: (t) => !!t.asiaRangeFvg },
+    { field: 'asiaRange', label: 'Asia Range', unlocks: 'Range / Trend / Swept kıyası', ok: (t) => !!t.asiaRange },
+    { field: 'sweepTime', label: 'Sweep Time', unlocks: 'Sweep saati (30 dk) ve Sweep → Giriş süresi', ok: (t) => !!t.sweepTime },
+    { field: 'session', label: 'Session', unlocks: 'Session ve Session × Yön kıyası', ok: (t) => !!t.session },
+    { field: 'htfTimeframe', label: 'HTF', unlocks: 'HTF kıyası, HTF × Entry TF matrisi', ok: (t) => !!t.htfTimeframe },
+    { field: 'confirmations', label: 'PD Array', unlocks: 'PD Array türü kıyası', ok: (t) => list(t.confirmations) },
+    { field: 'timeframe', label: 'Entry TF', unlocks: 'Entry TF kıyası, HTF × Entry TF matrisi', ok: (t) => !!t.timeframe },
+    { field: 'entryModels', label: 'Entry Model', unlocks: 'Entry Model kıyası', ok: (t) => list(t.entryModels) },
+    { field: 'tpTargets', label: 'Target', unlocks: 'Çıkış hedefi kıyası', ok: (t) => list(t.tpTargets) },
+    { field: 'premiumDiscount', label: 'Confirmations', unlocks: 'Confirmations × Yön kıyası', ok: (t) => !!t.premiumDiscount },
+    { field: 'management', label: 'İşlem Yönetimi', unlocks: "Yönetim edge'i", ok: (t) => list(t.management) },
+    { field: 'afterExitTp', label: 'Çıkış Sonrası TP', unlocks: 'Yönetimle kaçırılan R (sorulduğu işlemlerde)', ok: (t) => typeof t.afterExitTp === 'boolean', asked: (t) => t.status === 'BREAKEVEN' || (Array.isArray(t.management) && (t.management.includes('Erken Kapatıldı') || t.management.includes('BE Çekildi'))) },
+    { field: 'riskPct', label: 'Risk %', unlocks: 'Risk seviyesine göre edge, aşırı risk uyarısı (hesaplı işlemlerde)', ok: (t) => hasNum(t.riskPct) && t.riskPct > 0, asked: (t) => !!t.accountId },
+    { field: 'exitAt', label: 'Çıkış Saati', unlocks: 'İşlem süresi, hedefe ulaşma süresi', ok: (t) => hasNum(t.exitAt) && t.exitAt >= t.createdAt },
+    { field: 'stopPips', label: 'Stop Pip', unlocks: 'Stop simülatörü, Stop / Asia Range, Planlanan R:R', ok: (t) => hasNum(t.stopPips) && t.stopPips > 0 },
+    { field: 'tpPips', label: 'TP Pip', unlocks: 'Planlanan R:R, hedef tamamlama, kaçırılan R', ok: (t) => hasNum(t.tpPips) && t.tpPips > 0 },
+    { field: 'maePips', label: 'MAE Pip', unlocks: 'Stop daraltma simülatörü', ok: (t) => hasNum(t.maePips) },
+    { field: 'mfePips', label: 'MFE Pip', unlocks: 'TP simülatörü, potansiyel R, MFE yakalama', ok: (t) => hasNum(t.mfePips) },
+    { field: 'asiaRangePips', label: 'Asia Range Pip', unlocks: 'Range büyüklüğü (parite bazlı), Stop / Asia Range', ok: (t) => hasNum(t.asiaRangePips) && t.asiaRangePips > 0 },
   ];
   return defs.map((d) => {
-    const filled = trades.filter(d.ok).length;
-    return { field: d.field, label: d.label, filled, pct: n > 0 ? Math.round((filled / n) * 100) : 0, unlocks: d.unlocks };
+    const pool = d.asked ? trades.filter(d.asked) : trades;
+    const filled = pool.filter(d.ok).length;
+    return { field: d.field, label: d.label, filled, base: pool.length, pct: pool.length > 0 ? Math.round((filled / pool.length) * 100) : 0, unlocks: d.unlocks };
   });
 }
 
@@ -689,42 +721,62 @@ export function analyzeAsia(allTrades: Trade[], opts: AsiaLabOptions): AsiaLabRe
     rolling.push({ index: i, date: nyDateKey(last.createdAt), expectancy: round(exp, 3) });
   }
 
-  // Combination finder (two-factor), ranked for reliability — not by raw expectancy alone
+  // Kombinasyon bulucu (iki alan): yalnızca işleme girmeden ÖNCE bilinen alanlar (Edge Özeti taramasıyla aynı ilke).
+  // İşlem süresi / yönetim gibi sonradan belirlenen alanlar "bunu daha çok yap" kombinasyonu üretemez.
+  // Çoklu seçimli alanlar (PD Array, Entry Model, Target) birleşik değer olarak sayılır: bir işlem iki kez sayılmaz.
+  const joined = (xs?: string[]) => {
+    const v = (xs || []).map((x) => x.trim()).filter(Boolean);
+    return v.length ? [...new Set(v)].sort((a, b) => a.localeCompare(b, 'tr')).join(' + ') : null;
+  };
   const dims: Array<{ name: string; get: (t: Trade) => string | null }> = [
     { name: 'Parite', get: (t) => normalizePair(t.asset) },
     { name: 'Saat', get: (t) => getTradeHourBucket(t) },
-    { name: 'PD TF', get: (t) => t.htfTimeframe || null },
-    { name: 'Yön', get: (t) => (getSweepSide(t) === 'HIGH' ? 'High→Short' : 'Low→Long') },
     { name: 'Gün', get: (t) => WEEKDAY_NAMES_TR[getTradeNyWeekday(t)] },
+    { name: 'Yön', get: (t) => (getSweepSide(t) === 'HIGH' ? 'High→Short' : 'Low→Long') },
+    { name: 'Session', get: (t) => t.session || null },
     { name: 'Asia Range', get: (t) => t.asiaRange || null },
     { name: 'Sweep Saati', get: (t) => sweepHourBucket(t.sweepTime) },
     { name: 'Sweep→Giriş', get: (t) => sweepDelayBucket(t) },
     { name: 'Setup Kalitesi', get: (t) => t.planFidelity || null },
-    { name: 'İşlem Süresi', get: (t) => holdBucket(t) },
+    { name: 'Trend', get: (t) => t.trend || null },
+    { name: 'HTF', get: (t) => t.htfTimeframe || null },
+    { name: 'PD Array', get: (t) => joined(t.confirmations) },
+    { name: 'Entry TF', get: (t) => t.timeframe || null },
+    { name: 'Entry Model', get: (t) => joined(t.entryModels) },
+    { name: 'Target', get: (t) => joined(t.tpTargets) },
+    { name: 'Confirmations', get: (t) => t.premiumDiscount || null },
+    { name: 'Asia Range FVG', get: (t) => t.asiaRangeFvg || null },
+    { name: 'News Day', get: (t) => (typeof t.newsDay === 'boolean' ? (t.newsDay ? nl.yes : nl.no) : null) },
     { name: 'Planlanan R:R', get: (t) => plannedRRBucket(t) },
     { name: 'Stop / Asia Range', get: (t) => stopToRangeBucket(t) },
     { name: 'Günün İşlemi', get: (t) => tradeOfDayBucket(t) },
-    { name: 'İşlem Yönetimi', get: (t) => managementBucket(t) },
     { name: 'Hesap Aşaması', get: (t) => stageBucket(t) },
-    { name: 'News Day', get: (t) => (typeof t.newsDay === 'boolean' ? (t.newsDay ? nl.yes : nl.no) : null) },
   ];
-  const comboMap = new Map<string, Trade[]>();
+  const comboMap = new Map<string, { a: string; b: string; list: Trade[] }>();
+  const singleCount = new Map<string, number>();
   trades.forEach((t) => {
+    const vals = dims.map((d) => d.get(t));
+    vals.forEach((v, i) => {
+      if (v) singleCount.set(`${i}=${v}`, (singleCount.get(`${i}=${v}`) || 0) + 1);
+    });
     for (let a = 0; a < dims.length; a++) {
-      const va = dims[a].get(t);
+      const va = vals[a];
       if (!va) continue;
       for (let b = a + 1; b < dims.length; b++) {
-        const vb = dims[b].get(t);
+        const vb = vals[b];
         if (!vb) continue;
         const key = `${dims[a].name}: ${va}  +  ${dims[b].name}: ${vb}`;
-        if (!comboMap.has(key)) comboMap.set(key, []);
-        comboMap.get(key)!.push(t);
+        const g = comboMap.get(key);
+        if (g) g.list.push(t);
+        else comboMap.set(key, { a: `${a}=${va}`, b: `${b}=${vb}`, list: [t] });
       }
     }
   });
   const combos: ComboRow[] = Array.from(comboMap.entries())
-    .filter(([, list]) => list.length >= Math.max(3, opts.minSample))
-    .map(([label, list]) => ({ label, stats: computeEdge(list) }))
+    .filter(([, g]) => g.list.length >= Math.max(3, opts.minSample))
+    // Birleşim, alanlardan birinin tüm işlemleriyle aynıysa yeni bilgi taşımaz (ör. tek parite süzülmüşken "Parite + X")
+    .filter(([, g]) => g.list.length !== singleCount.get(g.a) && g.list.length !== singleCount.get(g.b))
+    .map(([label, g]) => ({ label, stats: computeEdge(g.list) }))
     .sort((a, b) => b.stats.expLo - a.stats.expLo || b.stats.expectancy - a.stats.expectancy)
     .slice(0, 12);
 

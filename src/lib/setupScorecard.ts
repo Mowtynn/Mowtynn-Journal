@@ -1,5 +1,6 @@
 import { Trade } from '../types';
-import { edgeFromR, EdgeStats, sweepHourBucket, sweepDelayBucket, holdBucket, stageBucket, plannedRRBucket, stopToRangeBucket, tradeOfDayBucket, managementBucket, afterExitBucket, indexTradeOrder } from './asiaAnalytics';
+import { edgeFromR, EdgeStats, sweepHourBucket, sweepDelayBucket, holdBucket, stageBucket, plannedRRBucket, stopToRangeBucket, tradeOfDayBucket, managementBucket, afterExitBucket, indexTradeOrder, rangeSizeBucket } from './asiaAnalytics';
+import { getTradeHourBucket, getTradeNyWeekday, WEEKDAY_NAMES_TR } from './tradingTime';
 import { getNewsDayLabels } from '../constants/constants';
 import { EDGE_PROOF_MIN, MIN_SAMPLE } from './sampleSize';
 import { driftFromR, type EdgeDrift } from './edgeDrift';
@@ -31,6 +32,9 @@ export type SetupDimension =
   | 'tpTargets'
   | 'asiaRangeFvg'
   | 'newsDay'
+  | 'rangeSize'
+  | 'weekday'
+  | 'entryHour'
   | 'type'
   | 'asset';
 
@@ -56,6 +60,9 @@ export const SETUP_DIMENSIONS: { id: SetupDimension; label: string }[] = [
   { id: 'tpTargets', label: 'Target' },
   { id: 'asiaRangeFvg', label: 'Asia Range FVG' },
   { id: 'newsDay', label: 'News Day' },
+  { id: 'rangeSize', label: 'Asia Range Büyüklüğü' },
+  { id: 'weekday', label: 'Gün' },
+  { id: 'entryHour', label: 'Giriş Saati (NY)' },
   { id: 'type', label: 'Yön' },
   { id: 'asset', label: 'Parite' },
 ];
@@ -110,6 +117,16 @@ export function dimensionValue(t: Trade, d: SetupDimension): string {
       return holdBucket(t) ?? UNSPECIFIED;
     case 'accountStage':
       return stageBucket(t) ?? UNSPECIFIED;
+    case 'rangeSize':
+      return rangeSizeBucket(t) ?? UNSPECIFIED;
+    case 'weekday': {
+      const d = getTradeNyWeekday(t);
+      return Number.isInteger(d) ? WEEKDAY_NAMES_TR[d] : UNSPECIFIED;
+    }
+    case 'entryHour': {
+      const h = getTradeHourBucket(t);
+      return h && h !== 'Belirsiz' ? h : UNSPECIFIED;
+    }
     case 'newsDay': {
       if (typeof t.newsDay !== 'boolean') return UNSPECIFIED;
       const nl = getNewsDayLabels();
@@ -164,7 +181,7 @@ export function buildSetupScorecard(trades: Trade[], dims: SetupDimension[], opt
 
   // R sırası için kronolojik
   const sorted = [...trades].sort((a, b) => a.createdAt - b.createdAt);
-  if (useDims.includes('tradeOfDay')) indexTradeOrder(sorted);
+  if (useDims.includes('tradeOfDay') || useDims.includes('rangeSize')) indexTradeOrder(sorted);
   for (const t of sorted) {
     if (typeof t.rr !== 'number' || !Number.isFinite(t.rr)) continue;
     const labels = useDims.map((d) => dimensionValue(t, d));

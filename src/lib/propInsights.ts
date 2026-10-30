@@ -185,7 +185,8 @@ export function computeAccountRInsights(
   const main = simulate(unit);
 
   // Risk önerisi: hesap boyutuna göre risk seviyeleri; drawdown sınırı ve hedef gerçek hesap kurallarından.
-  // Değerlendirmede: hesabı yakma olasılığı ≤ %15 kalırken geçme olasılığı en yüksek olan seviye (eşitlikte düşük risk).
+  // Değerlendirmede: hesabı yakma olasılığı ≤ %15 olan seviyeler içinde geçme olasılığı en yükseğe 2 puan yakın
+  // olanlardan hedefe en hızlı (medyan işlem) ulaşanı.
   // Funded'da: ufuk boyunca ayakta kalma ≥ %90 olan en yüksek seviye.
   if (account.size > 0) {
     const levels = RISK_LEVELS.map((pct) => ({ pct, ...simulate((account.size * pct) / 100) }));

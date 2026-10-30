@@ -239,12 +239,12 @@ export const AsiaEdgeLab = React.memo(function AsiaEdgeLab({ trades }: AsiaEdgeL
         <>
           <Card title="Veri Eksiği Panosu" hint="Hangi alanı doldurmazsan hangi analiz çalışmıyor. Yüzde düşükse o analiz güvenilmez.">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-              {r.coverage.map((c) => (
+              {r.coverage.filter((c) => c.base > 0).map((c) => (
                 <div key={c.field} className="p-2.5 bg-zinc-900 border border-zinc-800/80 rounded-lg text-xs font-sans">
                   <div className="flex justify-between">
                     <span className="text-zinc-200 font-medium">{c.label}</span>
                     <span className={c.pct >= 80 ? 'text-emerald-400' : c.pct >= 40 ? 'text-zinc-300' : 'text-rose-400'}>
-                      %{c.pct} <span className="text-zinc-600">({c.filled}/{r.overall.n})</span>
+                      %{c.pct} <span className="text-zinc-600">({c.filled}/{c.base})</span>
                     </span>
                   </div>
                   <div className="h-1 bg-zinc-800 rounded mt-1.5">
@@ -432,7 +432,7 @@ export const AsiaEdgeLab = React.memo(function AsiaEdgeLab({ trades }: AsiaEdgeL
 
           <Card
             title="Kombinasyon Bulucu"
-            hint="İki faktörlü gruplar, güven aralığı alt sınırına göre sıralanır. Çok sayıda kombinasyon denendiği için rastlantısal 'parlak' sonuçlar çıkar: bulduğunu yeni veride (live-test) doğrulamadan kural yapma."
+            hint="Girişten önce bilinen iki alanın birleşimleri (süre ve yönetim hariç), güven aralığı alt sınırına göre sıralanır. Çok sayıda kombinasyon denendiği için rastlantısal 'parlak' sonuçlar çıkar: bulduğunu yeni veride (live-test) doğrulamadan kural yapma."
           >
             {r.combos.length === 0 ? (
               <Empty text={`En az ${Math.max(3, minSample)} işlemlik kombinasyon yok.`} />

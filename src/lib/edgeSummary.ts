@@ -102,6 +102,7 @@ export const MANAGEMENT_DIMENSIONS: SetupDimension[] = ['management', 'afterExit
 /** Sızıntı / güç taramasında bakılan tekil alanlar (yalnızca işleme girmeden önce bilinenler) */
 const SCAN_DIMENSIONS: SetupDimension[] = [
   'asiaRange',
+  'rangeSize',
   'sweepHour',
   'sweepDelay',
   'planFidelity',
@@ -119,6 +120,8 @@ const SCAN_DIMENSIONS: SetupDimension[] = [
   'tpTargets',
   'asiaRangeFvg',
   'newsDay',
+  'weekday',
+  'entryHour',
   'type',
   'asset',
 ];
