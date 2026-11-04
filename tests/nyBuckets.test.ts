@@ -18,10 +18,6 @@ test('haftalık hacim ve parite×seans matrisi: hafta NY takvimine göre; taray�
       trade({ id: 'b', status: 'LOSS', rr: -1, asset: 'EURUSD', session: 'London', createdAt: mon + 3600000 }),
     ])!;
     assert.deepEqual(m.deadZone.EURUSD.London, { count: 2, wins: 1, rr: 1 });
-    const one = m.optimalFreq.find((f) => f.label === '1-3 İşlem')!;
-    assert.equal(one.weeksCount, 1);
-    assert.equal(one.avgPF, 2);
-    assert.equal(one.avgR, 0.5);
   } finally {
     if (prevTz === undefined) delete process.env.TZ;
     else process.env.TZ = prevTz;

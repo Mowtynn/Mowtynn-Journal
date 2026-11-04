@@ -4,13 +4,12 @@ import { FilterChip, FILTER_INPUT, FILTER_LABEL } from './filters/FilterControls
 import React, { useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Crosshair, Target, Infinity as InfinityIcon, Calendar, AlertTriangle, Activity, Layers, Percent, X, Filter, ChevronLeft, ChevronRight, ChevronsUpDown, Search, Grid, SlidersHorizontal, Clock, Maximize2, Zap, TrendingUp } from 'lucide-react';
+import { Target, Infinity as InfinityIcon, Calendar, AlertTriangle, Activity, Layers, Percent, X, Filter, ChevronLeft, ChevronRight, ChevronsUpDown, Search, Grid, SlidersHorizontal, Clock, Maximize2, Zap, TrendingUp } from 'lucide-react';
 import { Trade } from '../types';
 import { caseInsensitiveMatch } from '../constants/constants';
 import { HeatmapModal } from './HeatmapModal';
+import { MIN_SAMPLE } from '../lib/sampleSize';
 import { calculateAdvancedMetrics } from '../lib/advancedMetrics';
-import { setupQualityTier } from '../lib/discipline';
-import { formatPF } from '../lib/statMath';
 import { TradeHistoryModal } from './TradeHistoryModal';
 import { lazyWithPreload, named } from '../lib/lazyWithPreload';
 import { Deferred } from './common/Deferred';
@@ -35,8 +34,6 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
   const [detailedPage, setDetailedPage] = React.useState(1);
   const [deadZonePage, setDeadZonePage] = React.useState(1);
   const [assetsPage, setAssetsPage] = React.useState(1);
-  const [planFidelitySort, setPlanFidelitySort] = React.useState<'pnl' | 'loss' | 'winrate'>('pnl');
-  const [isPlanFidelityFilterOpen, setIsPlanFidelityFilterOpen] = React.useState(false);
   const [sessionSort, setSessionSort] = React.useState<'pnl' | 'loss' | 'winrate'>('pnl');
   const [performanceTimeframe, setPerformanceTimeframe] = React.useState<'day' | 'week' | 'month' | 'year'>('week');
   const [assetSearch, setAssetSearch] = React.useState('');
@@ -51,16 +48,13 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
   const [isSessionFilterOpen, setIsSessionFilterOpen] = React.useState(false);
   const [isHeatmapOpen, setIsHeatmapOpen] = React.useState(false);
   const [isDeadZoneModalOpen, setIsDeadZoneModalOpen] = React.useState(false);
-  const [isOptimalFreqModalOpen, setIsOptimalFreqModalOpen] = React.useState(false);
-  useBodyScrollLock(isDeadZoneModalOpen || isOptimalFreqModalOpen);
+  useBodyScrollLock(isDeadZoneModalOpen);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         if (isDeadZoneModalOpen) {
           setIsDeadZoneModalOpen(false);
-        } else if (isOptimalFreqModalOpen) {
-          setIsOptimalFreqModalOpen(false);
         } else if (isHeatmapOpen) {
           setIsHeatmapOpen(false);
         } else if (selectedPerformancePeriod) {
@@ -80,7 +74,6 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
     };
   }, [
     isDeadZoneModalOpen,
-    isOptimalFreqModalOpen,
     isHeatmapOpen,
     selectedPerformancePeriod,
     selectedAsset
@@ -92,15 +85,6 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
     if (!trades || trades.length === 0) return null;
 
     const closedTrades = trades;
-
-    // 1. Uç Değer Kontrolü (En Büyük Kazanç vs. En Büyük Kayıp in RUnits!)
-    let largestWin = 0;
-    let largestLoss = 0;
-    closedTrades.forEach(t => {
-      const valR = t.rr || 0;
-      if (valR > 0 && valR > largestWin) largestWin = valR;
-      if (valR < 0 && Math.abs(valR) > largestLoss) largestLoss = Math.abs(valR);
-    });
 
     // 2. Haftalık Gün Dağılımı ve Başarı Oranları (En Kanlı Gün ve Net R Dağılımı)
     const dayNames = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
@@ -156,7 +140,6 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
 
     // 4. En kârlı sessionlar (in R)
     const sessionStatsMap: Record<string, { session: string; pnl: number; total: number; wins: number; rr: number }> = {};
-    const planFidelityStatsMap: Record<string, { planFidelity: string; pnl: number; total: number; wins: number; rr: number }> = {};
 
     closedTrades.forEach(t => {
       const s = t.session || 'Bilinmeyen';
@@ -170,19 +153,8 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
         sessionStatsMap[s].wins++;
       }
 
-      const pf = t.planFidelity || 'Belirtilmemiş';
-      if (!planFidelityStatsMap[pf]) {
-        planFidelityStatsMap[pf] = { planFidelity: pf, pnl: 0, total: 0, wins: 0, rr: 0 };
-      }
-      planFidelityStatsMap[pf].pnl += t.rr || 0;
-      planFidelityStatsMap[pf].rr += t.rr || 0;
-      planFidelityStatsMap[pf].total++;
-      if (t.status === 'WIN') {
-        planFidelityStatsMap[pf].wins++;
-      }
     });
     const sessionRanking = Object.values(sessionStatsMap).sort((a, b) => b.rr - a.rr);
-    const planFidelityRanking = Object.values(planFidelityStatsMap).sort((a, b) => b.rr - a.rr);
 
     // 5. Performans Geçmişi (Day, Week, Month, Year PnL OHLC)
     const dailyTradesMap: Record<string, Trade[]> = {};
@@ -300,134 +272,16 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
       displayConfirmations = displayConfirmations.slice(0, 4);
     }
 
-    const heatmapAssets = assetRanking.map(x => x.asset);
-
-    const heatmapMatrix = heatmapAssets.map(asset => {
-      return {
-        asset,
-        cells: displayConfirmations.map(confirmation => {
-          let matches = closedTrades.filter(t => t.asset === asset);
-          
-          
-          if (confirmation === 'Belirtilmemiş') {
-            matches = matches.filter(t => !t.confirmations || t.confirmations.length === 0);
-          } else {
-            matches = matches.filter(t => t.confirmations && t.confirmations.includes(confirmation));
-          }
-
-
-          const total = matches.length;
-          const wins = matches.filter(t => t.status === 'WIN').length;
-          const winRate = total > 0 ? (wins / total) * 100 : 0;
-          const pnl = matches.reduce((acc, t) => acc + (t.rr || 0), 0);
-          const rr = matches.reduce((acc, t) => acc + (t.rr || 0), 0);
-
-          return {
-            confirmation,
-            winRate,
-            total,
-            pnl,
-            rr
-          };
-        })
-      };
-    });
-
-    // 7. En Verimli Yön ve Parite Eşleşmesi
-    const directionStatsMap: Record<string, { asset: string; longPnl: number; longRr: number; longWins: number; longTotal: number; shortPnl: number; shortRr: number; shortWins: number; shortTotal: number }> = {};
-    const assetFilters = assetRanking.slice(0, 5).map(x => x.asset);
-    
-    closedTrades.forEach(t => {
-      if (assetFilters.includes(t.asset)) {
-        if (!directionStatsMap[t.asset]) {
-          directionStatsMap[t.asset] = { asset: t.asset, longPnl: 0, longRr: 0, longWins: 0, longTotal: 0, shortPnl: 0, shortRr: 0, shortWins: 0, shortTotal: 0 };
-        }
-        if (t.type === 'LONG') {
-          directionStatsMap[t.asset].longPnl += t.rr || 0;
-          directionStatsMap[t.asset].longRr += t.rr || 0;
-          directionStatsMap[t.asset].longTotal++;
-          if (t.status === 'WIN') directionStatsMap[t.asset].longWins++;
-        } else if (t.type === 'SHORT') {
-          directionStatsMap[t.asset].shortPnl += t.rr || 0;
-          directionStatsMap[t.asset].shortRr += t.rr || 0;
-          directionStatsMap[t.asset].shortTotal++;
-          if (t.status === 'WIN') directionStatsMap[t.asset].shortWins++;
-        }
-      }
-    });
-
-    // 8. Detailed Heatmap (Asset x Session x Type) x Confirmation
-    const detailedHeatmapRows = [];
-    
-    // Get all unique combinations of Asset, Session, Type present in closedTrades
-    const actvCombos: Record<string, { asset: string, session: string, type: string, trades: Trade[] }> = {};
-    closedTrades.forEach(t => {
-      const asset = t.asset || 'Unknown';
-      const session = t.session || 'Unspecified';
-      const type = t.type || 'LONG';
-      const key = `${asset}|${session}|${type}`;
-      if (!actvCombos[key]) {
-        actvCombos[key] = { asset, session, type, trades: [] };
-      }
-      actvCombos[key].trades.push(t);
-    });
-
-    Object.values(actvCombos).forEach(combo => {
-      // Sort out confirmations
-      const cells = displayConfirmations.map(confirmation => {
-        let confirmationTrades = combo.trades;
-        
-        if (confirmation === 'Belirtilmemiş') {
-          confirmationTrades = confirmationTrades.filter(t => !t.confirmations || t.confirmations.length === 0);
-        } else {
-          confirmationTrades = confirmationTrades.filter(t => t.confirmations && t.confirmations.includes(confirmation));
-        }
-
-
-        const total = confirmationTrades.length;
-        const wins = confirmationTrades.filter(t => t.status === 'WIN').length;
-        const winRate = total > 0 ? Math.round((wins / total) * 100) : 0;
-        const pnl = confirmationTrades.reduce((acc, t) => acc + (t.rr || 0), 0);
-        const rr = confirmationTrades.reduce((acc, t) => acc + (t.rr || 0), 0);
-        
-        return { confirmation, total, wins, winRate, pnl, rr };
-      });
-      
-      const totalTrades = combo.trades.length;
-      if (totalTrades > 0) {
-        detailedHeatmapRows.push({
-          asset: combo.asset,
-          session: combo.session,
-          type: combo.type,
-          label: `${combo.asset} - ${combo.session} (${combo.type})`,
-          totalTrades,
-          cells
-        });
-      }
-    });
-
-    detailedHeatmapRows.sort((a, b) => b.totalTrades - a.totalTrades);
-
     return {
-      detailedHeatmapRows,
-      largestWin,
-      largestLoss,
       dayStats,
       TurkishDayFullNames,
       assetRanking,
       sessionRanking,
-      planFidelityRanking,
       dailyPerformance,
       weeklyPerformance,
       monthlyPerformance,
       yearlyPerformance,
       displayConfirmations,
-      heatmapMatrix,
-      directionStats: Object.values(directionStatsMap).sort((a, b) => {
-        const totalA = (a.longRr + a.shortRr);
-        const totalB = (b.longRr + b.shortRr);
-        return totalB - totalA;
-      })
     };
   }, [trades]);
 
@@ -712,11 +566,6 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
     show: { opacity: 1, transition: { duration: 0.15, ease: EASE } }
   };
 
-  const getPFColor = (pf: number) => {
-    if (pf >= 2) return 'text-emerald-400';
-    if (pf >= 1) return 'text-blue-400';
-    return 'text-rose-400';
-  };
 
   if (!metrics || !customMetrics || trades.length === 0) {
     return (
@@ -918,6 +767,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
                             <span className="text-zinc-500 font-normal text-[9px]">
                               ({sr.total} Trade・%{winRate.toFixed(0)} WR)
                             </span>
+                            {sr.total < MIN_SAMPLE && <span className="px-1 py-px rounded border border-zinc-700 bg-zinc-900 text-[8px] font-bold text-zinc-400 uppercase tracking-wide" >Az Veri</span>}
                           </div>
                           <div className="text-right">
                             <span className={`font-black ${isProfit ? 'text-emerald-400' : 'text-rose-400'}`}>
@@ -960,12 +810,6 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
                   <h3 className="heading-2">
                     NET KAZANÇ GÜN DAĞILIMI
                   </h3>
-                  <button
-                    onClick={() => setIsOptimalFreqModalOpen(true)}
-                    className="flex items-center justify-center w-7 h-7 ml-1 rounded-lg border transition-colors duration-200 ease-out bg-zinc-900/50 border-zinc-700/50 text-zinc-300 hover:bg-blue-500/10 hover:border-blue-500/30 hover:text-blue-400 shrink-0"
-                  >
-                    <Crosshair size={10} />
-                  </button>
                 </div>
               </div>
 
@@ -982,7 +826,10 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
                 return (
                   <div key={dayKey}>
                     <div className="flex justify-between items-baseline mb-0.5">
-                      <span className="text-xs font-bold text-zinc-200 tracking-tight font-sans">{fullDayName}</span>
+                      <span className="text-xs font-bold text-zinc-200 tracking-tight font-sans flex items-center gap-1.5">
+                        {fullDayName}
+                        {stats.total > 0 && stats.total < MIN_SAMPLE && <span className="px-1 py-px rounded border border-zinc-700 bg-zinc-900 text-[8px] font-bold text-zinc-400 uppercase tracking-wide" >Az Veri</span>}
+                      </span>
                       <span className={`text-[10px] font-bold font-sans flex items-center gap-1.5 ${isProfitVal ? 'text-emerald-400' : 'text-rose-400'}`}>
                         {(
                           <>
@@ -1024,117 +871,6 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
                   </div>
                 );
               })}
-            </div>
-            </div>
-          </motion.div>
-        </div>
-
-        {/* SETUP KALİTESİ PERFORMANSI */}
-        <div className="grid grid-cols-1 gap-0 border-b border-zinc-800/80">
-          <motion.div variants={itemVariants} className="bg-transparent p-3.5 sm:p-4 flex flex-col justify-between h-full transition-colors duration-200">
-            <div className="flex flex-col h-full justify-between">
-              <div className="flex justify-between items-center h-6 mb-2.5">
-                <div className="flex items-center gap-1.5">
-                  <Target size={13} className="text-blue-400" />
-                  <h3 className="heading-2">
-                    SETUP KALİTESİ PERFORMANSI
-                  </h3>
-                  <button aria-label="Filtrele"
-                    onClick={() => setIsPlanFidelityFilterOpen(!isPlanFidelityFilterOpen)}
-                    className={`flex items-center justify-center w-7 h-7 ml-1 rounded-lg border transition-colors duration-200 ease-out ${
-                      isPlanFidelityFilterOpen 
-                        ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' 
-                        : 'bg-zinc-900/50 border-zinc-700/50 text-zinc-300 hover:bg-zinc-800'
-                    } shrink-0`}
-                  >
-                    <Filter size={9} />
-                  </button>
-                </div>
-                
-                <AnimatePresence>
-                  {isPlanFidelityFilterOpen && (
-                    <motion.div
-                      key="plan-fidelity-filter-panel"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.15, ease: EASE }}
-                      className="overflow-hidden whitespace-nowrap "
-                    >
-                      <div className="flex gap-1">
-                        <button onClick={() => setPlanFidelitySort('pnl')} className={`px-2 py-0.5 rounded-lg heading-3 transition-colors duration-200 ease-out border ${planFidelitySort === 'pnl' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'}`}>Net R</button>
-                        <button onClick={() => setPlanFidelitySort('loss')} className={`px-2 py-0.5 rounded-lg heading-3 transition-colors duration-200 ease-out border ${planFidelitySort === 'loss' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'}`}>Zarar</button>
-                        <button onClick={() => setPlanFidelitySort('winrate')} className={`px-2 py-0.5 rounded-lg heading-3 transition-colors duration-200 ease-out border ${planFidelitySort === 'winrate' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'}`}>WR</button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-            <div className="flex-1 flex flex-col justify-between py-0.5">
-              <div className="flex flex-col gap-1 w-full h-full justify-between">
-                {(() => {
-                  let sortedFidelities = [...customMetrics.planFidelityRanking];
-                  if (planFidelitySort === 'pnl') {
-                    sortedFidelities.sort((a, b) => b.pnl - a.pnl);
-                  } else if (planFidelitySort === 'loss') {
-                    sortedFidelities.sort((a, b) => a.pnl - b.pnl);
-                  } else if (planFidelitySort === 'winrate') {
-                    sortedFidelities.sort((a, b) => (b.total > 0 ? b.wins / b.total : 0) - (a.total > 0 ? a.wins / a.total : 0));
-                  }
-                  
-                  const srMaxPnL = Math.max(...sortedFidelities.map(sr => Math.abs(sr.pnl)), 1);
-
-                  return sortedFidelities.map((sr, idx) => {
-                    const isProfit = sr.pnl >= 0;
-                    const winRate = sr.total > 0 ? (sr.wins / sr.total) * 100 : 0;
-                    const barWidth = Math.min(100, (Math.abs(sr.pnl) / srMaxPnL) * 100);
-
-                    const readableName = sr.planFidelity || 'Belirtilmemiş';
-
-                    const tier = setupQualityTier(sr.planFidelity);
-                    const rowColors = tier === 'high' ? 'text-emerald-400' : tier === 'mid' ? 'text-blue-300' : tier === 'low' ? 'text-rose-400' : sr.planFidelity ? 'text-purple-400' : 'text-zinc-400';
-
-                    return (
-                      <div key={idx} className="bg-zinc-800 px-2 py-1.5 flex flex-col justify-center rounded-lg border border-zinc-700/50">
-                        <div className="flex items-center justify-between text-[9px] font-sans mb-1">
-                          <div className="flex items-center gap-1.5">
-                            <Target size={9} className={`${rowColors}`} />
-                            <span className={`font-black tracking-wide uppercase ${rowColors}`}>
-                              {readableName}
-                            </span>
-                            <span className="text-zinc-500 font-normal text-[9px]">
-                              ({sr.total} Trade・%{winRate.toFixed(0)} WR)
-                            </span>
-                          </div>
-                          <div className="text-right">
-                            <span className={`font-black ${isProfit ? 'text-emerald-400' : 'text-rose-400'}`}>
-                              {isProfit ? '+' : ''}{(sr?.rr || 0).toFixed(2)} <span className="text-[9px] text-zinc-500">R</span>
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-1.5">
-                          <div className="flex-1 h-1 bg-zinc-950 rounded-full overflow-hidden flex">
-                            <motion.div 
-                              initial={{ scaleX: 0 }}
-                              animate={{ scaleX: barWidth / 100 }}
-                              style={{ transformOrigin: "left", width: "100%" }}
-                              transition={{ duration: 0.15, ease: EASE }}
-                              className={`h-full rounded-full ${isProfit ? 'bg-gradient-to-r from-emerald-500/20 to-emerald-500' : 'bg-gradient-to-r from-rose-500/20 to-rose-500'}`}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  });
-                })()}
-                {customMetrics.planFidelityRanking.length === 0 && (
-                  <div className="text-center py-6 text-[9px] text-zinc-600 font-sans uppercase tracking-widest flex-1 flex items-center justify-center">
-                    {smartUpper("Veri Yok")}
-                  </div>
-                )}
-              </div>
             </div>
             </div>
           </motion.div>
@@ -1248,7 +984,10 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
                       
                       <div className="w-full">
                         <div className="flex justify-between items-center z-10 mb-1">
-                          <span className="font-extrabold text-xs text-white uppercase tracking-wider font-sans ">{ar.asset}</span>
+                          <span className="font-extrabold text-xs text-white uppercase tracking-wider font-sans flex items-center gap-1.5">
+                            {ar.asset}
+                            {ar.total < MIN_SAMPLE && <span className="px-1 py-px rounded border border-zinc-700 bg-zinc-900 text-[8px] font-bold text-zinc-400 uppercase tracking-wide" >Az Veri</span>}
+                          </span>
                           <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg border uppercase tracking-widest ${isProfit ? 'toggle-item-win' : 'toggle-item-loss'}`}>
                             {ar.total} İŞLEM
                           </span>
@@ -2178,96 +1917,6 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
       document.body
     )}
 
-      {/* Haftalık İdeal İşlem Frekansı Modal */}
-      {createPortal(
-        <AnimatePresence>
-          {isOptimalFreqModalOpen && (
-            <motion.div
-              key="optimal-freq-modal-backdrop"
-              {...MODAL_BACKDROP}
-              className="fixed inset-0 modal-layer modal-dim z-[1500] flex items-center justify-center p-4  "
-              onClick={() => setIsOptimalFreqModalOpen(false)}
-            >
-              <motion.div
-                key="optimal-freq-modal-content"
-                {...MODAL_PANEL}
-                className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-2xl h-[82vh] sm:h-[640px] max-h-[90vh] min-h-[460px] flex flex-col shadow-2xl overflow-hidden "
-                onClick={e => e.stopPropagation()}
-              >
-              {/* Header */}
-              <div className="flex items-center justify-between p-4 sm:p-5 border-b border-zinc-800 bg-transparent">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
-                    <Crosshair size={18} />
-                  </div>
-                  <div>
-                    <h2 className="text-sm font-black uppercase font-sans text-zinc-100 tracking-wider">
-                      {smartUpper("Haftalık İdeal İşlem Frekansı")}
-                    </h2>
-                    <p className="text-xs text-zinc-400 font-sans">
-                      Haftalık işlem hacminize göre kârlılık, Profit Factor ve R verimlilik analizi
-                    </p>
-                  </div>
-                </div>
-                <button aria-label="Kapat"
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsOptimalFreqModalOpen(false);
-                  }}
-                  className="w-8 h-8 rounded-lg bg-zinc-800/60 hover:bg-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-
-              {/* Content Table */}
-              <div className="flex-1 overflow-auto p-4 space-y-4 min-h-0">
-                <table className="w-full text-left border-collapse text-xs font-sans whitespace-nowrap">
-                  <thead>
-                    <tr className="border-b border-zinc-800 text-[10px] text-zinc-400 uppercase tracking-widest bg-zinc-950/80">
-                      <th className="py-2.5 px-3">İşlem Hacmi (Haftalık)</th>
-                      <th className="py-2.5 px-3 text-center">Avg. Profit Factor</th>
-                      <th className="py-2.5 px-3 text-center">Ortalama R</th>
-                      <th className="py-2.5 px-3 text-right">Aktif Hafta Sayısı</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-800/60">
-                    {metrics.optimalFreq.map((f) => (
-                      <tr key={f.label} className="hover:bg-zinc-800/30 transition-colors">
-                        <td className="py-3 px-3 text-zinc-200 font-black">{f.label}</td>
-                        <td className="py-3 px-3 text-center">
-                          <span className={`px-2.5 py-0.5 rounded-lg text-xs font-black ${getPFColor(f.avgPF)} bg-zinc-800/90 border border-zinc-700/50 text-zinc-100`}>
-                            {f.weeksCount === 0 ? "—" : formatPF(f.avgPF)}
-                          </span>
-                        </td>
-                        <td className="py-3 px-3 text-center">
-                          <span className={`px-2.5 py-0.5 rounded-lg text-xs font-black font-sans ${f.avgR > 0 ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/30" : f.avgR < 0 ? "text-rose-400 bg-rose-500/10 border-rose-500/30" : "text-zinc-400 bg-transparent border-zinc-800"} border`}>
-                            {f.avgR > 0 ? "+" : ""}{(f.avgR ?? 0).toFixed(2)} R
-                          </span>
-                        </td>
-                        <td className="py-3 px-3 text-right text-zinc-400 font-bold">{f.weeksCount} hafta</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Footer */}
-              <div className="p-4 border-t border-zinc-800 bg-transparent flex justify-end">
-                <button
-                  onClick={() => setIsOptimalFreqModalOpen(false)}
-                  className="px-4 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-bold transition-colors"
-                >
-                  Kapat
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>,
-      document.body
-    )}
     </div>
   );
 });

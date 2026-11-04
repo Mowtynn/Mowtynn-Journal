@@ -177,22 +177,14 @@ test('disiplin: kurala uyan + ihlal eden = gerçekleşen; ihlal maliyeti tanıml
   }
 });
 
-test('strateji laboratuvarı alt tabloları işlemleri eksiksiz bölüştürür', () => {
+test('strateji laboratuvarı (MAE, MFE & Stop, Psikoloji) tabloları işlemleri eksiksiz bölüştürür', () => {
   const trades = dataset(150);
   const s = calculateStrategyAnalytics(trades);
-  const n = trades.length;
-  const net = trades.reduce((a, t) => a + t.rr, 0);
-  const sum = (xs: Array<{ total: number; netR: number }>) => [xs.reduce((a, x) => a + x.total, 0), xs.reduce((a, x) => a + x.netR, 0)];
-  for (const [label, rows] of [['saat', s.hourlyStats], ['seans × yön', s.sessionDirectionStats], ['parite', s.assetStats], ['kalite', s.setupQualityStats.ranking], ['hesap türü', s.accountCategoryStats], ['trend', s.trendStats.ranking]] as const) {
-    const [cnt, r] = sum(rows as any);
-    assert.equal(cnt, n, label);
-    close(r, net, 0.05, label);
-  }
-  // Hafta içi günleri: hafta sonu işlemleri hariç toplam ≤ n
-  assert.ok(s.dayOfWeekStats.reduce((a, d) => a + d.total, 0) <= n);
   // Asia range dilimleri: aralığı girilmiş işlemleri bölüştürür
   const b = s.asiaRangeStats.brackets;
   assert.equal(b.tight.count + b.medium.count + b.wide.count, trades.filter((t) => (t.asiaRangePips || 0) > 0).length);
+  // Stop dilimleri stop'u girilmiş işlemleri bölüştürür
+  assert.equal(s.stopSizeStats.brackets.reduce((a, x) => a + x.count, 0), trades.filter((t) => (t.stopPips || 0) > 0).length);
   // Seri: en uzun seriler toplamı aşmaz, kayıp sonrası WR 0–100
   assert.ok(s.streakStats.maxWinStreak <= s.totalTrades && s.streakStats.postLossWinRate >= 0 && s.streakStats.postLossWinRate <= 100);
 });
