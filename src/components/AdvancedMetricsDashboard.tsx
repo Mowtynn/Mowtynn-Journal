@@ -4,7 +4,7 @@ import { FilterChip, FILTER_INPUT, FILTER_LABEL } from './filters/FilterControls
 import React, { useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Target, Infinity as InfinityIcon, Calendar, AlertTriangle, Activity, Layers, Percent, X, Filter, ChevronLeft, ChevronRight, ChevronsUpDown, Search, Grid, SlidersHorizontal, Clock, Maximize2, Zap, TrendingUp } from 'lucide-react';
+import { Target, Infinity as InfinityIcon, AlertTriangle, Activity, Layers, Percent, X, Filter, ChevronLeft, ChevronRight, ChevronsUpDown, Search, Grid, SlidersHorizontal, Clock, Maximize2, Zap, TrendingUp } from 'lucide-react';
 import { Trade } from '../types';
 import { caseInsensitiveMatch } from '../constants/constants';
 import { HeatmapModal } from './HeatmapModal';
@@ -22,10 +22,6 @@ import { nyWallDate } from '../lib/tradingTime';
 
 const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [] }: { trades: Trade[], onMetricClick?: (id: string, val: string | number) => void, onEdit?: (trade: Trade) => void, sessions?: string[] }) => {
   const [selectedAsset, setSelectedAsset] = React.useState<string | null>(null);
-  const [selectedPerformancePeriod, setSelectedPerformancePeriod] = React.useState<{
-    label: string;
-    trades: Trade[];
-  } | null>(null);
 
   const [assetSort, setAssetSort] = React.useState<'pnl' | 'winrate' | 'rr' | 'trades_desc' | 'trades_asc'>('pnl');
   const [assetFilter, setAssetFilter] = React.useState<'all' | 'profitable' | 'loss'>('all');
@@ -35,7 +31,6 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
   const [deadZonePage, setDeadZonePage] = React.useState(1);
   const [assetsPage, setAssetsPage] = React.useState(1);
   const [sessionSort, setSessionSort] = React.useState<'pnl' | 'loss' | 'winrate'>('pnl');
-  const [performanceTimeframe, setPerformanceTimeframe] = React.useState<'day' | 'week' | 'month' | 'year'>('week');
   const [assetSearch, setAssetSearch] = React.useState('');
   const [detailedSearch, setDetailedSearch] = React.useState('');
   const [deadZoneSearch, setDeadZoneSearch] = React.useState('');
@@ -57,8 +52,6 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
           setIsDeadZoneModalOpen(false);
         } else if (isHeatmapOpen) {
           setIsHeatmapOpen(false);
-        } else if (selectedPerformancePeriod) {
-          setSelectedPerformancePeriod(null);
         } else if (selectedAsset) {
           setSelectedAsset(null);
         } else {
@@ -75,7 +68,6 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
   }, [
     isDeadZoneModalOpen,
     isHeatmapOpen,
-    selectedPerformancePeriod,
     selectedAsset
   ]);
   const metrics = useMemo(() => calculateAdvancedMetrics(trades), [trades]);
@@ -156,105 +148,6 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
     });
     const sessionRanking = Object.values(sessionStatsMap).sort((a, b) => b.rr - a.rr);
 
-    // 5. Performans Geçmişi (Day, Week, Month, Year PnL OHLC)
-    const dailyTradesMap: Record<string, Trade[]> = {};
-    const weeklyTradesMap: Record<string, Trade[]> = {};
-    const monthlyTradesMap: Record<string, Trade[]> = {};
-    const yearlyTradesMap: Record<string, Trade[]> = {};
-    
-    closedTrades.forEach(t => {
-      const d = nyWallDate(t.createdAt);
-      
-      // Daily
-      const dayDate = new Date(d);
-      dayDate.setHours(0, 0, 0, 0);
-      const dayKey = dayDate.getTime().toString();
-      if (!dailyTradesMap[dayKey]) dailyTradesMap[dayKey] = [];
-      dailyTradesMap[dayKey].push(t);
-
-      // Weekly
-      const day = d.getDay();
-      const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-      const monday = new Date(d);
-      monday.setDate(diff);
-      monday.setHours(0, 0, 0, 0);
-      const weekKey = monday.getTime().toString();
-      if (!weeklyTradesMap[weekKey]) weeklyTradesMap[weekKey] = [];
-      weeklyTradesMap[weekKey].push(t);
-
-      // Monthly
-      const monthDate = new Date(d.getFullYear(), d.getMonth(), 1);
-      const monthKey = monthDate.getTime().toString();
-      if (!monthlyTradesMap[monthKey]) monthlyTradesMap[monthKey] = [];
-      monthlyTradesMap[monthKey].push(t);
-
-      // Yearly
-      const yearDate = new Date(d.getFullYear(), 0, 1);
-      const yearKey = yearDate.getTime().toString();
-      if (!yearlyTradesMap[yearKey]) yearlyTradesMap[yearKey] = [];
-      yearlyTradesMap[yearKey].push(t);
-    });
-
-    const buildStats = (tradesMap: Record<string, Trade[]>, labelFormatter: (d: Date) => string, maxItems: number = 10) => {
-        const stats: Record<string, { 
-          weekLabel: string; 
-          weekTimestamp: number; 
-          pnl: number; 
-          high: number; 
-          low: number;
-          rr: number;
-          rrHigh: number;
-          rrLow: number;
-          trades: Trade[];
-        }> = {};
-        Object.keys(tradesMap).forEach(key => {
-            const tradesInPeriod = tradesMap[key].sort((a,b) => a.createdAt - b.createdAt);
-            const timestamp = parseInt(key, 10);
-            const dateObj = new Date(timestamp);
-            const label = labelFormatter(dateObj);
-            
-            let cumulativePnl = 0;
-            let pnlHigh = 0;
-            let pnlLow = 0;
-
-            let cumulativeRr = 0;
-            let rrHigh = 0;
-            let rrLow = 0;
-            
-            tradesInPeriod.forEach(t => {
-                cumulativePnl += t.rr || 0;
-                if (cumulativePnl > pnlHigh) pnlHigh = cumulativePnl;
-                if (cumulativePnl < pnlLow) pnlLow = cumulativePnl;
-
-                cumulativeRr += (t.rr || 0);
-                if (cumulativeRr > rrHigh) rrHigh = cumulativeRr;
-                if (cumulativeRr < rrLow) rrLow = cumulativeRr;
-            });
-            
-            stats[key] = {
-                weekLabel: label,
-                weekTimestamp: timestamp,
-                pnl: cumulativePnl,
-                high: pnlHigh,
-                low: pnlLow,
-                rr: cumulativeRr,
-                rrHigh,
-                rrLow,
-                trades: tradesInPeriod
-            };
-        });
-        return Object.values(stats)
-            .sort((a, b) => a.weekTimestamp - b.weekTimestamp)
-            .slice(-maxItems);
-    };
-
-    const monthTurkishShort = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
-
-    const dailyPerformance = buildStats(dailyTradesMap, d => `${d.getDate()} ${monthTurkishShort[d.getMonth()]}`, 14); // Son 14 gün
-    const weeklyPerformance = buildStats(weeklyTradesMap, d => `${d.getDate()} ${monthTurkishShort[d.getMonth()]}`, 10); // Son 10 hafta
-    const monthlyPerformance = buildStats(monthlyTradesMap, d => `${monthTurkishShort[d.getMonth()]} ${d.getFullYear().toString().slice(-2)}`, 12); // Son 12 ay
-    const yearlyPerformance = buildStats(yearlyTradesMap, d => `${d.getFullYear()}`, 5); // Son 5 yıl
-
     // 6. Strateji & Parite Dağılım Matrisi (Isı Haritası / Heatmap)
     const allUniqueConfirmations = new Set<string>();
     closedTrades.forEach(t => {
@@ -277,10 +170,6 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
       TurkishDayFullNames,
       assetRanking,
       sessionRanking,
-      dailyPerformance,
-      weeklyPerformance,
-      monthlyPerformance,
-      yearlyPerformance,
       displayConfirmations,
     };
   }, [trades]);
@@ -577,104 +466,9 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
     );
   }
 
-  const performanceData = (() => {
-    switch (performanceTimeframe) {
-      case 'day': return customMetrics.dailyPerformance;
-      case 'week': return customMetrics.weeklyPerformance;
-      case 'month': return customMetrics.monthlyPerformance;
-      case 'year': return customMetrics.yearlyPerformance;
-      default: return customMetrics.weeklyPerformance;
-    }
-  })();
-
-  const maxWeeklyPnlAbs = Math.max(
-    ...performanceData.map(w => Math.abs(w.rr)),
-    1);
-
   return (
     <div className="mt-4 mb-4 flex flex-col bg-zinc-900/70 border border-zinc-700/50  rounded-xl transition-ui duration-200 shadow-sm overflow-hidden divide-y divide-zinc-800/80 w-full">
       
-      {/* SEKSIYON BAŞLIĞI */}
-      
-        
-        {/* 3. Performans Geçmişi Chart */}
-        <motion.div variants={itemVariants} className="bg-transparent p-5 flex flex-col justify-between transition-colors duration-200 ">
-          <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center mb-3 gap-3">
-            <div className="flex items-center gap-2">
-              <Calendar size={15} className="text-blue-400" />
-              <h3 className="heading-2">
-                PERFORMANS GEÇMİŞİ
-              </h3>
-            </div>
-            <div className="flex flex-wrap items-center gap-2.5">
-              {/* Timeframe Selector */}
-              <div className="flex bg-zinc-800/90 border border-zinc-700/50 text-zinc-100 rounded-lg overflow-hidden p-0.5">
-                {(['day', 'week', 'month', 'year'] as const).map(tf => (
-                  <button
-                    lang="en"
-                    key={tf}
-                    onClick={() => setPerformanceTimeframe(tf)}
-                    className={`px-2.5 py-1 heading-3 transition-colors duration-200 ease-out border rounded-lg ${
-                      performanceTimeframe === tf 
-                        ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' 
-                        : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
-                    }`}
-                  >
-                    {tf === 'day' ? 'GÜN' : tf === 'week' ? 'HAFTA' : tf === 'month' ? 'AY' : 'YIL'}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="h-52 flex items-end justify-center gap-[1px] sm:gap-[2px] px-1 relative mt-4 max-w-4xl mx-auto w-full">
-            {performanceData.map((week, idx) => {
-              const metricValue = week.rr;
-              const isProfit = metricValue >= 0;
-
-              const labelValueText = (week.rr !== 0 ? (week.rr > 0 ? '+' : '') + week.rr.toFixed(1) : '0');
-
-              return (
-                <div key={idx} className="flex flex-col flex-1 max-w-[52px] sm:max-w-[76px] h-full justify-end items-center relative z-10 group cursor-pointer" onClick={() => setSelectedPerformancePeriod({ label: week.weekLabel, trades: week.trades })}>
-                  
-                  {/* Chart Area */}
-                  <div className="w-full relative flex-1 flex justify-center mt-2 mb-2">
-                    {/* Tooltip on hover */}
-                    
-
-                    {/* Candlestick Body */}
-                    <motion.div 
-                      initial={{ scaleY: 0 }}
-                      animate={{ scaleY: 1 }}
-                      className={`absolute bottom-0 w-4 sm:w-6 ${isProfit ? 'bg-emerald-500' : 'bg-rose-500'} rounded-t-md cursor-pointer  origin-bottom`}
-                      style={{
-                        height: `${Math.max((Math.abs(metricValue) / maxWeeklyPnlAbs) * 100, 2)}%`,
-                        minHeight: '2px'
-                      }}
-                    ></motion.div>
-                  </div>
-
-                  {/* Hafta Adı */}
-                  <span className="heading-3">
-                    {week.weekLabel}
-                  </span>
-                  <span className={`text-[9px] font-sans font-extrabold tracking-tight mt-0.5 ${isProfit ? 'text-emerald-500' : 'text-rose-500'}`}>
-                    {labelValueText}
-                  </span>
-                </div>
-              );
-            })}
-
-            {performanceData.length === 0 && (
-              <div className="absolute inset-0 flex items-center justify-center text-[10px] text-zinc-600 font-sans tracking-widest uppercase">
-                {smartUpper("Veri Yok")}
-              </div>
-            )}
-          </div>
-        </motion.div>
-
-      
-
         {/* SESSION PERFORMANSI & NET KAZANÇ GÜN DAĞILIMI */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 divide-y lg:divide-y-0 lg:divide-x divide-zinc-800/80">
           {/* SESSION PERFORMANSI */}
@@ -1678,17 +1472,6 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, sessions = [
       </motion.div>
 
 
-      <TradeHistoryModal
-        isOpen={!!selectedPerformancePeriod}
-        onClose={() => setSelectedPerformancePeriod(null)}
-        title={selectedPerformancePeriod?.label || ""}
-        icon={<Calendar size={16} className="mr-1.5 text-blue-400 shrink-0" />}
-        trades={selectedPerformancePeriod?.trades || []}
-        onEdit={(trade) => {
-          if (onEdit) onEdit(trade);
-          setSelectedPerformancePeriod(null);
-        }}
-      />
 
       <TradeHistoryModal
         isOpen={!!selectedAsset}

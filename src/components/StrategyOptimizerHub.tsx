@@ -8,7 +8,6 @@ import {
   Compass,
   Sparkles,
   ShieldCheck,
-  BarChart3,
   Activity,
   Brain,
   Flame,
@@ -24,7 +23,6 @@ import { AsiaEdgeLab } from './AsiaEdgeLab';
 import { SetupScorecardTab } from './strategy/SetupScorecardTab';
 import { EdgeSummaryCard, DisciplineCard } from './deepAnalysis/EdgeCockpit';
 import { TradeHistoryModal } from './TradeHistoryModal';
-import { ComparatorTab } from './strategy/ComparatorTab';
 import { RuleSimulatorTab } from './strategy/RuleSimulatorTab';
 import { formatPF } from '../lib/statMath';
 
@@ -126,15 +124,14 @@ interface StrategyOptimizerHubProps {
   onEdit?: (trade: Trade) => void;
 }
 
-type LabTab =  
+type LabTab =
   | 'edge_summary'
   | 'rule_sim'
   | 'discipline'
   | 'setup_scorecard'
   | 'asia_lab'
-  | 'psychology' 
-  | 'mae_mfe'   
-  | 'matrix_comparator' ;
+  | 'psychology'
+  | 'mae_mfe';
 
 const SUBTABS: Array<{ id: LabTab; label: string; icon: React.ComponentType<{ size?: number; className?: string }>; activeColor: string }> = [
   { id: 'edge_summary', label: 'Edge Özeti', icon: Sparkles, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
@@ -144,7 +141,6 @@ const SUBTABS: Array<{ id: LabTab; label: string; icon: React.ComponentType<{ si
   { id: 'asia_lab', label: 'Asia Edge Lab', icon: Compass, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
   { id: 'psychology', label: 'Psikoloji & Tilt', icon: Brain, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
   { id: 'mae_mfe', label: 'MAE, MFE & Stop', icon: Target, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
-  { id: 'matrix_comparator', label: 'Kıyaslama', icon: BarChart3, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
 ];
 
 export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
@@ -493,7 +489,6 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
 
 
       {/* SUBTAB 11: MULTI-VARIABLE COMPARATOR */}
-      {activeSubTab === 'matrix_comparator' && <ComparatorTab trades={trades} />}
 
       {/* SUBTAB 12: PRE-TRADE EDGE CHECKER */}
         </motion.div>
