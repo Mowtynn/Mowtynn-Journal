@@ -7,23 +7,13 @@ import {
   TrendingUp,
   Compass,
   Sparkles,
-  AlertTriangle,
-  CheckCircle2,
-  Clock,
   ShieldCheck,
-  Award,
   BarChart3,
-  Layers,
-  Scale,
   Activity,
-  Calendar,
   Brain,
-  ShieldAlert,
   Flame,
   ChevronLeft,
   ChevronRight,
-  Flag,
-  Newspaper,
   ClipboardList,
   FlaskConical,
 } from 'lucide-react';
@@ -36,11 +26,8 @@ import { EdgeSummaryCard, DisciplineCard } from './deepAnalysis/EdgeCockpit';
 import { TradeHistoryModal } from './TradeHistoryModal';
 import { ComparatorTab } from './strategy/ComparatorTab';
 import { RuleSimulatorTab } from './strategy/RuleSimulatorTab';
-import { setupQualityTier } from '../lib/discipline';
-import { EDGE_PROOF_MIN } from '../lib/sampleSize';
 import { formatPF } from '../lib/statMath';
 
-const signedR = (v: number) => (v > 0 ? `+${v}` : `${v}`);
 
 /**
  * Sekme şeridi: kullanıcı kaydırmaz, sağ/sol butonlarla kayar.
@@ -139,38 +126,24 @@ interface StrategyOptimizerHubProps {
   onEdit?: (trade: Trade) => void;
 }
 
-type LabTab = 
-  | 'overview' 
+type LabTab =  
   | 'edge_summary'
   | 'rule_sim'
   | 'discipline'
   | 'setup_scorecard'
   | 'asia_lab'
-  | 'psychology'
-  | 'day_of_week'
-  | 'tp_zone' 
-  | 'mae_mfe' 
-  | 'ict_concepts' 
-  | 'trend_time' 
-  | 'setup_quality'
-  | 'asset_account'
+  | 'psychology' 
+  | 'mae_mfe'   
   | 'matrix_comparator' ;
 
 const SUBTABS: Array<{ id: LabTab; label: string; icon: React.ComponentType<{ size?: number; className?: string }>; activeColor: string }> = [
-  { id: 'overview', label: 'Genel Bakış', icon: Award, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
   { id: 'edge_summary', label: 'Edge Özeti', icon: Sparkles, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
   { id: 'rule_sim', label: 'Kural Simülatörü', icon: FlaskConical, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
   { id: 'discipline', label: 'Disiplin', icon: ShieldCheck, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
   { id: 'setup_scorecard', label: 'Kurulum Karnesi', icon: ClipboardList, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
   { id: 'asia_lab', label: 'Asia Edge Lab', icon: Compass, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
   { id: 'psychology', label: 'Psikoloji & Tilt', icon: Brain, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
-  { id: 'day_of_week', label: 'Günlük Edge', icon: Calendar, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
-  { id: 'tp_zone', label: 'Target & Confirmations', icon: Flag, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
   { id: 'mae_mfe', label: 'MAE, MFE & Stop', icon: Target, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
-  { id: 'ict_concepts', label: 'Likidite & Modeller', icon: Layers, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
-  { id: 'trend_time', label: 'HTF, Entry TF & Saatler', icon: Clock, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
-  { id: 'setup_quality', label: 'A+ Kalite & Disiplin', icon: ShieldCheck, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
-  { id: 'asset_account', label: 'Parite & Hesap Türü', icon: Scale, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
   { id: 'matrix_comparator', label: 'Kıyaslama', icon: BarChart3, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
 ];
 
@@ -181,7 +154,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
   // Edge Özeti / Disiplin satırlarına tıklanınca ilgili işlemler geçmiş penceresinde açılır
   const [shownTrades, setShownTrades] = useState<{ title: string; trades: Trade[] } | null>(null);
   const showTrades = useCallback((title: string, list: Trade[]) => setShownTrades({ title, trades: list }), []);
-  const [activeSubTab, setActiveSubTab] = useState<LabTab>('overview');
+  const [activeSubTab, setActiveSubTab] = useState<LabTab>('edge_summary');
 
   const { version: newsLabelsVersion } = useNewsDayLabels();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -206,25 +179,8 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
     maeStats, 
     mfeStats, 
     asiaRangeStats, 
-    entryModelStats, 
-    trendStats, 
-    timeframeMatrix, 
-    hourlyStats, 
-    tpTargetStats,
-    premiumDiscountStats,
-    newsDayStats,
-    confirmationStats,
-    setupQualityStats,
-    sessionDirectionStats,
-    disciplineStats, 
-    dayOfWeekStats,
     stopSizeStats,
     streakStats,
-    redFlagRules,
-    goldenSetup, 
-    actionableInsights,
-    assetStats,
-    accountCategoryStats
   } = stats;
 
   if (isEmpty) return emptyState;
@@ -330,146 +286,6 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
 
       {activeSubTab === 'asia_lab' && <AsiaEdgeLab trades={trades} />}
 
-      {/* SUBTAB 1: OVERVIEW & RED FLAG RULES */}
-      {activeSubTab === 'overview' && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {/* Golden Setup Formula */}
-            <div className="bg-gradient-to-br from-amber-950/20 via-zinc-900/60 to-zinc-950 border border-amber-500/30 rounded-xl p-4 flex flex-col justify-between relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-28 h-28 bg-amber-500/5 rounded-full blur-2xl pointer-events-none" />
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[11px] font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5 font-sans">
-                  <Award size={14} /> Senin Altın Setup Formülün
-                </span>
-                {goldenSetup.hasFormula && (
-                  <span className="flex items-center gap-1.5">
-                    <span
-                      className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-md border ${goldenSetup.confirmed ? 'text-emerald-300 border-emerald-500/30 bg-emerald-500/10' : 'text-zinc-400 border-zinc-700 bg-zinc-800/60'}`}
-                    >
-                      {goldenSetup.confirmed ? 'Kanıtlı' : `Erken${goldenSetup.sampleSize < EDGE_PROOF_MIN ? ` · ${goldenSetup.sampleSize}/${EDGE_PROOF_MIN}` : ''}`}
-                    </span>
-                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/20">
-                      {goldenSetup.sampleSize} İşlem
-                    </span>
-                  </span>
-                )}
-              </div>
-              <p className="text-xs font-semibold text-zinc-100 leading-relaxed mb-3 font-sans">
-                {goldenSetup.hasFormula ? goldenSetup.description : 'Farklı parite, seans ve modellerde daha fazla işlem kaydettikçe en kârlı formülünüz burada belirecektir.'}
-              </p>
-              {goldenSetup.hasFormula ? (
-                <div className="flex items-center gap-4 pt-2 border-t border-amber-500/15 text-xs font-mono">
-                  <div>
-                    <span className="text-zinc-400 text-[10px] block font-sans">Kazanma Oranı</span>
-                    <span className="text-emerald-400 font-bold font-sans">%{goldenSetup.winRate}</span>
-                  </div>
-                  <div>
-                    <span className="text-zinc-400 text-[10px] block font-sans">Toplam Kazanç</span>
-                    <span className="text-amber-300 font-bold font-sans">+{goldenSetup.netR} R</span>
-                  </div>
-                </div>
-              ) : null}
-            </div>
-
-            {/* Discipline Delta Card */}
-            <div className="bg-gradient-to-br from-blue-950/20 via-zinc-900/60 to-zinc-950 border border-blue-500/30 rounded-xl p-4 flex flex-col justify-between relative overflow-hidden">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[11px] font-bold text-blue-400 uppercase tracking-wider flex items-center gap-1.5 font-sans">
-                  <Scale size={14} /> Disiplin Deltası (kaliteye göre)
-                </span>
-                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-300 border border-blue-500/20">
-                  Potansiyel Kurtarma
-                </span>
-              </div>
-              <p className="text-xs text-zinc-300 leading-relaxed mb-2 font-sans">
-                {disciplineStats.disciplineAlphaR > 0
-                  ? `Plan dışı (B-C / FOMO) işlemleri tamamen elerseniz portföyünüze net +${disciplineStats.disciplineAlphaR} R eklenmiş olacaktı.`
-                  : 'B-C / FOMO işlemlerinizin hesaba net bir negatif etkisi tespit edilmedi. Disiplininizi koruyun!'}
-              </p>
-              <div className="grid grid-cols-3 gap-2 pt-2 border-t border-blue-500/15 text-xs">
-                <div className="min-w-0">
-                  <span className="text-zinc-500 text-[10px] block font-sans">Yüksek (A+)</span>
-                  <span className={`${disciplineStats.highQualityNetR >= 0 ? 'text-emerald-400' : 'text-rose-400'} font-bold font-sans`}>{signedR(disciplineStats.highQualityNetR)} R</span>
-                  <span className="text-zinc-500 text-[10px] block font-sans">{disciplineStats.highQualityTradesCount} işlem</span>
-                </div>
-                <div className="min-w-0">
-                  <span className="text-zinc-500 text-[10px] block font-sans">Orta (A)</span>
-                  <span className={`${disciplineStats.midQualityNetR >= 0 ? 'text-emerald-400' : 'text-rose-400'} font-bold font-sans`}>{signedR(disciplineStats.midQualityNetR)} R</span>
-                  <span className="text-zinc-500 text-[10px] block font-sans">{disciplineStats.midQualityTradesCount} işlem</span>
-                </div>
-                <div className="min-w-0">
-                  <span className="text-zinc-500 text-[10px] block font-sans">Düşük (B-C)</span>
-                  <span className={`${disciplineStats.lowQualityNetR < 0 ? 'text-rose-400' : 'text-emerald-400'} font-bold font-sans`}>{signedR(disciplineStats.lowQualityNetR)} R</span>
-                  <span className="text-zinc-500 text-[10px] block font-sans">{disciplineStats.lowQualityTradesCount} işlem</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Red Flag Elimination Rules */}
-          {redFlagRules.length > 0 && (
-            <div className="space-y-2">
-              <h4 className="text-xs font-bold text-rose-400 uppercase tracking-wide flex items-center gap-1.5 font-sans">
-                <ShieldAlert size={14} />
-                Kırmızı Çizgiler & Otomatik Eliminasyon Kuralları (Hesap Sızıntıları)
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-                {redFlagRules.map((rf) => (
-                  <div key={rf.id} className="p-3.5 bg-rose-950/20 border border-rose-500/30 rounded-xl space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-rose-200 font-sans flex items-center gap-1.5">
-                        <AlertTriangle size={13} className="text-rose-400 shrink-0" />
-                        {rf.rule}
-                      </span>
-                      <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-rose-900/60 text-rose-300 border border-rose-700/60">
-                        -{rf.lossR} R ({rf.tradeCount} İşlem)
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-zinc-400 leading-relaxed font-sans">
-                      {rf.recommendation}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Actionable Insights List */}
-          <div className="space-y-2">
-            <h4 className="text-xs font-bold text-zinc-300 uppercase tracking-wide flex items-center gap-1.5 font-sans">
-              <Sparkles size={13} className="text-blue-400" />
-              Sana Özel Matematiksel Edge Önerileri
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-              {actionableInsights.map((insight, idx) => (
-                <div 
-                  key={idx}
-                  className={`p-3.5 rounded-xl border flex flex-col justify-between ${
-                    insight.type === 'opportunity'
-                      ? 'bg-blue-950/15 border-blue-500/30'
-                      : insight.type === 'warning'
-                      ? 'bg-rose-950/15 border-rose-500/30'
-                      : 'bg-emerald-950/15 border-emerald-500/30'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs font-bold text-zinc-100 flex items-center gap-1.5 font-sans">
-                      {insight.type === 'warning' ? <AlertTriangle size={13} className="text-rose-400" /> : <CheckCircle2 size={13} className="text-emerald-400" />}
-                      {insight.title}
-                    </span>
-                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-700 text-zinc-300">
-                      {insight.metricTag}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-zinc-400 leading-relaxed font-sans">
-                    {insight.description}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
 
 
@@ -532,215 +348,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
         </div>
       )}
 
-      {/* SUBTAB 5: DAY OF WEEK */}
-      {activeSubTab === 'day_of_week' && (
-        <div className="space-y-4">
-          <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 space-y-3">
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5">
-              <div className="flex items-center gap-2">
-                <Calendar size={16} className="text-blue-400" />
-                <h4 className="text-xs font-bold text-zinc-100 font-sans uppercase tracking-wider">
-                  Haftanın Günleri (Pazartesi - Cuma) Getiri & Edge Haritası
-                </h4>
-              </div>
-              <span className="text-[10px] font-mono text-zinc-400">
-                Gün Bazlı İstatistik
-              </span>
-            </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
-              {dayOfWeekStats.map((d) => (
-                <div key={d.dayIndex} className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl space-y-1.5 text-center">
-                  <span className="text-xs font-bold text-zinc-200 uppercase block font-sans">{smartUpper(d.dayName)}</span>
-                  <span className="text-[10px] text-zinc-500 block font-sans">{d.total} İşlem</span>
-                  <div className="pt-1 border-t border-zinc-800/80">
-                    <span className="text-[9px] text-zinc-500 block font-sans">Win Rate</span>
-                    <span className={`font-bold text-xs font-sans ${d.winRate >= 50 ? 'text-emerald-400' : 'text-zinc-300'}`}>
-                      %{d.winRate}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-[9px] text-zinc-500 block font-sans">Net R</span>
-                    <span className={`font-bold text-xs font-sans ${d.netR >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                      {d.netR >= 0 ? '+' : ''}{d.netR} R
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* SUBTAB 6: TP TARGET & ZONE & CONFIRMATIONS */}
-      {activeSubTab === 'tp_zone' && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            
-            {/* Target (çıkış hedefi) Card */}
-            <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 space-y-3">
-              <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5">
-                <div className="flex items-center gap-2">
-                  <Flag size={16} className="text-purple-400" />
-                  <h4 className="text-xs font-bold text-zinc-100 font-sans uppercase tracking-wider">
-                    {smartUpper("Target (çıkış hedefi) performansı")}
-                  </h4>
-                </div>
-                <span className="text-[10px] font-mono text-zinc-400">
-                  {tpTargetStats.ranking.length} Farklı Hedef
-                </span>
-              </div>
-              <p className="text-[11px] text-purple-300 bg-purple-500/10 border border-purple-500/20 p-2.5 rounded-lg font-sans">
-                {tpTargetStats.insight}
-              </p>
-
-              {tpTargetStats.ranking.length === 0 ? (
-                <div className="text-center py-6 text-xs text-zinc-500 font-sans">Henüz Target (çıkış hedefi) girilmemiş.</div>
-              ) : (
-                <div className="space-y-1.5">
-                  {tpTargetStats.ranking.map((item) => (
-                    <div key={item.target} className="flex items-center justify-between p-2.5 bg-zinc-900/60 border border-zinc-800/80 rounded-lg text-xs">
-                      <div>
-                        <span className="font-bold text-zinc-200 uppercase block font-sans">{smartUpper(item.target)}</span>
-                        <span className="text-[10px] text-zinc-500 font-sans">{item.total} İşlem ({item.wins} Galibiyet)</span>
-                      </div>
-                      <div className="flex items-center gap-4 text-right">
-                        <div>
-                          <span className="text-[10px] text-zinc-500 block font-sans">Win Rate</span>
-                          <span className={`font-bold font-sans ${item.winRate >= 50 ? 'text-emerald-400' : 'text-zinc-300'}`}>%{item.winRate}</span>
-                        </div>
-                        <div>
-                          <span className="text-[10px] text-zinc-500 block font-sans">Net R</span>
-                          <span className={`font-bold font-sans ${item.netR >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                            {item.netR >= 0 ? '+' : ''}{item.netR} R
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Confirmations Card */}
-            <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 space-y-3">
-              <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck size={16} className="text-emerald-400" />
-                  <h4 className="text-xs font-bold text-zinc-100 font-sans uppercase tracking-wider">
-                    {smartUpper("Confirmations analizi")}
-                  </h4>
-                </div>
-                <span className="text-[10px] font-mono text-zinc-400">
-                  {premiumDiscountStats.ranking.length} değer
-                </span>
-              </div>
-              <p className="text-[11px] text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 p-2.5 rounded-lg font-sans">
-                {premiumDiscountStats.insight}
-              </p>
-
-              {premiumDiscountStats.ranking.length === 0 ? (
-                <div className="text-center py-6 text-xs text-zinc-500 font-sans">Henüz Confirmations alanı girilmemiş.</div>
-              ) : (
-                <div className="space-y-1.5">
-                  {premiumDiscountStats.ranking.map((item) => (
-                    <div key={item.zone} className="flex items-center justify-between p-2.5 bg-zinc-900/60 border border-zinc-800/80 rounded-lg text-xs">
-                      <div>
-                        <span className="font-bold text-zinc-200 uppercase block font-sans">{smartUpper(item.zone)}</span>
-                        <span className="text-[10px] text-zinc-500 font-sans">{item.total} İşlem ({item.wins} Galibiyet)</span>
-                      </div>
-                      <div className="flex items-center gap-4 text-right">
-                        <div>
-                          <span className="text-[10px] text-zinc-500 block font-sans">Win Rate</span>
-                          <span className={`font-bold font-sans ${item.winRate >= 50 ? 'text-emerald-400' : 'text-zinc-300'}`}>%{item.winRate}</span>
-                        </div>
-                        <div>
-                          <span className="text-[10px] text-zinc-500 block font-sans">Net R</span>
-                          <span className={`font-bold font-sans ${item.netR >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                            {item.netR >= 0 ? '+' : ''}{item.netR} R
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* PD Array / Confirmations */}
-              <div className="pt-2 border-t border-zinc-800">
-                <span className="text-[10px] font-bold uppercase text-zinc-400 mb-2 block font-sans">PD Array / Onay Başarı Oranları</span>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {confirmationStats.ranking.map((conf) => (
-                    <div key={conf.confirmation} className="p-2 bg-zinc-900 border border-zinc-800/60 rounded-md text-[11px] flex justify-between items-center">
-                      <span className="font-bold text-zinc-300">{conf.confirmation}</span>
-                      <span className={`font-bold ${conf.netR >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                        {conf.netR >= 0 ? '+' : ''}{conf.netR} R (%{conf.winRate})
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* News Day / Bank Holiday Card */}
-            <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 space-y-3">
-              <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5">
-                <div className="flex items-center gap-2">
-                  <Newspaper size={16} className="text-amber-400" />
-                  <h4 className="text-xs font-bold text-zinc-100 font-sans uppercase tracking-wider">
-                    {smartUpper("News Day / Bank Holiday Analizi")}
-                  </h4>
-                </div>
-                <span className="text-[10px] font-mono text-zinc-400">
-                  {newsDayStats.ranking.reduce((sum, r) => sum + r.total, 0)} Verili İşlem
-                </span>
-              </div>
-              <p className="text-[11px] text-amber-300 bg-amber-500/10 border border-amber-500/20 p-2.5 rounded-lg font-sans leading-relaxed">
-                {newsDayStats.insight}
-              </p>
-
-              {newsDayStats.ranking.length === 0 ? (
-                <div className="text-center py-6 text-xs text-zinc-500 font-sans">Henüz News Day / Bank Holiday bilgisi olan işlem yok.</div>
-              ) : (
-                <div className="space-y-1.5">
-                  {newsDayStats.ranking.map((item) => (
-                    <div key={item.label} className="flex items-center justify-between p-2.5 bg-zinc-900/60 border border-zinc-800/80 rounded-lg text-xs">
-                      <div>
-                        <span className="font-bold text-zinc-200 uppercase block font-sans">{smartUpper(item.label)}</span>
-                        <span className="text-[10px] text-zinc-500 font-sans">{item.total} İşlem ({item.wins} Galibiyet)</span>
-                      </div>
-                      <div className="flex items-center gap-4 text-right">
-                        <div>
-                          <span className="text-[10px] text-zinc-500 block font-sans">Win Rate</span>
-                          <span className={`font-bold font-sans ${item.winRate >= 50 ? 'text-emerald-400' : 'text-zinc-300'}`}>%{item.winRate}</span>
-                        </div>
-                        <div>
-                          <span className="text-[10px] text-zinc-500 block font-sans">Ort. R</span>
-                          <span className={`font-bold font-sans ${item.avgR >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                            {item.avgR >= 0 ? '+' : ''}{item.avgR}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-[10px] text-zinc-500 block font-sans">Net R</span>
-                          <span className={`font-bold font-sans ${item.netR >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                            {item.netR >= 0 ? '+' : ''}{item.netR} R
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {newsDayStats.unknownCount > 0 && (
-                <p className="text-[10px] text-zinc-500 font-sans">
-                  {newsDayStats.unknownCount} işlemde News Day bilgisi girilmemiş (eski kayıt); kıyasa dahil edilmedi.
-                </p>
-              )}
-            </div>
-
-          </div>
-        </div>
-      )}
 
       {/* SUBTAB 7: MAE, MFE & STOP VOLATILITY */}
       {activeSubTab === 'mae_mfe' && (
@@ -861,381 +469,28 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
               ))}
             </div>
           </div>
+          {/* Lehine en az 1R gidip kârsız kapanan işlemler (eski Genel Bakış önerisinden taşındı) */}
+          {mfeStats.missedProfitTradesCount > 0 && (
+            <button
+              type="button"
+              onClick={() => showTrades('Lehine 1R gidip kârsız kapanan işlemler', mfeStats.missedProfitTrades)}
+              className="w-full flex items-center justify-between gap-3 rounded-xl border border-amber-500/25 bg-amber-500/5 hover:bg-amber-500/10 px-4 py-3 text-left transition-ui cursor-pointer"
+            >
+              <span className="min-w-0">
+                <span className="block text-xs font-bold text-amber-200">{smartUpper("Lehine 1R gidip kârsız kapanan işlemler")}</span>
+                <span className="block text-[11px] text-zinc-400 mt-0.5">Fiyat en az stop mesafesi kadar lehine gitti ama işlem zararla ya da başabaşta kapandı. BE / kısmi kâr kuralını Asia Edge Lab'deki TP simülatörüyle test et.</span>
+              </span>
+              <span className="shrink-0 text-sm font-bold tabular-nums text-amber-300">
+                {mfeStats.missedProfitTradesCount} işlem · {(Math.round(mfeStats.missedProfitTrades.reduce((a, t) => a + Math.min(0, t.rr || 0), 0) * 100) / 100).toFixed(2)} R
+              </span>
+            </button>
+          )}
         </div>
       )}
 
-      {/* SUBTAB 8: ICT CONCEPTS (LIQUIDITY & ENTRY MODELS) */}
-      {activeSubTab === 'ict_concepts' && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            
-            {/* Entry Models */}
-            <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 space-y-3">
-              <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5">
-                <div className="flex items-center gap-2">
-                  <Layers size={16} className="text-blue-400" />
-                  <h4 className="text-xs font-bold text-zinc-100 font-sans uppercase tracking-wider">
-                    {smartUpper("Giriş Modelleri (Breaker, Mitigation, FVG, IFVG)")}
-                  </h4>
-                </div>
-                <span className="text-[10px] font-mono text-zinc-400">
-                  {entryModelStats.ranking.length} Model
-                </span>
-              </div>
 
-              <div className="space-y-1.5 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
-                {entryModelStats.ranking.map((m) => (
-                  <div key={m.model} className="flex items-center justify-between p-2.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs">
-                    <div>
-                      <span className="font-bold text-zinc-200 uppercase block font-sans">{smartUpper(m.model)}</span>
-                      <span className="text-[10px] text-zinc-500 font-sans">{m.total} İşlem ({m.wins} Win)</span>
-                    </div>
-                    <div className="flex items-center gap-4 text-right">
-                      <div>
-                        <span className="text-[10px] text-zinc-500 block font-sans">WR</span>
-                        <span className={`font-bold font-sans ${m.winRate >= 50 ? 'text-emerald-400' : 'text-zinc-300'}`}>%{m.winRate}</span>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-zinc-500 block font-sans">Net R</span>
-                        <span className={`font-bold font-sans ${m.netR >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                          {m.netR >= 0 ? '+' : ''}{m.netR} R
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
 
-          </div>
-        </div>
-      )}
 
-      {/* SUBTAB 9: HTF, ENTRY TIMEFRAME & HOURS */}
-      {activeSubTab === 'trend_time' && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            
-            {/* HTF x Entry Timeframe Matrix */}
-            <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 space-y-3">
-              <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5">
-                <div className="flex items-center gap-2">
-                  <Clock size={16} className="text-rose-400" />
-                  <h4 className="text-xs font-bold text-zinc-100 font-sans uppercase tracking-wider">
-                    {smartUpper("Timeframe (HTF) x Entry Timeframe Sinerjisi")}
-                  </h4>
-                </div>
-                <span className="text-[10px] font-mono text-zinc-400">
-                  {timeframeMatrix.length} Kesişim
-                </span>
-              </div>
-
-              <div className="space-y-1.5 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
-                {timeframeMatrix.map((tf) => (
-                  <div key={tf.pair} className="flex items-center justify-between p-2.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs">
-                    <div>
-                      <span className="font-bold text-zinc-200 uppercase block font-sans">{smartUpper(tf.pair)}</span>
-                      <span className="text-[10px] text-zinc-500 font-sans">{tf.total} İşlem ({tf.wins} Galibiyet)</span>
-                    </div>
-                    <div className="flex items-center gap-4 text-right">
-                      <div>
-                        <span className="text-[10px] text-zinc-500 block font-sans">WR</span>
-                        <span className={`font-bold font-sans ${tf.winRate >= 50 ? 'text-emerald-400' : 'text-zinc-300'}`}>%{tf.winRate}</span>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-zinc-500 block font-sans">Net R</span>
-                        <span className={`font-bold font-sans ${tf.netR >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                          {tf.netR >= 0 ? '+' : ''}{tf.netR} R
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Hourly Entry Time Windows */}
-            <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 space-y-3">
-              <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5">
-                <div className="flex items-center gap-2">
-                  <Clock size={16} className="text-amber-400" />
-                  <h4 className="text-xs font-bold text-zinc-100 font-sans uppercase tracking-wider">
-                    {smartUpper("Giriş Saatleri (Entry Time) Performansı")}
-                  </h4>
-                </div>
-                <span className="text-[10px] font-mono text-zinc-400">
-                  {hourlyStats.length} Zaman Aralığı
-                </span>
-              </div>
-
-              <div className="space-y-1.5 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
-                {hourlyStats.map((h) => (
-                  <div key={h.hour} className="flex items-center justify-between p-2.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs">
-                    <div>
-                      <span className="font-bold text-zinc-200 block font-mono">{h.hour}</span>
-                      <span className="text-[10px] text-zinc-500 font-sans">{h.total} İşlem</span>
-                    </div>
-                    <div className="flex items-center gap-4 text-right">
-                      <div>
-                        <span className="text-[10px] text-zinc-500 block font-sans">WR</span>
-                        <span className={`font-bold font-sans ${h.winRate >= 50 ? 'text-emerald-400' : 'text-zinc-300'}`}>%{h.winRate}</span>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-zinc-500 block font-sans">Net R</span>
-                        <span className={`font-bold font-sans ${h.netR >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                          {h.netR >= 0 ? '+' : ''}{h.netR} R
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Trend Yapısı Performansı */}
-            <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 space-y-3">
-              <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5">
-                <div className="flex items-center gap-2">
-                  <TrendingUp size={16} className="text-emerald-400" />
-                  <h4 className="text-xs font-bold text-zinc-100 font-sans uppercase tracking-wider">
-                    {smartUpper("Trend Yapısı (Continuation vs Reversal)")}
-                  </h4>
-                </div>
-                <span className="text-[10px] font-mono text-zinc-400">
-                  {trendStats.ranking.length} Yapı
-                </span>
-              </div>
-
-              <div className="space-y-1.5">
-                {trendStats.ranking.map((tr) => (
-                  <div key={tr.trend} className="flex items-center justify-between p-2.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs">
-                    <div>
-                      <span className="font-bold text-zinc-200 uppercase block font-sans">{smartUpper(tr.trend)}</span>
-                      <span className="text-[10px] text-zinc-500 font-sans">{tr.total} İşlem ({tr.wins} Win)</span>
-                    </div>
-                    <div className="flex items-center gap-4 text-right">
-                      <div>
-                        <span className="text-[10px] text-zinc-500 block font-sans">WR</span>
-                        <span className={`font-bold font-sans ${tr.winRate >= 50 ? 'text-emerald-400' : 'text-zinc-300'}`}>%{tr.winRate}</span>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-zinc-500 block font-sans">Net R</span>
-                        <span className={`font-bold font-sans ${tr.netR >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                          {tr.netR >= 0 ? '+' : ''}{tr.netR} R
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Seans x İşlem Yönü Kesişimi */}
-            <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 space-y-3">
-              <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5">
-                <div className="flex items-center gap-2">
-                  <Scale size={16} className="text-blue-400" />
-                  <h4 className="text-xs font-bold text-zinc-100 font-sans uppercase tracking-wider">
-                    {smartUpper("Seans x İşlem Yönü (Long / Short) Kesişimi")}
-                  </h4>
-                </div>
-                <span className="text-[10px] font-mono text-zinc-400">
-                  {sessionDirectionStats.length} Kesişim
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-1.5">
-                {sessionDirectionStats.map((sd, i) => (
-                  <div key={i} className="p-2.5 bg-zinc-900 border border-zinc-800/80 rounded-lg text-xs flex justify-between items-center">
-                    <div>
-                      <span className="font-bold text-zinc-200 block font-sans">{sd.session} {sd.direction}</span>
-                      <span className="text-[10px] text-zinc-500 font-sans">{sd.total} İşlem</span>
-                    </div>
-                    <div className="text-right">
-                      <span className={`font-bold block font-sans ${sd.netR >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                        {sd.netR >= 0 ? '+' : ''}{sd.netR} R
-                      </span>
-                      <span className="text-[10px] text-zinc-400 font-sans">%{sd.winRate} WR</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-          </div>
-        </div>
-      )}
-
-      {/* SUBTAB 10: SETUP KALİTESİ & DİSİPLİN */}
-      {activeSubTab === 'setup_quality' && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {setupQualityStats.ranking.map((sq) => {
-              const tier = setupQualityTier(sq.quality);
-              return (
-                <div 
-                  key={sq.quality}
-                  className={`p-4 rounded-xl border flex flex-col justify-between ${
-                    tier === 'high'
-                      ? 'bg-emerald-950/20 border-emerald-500/40'
-                      : tier === 'mid'
-                      ? 'bg-blue-950/20 border-blue-500/40'
-                      : tier === 'low'
-                      ? 'bg-rose-950/20 border-rose-500/40'
-                      : 'bg-zinc-900/40 border-zinc-700/60'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold uppercase tracking-wider text-zinc-100 font-sans">{sq.quality} Kalite</span>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-900 border border-zinc-700 text-zinc-300">
-                      {sq.total} İşlem
-                    </span>
-                  </div>
-                  <div className="space-y-1 my-2">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-zinc-400 font-sans">Kazanma Oranı</span>
-                      <span className="font-bold font-sans text-zinc-100">%{sq.winRate}</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-zinc-400 font-sans">Net R</span>
-                      <span className={`font-bold font-sans ${sq.netR >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                        {signedR(sq.netR)} R
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-zinc-400 font-sans">Kâr Faktörü</span>
-                      <span className="font-bold font-sans text-zinc-200">{formatPF(sq.profitFactor)}</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="p-4 bg-zinc-950/80 border border-zinc-800 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div>
-              <h5 className="text-xs font-bold text-zinc-200 uppercase tracking-wide font-sans flex items-center gap-1.5">
-                <CheckCircle2 size={14} className="text-emerald-400" /> Sadece Yüksek Kalite (A+) Simülasyonu
-              </h5>
-              <p className="text-[11px] text-zinc-400 mt-0.5 font-sans">
-                Yalnızca yüksek kalite (A+) kurulumları alıp A ve B-C kurulumlarını pas geçseydin:
-              </p>
-            </div>
-            <div className="flex items-center gap-4 shrink-0">
-              <div className="text-right">
-                <span className="text-[10px] text-zinc-500 block uppercase font-sans">A+ Net R</span>
-                <span className={`text-sm font-bold ${setupQualityStats.onlyAPlusNetR >= 0 ? 'text-emerald-400' : 'text-rose-400'} font-sans`}>{signedR(setupQualityStats.onlyAPlusNetR)} R</span>
-              </div>
-              <div className="text-right">
-                <span className="text-[10px] text-zinc-500 block uppercase font-sans">A+ Kazanma</span>
-                <span className="text-sm font-bold text-zinc-200 font-sans">%{setupQualityStats.onlyAPlusWinRate}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* SUBTAB 12: ASSET & ACCOUNT DISCIPLINE */}
-      {activeSubTab === 'asset_account' && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            
-            {/* Parite Bazında Edge */}
-            <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 space-y-3">
-              <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5">
-                <div className="flex items-center gap-2">
-                  <Scale size={16} className="text-blue-400" />
-                  <h4 className="text-xs font-bold text-zinc-100 font-sans uppercase tracking-wider">
-                    {smartUpper("Parite Bazında Performans & Kârlılık")}
-                  </h4>
-                </div>
-                <span className="text-[10px] text-zinc-500 font-sans font-mono">
-                  {assetStats.length} Parite
-                </span>
-              </div>
-
-              <div className="space-y-2">
-                {assetStats.map((ast) => (
-                  <div key={ast.asset} className="p-3 bg-zinc-900 border border-zinc-800/80 rounded-xl flex items-center justify-between gap-3 text-xs">
-                    <div>
-                      <span className="font-bold text-zinc-100 block font-sans text-sm">{ast.asset}</span>
-                      <span className="text-[10px] text-zinc-400 font-sans">
-                        {ast.total} İşlem ({ast.wins}W / {ast.losses}L{ast.total - ast.wins - ast.losses > 0 ? ` / ${ast.total - ast.wins - ast.losses}BE` : ''}) • Kâr Faktörü: {formatPF(ast.profitFactor)}
-                      </span>
-                    </div>
-                    <div className="text-right">
-                      <span className={`font-black block font-mono text-sm ${ast.netR >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                        {ast.netR >= 0 ? '+' : ''}{ast.netR} R
-                      </span>
-                      <span className="text-[10px] text-zinc-400 font-sans">%{ast.winRate} Kazanma</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Hesap Türü Disiplin Analizi (Funded vs Challenge vs Demo) */}
-            <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 space-y-3">
-              <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck size={16} className="text-emerald-400" />
-                  <h4 className="text-xs font-bold text-zinc-100 font-sans uppercase tracking-wider">
-                    {smartUpper("Hesap Türü & Disiplin Karşılaştırması")}
-                  </h4>
-                </div>
-                <span className="text-[10px] text-zinc-500 font-sans font-mono">
-                  Funded / Challenge / Demo
-                </span>
-              </div>
-
-              <div className="space-y-2">
-                {accountCategoryStats.map((acc) => {
-                  const isFunded = acc.category === 'FUNDED';
-                  const isChallenge = acc.category === 'CHALLENGE';
-                  return (
-                    <div 
-                      key={acc.category} 
-                      className={`p-3.5 rounded-xl border flex items-center justify-between gap-3 text-xs ${
-                        isFunded ? 'bg-emerald-950/20 border-emerald-500/30' :
-                        isChallenge ? 'bg-amber-950/20 border-amber-500/30' :
-                        'bg-blue-950/20 border-blue-500/30'
-                      }`}
-                    >
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-zinc-100 font-sans text-sm">{acc.category}</span>
-                          <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase font-mono ${
-                            isFunded ? 'bg-emerald-500/20 text-emerald-300' :
-                            isChallenge ? 'bg-amber-500/20 text-amber-300' :
-                            'bg-blue-500/20 text-blue-300'
-                          }`}>
-                            {isFunded ? 'Gerçek Fon' : isChallenge ? 'Fon Sınavı' : 'Demo / Simülasyon'}
-                          </span>
-                        </div>
-                        <span className="text-[10px] text-zinc-400 font-sans block mt-1">
-                          {acc.total} İşlem • Ortalama {acc.avgR} R / İşlem
-                        </span>
-                      </div>
-                      <div className="text-right">
-                        <span className={`font-black block font-mono text-sm ${acc.netR >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                          {acc.netR >= 0 ? '+' : ''}{acc.netR} R
-                        </span>
-                        <span className="text-[10px] text-zinc-300 font-sans">%{acc.winRate} Kazanma</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="p-3 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-zinc-400 leading-relaxed font-sans">
-                <span className="text-zinc-200 font-bold block mb-1">Psikolojik Çıkarım:</span>
-                Challenge hesaplarında kural zorlama ve acelecilik eğilimi genelde kazanma oranını düşürür. Fonlu (Funded) hesaplarda koruma içgüdüsü devreye girer. Bu verilerle iki zihniyet arasındaki finansal uçurumu takip edin.
-              </div>
-            </div>
-
-          </div>
-        </div>
-      )}
 
       {/* SUBTAB 11: MULTI-VARIABLE COMPARATOR */}
       {activeSubTab === 'matrix_comparator' && <ComparatorTab trades={trades} />}
