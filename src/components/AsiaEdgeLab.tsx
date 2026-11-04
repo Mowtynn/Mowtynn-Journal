@@ -2,18 +2,16 @@ import React, { useMemo, useState } from 'react';
 import { smartUpper } from '../constants/constants';
 import { FilterChip, FILTER_LABEL, FILTER_SELECT } from './filters/FilterControls';
 import { Trade } from '../types';
-import { MIN_SAMPLE, EDGE_PROOF_MIN } from '../lib/sampleSize';
+import { MIN_SAMPLE } from '../lib/sampleSize';
 import {
   analyzeAsia,
   AsiaLabResult,
   DatasetKey,
   DATASET_LABELS,
-  EdgeStats,
-  GroupRow,
   listPairs,
-  SimRow,
 } from '../lib/asiaAnalytics';
 import { useNewsDayLabels } from '../hooks/useNewsDayLabels';
+import { SimTable } from './strategy/ExcursionSimulators';
 
 interface AsiaEdgeLabProps {
   trades: Trade[];
@@ -35,103 +33,6 @@ const Card: React.FC<{ title: string; hint?: string; children: React.ReactNode }
 const Empty: React.FC<{ text: string }> = ({ text }) => (
   <p className="text-[11px] text-zinc-500 font-sans py-2">{text}</p>
 );
-
-const GroupTable: React.FC<{
-  rows: Array<{ label: string; stats: EdgeStats }>;
-  minSample: number;
-  empty: string;
-}> = ({ rows, minSample, empty }) => {
-  if (rows.length === 0) return <Empty text={empty} />;
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-xs font-sans">
-        <thead>
-          <tr className="text-[10px] uppercase text-zinc-500 text-right">
-            <th className="text-left font-medium pb-1.5">Grup</th>
-            <th className="font-medium pb-1.5">İşlem</th>
-            <th className="font-medium pb-1.5">WR %</th>
-            <th className="font-medium pb-1.5">Beklenti (R)</th>
-            <th className="font-medium pb-1.5">%95 Aralık</th>
-            <th className="font-medium pb-1.5">PF</th>
-            <th className="font-medium pb-1.5">Net R</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => {
-            const small = r.stats.n < minSample;
-            return (
-              <tr key={r.label} className={`border-t border-zinc-800/70 text-right ${small ? 'opacity-50' : ''}`}>
-                <td className="text-left py-1.5 pr-2 text-zinc-200 font-medium">{r.label}</td>
-                <td className="py-1.5 text-zinc-300">{r.stats.n}</td>
-                <td className="py-1.5 text-zinc-300">{r.stats.winRate}</td>
-                <td className={`py-1.5 font-bold ${tone(r.stats.expectancy)}`}>{signed(r.stats.expectancy)}</td>
-                <td className="py-1.5 text-zinc-500 font-mono text-[10px]">
-                  {signed(r.stats.expLo, 2)} / {signed(r.stats.expHi, 2)}
-                </td>
-                <td className="py-1.5 text-zinc-300">{r.stats.profitFactor >= 999 ? '∞' : r.stats.profitFactor}</td>
-                <td className={`py-1.5 ${tone(r.stats.netR)}`}>{signed(r.stats.netR)}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
-};
-
-const toRows = (rows: GroupRow[]) => rows.map((r) => ({ label: r.key, stats: r.stats }));
-
-const SimTable: React.FC<{ rows: SimRow[] }> = ({ rows }) => (
-  <div className="overflow-x-auto">
-    <table className="w-full text-xs font-sans">
-      <thead>
-        <tr className="text-[10px] uppercase text-zinc-500 text-right">
-          <th className="text-left font-medium pb-1.5">Senaryo</th>
-          <th className="font-medium pb-1.5">İşlem</th>
-          <th className="font-medium pb-1.5">WR %</th>
-          <th className="font-medium pb-1.5">Beklenti (R)</th>
-          <th className="font-medium pb-1.5">Fark</th>
-          <th className="font-medium pb-1.5">Net R</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((r, i) => (
-          <tr key={r.label} className={`border-t border-zinc-800/70 text-right ${i === 0 ? 'bg-zinc-900/60' : ''}`}>
-            <td className="text-left py-1.5 pr-2 text-zinc-200 font-medium">{r.label}</td>
-            <td className="py-1.5 text-zinc-300">{r.n}</td>
-            <td className="py-1.5 text-zinc-300">{r.winRate}</td>
-            <td className={`py-1.5 font-bold ${tone(r.expectancy)}`}>{signed(r.expectancy)}</td>
-            <td className={`py-1.5 ${i === 0 ? 'text-zinc-600' : tone(r.deltaVsActual)}`}>{i === 0 ? '—' : signed(r.deltaVsActual)}</td>
-            <td className={`py-1.5 ${tone(r.netR)}`}>{signed(r.netR)}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
-);
-
-const verdict = (e: EdgeStats): { text: string; cls: string } => {
-  if (e.n === 0) return { text: 'Seçili filtrede işlem yok.', cls: 'text-zinc-500' };
-  if (e.n < MIN_SAMPLE) {
-    return {
-      text: `${e.n} işlem: örneklem henüz küçük. Hüküm için en az ${MIN_SAMPLE} işlem gerekir; güven aralığı daraldıkça karar netleşir.`,
-      cls: 'text-zinc-300',
-    };
-  }
-  if (e.expLo > 0 && e.n < EDGE_PROOF_MIN) {
-    return { text: `Beklenti pozitif görünüyor (alt sınır ${signed(e.expLo)}R) ama ${e.n} işlem az; kanıt için en az ${EDGE_PROOF_MIN} işlem gerekir.`, cls: 'text-blue-300' };
-  }
-  if (e.expLo > 0) {
-    return { text: `Beklenti %95 güvenle pozitif (alt sınır ${signed(e.expLo)}R). Edge istatistiksel olarak destekleniyor.`, cls: 'text-emerald-400' };
-  }
-  if (e.expHi < 0) {
-    return { text: `Beklenti %95 güvenle negatif (üst sınır ${signed(e.expHi)}R). Bu veriyle strateji para kaybettiriyor.`, cls: 'text-rose-400' };
-  }
-  return {
-    text: `Edge henüz kanıtlanmadı: aralık sıfırı kapsıyor (${signed(e.expLo)}R … ${signed(e.expHi)}R).${e.tradesNeeded ? ` Mevcut ortalama ve dağılımla ~${e.tradesNeeded} işlem daha gerekir.` : ''}`,
-    cls: 'text-zinc-300',
-  };
-};
 
 const Sparkline: React.FC<{ points: AsiaLabResult['rolling'] }> = ({ points }) => {
   if (points.length < 2) return <Empty text="Kayan beklenti için en az 21 işlem gerekir (20 işlemlik pencere)." />;
@@ -168,9 +69,7 @@ export const AsiaEdgeLab = React.memo(function AsiaEdgeLab({ trades }: AsiaEdgeL
   const { version: newsVersion } = useNewsDayLabels();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const r = useMemo(() => analyzeAsia(trades, { dataset, pair, minSample }), [trades, dataset, pair, minSample, newsVersion]);
-  const v = verdict(r.overall);
 
-  const pairRows = r.pairs.map((p) => ({ label: p.key, stats: p.stats }));
   const sparseHourPair = r.hourPair.hours.length > 0 && r.hourPair.pairs.length > 0;
 
   return (
@@ -213,29 +112,9 @@ export const AsiaEdgeLab = React.memo(function AsiaEdgeLab({ trades }: AsiaEdgeL
         </label>
       </div>
 
-      {/* Summary */}
-      <Card title="Edge Özeti" hint="Beklenti = işlem başına ortalama R. Güven aralığı küçük örneklemde ne kadar emin olamayacağını gösterir.">
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
-          {[
-            { l: 'İşlem', val: String(r.overall.n), c: 'text-zinc-100' },
-            { l: 'Win Rate', val: `%${r.overall.winRate}`, sub: `%${r.overall.wrLo} – %${r.overall.wrHi}`, c: 'text-zinc-100' },
-            { l: 'Beklenti', val: `${signed(r.overall.expectancy)} R`, sub: `${signed(r.overall.expLo)} – ${signed(r.overall.expHi)}`, c: tone(r.overall.expectancy) },
-            { l: 'Net R', val: `${signed(r.overall.netR)} R`, c: tone(r.overall.netR) },
-            { l: 'Profit Factor', val: r.overall.profitFactor >= 999 ? '∞' : String(r.overall.profitFactor), c: 'text-zinc-100' },
-            { l: 'Maks. DD', val: `${r.overall.maxDrawdownR} R`, sub: `Şu an ${r.overall.currentDrawdownR} R`, c: 'text-zinc-100' },
-            { l: 'P(Edge > 0)', val: `%${r.overall.pPositive}`, sub: 'yaklaşık', c: 'text-zinc-100' },
-          ].map((c) => (
-            <div key={c.l} className="p-2.5 bg-zinc-900 border border-zinc-800/80 rounded-lg">
-              <span className="text-[10px] text-zinc-500 block font-sans uppercase">{smartUpper(c.l)}</span>
-              <span className={`text-sm font-bold font-sans ${c.c}`}>{c.val}</span>
-              {c.sub && <span className="text-[10px] text-zinc-500 block font-mono">{c.sub}</span>}
-            </div>
-          ))}
-        </div>
-        <p className={`text-xs font-sans leading-relaxed ${v.cls}`}>{v.text}</p>
-      </Card>
-
-      {r.overall.n === 0 ? null : (
+      {r.overall.n === 0 ? (
+        <Empty text="Bu filtrelerle işlem yok." />
+      ) : (
         <>
           <Card title="Veri Eksiği Panosu" hint="Hangi alanı doldurmazsan hangi analiz çalışmıyor. Yüzde düşükse o analiz güvenilmez.">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
@@ -255,16 +134,6 @@ export const AsiaEdgeLab = React.memo(function AsiaEdgeLab({ trades }: AsiaEdgeL
               ))}
             </div>
           </Card>
-
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-            <Card title="Parite Bazında Edge">
-              <GroupTable rows={pairRows} minSample={minSample} empty="Parite verisi yok." />
-            </Card>
-
-            <Card title="Giriş Saati">
-              <GroupTable rows={toRows(r.hours)} minSample={minSample} empty="Saat verisi yok." />
-            </Card>
-          </div>
 
           <Card title="Saat × Parite Isı Tablosu" hint="Hücre: beklenti (R) ve işlem sayısı. Soluk hücreler minimum örneklemin altındadır; onlara göre karar verme.">
             {!sparseHourPair ? (
@@ -304,121 +173,15 @@ export const AsiaEdgeLab = React.memo(function AsiaEdgeLab({ trades }: AsiaEdgeL
             )}
           </Card>
 
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-            <Card title="Süpürülen Taraf (Asia High / Low)">
-              <GroupTable rows={toRows(r.sweepSide)} minSample={minSample} empty="Veri yok." />
+          {r.missedByManagement.n > 0 && (
+            <Card title="Yönetimle Kaçırılan R" hint="Erken kapatıp ardından TP'ye giden işlemler: yönetim kararının maliyeti.">
+              <p className="text-xs text-zinc-400 font-sans">
+                Çıkıştan sonra TP'ye giden {r.missedByManagement.n} işlem
+                {r.missedByManagement.measured > 0 && <> · kaçırılan <span className="font-bold text-rose-300">{r.missedByManagement.missedR.toFixed(2)}R</span></>}
+                {r.missedByManagement.measured < r.missedByManagement.n && <> ({r.missedByManagement.n - r.missedByManagement.measured} işlemde TP / Stop Pip eksik)</>}
+              </p>
             </Card>
-
-            <Card title="PD Array Zaman Dilimi (1H / 4H / D)">
-              <GroupTable rows={toRows(r.pdTimeframe)} minSample={minSample} empty="PD Array zaman dilimi girilmemiş." />
-            </Card>
-
-            <Card title="PD Array Türü (FVG / OB …)">
-              <GroupTable rows={toRows(r.pdType)} minSample={minSample} empty="PD Array türü girilmemiş." />
-            </Card>
-
-            <Card title="Giriş Modeli">
-              <GroupTable rows={toRows(r.entryModels)} minSample={minSample} empty="Entry Model girilmemiş." />
-            </Card>
-
-            <Card title="Asia Range (Range / Trend / Swept)">
-              <GroupTable rows={toRows(r.asiaRanges)} minSample={minSample} empty="Asia Range girilmemiş." />
-            </Card>
-
-            <Card title="Sweep Time (NY, 30 dk)">
-              <GroupTable rows={toRows(r.sweepHours)} minSample={minSample} empty="Sweep Time girilmemiş." />
-            </Card>
-
-            <Card title="İşlem Süresi (Giriş → Çıkış)">
-              <GroupTable rows={toRows(r.holdTime)} minSample={minSample} empty="Çıkış saati girilmiş işlem yok." />
-            </Card>
-
-            <Card title="Hesap Aşaması">
-              <GroupTable rows={toRows(r.stages)} minSample={minSample} empty="Prop hesabına bağlı işlem yok." />
-            </Card>
-
-            <Card title="Planlanan R:R (TP ÷ Stop)">
-              <GroupTable rows={toRows(r.plannedRR)} minSample={minSample} empty="TP ve Stop Pip girilmiş işlem yok." />
-            </Card>
-
-            <Card title="Stop / Asia Range">
-              <GroupTable rows={toRows(r.stopToRange)} minSample={minSample} empty="Stop ve Asia Range Pip girilmiş işlem yok." />
-            </Card>
-
-            <Card title="Günün Kaçıncı İşlemi">
-              <GroupTable rows={toRows(r.tradeOfDay)} minSample={minSample} empty="İşlem yok." />
-            </Card>
-
-            <Card title="Gün İçi Önceki İşlem" hint="Aynı NY günündeki bir önceki işlemin sonucuna göre (hesaplardan bağımsız). Kayıptan sonraki işlemlerin edge'i düşükse 'kayıptan sonra dur' kuralı veriye dayanır.">
-              <GroupTable rows={toRows(r.prevTrade)} minSample={minSample} empty="İşlem yok." />
-            </Card>
-
-            <Card title="İşlem Yönetimi">
-              <GroupTable rows={toRows(r.management)} minSample={minSample} empty="İşlem Yönetimi girilmemiş." />
-              {r.missedByManagement.n > 0 && (
-                <p className="mt-2 text-xs text-zinc-400">
-                  Çıkıştan sonra TP'ye giden {r.missedByManagement.n} işlem
-                  {r.missedByManagement.measured > 0 && <> · yönetimle kaçırılan <span className="font-bold text-rose-300">{r.missedByManagement.missedR.toFixed(2)}R</span></>}
-                  {r.missedByManagement.measured < r.missedByManagement.n && <> ({r.missedByManagement.n - r.missedByManagement.measured} işlemde TP / Stop Pip eksik)</>}
-                </p>
-              )}
-            </Card>
-
-            <Card title="Çıkış Sonrası TP">
-              <GroupTable rows={toRows(r.afterExit)} minSample={minSample} empty="BE / erken kapanan işlemlerde girilmemiş." />
-            </Card>
-
-            <Card title="Sweep → Giriş Gecikmesi">
-              <GroupTable rows={toRows(r.sweepDelay)} minSample={minSample} empty="Sweep Time girilmiş işlem yok." />
-            </Card>
-
-            <Card title="Asia Range FVG">
-              <GroupTable rows={toRows(r.asiaRangeFvgs)} minSample={minSample} empty="Asia Range FVG girilmemiş." />
-            </Card>
-
-            <Card
-              title="News Day / Bank Holiday"
-              hint="Haber günü ile normal gün kıyası. Bilgisi girilmemiş eski işlemler dahil edilmez."
-            >
-              <GroupTable rows={toRows(r.newsDay.rows)} minSample={minSample} empty="News Day bilgisi girilmiş işlem yok." />
-              {r.newsDay.unknown > 0 && (
-                <p className="text-[10px] text-zinc-500 font-sans">{r.newsDay.unknown} işlemde bilgi yok; kıyasa katılmadı.</p>
-              )}
-            </Card>
-
-            <Card title="Asia Range Büyüklüğü (parite medyanına göre)" hint="Her parite kendi medyanıyla kıyaslanır; EURCAD ve EURUSD aynı pip eşiğiyle yargılanmaz.">
-              <GroupTable rows={r.rangeSize.map((x) => ({ label: x.label, stats: x.stats }))} minSample={minSample} empty="Asia Range (pip) girilmemiş." />
-            </Card>
-
-            <Card title="Gün">
-              <GroupTable rows={r.weekdays.filter((d) => d.stats.n > 0).map((d) => ({ label: d.day, stats: d.stats }))} minSample={minSample} empty="Veri yok." />
-            </Card>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4">
-            <Card title="Hedefe Ulaşma Dağılımı" hint="MFE / TP mesafesi: fiyat karşı Asia ucuna giden yolun ne kadarını katetti?">
-              {r.targetReach ? (
-                <div className="space-y-1.5">
-                  {r.targetReach.buckets.map((b) => (
-                    <div key={b.label} className="text-xs font-sans">
-                      <div className="flex justify-between text-zinc-300">
-                        <span>{b.label}</span>
-                        <span className="text-zinc-500">
-                          {b.count} işlem · %{b.pct}
-                        </span>
-                      </div>
-                      <div className="h-1 bg-zinc-800 rounded mt-1">
-                        <div className="h-1 bg-zinc-500 rounded" style={{ width: `${b.pct}%` }} />
-                      </div>
-                    </div>
-                  ))}
-                  <p className="text-[10px] text-zinc-500 font-sans pt-1">{r.targetReach.usable} işlemde TP ve MFE var; hedefe ulaşma oranı %{r.targetReach.reachedPct}.</p>
-                </div>
-              ) : (
-                <Empty text="TP ve MFE girilmiş işlem yok." />
-              )}
-            </Card>
-          </div>
+          )}
 
           <Card
             title="Asia Range Katı Cinsinden Hedef"
@@ -461,31 +224,6 @@ export const AsiaEdgeLab = React.memo(function AsiaEdgeLab({ trades }: AsiaEdgeL
               </div>
             ) : (
               <Empty text="MFE ve Asia Range Pip girilmiş işlem yok." />
-            )}
-          </Card>
-
-          <Card
-            title="TP Simülatörü"
-            hint="Kayıtlı MFE ile 'şu R’da kapatsaydım ne olurdu' sorusunu cevaplar. Varsayım: MFE, orijinal çıkıştan önce ölçüldü. Karşılaştırma aynı işlem alt kümesi üzerinde yapılır."
-          >
-            {r.tpSim.rows.length === 0 ? <Empty text="Stop ve MFE girilmiş işlem yok." /> : <SimTable rows={r.tpSim.rows} />}
-          </Card>
-
-          <Card
-            title="Stop Daraltma Simülatörü"
-            hint="Kayıtlı MAE ile stopu daraltsaydın hangi işlemler erken stop olurdu? Spread ve slipaj hesaba katılmaz; gerçek hayatta sonuçlar biraz daha kötü olur."
-          >
-            {r.stopSim.rows.length === 0 ? <Empty text="Stop ve MAE girilmiş işlem yok." /> : <SimTable rows={r.stopSim.rows} />}
-          </Card>
-
-          <Card
-            title="Kombinasyon Bulucu"
-            hint="Girişten önce bilinen iki alanın birleşimleri (süre ve yönetim hariç), güven aralığı alt sınırına göre sıralanır. Çok sayıda kombinasyon denendiği için rastlantısal 'parlak' sonuçlar çıkar: bulduğunu yeni veride (live-test) doğrulamadan kural yapma."
-          >
-            {r.combos.length === 0 ? (
-              <Empty text={`En az ${Math.max(3, minSample)} işlemlik kombinasyon yok.`} />
-            ) : (
-              <GroupTable rows={r.combos.map((c) => ({ label: c.label, stats: c.stats }))} minSample={minSample} empty="" />
             )}
           </Card>
 

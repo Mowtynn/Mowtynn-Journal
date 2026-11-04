@@ -1,5 +1,5 @@
 import { MetricDetail } from '../components/MetricDetailModal';
-import { Activity, AlertTriangle, ArrowDownRight, ArrowUpRight, Calendar, LineChart, Scale, Target, TrendingDown, TrendingUp } from 'lucide-react';
+import { Activity, AlertTriangle, ArrowDownRight, ArrowUpRight, Calendar, Scale, Target, TrendingDown, TrendingUp } from 'lucide-react';
 
 export const metricDetailsDict: Record<string, Omit<MetricDetail, 'value' | 'id'>> = {
   // DeepAnalysis
@@ -25,17 +25,7 @@ export const metricDetailsDict: Record<string, Omit<MetricDetail, 'value' | 'id'
       'Pozitif kalması, uzun vadede stratejinin kârlı büyüyeceğini gösterir.'
     ]
   },
-  expectancy: {
-    title: 'Expectancy (Beklenti Oranı)',
-    description: 'İşlem başına ortalama olarak beklenen kazanç miktarını (veya kaybı) risk çarpanı (R) cinsinden gösterir.',
-    formula: '(Kazanma Oranı × Ortalama Kazanılan R) - (Kaybetme Oranı × Ortalama Kaybedilen R)',
-    type: 'info',
-    icon: Activity,
-    details: [
-      'Pozitif Beklenti: İstatistiksel olarak bu stratejiyi oynamaya devam ederseniz uzun vadede kazanırsınız.',
-      'Negatif Beklenti: İşlemlere devam edildikçe sistem kasanızı eritecektir.'
-    ]
-  },
+
   averageWin: {
     title: "Ortalama Kazanç (Average Win)",
     description: "Kârlı kapatılan işlemlerden kazanılan ortalama risk çarpanı (R-Multiple) değeridir.",
@@ -140,28 +130,8 @@ export const metricDetailsDict: Record<string, Omit<MetricDetail, 'value' | 'id'
       "Devam eden (henüz toparlanmamış) düşüş ortalamaya katılmaz; hiç tamamlanmış düşüş yoksa — gösterilir."
     ]
   },
-  efficiencyLevel: {
-    title: "Sistem Verimlilik Seviyesi",
-    description: "Son 10 işlemin Profit Factor'ü ile tüm geçmişin Profit Factor'ünün karşılaştırması.",
-    formula: "Son 10 işlem: brüt kazanç R / brüt kayıp R",
-    type: 'info',
-    icon: Target,
-    details: [
-      "Son 10'un PF'si genelin belirgin altındaysa piyasa koşulları ya da uygulama değişmiş olabilir.",
-      "10 işlem küçük bir örneklemdir: tek başına karar verdirmez, eğilim uyarısıdır."
-    ]
-  },
-  last10AvgR: {
-    title: "Son 10 İşlem Ortalaması",
-    description: "Son 10 işlemin işlem başına ortalama R'si (BE dahil).",
-    formula: "Son 10 işlemin R toplamı / 10",
-    type: 'info',
-    icon: LineChart,
-    details: [
-      "Genel beklentiyle (işlem başı ortalama R) karşılaştırarak son dönemin daha iyi mi kötü mü gittiğini görürsünüz.",
-      "10'dan az işlem varsa mevcut işlemlerin ortalamasıdır."
-    ]
-  },
+
+
   profitableDays: {
     title: "Kârlı / Zararlı Gün",
     description: "İşlem yapılan New York takvim günlerinin, günün toplam R sonucuna göre dağılımı. Gün içinde birden çok işlem varsa toplamları alınır.",
@@ -173,19 +143,5 @@ export const metricDetailsDict: Record<string, Omit<MetricDetail, 'value' | 'id'
       "Kârlı günlerin oranı, kazanma oranından farklıdır: tek bir büyük kazanç birkaç küçük kaybı aynı gün içinde telafi edebilir.",
     ],
   },
-  sqn: {
-    title: "Sistem Kalitesi (SQN - System Quality Number)",
-    description: "Van Tharp tarafından geliştirilmiş SQN skoru; yapılan işlemlerin ortalama net risk (R) getirisini, bu getirilerin değişkenliğiyle (standart sapma) kıyaslayarak ve aynı zamanda sistemin işlem adedini de hesaba katarak genel bir \"Sistem Kalite Derecesi\" belirler.",
-    formula: "SQN = (Ortalama R / Standart Sapma) × Karekök(İşlem Sayısı)",
-    type: 'positive',
-    icon: Activity,
-    details: [
-      "SQN skoru, stratejinizin pazar koşullarında sadece ne kadar kazanç getirdiğini değil, bu kazancı ne kadar stabil ve düşük dalgalanmayla getirdiğini ölçer.",
-      "İşlem sayısı arttıkça aynı R ortalaması ve standart sapmaya sahip bir sistemin güvenilirliği ve SQN puanı artar.",
-      "1.6 altı: Geliştirilmeli (Ortalama Altı)",
-      "1.6 - 2.49 arası: Ortalama (İyi) - Çoğu kârlı trade sistemi bu aralıktadır.",
-      "2.5 - 2.99 arası: İyi Sistem - Çok istikrarlı gelişim.",
-      "3.0 ve üstü: Mükemmel - Ölçeklendirme için harika şartlar."
-    ]
-  },
+
 };

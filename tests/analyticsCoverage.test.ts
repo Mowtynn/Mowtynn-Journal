@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { analyzeAsia, computeCoverage, indexTradeOrder, RANGE_SIZE_BUCKETS } from '../src/lib/asiaAnalytics';
+import { computeCoverage, indexTradeOrder, RANGE_SIZE_BUCKETS } from '../src/lib/asiaAnalytics';
 import { dimensionValue, UNSPECIFIED } from '../src/lib/setupScorecard';
 import { calculateStrategyAnalytics } from '../src/lib/strategyAnalytics';
 import { NOW, DAY, trade } from './fixtures';
@@ -41,26 +41,6 @@ test('veri eksiği panosu: her girdi var; yalnızca sorulan işlemlerde ölçül
   assert.equal(cov.afterExitTp.pct, 50);
   assert.equal(cov.riskPct.base, 2);
   assert.equal(cov.riskPct.filled, 1);
-});
-
-test('Asia Lab kombinasyon bulucu yalnızca girişten önce bilinen alanları kullanır, gereksiz birleşimi atar', () => {
-  const trades = Array.from({ length: 24 }, (_, i) =>
-    t(i % 3 === 0 ? -1 : 2, {
-      session: i < 12 ? 'London' : 'NY AM',
-      asiaRange: i % 2 ? 'Range' : 'Trend',
-      entryModels: i % 3 === 2 ? ['FVG'] : ['MSS', 'FVG'],
-      exitAt: NOW - (100 - i) * DAY + 30 * 60000,
-      management: ['BE Çekildi'],
-    }, i),
-  );
-  const r = analyzeAsia(trades, { dataset: 'ALL', pair: 'ALL', minSample: 5 });
-  assert.ok(r.combos.length > 0);
-  assert.ok(r.combos.every((c) => !c.label.includes('İşlem Süresi') && !c.label.includes('İşlem Yönetimi')));
-  assert.ok(r.combos.some((c) => c.label.includes('Session: London')));
-  // Tek parite: "Parite: EURUSD + X" birleşimi X'in kendisiyle aynı işlemler → listelenmez
-  assert.ok(r.combos.every((c) => !c.label.startsWith('Parite:')));
-  // Çoklu seçim birleşik değer olarak sayılır (işlem iki kez sayılmaz)
-  assert.ok(r.combos.some((c) => c.label.includes('Entry Model: FVG + MSS')));
 });
 
 test('MFE yakalama ve masada kalan kâr aynı işlemler üzerinden (MFE + TP girilmiş kazananlar)', () => {

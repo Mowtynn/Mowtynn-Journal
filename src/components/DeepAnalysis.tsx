@@ -1,7 +1,7 @@
 import { EASE } from '../lib/motion';
 import { smartUpper } from '../constants/constants';
 import React, { useState, useMemo, useEffect } from "react";
-import { nyIsoWeekKey } from "../lib/advancedMetrics";
+import { nyIsoWeekKey } from "../lib/tradingTime";
 
 // Sermaye eğrisi her noktada tarih yazar: biçimleyiciler bir kez kurulur (toLocaleDateString her çağrıda yenisini kurar)
 const TR_LONG = new Intl.DateTimeFormat("tr-TR", { day: "numeric", month: "long", year: "numeric" });
@@ -16,9 +16,7 @@ import {
   Target,
   Filter,
   TrendingUp,
-  TrendingDown,
   Layers,
-  Activity,
   Calendar as CalendarIcon,
   CheckCircle2,
   XCircle,
@@ -43,7 +41,6 @@ interface DeepAnalysisProps {
   onViewDetails: (trade: Trade, list?: Trade[]) => void;
   onEdit?: (trade: Trade) => void;
   onDelete?: (id: string) => void;
-  sessions?: string[];
   definitionTitles?: DefinitionTitles;
   planFidelities?: string[];
   entryModels?: string[];
@@ -54,7 +51,6 @@ interface DeepAnalysisProps {
 const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
   trades,
   onEdit,
-  sessions = [],
   definitionTitles = DEFAULT_DEFINITION_TITLES,
   planFidelities = [],
 }: DeepAnalysisProps) {
@@ -473,69 +469,6 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
             </div>
           </motion.div>
 
-          {/* SİSTEM STATÜSÜ */}
-          <motion.div variants={itemVariants} className="bg-transparent p-4 sm:p-5 transition-colors duration-200 ease-out flex flex-col justify-center flex-1">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-[10px] font-bold uppercase text-zinc-400 tracking-wider font-sans flex items-center gap-1.5">
-                <span className="p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400">
-                  <Activity size={11} />
-                </span>
-                Sistem Statüsü & Kalitesi
-              </p>
-            </div>
-            <div className="grid grid-cols-2 gap-3 items-stretch w-full h-full">
-              <div 
-                className="bg-zinc-950/60 border border-zinc-800/80 rounded-2xl p-3.5 flex flex-col justify-between cursor-pointer hover:bg-amber-950/10 hover:border-amber-500/30 transition-ui duration-200 ease-out group shadow-xs" 
-                onClick={() => handleMetricClick("sqn", (metrics.sqn)?.toFixed(2) || "0.00")}
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <p className="text-[10px] text-zinc-400 uppercase tracking-wider font-bold font-sans">
-                    SQN PUANI
-                  </p>
-                  {(() => {
-                    const s = metrics.sqn;
-                    if (s < 1.6) return null;
-                    return (
-                      <span className={`text-[9px] font-sans font-bold px-2 py-0.5 rounded-lg border ${
-                        s >= 3 
-                          ? "toggle-item-win" 
-                          : s >= 2.5 
-                            ? "toggle-item-brand" 
-                            : "toggle-item-breakeven"
-                      }`}>
-                        {s < 2.5 ? "Ortalama" : s < 3.0 ? "İyi Sistem" : "Mükemmel"}
-                      </span>
-                    );
-                  })()}
-                </div>
-                <div className="mt-1">
-                    <span className={`text-lg sm:text-xl font-bold font-sans tracking-tight ${(metrics.sqn) >= 2.5 ? "text-emerald-400" : (metrics.sqn) >= 1.6 ? "text-amber-400" : "text-rose-400"}`}>
-                      {(metrics.sqn)?.toFixed(2) || "0.00"}
-                    </span>
-                </div>
-              </div>
-
-              <div 
-                className="bg-zinc-950/60 border border-zinc-800/80 rounded-2xl p-3.5 flex flex-col justify-between cursor-pointer hover:bg-blue-950/10 hover:border-blue-500/30 transition-ui duration-200 ease-out group shadow-xs" 
-                onClick={() => handleMetricClick("expectancy", (metrics.expectancy > 0 ? "+" : "") + metrics.expectancy.toFixed(2) + " R")}
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <p className="text-[10px] text-zinc-400 uppercase tracking-wider font-bold font-sans">
-                    İşlem Başı Beklenti
-                  </p>
-                </div>
-                <div className="mt-1">
-                    <span className={`text-lg sm:text-xl font-bold font-sans tracking-tight ${metrics.expectancy >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
-                      {(
-                        <span className="flex flex-col">
-                          <span>{metrics.expectancy > 0 ? "+" : ""}{metrics.expectancy.toFixed(2)} <span className="text-xs font-bold">R</span></span>
-                        </span>
-                      )}
-                    </span>
-                </div>
-              </div>
-            </div>
-          </motion.div>
         </div>
 
         {/* Kümülatif Kâr / Zarar Eğrisi (Equity Curve) */}
@@ -651,7 +584,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
       </div>
 
       {/* Gün İstatistikleri & Ekstrem Değerler */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 divide-y lg:divide-y-0 lg:divide-x divide-zinc-800/80 w-full">
+      <div className="w-full">
         {/* Kârlı / Zararlı Gün */}
         <motion.div variants={itemVariants} className="bg-transparent p-4 sm:p-5 transition-colors duration-200 ease-out flex flex-col justify-center">
           <div className="flex items-center justify-between mb-3">
@@ -695,50 +628,12 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
             </div>
           )}
         </motion.div>
-
-        {/* Maks. Kazanç / Maks. Kayıp */}
-        <motion.div variants={itemVariants} className="bg-transparent p-4 sm:p-5 transition-colors duration-200 ease-out flex flex-col justify-center">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-[10px] font-bold uppercase text-zinc-400 tracking-wider font-sans flex items-center gap-1.5">
-              <span className="p-1.5 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400">
-                <Target size={11} />
-              </span>
-              MAKS. İŞLEMLER
-            </p>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div 
-              className="bg-zinc-950/60 border border-emerald-500/20 hover:border-emerald-500/40 p-3.5 rounded-2xl cursor-pointer hover:bg-emerald-950/10 transition-ui duration-200"
-              onClick={(e) => { e.stopPropagation(); handleMetricClick("largestWin", ("+" + (metrics.bestTrade ? (metrics.bestTrade.rr || 0).toFixed(1) : "0") + " R")); }}
-            >
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[10px] block uppercase font-bold text-emerald-400 font-sans">Maks. Kazanç</span>
-                <TrendingUp size={13} className="text-emerald-400/80" />
-              </div>
-              <span className="text-lg sm:text-xl font-bold text-emerald-400 block font-sans mt-0.5">
-                +{(metrics.bestTrade ? (metrics.bestTrade.rr || 0).toFixed(2) : "0")} <span className="text-xs">R</span>
-              </span>
-            </div>
-            <div 
-              className="bg-zinc-950/60 border border-rose-500/20 hover:border-rose-500/40 p-3.5 rounded-2xl cursor-pointer hover:bg-rose-950/10 transition-ui duration-200"
-              onClick={(e) => { e.stopPropagation(); handleMetricClick("largestLoss", ("-" + (metrics.worstTrade ? Math.abs(metrics.worstTrade.rr || 0).toFixed(1) : "0") + " R")); }}
-            >
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[10px] block uppercase font-bold text-rose-400 font-sans">Maks. Kayıp</span>
-                <TrendingDown size={13} className="text-rose-400/80" />
-              </div>
-              <span className="text-lg sm:text-xl font-bold text-rose-400 block font-sans mt-0.5">
-                -{(metrics.worstTrade ? Math.abs(metrics.worstTrade.rr || 0).toFixed(2) : "0")} <span className="text-xs">R</span>
-              </span>
-            </div>
-          </div>
-        </motion.div>
       </div>
 
 
 
       <Deferred minHeight={900} idleMs={600}>
-        <AdvancedMetricsDashboard trades={trades} onMetricClick={handleMetricClick} onEdit={onEdit} sessions={sessions} />
+        <AdvancedMetricsDashboard trades={trades} onMetricClick={handleMetricClick} onEdit={onEdit} />
       </Deferred>
       
       <MetricDetailModal 

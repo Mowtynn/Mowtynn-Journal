@@ -2344,7 +2344,6 @@ export default function App() {
                         onViewDetails={openTradeDetail}
                         onEdit={handleStartEdit}
                         onDelete={handleDeleteTrade}
-                        sessions={sessions}
                         definitionTitles={definitionTitles}
                         planFidelities={planFidelities}
                         entryModels={entryModels}

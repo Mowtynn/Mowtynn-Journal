@@ -18,12 +18,7 @@ test('detaylı analiz: max düşüş, toparlanma faktörü ve toparlanma süresi
   assert.equal(m.equityCurve.at(-1)!.drawdown, -1);
 });
 
-test('detaylı analiz: son 10 işlem gerçekten hesaplanır; hiç düşüş yoksa toparlanma yok', () => {
-  const m = computeDeepMetrics(seq([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -1]));
-  assert.equal(m.last10.n, 10);
-  assert.equal(m.last10.grossProfit, 9);
-  assert.equal(m.last10.grossLoss, 1);
-  assert.equal(m.last10.avgR, 0.8);
+test('detaylı analiz: hiç düşüş yoksa toparlanma yok', () => {
   const up = computeDeepMetrics(seq([1, 2]));
   assert.equal(up.avgRecoveryTrades, null);
   assert.equal(up.maxDrawdown, 0);

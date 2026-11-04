@@ -8,12 +8,6 @@ export { MIN_SAMPLE };
 
 export interface StrategyAnalyticsResult {
   totalTrades: number;
-  overallScore: {
-    winRate: number;
-    profitFactor: number;
-    netR: number;
-    expectancy: number;
-  };
   
   // 1. MAE (Maximum Adverse Excursion) Analytics
   maeStats: {
@@ -72,7 +66,6 @@ export interface StrategyAnalyticsResult {
   // 18. Streak & Post-Loss / Tilt Analytics
   streakStats: {
     currentStreak: { type: 'WIN' | 'LOSS' | 'NONE'; count: number };
-    maxWinStreak: number;
     maxLossStreak: number;
     postWinWinRate: number;
     postLossWinRate: number;
@@ -97,7 +90,6 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
 
   const defaultEmptyResult: StrategyAnalyticsResult = {
     totalTrades: 0,
-    overallScore: { winRate: 0, profitFactor: 0, netR: 0, expectancy: 0 },
     maeStats: {
       hasData: false,
       tradeCount: 0,
@@ -133,7 +125,6 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
     stopSizeStats: { hasData: false, brackets: [], insight: 'Stop Pip verisi yok.' },
     streakStats: {
       currentStreak: { type: 'NONE', count: 0 },
-      maxWinStreak: 0,
       maxLossStreak: 0,
       postWinWinRate: 0,
       postLossWinRate: 0,
@@ -147,11 +138,6 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
   // General Performance
   const totalWins = trades.filter(t => t.status === 'WIN').length;
   const overallWinRate = Math.round((totalWins / totalTrades) * 1000) / 10;
-  const overallNetR = Math.round(trades.reduce((s, t) => s + (t.rr || 0), 0) * 100) / 100;
-  const posR = trades.filter(t => (t.rr || 0) > 0).reduce((s, t) => s + (t.rr || 0), 0);
-  const negR = Math.abs(trades.filter(t => (t.rr || 0) < 0).reduce((s, t) => s + (t.rr || 0), 0));
-  const overallProfitFactor = Math.round(calculateProfitFactor(toRR(posR), toRR(negR)) * 100) / 100;
-  const overallExpectancy = Math.round((overallNetR / totalTrades) * 100) / 100;
 
   // 1. MAE Analytics
   const tradesWithMae = trades.filter(t => typeof t.maePips === 'number' && !isNaN(t.maePips) && t.maePips >= 0);
@@ -252,7 +238,7 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
     list.sort((a, b) => b.avgR - a.avgR);
     if (list.length > 0) {
       bestAsiaBracket = list[0].label;
-      asiaInsight = `İşlem başına en yüksek beklenti ${bestAsiaBracket} aralığında (${list[0].avgR >= 0 ? '+' : ''}${list[0].avgR} R, ${list[0].count} işlem).${earlyNote(list[0].count)} Güven aralıkları için Asia Edge Lab'e bakın.`;
+      asiaInsight = `İşlem başına en yüksek beklenti ${bestAsiaBracket} aralığında (${list[0].avgR >= 0 ? '+' : ''}${list[0].avgR} R, ${list[0].count} işlem).${earlyNote(list[0].count)} Güven aralıkları için Kurulum Karnesi'nde Asia Range Büyüklüğü alanına bakın.`;
     } else {
       asiaInsight = `Her aralıkta en az ${MIN_SAMPLE} işlem birikince kıyas yapılır.`;
     }
@@ -269,7 +255,7 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
     { label: 'Geniş Stop (> 25 Pip)', ...calcBucket(wideStopTrades, 'Geniş Stop (> 25 Pip)') },
   ];
 
-  let stopSizeInsight = `Pip eşikleri sabittir; farklı volatilitedeki pariteleri karıştırıyorsan Asia Edge Lab'i parite filtresiyle kullan. Her grupta en az ${MIN_SAMPLE} işlem olunca yorum yapılır.`;
+  let stopSizeInsight = `Pip eşikleri sabittir; farklı volatilitedeki pariteleri karıştırıyorsan Kurulum Karnesi'ndeki Stop / Asia Range alanına bak. Her grupta en az ${MIN_SAMPLE} işlem olunca yorum yapılır.`;
   const stopReliable = stopSizeBrackets.filter(b => b.count >= MIN_SAMPLE).sort((a, b) => b.avgR - a.avgR);
   if (stopReliable.length >= 2) {
     stopSizeInsight = `İşlem başına en yüksek beklenti ${stopReliable[0].label} grubunda (${stopReliable[0].avgR} R, ${stopReliable[0].count} işlem).${earlyNote(stopReliable[0].count)}`;
@@ -279,7 +265,6 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
   const sortedChronological = [...trades].sort((a, b) => a.createdAt - b.createdAt);
   let currentStreakType: 'WIN' | 'LOSS' | 'NONE' = 'NONE';
   let currentStreakCount = 0;
-  let maxWinStreak = 0;
   let maxLossStreak = 0;
   let tempWin = 0;
   let tempLoss = 0;
@@ -294,7 +279,6 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
     if (t.status === 'WIN') {
       tempWin++;
       tempLoss = 0;
-      if (tempWin > maxWinStreak) maxWinStreak = tempWin;
     } else if (t.status === 'LOSS') {
       tempLoss++;
       tempWin = 0;
@@ -349,12 +333,6 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
 
   return {
     totalTrades,
-    overallScore: {
-      winRate: overallWinRate,
-      profitFactor: overallProfitFactor,
-      netR: overallNetR,
-      expectancy: overallExpectancy,
-    },
     maeStats: {
       hasData: tradesWithMae.length > 0,
       tradeCount: tradesWithMae.length,
@@ -390,7 +368,6 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
     },
     streakStats: {
       currentStreak: { type: currentStreakType, count: currentStreakCount },
-      maxWinStreak,
       maxLossStreak,
       postWinWinRate,
       postLossWinRate,

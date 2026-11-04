@@ -1,11 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateAdvancedMetrics, nyIsoWeekKey } from '../src/lib/advancedMetrics';
-import { nyInputToTs } from '../src/lib/tradingTime';
+import { nyInputToTs, nyIsoWeekKey } from '../src/lib/tradingTime';
 import { normalizeTrade } from '../src/lib/tradeModel';
 import { trade } from './fixtures';
 
-test('haftalık hacim ve parite×seans matrisi: hafta NY takvimine göre; tarayıcının saat dilimi (İstanbul) kaydırmaz', () => {
+test('haftalık gruplama: hafta NY takvimine göre; tarayıcının saat dilimi (İstanbul) kaydırmaz', () => {
   const prevTz = process.env.TZ;
   process.env.TZ = 'Europe/Istanbul';
   try {
@@ -13,11 +12,6 @@ test('haftalık hacim ve parite×seans matrisi: hafta NY takvimine göre; taray�
     const sun = nyInputToTs('2026-10-18T20:00')!;
     const mon = nyInputToTs('2026-10-19T09:30')!;
     assert.notEqual(nyIsoWeekKey(sun), nyIsoWeekKey(mon));
-    const m = calculateAdvancedMetrics([
-      trade({ id: 'a', status: 'WIN', rr: 2, asset: 'EURUSD', session: 'London', createdAt: mon }),
-      trade({ id: 'b', status: 'LOSS', rr: -1, asset: 'EURUSD', session: 'London', createdAt: mon + 3600000 }),
-    ])!;
-    assert.deepEqual(m.deadZone.EURUSD.London, { count: 2, wins: 1, rr: 1 });
   } finally {
     if (prevTz === undefined) delete process.env.TZ;
     else process.env.TZ = prevTz;

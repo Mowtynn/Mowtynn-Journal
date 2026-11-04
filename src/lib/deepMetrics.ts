@@ -1,6 +1,5 @@
 import type { Trade } from '../types';
 import { calculateProfitFactor, calculateRecoveryFactor, toRR } from './statMath';
-import { calculateSQN } from '../utils/math';
 import { nyDateKey, nyWallDate } from './tradingTime';
 
 /**
@@ -34,8 +33,6 @@ export interface DeepMetrics {
   avgWinRR: number;
   avgLossRR: number;
   /** İşlem başına ortalama R (BE dahil) */
-  expectancy: number;
-  sqn: number;
   statusAnalysis: { win: number; loss: number; breakeven: number; total: number };
   /** NY takvim günü bazında: günlük toplam R > 0 / < 0 */
   greenDays: number;
@@ -52,7 +49,6 @@ export interface DeepMetrics {
   /** Tamamlanmış düşüş sayısı */
   recoveredDrawdowns: number;
   /** Son 10 işlem: brüt kazanç / kayıp ve işlem başına ortalama R */
-  last10: { n: number; grossProfit: number; grossLoss: number; avgR: number };
 }
 
 const MONTHS_TR = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
@@ -127,13 +123,6 @@ export function computeDeepMetrics(trades: Trade[]): DeepMetrics {
   let redDays = 0;
   daily.forEach((v) => (v > 1e-9 ? greenDays++ : v < -1e-9 ? redDays++ : 0));
 
-  const last = sorted.slice(-10).map(rOf);
-  const last10 = {
-    n: last.length,
-    grossProfit: last.filter((r) => r > 0).reduce((s, r) => s + r, 0),
-    grossLoss: Math.abs(last.filter((r) => r < 0).reduce((s, r) => s + r, 0)),
-    avgR: last.length ? last.reduce((s, r) => s + r, 0) / last.length : 0,
-  };
 
   return {
     totalR,
@@ -144,8 +133,6 @@ export function computeDeepMetrics(trades: Trade[]): DeepMetrics {
     worstTrade,
     avgWinRR: wins.length ? winR / wins.length : 0,
     avgLossRR: losses.length ? lossR / losses.length : 0,
-    expectancy: sorted.length ? totalR / sorted.length : 0,
-    sqn: calculateSQN(rList),
     statusAnalysis: { win: wins.length, loss: losses.length, breakeven: bes.length, total: sorted.length },
     greenDays,
     redDays,
@@ -155,6 +142,5 @@ export function computeDeepMetrics(trades: Trade[]): DeepMetrics {
     pureProfitFactor: calculateProfitFactor(toRR(grossPos), toRR(grossNeg)),
     avgRecoveryTrades: recoveries.length ? recoveries.reduce((s, n) => s + n, 0) / recoveries.length : null,
     recoveredDrawdowns: recoveries.length,
-    last10,
   };
 }

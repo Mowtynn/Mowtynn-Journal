@@ -1,6 +1,6 @@
 import { EASE } from '../lib/motion';
 import { smartUpper } from '../constants/constants';
-import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Target,
@@ -10,9 +10,6 @@ import {
   ShieldCheck,
   Activity,
   Brain,
-  Flame,
-  ChevronLeft,
-  ChevronRight,
   ClipboardList,
   FlaskConical,
 } from 'lucide-react';
@@ -24,98 +21,8 @@ import { SetupScorecardTab } from './strategy/SetupScorecardTab';
 import { EdgeSummaryCard, DisciplineCard } from './deepAnalysis/EdgeCockpit';
 import { TradeHistoryModal } from './TradeHistoryModal';
 import { RuleSimulatorTab } from './strategy/RuleSimulatorTab';
-import { formatPF } from '../lib/statMath';
+import { ExcursionSimulators } from './strategy/ExcursionSimulators';
 
-
-/**
- * Sekme şeridi: kullanıcı kaydırmaz, sağ/sol butonlarla kayar.
- * Aktif sekme seçilince otomatik görünür alana getirilir.
- */
-const TabStrip = React.memo(function TabStrip({
-  activeKey,
-  children,
-}: {
-  activeKey: string;
-  children: React.ReactNode;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [canLeft, setCanLeft] = useState(false);
-  const [canRight, setCanRight] = useState(false);
-
-  const update = useCallback(() => {
-    const el = ref.current;
-    if (!el) return;
-    setCanLeft(el.scrollLeft > 2);
-    setCanRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 2);
-  }, []);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    update();
-    el.addEventListener('scroll', update, { passive: true });
-    let ro: ResizeObserver | null = null;
-    if (typeof ResizeObserver !== 'undefined') {
-      ro = new ResizeObserver(update);
-      ro.observe(el);
-    }
-    return () => {
-      el.removeEventListener('scroll', update);
-      ro?.disconnect();
-    };
-  }, [update]);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const active = el.querySelector<HTMLElement>('[data-active="true"]');
-    if (!active) return;
-    const pad = 44; // yan butonların altında kalmasın
-    const left = active.offsetLeft - pad;
-    const right = active.offsetLeft + active.offsetWidth - el.clientWidth + pad;
-    if (left < el.scrollLeft) el.scrollTo({ left: Math.max(0, left), behavior: 'smooth' });
-    else if (right > el.scrollLeft) el.scrollTo({ left: right, behavior: 'smooth' });
-  }, [activeKey]);
-
-  const slide = (dir: -1 | 1) => {
-    const el = ref.current;
-    if (!el) return;
-    el.scrollBy({ left: dir * Math.max(160, el.clientWidth * 0.6), behavior: 'smooth' });
-  };
-
-  const arrowCls =
-    'absolute top-1/2 -translate-y-1/2 z-10 h-7 w-7 flex items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900/95 text-zinc-300 hover:text-white hover:bg-zinc-800 shadow-md transition-opacity duration-150 cursor-pointer select-none';
-
-  return (
-    <div className="relative bg-zinc-950 rounded-xl border border-zinc-800">
-      <div
-        ref={ref}
-        className="relative flex items-center p-1.5 gap-1 text-xs overflow-x-hidden overscroll-x-none"
-        style={{ scrollbarWidth: 'none', touchAction: 'pan-y' }}
-      >
-        {children}
-      </div>
-      <button
-        type="button"
-        aria-label="Sekmeleri sola kaydır"
-        onClick={() => slide(-1)}
-        tabIndex={canLeft ? 0 : -1}
-        className={`${arrowCls} left-1 ${canLeft ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-      >
-        <ChevronLeft size={15} />
-      </button>
-      <button
-        type="button"
-        aria-label="Sekmeleri sağa kaydır"
-        onClick={() => slide(1)}
-        tabIndex={canRight ? 0 : -1}
-        className={`${arrowCls} right-1 ${canRight ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-      >
-        <ChevronRight size={15} />
-      </button>
-    </div>
-  );
-});
 
 interface StrategyOptimizerHubProps {
   trades: Trade[];
@@ -133,15 +40,27 @@ type LabTab =
   | 'psychology'
   | 'mae_mfe';
 
-const SUBTABS: Array<{ id: LabTab; label: string; icon: React.ComponentType<{ size?: number; className?: string }>; activeColor: string }> = [
-  { id: 'edge_summary', label: 'Edge Özeti', icon: Sparkles, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
-  { id: 'rule_sim', label: 'Kural Simülatörü', icon: FlaskConical, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
-  { id: 'discipline', label: 'Disiplin', icon: ShieldCheck, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
-  { id: 'setup_scorecard', label: 'Kurulum Karnesi', icon: ClipboardList, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
-  { id: 'asia_lab', label: 'Asia Edge Lab', icon: Compass, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
-  { id: 'psychology', label: 'Psikoloji & Tilt', icon: Brain, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
-  { id: 'mae_mfe', label: 'MAE, MFE & Stop', icon: Target, activeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
+// İş akışı sırasıyla: önce ne çalıştığını gör, sonra ayrıntıya in, en son davranışı kontrol et
+const SUBTABS: Array<{ id: LabTab; label: string; desc: string; icon: React.ComponentType<{ size?: number; className?: string }> }> = [
+  { id: 'edge_summary', label: 'Edge Özeti', desc: 'Ne çalışıyor, ne sızdırıyor', icon: Sparkles },
+  { id: 'setup_scorecard', label: 'Kurulum Karnesi', desc: 'Kurulumları karşılaştır', icon: ClipboardList },
+  { id: 'asia_lab', label: 'Asia Edge Lab', desc: "Asia Range'e özgü analiz", icon: Compass },
+  { id: 'mae_mfe', label: 'MAE, MFE & Stop', desc: 'Stop ve TP ayarı', icon: Target },
+  { id: 'rule_sim', label: 'Kural Simülatörü', desc: 'Bir kuralı geçmişte dene', icon: FlaskConical },
+  { id: 'discipline', label: 'Disiplin', desc: 'Kural ihlalinin bedeli', icon: ShieldCheck },
+  { id: 'psychology', label: 'Psikoloji & Tilt', desc: 'Seri ve kayıp sonrası', icon: Brain },
 ];
+
+const TAB_KEY = 'tj.lab.tab';
+const loadTab = (): LabTab => {
+  try {
+    const v = localStorage.getItem(TAB_KEY);
+    if (v && SUBTABS.some((t) => t.id === v)) return v as LabTab;
+  } catch {
+    /* depolama kapalı olabilir */
+  }
+  return 'edge_summary';
+};
 
 export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
   trades,
@@ -150,7 +69,15 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
   // Edge Özeti / Disiplin satırlarına tıklanınca ilgili işlemler geçmiş penceresinde açılır
   const [shownTrades, setShownTrades] = useState<{ title: string; trades: Trade[] } | null>(null);
   const showTrades = useCallback((title: string, list: Trade[]) => setShownTrades({ title, trades: list }), []);
-  const [activeSubTab, setActiveSubTab] = useState<LabTab>('edge_summary');
+  const [activeSubTab, setActiveSubTabState] = useState<LabTab>(loadTab);
+  const setActiveSubTab = useCallback((id: LabTab) => {
+    setActiveSubTabState(id);
+    try {
+      localStorage.setItem(TAB_KEY, id);
+    } catch {
+      /* depolama kapalı olabilir */
+    }
+  }, []);
 
   const { version: newsLabelsVersion } = useNewsDayLabels();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -171,7 +98,6 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
   );
 
   const { 
-    overallScore,
     maeStats, 
     mfeStats, 
     asiaRangeStats, 
@@ -189,7 +115,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
       className="bg-zinc-900/70 border border-zinc-700/50 rounded-2xl p-4 sm:p-5 shadow-sm space-y-4"
     >
       
-      {/* 1. Header Banner & Health Score */}
+      {/* 1. Başlık */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-zinc-800">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500/20 via-blue-500/20 to-purple-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0 shadow-inner">
@@ -206,59 +132,34 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
             </div>
           </div>
         </div>
-
-        {/* Quick KPI Strip */}
-        <div className="flex items-center flex-wrap gap-2 sm:gap-3">
-          <div className="bg-zinc-950/70 border border-zinc-800 px-3 py-1.5 rounded-xl text-center shrink-0">
-            <span className="text-[9px] uppercase tracking-wider text-zinc-500 block font-sans font-bold">{smartUpper("Kazanma Oranı")}</span>
-            <span className="text-xs font-black font-sans text-zinc-100">%{overallScore.winRate}</span>
-          </div>
-          <div className="bg-zinc-950/70 border border-zinc-800 px-3 py-1.5 rounded-xl text-center shrink-0">
-            <span className="text-[9px] uppercase tracking-wider text-zinc-500 block font-sans font-bold">Kâr Faktörü</span>
-            <span className={`text-xs font-black font-sans ${overallScore.profitFactor >= 1.5 ? 'text-emerald-400' : 'text-zinc-200'}`}>
-              {formatPF(overallScore.profitFactor)}
-            </span>
-          </div>
-          <div className="bg-zinc-950/70 border border-zinc-800 px-3 py-1.5 rounded-xl text-center shrink-0">
-            <span className="text-[9px] uppercase tracking-wider text-zinc-500 block font-sans font-bold">Beklenti</span>
-            <span className={`text-xs font-black font-sans ${overallScore.expectancy >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-              {overallScore.expectancy >= 0 ? '+' : ''}{overallScore.expectancy} R
-            </span>
-          </div>
-          <div className="bg-zinc-950/70 border border-zinc-800 px-3 py-1.5 rounded-xl text-center shrink-0">
-            <span className="text-[9px] uppercase tracking-wider text-zinc-500 block font-sans font-bold">Net R</span>
-            <span className={`text-xs font-black font-sans ${overallScore.netR >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-              {overallScore.netR >= 0 ? '+' : ''}{overallScore.netR} R
-            </span>
-          </div>
-        </div>
       </div>
 
       {/* 2. SubTab Navigation Bar */}
-      <TabStrip activeKey={activeSubTab}>
+      <nav aria-label="Laboratuvar sekmeleri" className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7 gap-2">
         {SUBTABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeSubTab === tab.id;
           return (
-            <motion.button
+            <button
               key={tab.id}
               type="button"
-              data-active={isActive ? 'true' : 'false'}
-              whileHover={{ y: -1 }}
-              whileTap={{ scale: 0.97 }}
+              aria-current={isActive ? 'page' : undefined}
               onClick={() => setActiveSubTab(tab.id)}
-              className={`px-3 py-1.5 rounded-lg font-bold text-[11px] font-sans transition-ui whitespace-nowrap cursor-pointer flex items-center gap-1.5 select-none border ${
+              className={`group min-w-0 rounded-xl border px-3 py-2.5 text-left transition-ui cursor-pointer select-none ${
                 isActive
-                  ? `${tab.activeColor} shadow-xs`
-                  : 'border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
+                  ? 'border-blue-500/50 bg-blue-500/10 shadow-xs'
+                  : 'border-zinc-800 bg-zinc-950/60 hover:border-zinc-700 hover:bg-zinc-900'
               }`}
             >
-              <Icon size={13} />
-              <span>{tab.label}</span>
-            </motion.button>
+              <span className={`flex items-center gap-1.5 text-[12px] font-bold font-sans ${isActive ? 'text-blue-200' : 'text-zinc-200'}`}>
+                <Icon size={14} className={`shrink-0 ${isActive ? 'text-blue-400' : 'text-zinc-500 group-hover:text-zinc-300'}`} />
+                <span className="truncate">{tab.label}</span>
+              </span>
+              <span className={`mt-0.5 block text-[10px] font-sans leading-snug truncate ${isActive ? 'text-blue-300/70' : 'text-zinc-500'}`}>{tab.desc}</span>
+            </button>
           );
         })}
-      </TabStrip>
+      </nav>
 
       {/* 3. Animated SubTab Content */}
       <AnimatePresence mode="wait">
@@ -271,7 +172,6 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
           className="space-y-4"
         >
 
-      {/* SUBTAB 0: ASIA EDGE LAB */}
       {activeSubTab === 'edge_summary' && <EdgeSummaryCard trades={trades} onShowTrades={showTrades} />}
 
       {activeSubTab === 'rule_sim' && <RuleSimulatorTab trades={trades} />}
@@ -318,9 +218,9 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
               </div>
 
               <div className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-center">
-                <span className="text-[9px] uppercase tracking-wider text-zinc-500 block font-sans">Maks. Win Serisi</span>
-                <span className="text-base font-bold text-emerald-400 font-sans flex items-center justify-center gap-1">
-                  <Flame size={15} /> {streakStats.maxWinStreak} İşlem
+                <span className="text-[9px] uppercase tracking-wider text-zinc-500 block font-sans">Maks. Kayıp Serisi</span>
+                <span className="text-base font-bold text-rose-400 font-sans">
+                  {streakStats.maxLossStreak} İşlem
                 </span>
               </div>
 
@@ -474,13 +374,15 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
             >
               <span className="min-w-0">
                 <span className="block text-xs font-bold text-amber-200">{smartUpper("Lehine 1R gidip kârsız kapanan işlemler")}</span>
-                <span className="block text-[11px] text-zinc-400 mt-0.5">Fiyat en az stop mesafesi kadar lehine gitti ama işlem zararla ya da başabaşta kapandı. BE / kısmi kâr kuralını Asia Edge Lab'deki TP simülatörüyle test et.</span>
+                <span className="block text-[11px] text-zinc-400 mt-0.5">Fiyat en az stop mesafesi kadar lehine gitti ama işlem zararla ya da başabaşta kapandı. BE / kısmi kâr kuralını aşağıdaki TP simülatörüyle test et.</span>
               </span>
               <span className="shrink-0 text-sm font-bold tabular-nums text-amber-300">
                 {mfeStats.missedProfitTradesCount} işlem · {(Math.round(mfeStats.missedProfitTrades.reduce((a, t) => a + Math.min(0, t.rr || 0), 0) * 100) / 100).toFixed(2)} R
               </span>
             </button>
           )}
+
+          <ExcursionSimulators trades={trades} />
         </div>
       )}
 
@@ -488,9 +390,6 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
 
 
 
-      {/* SUBTAB 11: MULTI-VARIABLE COMPARATOR */}
-
-      {/* SUBTAB 12: PRE-TRADE EDGE CHECKER */}
         </motion.div>
       </AnimatePresence>
 

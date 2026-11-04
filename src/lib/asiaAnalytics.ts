@@ -1,14 +1,11 @@
 import { getNyParts } from './tradingTime';
 import { Trade } from '../types';
-import { getTradeAccountCategory, getNewsDayLabels, getTradeStageLabel } from '../constants/constants';
+import { getTradeAccountCategory, getTradeStageLabel } from '../constants/constants';
 import { calculateProfitFactor, toRR } from './statMath';
 import {
-  getSweepSide,
   getTradeHourBucket,
   nyDateKey,
-  getTradeNyWeekday,
   normalizePair,
-  WEEKDAY_NAMES_TR,
 } from './tradingTime';
 
 /* ------------------------------------------------------------------ */
@@ -54,13 +51,6 @@ export const tCrit95 = (df: number): number => {
   return z + (z3 + z) / (4 * df) + (5 * z5 + 16 * z3 + 3 * z) / (96 * df * df);
 };
 
-const normCdf = (x: number): number => {
-  const t = 1 / (1 + 0.2316419 * Math.abs(x));
-  const d = 0.3989423 * Math.exp((-x * x) / 2);
-  const p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
-  return x > 0 ? 1 - p : p;
-};
-
 const round = (v: number, digits = 2): number => {
   if (!Number.isFinite(v)) return 0;
   const m = Math.pow(10, digits);
@@ -84,8 +74,6 @@ export interface EdgeStats {
   avgWin: number;
   avgLoss: number;
   maxDrawdownR: number;
-  currentDrawdownR: number;
-  pPositive: number; // approx. probability that the true expectancy is > 0 (%)
   tradesNeeded: number | null; // extra trades for the CI lower bound to clear 0 at the current mean/sd
 }
 
@@ -106,8 +94,6 @@ export const EMPTY_EDGE: EdgeStats = {
   avgWin: 0,
   avgLoss: 0,
   maxDrawdownR: 0,
-  currentDrawdownR: 0,
-  pPositive: 0,
   tradesNeeded: null,
 };
 
@@ -154,18 +140,6 @@ export function edgeFromR(rs: number[], statuses?: Array<Trade['status']>): Edge
     if (peak - equity > maxDD) maxDD = peak - equity;
   });
 
-  // Gerçek beklentinin sıfırdan büyük olma olasılığı: t dağılımıyla (n − 1 serbestlik derecesi). Eskiden normal
-  // dağılım kullanılıyordu; küçük örneklemde fazla iyimserdi (ör. 5 işlemde t = 2.78 için %99.7 yerine ≈%97).
-  let pPositive = 0;
-  if (n > 1 && se > 0) {
-    const tStat = mean / se;
-    const df = n - 1;
-    // Abramowitz & Stegun 26.7.8: t → yaklaşık standart normal
-    const zEq = (tStat * (1 - 1 / (4 * df))) / Math.sqrt(1 + (tStat * tStat) / (2 * df));
-    pPositive = normCdf(zEq) * 100;
-  }
-  else if (n > 1) pPositive = mean > 0 ? 100 : 0;
-
   // Güven aralığının alt sınırı sıfırı geçsin diye gereken toplam işlem: aralıkla AYNI t-değeriyle aranır
   // (eskiden z=1.96 kullanılıyordu; küçük örneklemde "0 işlem daha" deyip aralık hâlâ sıfırı kapsayabiliyordu)
   let tradesNeeded: number | null = null;
@@ -200,8 +174,6 @@ export function edgeFromR(rs: number[], statuses?: Array<Trade['status']>): Edge
     avgWin: winners.length ? round(winners.reduce((s, r) => s + r, 0) / winners.length, 2) : 0,
     avgLoss: losers.length ? round(losers.reduce((s, r) => s + r, 0) / losers.length, 2) : 0,
     maxDrawdownR: round(maxDD, 2),
-    currentDrawdownR: round(Math.max(0, peak - equity), 2),
-    pPositive: round(pPositive, 0),
     tradesNeeded,
   };
 }
@@ -416,12 +388,6 @@ const median = (values: number[]): number => {
 };
 
 export type RangeBucket = 'NARROW' | 'NORMAL' | 'WIDE';
-
-export const RANGE_BUCKET_LABELS: Record<RangeBucket, string> = {
-  NARROW: 'Dar (< 0.8× parite medyanı)',
-  NORMAL: 'Normal (0.8× – 1.25×)',
-  WIDE: 'Geniş (> 1.25×)',
-};
 
 /** Classifies each trade's Asia Range relative to that pair's own median, so EURCAD and EURUSD are not judged by one pip scale. */
 export function bucketAsiaRanges(trades: Trade[]): Map<string, RangeBucket> {
@@ -662,43 +628,13 @@ export interface HourPairCell {
   netR: number;
 }
 
-export interface ComboRow {
-  label: string;
-  stats: EdgeStats;
-}
-
 export interface AsiaLabResult {
   trades: Trade[];
   overall: EdgeStats;
-  pairs: GroupRow[];
-  hours: GroupRow[];
-  weekdays: Array<{ day: string; stats: EdgeStats }>;
   hourPair: { hours: string[]; pairs: string[]; cells: Record<string, HourPairCell> };
-  sweepSide: GroupRow[];
-  pdTimeframe: GroupRow[];
-  pdType: GroupRow[];
-  entryModels: GroupRow[];
-  newsDay: { rows: GroupRow[]; unknown: number };
-  asiaRanges: GroupRow[];
-  sweepHours: GroupRow[];
-  sweepDelay: GroupRow[];
-  holdTime: GroupRow[];
-  plannedRR: GroupRow[];
-  stopToRange: GroupRow[];
-  tradeOfDay: GroupRow[];
-  prevTrade: GroupRow[];
-  management: GroupRow[];
-  afterExit: GroupRow[];
   missedByManagement: { n: number; measured: number; missedR: number };
-  stages: GroupRow[];
-  asiaRangeFvgs: GroupRow[];
-  rangeSize: Array<{ key: RangeBucket; label: string; stats: EdgeStats }>;
-  targetReach: { usable: number; buckets: Array<{ label: string; count: number; pct: number }>; reachedPct: number } | null;
   rangeMultiples: RangeMultipleResult | null;
-  tpSim: { rows: SimRow[]; usable: number };
-  stopSim: { rows: SimRow[]; usable: number };
   rolling: Array<{ index: number; date: string; expectancy: number }>;
-  combos: ComboRow[];
   coverage: CoverageRow[];
 }
 
@@ -719,77 +655,15 @@ export function listPairs(trades: Trade[]): string[] {
     .map(([p]) => p);
 }
 
-export function analyzeAsia(allTrades: Trade[], opts: AsiaLabOptions): AsiaLabResult {
-  const trades = allTrades.filter((t) => {
-    if (opts.dataset !== 'ALL' && getTradeDataset(t) !== opts.dataset) return false;
-    if (opts.pair !== 'ALL' && normalizePair(t.asset) !== opts.pair) return false;
-    return true;
-  });
+export interface TargetReach {
+  usable: number;
+  buckets: Array<{ label: string; count: number; pct: number }>;
+  reachedPct: number;
+}
 
-  indexTradeOrder(trades);
-  const overall = computeEdge(trades);
-
-  const pairRows = groupTrades(trades, (t) => normalizePair(t.asset));
-
-  const hours = groupTrades(trades, (t) => getTradeHourBucket(t)).sort((a, b) => a.key.localeCompare(b.key));
-
-  const weekdays = [1, 2, 3, 4, 5].map((d) => ({
-    day: WEEKDAY_NAMES_TR[d],
-    stats: computeEdge(trades.filter((t) => getTradeNyWeekday(t) === d)),
-  }));
-
-  // Hour x pair matrix
-  const pairKeys = pairRows.map((p) => p.key);
-  const hourKeys = hours.map((h) => h.key);
-  // Saat × parite: tek geçişte gruplanır (eskiden her hücre için tüm işlemler yeniden süzülüyordu)
-  const cells: Record<string, HourPairCell> = {};
-  const cellLists = new Map<string, Trade[]>();
-  trades.forEach((t) => {
-    const k = `${getTradeHourBucket(t)}|${normalizePair(t.asset)}`;
-    (cellLists.get(k) || cellLists.set(k, []).get(k)!).push(t);
-  });
-  cellLists.forEach((list, k) => {
-    const e = computeEdge(list);
-    cells[k] = { n: e.n, expectancy: e.expectancy, netR: e.netR };
-  });
-
-  const sweepSide = groupTrades(trades, (t) => (getSweepSide(t) === 'HIGH' ? 'Asia High süpürüldü → SHORT' : 'Asia Low süpürüldü → LONG'));
-
-  const pdTimeframe = groupTrades(trades, (t) => (t.htfTimeframe ? t.htfTimeframe : null));
-  const pdType = groupTrades(trades, (t) => (Array.isArray(t.confirmations) && t.confirmations.length > 0 ? t.confirmations : null));
-  const entryModels = groupTrades(trades, (t) => (Array.isArray(t.entryModels) && t.entryModels.length > 0 ? t.entryModels : null));
-
-  // News Day / Bank Holiday: bilgisi olmayan (eski) işlemler kıyasa girmez
-  const nl = getNewsDayLabels();
-  const newsGroups = groupTrades(trades, (t) => (typeof t.newsDay === 'boolean' ? (t.newsDay ? nl.yes : nl.no) : null));
-  const newsDay = {
-    rows: [nl.yes, nl.no].map((k) => newsGroups.find((g) => g.key === k)).filter((g): g is GroupRow => !!g),
-    unknown: trades.filter((t) => typeof t.newsDay !== 'boolean').length,
-  };
-
-  const asiaRanges = groupTrades(trades, (t) => t.asiaRange || null);
-  // Sweep saati (NY) 30 dakikalık dönemlere, Asia → London → NY sırasıyla
-  const order = (list: readonly string[]) => (x: GroupRow, y: GroupRow) => list.indexOf(x.key) - list.indexOf(y.key);
-  const plannedRRRows = groupTrades(trades, (t) => plannedRRBucket(t)).sort(order(PLANNED_RR_BUCKETS));
-  const stopToRange = groupTrades(trades, (t) => stopToRangeBucket(t)).sort(order(STOP_RANGE_BUCKETS));
-  const tradeOfDay = groupTrades(trades, (t) => tradeOfDayBucket(t)).sort((x, y) => x.key.localeCompare(y.key));
-  const prevTrade = groupTrades(trades, (t) => prevTradeBucket(t)).sort(order(PREV_TRADE_BUCKETS));
-  const management = groupTrades(trades, (t) => managementBucket(t));
-  const afterExit = groupTrades(trades, (t) => afterExitBucket(t));
-  const holdTime = groupTrades(trades, (t) => holdBucket(t)).sort((x, y) => HOLD_BUCKETS.indexOf(x.key as any) - HOLD_BUCKETS.indexOf(y.key as any));
-  const stages = groupTrades(trades, (t) => stageBucket(t));
-  const sweepDelay = groupTrades(trades, (t) => sweepDelayBucket(t)).sort((x, y) => SWEEP_DELAY_BUCKETS.indexOf(x.key as any) - SWEEP_DELAY_BUCKETS.indexOf(y.key as any));
-  const sweepHours = groupTrades(trades, (t) => sweepHourBucket(t.sweepTime)).sort((x, y) => sweepBucketOrder(x.key) - sweepBucketOrder(y.key));
-  const asiaRangeFvgs = groupTrades(trades, (t) => t.asiaRangeFvg || null);
-
-  // Range size (pair-normalised)
-  const bucketMap = bucketAsiaRanges(trades);
-  const rangeSize = (['NARROW', 'NORMAL', 'WIDE'] as RangeBucket[])
-    .map((key) => ({ key, label: RANGE_BUCKET_LABELS[key], stats: computeEdge(trades.filter((t) => bucketMap.get(t.id) === key)) }))
-    .filter((r) => r.stats.n > 0);
-
-  // Target reach distribution: how far into the TP distance did price travel?
-  let targetReach: AsiaLabResult['targetReach'] = null;
+/** Hedefe ulaşma dağılımı: MFE / TP mesafesi (fiyat TP yolunun ne kadarını katetti). */
+export function computeTargetReach(trades: Trade[]): TargetReach | null {
+  let targetReach: TargetReach | null = null;
   const reachTrades = trades.filter((t) => hasNum(t.tpPips) && t.tpPips > 0 && hasNum(t.mfePips) && t.mfePips >= 0);
   if (reachTrades.length > 0) {
     const edges = [
@@ -811,8 +685,38 @@ export function analyzeAsia(allTrades: Trade[], opts: AsiaLabOptions): AsiaLabRe
     };
   }
 
-  const tpSim = simulateFixedTp(trades);
-  const stopSim = simulateStopFactor(trades);
+  return targetReach;
+}
+
+export function analyzeAsia(allTrades: Trade[], opts: AsiaLabOptions): AsiaLabResult {
+  const trades = allTrades.filter((t) => {
+    if (opts.dataset !== 'ALL' && getTradeDataset(t) !== opts.dataset) return false;
+    if (opts.pair !== 'ALL' && normalizePair(t.asset) !== opts.pair) return false;
+    return true;
+  });
+
+  indexTradeOrder(trades);
+  const overall = computeEdge(trades);
+
+  const pairRows = groupTrades(trades, (t) => normalizePair(t.asset));
+
+  const hours = groupTrades(trades, (t) => getTradeHourBucket(t)).sort((a, b) => a.key.localeCompare(b.key));
+
+  // Hour x pair matrix
+  const pairKeys = pairRows.map((p) => p.key);
+  const hourKeys = hours.map((h) => h.key);
+  // Saat × parite: tek geçişte gruplanır (eskiden her hücre için tüm işlemler yeniden süzülüyordu)
+  const cells: Record<string, HourPairCell> = {};
+  const cellLists = new Map<string, Trade[]>();
+  trades.forEach((t) => {
+    const k = `${getTradeHourBucket(t)}|${normalizePair(t.asset)}`;
+    (cellLists.get(k) || cellLists.set(k, []).get(k)!).push(t);
+  });
+  cellLists.forEach((list, k) => {
+    const e = computeEdge(list);
+    cells[k] = { n: e.n, expectancy: e.expectancy, netR: e.netR };
+  });
+
 
   // Rolling expectancy (edge stability), window of 20 trades
   const sorted = chronological(trades);
@@ -825,138 +729,13 @@ export function analyzeAsia(allTrades: Trade[], opts: AsiaLabOptions): AsiaLabRe
     rolling.push({ index: i, date: nyDateKey(last.createdAt), expectancy: round(exp, 3) });
   }
 
-  // Kombinasyon bulucu (iki alan): yalnızca işleme girmeden ÖNCE bilinen alanlar (Edge Özeti taramasıyla aynı ilke).
-  // İşlem süresi / yönetim gibi sonradan belirlenen alanlar "bunu daha çok yap" kombinasyonu üretemez.
-  // Çoklu seçimli alanlar (PD Array, Entry Model, Target) birleşik değer olarak sayılır: bir işlem iki kez sayılmaz.
-  const joined = (xs?: string[]) => {
-    const v = (xs || []).map((x) => x.trim()).filter(Boolean);
-    return v.length ? [...new Set(v)].sort((a, b) => a.localeCompare(b, 'tr')).join(' + ') : null;
-  };
-  const dims: Array<{ name: string; get: (t: Trade) => string | null }> = [
-    { name: 'Parite', get: (t) => normalizePair(t.asset) },
-    { name: 'Saat', get: (t) => getTradeHourBucket(t) },
-    { name: 'Gün', get: (t) => WEEKDAY_NAMES_TR[getTradeNyWeekday(t)] },
-    { name: 'Yön', get: (t) => (getSweepSide(t) === 'HIGH' ? 'High→Short' : 'Low→Long') },
-    { name: 'Session', get: (t) => t.session || null },
-    { name: 'Asia Range', get: (t) => t.asiaRange || null },
-    { name: 'Sweep Saati', get: (t) => sweepHourBucket(t.sweepTime) },
-    { name: 'Sweep→Giriş', get: (t) => sweepDelayBucket(t) },
-    { name: 'Setup Kalitesi', get: (t) => t.planFidelity || null },
-    { name: 'Trend', get: (t) => t.trend || null },
-    { name: 'HTF', get: (t) => t.htfTimeframe || null },
-    { name: 'PD Array', get: (t) => joined(t.confirmations) },
-    { name: 'Entry TF', get: (t) => t.timeframe || null },
-    { name: 'Entry Model', get: (t) => joined(t.entryModels) },
-    { name: 'Target', get: (t) => joined(t.tpTargets) },
-    { name: 'Confirmations', get: (t) => t.premiumDiscount || null },
-    { name: 'Asia Range FVG', get: (t) => t.asiaRangeFvg || null },
-    { name: 'News Day', get: (t) => (typeof t.newsDay === 'boolean' ? (t.newsDay ? nl.yes : nl.no) : null) },
-    { name: 'Planlanan R:R', get: (t) => plannedRRBucket(t) },
-    { name: 'Stop / Asia Range', get: (t) => stopToRangeBucket(t) },
-    { name: 'Günün İşlemi', get: (t) => tradeOfDayBucket(t) },
-    { name: 'Önceki İşlem', get: (t) => prevTradeBucket(t) },
-    { name: 'Hesap Aşaması', get: (t) => stageBucket(t) },
-  ];
-  // Değerler alan başına sayıya çevrilir; her alan çifti için sayım tipli dizide, sıralama ölçüsü (güven aralığı
-  // alt sınırı) toplamlar üzerinden. Tam istatistik yalnızca ilk 12 birleşim için hesaplanır.
-  const N = trades.length;
-  const minN = Math.max(3, opts.minSample);
-  const rs = trades.map((t) => (typeof t.rr === 'number' && Number.isFinite(t.rr) ? t.rr : 0));
-  const dict: string[][] = dims.map(() => []);
-  const codes: Int32Array[] = dims.map((d, di) => {
-    const index = new Map<string, number>();
-    const arr = new Int32Array(N);
-    trades.forEach((t, ti) => {
-      const v = d.get(t);
-      if (!v) {
-        arr[ti] = -1;
-        return;
-      }
-      let c = index.get(v);
-      if (c === undefined) {
-        c = dict[di].length;
-        dict[di].push(v);
-        index.set(v, c);
-      }
-      arr[ti] = c;
-    });
-    return arr;
-  });
-  const singleN = codes.map((arr, di) => {
-    const cnt = new Uint32Array(dict[di].length);
-    arr.forEach((c) => c >= 0 && cnt[c]++);
-    return cnt;
-  });
-  const cands: Array<{ a: number; b: number; k: number; vb: number; lo: number; exp: number }> = [];
-  for (let a = 0; a < dims.length; a++) {
-    for (let b = a + 1; b < dims.length; b++) {
-      const vb = dict[b].length;
-      if (!dict[a].length || !vb) continue;
-      const size = dict[a].length * vb;
-      const n = new Uint32Array(size);
-      const sum = new Float64Array(size);
-      const sq = new Float64Array(size);
-      const ca = codes[a];
-      const cb = codes[b];
-      for (let t = 0; t < N; t++) {
-        if (ca[t] < 0 || cb[t] < 0) continue;
-        const k = ca[t] * vb + cb[t];
-        n[k]++;
-        sum[k] += rs[t];
-        sq[k] += rs[t] * rs[t];
-      }
-      for (let k = 0; k < size; k++) {
-        const c = n[k];
-        // Birleşim, alanlardan birinin tüm işlemleriyle aynıysa yeni bilgi taşımaz (ör. tek parite süzülmüşken "Parite + X")
-        if (c < minN || c === singleN[a][Math.floor(k / vb)] || c === singleN[b][k % vb]) continue;
-        const mean = sum[k] / c;
-        const sd = c > 1 ? Math.sqrt(Math.max(0, (sq[k] - c * mean * mean) / (c - 1))) : 0;
-        cands.push({ a, b, k, vb, lo: round(c > 1 ? mean - tCrit95(c - 1) * (sd / Math.sqrt(c)) : mean, 3), exp: round(mean, 3) });
-      }
-    }
-  }
-  const combos: ComboRow[] = cands
-    .sort((x, y) => y.lo - x.lo || y.exp - x.exp)
-    .slice(0, 12)
-    .map(({ a, b, k, vb }) => {
-      const ia = Math.floor(k / vb);
-      const ib = k % vb;
-      const list = trades.filter((_, t) => codes[a][t] === ia && codes[b][t] === ib);
-      return { label: `${dims[a].name}: ${dict[a][ia]}  +  ${dims[b].name}: ${dict[b][ib]}`, stats: computeEdge(list) };
-    });
-
   return {
     trades,
     overall,
-    pairs: pairRows,
-    hours,
-    weekdays,
     hourPair: { hours: hourKeys, pairs: pairKeys, cells },
-    sweepSide,
-    pdTimeframe,
-    pdType,
-    entryModels,
-    newsDay,
-    asiaRanges,
-    sweepHours,
-    sweepDelay,
-    holdTime,
-    plannedRR: plannedRRRows,
-    stopToRange,
-    tradeOfDay,
-    prevTrade,
-    management,
-    afterExit,
     missedByManagement: managementMissedR(trades),
-    stages,
-    asiaRangeFvgs,
-    rangeSize,
-    targetReach,
     rangeMultiples: analyzeRangeMultiples(trades),
-    tpSim,
-    stopSim,
     rolling: rolling.slice(-80),
-    combos,
     coverage: computeCoverage(trades),
   };
 }
