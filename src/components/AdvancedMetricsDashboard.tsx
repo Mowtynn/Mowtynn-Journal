@@ -14,6 +14,8 @@ import { Deferred } from './common/Deferred';
 
 // Strateji laboratuvarı ayrı parçada; ekrana yaklaşınca indirilip çizilir
 const StrategyOptimizerHub = lazyWithPreload(() => named(import('./StrategyOptimizerHub'), 'StrategyOptimizerHub'));
+/** Laboratuvar parçasını önden indirir (sekme arka planda hazırlanırken) */
+export const preloadStrategyHub = () => StrategyOptimizerHub.preload();
 import { nyWallDate } from '../lib/tradingTime';
 
 
@@ -618,7 +620,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit }: { trades: 
 
       {/* Strateji & Edge Geliştirme Laboratuvarı */}
       <motion.div variants={itemVariants} className="w-full my-3">
-        <Deferred minHeight={520}>
+        <Deferred minHeight={520} idleMs={800}>
           <StrategyOptimizerHub trades={trades} onEdit={onEdit} />
         </Deferred>
       </motion.div>

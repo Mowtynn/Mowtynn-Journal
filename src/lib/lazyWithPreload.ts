@@ -40,16 +40,20 @@ export const named = <M, K extends keyof M>(p: Promise<M>, key: K): Promise<{ de
 type IdleWindow = Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number };
 
 /**
- * Tarayıcı boşta kaldıkça parçaları sırayla indirir; ilk ekranı yavaşlatmaz.
+ * Tarayıcı boşta kaldıkça parçaları sırayla indirir; ilk ekranı yavaşlatmaz. Hepsi inince `onDone` çağrılır.
  * Dönen fonksiyon bekleyen indirmeleri iptal eder.
  */
-export function preloadWhenIdle(loaders: Array<() => Promise<unknown>>, startDelayMs = 1200): () => void {
+export function preloadWhenIdle(loaders: Array<() => Promise<unknown>>, startDelayMs = 1200, onDone?: () => void): () => void {
   let cancelled = false;
   let i = 0;
   const w = window as IdleWindow;
   const schedule = (fn: () => void) => (w.requestIdleCallback ? w.requestIdleCallback(fn, { timeout: 3000 }) : window.setTimeout(fn, 200));
   const next = () => {
-    if (cancelled || i >= loaders.length) return;
+    if (cancelled) return;
+    if (i >= loaders.length) {
+      onDone?.();
+      return;
+    }
     const load = loaders[i++];
     load().catch(() => undefined).finally(() => schedule(next));
   };

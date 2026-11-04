@@ -106,6 +106,8 @@ const BackupRescue = lazyWithPreload(() => import("./components/BackupRescue"));
 const IDLE_PRELOAD = [
   GlobalFilterModal.preload,
   DeepAnalysis.preload,
+  // Detaylı Analiz'in iç parçaları (metrikler + strateji laboratuvarı)
+  () => DeepAnalysis.preload().then((m) => (m as { preloadDeepAnalysisParts?: () => Promise<unknown> }).preloadDeepAnalysisParts?.()),
   PropView.preload,
   BackupRescue.preload,
   JournalView.preload,
@@ -138,11 +140,12 @@ const DateLimitNote = ({ limit, shown, onReset }: { limit: string; shown: number
 // kesintiye uğratılabilir bir güncellemeyle kurulur; böylece sekme düğmesi takılmaz.
 // Gizliyken alt ağaç dondurulur: son aktif render'ın elemanı yeniden kullanıldığından React gizli sekmeyi
 // Firestore anlık güncellemelerinde / modal açılışında yeniden render etmez. Sekme açılınca güncel veriyle çizilir.
-const TabPane = ({ active, className = "", children }: { active: boolean; className?: string; children: ReactNode }) => {
-  // Açılıştaki sekme beklemeden çizilir
+const TabPane = ({ active, warm = false, className = "", children }: { active: boolean; warm?: boolean; className?: string; children: ReactNode }) => {
+  // Açılıştaki sekme beklemeden çizilir; diğerleri tarayıcı boşta kalınca (warm) arka planda, gizli olarak kurulur.
+  // Böylece sekmeye ilk geçişte "Yükleniyor" görünmez, içerik hazır bekler.
   const [ready, setReady] = useState(active);
   useEffect(() => {
-    if (!active || ready) return;
+    if (ready || !(active || warm)) return;
     let t = 0;
     const raf = requestAnimationFrame(() => {
       t = window.setTimeout(() => startTransition(() => setReady(true)), 0);
@@ -151,13 +154,14 @@ const TabPane = ({ active, className = "", children }: { active: boolean; classN
       cancelAnimationFrame(raf);
       window.clearTimeout(t);
     };
-  }, [active, ready]);
+  }, [active, warm, ready]);
   const frozen = useRef<ReactNode>(null);
-  if (active && ready) frozen.current = children;
+  // Aktifken her render güncel içeriği alır; arka planda ilk kurulumda bir kez alınır, sonra sekme açılana kadar dondurulur
+  if (ready && (active || frozen.current === null)) frozen.current = children;
   return (
     <div hidden={!active} className="tab-pane">
       {ready ? (
-        <Suspense fallback={paneFallback}>
+        <Suspense fallback={active ? paneFallback : null}>
           {/* Düzen sınıfları (gap vb.) içerik sarmalayıcısına uygulanır; dış kap yalnızca göster/gizle yapar */}
           <div className={`pane-content-in ${className}`}>{frozen.current}</div>
         </Suspense>
@@ -398,10 +402,26 @@ export default function App() {
       });
       TradeDetailModal.preload();
     }, 0);
-    const cancel = preloadWhenIdle(IDLE_PRELOAD, 600);
+    // Parçalar inince sekmeler birer birer, tarayıcı boşta kaldıkça gizli olarak kurulur (tek seferde takılma yapmaz)
+    let step = 0;
+    let stepTimer = 0;
+    const warmNext = () => {
+      if (step >= 4) return;
+      step += 1;
+      const n = step;
+      startTransition(() => setWarmLevel(n));
+      stepTimer = window.setTimeout(() => {
+        const w = window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number };
+        if (w.requestIdleCallback) w.requestIdleCallback(warmNext, { timeout: 1500 });
+        else warmNext();
+      }, 250);
+    };
+    const cancel = preloadWhenIdle(IDLE_PRELOAD, 300, warmNext);
     return () => {
       window.clearTimeout(t);
       window.clearTimeout(warm);
+      window.clearTimeout(stepTimer);
+      step = 4;
       cancel();
     };
   }, []);
@@ -934,6 +954,8 @@ export default function App() {
   // "İşlem Ekle"ye basınca yalnızca görünür olur — eksiksiz ve beklemeden. Kapanınca bir sonraki için
   // temiz bir form yine arka planda hazırlanır. Düzenlemede form o işlemle kurulur.
   const [formWarm, setFormWarm] = useState(false);
+  // Arka planda sırayla hazırlanan sekme sayısı (Detaylı Analiz → Günlük → Prop → Notlar)
+  const [warmLevel, setWarmLevel] = useState(0);
   const [, setFormRecycle] = useState(0);
   const formSlotRef = useRef<{ seq: number; editing: Trade | null; wasOpen: boolean; needsReset: boolean }>({
     seq: 0,
@@ -2334,7 +2356,7 @@ export default function App() {
                       </SectionErrorBoundary>
                     </div>
                   </TabPane>
-                  <TabPane active={currentTab === "deep-analysis"}>
+                  <TabPane active={currentTab === "deep-analysis"} warm={warmLevel >= 1}>
                     <div className="mb-3 empty:hidden">
                       <DateLimitNote limit={globalDateLimit} shown={filteredGlobalTrades.length} onReset={() => setGlobalDateLimit(DEFAULT_DATE_LIMIT)} />
                     </div>
@@ -2351,7 +2373,7 @@ export default function App() {
                       />
                     </SectionErrorBoundary>
                   </TabPane>
-                  <TabPane active={currentTab === "journal"}>
+                  <TabPane active={currentTab === "journal"} warm={warmLevel >= 2}>
                     <SectionErrorBoundary sectionName="Günlükler">
                       <JournalView
                         entries={journals}
@@ -2364,12 +2386,12 @@ export default function App() {
                       />
                     </SectionErrorBoundary>
                   </TabPane>
-                  <TabPane active={currentTab === "prop"}>
+                  <TabPane active={currentTab === "prop"} warm={warmLevel >= 3}>
                     <SectionErrorBoundary sectionName="Prop">
                       <PropView accounts={propAccounts} trades={trades} onChange={handlePropAccountsChange} uploadImage={uploadPropImage} />
                     </SectionErrorBoundary>
                   </TabPane>
-                  <TabPane active={currentTab === "notes"}>
+                  <TabPane active={currentTab === "notes"} warm={warmLevel >= 4}>
                     <SectionErrorBoundary sectionName="Notlar">
                       <NotesView
                         notes={notes}
@@ -2379,7 +2401,7 @@ export default function App() {
                     </SectionErrorBoundary>
                   </TabPane>
             </div>
-  ), [ globalDateLimit, setGlobalDateLimit, weeklyDue, weeklyRequest, openWeeklyReview, scopedTrades, activeScopeKey, activeScopeName, calculatedStats, overallEdge, edgeDrift, currentTab, definitionTitles, entryModels, filteredGlobalTrades, handleDeleteJournal, handleDeleteNote, handleDeleteTrade, handleSaveJournal, handleSaveNote, handleStartEdit, journals, notes, planFidelities, propAccounts, handlePropAccountsChange, uploadPropImage, sessions, setDetailedTrade, setEditingTrade, setIsFormOpen, trades, trendTypes ]);
+  ), [ warmLevel, globalDateLimit, setGlobalDateLimit, weeklyDue, weeklyRequest, openWeeklyReview, scopedTrades, activeScopeKey, activeScopeName, calculatedStats, overallEdge, edgeDrift, currentTab, definitionTitles, entryModels, filteredGlobalTrades, handleDeleteJournal, handleDeleteNote, handleDeleteTrade, handleSaveJournal, handleSaveNote, handleStartEdit, journals, notes, planFidelities, propAccounts, handlePropAccountsChange, uploadPropImage, sessions, setDetailedTrade, setEditingTrade, setIsFormOpen, trades, trendTypes ]);
 
   return (
     <AllTradesContext.Provider value={trades}>

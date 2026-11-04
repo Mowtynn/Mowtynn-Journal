@@ -30,6 +30,11 @@ import { Deferred } from "./common/Deferred";
 
 // Gelişmiş metrikler + strateji laboratuvarı ayrı parçada; sekmenin üst kısmı önce çizilir
 const AdvancedMetricsDashboard = lazyWithPreload(() => named(import("./AdvancedMetricsDashboard"), "AdvancedMetricsDashboard"));
+/** Sekmenin iç parçalarını (metrikler + laboratuvar) önden indirir; ilk açılışta "yükleniyor" görünmez */
+export const preloadDeepAnalysisParts = () =>
+  AdvancedMetricsDashboard.preload()
+    .then(() => import("./AdvancedMetricsDashboard"))
+    .then((m) => m.preloadStrategyHub());
 import { CalendarView } from "./CalendarView";
 import { TradeHistoryModal } from "./TradeHistoryModal";
 import { MemoizedEquityChart } from './deepAnalysis/EquityChart';
@@ -632,7 +637,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
 
 
 
-      <Deferred minHeight={900} idleMs={600}>
+      <Deferred minHeight={900} idleMs={300}>
         <AdvancedMetricsDashboard trades={trades} onMetricClick={handleMetricClick} onEdit={onEdit} />
       </Deferred>
       
