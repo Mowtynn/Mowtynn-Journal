@@ -186,6 +186,7 @@ export interface DefinitionTitles {
   premiumDiscounts?: string;
   newsDays?: string;
   asiaRangeFvgs?: string;
+  riskPresets?: string;
   // Listesi olmayan form alanlarının başlıkları (Tanımlamalar > Form Başlıkları)
   basicInfoCard?: string;
   financialCard?: string;

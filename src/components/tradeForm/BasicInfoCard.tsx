@@ -6,7 +6,7 @@ import { canonicalAsset } from "../../lib/tradeModel";
 import { TurkishDateTimePicker } from "../TurkishDateTimePicker";
 import { ScrollStrip } from "../common/ScrollStrip";
 import { Search, Layers, Check, Shield, X, Plus } from "lucide-react";
-import { NO_ACCOUNT, RISK_PRESETS, Num, SetState, AccountOption, Titles, SlideBg } from './shared';
+import { NO_ACCOUNT, Num, SetState, AccountOption, Titles, SlideBg } from './shared';
 import { isNyWallTimeValid, nyInputToTs, toNyInput } from '../../lib/tradingTime';
 
 /* ================= 1. KART: TEMEL BİLGİLER (parite, yön, hesap, risk, tarih) ================= */
@@ -28,6 +28,7 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
   accountError,
   setAccountError,
   selectedAccount,
+  riskPresets,
   riskChoice,
   setRiskChoice,
   customRiskPct,
@@ -57,6 +58,7 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
   accountError: boolean;
   setAccountError: SetState<boolean>;
   selectedAccount: AccountOption | undefined;
+  riskPresets: number[];
   riskChoice: number | "CUSTOM" | null;
   setRiskChoice: SetState<number | "CUSTOM" | null>;
   customRiskPct: Num;
@@ -306,7 +308,7 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
         return (
           <div id="risk-field" aria-disabled={riskDisabled || undefined}>
             <label className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-wide mb-2 block font-sans transition-colors ${riskDisabled ? "text-zinc-500" : "text-zinc-300"}`}>
-              Risk (başlangıç bakiyesinin %'si)
+              {titles.T("riskPresets") || "Risk"} (başlangıç bakiyesinin %'si)
             </label>
             {/* Tek satır, sarmaz: [$ karşılığı] [0.50] [0.75] [1.00] [% / elle giriş] — chipler kalan genişliği paylaşır */}
             <div
@@ -320,7 +322,7 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
               >
                 {riskDollar !== null ? `$${riskDollar.toLocaleString("en-US", { maximumFractionDigits: 2 })}` : "$ —"}
               </span>
-              {RISK_PRESETS.map((pct) => {
+              {riskPresets.map((pct) => {
                 const sel = !riskDisabled && riskChoice === pct;
                 return (
                   <button

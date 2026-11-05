@@ -7,8 +7,6 @@ import { toNyInput } from '../../lib/tradingTime';
 
 /** İşlem formu: bölümlerin ortak sabitleri, türleri ve yardımcıları */
 export const NO_ACCOUNT = "__none__";
-/** Hazır risk yüzdeleri (başlangıç bakiyesinin %'si) */
-export const RISK_PRESETS = [0.5, 0.75, 1];
 
 export type Num = number | "";
 export type Status = "WIN" | "LOSS" | "BREAKEVEN";
@@ -37,15 +35,16 @@ export const parsePip = (val: string): Num => {
  * Formun ilk değerleri doğrudan işlemden (ya da boş) kurulur. Eskiden form önce boş çizilip
  * ardından bir efekt ~30 alanı tek tek doldurup/sıfırlıyordu: açılışta fazladan bir tam çizim.
  */
-export function buildInitial(t: Trade | null) {
+/** riskPresets: Tanımlamalar'daki hazır risk yüzdeleri; işlemin riski bunlardan biri değilse elle giriş (CUSTOM) açılır */
+export function buildInitial(t: Trade | null, riskPresets: number[]) {
   const rp = t?.riskPct;
   const hasRisk = typeof rp === "number" && rp > 0;
   return {
     asset: t?.asset || "",
     type: (t?.type || "LONG") as "LONG" | "SHORT",
     accountChoice: (t ? (t.accountId ? t.accountId : t.accountCategory === "DEMO" ? NO_ACCOUNT : null) : null) as string | null,
-    riskChoice: (hasRisk ? (RISK_PRESETS.includes(rp as number) ? rp : "CUSTOM") : null) as number | "CUSTOM" | null,
-    customRiskPct: (hasRisk && !RISK_PRESETS.includes(rp as number) ? rp : "") as Num,
+    riskChoice: (hasRisk ? (riskPresets.includes(rp as number) ? rp : "CUSTOM") : null) as number | "CUSTOM" | null,
+    customRiskPct: (hasRisk && !riskPresets.includes(rp as number) ? rp : "") as Num,
     timeframe: t?.timeframe || "",
     htfTimeframe: t?.htfTimeframe || "",
     session: t?.session || "",

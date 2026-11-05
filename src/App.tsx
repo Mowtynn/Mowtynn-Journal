@@ -19,6 +19,8 @@ import {
   DEFAULT_PREMIUM_DISCOUNTS,
   DEFAULT_NEWS_DAYS,
   DEFAULT_ASIA_RANGE_FVGS,
+  DEFAULT_RISK_PRESETS,
+  normalizeRiskPresets,
   NEWS_DAYS_EVENT,
   normalizeNewsDays,
   DEFAULT_DEFINITION_TITLES,
@@ -198,6 +200,7 @@ const SETTINGS_LIST_KEYS: [string, string][] = [
   ["premiumDiscounts", "trading_premium_discounts_list"],
   ["newsDays", "trading_news_days_list"],
   ["asiaRangeFvgs", "trading_asia_range_fvgs_list"],
+  ["riskPresets", "trading_risk_presets_list"],
   ["requiredFields", "tj_required_fields"],
 ];
 /** Cihazdaki işlem/not/günlük verisinin hangi hesaba ait olduğu (hesaplar arası karışmayı önler) */
@@ -252,6 +255,7 @@ const sanitizeImportedSettings = (raw: any) => {
     if (v) out[k] = v;
   });
   if (Array.isArray(raw.newsDays)) out.newsDays = normalizeNewsDays(raw.newsDays);
+  if (Array.isArray(raw.riskPresets)) out.riskPresets = normalizeRiskPresets(raw.riskPresets);
   if (raw.definitionTitles && typeof raw.definitionTitles === "object") {
     out.definitionTitles = sanitizeDefinitionTitles(raw.definitionTitles);
   }
@@ -752,6 +756,31 @@ export default function App() {
     }
   }, [user]);
 
+  // İşlem formundaki hazır risk yüzdeleri (Tanımlamalar > Risk)
+  const [riskPresets, setRiskPresets] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem("trading_risk_presets_list");
+      if (stored) return normalizeRiskPresets(JSON.parse(stored));
+    } catch (e) {
+      console.error(e);
+    }
+    return DEFAULT_RISK_PRESETS;
+  });
+
+  const persistRiskPresets = useCallback((incoming: string[], syncCloud = true) => {
+    const updated = normalizeRiskPresets(incoming);
+    setRiskPresets(updated);
+    try {
+      localStorage.setItem("trading_risk_presets_list", JSON.stringify(updated));
+      if (syncCloud && user) {
+        setDoc(doc(db, "settings", user.uid), cleanForFirestore({ riskPresets: updated, userId: user.uid }), { merge: true })
+          .catch(err => reportCloudError("ayar kaydı", err, "Tanımlamalar buluta kaydedilemedi; cihazda tutuluyor."));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, [user]);
+
   const [newsDays, setNewsDays] = useState<string[]>(() => {
     try {
       const stored = localStorage.getItem("trading_news_days_list");
@@ -1126,6 +1155,7 @@ export default function App() {
               applyList(data.premiumDiscounts, "trading_premium_discounts_list", persistPremiumDiscounts);
               applyList(data.newsDays, "trading_news_days_list", persistNewsDays);
               applyList(data.asiaRangeFvgs, "trading_asia_range_fvgs_list", persistAsiaRangeFvgs);
+              applyList(data.riskPresets, "trading_risk_presets_list", persistRiskPresets);
               // Zorunlu alanlar: buluttaki ayar cihaza yazılır (olay tetiklenmez; döngü olmasın)
               if (Array.isArray(data.requiredFields)) applyRequiredFieldsFromCloud(data.requiredFields);
               if (data.definitionTitles) persistDefinitionTitles(data.definitionTitles, false);
@@ -1303,6 +1333,7 @@ export default function App() {
         ["trading_tp_targets_list", setTpTargets],
         ["trading_premium_discounts_list", setPremiumDiscounts],
         ["trading_asia_range_fvgs_list", setAsiaRangeFvgs],
+        ["trading_risk_presets_list", (v) => setRiskPresets(normalizeRiskPresets(v))],
         ["trading_news_days_list", (v) => setNewsDays(normalizeNewsDays(v))],
       ];
       lists.forEach(([key, set]) => {
@@ -1933,6 +1964,7 @@ export default function App() {
           if (importedSettings.premiumDiscounts) persistPremiumDiscounts(importedSettings.premiumDiscounts, sync);
           if (importedSettings.newsDays) persistNewsDays(importedSettings.newsDays, sync);
           if (importedSettings.asiaRangeFvgs) persistAsiaRangeFvgs(importedSettings.asiaRangeFvgs, sync);
+          if (importedSettings.riskPresets) persistRiskPresets(importedSettings.riskPresets, sync);
           if (importedSettings.definitionTitles) persistDefinitionTitles(importedSettings.definitionTitles, sync);
           if (importedSettings.propAccounts) {
             // id'ye göre birleştir: yedekteki hesap aynı id'li yerel hesabın yerine geçer
@@ -1966,6 +1998,7 @@ export default function App() {
       persistPremiumDiscounts,
       persistNewsDays,
       persistAsiaRangeFvgs,
+      persistRiskPresets,
       persistDefinitionTitles,
       persistPropAccounts,
       propAccounts,
@@ -2079,6 +2112,7 @@ export default function App() {
       persistPremiumDiscounts(DEFAULT_PREMIUM_DISCOUNTS, !!user);
       persistNewsDays(DEFAULT_NEWS_DAYS, !!user);
       persistAsiaRangeFvgs(DEFAULT_ASIA_RANGE_FVGS, !!user);
+      persistRiskPresets(DEFAULT_RISK_PRESETS, !!user);
       persistDefinitionTitles(DEFAULT_DEFINITION_TITLES, !!user);
 
       setGlobalSelectedConfirmations([]);
@@ -2153,6 +2187,7 @@ export default function App() {
     persistPremiumDiscounts,
     persistNewsDays,
     persistAsiaRangeFvgs,
+    persistRiskPresets,
     persistDefinitionTitles,
     setGlobalSelectedPlanFidelity,
   ]);
@@ -2253,6 +2288,7 @@ export default function App() {
     premiumDiscounts,
     newsDays,
     asiaRangeFvgs,
+    riskPresets,
     definitionTitles,
     propAccounts,
   }), [
@@ -2268,6 +2304,7 @@ export default function App() {
     premiumDiscounts,
     newsDays,
     asiaRangeFvgs,
+    riskPresets,
     definitionTitles,
     propAccounts,
   ]);
@@ -2960,6 +2997,7 @@ export default function App() {
           premiumDiscounts={premiumDiscounts}
           newsDays={newsDays}
           asiaRangeFvgs={asiaRangeFvgs}
+          riskPresets={riskPresets}
           definitionTitles={definitionTitles}
           persistTimeframes={persistTimeframes}
           persistHtfTimeframes={persistHtfTimeframes}
@@ -2973,6 +3011,7 @@ export default function App() {
           persistPremiumDiscounts={persistPremiumDiscounts}
           persistNewsDays={persistNewsDays}
           persistAsiaRangeFvgs={persistAsiaRangeFvgs}
+          persistRiskPresets={persistRiskPresets}
           onRenameDefinition={handleRenameDefinition}
           persistDefinitionTitles={persistDefinitionTitles}
         />
@@ -3012,6 +3051,7 @@ export default function App() {
                     premiumDiscounts={premiumDiscounts}
                     newsDays={newsDays}
                     asiaRangeFvgs={asiaRangeFvgs}
+                    riskPresets={riskPresets}
                     definitionTitles={definitionTitles}
                     lastTrade={latestTrade}
                     registerCloseGuard={registerFormCloseGuard}

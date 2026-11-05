@@ -26,6 +26,7 @@ import {
   TrendingUp,
   Flag,
   Layers,
+  Percent,
   Newspaper,
   Type,
 } from 'lucide-react';
@@ -44,6 +45,9 @@ import {
   DEFAULT_PREMIUM_DISCOUNTS,
   DEFAULT_NEWS_DAYS,
   DEFAULT_ASIA_RANGE_FVGS,
+  DEFAULT_RISK_PRESETS,
+  MAX_RISK_PRESETS,
+  parseRiskPreset,
   FORM_LABEL_KEYS,
   DEFAULT_DEFINITION_TITLES,
   caseInsensitiveMatch,
@@ -71,6 +75,7 @@ interface DefinitionsManagerModalProps {
   premiumDiscounts?: string[];
   newsDays?: string[];
   asiaRangeFvgs?: string[];
+  riskPresets?: string[];
   definitionTitles?: DefinitionTitles;
   persistTimeframes: (list: string[]) => void;
   persistHtfTimeframes: (list: string[]) => void;
@@ -84,12 +89,13 @@ interface DefinitionsManagerModalProps {
   persistPremiumDiscounts?: (list: string[]) => void;
   persistNewsDays?: (list: string[]) => void;
   persistAsiaRangeFvgs?: (list: string[]) => void;
+  persistRiskPresets?: (list: string[]) => void;
   /** Bir öğe yeniden adlandırılınca işlemlerdeki değeri de günceller; güncellenen işlem sayısını döndürür. */
   onRenameDefinition?: (category: string, from: string, to: string) => number;
   persistDefinitionTitles?: (updated: DefinitionTitles) => void;
 }
 
-type TabType = 'assets' | 'timeframes' | 'htfTimeframes' | 'confirmations' | 'sessions' | 'planFidelities' | 'trendTypes' | 'entryModels' | 'tpTargets' | 'premiumDiscounts' | 'newsDays' | 'asiaRangeFvgs' | 'formLabels' | 'requiredFields';
+type TabType = 'assets' | 'timeframes' | 'htfTimeframes' | 'confirmations' | 'sessions' | 'planFidelities' | 'trendTypes' | 'entryModels' | 'tpTargets' | 'premiumDiscounts' | 'newsDays' | 'asiaRangeFvgs' | 'riskPresets' | 'formLabels' | 'requiredFields';
 
 /** Sekme kimliği -> DefinitionTitles anahtarı (Form Başlıkları sekmesinin kendi başlığı yok) */
 const titleKeyFor = (tab: TabType): keyof DefinitionTitles =>
@@ -234,6 +240,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
   premiumDiscounts = DEFAULT_PREMIUM_DISCOUNTS,
   newsDays = DEFAULT_NEWS_DAYS,
   asiaRangeFvgs = DEFAULT_ASIA_RANGE_FVGS,
+  riskPresets = DEFAULT_RISK_PRESETS,
   definitionTitles = DEFAULT_DEFINITION_TITLES,
   persistTimeframes,
   persistHtfTimeframes,
@@ -247,6 +254,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
   persistPremiumDiscounts = () => {},
   persistNewsDays = (_list: string[]) => {},
   persistAsiaRangeFvgs = () => {},
+  persistRiskPresets = (_list: string[]) => {},
   onRenameDefinition,
   persistDefinitionTitles,
 }) => {
@@ -282,6 +290,8 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
       if (t.trend) counts[`trendTypes:${t.trend}`] = (counts[`trendTypes:${t.trend}`] || 0) + 1;
       if (t.premiumDiscount) counts[`premiumDiscounts:${t.premiumDiscount}`] = (counts[`premiumDiscounts:${t.premiumDiscount}`] || 0) + 1;
       if (t.asiaRangeFvg) counts[`asiaRangeFvgs:${t.asiaRangeFvg}`] = (counts[`asiaRangeFvgs:${t.asiaRangeFvg}`] || 0) + 1;
+      const rp = parseRiskPreset(t.riskPct);
+      if (rp !== null) counts[`riskPresets:${rp}`] = (counts[`riskPresets:${rp}`] || 0) + 1;
       if (typeof t.newsDay === 'boolean') {
         const nk = `newsDays:${t.newsDay ? newsYes : newsNo}`;
         counts[nk] = (counts[nk] || 0) + 1;
@@ -302,6 +312,8 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
 
   const tabs: { id: TabType; label: string; icon: React.ComponentType<{ size?: number; className?: string }>; list: string[]; persist: (list: string[]) => void; defaultList: string[]; fixed?: boolean; special?: boolean }[] = [
     { id: 'assets', label: definitionTitles.assets || DEFAULT_DEFINITION_TITLES.assets, icon: LineChart, list: assets, persist: persistAssets, defaultList: DEFAULT_ASSETS },
+    // İşlem formundaki hazır risk yüzdeleri (en fazla 5; formda tek satıra sığar)
+    { id: 'riskPresets', label: definitionTitles.riskPresets || DEFAULT_DEFINITION_TITLES.riskPresets || "Risk", icon: Percent, list: riskPresets, persist: persistRiskPresets, defaultList: DEFAULT_RISK_PRESETS },
     { id: 'trendTypes', label: definitionTitles.trendTypes || DEFAULT_DEFINITION_TITLES.trendTypes || "Trend Yapısı", icon: TrendingUp, list: trendTypes, persist: persistTrendTypes, defaultList: DEFAULT_TREND_TYPES },
     { id: 'entryModels', label: definitionTitles.entryModels || DEFAULT_DEFINITION_TITLES.entryModels || "Entry Model", icon: Zap, list: entryModels, persist: persistEntryModels, defaultList: DEFAULT_ENTRY_MODELS },
     { id: 'timeframes', label: definitionTitles.timeframes || DEFAULT_DEFINITION_TITLES.timeframes, icon: Clock, list: timeframes, persist: persistTimeframes, defaultList: DEFAULT_TIMEFRAMES },
@@ -349,7 +361,33 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
     return activeList.filter(item => caseInsensitiveMatch(item, searchQuery));
   }, [activeList, searchQuery]);
 
+  /** Risk sekmesinde girilen değeri doğrular: 0–10 arası sayı, en fazla 5 değer; geçerliyse biçimlenmiş metni döndürür */
+  const checkRiskPreset = (raw: string, exceptIndex: number | null): string | null => {
+    const n = parseRiskPreset(raw);
+    if (n === null) {
+      toast.error('Risk yüzdesi 0 ile 10 arasında bir sayı olmalı (ör. 0.5).');
+      return null;
+    }
+    if (activeList.some((i, idx) => idx !== exceptIndex && parseRiskPreset(i) === n)) {
+      toast.error(`%${n} zaten listede mevcut!`);
+      return null;
+    }
+    if (exceptIndex === null && activeList.length >= MAX_RISK_PRESETS) {
+      toast.error(`En fazla ${MAX_RISK_PRESETS} risk yüzdesi eklenebilir; önce birini silin.`);
+      return null;
+    }
+    return String(n);
+  };
+
   const handleAddItem = () => {
+    if (activeTab === 'riskPresets') {
+      const v = checkRiskPreset(newItemText, null);
+      if (!v) return;
+      currentPersist([...activeList, v]);
+      setNewItemText('');
+      toast.success(`Yeni risk yüzdesi eklendi: %${v}`);
+      return;
+    }
     const val = newItemText.trim();
     if (!val || isFixedTab) return;
     if (activeList.some(i => caseInsensitiveEquals(i, val))) {
@@ -368,6 +406,18 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
     const val = editingText.trim();
     const previous = activeList[originalIndex];
     if (!val || val === previous) {
+      setEditingIndex(null);
+      setEditingText('');
+      return;
+    }
+    if (activeTab === 'riskPresets') {
+      // Hazır yüzde değişir; geçmiş işlemlerin kayıtlı riski olduğu gibi kalır
+      const v = checkRiskPreset(val, originalIndex);
+      if (!v) return;
+      const updated = [...activeList];
+      updated[originalIndex] = v;
+      currentPersist(updated);
+      toast.success('Risk yüzdesi güncellendi.');
       setEditingIndex(null);
       setEditingText('');
       return;
@@ -453,6 +503,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
       premiumDiscounts,
       newsDays: normalizeNewsDays(newsDays),
       asiaRangeFvgs,
+      riskPresets,
       exportedAt: new Date().toISOString(),
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -506,6 +557,10 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
         apply(data.tpTargets, persistTpTargets);
         apply(data.premiumDiscounts, persistPremiumDiscounts);
         apply(data.asiaRangeFvgs, persistAsiaRangeFvgs);
+        if (Array.isArray(data.riskPresets)) {
+          persistRiskPresets(data.riskPresets.map((x: unknown) => String(x)));
+          applied++;
+        }
         if (Array.isArray(data.newsDays)) {
           persistNewsDays(normalizeNewsDays(data.newsDays));
           applied++;
@@ -742,7 +797,8 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                   <div className="flex items-center gap-1.5 flex-1 sm:flex-none">
                     <input
                       type="text"
-                      placeholder={`Yeni ${currentTabObj.label} Ekle...`}
+                      placeholder={activeTab === 'riskPresets' ? 'Yüzde ekle (ör. 0.5)' : `Yeni ${currentTabObj.label} Ekle...`}
+                      inputMode={activeTab === 'riskPresets' ? 'decimal' : undefined}
                       value={newItemText}
                       onChange={e => setNewItemText(e.target.value)}
                       onKeyDown={e => { if (e.key === 'Enter') handleAddItem(); }}

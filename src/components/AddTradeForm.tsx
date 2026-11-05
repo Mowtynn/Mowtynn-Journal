@@ -13,6 +13,8 @@ import {
   DEFAULT_PREMIUM_DISCOUNTS,
   DEFAULT_NEWS_DAYS,
   DEFAULT_ASIA_RANGE_FVGS,
+  DEFAULT_RISK_PRESETS,
+  parseRiskPreset,
 } from "../constants/constants";
 import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
 import { missingRequired } from "../lib/requiredFields";
@@ -45,6 +47,8 @@ interface AddTradeFormProps {
   premiumDiscounts?: string[];
   newsDays?: string[];
   asiaRangeFvgs?: string[];
+  /** Hazır risk yüzdeleri (Tanımlamalar > Risk) */
+  riskPresets?: string[];
   definitionTitles?: DefinitionTitles;
   /** En son kaydedilen işlem: "Son kurulumu kopyala" için */
   lastTrade?: Trade | null;
@@ -81,6 +85,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
   premiumDiscounts = DEFAULT_PREMIUM_DISCOUNTS,
   newsDays = DEFAULT_NEWS_DAYS,
   asiaRangeFvgs = DEFAULT_ASIA_RANGE_FVGS,
+  riskPresets = DEFAULT_RISK_PRESETS,
   definitionTitles = DEFAULT_DEFINITION_TITLES,
   lastTrade = null,
   registerCloseGuard,
@@ -96,8 +101,12 @@ const AddTradeForm = React.memo(function AddTradeForm({
   const titles = useTitles(definitionTitles);
 
   // İlk değerler bir kez, doğrudan işlemden. Form her açılışta yeniden bağlanır (App'te key).
+  const riskPresetValues = useMemo(
+    () => riskPresets.map(parseRiskPreset).filter((n): n is number => n !== null),
+    [riskPresets],
+  );
   const [init] = useState(() => {
-    const base = buildInitial(editingTrade);
+    const base = buildInitial(editingTrade, riskPresetValues);
     return !editingTrade && defaultAccountChoice ? { ...base, accountChoice: defaultAccountChoice } : base;
   });
   const [asset, setAsset] = useState(init.asset);
@@ -472,6 +481,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
               accountError={accountError}
               setAccountError={setAccountError}
               selectedAccount={selectedAccount}
+              riskPresets={riskPresetValues}
               riskChoice={riskChoice}
               setRiskChoice={setRiskChoice}
               customRiskPct={customRiskPct}

@@ -58,6 +58,29 @@ export const DEFAULT_PREMIUM_DISCOUNTS = [
  */
 export const DEFAULT_ASIA_RANGE_FVGS = ["Var", "Yok"];
 
+/** İşlem formundaki hazır risk yüzdeleri (Tanımlamalar > Risk %). Formda tek satıra sığsın diye en fazla 5. */
+export const DEFAULT_RISK_PRESETS = ["0.5", "0.75", "1"];
+export const MAX_RISK_PRESETS = 5;
+
+/** "0,5" / "%1" / 0.75 → 0.5 / 1 / 0.75; geçersiz ya da (0, 10] dışı → null */
+export const parseRiskPreset = (v: unknown): number | null => {
+  const n = typeof v === "number" ? v : typeof v === "string" ? Number(v.trim().replace(",", ".").replace("%", "")) : NaN;
+  if (!Number.isFinite(n) || n <= 0 || n > 10) return null;
+  return Math.round(n * 100) / 100;
+};
+
+/** Liste değilse varsayılan; değilse geçerli, tekrarsız, en fazla 5 yüzde (sıra korunur) */
+export const normalizeRiskPresets = (list: unknown): string[] => {
+  if (!Array.isArray(list)) return DEFAULT_RISK_PRESETS;
+  const out: number[] = [];
+  for (const x of list) {
+    const n = parseRiskPreset(x);
+    if (n !== null && !out.includes(n)) out.push(n);
+    if (out.length >= MAX_RISK_PRESETS) break;
+  }
+  return out.map(String);
+};
+
 /** Listesi olmayan form alanlarının başlıkları: Tanımlamalar > Form Başlıkları'ndan değiştirilir. */
 export const FORM_LABEL_KEYS = [
   "basicInfoCard", "financialCard", "notesCard", "direction", "tradeDate", "tradeStatus",
@@ -116,6 +139,7 @@ export const DEFAULT_DEFINITION_TITLES: DefinitionTitles = {
   premiumDiscounts: "Confirmations",
   newsDays: "News Day/Bank Holiday",
   asiaRangeFvgs: "Asia Range FVG",
+  riskPresets: "Risk",
   basicInfoCard: "Temel Bilgiler",
   financialCard: "Sonuç",
   notesCard: "Analiz & Notlar",
