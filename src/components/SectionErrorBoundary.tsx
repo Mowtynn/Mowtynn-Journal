@@ -1,11 +1,14 @@
 import { Component, ErrorInfo, ReactNode } from "react";
 import { AlertTriangle } from "lucide-react";
+import toast from "react-hot-toast";
 import { isStaleChunkError, reloadForNewVersion } from "../lib/chunkReload";
 
 interface Props {
   children?: ReactNode;
   fallback?: ReactNode;
   sectionName?: string;
+  /** Görünür yedek alan yoksa (pencereler) hatayı kısa bir bildirimle haber ver */
+  notify?: boolean;
 }
 
 interface State {
@@ -35,11 +38,12 @@ export class SectionErrorBoundary extends Component<Props, State> {
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error(`Uncaught error in ${this.props.sectionName || 'section'}:`, error, errorInfo);
     if (isStaleChunkError(error)) reloadForNewVersion();
+    else if (this.props.notify) toast.error(`${this.props.sectionName || 'Pencere'} açılırken bir hata oluştu. Sayfayı yenileyip tekrar deneyin.`);
   }
 
   public render() {
     if (this.state.hasError) {
-      if (this.props.fallback) {
+      if (this.props.fallback !== undefined) {
         return this.props.fallback;
       }
       return (

@@ -209,7 +209,6 @@ html {
   .toggle-item-brand { @apply bg-brand/10 border-brand/20 text-brand shadow-xs; }
   .toggle-item-win { @apply bg-win-bg border-win-border text-win shadow-xs; }
   .toggle-item-loss { @apply bg-loss-bg border-loss-border text-loss shadow-xs; }
-  .toggle-item-breakeven { @apply bg-breakeven-bg border-breakeven-border text-breakeven shadow-xs; }
   
   /* ----- BADGES ----- */
   .badge-base {
@@ -683,20 +682,17 @@ h1,
 h2,
 .heading-1,
 .page-title,
-.font-display,
 .text-lg,
 .text-xl,
 .text-2xl,
 .text-3xl,
-.text-4xl,
-.text-5xl {
+.text-4xl {
   font-family: var(--font-display);
 }
 .text-xl:not(.uppercase),
 .text-2xl:not(.uppercase),
 .text-3xl:not(.uppercase),
-.text-4xl:not(.uppercase),
-.text-5xl:not(.uppercase) {
+.text-4xl:not(.uppercase) {
   letter-spacing: -0.02em;
 }
 .heading-1,

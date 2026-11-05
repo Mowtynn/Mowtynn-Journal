@@ -22,6 +22,7 @@ import { EdgeSummaryCard, DisciplineCard } from './deepAnalysis/EdgeCockpit';
 import { TradeHistoryModal } from './TradeHistoryModal';
 import { RuleSimulatorTab } from './strategy/RuleSimulatorTab';
 import { ExcursionSimulators } from './strategy/ExcursionSimulators';
+import { SectionErrorBoundary } from './SectionErrorBoundary';
 
 
 interface StrategyOptimizerHubProps {
@@ -171,6 +172,8 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
           transition={{ duration: 0.2, ease: EASE }}
           className="space-y-4"
         >
+      {/* Bir sekmede hata olursa yalnızca o sekme etkilenir; sekme değişince sıfırlanır */}
+      <SectionErrorBoundary key={activeSubTab} sectionName={SUBTABS.find((t) => t.id === activeSubTab)?.label}>
 
       {activeSubTab === 'edge_summary' && <EdgeSummaryCard trades={trades} onShowTrades={showTrades} />}
 
@@ -390,6 +393,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
 
 
 
+      </SectionErrorBoundary>
         </motion.div>
       </AnimatePresence>
 

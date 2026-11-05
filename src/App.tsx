@@ -149,9 +149,16 @@ const TabPane = ({ active, warm = false, className = "", children }: { active: b
   useEffect(() => {
     if (ready || !(active || warm)) return;
     let t = 0;
-    const raf = requestAnimationFrame(() => {
+    let raf = 0;
+    if (active) {
+      // Tıklanan sekme: önce "Yükleniyor" çizilsin (anında tepki), içerik bir sonraki karede
+      raf = requestAnimationFrame(() => {
+        t = window.setTimeout(() => startTransition(() => setReady(true)), 0);
+      });
+    } else {
+      // Arka planda hazırlık: kare beklemez (sayfa arka plandayken de ilerler)
       t = window.setTimeout(() => startTransition(() => setReady(true)), 0);
-    });
+    }
     return () => {
       cancelAnimationFrame(raf);
       window.clearTimeout(t);
@@ -2893,6 +2900,7 @@ export default function App() {
           )}
           
             {globalFilterMounted && (
+              <SectionErrorBoundary sectionName="Filtre Penceresi" fallback={null} notify>
               <Suspense fallback={null}>
             <GlobalFilterModal
               isOpen={isGlobalFilterModalOpen}
@@ -2948,9 +2956,11 @@ export default function App() {
               setGlobalExtra={setGlobalExtra}
             />
               </Suspense>
+              </SectionErrorBoundary>
             )}
 
             {/* RECOVERY BACKUP RESCUE MOD - FOOTNOTE */}
+            <SectionErrorBoundary sectionName="Yedekleme">
             <Suspense fallback={null}>
             <BackupRescue
               trades={trades}
@@ -2962,6 +2972,7 @@ export default function App() {
               onEditTrade={handleStartEdit}
             />
             </Suspense>
+            </SectionErrorBoundary>
 
           {/* CONTROLS AREA AND CHANNELS */}
           {true && (
@@ -2980,6 +2991,7 @@ export default function App() {
       </main>
 
       {platformMenuMounted && (
+        <SectionErrorBoundary sectionName="Tanımlamalar" fallback={null} notify>
         <Suspense fallback={null}>
         <DefinitionsManagerModal
           isOpen={isPlatformMenuOpen}
@@ -3016,6 +3028,7 @@ export default function App() {
           persistDefinitionTitles={persistDefinitionTitles}
         />
         </Suspense>
+        </SectionErrorBoundary>
       )}
 
       {/* OVERLAY MODALS WRAPPER */}
@@ -3033,6 +3046,7 @@ export default function App() {
                 onClick={(e) => e.stopPropagation()}
                 className={`form-modal-panel w-full ${formQuickMode && !formSlot.editing ? "max-w-4xl" : "max-w-6xl xl:max-w-7xl 2xl:max-w-[1440px]"} h-auto max-h-[96vh] overflow-hidden bg-[#0a0a0c] border border-zinc-800/80 rounded-2xl relative shadow-2xl flex flex-col cursor-default my-auto`}
               >
+                <SectionErrorBoundary sectionName="İşlem Formu">
                 <Suspense fallback={<div className="p-4"><PaneLoader minHeight={360} label="Form hazırlanıyor" /></div>}>
                   <AddTradeForm
                     key={formKey}
@@ -3062,6 +3076,7 @@ export default function App() {
                     active={isFormOpen}
                   />
                 </Suspense>
+                </SectionErrorBoundary>
               </div>
             </div>,
             document.body,
@@ -3069,6 +3084,7 @@ export default function App() {
 
         {/* LIGHTBOX DETAILS MODAL */}
         {detailMounted && (
+          <SectionErrorBoundary sectionName="İşlem Detayı" fallback={null} notify>
           <Suspense fallback={null}>
             <TradeDetailModal
               key="trade-detail-modal"
@@ -3081,17 +3097,20 @@ export default function App() {
               onNavigate={setDetailedTrade}
             />
           </Suspense>
+          </SectionErrorBoundary>
         )}
 
 
         {/* AUTH MODAL */}
         {authModalMounted && (
+          <SectionErrorBoundary sectionName="Giriş Penceresi" fallback={null} notify>
           <Suspense fallback={null}>
             <AuthModal
               isOpen={isAuthModalOpen}
               onClose={closeAuthModal}
             />
           </Suspense>
+          </SectionErrorBoundary>
         )}
 
     </div>
