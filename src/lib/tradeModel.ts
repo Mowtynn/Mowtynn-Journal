@@ -8,7 +8,7 @@ import { titleCase } from '../constants/constants';
  * yedekten yükleme ve kayıt aynı fonksiyondan geçer: istatistikler iki farklı veri biçimini karıştırmaz.
  */
 // entryTime: ayrı giriş saati etiketi kaldırıldı; saat her zaman işlem zamanından (NY) türetilir
-const LEGACY_KEYS = ['entry', 'liquiditySweep', 'liquiditySweeps', 'concept', 'htfBias', 'spreadPips', 'exitReason', 'entryDate', 'entryTime'];
+const LEGACY_KEYS = ['entry', 'liquiditySweep', 'liquiditySweeps', 'concept', 'htfBias', 'spreadPips', 'exitReason', 'entryDate', 'entryTime', 'maePips', 'mfePips'];
 
 const splitList = (v: unknown): string[] =>
   typeof v === 'string' ? v.split(',').map((x) => x.trim()).filter(Boolean) : [];
@@ -141,7 +141,7 @@ export function normalizeTrade<T extends Partial<Trade> & Record<string, any>>(r
 /** Metin alanları için üst sınır (kuraldaki 200 ile aynı) */
 const TEXT_MAX = 200;
 const OPTIONAL_TEXT_KEYS = ['timeframe', 'htfTimeframe', 'session', 'planFidelity', 'trend', 'premiumDiscount', 'strategy', 'asiaRangeFvg', 'platform'] as const;
-const OPTIONAL_NUMBER_KEYS = ['stopPips', 'tpPips', 'maePips', 'mfePips', 'asiaRangePips', 'riskPct', 'riskAmount', 'accountStage'] as const;
+const OPTIONAL_NUMBER_KEYS = ['stopPips', 'tpPips', 'asiaRangePips', 'riskPct', 'riskAmount', 'accountStage'] as const;
 
 /**
  * Buluta yazılabilir işlem: Firestore kurallarındaki (firestore.rules · validTrade) zorunlu alanlarla birebir aynı.

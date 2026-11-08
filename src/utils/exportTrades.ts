@@ -132,7 +132,7 @@ const numOr = (v: unknown): number | '-' => (typeof v === 'number' && Number.isF
 export const prepareTradeExportRows = (trades: Trade[], titles: Record<string, string> = {}) => {
   // Kullanıcının verdiği başlık başka bir sütunla aynıysa (ör. iki alana da "Timeframe" denmiş) sütun EZİLMEZ:
   // ikinci sütun "(Alan adı)" ekiyle ayrışır. Sabit sütun adları da (Saat, Gün…) korunur.
-  const FIXED = new Set(['Sıra', 'İşlem ID', 'Saat', 'Gün', 'Giriş Saati (saatlik)', 'Çıkış', 'Süre', 'Hesap ID', 'Hesap Türü', 'Aşama', 'Risk (%)', 'Risk ($)', 'Potansiyel R (MFE/Stop)', 'Hedef Tamamlama (MFE/TP %)', 'Süpürülen Asia Tarafı', 'Veri Seti', 'Hızlı Kayıt', 'Planlanan R:R', 'Stop / Asia Range (%)', 'Sweep Saati (30 dk)', 'Sweep → Giriş (dk)', 'Günün İşlemi', 'Kaçırılan R']);
+  const FIXED = new Set(['Sıra', 'İşlem ID', 'Saat', 'Gün', 'Giriş Saati (saatlik)', 'Çıkış', 'Süre', 'Hesap ID', 'Hesap Türü', 'Aşama', 'Risk (%)', 'Risk ($)', 'Süpürülen Asia Tarafı', 'Veri Seti', 'Hızlı Kayıt', 'Planlanan R:R', 'Stop / Asia Range (%)', 'Sweep Saati (30 dk)', 'Sweep → Giriş (dk)', 'Günün İşlemi', 'Kaçırılan R']);
   const usedLabels = new Map<string, string>();
   const T = (key: string, fallback: string) => {
     const want = (titles[key] && String(titles[key]).trim()) || fallback;
@@ -191,13 +191,9 @@ export const prepareTradeExportRows = (trades: Trade[], titles: Record<string, s
       // Pip ölçümleri
       [T('stopPips', 'Stop Pip')]: numOr(t.stopPips),
       [T('tpPips', 'TP Pip')]: numOr(t.tpPips),
-      [T('maePips', 'MAE Pip')]: numOr(t.maePips),
-      [T('mfePips', 'MFE Pip')]: numOr(t.mfePips),
       [T('asiaRangePips', 'Asia Range Pip')]: numOr(t.asiaRangePips),
       // Analizlerde kullanılan türetilmiş değerler (Excel'de ayrıca süzülüp pivotlanabilsin)
       'Planlanan R:R': plannedRR(t) !== null ? Number((plannedRR(t) as number).toFixed(2)) : '-',
-      'Potansiyel R (MFE/Stop)': hasNum(t.mfePips) && stopOk ? Number(((t.mfePips as number) / (t.stopPips as number)).toFixed(2)) : '-',
-      'Hedef Tamamlama (MFE/TP %)': hasNum(t.mfePips) && hasNum(t.tpPips) && t.tpPips > 0 ? Math.round(((t.mfePips as number) / t.tpPips) * 100) : '-',
       'Stop / Asia Range (%)': stopOk && hasNum(t.asiaRangePips) && (t.asiaRangePips as number) > 0 ? Math.round(((t.stopPips as number) / (t.asiaRangePips as number)) * 100) : '-',
       'Sweep Saati (30 dk)': sweepHourBucket(t.sweepTime) || '-',
       'Sweep → Giriş (dk)': sweepToEntryMinutes(t) ?? '-',

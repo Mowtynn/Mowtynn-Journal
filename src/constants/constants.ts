@@ -84,7 +84,7 @@ export const normalizeRiskPresets = (list: unknown): string[] => {
 /** Listesi olmayan form alanlarının başlıkları: Tanımlamalar > Form Başlıkları'ndan değiştirilir. */
 export const FORM_LABEL_KEYS = [
   "basicInfoCard", "financialCard", "notesCard", "direction", "tradeDate", "tradeStatus",
-  "stopPips", "tpPips", "maePips", "mfePips", "asiaRangePips", "rr", "chartLink", "asiaRange", "sweepTime", "management",
+  "stopPips", "tpPips", "asiaRangePips", "rr", "chartLink", "asiaRange", "sweepTime", "management",
 ] as const;
 
 export const DEFAULT_NEWS_DAYS = ["Var", "Yok"];
@@ -148,8 +148,6 @@ export const DEFAULT_DEFINITION_TITLES: DefinitionTitles = {
   tradeStatus: "İşlem Durumu",
   stopPips: "Stop Pip",
   tpPips: "TP Pip",
-  maePips: "MAE Pip",
-  mfePips: "MFE Pip",
   asiaRangePips: "Asia Range Pip",
   rr: "Sonuç R",
   chartLink: "Grafik Linki",
@@ -171,7 +169,7 @@ const EN_WORDS = new Set([
   "shift", "break", "silver", "bullet", "judas", "swing", "london", "york", "new", "tokyo", "sydney", "firm", "kill", "zone", "killzone",
   "edge", "lab", "filter", "filters", "link", "chart", "tradingview", "breakeven", "short", "long", "limit", "ratio",
   "matrix", "insight", "insights", "high/low", "pdh", "pdl", "ote", "smt", "mss", "bos", "choch", "sibi", "bisi", "silver",
-  "with", "mowtynn", "testfirm", "pip'", "sharpe", "sortino", "kelly", "sqn", "mae", "mfe", "minimum", "maximum",
+  "with", "mowtynn", "testfirm", "pip'", "sharpe", "sortino", "kelly", "sqn", "minimum", "maximum",
   "imbalance", "rejection", "retest", "internal", "external", "intraday", "daily", "weekly", "monthly", "open", "close", "midnight",
   "unicorn", "turtle", "soup", "power", "three", "consolidation", "expansion", "retracement", "accumulation", "manipulation",
   "distribution", "previous", "week", "inside", "outside", "candle", "wick", "body", "level", "levels", "point", "points", "pivot",

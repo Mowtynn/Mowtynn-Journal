@@ -16,8 +16,6 @@ export const REQUIRABLE_FIELDS = [
   { id: 'planFidelity', label: 'Setup Kalitesi', missing: (t: Partial<Trade>) => !t.planFidelity },
   { id: 'management', label: 'İşlem Yönetimi', missing: (t: Partial<Trade>) => !t.management?.length },
   { id: 'exitAt', label: 'Çıkış Saati', missing: (t: Partial<Trade>) => typeof t.exitAt !== 'number' },
-  { id: 'maePips', label: 'MAE Pip', missing: (t: Partial<Trade>) => typeof t.maePips !== 'number' },
-  { id: 'mfePips', label: 'MFE Pip', missing: (t: Partial<Trade>) => typeof t.mfePips !== 'number' },
   { id: 'trend', label: 'Trend Yapısı', missing: (t: Partial<Trade>) => !t.trend },
   { id: 'htfTimeframe', label: 'Timeframe', missing: (t: Partial<Trade>) => !t.htfTimeframe },
   { id: 'timeframe', label: 'Entry Timeframe', missing: (t: Partial<Trade>) => !t.timeframe },

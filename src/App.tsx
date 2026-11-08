@@ -380,14 +380,6 @@ export default function App() {
     setGlobalMinAsiaRangePips,
     globalMaxAsiaRangePips,
     setGlobalMaxAsiaRangePips,
-    globalMinMaePips,
-    setGlobalMinMaePips,
-    globalMaxMaePips,
-    setGlobalMaxMaePips,
-    globalMinMfePips,
-    setGlobalMinMfePips,
-    globalMaxMfePips,
-    setGlobalMaxMfePips,
     globalExtra,
     setGlobalExtra,
   } = useAppStore();
@@ -2135,10 +2127,6 @@ export default function App() {
       setGlobalDateLimit(DEFAULT_DATE_LIMIT);
       setGlobalMinAsiaRangePips(undefined);
       setGlobalMaxAsiaRangePips(undefined);
-      setGlobalMinMaePips(undefined);
-      setGlobalMaxMaePips(undefined);
-      setGlobalMinMfePips(undefined);
-      setGlobalMaxMfePips(undefined);
       setGlobalExtra(EMPTY_EXTRA_FILTERS);
 
       setEditingTrade(null);
@@ -2173,10 +2161,6 @@ export default function App() {
     setGlobalDateLimit,
     setGlobalMinAsiaRangePips,
     setGlobalMaxAsiaRangePips,
-    setGlobalMinMaePips,
-    setGlobalMaxMaePips,
-    setGlobalMinMfePips,
-    setGlobalMaxMfePips,
     setGlobalExtra,
     setTrades,
     setNotes,
@@ -2221,13 +2205,9 @@ export default function App() {
         globalSelectedTrendTypes,
         globalMinAsiaRangePips,
         globalMaxAsiaRangePips,
-        globalMinMaePips,
-        globalMaxMaePips,
-        globalMinMfePips,
-        globalMaxMfePips,
         globalExtra,
       }),
-    [trades, globalExtra, activeAccountCategory, activeAccount, activeUnlinkedOf, globalSelectedConfirmations, globalSelectedPlanFidelity, globalDateLimit, globalSelectedAssets, globalSelectedSessions, globalSelectedTimeframes, globalSelectedHtfTimeframes, globalSelectedStatuses, globalSelectedTypes, globalSelectedEntryModels, globalSelectedTrendTypes, globalMinAsiaRangePips, globalMaxAsiaRangePips, globalMinMaePips, globalMaxMaePips, globalMinMfePips, globalMaxMfePips],
+    [trades, globalExtra, activeAccountCategory, activeAccount, activeUnlinkedOf, globalSelectedConfirmations, globalSelectedPlanFidelity, globalDateLimit, globalSelectedAssets, globalSelectedSessions, globalSelectedTimeframes, globalSelectedHtfTimeframes, globalSelectedStatuses, globalSelectedTypes, globalSelectedEntryModels, globalSelectedTrendTypes, globalMinAsiaRangePips, globalMaxAsiaRangePips],
   );
 
   // Calculate comprehensive statistics (moved outside)
@@ -2257,8 +2237,6 @@ export default function App() {
       globalSelectedTrendTypes.length +
       (globalDateLimit !== DEFAULT_DATE_LIMIT ? 1 : 0) +
       (globalMinAsiaRangePips !== undefined || globalMaxAsiaRangePips !== undefined ? 1 : 0) +
-      (globalMinMaePips !== undefined || globalMaxMaePips !== undefined ? 1 : 0) +
-      (globalMinMfePips !== undefined || globalMaxMfePips !== undefined ? 1 : 0) +
       countExtraFilters(globalExtra),
     [
       globalExtra,
@@ -2275,10 +2253,6 @@ export default function App() {
       globalDateLimit,
       globalMinAsiaRangePips,
       globalMaxAsiaRangePips,
-      globalMinMaePips,
-      globalMaxMaePips,
-      globalMinMfePips,
-      globalMaxMfePips,
     ],
   );
 
@@ -2940,14 +2914,6 @@ export default function App() {
               setGlobalMinAsiaRangePips={setGlobalMinAsiaRangePips}
               globalMaxAsiaRangePips={globalMaxAsiaRangePips}
               setGlobalMaxAsiaRangePips={setGlobalMaxAsiaRangePips}
-              globalMinMaePips={globalMinMaePips}
-              setGlobalMinMaePips={setGlobalMinMaePips}
-              globalMaxMaePips={globalMaxMaePips}
-              setGlobalMaxMaePips={setGlobalMaxMaePips}
-              globalMinMfePips={globalMinMfePips}
-              setGlobalMinMfePips={setGlobalMinMfePips}
-              globalMaxMfePips={globalMaxMfePips}
-              setGlobalMaxMfePips={setGlobalMaxMfePips}
               trades={scopedTrades}
               premiumDiscounts={premiumDiscounts}
               tpTargets={tpTargets}

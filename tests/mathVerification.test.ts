@@ -69,7 +69,7 @@ function dataset(n: number): Trade[] {
       status: rr > 0 ? 'WIN' : rr < 0 ? 'LOSS' : 'BREAKEVEN', rr, createdAt: t0, notes: '', screenshot: null,
       session: rnd() < 0.9 ? pick(['London', 'NY AM']) : undefined, asiaRange: pick(['Range', 'Trend', 'Swept']),
       entryModels: rnd() < 0.3 ? ['FVG', 'MSS'] : [pick(['FVG', 'MSS'])], planFidelity: pick(['A+', 'A', 'B-C']),
-      stopPips: 8 + rnd() * 10, tpPips: 15 + rnd() * 20, maePips: rnd() * 12, mfePips: rnd() * 35, asiaRangePips: 15 + rnd() * 25,
+      stopPips: 8 + rnd() * 10, tpPips: 15 + rnd() * 20, asiaRangePips: 15 + rnd() * 25,
       newsDay: rnd() < 0.2,
     } as Trade;
   });
@@ -165,7 +165,7 @@ test('disiplin: kurala uyan + ihlal eden = gerçekleşen; ihlal maliyeti tanıml
   }
 });
 
-test('strateji laboratuvarı (MAE, MFE & Stop, Psikoloji) tabloları işlemleri eksiksiz bölüştürür', () => {
+test('strateji laboratuvarı (Stop & Range, Psikoloji) tabloları işlemleri eksiksiz bölüştürür', () => {
   const trades = dataset(150);
   const s = calculateStrategyAnalytics(trades);
   // Asia range dilimleri: aralığı girilmiş işlemleri bölüştürür

@@ -17,8 +17,6 @@ export interface Trade {
   stopPips?: number;        // Stop Loss in pips / ticks / points
   tpPips?: number;          // Take Profit in pips / ticks / points
   asiaRangePips?: number;   // Asia Range in pips (optional)
-  maePips?: number;         // MAE (Maximum Adverse Excursion) in pips
-  mfePips?: number;         // MFE (Maximum Favorable Excursion) in pips
   notes: string;            // Analysis notes, setup descriptions
   screenshot: string | null; // Base64 data URI of compressed screenshot
   createdAt: number;        // Timestamp of entry
@@ -195,8 +193,6 @@ export interface DefinitionTitles {
   tradeStatus?: string;
   stopPips?: string;
   tpPips?: string;
-  maePips?: string;
-  mfePips?: string;
   asiaRangePips?: string;
   rr?: string;
   chartLink?: string;

@@ -6,24 +6,10 @@ import type { Trade } from '../src/types';
 
 const t = (rr: number, p: Partial<Trade> = {}) => trade({ status: rr > 0 ? 'WIN' : rr < 0 ? 'LOSS' : 'BREAKEVEN', rr, ...p });
 
-test('fiyat yolu: plan R:R, MAE stop yüzdesi, MFE R ve masada bırakılan', () => {
-  const p = computePricePath(t(2, { stopPips: 10, tpPips: 30, maePips: 4, mfePips: 35 }));
-  assert.equal(p.plannedRR, 3);
-  assert.equal(p.maePctOfStop, 40);
-  assert.equal(p.maeR, 0.4);
-  assert.equal(p.mfeR, 3.5);
-  assert.equal(p.leftOnTableR, 1.5);
-  assert.equal(p.captureRate, 57);
-});
-
-test('stop yoksa oranlar hesaplanmaz; kayıpta masada bırakılan negatif olmaz', () => {
-  const a = computePricePath(t(1, { maePips: 4, mfePips: 20 }));
-  assert.equal(a.plannedRR, null);
-  assert.equal(a.mfeR, null);
-  assert.equal(a.maePctOfStop, null);
-  const b = computePricePath(t(-1, { stopPips: 10, mfePips: 5 }));
-  assert.equal(b.leftOnTableR, 1.5);
-  assert.equal(b.captureRate, 0);
+test('sonuç: plan R:R = TP / Stop; stop yoksa plan yok', () => {
+  assert.equal(computePricePath(t(2, { stopPips: 10, tpPips: 30 })).plannedRR, 3);
+  assert.equal(computePricePath(t(2, { tpPips: 30 })).plannedRR, null);
+  assert.equal(computePricePath(t(-1, {})).realizedR, -1);
 });
 
 test('kurulum geçmişi bu işlemi hariç tutar; ihlaller işlem bazında', () => {

@@ -4,7 +4,7 @@ import { missingFields, logicProblem } from '../src/lib/integrity';
 import { trade } from './fixtures';
 
 const complete = {
-  stopPips: 10, tpPips: 30, maePips: 3, mfePips: 35, asiaRangePips: 20,
+  stopPips: 10, tpPips: 30, asiaRangePips: 20,
   asiaRange: 'Swept' as const, trend: 'Continuation', newsDay: false, entryModels: ['Breaker'],
 };
 
@@ -25,7 +25,7 @@ test('prop hesabındaki işlemde risk yüzdesi zorunlu; hesapsızda aranmaz', ()
 
 test('analiz alanları eksikse listelenir', () => {
   const m = missingFields(trade({ status: 'WIN', rr: 2, accountCategory: 'DEMO' }));
-  for (const k of ['Stop Pip', 'TP Pip', 'MAE Pip', 'MFE Pip', 'Asia Range Pip', 'Asia Range', 'Trend', 'News Day', 'Entry Model']) assert.ok(m.includes(k), k);
+  for (const k of ['Stop Pip', 'TP Pip', 'Asia Range Pip', 'Asia Range', 'Trend', 'News Day', 'Entry Model']) assert.ok(m.includes(k), k);
 });
 
 test('mantık hataları: durum ile R işareti çelişirse', () => {

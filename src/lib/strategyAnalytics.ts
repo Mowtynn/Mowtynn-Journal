@@ -9,32 +9,7 @@ export { MIN_SAMPLE };
 export interface StrategyAnalyticsResult {
   totalTrades: number;
   
-  // 1. MAE (Maximum Adverse Excursion) Analytics
-  maeStats: {
-    hasData: boolean;
-    tradeCount: number;
-    avgMaeAll: number;
-    avgMaeWins: number;
-    avgMaeLosses: number;
-    avgStopPips: number;
-    stopCushionEfficiency: number; // % of stop unused on winners
-    earlyEntryWarningCount: number; // trades with MAE > 75% of stop that still won
-  };
-
-  // 2. MFE (Maximum Favorable Excursion) Analytics
-  mfeStats: {
-    hasData: boolean;
-    tradeCount: number;
-    avgMfeAll: number;
-    avgMfeWins: number;
-    avgTpPips: number;
-    mfeRealizationRate: number; // % of MFE captured (TP / MFE)
-    leftOnTheTablePips: number;
-    missedProfitTradesCount: number; // MFE ≥ 1R (stop mesafesi) ama BE / Loss kapanan işlemler
-    missedProfitTrades: Trade[];
-  };
-
-  // 3. Asia Range Volatility Matrix
+  // Asia Range Volatility Matrix
   asiaRangeStats: {
     hasData: boolean;
     tradeCount: number;
@@ -90,27 +65,6 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
 
   const defaultEmptyResult: StrategyAnalyticsResult = {
     totalTrades: 0,
-    maeStats: {
-      hasData: false,
-      tradeCount: 0,
-      avgMaeAll: 0,
-      avgMaeWins: 0,
-      avgMaeLosses: 0,
-      avgStopPips: 0,
-      stopCushionEfficiency: 0,
-      earlyEntryWarningCount: 0,
-    },
-    mfeStats: {
-      hasData: false,
-      tradeCount: 0,
-      avgMfeAll: 0,
-      avgMfeWins: 0,
-      avgTpPips: 0,
-      mfeRealizationRate: 0,
-      leftOnTheTablePips: 0,
-      missedProfitTradesCount: 0,
-      missedProfitTrades: [],
-    },
     asiaRangeStats: {
       hasData: false,
       tradeCount: 0,
@@ -139,72 +93,9 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
   const totalWins = trades.filter(t => t.status === 'WIN').length;
   const overallWinRate = Math.round((totalWins / totalTrades) * 1000) / 10;
 
-  // 1. MAE Analytics
-  const tradesWithMae = trades.filter(t => typeof t.maePips === 'number' && !isNaN(t.maePips) && t.maePips >= 0);
-  const maeWins = tradesWithMae.filter(t => t.status === 'WIN');
-  const maeLosses = tradesWithMae.filter(t => t.status === 'LOSS');
   const tradesWithStop = trades.filter(t => typeof t.stopPips === 'number' && !isNaN(t.stopPips) && t.stopPips > 0);
 
-  const avgMaeAll = tradesWithMae.length > 0 
-    ? tradesWithMae.reduce((s, t) => s + (t.maePips || 0), 0) / tradesWithMae.length 
-    : 0;
-  const avgMaeWins = maeWins.length > 0 
-    ? maeWins.reduce((s, t) => s + (t.maePips || 0), 0) / maeWins.length 
-    : 0;
-  const avgMaeLosses = maeLosses.length > 0 
-    ? maeLosses.reduce((s, t) => s + (t.maePips || 0), 0) / maeLosses.length 
-    : 0;
-  const avgStopPips = tradesWithStop.length > 0 
-    ? tradesWithStop.reduce((s, t) => s + (t.stopPips || 0), 0) / tradesWithStop.length 
-    : 0;
-
-  // Stop tamponu: kazananlarda stop'un kullanılmayan kısmı. Aynı işlemler üzerinden (MAE ve stop'u girilmiş kazananlar);
-  // eskiden tüm işlemlerin stop ortalaması ile yalnızca kazananların MAE ortalaması karşılaştırılıyordu.
-  const cushionWins = maeWins.filter(t => typeof t.stopPips === 'number' && t.stopPips > 0);
-  const cushionStop = cushionWins.reduce((s, t) => s + (t.stopPips || 0), 0);
-  const cushionMae = cushionWins.reduce((s, t) => s + Math.min(t.maePips || 0, t.stopPips || 0), 0);
-  const stopCushionEfficiency = cushionStop > 0 ? ((cushionStop - cushionMae) / cushionStop) * 100 : 0;
-
-  let earlyEntryCount = 0;
-  tradesWithMae.forEach(t => {
-    if (t.status === 'WIN' && t.stopPips && t.stopPips > 0 && t.maePips) {
-      if (t.maePips / t.stopPips >= 0.75) earlyEntryCount++;
-    }
-  });
-
-  // 2. MFE Analytics
-  // MFE = 0 da geçerli bir ölçüm: dışarıda bırakılırsa ortalama MFE olduğundan yüksek çıkar
-  const tradesWithMfe = trades.filter(t => typeof t.mfePips === 'number' && !isNaN(t.mfePips) && t.mfePips >= 0);
-  const mfeWins = tradesWithMfe.filter(t => t.status === 'WIN');
-  const tradesWithTp = trades.filter(t => typeof t.tpPips === 'number' && !isNaN(t.tpPips) && t.tpPips > 0);
-
-  const avgMfeAll = tradesWithMfe.length > 0 
-    ? tradesWithMfe.reduce((s, t) => s + (t.mfePips || 0), 0) / tradesWithMfe.length 
-    : 0;
-  const avgMfeWins = mfeWins.length > 0 
-    ? mfeWins.reduce((s, t) => s + (t.mfePips || 0), 0) / mfeWins.length 
-    : 0;
-  const avgTpPips = tradesWithTp.length > 0 
-    ? tradesWithTp.reduce((s, t) => s + (t.tpPips || 0), 0) / tradesWithTp.length 
-    : 0;
-
-  // Yakalama oranı ve masada kalan kâr aynı işlemler üzerinden: hem MFE hem TP'si girilmiş kazananlar.
-  // (Eskiden tüm işlemlerin TP ortalaması, yalnızca kazananların MFE ortalamasına bölünüyordu; iki farklı küme.)
-  const pairedWins = mfeWins.filter(t => typeof t.tpPips === 'number' && t.tpPips > 0 && (t.mfePips || 0) > 0);
-  const pairedMfe = pairedWins.reduce((s, t) => s + (t.mfePips || 0), 0);
-  const pairedTp = pairedWins.reduce((s, t) => s + Math.min(t.tpPips || 0, t.mfePips || 0), 0);
-  const mfeRealizationRate = pairedMfe > 0 ? Math.min(100, Math.round((pairedTp / pairedMfe) * 100)) : 0;
-  const leftOnTheTablePips = pairedWins.length > 0
-    ? Math.round((pairedWins.reduce((s, t) => s + Math.max(0, (t.mfePips || 0) - (t.tpPips || 0)), 0) / pairedWins.length) * 10) / 10
-    : 0;
-
-  // Kârsız kapanan ama en az 1R (kendi stop mesafesi kadar) lehte gitmiş işlemler. Sabit pip eşiği pariteler arasında anlamsızdı.
-  const missedProfitTrades = tradesWithMfe.filter(t => {
-    const isBeOrLoss = t.status === 'BREAKEVEN' || t.status === 'LOSS';
-    return isBeOrLoss && typeof t.stopPips === 'number' && t.stopPips > 0 && (t.mfePips || 0) >= t.stopPips;
-  });
-
-  // 3. Asia Range Volatility Matrix
+  // Asia Range Volatility Matrix
   const tradesWithAsia = trades.filter(t => typeof t.asiaRangePips === 'number' && !isNaN(t.asiaRangePips) && t.asiaRangePips > 0);
   
   const calcBucket = (bucketTrades: Trade[], label: string) => {
@@ -333,27 +224,6 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
 
   return {
     totalTrades,
-    maeStats: {
-      hasData: tradesWithMae.length > 0,
-      tradeCount: tradesWithMae.length,
-      avgMaeAll: Math.round(avgMaeAll * 10) / 10,
-      avgMaeWins: Math.round(avgMaeWins * 10) / 10,
-      avgMaeLosses: Math.round(avgMaeLosses * 10) / 10,
-      avgStopPips: Math.round(avgStopPips * 10) / 10,
-      stopCushionEfficiency: Math.round(stopCushionEfficiency),
-      earlyEntryWarningCount: earlyEntryCount,
-    },
-    mfeStats: {
-      hasData: tradesWithMfe.length > 0,
-      tradeCount: tradesWithMfe.length,
-      avgMfeAll: Math.round(avgMfeAll * 10) / 10,
-      avgMfeWins: Math.round(avgMfeWins * 10) / 10,
-      avgTpPips: Math.round(avgTpPips * 10) / 10,
-      mfeRealizationRate,
-      leftOnTheTablePips,
-      missedProfitTradesCount: missedProfitTrades.length,
-      missedProfitTrades,
-    },
     asiaRangeStats: {
       hasData: tradesWithAsia.length > 0,
       tradeCount: tradesWithAsia.length,

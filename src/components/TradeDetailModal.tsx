@@ -25,7 +25,7 @@ import { setupQualityTier } from "../lib/discipline";
 import { useAllTrades } from "../lib/allTradesContext";
 import { nyWallDate, nyDateKey } from "../lib/tradingTime";
 import { computeTradeInsight } from "../lib/tradeInsight";
-import { ResultPanel, PricePathPanel, hasPricePathContent, SetupHistoryPanel, RuleBadges, formatR } from "./tradeDetail/TradeInsightPanels";
+import { ResultPanel, SetupHistoryPanel, RuleBadges, formatR } from "./tradeDetail/TradeInsightPanels";
 
 interface TradeDetailModalProps {
   trade: Trade | null;
@@ -404,7 +404,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                     );
                   })()}
 
-                  {/* Sonuç: gerçekleşen ↔ plan R:R, risk ve fiyat yolu (MAE/MFE stop'a göre) */}
+                  {/* Sonuç: gerçekleşen ↔ plan R:R, risk */}
                   {insight ? (
                     <ResultPanel trade={currentTrade} path={insight.path} />
                   ) : (
@@ -561,26 +561,6 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                             value={typeof currentTrade.afterExitTp === 'boolean' ? (currentTrade.afterExitTp ? 'Evet' : 'Hayır') : undefined}
                             icon={<Target size={14} className="text-blue-400"/>}
                           />
-                          {/* MAE / MFE (pip): fiyat yolu panelinde R olarak gösterilmiyorsa; ikisi birlikte satır olur */}
-                          {(() => {
-                            const showMae = currentTrade.maePips !== undefined && currentTrade.maePips !== null && !(insight && insight.path.maeR !== null);
-                            const showMfe = currentTrade.mfePips !== undefined && currentTrade.mfePips !== null && !(insight && insight.path.mfeR !== null);
-                            if (!showMae && !showMfe) return null;
-                            return (
-                              <>
-                                <ContextRow
-                                  label="MAE (PİP)"
-                                  value={typeof currentTrade.maePips === 'number' ? `${currentTrade.maePips} Pip` : undefined}
-                                  icon={<TrendingDown size={14} className="text-orange-400"/>}
-                                />
-                                <ContextRow
-                                  label="MFE (PİP)"
-                                  value={typeof currentTrade.mfePips === 'number' ? `${currentTrade.mfePips} Pip` : undefined}
-                                  icon={<TrendingUp size={14} className="text-cyan-400"/>}
-                                />
-                              </>
-                            );
-                          })()}
                         </div>
                       </section>
                     );
@@ -685,18 +665,12 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                     </div>
                   </section>
 
-                  {/* Notların altında: fiyat yolu ve kurulum geçmişi yan yana */}
-                  {insight && (() => {
-                    const hasPath = hasPricePathContent(currentTrade, insight.path);
-                    const hasSetup = !!insight.setup;
-                    if (!hasPath && !hasSetup) return null;
-                    return (
-                      <div className={`shrink-0 grid gap-4 ${hasPath && hasSetup ? 'sm:grid-cols-2' : ''}`}>
-                        {hasPath && <PricePathPanel trade={currentTrade} path={insight.path} />}
-                        {hasSetup && <SetupHistoryPanel insight={insight} />}
-                      </div>
-                    );
-                  })()}
+                  {/* Notların altında: kurulum geçmişi */}
+                  {insight?.setup && (
+                    <div className="shrink-0">
+                      <SetupHistoryPanel insight={insight} />
+                    </div>
+                  )}
 
                 </div>
               </div>

@@ -16,10 +16,6 @@ interface AppState {
   globalDateLimit: string;
   globalMinAsiaRangePips?: number;
   globalMaxAsiaRangePips?: number;
-  globalMinMaePips?: number;
-  globalMaxMaePips?: number;
-  globalMinMfePips?: number;
-  globalMaxMfePips?: number;
   /** Asia Range, News Day, P/D, TP target, Asia FVG, risk %, hızlı kayıt filtreleri */
   globalExtra: ExtraTradeFilters;
   isQuantMode: boolean;
@@ -36,10 +32,6 @@ interface AppState {
   setGlobalDateLimit: (val: string) => void;
   setGlobalMinAsiaRangePips: (val?: number) => void;
   setGlobalMaxAsiaRangePips: (val?: number) => void;
-  setGlobalMinMaePips: (val?: number) => void;
-  setGlobalMaxMaePips: (val?: number) => void;
-  setGlobalMinMfePips: (val?: number) => void;
-  setGlobalMaxMfePips: (val?: number) => void;
   setGlobalExtra: (val: ExtraTradeFilters) => void;
   setIsQuantMode: (val: boolean) => void;
 }
@@ -60,10 +52,6 @@ export const useAppStore = create<AppState>()(
       globalDateLimit: DEFAULT_DATE_LIMIT,
       globalMinAsiaRangePips: undefined,
       globalMaxAsiaRangePips: undefined,
-      globalMinMaePips: undefined,
-      globalMaxMaePips: undefined,
-      globalMinMfePips: undefined,
-      globalMaxMfePips: undefined,
       globalExtra: EMPTY_EXTRA_FILTERS,
       isQuantMode: false,
       
@@ -80,10 +68,6 @@ export const useAppStore = create<AppState>()(
       setGlobalDateLimit: (val) => set({ globalDateLimit: val }),
       setGlobalMinAsiaRangePips: (val) => set({ globalMinAsiaRangePips: val }),
       setGlobalMaxAsiaRangePips: (val) => set({ globalMaxAsiaRangePips: val }),
-      setGlobalMinMaePips: (val) => set({ globalMinMaePips: val }),
-      setGlobalMaxMaePips: (val) => set({ globalMaxMaePips: val }),
-      setGlobalMinMfePips: (val) => set({ globalMinMfePips: val }),
-      setGlobalMaxMfePips: (val) => set({ globalMaxMfePips: val }),
       setGlobalExtra: (val) => set({ globalExtra: val }),
       setIsQuantMode: (val) => set({ isQuantMode: val }),
     }),

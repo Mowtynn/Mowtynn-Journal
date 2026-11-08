@@ -50,7 +50,7 @@ service cloud.firestore {
         && d.rr is number
         && optNum(d, 'exitAt')
         && optNum(d, 'riskPct') && optNum(d, 'riskAmount') && optNum(d, 'accountStage')
-        && optNum(d, 'stopPips') && optNum(d, 'tpPips') && optNum(d, 'maePips') && optNum(d, 'mfePips') && optNum(d, 'asiaRangePips')
+        && optNum(d, 'stopPips') && optNum(d, 'tpPips') && optNum(d, 'asiaRangePips')
         && optBool(d, 'newsDay') && optBool(d, 'quickEntry') && optBool(d, 'afterExitTp')
         && optList(d, 'management', 4)
         && optList(d, 'confirmations', 50) && optList(d, 'entryModels', 50) && optList(d, 'tpTargets', 50)

@@ -90,14 +90,6 @@ interface GlobalFilterModalProps {
   setGlobalMinAsiaRangePips?: (v?: number) => void;
   globalMaxAsiaRangePips?: number;
   setGlobalMaxAsiaRangePips?: (v?: number) => void;
-  globalMinMaePips?: number;
-  setGlobalMinMaePips?: (v?: number) => void;
-  globalMaxMaePips?: number;
-  setGlobalMaxMaePips?: (v?: number) => void;
-  globalMinMfePips?: number;
-  setGlobalMinMfePips?: (v?: number) => void;
-  globalMaxMfePips?: number;
-  setGlobalMaxMfePips?: (v?: number) => void;
   // Sonradan eklenen alanlar
   premiumDiscounts?: string[];
   tpTargets?: string[];
@@ -133,10 +125,6 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
   globalDateLimit, setGlobalDateLimit,
   globalMinAsiaRangePips, setGlobalMinAsiaRangePips,
   globalMaxAsiaRangePips, setGlobalMaxAsiaRangePips,
-  globalMinMaePips, setGlobalMinMaePips,
-  globalMaxMaePips, setGlobalMaxMaePips,
-  globalMinMfePips, setGlobalMinMfePips,
-  globalMaxMfePips, setGlobalMaxMfePips,
   premiumDiscounts = [],
   tpTargets = [],
   asiaRangeFvgs = [],
@@ -329,10 +317,6 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
     setGlobalDateLimit(DEFAULT_DATE_LIMIT);
     setGlobalMinAsiaRangePips?.(undefined);
     setGlobalMaxAsiaRangePips?.(undefined);
-    setGlobalMinMaePips?.(undefined);
-    setGlobalMaxMaePips?.(undefined);
-    setGlobalMinMfePips?.(undefined);
-    setGlobalMaxMfePips?.(undefined);
     setGlobalExtra?.(EMPTY_EXTRA_FILTERS);
   };
 
@@ -363,8 +347,6 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
     (globalSelectedTrendTypes?.length || 0) + 
     (globalDateLimit !== DEFAULT_DATE_LIMIT ? 1 : 0) +
     (globalMinAsiaRangePips !== undefined || globalMaxAsiaRangePips !== undefined ? 1 : 0) +
-    (globalMinMaePips !== undefined || globalMaxMaePips !== undefined ? 1 : 0) +
-    (globalMinMfePips !== undefined || globalMaxMfePips !== undefined ? 1 : 0) +
     countExtraFilters(globalExtra);
 
   const dateOptions = [
@@ -564,131 +546,6 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                 </div>
               </FilterAccordionRow>
 
-              {/* 4c. MAE (DRAWDOWN PİP) */}
-              <FilterAccordionRow title="MAE (Maks. Aleyhte Pip)" 
-                icon={<Activity size={14} className="text-rose-400" />}
-                summaryText={
-                  (globalMinMaePips !== undefined || globalMaxMaePips !== undefined)
-                    ? `${globalMinMaePips ?? '0'} - ${globalMaxMaePips ?? '∞'} Pip`
-                    : 'Tümü'
-                }
-                badgeCount={(globalMinMaePips !== undefined || globalMaxMaePips !== undefined) ? 1 : 0}
-                isOpen={!!openSections.mae}
-                onToggle={() => toggleSection('mae')}
-              >
-                <div className="bg-zinc-950/60 p-3 rounded-xl border border-zinc-800/80 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-zinc-400 font-sans font-bold uppercase tracking-wider">{smartUpper("Aralık (En Az - En Çok Drawdown)")}</span>
-                    {(globalMinMaePips !== undefined || globalMaxMaePips !== undefined) && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setGlobalMinMaePips?.(undefined);
-                          setGlobalMaxMaePips?.(undefined);
-                        }}
-                        className="text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer"
-                      >
-                        Temizle
-                      </button>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <div>
-                      <label className={`${FILTER_LABEL} mb-1 block`}>En Az (Min Pip)</label>
-                      <input
-                        type="number"
-                        step="any"
-                        min="0"
-                        placeholder="Min Pip"
-                        value={globalMinMaePips ?? ''}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setGlobalMinMaePips?.(val !== '' ? parseFloat(val) : undefined);
-                        }}
-                        className={FILTER_INPUT}
-                      />
-                    </div>
-                    <div>
-                      <label className={`${FILTER_LABEL} mb-1 block`}>En Çok (Maks Pip)</label>
-                      <input
-                        type="number"
-                        step="any"
-                        min="0"
-                        placeholder="Maks Pip"
-                        value={globalMaxMaePips ?? ''}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setGlobalMaxMaePips?.(val !== '' ? parseFloat(val) : undefined);
-                        }}
-                        className={FILTER_INPUT}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </FilterAccordionRow>
-
-              {/* 4d. MFE (LEHTE PİP) */}
-              <FilterAccordionRow title="MFE (Maks. Lehte Pip)" 
-                icon={<Activity size={14} className="text-blue-400" />}
-                summaryText={
-                  (globalMinMfePips !== undefined || globalMaxMfePips !== undefined)
-                    ? `${globalMinMfePips ?? '0'} - ${globalMaxMfePips ?? '∞'} Pip`
-                    : 'Tümü'
-                }
-                badgeCount={(globalMinMfePips !== undefined || globalMaxMfePips !== undefined) ? 1 : 0}
-                isOpen={!!openSections.mfe}
-                onToggle={() => toggleSection('mfe')}
-              >
-                <div className="bg-zinc-950/60 p-3 rounded-xl border border-zinc-800/80 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-zinc-400 font-sans font-bold uppercase tracking-wider">{smartUpper("Aralık (En Az - En Çok Tepe)")}</span>
-                    {(globalMinMfePips !== undefined || globalMaxMfePips !== undefined) && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setGlobalMinMfePips?.(undefined);
-                          setGlobalMaxMfePips?.(undefined);
-                        }}
-                        className="text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer"
-                      >
-                        Temizle
-                      </button>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <div>
-                      <label className={`${FILTER_LABEL} mb-1 block`}>En Az (Min Pip)</label>
-                      <input
-                        type="number"
-                        step="any"
-                        min="0"
-                        placeholder="Min Pip"
-                        value={globalMinMfePips ?? ''}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setGlobalMinMfePips?.(val !== '' ? parseFloat(val) : undefined);
-                        }}
-                        className={FILTER_INPUT}
-                      />
-                    </div>
-                    <div>
-                      <label className={`${FILTER_LABEL} mb-1 block`}>En Çok (Maks Pip)</label>
-                      <input
-                        type="number"
-                        step="any"
-                        min="0"
-                        placeholder="Maks Pip"
-                        value={globalMaxMfePips ?? ''}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setGlobalMaxMfePips?.(val !== '' ? parseFloat(val) : undefined);
-                        }}
-                        className={FILTER_INPUT}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </FilterAccordionRow>
 
               {/* 5. TIMEFRAME */}
               <FilterAccordionRow title={definitionTitles.htfTimeframes || "Timeframe"} 

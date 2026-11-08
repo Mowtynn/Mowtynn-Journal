@@ -20,10 +20,6 @@ export const ResultCard = React.memo(function ResultCard({
   setStopPips,
   tpPips,
   setTpPips,
-  maePips,
-  setMaePips,
-  mfePips,
-  setMfePips,
   asiaRangePips,
   setAsiaRangePips,
 }: {
@@ -37,10 +33,6 @@ export const ResultCard = React.memo(function ResultCard({
   setStopPips: SetState<Num>;
   tpPips: Num;
   setTpPips: SetState<Num>;
-  maePips: Num;
-  setMaePips: SetState<Num>;
-  mfePips: Num;
-  setMfePips: SetState<Num>;
   asiaRangePips: Num;
   setAsiaRangePips: SetState<Num>;
 }) {
@@ -61,8 +53,6 @@ export const ResultCard = React.memo(function ResultCard({
     }
   };
   const handleAsiaRangePipsChange = (val: string) => setAsiaRangePips(parsePip(val));
-  const handleMaePipsChange = (val: string) => setMaePips(parsePip(val));
-  const handleMfePipsChange = (val: string) => setMfePips(parsePip(val));
 
   return (
     <div className="tf-card bg-zinc-900/50 border border-zinc-800/80 rounded-2xl p-4 flex flex-col gap-3.5 shadow-sm">
@@ -121,8 +111,8 @@ export const ResultCard = React.memo(function ResultCard({
 
       {/* PİP HESAPLAYICI & DEĞERLERİ — hızlı kayıtta yalnızca stop/TP (plan R:R ve önerilen R için) */}
       <div className="bg-zinc-950/40 p-2 sm:p-2.5 rounded-xl border border-zinc-800/70 space-y-2">
-        {/* 1. SATIR: STOP & TP */}
-        <div className="grid grid-cols-2 gap-2">
+        {/* STOP · TP · ASIA RANGE (tek satır; hızlı kayıtta yalnızca stop/TP) */}
+        <div className={`grid gap-2 ${isQuick ? "grid-cols-2" : "grid-cols-[1fr_1fr_1.25fr]"}`}>
           {/* STOP PİP */}
           <div>
             <label className="text-[10px] sm:text-[11px] font-bold text-rose-400 uppercase tracking-wide font-sans flex items-center gap-1 mb-2 min-w-0 whitespace-nowrap">
@@ -156,45 +146,9 @@ export const ResultCard = React.memo(function ResultCard({
               className="w-full h-9 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 rounded-lg sm:rounded-xl px-2.5 text-xs text-zinc-100 focus:outline-none placeholder-zinc-500 font-sans shadow-inner transition-ui [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
             />
           </div>
-        </div>
 
-        {/* 2. SATIR: MAE · MFE · ASIA RANGE (tek satır) */}
-        <div className={`grid grid-cols-[1fr_1fr_1.4fr] gap-2 items-end pt-1.5 border-t border-zinc-800/60 ${isQuick ? "hidden" : ""}`}>
-          {/* MAE PİP */}
-          <div>
-            <label className="text-[10px] sm:text-[11px] font-bold text-orange-400 uppercase tracking-wide font-sans flex items-center gap-1 mb-2 min-w-0 whitespace-nowrap">
-              <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-orange-500"></span>
-              <span className="truncate">{L("maePips")}</span>
-            </label>
-            <input
-              type="number"
-              step="any"
-              min="0"
-              placeholder="örn: 4.5"
-              value={maePips}
-              onChange={(e) => handleMaePipsChange(e.target.value)}
-              className="w-full h-9 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-orange-500 focus:ring-1 focus:ring-orange-500/30 rounded-lg sm:rounded-xl px-2.5 text-xs text-zinc-100 focus:outline-none placeholder-zinc-500 font-sans shadow-inner transition-ui [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
-            />
-          </div>
-
-          {/* MFE PİP */}
-          <div>
-            <label className="text-[10px] sm:text-[11px] font-bold text-cyan-400 uppercase tracking-wide font-sans flex items-center gap-1 mb-2 min-w-0 whitespace-nowrap">
-              <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
-              <span className="truncate">{L("mfePips")}</span>
-            </label>
-            <input
-              type="number"
-              step="any"
-              min="0"
-              placeholder="örn: 28"
-              value={mfePips}
-              onChange={(e) => handleMfePipsChange(e.target.value)}
-              className="w-full h-9 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/30 rounded-lg sm:rounded-xl px-2.5 text-xs text-zinc-100 focus:outline-none placeholder-zinc-500 font-sans shadow-inner transition-ui [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
-            />
-          </div>
           {/* ASIA RANGE PİP */}
-          <div>
+          <div className={isQuick ? "hidden" : ""}>
           <label className="text-[10px] sm:text-[11px] font-bold text-amber-400 uppercase tracking-wide font-sans flex items-center gap-1 mb-2 min-w-0 whitespace-nowrap">
               <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-amber-500"></span>
               <span className="truncate">{L("asiaRangePips")}</span>

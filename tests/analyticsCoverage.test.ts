@@ -31,7 +31,7 @@ test('veri eksiği panosu: her girdi var; yalnızca sorulan işlemlerde ölçül
     t(-1, {}, 4),
   ];
   const cov = Object.fromEntries(computeCoverage(trades).map((c) => [c.field, c]));
-  for (const f of ['planFidelity', 'trend', 'newsDay', 'asiaRangeFvg', 'asiaRange', 'sweepTime', 'session', 'htfTimeframe', 'confirmations', 'timeframe', 'entryModels', 'tpTargets', 'premiumDiscount', 'management', 'afterExitTp', 'riskPct', 'exitAt', 'stopPips', 'tpPips', 'maePips', 'mfePips', 'asiaRangePips']) {
+  for (const f of ['planFidelity', 'trend', 'newsDay', 'asiaRangeFvg', 'asiaRange', 'sweepTime', 'session', 'htfTimeframe', 'confirmations', 'timeframe', 'entryModels', 'tpTargets', 'premiumDiscount', 'management', 'afterExitTp', 'riskPct', 'exitAt', 'stopPips', 'tpPips', 'asiaRangePips']) {
     assert.ok(cov[f], `${f} panoda yok`);
   }
   assert.equal(cov.management.base, 4);
@@ -43,14 +43,3 @@ test('veri eksiği panosu: her girdi var; yalnızca sorulan işlemlerde ölçül
   assert.equal(cov.riskPct.filled, 1);
 });
 
-test('MFE yakalama ve masada kalan kâr aynı işlemler üzerinden (MFE + TP girilmiş kazananlar)', () => {
-  const trades = [
-    t(2, { tpPips: 20, mfePips: 40 }, 1),   // 20/40 yakalandı, 20 pip masada
-    t(2, { tpPips: 20, mfePips: 20 }, 2),   // tamamı yakalandı
-    t(-1, { tpPips: 60, mfePips: 5 }, 3),   // kaybeden: bu ölçüye girmez
-    t(1, { mfePips: 30 }, 4),               // TP yok: bu ölçüye girmez
-  ];
-  const s = calculateStrategyAnalytics(trades).mfeStats;
-  assert.equal(s.mfeRealizationRate, 67); // 40 / 60
-  assert.equal(s.leftOnTheTablePips, 10); // (20 + 0) / 2
-});

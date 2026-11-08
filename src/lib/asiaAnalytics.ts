@@ -216,167 +216,6 @@ function groupTrades(trades: Trade[], keyFn: (t: Trade) => string | string[] | n
 const hasNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 
 /* ------------------------------------------------------------------ */
-/* Simulators (what-if on recorded MAE / MFE)                          */
-/* ------------------------------------------------------------------ */
-
-export interface SimRow {
-  label: string;
-  n: number;
-  winRate: number;
-  netR: number;
-  expectancy: number;
-  profitFactor: number;
-  deltaVsActual: number; // expectancy minus actual expectancy on the SAME subset
-}
-
-function simRow(label: string, rs: number[], actualExp: number): SimRow {
-  const e = edgeFromR(rs);
-  return {
-    label,
-    n: e.n,
-    winRate: e.winRate,
-    netR: e.netR,
-    expectancy: e.expectancy,
-    profitFactor: e.profitFactor,
-    deltaVsActual: round(e.expectancy - actualExp, 3),
-  };
-}
-
-/**
- * Fixed-R take-profit simulator.
- * A trade that recorded MFE >= k * stop is scored +k R. A trade that did not get there keeps its actual result,
- * except winners/breakevens whose MAE reached the stop (they would have been stopped) which score -1R.
- * Assumes MFE was recorded before the original exit — see the caveat shown in the UI.
- */
-export function simulateFixedTp(trades: Trade[]): { rows: SimRow[]; usable: number } {
-  const usable = trades.filter((t) => hasNum(t.stopPips) && t.stopPips > 0 && hasNum(t.mfePips) && t.mfePips >= 0);
-  if (usable.length === 0) return { rows: [], usable: 0 };
-
-  const actualRs = usable.map((t) => t.rr || 0);
-  const actualExp = actualRs.reduce((s, r) => s + r, 0) / actualRs.length;
-  const rows: SimRow[] = [simRow('Gerçekleşen (mevcut çıkış)', actualRs, actualExp)];
-
-  const scoreAt = (t: Trade, k: number, targetPips: number | null): number => {
-    const stop = t.stopPips as number;
-    const mfe = t.mfePips as number;
-    const need = targetPips !== null ? targetPips : k * stop;
-    const rrAtTarget = targetPips !== null ? targetPips / stop : k;
-    if (mfe >= need) return rrAtTarget;
-    if (t.status !== 'LOSS' && hasNum(t.maePips) && t.maePips >= stop) return -1;
-    return t.rr || 0;
-  };
-
-  [1, 1.5, 2, 2.5, 3, 4, 5].forEach((k) => {
-    rows.push(simRow(`Sabit ${k}R TP`, usable.map((t) => scoreAt(t, k, null)), actualExp));
-  });
-
-  const withTp = usable.filter((t) => hasNum(t.tpPips) && t.tpPips > 0);
-  if (withTp.length >= 3) {
-    const actualTp = withTp.map((t) => t.rr || 0);
-    const actualTpExp = actualTp.reduce((s, r) => s + r, 0) / actualTp.length;
-    rows.push(
-      simRow(
-        `Karşı Asia ucu (TP mesafesi, ${withTp.length} işlem)`,
-        withTp.map((t) => scoreAt(t, 0, t.tpPips as number)),
-        actualTpExp,
-      ),
-    );
-  }
-
-  return { rows, usable: usable.length };
-}
-
-/**
- * Stop-tightening simulator. A tighter stop (factor f of the original) stops out every trade whose MAE reached it (-1R),
- * and re-scales surviving trades' R by 1/f because the same pip result is now measured against a smaller risk.
- */
-export function simulateStopFactor(trades: Trade[]): { rows: SimRow[]; usable: number } {
-  const usable = trades.filter((t) => hasNum(t.stopPips) && t.stopPips > 0 && hasNum(t.maePips) && t.maePips >= 0);
-  if (usable.length === 0) return { rows: [], usable: 0 };
-
-  const actualRs = usable.map((t) => t.rr || 0);
-  const actualExp = actualRs.reduce((s, r) => s + r, 0) / actualRs.length;
-  const rows: SimRow[] = [simRow('Mevcut stop (%100)', actualRs, actualExp)];
-
-  [0.9, 0.8, 0.7, 0.6, 0.5].forEach((f) => {
-    const rs = usable.map((t) => {
-      const newStop = (t.stopPips as number) * f;
-      if ((t.maePips as number) >= newStop) return -1;
-      return (t.rr || 0) / f;
-    });
-    rows.push(simRow(`Stop %${Math.round(f * 100)}`, rs, actualExp));
-  });
-
-  return { rows, usable: usable.length };
-}
-
-/* ------------------------------------------------------------------ */
-/* Range katı cinsinden hedef                                          */
-/* ------------------------------------------------------------------ */
-
-export const RANGE_MULTIPLE_BUCKETS = ['< 0.5×', '0.5–1×', '1–1.5×', '1.5–2×', '2×+'] as const;
-export const RANGE_TP_MULTIPLES = [0.5, 0.75, 1, 1.25, 1.5, 2] as const;
-
-export interface RangeMultipleResult {
-  /** MFE ve Asia Range Pip'i girilmiş işlem sayısı */
-  usable: number;
-  /** Fiyatın girişten sonra lehe gittiği en uzak mesafe, o günün Asia Range'inin katı olarak (medyan) */
-  medianMultiple: number;
-  distribution: Array<{ label: string; count: number; pct: number }>;
-  /** k × range'e ulaşan işlemlerin oranı */
-  reach: Array<{ multiple: number; pct: number }>;
-  /** TP k × range'e konsaydı (Stop Pip'i de girilmiş işlemler) */
-  sim: { rows: SimRow[]; usable: number; best: number | null };
-}
-
-/**
- * Hedefi Asia Range cinsinden okur: MFE ÷ Asia Range. "TP'yi karşı uca mı, 1× range'e mi, 1.5×'e mi koymalıyım"
- * sorusunun cevabı. Simülasyon sabit R simülatörüyle aynı varsayımla: MFE hedefe ulaştıysa hedef R'ı yazılır,
- * ulaşmadıysa gerçek sonuç kalır (MAE stop'a değmiş kazanan / BE işlem -1R sayılır).
- */
-export function analyzeRangeMultiples(trades: Trade[]): RangeMultipleResult | null {
-  const usable = trades.filter((t) => hasNum(t.mfePips) && t.mfePips >= 0 && hasNum(t.asiaRangePips) && t.asiaRangePips > 0);
-  if (usable.length === 0) return null;
-  const mult = usable.map((t) => (t.mfePips as number) / (t.asiaRangePips as number));
-  const idx = (m: number) => (m < 0.5 ? 0 : m < 1 ? 1 : m < 1.5 ? 2 : m < 2 ? 3 : 4);
-  const counts = RANGE_MULTIPLE_BUCKETS.map(() => 0);
-  mult.forEach((m) => counts[idx(m)]++);
-
-  const withStop = usable.filter((t) => hasNum(t.stopPips) && t.stopPips > 0);
-  const rows: SimRow[] = [];
-  let best: number | null = null;
-  if (withStop.length > 0) {
-    const actual = withStop.map((t) => t.rr || 0);
-    const actualExp = actual.reduce((s, r) => s + r, 0) / actual.length;
-    rows.push(simRow('Gerçekleşen (mevcut çıkış)', actual, actualExp));
-    let bestExp = -Infinity;
-    RANGE_TP_MULTIPLES.forEach((k) => {
-      const rs = withStop.map((t) => {
-        const target = k * (t.asiaRangePips as number);
-        const stop = t.stopPips as number;
-        if ((t.mfePips as number) >= target) return target / stop;
-        if (t.status !== 'LOSS' && hasNum(t.maePips) && t.maePips >= stop) return -1;
-        return t.rr || 0;
-      });
-      const row = simRow(`TP ${k}× Asia Range`, rs, actualExp);
-      rows.push(row);
-      if (row.expectancy > bestExp) {
-        bestExp = row.expectancy;
-        best = k;
-      }
-    });
-  }
-
-  return {
-    usable: usable.length,
-    medianMultiple: round(median(mult), 2),
-    distribution: RANGE_MULTIPLE_BUCKETS.map((label, i) => ({ label, count: counts[i], pct: Math.round((counts[i] / usable.length) * 100) })),
-    reach: RANGE_TP_MULTIPLES.map((k) => ({ multiple: k, pct: Math.round((mult.filter((m) => m >= k).length / mult.length) * 100) })),
-    sim: { rows, usable: withStop.length, best },
-  };
-}
-
-/* ------------------------------------------------------------------ */
 /* Range size normalisation (per pair)                                 */
 /* ------------------------------------------------------------------ */
 
@@ -607,8 +446,6 @@ export function computeCoverage(trades: Trade[]): CoverageRow[] {
     { field: 'exitAt', label: 'Çıkış Saati', unlocks: 'İşlem süresi, hedefe ulaşma süresi', ok: (t) => hasNum(t.exitAt) && t.exitAt >= t.createdAt },
     { field: 'stopPips', label: 'Stop Pip', unlocks: 'Stop simülatörü, Stop / Asia Range, Planlanan R:R', ok: (t) => hasNum(t.stopPips) && t.stopPips > 0 },
     { field: 'tpPips', label: 'TP Pip', unlocks: 'Planlanan R:R, hedef tamamlama, kaçırılan R', ok: (t) => hasNum(t.tpPips) && t.tpPips > 0 },
-    { field: 'maePips', label: 'MAE Pip', unlocks: 'Stop daraltma simülatörü', ok: (t) => hasNum(t.maePips) },
-    { field: 'mfePips', label: 'MFE Pip', unlocks: 'TP simülatörü, potansiyel R, MFE yakalama', ok: (t) => hasNum(t.mfePips) },
     { field: 'asiaRangePips', label: 'Asia Range Pip', unlocks: 'Range büyüklüğü (parite bazlı), Stop / Asia Range', ok: (t) => hasNum(t.asiaRangePips) && t.asiaRangePips > 0 },
   ];
   return defs.map((d) => {
@@ -633,7 +470,6 @@ export interface AsiaLabResult {
   overall: EdgeStats;
   hourPair: { hours: string[]; pairs: string[]; cells: Record<string, HourPairCell> };
   missedByManagement: { n: number; measured: number; missedR: number };
-  rangeMultiples: RangeMultipleResult | null;
   rolling: Array<{ index: number; date: string; expectancy: number }>;
   coverage: CoverageRow[];
 }
@@ -653,39 +489,6 @@ export function listPairs(trades: Trade[]): string[] {
   return Array.from(counts.entries())
     .sort((a, b) => b[1] - a[1])
     .map(([p]) => p);
-}
-
-export interface TargetReach {
-  usable: number;
-  buckets: Array<{ label: string; count: number; pct: number }>;
-  reachedPct: number;
-}
-
-/** Hedefe ulaşma dağılımı: MFE / TP mesafesi (fiyat TP yolunun ne kadarını katetti). */
-export function computeTargetReach(trades: Trade[]): TargetReach | null {
-  let targetReach: TargetReach | null = null;
-  const reachTrades = trades.filter((t) => hasNum(t.tpPips) && t.tpPips > 0 && hasNum(t.mfePips) && t.mfePips >= 0);
-  if (reachTrades.length > 0) {
-    const edges = [
-      { label: '< %25', test: (r: number) => r < 0.25 },
-      { label: '%25 – %50', test: (r: number) => r >= 0.25 && r < 0.5 },
-      { label: '%50 – %75', test: (r: number) => r >= 0.5 && r < 0.75 },
-      { label: '%75 – %100', test: (r: number) => r >= 0.75 && r < 1 },
-      { label: 'Hedefe ulaştı (≥ %100)', test: (r: number) => r >= 1 },
-    ];
-    const ratios = reachTrades.map((t) => (t.mfePips as number) / (t.tpPips as number));
-    const buckets = edges.map((e) => {
-      const count = ratios.filter(e.test).length;
-      return { label: e.label, count, pct: Math.round((count / ratios.length) * 100) };
-    });
-    targetReach = {
-      usable: reachTrades.length,
-      buckets,
-      reachedPct: Math.round((ratios.filter((r) => r >= 1).length / ratios.length) * 100),
-    };
-  }
-
-  return targetReach;
 }
 
 export function analyzeAsia(allTrades: Trade[], opts: AsiaLabOptions): AsiaLabResult {
@@ -734,7 +537,6 @@ export function analyzeAsia(allTrades: Trade[], opts: AsiaLabOptions): AsiaLabRe
     overall,
     hourPair: { hours: hourKeys, pairs: pairKeys, cells },
     missedByManagement: managementMissedR(trades),
-    rangeMultiples: analyzeRangeMultiples(trades),
     rolling: rolling.slice(-80),
     coverage: computeCoverage(trades),
   };

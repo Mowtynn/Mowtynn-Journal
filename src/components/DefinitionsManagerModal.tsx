@@ -110,8 +110,6 @@ const FORM_LABEL_HINTS: Record<string, string> = {
   tradeStatus: 'WIN / LOSS / BREAKEVEN seçimi',
   stopPips: 'Stop mesafesi',
   tpPips: 'Take profit mesafesi',
-  maePips: 'Aleyhe maksimum sapma',
-  mfePips: 'Lehe maksimum sapma',
   asiaRangePips: 'Asia Range büyüklüğü',
   rr: 'Sonuç R',
   chartLink: 'Grafik bağlantısı alanı',

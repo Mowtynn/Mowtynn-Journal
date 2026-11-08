@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { analyzeRangeMultiples, indexTradeOrder, prevTradeBucket, PREV_TRADE_BUCKETS } from '../src/lib/asiaAnalytics';
+import { indexTradeOrder, prevTradeBucket, PREV_TRADE_BUCKETS } from '../src/lib/asiaAnalytics';
 import { dimensionValue } from '../src/lib/setupScorecard';
 import { simulateRule, matchesRule, ruleOptions } from '../src/lib/ruleSimulator';
 import { computeEdgeSummary, validateOutOfSample, edgeReportRows } from '../src/lib/edgeSummary';
@@ -20,24 +20,6 @@ test('gün içi önceki işlem: aynı NY gününde bir önceki işlemin sonucu',
   indexTradeOrder([d, c, b, a, other]);
   assert.deepEqual([a, b, c, d, other].map(prevTradeBucket), [PREV_TRADE_BUCKETS[0], 'Önceki Kaybetti', 'Önceki Kazandı', 'Önceki BE', PREV_TRADE_BUCKETS[0]]);
   assert.equal(dimensionValue(b, 'prevTrade'), 'Önceki Kaybetti');
-});
-
-test('Asia Range katı: dağılım, ulaşma oranı ve range katı TP simülasyonu', () => {
-  const trades = [
-    t(1, { asiaRangePips: 20, mfePips: 10, stopPips: 10 }, 1),  // 0.5×
-    t(2, { asiaRangePips: 20, mfePips: 30, stopPips: 10 }, 2),  // 1.5×
-    t(-1, { asiaRangePips: 20, mfePips: 4, stopPips: 10 }, 3),  // 0.2×
-    t(3, { asiaRangePips: 20, mfePips: 50 }, 4),                 // 2.5×, stop yok: simülasyona girmez
-  ];
-  const r = analyzeRangeMultiples(trades)!;
-  assert.equal(r.usable, 4);
-  assert.deepEqual(r.distribution.map((b) => b.count), [1, 1, 0, 1, 1]);
-  assert.equal(r.reach.find((x) => x.multiple === 1)!.pct, 50);
-  assert.equal(r.sim.usable, 3);
-  const at1 = r.sim.rows.find((x) => x.label === 'TP 1× Asia Range')!;
-  // 1× range = 20 pip = 2R: yalnızca ikinci işlem ulaşır (+2); diğerleri gerçek sonucunu korur (+1, -1)
-  assert.equal(at1.netR, 2);
-  assert.equal(analyzeRangeMultiples([t(1, {}, 1)]), null);
 });
 
 test('kural simülatörü: yalnızca / hariç, çoklu alan, vazgeçilen işlemler ve iki yarı', () => {
@@ -95,12 +77,3 @@ test('t kritik değeri: 30 üstünde gerçek t dağılımına yakın (aralık ol
   assert.equal(tCrit95(10), 2.228);
 });
 
-test('stop tamponu aynı işlemler üzerinden: MAE ve stop girilmiş kazananlar', async () => {
-  const { calculateStrategyAnalytics } = await import('../src/lib/strategyAnalytics');
-  const s = calculateStrategyAnalytics([
-    t(2, { stopPips: 10, maePips: 2 }, 1),
-    t(2, { stopPips: 20, maePips: 8 }, 2),
-    t(-1, { stopPips: 100, maePips: 100 }, 3), // kaybeden: tampona girmez
-  ]).maeStats;
-  assert.equal(s.stopCushionEfficiency, 67); // 1 − 10/30
-});

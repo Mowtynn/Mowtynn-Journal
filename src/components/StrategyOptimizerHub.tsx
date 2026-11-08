@@ -4,7 +4,6 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Target,
-  TrendingUp,
   Compass,
   Sparkles,
   ShieldCheck,
@@ -21,7 +20,6 @@ import { SetupScorecardTab } from './strategy/SetupScorecardTab';
 import { EdgeSummaryCard, DisciplineCard } from './deepAnalysis/EdgeCockpit';
 import { TradeHistoryModal } from './TradeHistoryModal';
 import { RuleSimulatorTab } from './strategy/RuleSimulatorTab';
-import { ExcursionSimulators } from './strategy/ExcursionSimulators';
 import { SectionErrorBoundary } from './SectionErrorBoundary';
 
 
@@ -39,14 +37,14 @@ type LabTab =
   | 'setup_scorecard'
   | 'asia_lab'
   | 'psychology'
-  | 'mae_mfe';
+  | 'stop_range';
 
 // İş akışı sırasıyla: önce ne çalıştığını gör, sonra ayrıntıya in, en son davranışı kontrol et
 const SUBTABS: Array<{ id: LabTab; label: string; desc: string; icon: React.ComponentType<{ size?: number; className?: string }> }> = [
   { id: 'edge_summary', label: 'Edge Özeti', desc: 'Ne çalışıyor, ne sızdırıyor', icon: Sparkles },
   { id: 'setup_scorecard', label: 'Kurulum Karnesi', desc: 'Kurulumları karşılaştır', icon: ClipboardList },
   { id: 'asia_lab', label: 'Asia Edge Lab', desc: "Asia Range'e özgü analiz", icon: Compass },
-  { id: 'mae_mfe', label: 'MAE, MFE & Stop', desc: 'Stop ve TP ayarı', icon: Target },
+  { id: 'stop_range', label: 'Stop & Range', desc: 'Stop ve range genişliği', icon: Target },
   { id: 'rule_sim', label: 'Kural Simülatörü', desc: 'Bir kuralı geçmişte dene', icon: FlaskConical },
   { id: 'discipline', label: 'Disiplin', desc: 'Kural ihlalinin bedeli', icon: ShieldCheck },
   { id: 'psychology', label: 'Psikoloji & Tilt', desc: 'Seri ve kayıp sonrası', icon: Brain },
@@ -92,15 +90,13 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
         <Compass className="w-10 h-10 text-zinc-600 mx-auto mb-3" />
         <h4 className="text-sm font-bold text-zinc-200 font-sans">Strateji Geliştirme İçin Yeterli Veri Yok</h4>
         <p className="text-xs text-zinc-500 mt-1 max-w-md mx-auto font-sans">
-          İşlem eklerken girdiğiniz Parite, Stop/TP Pip, MAE, MFE, Asia Range, Target (çıkış hedefi), Confirmations, Onaylar ve Giriş Modelleri burada otomatik strateji önerilerine ve edge matrislerine dönüştürülür.
+          İşlem eklerken girdiğiniz Parite, Stop/TP Pip, Asia Range, Target (çıkış hedefi), Confirmations, Onaylar ve Giriş Modelleri burada otomatik strateji önerilerine ve edge matrislerine dönüştürülür.
         </p>
       </div>
     
   );
 
   const { 
-    maeStats, 
-    mfeStats, 
     asiaRangeStats, 
     stopSizeStats,
     streakStats,
@@ -249,75 +245,9 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
 
 
 
-      {/* SUBTAB 7: MAE, MFE & STOP VOLATILITY */}
-      {activeSubTab === 'mae_mfe' && (
+      {/* STOP & ASIA RANGE: stop mesafesi ve range genişliğine göre sonuç */}
+      {activeSubTab === 'stop_range' && (
         <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            
-            {/* MAE Drawdown Card */}
-            <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 space-y-3">
-              <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5">
-                <div className="flex items-center gap-2">
-                  <Target size={16} className="text-blue-400" />
-                  <h4 className="text-xs font-bold text-zinc-100 font-sans uppercase tracking-wider">
-                    {smartUpper("MAE (Maksimum Aleyhte Drawdown)")}
-                  </h4>
-                </div>
-                <span className="text-[10px] font-mono text-zinc-400">
-                  {maeStats.tradeCount} Verili İşlem
-                </span>
-              </div>
-
-              <div className="grid grid-cols-3 gap-2">
-                <div className="p-2.5 bg-zinc-900/60 border border-zinc-800/80 rounded-lg text-center">
-                  <span className="text-[9px] uppercase tracking-wider text-zinc-500 block font-sans">Ort. MAE</span>
-                  <span className="text-sm font-bold text-zinc-200 font-mono">{maeStats.avgMaeAll} Pip</span>
-                </div>
-                <div className="p-2.5 bg-zinc-900/60 border border-zinc-800/80 rounded-lg text-center">
-                  <span className="text-[9px] uppercase tracking-wider text-zinc-500 block font-sans">Kazanan MAE</span>
-                  <span className="text-sm font-bold text-emerald-400 font-mono">{maeStats.avgMaeWins} Pip</span>
-                </div>
-                <div className="p-2.5 bg-zinc-900/60 border border-zinc-800/80 rounded-lg text-center">
-                  <span className="text-[9px] uppercase tracking-wider text-zinc-500 block font-sans">Ort. Stop</span>
-                  <span className="text-sm font-bold text-rose-400 font-mono">{maeStats.avgStopPips} Pip</span>
-                </div>
-              </div>
-
-            </div>
-
-            {/* MFE Profit Realization Card */}
-            <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 space-y-3">
-              <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5">
-                <div className="flex items-center gap-2">
-                  <TrendingUp size={16} className="text-emerald-400" />
-                  <h4 className="text-xs font-bold text-zinc-100 font-sans uppercase tracking-wider">
-                    {smartUpper("MFE (Maksimum Kâr Potansiyeli)")}
-                  </h4>
-                </div>
-                <span className="text-[10px] font-mono text-zinc-400">
-                  {mfeStats.tradeCount} Verili İşlem
-                </span>
-              </div>
-
-              <div className="grid grid-cols-3 gap-2">
-                <div className="p-2.5 bg-zinc-900/60 border border-zinc-800/80 rounded-lg text-center">
-                  <span className="text-[9px] uppercase tracking-wider text-zinc-500 block font-sans">Ortalama MFE</span>
-                  <span className="text-sm font-bold text-emerald-400 font-mono">{mfeStats.avgMfeAll} Pip</span>
-                </div>
-                <div className="p-2.5 bg-zinc-900/60 border border-zinc-800/80 rounded-lg text-center">
-                  <span className="text-[9px] uppercase tracking-wider text-zinc-500 block font-sans">Masada Kalan Kâr</span>
-                  <span className="text-sm font-bold text-amber-400 font-mono">{mfeStats.leftOnTheTablePips} Pip</span>
-                </div>
-                <div className="p-2.5 bg-zinc-900/60 border border-zinc-800/80 rounded-lg text-center">
-                  <span className="text-[9px] uppercase tracking-wider text-zinc-500 block font-sans">MFE Yakalama</span>
-                  <span className="text-sm font-bold text-zinc-200 font-mono">%{mfeStats.mfeRealizationRate}</span>
-                </div>
-              </div>
-
-            </div>
-
-          </div>
-
           {/* Stop Size Volatility Distribution */}
           <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 space-y-3">
             <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
@@ -368,24 +298,6 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
               ))}
             </div>
           </div>
-          {/* Lehine en az 1R gidip kârsız kapanan işlemler (eski Genel Bakış önerisinden taşındı) */}
-          {mfeStats.missedProfitTradesCount > 0 && (
-            <button
-              type="button"
-              onClick={() => showTrades('Lehine 1R gidip kârsız kapanan işlemler', mfeStats.missedProfitTrades)}
-              className="w-full flex items-center justify-between gap-3 rounded-xl border border-amber-500/25 bg-amber-500/5 hover:bg-amber-500/10 px-4 py-3 text-left transition-ui cursor-pointer"
-            >
-              <span className="min-w-0">
-                <span className="block text-xs font-bold text-amber-200">{smartUpper("Lehine 1R gidip kârsız kapanan işlemler")}</span>
-                <span className="block text-[11px] text-zinc-400 mt-0.5">Fiyat en az stop mesafesi kadar lehine gitti ama işlem zararla ya da başabaşta kapandı. BE / kısmi kâr kuralını aşağıdaki TP simülatörüyle test et.</span>
-              </span>
-              <span className="shrink-0 text-sm font-bold tabular-nums text-amber-300">
-                {mfeStats.missedProfitTradesCount} işlem · {(Math.round(mfeStats.missedProfitTrades.reduce((a, t) => a + Math.min(0, t.rr || 0), 0) * 100) / 100).toFixed(2)} R
-              </span>
-            </button>
-          )}
-
-          <ExcursionSimulators trades={trades} />
         </div>
       )}
 

@@ -18,16 +18,12 @@ const none: GlobalTradeFilters = {
   globalSelectedTrendTypes: [],
   globalMinAsiaRangePips: undefined,
   globalMaxAsiaRangePips: undefined,
-  globalMinMaePips: undefined,
-  globalMaxMaePips: undefined,
-  globalMinMfePips: undefined,
-  globalMaxMfePips: undefined,
 };
 const f = (p: Partial<GlobalTradeFilters>) => ({ ...none, ...p });
 
-const p1 = trade({ status: 'WIN', rr: 3, accountId: 'a', accountStage: 1, accountCategory: 'CHALLENGE', platform: 'FTMO 10K · Phase 1', createdAt: NOW - 2 * DAY, maePips: 4 });
+const p1 = trade({ status: 'WIN', rr: 3, accountId: 'a', accountStage: 1, accountCategory: 'CHALLENGE', platform: 'FTMO 10K · Phase 1', createdAt: NOW - 2 * DAY, asiaRangePips: 4 });
 const p2 = trade({ status: 'LOSS', rr: -1, accountId: 'b', accountStage: 2, accountCategory: 'CHALLENGE', platform: 'FTMO 10K · Phase 2', createdAt: NOW - 10 * DAY });
-const fu = trade({ status: 'WIN', rr: 2, accountId: 'c', accountStage: 0, accountCategory: 'FUNDED', platform: 'FTMO 10K · Funded', createdAt: NOW - 40 * DAY, maePips: 12 });
+const fu = trade({ status: 'WIN', rr: 2, accountId: 'c', accountStage: 0, accountCategory: 'FUNDED', platform: 'FTMO 10K · Funded', createdAt: NOW - 40 * DAY, asiaRangePips: 12 });
 const demo = trade({ status: 'BREAKEVEN', rr: 0, accountCategory: 'DEMO', createdAt: NOW - DAY, session: 'London KZ' });
 const legacy = trade({ status: 'WIN', rr: 1, createdAt: NOW - DAY }); // eski kayıt: hesap bilgisi yok
 const all = [p1, p2, fu, demo, legacy];
@@ -53,8 +49,8 @@ test('tarih aralığı "şimdi"ye göre', () => {
 });
 
 test('sayısal aralık: değeri girilmemiş işlem aralık filtresinden geçmez', () => {
-  assert.deepEqual(ids(applyGlobalFilters(all, f({ globalMinMaePips: 5 }), NOW)), ids([fu]));
-  assert.deepEqual(ids(applyGlobalFilters(all, f({ globalMaxMaePips: 5 }), NOW)), ids([p1]));
+  assert.deepEqual(ids(applyGlobalFilters(all, f({ globalMinAsiaRangePips: 5 }), NOW)), ids([fu]));
+  assert.deepEqual(ids(applyGlobalFilters(all, f({ globalMaxAsiaRangePips: 5 }), NOW)), ids([p1]));
 });
 
 test('filtreler birlikte VE ile çalışır', () => {

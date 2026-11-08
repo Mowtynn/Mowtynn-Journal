@@ -110,10 +110,6 @@ export interface GlobalTradeFilters {
   globalSelectedTrendTypes: string[];
   globalMinAsiaRangePips: number | undefined;
   globalMaxAsiaRangePips: number | undefined;
-  globalMinMaePips: number | undefined;
-  globalMaxMaePips: number | undefined;
-  globalMinMfePips: number | undefined;
-  globalMaxMfePips: number | undefined;
   /** İsteğe bağlı: sonradan eklenen alanların filtreleri */
   globalExtra?: ExtraTradeFilters;
 }
@@ -140,10 +136,6 @@ export function applyGlobalFilters(trades: Trade[], filters: GlobalTradeFilters,
     globalSelectedTrendTypes,
     globalMinAsiaRangePips,
     globalMaxAsiaRangePips,
-    globalMinMaePips,
-    globalMaxMaePips,
-    globalMinMfePips,
-    globalMaxMfePips,
     globalExtra,
   } = filters;
     const extra = globalExtra || EMPTY_EXTRA_FILTERS;
@@ -161,10 +153,6 @@ export function applyGlobalFilters(trades: Trade[], filters: GlobalTradeFilters,
     const hasTrendTypes = globalSelectedTrendTypes.length > 0;
     const hasMinAsia = globalMinAsiaRangePips !== undefined;
     const hasMaxAsia = globalMaxAsiaRangePips !== undefined;
-    const hasMinMae = globalMinMaePips !== undefined;
-    const hasMaxMae = globalMaxMaePips !== undefined;
-    const hasMinMfe = globalMinMfePips !== undefined;
-    const hasMaxMfe = globalMaxMfePips !== undefined;
     // Kapsam her zaman uygulanır: TÜMÜ de hesapsız işlemleri dışarıda bırakır
     const hasCategory = true;
     const hasMinTime = minTime > 0;
@@ -183,10 +171,6 @@ export function applyGlobalFilters(trades: Trade[], filters: GlobalTradeFilters,
       hasTrendTypes ||
       hasMinAsia ||
       hasMaxAsia ||
-      hasMinMae ||
-      hasMaxMae ||
-      hasMinMfe ||
-      hasMaxMfe ||
       hasCategory ||
       hasMinTime ||
       hasExtra;
@@ -226,26 +210,6 @@ export function applyGlobalFilters(trades: Trade[], filters: GlobalTradeFilters,
       }
       if (hasMaxAsia) {
         if (t.asiaRangePips === undefined || t.asiaRangePips === null || t.asiaRangePips > globalMaxAsiaRangePips!) {
-          return false;
-        }
-      }
-      if (hasMinMae) {
-        if (t.maePips === undefined || t.maePips === null || t.maePips < globalMinMaePips!) {
-          return false;
-        }
-      }
-      if (hasMaxMae) {
-        if (t.maePips === undefined || t.maePips === null || t.maePips > globalMaxMaePips!) {
-          return false;
-        }
-      }
-      if (hasMinMfe) {
-        if (t.mfePips === undefined || t.mfePips === null || t.mfePips < globalMinMfePips!) {
-          return false;
-        }
-      }
-      if (hasMaxMfe) {
-        if (t.mfePips === undefined || t.mfePips === null || t.mfePips > globalMaxMfePips!) {
           return false;
         }
       }

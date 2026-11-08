@@ -63,8 +63,6 @@ export function buildInitial(t: Trade | null, riskPresets: number[]) {
     stopPips: numOr(t?.stopPips),
     tpPips: numOr(t?.tpPips),
     asiaRangePips: numOr(t?.asiaRangePips),
-    maePips: numOr(t?.maePips),
-    mfePips: numOr(t?.mfePips),
     rrValue: (t && typeof t.rr === "number" ? Math.abs(t.rr) : "") as Num,
     status: (t ? t.status || (t.rr < 0 ? "LOSS" : t.rr === 0 ? "BREAKEVEN" : "WIN") : "WIN") as Status,
     notes: t?.notes || "",

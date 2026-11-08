@@ -11,7 +11,6 @@ import {
   listPairs,
 } from '../lib/asiaAnalytics';
 import { useNewsDayLabels } from '../hooks/useNewsDayLabels';
-import { SimTable } from './strategy/ExcursionSimulators';
 
 interface AsiaEdgeLabProps {
   trades: Trade[];
@@ -182,50 +181,6 @@ export const AsiaEdgeLab = React.memo(function AsiaEdgeLab({ trades }: AsiaEdgeL
               </p>
             </Card>
           )}
-
-          <Card
-            title="Asia Range Katı Cinsinden Hedef"
-            hint="MFE ÷ o günün Asia Range'i: fiyat girişten sonra range'in kaç katı lehe gitti? Simülasyonda TP, her işlemin kendi range'inin k katına konur; MFE hedefe ulaştıysa hedef R'ı, ulaşmadıysa gerçek sonuç yazılır."
-          >
-            {r.rangeMultiples ? (
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <div className="text-[10px] text-zinc-500 font-sans uppercase">Lehe Gidilen Mesafe (Range Katı)</div>
-                    {r.rangeMultiples.distribution.map((b) => (
-                      <div key={b.label} className="text-xs font-sans">
-                        <div className="flex justify-between text-zinc-300">
-                          <span>{b.label}</span>
-                          <span className="text-zinc-500">{b.count} işlem · %{b.pct}</span>
-                        </div>
-                        <div className="h-1 bg-zinc-800 rounded mt-1">
-                          <div className="h-1 bg-zinc-500 rounded" style={{ width: `${b.pct}%` }} />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="space-y-1.5">
-                    <div className="text-[10px] text-zinc-500 font-sans uppercase">Hedefe Ulaşma Oranı</div>
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {r.rangeMultiples.reach.map((x) => (
-                        <div key={x.multiple} className="p-2 bg-zinc-900 border border-zinc-800/80 rounded-lg text-center">
-                          <span className="text-[10px] text-zinc-500 block font-sans">{x.multiple}× Range</span>
-                          <span className="text-sm font-bold text-zinc-100 font-sans tabular-nums">%{x.pct}</span>
-                        </div>
-                      ))}
-                    </div>
-                    <p className="text-[10px] text-zinc-500 font-sans pt-1">
-                      {r.rangeMultiples.usable} işlemde MFE ve Asia Range Pip var · medyan {r.rangeMultiples.medianMultiple}× range
-                      {r.rangeMultiples.sim.best !== null && <> · en yüksek beklenti <span className="text-zinc-300 font-bold">TP {r.rangeMultiples.sim.best}× range</span></>}
-                    </p>
-                  </div>
-                </div>
-                {r.rangeMultiples.sim.rows.length > 0 ? <SimTable rows={r.rangeMultiples.sim.rows} /> : <Empty text="Simülasyon için Stop Pip de gerekli." />}
-              </div>
-            ) : (
-              <Empty text="MFE ve Asia Range Pip girilmiş işlem yok." />
-            )}
-          </Card>
 
           <Card title="Kayan Beklenti (20 işlem)" hint="Edge zamanla sağlam mı, aşınıyor mu?">
             <Sparkline points={r.rolling} />

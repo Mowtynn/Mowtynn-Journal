@@ -55,10 +55,6 @@ test('üst filtre: hesap seçimi diğer filtrelerle birlikte uygulanır', () => 
     globalSelectedTrendTypes: [],
     globalMinAsiaRangePips: undefined,
     globalMaxAsiaRangePips: undefined,
-    globalMinMaePips: undefined,
-    globalMaxMaePips: undefined,
-    globalMinMfePips: undefined,
-    globalMaxMfePips: undefined,
   };
   assert.equal(ids(applyGlobalFilters(trades, base, NOW)), 'a');
   assert.equal(ids(applyGlobalFilters(trades, { ...base, activeAccount: null }, NOW)), 'a,b');

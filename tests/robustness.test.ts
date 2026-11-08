@@ -7,7 +7,7 @@ import { buildSetupScorecard, SETUP_DIMENSIONS } from '../src/lib/setupScorecard
 import { analyzeDiscipline } from '../src/lib/discipline';
 import { computeEdgeDrift } from '../src/lib/edgeDrift';
 import { simulateRule } from '../src/lib/ruleSimulator';
-import { analyzeAsia, computeTargetReach, simulateFixedTp, simulateStopFactor, analyzeRangeMultiples, computeEdge } from '../src/lib/asiaAnalytics';
+import { analyzeAsia, computeEdge } from '../src/lib/asiaAnalytics';
 import { calculateStrategyAnalytics } from '../src/lib/strategyAnalytics';
 import { computeTradeInsight } from '../src/lib/tradeInsight';
 import { computeWeekReview, currentWeekStart } from '../src/lib/weeklyReview';
@@ -40,8 +40,6 @@ function messyTrades(n: number): Trade[] {
       sweepTime: maybe(pick(['02:30', '03:15', '25:99', ''])),
       stopPips: maybe(pick([0, 5, 12, 30, -3])),
       tpPips: maybe(pick([0, 10, 25, 60])),
-      maePips: maybe(pick([0, 2, 8, 40])),
-      mfePips: maybe(pick([0, 3, 15, 90])),
       asiaRangePips: maybe(pick([0, 15, 30, 55])),
       riskPct: maybe(pick([0, 0.5, 1, 12])),
       planFidelity: maybe(pick(['A+', 'A', 'B', 'C'])),
@@ -82,10 +80,6 @@ for (const size of [0, 1, 2, 7, 60, 400]) {
     finiteDeep(computeEdgeDrift(trades), 'drift');
     finiteDeep(simulateRule(trades, []), 'rule');
     finiteDeep(analyzeAsia(trades, { dataset: 'ALL', pair: 'ALL', minSample: 3 }), 'asia');
-    finiteDeep(computeTargetReach(trades), 'reach');
-    finiteDeep(simulateFixedTp(trades), 'tpSim');
-    finiteDeep(simulateStopFactor(trades), 'stopSim');
-    finiteDeep(analyzeRangeMultiples(trades), 'rangeMultiples');
     finiteDeep(computeEdge(trades), 'edge');
     finiteDeep(calculateStrategyAnalytics(trades), 'strategy');
     finiteDeep(computeWeekReview(trades, currentWeekStart(NOW)), 'week');

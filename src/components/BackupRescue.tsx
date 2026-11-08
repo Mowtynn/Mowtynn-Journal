@@ -273,8 +273,6 @@ const BackupRescue = React.memo(function BackupRescue({
             stopPips: num(item.stopPips),
             tpPips: num(item.tpPips),
             asiaRangePips: num(item.asiaRangePips),
-            maePips: num(item.maePips),
-            mfePips: num(item.mfePips),
             trend: typeof item.trend === 'string' ? item.trend : undefined,
             tpTargets: strArr(item.tpTargets),
             premiumDiscount: typeof item.premiumDiscount === 'string' && item.premiumDiscount.trim() ? item.premiumDiscount.trim() : undefined,

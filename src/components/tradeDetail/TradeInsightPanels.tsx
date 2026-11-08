@@ -1,12 +1,11 @@
-import { Activity, Route, History, ShieldCheck, ShieldAlert, Info } from 'lucide-react';
-import { smartUpper } from '../../constants/constants';
+import { Activity, History, ShieldCheck, ShieldAlert } from 'lucide-react';
 import type { Trade } from '../../types';
 import type { TradeInsight, PricePath } from '../../lib/tradeInsight';
 import { formatDuration } from '../../lib/tradingTime';
 
 /**
  * İşlem detayı · içgörü bölümleri (klasik detay penceresi stilinde):
- * Sonuç (plan ↔ gerçekleşen), fiyat yolu, kurulum geçmişi, disiplin rozetleri.
+ * Sonuç (plan ↔ gerçekleşen), kurulum geçmişi, disiplin rozetleri.
  */
 
 const fmt = (v: number, d = 2) => v.toLocaleString('en-US', { maximumFractionDigits: d });
@@ -58,104 +57,6 @@ function ExitRow({ trade }: { trade: Trade }) {
     <div className={statCard}>
       <span className={statLabel}>Süre</span>
       <span className={`${statValue} text-zinc-200`}>{formatDuration((trade.exitAt as number) - trade.createdAt)}</span>
-    </div>
-  );
-}
-
-/* ---------------- Fiyat yolu (işlem bağlamının altında) ---------------- */
-export function PricePathPanel({ trade, path }: { trade: Trade; path: PricePath }) {
-  if (!hasPricePathContent(trade, path)) return null;
-  return (
-    <section className="h-full flex flex-col gap-1">
-      <h4 className="heading-2 flex items-center justify-between">
-        <span className="inline-flex items-center gap-1.5"><Route size={12} /> FİYAT YOLU</span>
-        <span className="text-[10px] font-normal normal-case tracking-normal text-zinc-500">stop = −1R</span>
-      </h4>
-      <PricePathCard trade={trade} path={path} />
-    </section>
-  );
-}
-
-export function hasPricePathContent(trade: Trade, path: PricePath) {
-  const hasStop = typeof trade.stopPips === 'number' && trade.stopPips > 0;
-  if (!hasStop || (path.mfeR === null && path.maeR === null && path.plannedRR === null)) {
-    return !(trade.maePips == null && trade.mfePips == null);
-  }
-  return true;
-}
-
-function PricePathCard({ trade, path }: { trade: Trade; path: PricePath }) {
-  const hasStop = typeof trade.stopPips === 'number' && trade.stopPips > 0;
-  if (!hasStop || (path.mfeR === null && path.maeR === null && path.plannedRR === null)) {
-    if (trade.maePips == null && trade.mfePips == null) return null;
-    return (
-      <p className="text-[11px] text-zinc-500 flex items-start gap-1.5 px-1">
-        <Info size={12} className="shrink-0 mt-px" />
-        Stop Pip girilirse MAE/MFE R'ye çevrilir ve fiyat yolu çizilir.
-      </p>
-    );
-  }
-
-  const lo = -Math.max(1, path.maeR ?? 0);
-  const hi = Math.max(1, path.plannedRR ?? 0, path.mfeR ?? 0, path.realizedR);
-  const span = hi - lo || 1;
-  const x = (v: number) => `${((Math.max(lo, Math.min(hi, v)) - lo) / span) * 100}%`;
-  const exit = path.realizedR;
-
-  return (
-    <div className="flex-1 bg-zinc-900/40 border border-zinc-800/60 rounded-xl px-3 py-2 flex flex-col justify-center gap-2">
-
-      {/* Çizgi: SL ← giriş → TP; gezinme aralığı (MAE…MFE) ve çıkış noktası */}
-      <div className="relative h-7" role="img" aria-label={`Fiyat yolu: MAE ${path.maeR ?? '—'}R, MFE ${path.mfeR ?? '—'}R, çıkış ${formatR(exit)}`}>
-        <div className="absolute inset-x-0 top-1.5 h-1 rounded-full overflow-hidden flex">
-          <div className="h-full bg-rose-500/15" style={{ width: x(0) }} />
-          <div className="h-full flex-1 bg-emerald-500/12" />
-        </div>
-        {(path.maeR !== null || path.mfeR !== null) && (
-          <div
-            className="absolute top-1.5 h-1 rounded-full bg-gradient-to-r from-rose-400/60 via-zinc-400/50 to-emerald-400/70"
-            style={{ left: x(-(path.maeR ?? 0)), width: `calc(${x(path.mfeR ?? 0)} - ${x(-(path.maeR ?? 0))})` }}
-          />
-        )}
-        <Tick at={x(-1)} label="SL" cls="bg-rose-400" />
-        <Tick at={x(0)} label="Giriş" cls="bg-zinc-300" />
-        {path.plannedRR !== null && <Tick at={x(path.plannedRR)} label="TP" cls="bg-blue-400" />}
-        <div
-          className={`absolute top-2 -translate-x-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full border-2 border-zinc-950 shadow ${exit > 0 ? 'bg-emerald-400' : exit < 0 ? 'bg-rose-400' : 'bg-zinc-300'}`}
-          style={{ left: x(exit) }}
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
-        <Chip label="MAE" value={path.maePctOfStop !== null ? `%${path.maePctOfStop} stop` : '—'} sub={trade.maePips != null ? `${trade.maePips} pip` : undefined} cls={path.maePctOfStop !== null && path.maePctOfStop >= 80 ? 'text-rose-300' : 'text-zinc-200'} />
-        <Chip label="MFE" value={path.mfeR !== null ? formatR(path.mfeR) : '—'} sub={trade.mfePips != null ? `${trade.mfePips} pip` : undefined} cls="text-emerald-300" />
-        <Chip
-          label="Masada kalan"
-          value={path.leftOnTableR !== null ? `${fmt(path.leftOnTableR)}R` : '—'}
-          sub="MFE − gerçekleşen"
-          cls={path.leftOnTableR !== null && path.leftOnTableR >= 1 ? 'text-amber-300' : 'text-zinc-200'}
-        />
-        <Chip label="Yakalanan" value={path.captureRate !== null ? `%${path.captureRate}` : '—'} sub="hareketin ne kadarı" cls="text-zinc-200" />
-      </div>
-    </div>
-  );
-}
-
-function Tick({ at, label, cls }: { at: string; label: string; cls: string }) {
-  return (
-    <div className="absolute top-0 bottom-0 -translate-x-1/2 flex flex-col items-center" style={{ left: at }}>
-      <span className={`w-0.5 h-2 mt-1 rounded-full ${cls} opacity-80`} />
-      <span className="mt-auto text-[8px] font-semibold text-zinc-500 leading-none">{label}</span>
-    </div>
-  );
-}
-
-function Chip({ label, value, cls }: { label: string; value: string; sub?: string; cls: string }) {
-  // Küçük metrik: etiket + değer; açıklama ipucunda
-  return (
-    <div className="min-w-0">
-      <div className="text-[8px] leading-3 font-bold uppercase tracking-normal text-zinc-500 truncate">{smartUpper(label)}</div>
-      <div className={`text-xs leading-4 font-bold tabular-nums truncate ${cls}`}>{value}</div>
     </div>
   );
 }

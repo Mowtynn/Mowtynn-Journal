@@ -140,8 +140,6 @@ const AddTradeForm = React.memo(function AddTradeForm({
   const [stopPips, setStopPips] = useState<Num>(init.stopPips);
   const [tpPips, setTpPips] = useState<Num>(init.tpPips);
   const [asiaRangePips, setAsiaRangePips] = useState<Num>(init.asiaRangePips);
-  const [maePips, setMaePips] = useState<Num>(init.maePips);
-  const [mfePips, setMfePips] = useState<Num>(init.mfePips);
   const [rrValue, setRrValue] = useState<Num>(init.rrValue);
   const [tradeStatus, setTradeStatus] = useState<Status>(init.status);
 
@@ -265,8 +263,6 @@ const AddTradeForm = React.memo(function AddTradeForm({
       stopPips: stopPips !== "" && typeof stopPips === 'number' ? stopPips : undefined,
       tpPips: tpPips !== "" && typeof tpPips === 'number' ? tpPips : undefined,
       asiaRangePips: asiaRangePips !== "" && typeof asiaRangePips === 'number' ? asiaRangePips : undefined,
-      maePips: maePips !== "" && typeof maePips === 'number' ? maePips : undefined,
-      mfePips: mfePips !== "" && typeof mfePips === 'number' ? mfePips : undefined,
       timeframe: selectedTimeframe || undefined,
       htfTimeframe: selectedHtfTimeframe || undefined,
       session: selectedSession || undefined,
@@ -324,7 +320,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
   // Kaydedilmemiş değişiklik takibi: ilk çizimdeki durum temel alınır (ek çizim yok)
   const snapshot = JSON.stringify([
     asset, type, accountChoice, riskChoice, customRiskPct, tradeDate, exitDate, tradeStatus, stopPips, tpPips, asiaRangePips,
-    maePips, mfePips, rrValue, notes, screenshot, selectedTimeframe, selectedHtfTimeframe, selectedSession,
+    rrValue, notes, screenshot, selectedTimeframe, selectedHtfTimeframe, selectedSession,
     selectedConfirmations, selectedEntries, selectedTrend, planFidelity,
     selectedTpTargets, premiumDiscount, newsDay, asiaRange, sweepTime, management, afterExitTp, selectedAsiaFvg,
   ]);
@@ -507,10 +503,6 @@ const AddTradeForm = React.memo(function AddTradeForm({
                 setStopPips={setStopPips}
                 tpPips={tpPips}
                 setTpPips={setTpPips}
-                maePips={maePips}
-                setMaePips={setMaePips}
-                mfePips={mfePips}
-                setMfePips={setMfePips}
                 asiaRangePips={asiaRangePips}
                 setAsiaRangePips={setAsiaRangePips}
               />
@@ -584,10 +576,6 @@ const AddTradeForm = React.memo(function AddTradeForm({
                 setStopPips={setStopPips}
                 tpPips={tpPips}
                 setTpPips={setTpPips}
-                maePips={maePips}
-                setMaePips={setMaePips}
-                mfePips={mfePips}
-                setMfePips={setMfePips}
                 asiaRangePips={asiaRangePips}
                 setAsiaRangePips={setAsiaRangePips}
               />
