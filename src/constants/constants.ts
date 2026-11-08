@@ -138,7 +138,7 @@ export const DEFAULT_DEFINITION_TITLES: DefinitionTitles = {
   tpTargets: "Target",
   premiumDiscounts: "Confirmations",
   newsDays: "News Day/Bank Holiday",
-  asiaRangeFvgs: "Asia Range FVG",
+  asiaRangeFvgs: "Asia Range FVG (1H)",
   riskPresets: "Risk",
   basicInfoCard: "Temel Bilgiler",
   financialCard: "Sonuç",
@@ -271,7 +271,8 @@ export function smartUpper(text: string | undefined | null): string {
 
 export const cleanDefinitionTitleString = (str?: string): string => {
   if (!str) return "";
-  let clean = str.replace(/\s*\([^)]*\)/g, "").trim();
+  // Eski açıklama ekleri "(Varlık)" vb. düşer; zaman dilimi etiketi "(1H)", "(15M)" korunur
+  let clean = str.replace(/\s*\((?!\s*\d+\s*[mhdw]\s*\))[^)]*\)/gi, "").trim();
   if (/varlık/i.test(clean)) return "Parite";
   return clean;
 };
@@ -370,6 +371,9 @@ export const sanitizeDefinitionTitles = (raw: Partial<DefinitionTitles> = {}): D
   if (!result.entryModels || /giriş model/i.test(result.entryModels)) {
     result.entryModels = "Entry Model";
   }
+
+  // Asia Range FVG 1H grafikte okunur: eski varsayılan başlık "Asia Range FVG (1H)" olur (özel başlık korunur)
+  if (!result.asiaRangeFvgs || /^asia range fvg$/i.test(result.asiaRangeFvgs.trim())) result.asiaRangeFvgs = DEFAULT_DEFINITION_TITLES.asiaRangeFvgs as string;
 
   if (!result.newsDays) {
     result.newsDays = DEFAULT_DEFINITION_TITLES.newsDays;

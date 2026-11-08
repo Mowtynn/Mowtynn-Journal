@@ -430,7 +430,7 @@ export function computeCoverage(trades: Trade[]): CoverageRow[] {
     { field: 'planFidelity', label: 'Setup Kalitesi', unlocks: 'A+ / A / B-C kıyası, düşük kalitenin maliyeti', ok: (t) => !!t.planFidelity },
     { field: 'trend', label: 'Trend', unlocks: 'Trend kıyası, reversal maliyeti', ok: (t) => !!t.trend },
     { field: 'newsDay', label: 'News Day', unlocks: 'Haber günü – normal gün kıyası', ok: (t) => typeof t.newsDay === 'boolean' },
-    { field: 'asiaRangeFvg', label: 'Asia Range FVG', unlocks: 'Asia Range FVG kıyası', ok: (t) => !!t.asiaRangeFvg },
+    { field: 'asiaRangeFvg', label: 'Asia Range FVG (1H)', unlocks: 'Asia Range FVG (1H) kıyası', ok: (t) => !!t.asiaRangeFvg },
     { field: 'asiaRange', label: 'Asia Range', unlocks: 'Range / Trend / Swept kıyası', ok: (t) => !!t.asiaRange },
     { field: 'sweepTime', label: 'Sweep Time', unlocks: 'Sweep saati (30 dk) ve Sweep → Giriş süresi', ok: (t) => !!t.sweepTime },
     { field: 'session', label: 'Session', unlocks: 'Session ve Session × Yön kıyası', ok: (t) => !!t.session },

@@ -60,7 +60,7 @@ export const SETUP_DIMENSIONS: { id: SetupDimension; label: string }[] = [
   { id: 'timeframe', label: 'Entry TF' },
   { id: 'htfTimeframe', label: 'HTF' },
   { id: 'tpTargets', label: 'Target' },
-  { id: 'asiaRangeFvg', label: 'Asia Range FVG' },
+  { id: 'asiaRangeFvg', label: 'Asia Range FVG (1H)' },
   { id: 'newsDay', label: 'News Day' },
   { id: 'rangeSize', label: 'Asia Range Büyüklüğü' },
   { id: 'weekday', label: 'Gün' },

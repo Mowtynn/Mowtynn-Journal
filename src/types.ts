@@ -38,7 +38,7 @@ export interface Trade {
   management?: ManagementType[]; // İşlem Yönetimi: Plana Göre / BE Çekildi / Kısmi Kâr / Erken Kapatıldı
   afterExitTp?: boolean;    // Çıkıştan sonra fiyat TP'ye ulaştı mı (BE / erken kapanan işlemlerde)
   sweepTime?: string;       // Sweep saati, New York saatiyle "HH:mm" (Asia Range seçiminden tamamen bağımsız)
-  asiaRangeFvg?: string;    // Asia Range FVG (Tanımlamalar'dan yönetilir)
+  asiaRangeFvg?: string;    // Asia Range FVG (1H) (Tanımlamalar'dan yönetilir)
   newsDay?: boolean;        // News Day / Bank Holiday: true = Var, false = Yok. Girilmemişse tanımsız (bilinmiyor)
   accountId?: string;       // Prop hesap kimliği (PropAccount.id)
   riskPct?: number;         // İşlem başı risk (%), hesabın başlangıç bakiyesine göre

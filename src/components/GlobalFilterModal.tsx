@@ -727,7 +727,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
               </FilterAccordionRow>
 
               {/* 14. ASIA RANGE FVG */}
-              <FilterAccordionRow title={definitionTitles.asiaRangeFvgs || "Asia Range FVG"}
+              <FilterAccordionRow title={definitionTitles.asiaRangeFvgs || "Asia Range FVG (1H)"}
                 icon={<Layers size={14} className="text-amber-400" />}
                 summaryText={globalExtra.asiaRangeFvgs.length > 0 ? globalExtra.asiaRangeFvgs.join(', ') : 'Tümü'}
                 badgeCount={globalExtra.asiaRangeFvgs.length}

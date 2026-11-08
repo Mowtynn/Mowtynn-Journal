@@ -321,7 +321,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
     { id: 'planFidelities', label: definitionTitles.planFidelities || DEFAULT_DEFINITION_TITLES.planFidelities, icon: Crosshair, list: planFidelities, persist: persistPlanFidelities, defaultList: DEFAULT_PLAN_FIDELITIES },
     { id: 'tpTargets', label: definitionTitles.tpTargets || DEFAULT_DEFINITION_TITLES.tpTargets || "Target", icon: Flag, list: tpTargets, persist: persistTpTargets, defaultList: DEFAULT_TP_TARGETS },
     { id: 'premiumDiscounts', label: definitionTitles.premiumDiscounts || DEFAULT_DEFINITION_TITLES.premiumDiscounts || "Confirmations", icon: Layers, list: premiumDiscounts, persist: persistPremiumDiscounts, defaultList: DEFAULT_PREMIUM_DISCOUNTS },
-    { id: 'asiaRangeFvgs', label: definitionTitles.asiaRangeFvgs || DEFAULT_DEFINITION_TITLES.asiaRangeFvgs || "Asia Range FVG", icon: Layers, list: asiaRangeFvgs, persist: persistAsiaRangeFvgs, defaultList: DEFAULT_ASIA_RANGE_FVGS },
+    { id: 'asiaRangeFvgs', label: definitionTitles.asiaRangeFvgs || DEFAULT_DEFINITION_TITLES.asiaRangeFvgs || "Asia Range FVG (1H)", icon: Layers, list: asiaRangeFvgs, persist: persistAsiaRangeFvgs, defaultList: DEFAULT_ASIA_RANGE_FVGS },
     // Sabit iki durumlu alan: yalnızca etiketler (Var / Yok) yeniden adlandırılır, ekleme/silme/sıralama yok
     { id: 'newsDays', label: definitionTitles.newsDays || DEFAULT_DEFINITION_TITLES.newsDays || "News Day/Bank Holiday", icon: Newspaper, list: normalizeNewsDays(newsDays), persist: persistNewsDays, defaultList: DEFAULT_NEWS_DAYS, fixed: true },
     // Listesi olmayan form alanlarının (Yön, Stop, R:R, Notlar...) başlıkları

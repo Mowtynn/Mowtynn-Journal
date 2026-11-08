@@ -176,7 +176,7 @@ export const prepareTradeExportRows = (trades: Trade[], titles: Record<string, s
       [T('planFidelities', 'Setup Kalitesi')]: t.planFidelity || '-',
       [T('trendTypes', 'Trend Yapısı')]: t.trend || '-',
       [T('newsDays', 'News Day/Bank Holiday')]: typeof t.newsDay === 'boolean' ? (t.newsDay ? news.yes : news.no) : '-',
-      [T('asiaRangeFvgs', 'Asia Range FVG')]: t.asiaRangeFvg || '-',
+      [T('asiaRangeFvgs', 'Asia Range FVG (1H)')]: t.asiaRangeFvg || '-',
       [T('asiaRange', 'Asia Range')]: t.asiaRange || '-',
       [T('sweepTime', 'Sweep Time')]: t.sweepTime || '-',
       [T('sessions', 'Session')]: t.session || '-',

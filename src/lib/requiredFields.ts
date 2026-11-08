@@ -21,7 +21,7 @@ export const REQUIRABLE_FIELDS = [
   { id: 'timeframe', label: 'Entry Timeframe', missing: (t: Partial<Trade>) => !t.timeframe },
   { id: 'tpTargets', label: 'Target', missing: (t: Partial<Trade>) => !t.tpTargets?.length },
   { id: 'premiumDiscount', label: 'Confirmations', missing: (t: Partial<Trade>) => !t.premiumDiscount },
-  { id: 'asiaRangeFvg', label: 'Asia Range FVG', missing: (t: Partial<Trade>) => !t.asiaRangeFvg },
+  { id: 'asiaRangeFvg', label: 'Asia Range FVG (1H)', missing: (t: Partial<Trade>) => !t.asiaRangeFvg },
 ] as const;
 
 export type RequirableField = (typeof REQUIRABLE_FIELDS)[number]['id'];

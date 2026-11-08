@@ -103,3 +103,11 @@ test('Asia Range ve Sweep Time: yalnızca geçerli değerler kalır', async () =
   assert.equal(normalizeClock('23:59'), '23:59');
   assert.equal(normalizeClock('24:00'), undefined);
 });
+
+test('Asia Range FVG başlığı: eski varsayılan "Asia Range FVG (1H)" olur, zaman dilimi eki silinmez, özel başlık korunur', async () => {
+  const { sanitizeDefinitionTitles, cleanDefinitionTitleString } = await import('../src/constants/constants');
+  assert.equal(sanitizeDefinitionTitles({}).asiaRangeFvgs, 'Asia Range FVG (1H)');
+  assert.equal(sanitizeDefinitionTitles({ asiaRangeFvgs: 'Asia Range FVG' }).asiaRangeFvgs, 'Asia Range FVG (1H)');
+  assert.equal(sanitizeDefinitionTitles({ asiaRangeFvgs: 'Asia Range FVG (1H)' }).asiaRangeFvgs, 'Asia Range FVG (1H)');
+  assert.equal(cleanDefinitionTitleString('Parite (Varlık)'), 'Parite');
+});
