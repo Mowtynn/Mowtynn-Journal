@@ -286,7 +286,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
               </span>
               <span className="text-[10px] text-zinc-500 font-sans">{asiaRangeStats.insight}</span>
             </div>
-            <p className="text-[10px] text-zinc-500 font-sans -mt-1">Asia Range pip'in, paritenin kendi medyan range'ine oranına göre (dar / normal / geniş gün) sonuçlar.</p>
+            <p className="text-[10px] text-zinc-500 font-sans -mt-1">Asia Range pip'in, aynı paritenin ÖNCEKİ işlemlerindeki medyan range'e oranı (girişte bilinen; paritenin ilk 5 işlemi sınıflanmaz): dar / normal / geniş günlerde sonuçlar.</p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
               {[asiaRangeStats.brackets.tight, asiaRangeStats.brackets.medium, asiaRangeStats.brackets.wide].map((b) => (
                 <div key={b.label} className="p-2.5 bg-zinc-900 border border-zinc-800/80 rounded-lg text-xs flex justify-between items-center">

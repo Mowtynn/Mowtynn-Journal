@@ -81,9 +81,9 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
       hasData: false,
       tradeCount: 0,
       brackets: {
-        tight: { label: 'Dar (< 0.8× parite medyanı)', count: 0, wins: 0, winRate: 0, netR: 0, avgR: 0, profitFactor: 0 },
+        tight: { label: 'Dar (< 0.8× önceki medyan)', count: 0, wins: 0, winRate: 0, netR: 0, avgR: 0, profitFactor: 0 },
         medium: { label: 'Normal (0.8× – 1.25×)', count: 0, wins: 0, winRate: 0, netR: 0, avgR: 0, profitFactor: 0 },
-        wide: { label: 'Geniş (> 1.25× parite medyanı)', count: 0, wins: 0, winRate: 0, netR: 0, avgR: 0, profitFactor: 0 },
+        wide: { label: 'Geniş (> 1.25× önceki medyan)', count: 0, wins: 0, winRate: 0, netR: 0, avgR: 0, profitFactor: 0 },
       },
       bestBracket: '-',
       insight: 'Asia Range verisi bulunamadı.',
@@ -137,9 +137,9 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
   const wideTrades = tradesWithAsia.filter(t => asiaRangeBucketOf(t) === 'WIDE');
 
   const asiaBrackets = {
-    tight: calcBucket(tightTrades, 'Dar (< 0.8× parite medyanı)'),
+    tight: calcBucket(tightTrades, 'Dar (< 0.8× önceki medyan)'),
     medium: calcBucket(mediumTrades, 'Normal (0.8× – 1.25×)'),
-    wide: calcBucket(wideTrades, 'Geniş (> 1.25× parite medyanı)'),
+    wide: calcBucket(wideTrades, 'Geniş (> 1.25× önceki medyan)'),
   };
 
   let bestAsiaBracket = '-';

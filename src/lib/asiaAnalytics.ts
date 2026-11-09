@@ -289,15 +289,22 @@ export function bucketAsiaRanges(trades: Trade[]): Map<string, RangeBucket> {
     for (const t of list) {
       const v = t.asiaRangePips as number;
       if (prior.length >= PAIR_MEDIAN_MIN) {
-        const ref = median(prior);
+        // prior zaten sıralı: medyan doğrudan okunur (her işlemde yeniden sıralama yok)
+        const m = prior.length >> 1;
+        const ref = prior.length % 2 ? prior[m] : (prior[m - 1] + prior[m]) / 2;
         if (ref > 0) {
           const ratio = v / ref;
           out.set(t.id, ratio < 0.8 ? 'NARROW' : ratio > 1.25 ? 'WIDE' : 'NORMAL');
         }
       }
-      let i = prior.length;
-      while (i > 0 && prior[i - 1] > v) i--;
-      prior.splice(i, 0, v);
+      let lo = 0;
+      let hi = prior.length;
+      while (lo < hi) {
+        const mid = (lo + hi) >> 1;
+        if (prior[mid] <= v) lo = mid + 1;
+        else hi = mid;
+      }
+      prior.splice(lo, 0, v);
     }
   });
   return out;
@@ -416,7 +423,7 @@ function buildOrder(trades: Trade[]): void {
         prevResult.set(t.id, !prev ? PREV_TRADE_BUCKETS[0] : prev.status === 'WIN' ? PREV_TRADE_BUCKETS[1] : prev.status === 'LOSS' ? PREV_TRADE_BUCKETS[2] : PREV_TRADE_BUCKETS[3]);
       }),
   );
-  // Asia Range büyüklüğü de aynı listeye göre (paritenin kendi medyanına oranla) bir kez sınıflanır
+  // Asia Range büyüklüğü de aynı listeden, girişten önce bilinen haliyle (önceki range'lerin medyanına oranla) bir kez sınıflanır
   rangeIndex = bucketAsiaRanges(trades);
 }
 export function tradeOfDayBucket(t: Pick<Trade, 'id'>): string | null {
@@ -434,7 +441,7 @@ export function prevTradeBucket(t: Pick<Trade, 'id'>): string | null {
   return prevResult.get(t.id) ?? null;
 }
 
-/** Asia Range büyüklüğü (paritenin medyanına göre): kurulum karnesi, Edge Özeti ve filtrelerde tek tanım */
+/** Asia Range büyüklüğü (paritenin önceki range'lerinin medyanına göre): kurulum karnesi, Edge Özeti, Stop & Range ve filtrelerde tek tanım */
 let rangeIndex = new Map<string, RangeBucket>();
 export const RANGE_SIZE_BUCKETS = ['Dar (< 0.8×)', 'Normal (0.8–1.25×)', 'Geniş (> 1.25×)'] as const;
 const RANGE_SIZE_LABEL: Record<RangeBucket, (typeof RANGE_SIZE_BUCKETS)[number]> = {

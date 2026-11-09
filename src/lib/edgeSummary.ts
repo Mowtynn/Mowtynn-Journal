@@ -78,6 +78,8 @@ export interface EdgeSummary {
   total: number;
   overall: EdgeStats;
   bestSetups: SetupRow[];
+  /** Kurulumların geri kalan işlemlere göre farkı ve Welch z'si (anahtar: SetupRow.key) */
+  setupVsRest: Record<string, { vsRest: number; vsRestZ: number }>;
   worstSetups: SetupRow[];
   /** Negatif beklentili, yeterli örneklemli tekil alan değerleri (en çok R kaybettiren önce) */
   leaks: DimensionSlice[];
@@ -162,9 +164,6 @@ export function computeEdgeSummary(trades: Trade[], minSample = SETUP_MIN_SAMPLE
 
   const card = buildSetupScorecard(sorted, DEFAULT_SETUP_DIMENSIONS, { minSample });
   const judged = card.rows.filter((r) => r.verdict !== 'LOW_SAMPLE');
-  // Kârlı bir sistemde neredeyse her kurulum pozitiftir: "daha çok yap" yalnızca geri kalandan daha iyi olanlar
-  const restExpOf = (n: number, netR: number) => (sorted.length - n > 0 ? (sorted.reduce((a, t) => a + rOf(t), 0) - netR) / (sorted.length - n) : 0);
-  const bestSetups = judged.filter((r) => r.edge.expectancy > 0 && r.edge.expectancy > restExpOf(r.edge.n, r.edge.netR)).slice(0, 3);
   const worstSetups = [...judged].reverse().filter((r) => r.edge.expectancy < 0).slice(0, 3);
 
   // Geri kalanla kıyas için toplamlar (dilim − geri kalan: Welch)
@@ -195,6 +194,14 @@ export function computeEdgeSummary(trades: Trade[], minSample = SETUP_MIN_SAMPLE
     const diff = mean - restMean;
     return { vsRest: Math.round(diff * 1000) / 1000, vsRestZ: se > 0 ? diff / se : 0 };
   };
+
+  // Kârlı bir sistemde neredeyse her kurulum pozitiftir: "daha çok yap" yalnızca geri kalandan daha iyi olanlar.
+  // Farkın kesinliği (Welch z) ekranda "fark henüz kesin değil" notu ve rozet için taşınır.
+  const setupVsRest: Record<string, { vsRest: number; vsRestZ: number }> = {};
+  judged.forEach((r) => {
+    setupVsRest[r.key] = vsRestOf(sorted.filter((t) => DEFAULT_SETUP_DIMENSIONS.every((d, i) => val(t, d) === r.labels[i])));
+  });
+  const bestSetups = judged.filter((r) => r.edge.expectancy > 0 && (setupVsRest[r.key]?.vsRest ?? 0) > 0).slice(0, 3);
 
   const scan = (dims: SetupDimension[]): DimensionSlice[] => {
   const slices: DimensionSlice[] = [];
@@ -303,6 +310,7 @@ export function computeEdgeSummary(trades: Trade[], minSample = SETUP_MIN_SAMPLE
     total: sorted.length,
     overall: edgeOf(sorted),
     bestSetups,
+    setupVsRest,
     worstSetups,
     leaks,
     strengths,
@@ -690,9 +698,9 @@ export function validateOutOfSample(trades: Trade[], minSample = SETUP_MIN_SAMPL
     const test = edgeOf(hit);
     const rest = testSet.filter((t) => !c.match(t));
     const restExp = rest.length ? rest.reduce((a, t) => a + rOf(t), 0) / rest.length : 0;
-    // AL bulgusu "geri kalandan iyi" diye seçildi: ikinci yarıda da geri kalandan iyi olmalı (sıfırdan büyük olması yetmez;
-    // kârlı bir sistemde rastgele her grup pozitif çıkar). ALMA bulgusu ikinci yarıda da kaybettirmeli.
-    const held = c.kind === 'TAKE' ? test.expectancy > 0 && test.expectancy > restExp : test.expectancy < 0;
+    // AL bulgusu ikinci yarıda da kârlı VE geri kalandan iyi, ALMA bulgusu ikinci yarıda da kaybettiren VE geri kalandan kötü
+    // olmalı (yalnızca sıfırla kıyas, kârlı sistemde AL'leri, zararlı sistemde ALMA'ları kendiliğinden "Tuttu" yapıyordu).
+    const held = c.kind === 'TAKE' ? test.expectancy > 0 && test.expectancy > restExp : test.expectancy < 0 && test.expectancy < restExp;
     const status: OosStatus = test.n < HALF_MIN ? 'UNTESTED' : held ? 'HELD' : 'FAILED';
     return { ...c, test, status };
   });

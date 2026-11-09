@@ -70,7 +70,10 @@ export const SetupScorecardTab = React.memo(function SetupScorecardTab({ trades 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const result = useMemo(() => buildSetupScorecard(trades, dims), [trades, dims, version]);
   const judged = result.rows.filter((r) => r.verdict !== 'LOW_SAMPLE');
-  const best = judged.filter((r) => r.edge.expectancy > 0).slice(0, 3);
+  // "Önceliklendir": Edge Özeti ile aynı tanım — kârlı VE geri kalan işlemlerden daha iyi (kârlı sistemde her kurulum pozitif çıkar)
+  const totalR = useMemo(() => trades.reduce((a, t) => a + (t.rr || 0), 0), [trades]);
+  const restExp = (r: SetupRow) => (trades.length - r.edge.n > 0 ? (totalR - r.edge.netR) / (trades.length - r.edge.n) : 0);
+  const best = judged.filter((r) => r.edge.expectancy > 0 && r.edge.expectancy > restExp(r)).slice(0, 3);
   const worst = [...judged].reverse().filter((r) => r.edge.expectancy < 0).slice(0, 3);
   const tokens = query.toLocaleLowerCase('tr').split(/\s+/).filter(Boolean);
   const matches = (r: SetupRow) => {
@@ -132,12 +135,14 @@ export const SetupScorecardTab = React.memo(function SetupScorecardTab({ trades 
             <span className="text-[10px] font-bold uppercase tracking-wide text-emerald-400 flex items-center gap-1.5">
               <TrendingUp size={12} /> Önceliklendir
             </span>
-            {best.length ? best.map((r) => <SetupHighlight key={r.key} row={r} tone="good" />) : <p className="text-[11px] text-zinc-500">Pozitif beklentili, yeterli örneklemli kurulum yok.</p>}
+            <p className="text-[10px] text-zinc-500 -mt-1">Kârlı ve geri kalan işlemlerinden daha iyi sonuç veren kurulumlar.</p>
+            {best.length ? best.map((r) => <SetupHighlight key={r.key} row={r} tone="good" />) : <p className="text-[11px] text-zinc-500">Hem kârlı hem de geri kalandan iyi, yeterli örneklemli kurulum yok.</p>}
           </div>
           <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-3 space-y-2">
             <span className="text-[10px] font-bold uppercase tracking-wide text-rose-400 flex items-center gap-1.5">
               <TrendingDown size={12} /> Azalt ya da bırak
             </span>
+            <p className="text-[10px] text-zinc-500 -mt-1">İşlem başına R'si negatif (kaybettiren) kurulumlar.</p>
             {worst.length ? worst.map((r) => <SetupHighlight key={r.key} row={r} tone="bad" />) : <p className="text-[11px] text-zinc-500">Negatif beklentili, yeterli örneklemli kurulum yok.</p>}
           </div>
         </div>

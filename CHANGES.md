@@ -824,3 +824,10 @@ Klasik tasarım korunarak, son eklenen alanlar (risk %, hesap bağı, strateji, 
   - Takvim: −0.0R gibi kayan nokta artıkları sıfır sayılır. Edge raporu: kayıpsız grupta PF ∞. Kurulum Karnesi "Son 10" erken sinyali "sinyal" etiketli ve soluk.
   - Detaylı Analiz kartlarında işlem sayıları; PF / Recovery 5 işlemden azsa "az veri"; DD Toparlanma düşüş sayısıyla. Asia Edge Lab min. örneklem 5'ten başlar.
   - Kurallarım · AL: kanıtlı kârlı olmanın yanında geri kalan işlemlerden %95 güvenle daha iyi olmayı şart koşar (işlemlerin çoğunu kapsayan, ortalamaya eşit gruplar — ör. "News Day: Yok" — AL kuralı olmuyor).
+- Yeniden denetim düzeltmeleri:
+  - Tesadüf Testi: ALMA bulgusu da ikinci yarıda hem kaybettirmeli hem geri kalandan kötü olmalı (zararlı tabanda kendiliğinden "Tuttu" olmuyordu).
+  - Kurulum Karnesi · Önceliklendir: Edge Özeti ile aynı tanım (kârlı ve geri kalandan iyi); bölüm açıklamaları.
+  - Edge Özeti · Daha çok yap: kurulumlar için de "fark henüz kesin değil" notu; "Kanıtlı" rozeti burada geri kalandan iyi olmanın kesinliğine göre.
+  - Prop: kart başlığındaki R "≈ bakiye ÷ 1R" olarak işaretli; Canlı R özetindeki Net R "işlemlerin R toplamı" açıklamalı.
+  - Asia Range büyüklüğü etiketleri "önceki medyan" olarak düzeltildi.
+- Performans: Asia Range sınıflamasında her işlemde yeniden sıralama kaldırıldı (önceki değerler sıralı tutulup medyan doğrudan okunuyor; 5000 işlemde indeksleme 66 ms → 23 ms). Dayanıklılık testleri prop hesapları ve hedefe ulaşma süresini de kapsıyor.

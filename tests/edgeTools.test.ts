@@ -44,13 +44,13 @@ test('kural simülatörü: yalnızca / hariç, çoklu alan, vazgeçilen işlemle
 });
 
 test('tesadüf testi: iki yarıda tutan bulgu "Tuttu", yalnızca ilk yarıda olan "Tutmadı"', () => {
-  // London her zaman iyi; Trend yalnızca ilk yarıda iyi, ikinci yarıda kötü
+  // London her zaman iyi; Trend yalnızca ilk yarıda iyi, ikinci yarıda sonuçsuz (BE)
   const trades = Array.from({ length: 80 }, (_, i) => {
     const london = i % 2 === 0;
     const trend = i % 4 < 2 ? 'Trend' : 'Range';
     const firstHalf = i < 40;
     let rr = london ? (i % 6 === 0 ? -1 : 2) : i % 6 === 1 ? 1 : -1;
-    if (trend === 'Trend') rr = firstHalf ? Math.abs(rr) + 1 : -1;
+    if (trend === 'Trend') rr = firstHalf ? Math.abs(rr) + 1 : 0;
     return t(rr, { session: london ? 'London' : 'NY AM', asiaRange: trend }, i);
   });
   const o = validateOutOfSample(trades);

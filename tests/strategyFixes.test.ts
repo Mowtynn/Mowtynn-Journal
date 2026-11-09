@@ -112,3 +112,18 @@ test('prop: kart ve canlı özet aynı 1R birimini kullanır (işlemlerdeki risk
   assert.equal(computeAccountMetrics(a, list).rUnit, 50);
   assert.equal(computeAccountRInsights(a, list).riskPerTrade, 50);
 });
+
+test('Tesadüf Testi: ALMA bulgusu da ikinci yarının geri kalanıyla kıyaslanır (zararlı tabanda kendiliğinden "Tuttu" olmaz)', async () => {
+  const { validateOutOfSample } = await import('../src/lib/edgeSummary');
+  // Bilgi taşımayan alanlarla zararlı bir taban: her işlem −0.3R civarı
+  let seed = 3;
+  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  const list = Array.from({ length: 200 }, (_, i) => {
+    const win = rnd() < 0.25;
+    return trade({ id: 'z' + i, asset: rnd() < 0.5 ? 'EURUSD' : 'GBPUSD', type: rnd() < 0.5 ? 'LONG' : 'SHORT', planFidelity: ['A+', 'A', 'B-C'][Math.floor(rnd() * 3)], status: win ? 'WIN' : 'LOSS', rr: win ? 1.8 : -1, createdAt: D0 + i * DAY });
+  });
+  const r = validateOutOfSample(list);
+  const avoid = r.findings.filter((f) => f.kind === 'AVOID' && f.status !== 'UNTESTED');
+  const held = avoid.filter((f) => f.status === 'HELD').length;
+  assert.ok(avoid.length === 0 || held / avoid.length < 0.8, `ALMA tutma oranı şişmemeli (${held}/${avoid.length})`);
+});

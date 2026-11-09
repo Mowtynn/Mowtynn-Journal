@@ -58,8 +58,9 @@ const card = 'bg-zinc-900/70 border border-zinc-700/50 rounded-2xl shadow-sm p-4
 const sectionTitle = 'text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5';
 
 /* ---------- bulgu güveni rozeti ---------- */
-export function SignalBadge({ edge }: { edge: EdgeStats }) {
-  const strong = signalStrength(edge) === 'CONFIRMED';
+/** relativeSure verilirse (Daha çok yap) "Kanıtlı", sıfıra göre değil geri kalandan iyi olmanın kesinliğine göre gösterilir */
+export function SignalBadge({ edge, relativeSure }: { edge: EdgeStats; relativeSure?: boolean }) {
+  const strong = signalStrength(edge) === 'CONFIRMED' && relativeSure !== false;
   const neg = edge.expectancy < 0;
   if (strong) {
     return (
@@ -78,7 +79,7 @@ export function SignalBadge({ edge }: { edge: EdgeStats }) {
 }
 
 /* ---------- ortak satır ---------- */
-function InsightRow({ title, sub, edge, onClick }: { title: string; sub?: string; edge: EdgeStats; onClick: () => void }) {
+function InsightRow({ title, sub, edge, onClick, relativeSure }: { title: string; sub?: string; edge: EdgeStats; onClick: () => void; relativeSure?: boolean }) {
   return (
     <button
       type="button"
@@ -88,7 +89,7 @@ function InsightRow({ title, sub, edge, onClick }: { title: string; sub?: string
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5 min-w-0">
           <span className="text-xs font-semibold text-zinc-200 truncate" title={title}>{title}</span>
-          <SignalBadge edge={edge} />
+          <SignalBadge edge={edge} relativeSure={relativeSure} />
         </div>
         <div className="text-[10px] text-zinc-500 mt-0.5 tabular-nums">
           {e2s(edge)}
@@ -149,8 +150,11 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
   const restDiff = (e: EdgeStats) => (s.total - e.n > 0 ? e.expectancy - (s.overall.netR - e.netR) / (s.total - e.n) : 0);
   const vsText = (d: number, sure?: boolean) => `geri kalandan ${d > 0 ? '+' : ''}${fmt(d)}R/işlem${sure === false ? ' · fark henüz kesin değil' : ''}`;
   const goods = [
-    ...s.bestSetups.map((r) => ({ key: `s:${r.key}`, title: r.labels.join(' · '), sub: `kurulum · ${vsText(restDiff(r.edge))}`, edge: r.edge, open: () => onShowTrades(`Kurulum: ${r.labels.join(' · ')}`, setupTrades(r)) })),
-    ...s.strengths.map((x) => ({ key: `d:${x.dimension}:${x.value}`, title: `${x.dimensionLabel}: ${x.value}`, sub: [vsText(x.vsRest, x.vsRestZ >= 1.96), x.overlap ? `%${Math.round(x.overlap.pct * 100)}'i ${x.overlap.label}` : ''].filter(Boolean).join(' · '), edge: x.edge, open: () => onShowTrades(`${x.dimensionLabel}: ${x.value}`, sliceTrades(x)) })),
+    ...s.bestSetups.map((r) => {
+      const v = s.setupVsRest[r.key] ?? { vsRest: restDiff(r.edge), vsRestZ: 0 };
+      return { key: `s:${r.key}`, title: r.labels.join(' · '), sub: `kurulum · ${vsText(v.vsRest, v.vsRestZ >= 1.96)}`, edge: r.edge, sure: v.vsRestZ >= 1.96, open: () => onShowTrades(`Kurulum: ${r.labels.join(' · ')}`, setupTrades(r)) };
+    }),
+    ...s.strengths.map((x) => ({ key: `d:${x.dimension}:${x.value}`, title: `${x.dimensionLabel}: ${x.value}`, sub: [vsText(x.vsRest, x.vsRestZ >= 1.96), x.overlap ? `%${Math.round(x.overlap.pct * 100)}'i ${x.overlap.label}` : ''].filter(Boolean).join(' · '), edge: x.edge, sure: x.vsRestZ >= 1.96, open: () => onShowTrades(`${x.dimensionLabel}: ${x.value}`, sliceTrades(x)) })),
   ].slice(0, 4);
   const bads = [
     ...s.worstSetups.map((r) => ({ key: `s:${r.key}`, title: r.labels.join(' · '), sub: 'kurulum', edge: r.edge, open: () => onShowTrades(`Kurulum: ${r.labels.join(' · ')}`, setupTrades(r)) })),
@@ -187,7 +191,7 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
           </span>
           <p className="text-[10px] text-zinc-500 -mt-1">Kârlı ve geri kalan işlemlerinden daha iyi sonuç veren kurulum / alanlar.</p>
           {goods.length ? (
-            goods.map((g) => <InsightRow key={g.key} title={g.title} sub={g.sub} edge={g.edge} onClick={g.open} />)
+            goods.map((g) => <InsightRow key={g.key} title={g.title} sub={g.sub} edge={g.edge} onClick={g.open} relativeSure={g.sure} />)
           ) : (
             <p className="text-[11px] text-zinc-500 rounded-xl border border-dashed border-zinc-800 px-3 py-3">
               Henüz hem kârlı hem de geri kalan işlemlerinden daha iyi, en az {SETUP_MIN_SAMPLE * 2} işlemli (ya da kanıtlı) bir alan yok.

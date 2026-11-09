@@ -63,7 +63,7 @@ export const PropRSummary = memo(function PropRSummary({ account, trades }: { ac
             hint="Ortalama kazancınla hedefe kaç kazanç kaldı"
           />
         ) : (
-          <Stat label="Net R" value={sR(ins.netR)} tone={ins.netR >= 0 ? 'text-emerald-300' : 'text-rose-300'} />
+          <Stat label="Net R" value={sR(ins.netR)} tone={ins.netR >= 0 ? 'text-emerald-300' : 'text-rose-300'} hint="İşlemlerin R toplamı (bakiye düzeltmeleri hariç)" />
         )}
       </div>
 

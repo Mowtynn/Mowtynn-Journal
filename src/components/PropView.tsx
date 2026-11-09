@@ -529,7 +529,7 @@ function ChainCard({
         <div className="text-right">
           <div className="text-base font-extrabold text-zinc-100 tabular-nums">{money(m.balance)}</div>
           <div className={`text-[11px] font-bold tabular-nums ${m.netPnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-            {signedMoney(m.netPnl)} · {R(m.netPnl)} · {m.tradeCount} işlem
+            {signedMoney(m.netPnl)} · <span title="Bakiye değişimi ÷ 1R (düzeltmeler dahil). İşlemlerin R toplamı aşağıdaki Canlı R özetinde.">≈ {R(m.netPnl)}</span> · {m.tradeCount} işlem
           </div>
         </div>
       </div>
