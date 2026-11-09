@@ -54,3 +54,20 @@ test('prop: 0 tutarlı bakiye kontrolü bakiyeyi ve drawdown takibini değiştir
   assert.equal(ma.maxLossRemaining, mb.maxLossRemaining);
   assert.equal(ma.adjustmentsTotal, 0);
 });
+
+test('zamanı bozuk kayıt: çıkış zamanı varsa onarılır, yoksa geçersiz kalır ve analizlere girmez', async () => {
+  const { normalizeTrade, isValidTrade } = await import('../src/lib/tradeModel');
+  const { applyGlobalFilters } = await import('../src/lib/tradeFilters');
+  const fixed = normalizeTrade({ id: 'x', asset: 'EURUSD', type: 'LONG', status: 'WIN', rr: 2, createdAt: NaN, exitAt: NOW } as any);
+  assert.equal(fixed.createdAt, NOW);
+  const broken = normalizeTrade({ id: 'y', asset: 'EURUSD', type: 'LONG', status: 'WIN', rr: 2, createdAt: 'çöp', accountCategory: 'CHALLENGE' } as any);
+  assert.equal(isValidTrade(broken), false);
+  const ok = t(1, { id: 'z', accountCategory: 'CHALLENGE' });
+  const base: any = {
+    activeAccountCategory: 'ALL', activeAccount: null, globalSelectedConfirmations: [], globalSelectedPlanFidelity: [], globalDateLimit: 'all',
+    globalSelectedAssets: [], globalSelectedSessions: [], globalSelectedTimeframes: [], globalSelectedHtfTimeframes: [], globalSelectedStatuses: [],
+    globalSelectedTypes: [], globalSelectedEntryModels: [], globalSelectedTrendTypes: [], globalMinAsiaRangePips: undefined, globalMaxAsiaRangePips: undefined,
+  };
+  const out = applyGlobalFilters([ok, broken], base, NOW);
+  assert.deepEqual(out.map((x) => x.id), ['z']);
+});

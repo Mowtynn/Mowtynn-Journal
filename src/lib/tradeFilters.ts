@@ -175,8 +175,10 @@ export function applyGlobalFilters(trades: Trade[], filters: GlobalTradeFilters,
       hasMinTime ||
       hasExtra;
 
+    // Giriş zamanı bozuk kayıt (Yedek Kurtarma'da onarılır) analizlere girmez: sıralamayı ve eğriyi NaN ile bozmasın
+    const timed = trades.every((t) => Number.isFinite(t.createdAt)) ? trades : trades.filter((t) => Number.isFinite(t.createdAt));
     if (!hasAnyFilter) {
-      return trades;
+      return timed;
     }
 
     const confirmationSet = hasConfirmations ? new Set(globalSelectedConfirmations.map(normalizeSearchString)) : null;
@@ -198,7 +200,7 @@ export function applyGlobalFilters(trades: Trade[], filters: GlobalTradeFilters,
       .filter(([, l]) => l && l.length)
       .map(([d, l]) => [d as FilterDimension, new Set(l as string[])] as const);
 
-    return trades.filter((t: Trade) => {
+    return timed.filter((t: Trade) => {
       // 1. Numeric and temporal checks first (fastest)
       if (hasMinTime && (!t.createdAt || t.createdAt < minTime)) {
         return false;

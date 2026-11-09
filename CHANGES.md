@@ -846,3 +846,7 @@ Klasik tasarım korunarak, son eklenen alanlar (risk %, hesap bağı, strateji, 
   - İşlem Geçmişi penceresi: Net R eklendi; Long / Short WR yön rengiyle (yeşil / kırmızı) değil nötr gösteriliyor (düşük WR yeşil görünmesin).
   - 0R sonuçlar (seans, gün, günlük) yeşil "+0.00" yerine nötr "0.00"; işlem satırlarında R iki basamağa yuvarlanıyor; günlükte BE sayısı da görünüyor.
   - Tesadüf Testi açıklaması koddaki ölçütle aynı (ALMA bulgusu ikinci yarıda kaybettirmeli VE geri kalandan kötü olmalı).
+- Zorlama testi (tests/fuzz.test.ts): tüm analiz fonksiyonları 0–140 işlemlik rastgele ve bozuk değerli (NaN, ∞, metin sayı, eksik alan) verilerle, birçok tohumla çalıştırılıyor; NaN / ∞ / hata üretmemeli, parçalar toplama eşit olmalı (karne satırları, kural simülatörü alınan + atlanan, haftalık günler, stop kovaları).
+  - Bulunan hata: bozuk giriş zamanı (NaN) olan bir kayıt sermaye eğrisini, gün gruplamasını ve sıralamayı NaN ile bozuyordu; artık çıkış zamanı varsa ondan onarılıyor; yoksa kayıt analizlere ve gün sayacına girmiyor (Yedek Kurtarma'da görünür, buluta bozuk yazılmaz).
+- Sınır testi (tests/stress.test.ts): 20.000 işlemde tüm analizler ~0.4 sn (Strateji Lab ~1 sn, prop simülasyonu ~25 ms); aynı kimlikli işlemler, yaz saati geçişleri, bozuk yedek ve bozuk prop hesapları çökme / NaN üretmiyor.
+  - Bulunan hata: bozuk / elle düzenlenmiş kayıtta %100'ü aşan drawdown / hedef / risk yüzdesi drawdown tabanını eksiye itebiliyordu; artık 0–100 aralığına sıkıştırılıyor.

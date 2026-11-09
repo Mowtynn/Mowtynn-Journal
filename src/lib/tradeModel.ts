@@ -70,6 +70,11 @@ export function normalizeTrade<T extends Partial<Trade> & Record<string, any>>(r
     const ms = Number.isFinite(n) ? n : Date.parse(t.createdAt);
     if (Number.isFinite(ms)) t.createdAt = ms;
   }
+  // Giriş zamanı bozuksa (NaN / çöp) ve geçerli bir çıkış zamanı varsa o kullanılır. İkisi de yoksa kayıt geçersiz kalır:
+  // buluta yazılmaz, Yedek Kurtarma'da görünür ve analizlerden çıkarılır (applyGlobalFilters).
+  if ((typeof t.createdAt !== 'number' || !Number.isFinite(t.createdAt)) && typeof t.exitAt === 'number' && Number.isFinite(t.exitAt)) {
+    t.createdAt = t.exitAt;
+  }
   // R her zaman sonlu bir sayı: metin "2.5" → 2.5; bozuk / sonsuz değer → 0 (istatistikleri NaN/∞ ile bozmasın)
   if (typeof t.rr !== 'number' || !Number.isFinite(t.rr)) {
     const n = Number(t.rr);

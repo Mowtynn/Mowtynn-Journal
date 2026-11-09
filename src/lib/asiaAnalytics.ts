@@ -409,6 +409,7 @@ function buildOrder(trades: Trade[]): void {
   tradeOrder.clear();
   const byDay = new Map<string, Trade[]>();
   for (const t of trades) {
+    if (!Number.isFinite(t.createdAt)) continue; // zamanı bozuk kayıt sıraya / gün sayacına girmez
     // Gün içi sıra veri seti içinde: backtest / hesapsız işlemler prop işlemlerinin "günün kaçıncı işlemi" sayacına karışmaz
     const k = `${nyDateKey(t.createdAt)}|${getTradeDataset(t)}`;
     (byDay.get(k) || byDay.set(k, []).get(k)!).push(t);

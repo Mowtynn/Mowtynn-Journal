@@ -63,11 +63,12 @@ export function sanitizePropAccounts(raw: any): PropAccount[] {
     const size = num(a.size);
     if (size <= 0) return;
     const legacy = !Array.isArray(a.phaseRules);
-    const maxDd = Math.max(0, num(a.maxDrawdownPct, 10));
+    const pct = (v: number) => Math.max(0, Math.min(100, v)); // yüzde alanları 0–100 (bozuk kayıt tabanı eksiye itmesin)
+    const maxDd = pct(num(a.maxDrawdownPct, 10));
     const phaseRules: PropStageRule[] = legacy
       ? [{ targetPct: num(a.profitTargetPct, 10) || 10, maxDdPct: maxDd }]
       : a.phaseRules
-          .map((r: any) => ({ targetPct: Math.max(0, num(r?.targetPct)), maxDdPct: Math.max(0, num(r?.maxDdPct)) }))
+          .map((r: any) => ({ targetPct: pct(num(r?.targetPct)), maxDdPct: pct(num(r?.maxDdPct)) }))
           .filter((r: PropStageRule) => r.maxDdPct > 0);
     const stage = legacy ? (a.type === 'FUNDED' ? 0 : 1) : Math.max(0, Math.min(phaseRules.length, Math.round(num(a.stage))));
     // Hesap ve firma adları baş harfleri büyük (FTMO 10K · Phase 1); eşleştirme harf duyarsız olduğu için bağ kopmaz
@@ -83,9 +84,9 @@ export function sanitizePropAccounts(raw: any): PropAccount[] {
       drawdownMode: a.drawdownMode === 'TRAILING' ? 'TRAILING' : 'STATIC',
       stage,
       phaseRules,
-      fundedMaxDdPct: Math.max(0, num(a.fundedMaxDdPct, maxDd)) || maxDd,
+      fundedMaxDdPct: pct(num(a.fundedMaxDdPct, maxDd)) || maxDd,
       dailyLossPct: num(a.dailyLossPct) > 0 && num(a.dailyLossPct) < 100 ? num(a.dailyLossPct) : undefined,
-      riskPct: num(a.riskPct) > 0 ? num(a.riskPct) : 1,
+      riskPct: num(a.riskPct) > 0 ? Math.min(100, num(a.riskPct)) : 1,
       fee: num(a.fee) > 0 ? num(a.fee) : undefined,
       status: ['ACTIVE', 'PASSED', 'BLOWN', 'ARCHIVED'].includes(a.status) ? a.status : 'ACTIVE',
       createdAt: num(a.createdAt, Date.now()),
