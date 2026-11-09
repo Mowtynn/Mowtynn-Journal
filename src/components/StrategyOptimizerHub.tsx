@@ -1,12 +1,11 @@
-import { EASE } from '../lib/motion';
+import { EASE, SPRING } from '../lib/motion';
 import { smartUpper } from '../constants/constants';
 import React, { useState, useMemo, useCallback } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import {
   Target,
   Compass,
   Sparkles,
-  ShieldCheck,
   Activity,
   Brain,
   ClipboardList,
@@ -14,10 +13,10 @@ import {
 } from 'lucide-react';
 import { Trade } from '../types';
 import { useNewsDayLabels } from '../hooks/useNewsDayLabels';
-import { calculateStrategyAnalytics, StrategyAnalyticsResult } from '../lib/strategyAnalytics';
+import { calculateStrategyAnalytics, StrategyAnalyticsResult, MIN_SAMPLE } from '../lib/strategyAnalytics';
 import { AsiaEdgeLab } from './AsiaEdgeLab';
 import { SetupScorecardTab } from './strategy/SetupScorecardTab';
-import { EdgeSummaryCard, DisciplineCard } from './deepAnalysis/EdgeCockpit';
+import { EdgeSummaryCard } from './deepAnalysis/EdgeCockpit';
 import { TradeHistoryModal } from './TradeHistoryModal';
 import { RuleSimulatorTab } from './strategy/RuleSimulatorTab';
 import { SectionErrorBoundary } from './SectionErrorBoundary';
@@ -26,14 +25,13 @@ import { SectionErrorBoundary } from './SectionErrorBoundary';
 interface StrategyOptimizerHubProps {
   trades: Trade[];
   onViewTrade?: (trade: Trade) => void;
-  /** Edge Özeti / Disiplin satırlarından açılan işlem listesinde düzenleme */
+  /** Edge Özeti satırlarından açılan işlem listesinde düzenleme */
   onEdit?: (trade: Trade) => void;
 }
 
 type LabTab =
   | 'edge_summary'
   | 'rule_sim'
-  | 'discipline'
   | 'setup_scorecard'
   | 'asia_lab'
   | 'psychology'
@@ -46,7 +44,6 @@ const SUBTABS: Array<{ id: LabTab; label: string; desc: string; icon: React.Comp
   { id: 'asia_lab', label: 'Asia Edge Lab', desc: "Asia Range'e özgü analiz", icon: Compass },
   { id: 'stop_range', label: 'Stop & Range', desc: 'Stop ve range genişliği', icon: Target },
   { id: 'rule_sim', label: 'Kural Simülatörü', desc: 'Bir kuralı geçmişte dene', icon: FlaskConical },
-  { id: 'discipline', label: 'Disiplin', desc: 'Kural ihlalinin bedeli', icon: ShieldCheck },
   { id: 'psychology', label: 'Psikoloji & Tilt', desc: 'Seri ve kayıp sonrası', icon: Brain },
 ];
 
@@ -65,7 +62,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
   trades,
   onEdit,
 }: StrategyOptimizerHubProps) {
-  // Edge Özeti / Disiplin satırlarına tıklanınca ilgili işlemler geçmiş penceresinde açılır
+  // Edge Özeti satırlarına tıklanınca ilgili işlemler geçmiş penceresinde açılır
   const [shownTrades, setShownTrades] = useState<{ title: string; trades: Trade[] } | null>(null);
   const showTrades = useCallback((title: string, list: Trade[]) => setShownTrades({ title, trades: list }), []);
   const [activeSubTab, setActiveSubTabState] = useState<LabTab>(loadTab);
@@ -109,30 +106,25 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, ease: EASE }}
-      className="bg-zinc-900/70 border border-zinc-700/50 rounded-2xl p-4 sm:p-5 shadow-sm space-y-4"
+      className="space-y-3"
     >
       
-      {/* 1. Başlık */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-zinc-800">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500/20 via-blue-500/20 to-purple-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0 shadow-inner">
-            <Compass size={20} />
-          </div>
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-sm sm:text-base font-bold text-zinc-100 font-sans tracking-tight">
-                Strateji & Edge Geliştirme Laboratuvarı
-              </h3>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-blue-500/10 border border-blue-500/30 text-blue-300">
-                {trades.length} İşlem İncelendi
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 2. SubTab Navigation Bar */}
-      <nav aria-label="Laboratuvar sekmeleri" className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7 gap-2">
+      {/* Laboratuvar sekmeleri: Detaylı Analiz sekme çubuğuyla aynı görünüm (kayan gösterge, ok tuşları) */}
+      <div
+        role="tablist"
+        aria-label="Laboratuvar sekmeleri"
+        className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-1 bg-zinc-950/60 border border-zinc-800/80 p-1 rounded-2xl"
+        onKeyDown={(e) => {
+          if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft' && e.key !== 'Home' && e.key !== 'End') return;
+          const els = Array.from(e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
+          const idx = els.findIndex((el) => el === document.activeElement);
+          if (idx < 0) return;
+          e.preventDefault();
+          const next = e.key === 'Home' ? 0 : e.key === 'End' ? els.length - 1 : (idx + (e.key === 'ArrowRight' ? 1 : -1) + els.length) % els.length;
+          els[next].focus();
+          els[next].click();
+        }}
+      >
         {SUBTABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeSubTab === tab.id;
@@ -140,34 +132,34 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
             <button
               key={tab.id}
               type="button"
-              aria-current={isActive ? 'page' : undefined}
+              role="tab"
+              aria-selected={isActive}
+              tabIndex={isActive ? 0 : -1}
+              title={tab.desc}
               onClick={() => setActiveSubTab(tab.id)}
-              className={`group min-w-0 rounded-xl border px-3 py-2.5 text-left transition-ui cursor-pointer select-none ${
-                isActive
-                  ? 'border-blue-500/50 bg-blue-500/10 shadow-xs'
-                  : 'border-zinc-800 bg-zinc-950/60 hover:border-zinc-700 hover:bg-zinc-900'
+              className={`relative min-w-0 px-2 py-2 text-xs font-bold rounded-xl transition-ui duration-150 cursor-pointer select-none ${
+                isActive ? 'text-blue-400' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60'
               }`}
             >
-              <span className={`flex items-center gap-1.5 text-[12px] font-bold font-sans ${isActive ? 'text-blue-200' : 'text-zinc-200'}`}>
-                <Icon size={14} className={`shrink-0 ${isActive ? 'text-blue-400' : 'text-zinc-500 group-hover:text-zinc-300'}`} />
+              {isActive && (
+                <motion.div
+                  layoutId="activeLabTabIndicator"
+                  className="absolute inset-0 bg-blue-500/15 rounded-xl border border-blue-500/30 shadow-xs"
+                  transition={SPRING.indicator}
+                />
+              )}
+              <span className="relative z-10 flex items-center justify-center gap-1.5 min-w-0">
+                <Icon size={14} className={`shrink-0 ${isActive ? 'text-blue-400' : 'text-zinc-500'}`} />
                 <span className="truncate">{tab.label}</span>
               </span>
-              <span className={`mt-0.5 block text-[10px] font-sans leading-snug truncate ${isActive ? 'text-blue-300/70' : 'text-zinc-500'}`}>{tab.desc}</span>
             </button>
           );
         })}
-      </nav>
+      </div>
 
       {/* 3. Animated SubTab Content */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={activeSubTab}
-          initial={{ opacity: 0, y: 10, scale: 0.997 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -8, scale: 0.997 }}
-          transition={{ duration: 0.2, ease: EASE }}
-          className="space-y-4"
-        >
+      {/* Sekme içeriği anında değişir (çıkış animasyonu beklenmez); girişte kısa CSS geçişi */}
+        <div key={activeSubTab} className="pane-content-in space-y-3">
       {/* Bir sekmede hata olursa yalnızca o sekme etkilenir; sekme değişince sıfırlanır */}
       <SectionErrorBoundary key={activeSubTab} sectionName={SUBTABS.find((t) => t.id === activeSubTab)?.label}>
 
@@ -175,7 +167,6 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
 
       {activeSubTab === 'rule_sim' && <RuleSimulatorTab trades={trades} />}
 
-      {activeSubTab === 'discipline' && <DisciplineCard trades={trades} onShowTrades={showTrades} />}
 
       {activeSubTab === 'setup_scorecard' && <SetupScorecardTab trades={trades} />}
 
@@ -207,6 +198,9 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
             <p className="text-xs text-purple-300 bg-purple-500/10 border border-purple-500/20 p-2.5 rounded-lg font-sans">
               {streakStats.insight}
             </p>
+            <p className="text-[10px] text-zinc-500 font-sans -mt-2">
+              Seriler tüm geçmişten sayılır. "Aynı gün" kartları yalnızca aynı NY gününde bir kazanç / kayıptan sonra açılan işlemlere bakar; karşılaştırma tabanı günün ilk işlemidir.
+            </p>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-center">
@@ -224,19 +218,28 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
               </div>
 
               <div className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-center">
-                <span className="text-[9px] uppercase tracking-wider text-zinc-500 block font-sans">Kazanç Sonrası WR</span>
+                <span className="text-[9px] uppercase tracking-wider text-zinc-500 block font-sans">Aynı Gün Kazanç Sonrası</span>
                 <span className="text-base font-bold text-zinc-200 font-mono">
-                  %{streakStats.postWinWinRate}
+                  {streakStats.postWinTotal > 0 ? `%${streakStats.postWinWinRate}` : '—'}
                 </span>
-                <span className="text-[9px] text-zinc-500 block mt-0.5">Aşırı Özgüven Etkisi</span>
+                <span className="text-[9px] text-zinc-500 block mt-0.5">
+                  {streakStats.postWinTotal > 0 ? `${streakStats.postWinTotal} işlem · ${streakStats.postWinAvgR > 0 ? '+' : ''}${streakStats.postWinAvgR.toFixed(2)} R ort.` : 'İşlem yok'}
+                </span>
+                {streakStats.postWinTotal > 0 && streakStats.postWinTotal < MIN_SAMPLE && <span className="mt-1 inline-block px-1 py-px rounded border border-zinc-700 bg-zinc-900 text-[8px] font-bold text-zinc-400 uppercase tracking-wide">Az Veri</span>}
               </div>
 
               <div className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-center">
-                <span className="text-[9px] uppercase tracking-wider text-zinc-500 block font-sans">Kayıp Sonrası WR</span>
-                <span className={`text-base font-bold font-mono ${streakStats.postLossWinRate < 45 ? 'text-rose-400' : 'text-zinc-200'}`}>
-                  %{streakStats.postLossWinRate}
+                <span className="text-[9px] uppercase tracking-wider text-zinc-500 block font-sans">Aynı Gün Kayıp Sonrası</span>
+                <span className={`text-base font-bold font-mono ${streakStats.postLossTiltRisk !== 'DÜŞÜK' ? 'text-rose-400' : 'text-zinc-200'}`}>
+                  {streakStats.postLossTotal > 0 ? `%${streakStats.postLossWinRate}` : '—'}
                 </span>
-                <span className="text-[9px] text-zinc-500 block mt-0.5">Kayıp sonrası performans</span>
+                <span className="text-[9px] text-zinc-500 block mt-0.5">
+                  {streakStats.postLossTotal > 0 ? `${streakStats.postLossTotal} işlem · ${streakStats.postLossAvgR > 0 ? '+' : ''}${streakStats.postLossAvgR.toFixed(2)} R ort.` : 'İşlem yok'}
+                </span>
+                <span className="text-[9px] text-zinc-600 block">
+                  Günün ilk işlemi: {streakStats.firstTradeAvgR > 0 ? '+' : ''}{streakStats.firstTradeAvgR.toFixed(2)} R ort.
+                </span>
+                {streakStats.postLossTotal > 0 && streakStats.postLossTotal < MIN_SAMPLE && <span className="mt-1 inline-block px-1 py-px rounded border border-zinc-700 bg-zinc-900 text-[8px] font-bold text-zinc-400 uppercase tracking-wide">Az Veri</span>}
               </div>
             </div>
           </div>
@@ -254,12 +257,14 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
               <span className="text-xs font-bold uppercase text-zinc-200 font-sans">{smartUpper("Stop Mesafesi (Pip) Dağılımı & Başarı Oranı")}</span>
               <span className="text-[10px] text-zinc-500 font-sans">{stopSizeStats.insight}</span>
             </div>
+            <p className="text-[10px] text-zinc-500 font-sans -mt-1">Stop pip'in, paritenin kendi medyan stop'una oranına göre üç grup: her grubun net R'si, kazanma oranı ve işlem başı R'si.</p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
               {stopSizeStats.brackets.map((b) => (
                 <div key={b.label} className="p-2.5 bg-zinc-900 border border-zinc-800/80 rounded-lg text-xs flex justify-between items-center">
                   <div>
                     <span className="font-bold text-zinc-200 block font-sans">{b.label}</span>
                     <span className="text-[10px] text-zinc-500 font-sans">{b.total || b.count} İşlem</span>
+                    {b.count < MIN_SAMPLE && <span className="ml-1.5 px-1 py-px rounded border border-zinc-700 bg-zinc-900 text-[8px] font-bold text-zinc-400 uppercase tracking-wide align-middle">Az Veri</span>}
                   </div>
                   <div className="text-right">
                     <span className={`font-bold block font-sans ${b.netR >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
@@ -281,12 +286,14 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
               </span>
               <span className="text-[10px] text-zinc-500 font-sans">{asiaRangeStats.insight}</span>
             </div>
+            <p className="text-[10px] text-zinc-500 font-sans -mt-1">Asia Range pip'in, paritenin kendi medyan range'ine oranına göre (dar / normal / geniş gün) sonuçlar.</p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
               {[asiaRangeStats.brackets.tight, asiaRangeStats.brackets.medium, asiaRangeStats.brackets.wide].map((b) => (
                 <div key={b.label} className="p-2.5 bg-zinc-900 border border-zinc-800/80 rounded-lg text-xs flex justify-between items-center">
                   <div>
                     <span className="font-bold text-zinc-200 block font-sans">{b.label}</span>
                     <span className="text-[10px] text-zinc-500 font-sans">{b.count} İşlem</span>
+                    {b.count < MIN_SAMPLE && <span className="ml-1.5 px-1 py-px rounded border border-zinc-700 bg-zinc-900 text-[8px] font-bold text-zinc-400 uppercase tracking-wide align-middle">Az Veri</span>}
                   </div>
                   <div className="text-right">
                     <span className={`font-bold block font-sans ${b.netR >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
@@ -306,8 +313,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
 
 
       </SectionErrorBoundary>
-        </motion.div>
-      </AnimatePresence>
+        </div>
 
       <TradeHistoryModal
         isOpen={!!shownTrades}

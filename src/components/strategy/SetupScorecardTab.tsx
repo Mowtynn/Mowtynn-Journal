@@ -185,9 +185,10 @@ export const SetupScorecardTab = React.memo(function SetupScorecardTab({ trades 
                     <span className={`inline-block px-2 py-0.5 rounded-lg border text-[10px] font-bold uppercase ${v.cls}`}>{v.label}</span>
                     {r.drift.ready && r.drift.direction !== 'STABLE' && (
                       <span
-                        className={`block mt-0.5 text-[10px] font-bold tabular-nums ${r.drift.direction === 'WEAKENING' ? 'text-rose-300' : 'text-emerald-300'}`}
+                        className={`block mt-0.5 text-[10px] font-bold tabular-nums ${r.drift.strength !== 'CONFIRMED' ? 'text-zinc-500' : r.drift.direction === 'WEAKENING' ? 'text-rose-300' : 'text-emerald-300'}`}
+                        title={r.drift.strength === 'CONFIRMED' ? 'Son 10 işlem öncekilerden %95 güvenle farklı' : 'Erken sinyal: fark henüz istatistiksel olarak kesin değil'}
                       >
-                        Son 10 {r.drift.direction === 'WEAKENING' ? '↓' : '↑'} {sR(r.drift.recent!.expectancy)}
+                        Son 10 {r.drift.direction === 'WEAKENING' ? '↓' : '↑'} {sR(r.drift.recent!.expectancy)}{r.drift.strength !== 'CONFIRMED' ? ' · sinyal' : ''}
                       </span>
                     )}
                   </span>

@@ -4,7 +4,6 @@ import { calculateComprehensiveStats } from '../src/lib/stats';
 import { computeDeepMetrics } from '../src/lib/deepMetrics';
 import { computeEdgeSummary, validateOutOfSample, edgeReportRows } from '../src/lib/edgeSummary';
 import { buildSetupScorecard, SETUP_DIMENSIONS } from '../src/lib/setupScorecard';
-import { analyzeDiscipline } from '../src/lib/discipline';
 import { computeEdgeDrift } from '../src/lib/edgeDrift';
 import { simulateRule } from '../src/lib/ruleSimulator';
 import { analyzeAsia, computeEdge } from '../src/lib/asiaAnalytics';
@@ -76,7 +75,6 @@ for (const size of [0, 1, 2, 7, 60, 400]) {
     finiteDeep(validateOutOfSample(trades), 'oos');
     finiteDeep(edgeReportRows(trades), 'reportRows');
     for (const d of SETUP_DIMENSIONS) finiteDeep(buildSetupScorecard(trades, [d.id], { includeUnspecified: true }), `card.${d.id}`);
-    finiteDeep(analyzeDiscipline(trades), 'discipline');
     finiteDeep(computeEdgeDrift(trades), 'drift');
     finiteDeep(simulateRule(trades, []), 'rule');
     finiteDeep(analyzeAsia(trades, { dataset: 'ALL', pair: 'ALL', minSample: 3 }), 'asia');

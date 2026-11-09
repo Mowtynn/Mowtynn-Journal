@@ -142,10 +142,12 @@ export interface PropAccountMetrics {
   maxLossFloor: number;
   maxLossRemaining: number;  // tabana kalan ($); negatifse aşılmış
   maxBreached: boolean;      // geçmişte herhangi bir anda taban aşıldı mı
+  /** Günlük kayıp limiti (gün başı bakiyeden boyut × %) geçmişte aşıldı mı; limit tanımlı değilse false */
+  dailyBreached: boolean;
   target?: number;           // hedef kâr ($)
   targetRemaining?: number;
   targetReached: boolean;
-  rUnit: number;             // 1R ($)
+  rUnit: number;             // 1R ($): işlemlerdeki risk tutarlarının medyanı, yoksa boyut × risk %
   payoutTotal: number;
   payoutCount: number;
 }
@@ -164,16 +166,29 @@ export function computeAccountMetrics(a: PropAccount, allTrades: Trade[]): PropA
   ].sort((x, y) => x.at - y.at);
 
   const floorFor = (peak: number) => (a.drawdownMode === 'TRAILING' ? Math.min(a.size, peak - maxDdAmount) : a.size - maxDdAmount);
+  const dailyLimit = a.dailyLossPct && a.dailyLossPct > 0 ? (a.size * a.dailyLossPct) / 100 : 0;
   let balance = a.size;
   let peak = a.size;
   let breached = false;
+  let dailyBreached = false;
+  let day = '';
+  let dayStart = balance;
   events.forEach((e) => {
+    const k = nyDateKey(e.at);
+    if (k !== day) {
+      day = k;
+      dayStart = balance;
+    }
     balance += e.amount;
     if (balance > peak) peak = balance;
     if (maxDdAmount > 0 && balance <= floorFor(peak)) breached = true;
+    if (dailyLimit > 0 && balance <= dayStart - dailyLimit) dailyBreached = true;
   });
 
   const maxLossFloor = floorFor(peak);
+  // 1R: işlemlerde gerçekten kullanılan risk tutarlarının medyanı (yoksa hesabın ayarı). Kart ve Canlı R özeti aynı birimi kullanır.
+  const risks = trades.map((t) => t.riskAmount).filter((x): x is number => typeof x === 'number' && x > 0).sort((x, y) => x - y);
+  const rUnit = risks.length ? (risks.length % 2 ? risks[(risks.length - 1) / 2] : (risks[risks.length / 2 - 1] + risks[risks.length / 2]) / 2) : defaultRiskAmount(a);
   const netPnl = balance - a.size;
   const target = rule.targetPct ? (a.size * rule.targetPct) / 100 : undefined;
   const payouts = (a.certificates || []).filter((c) => c.kind === 'PAYOUT');
@@ -188,10 +203,11 @@ export function computeAccountMetrics(a: PropAccount, allTrades: Trade[]): PropA
     maxLossFloor,
     maxLossRemaining: balance - maxLossFloor,
     maxBreached: breached,
+    dailyBreached,
     target,
     targetRemaining: target !== undefined ? Math.max(0, target - netPnl) : undefined,
     targetReached: target !== undefined && netPnl >= target,
-    rUnit: defaultRiskAmount(a),
+    rUnit,
     payoutTotal: payouts.reduce((s, c) => s + (c.amount || 0), 0),
     payoutCount: payouts.length,
   };

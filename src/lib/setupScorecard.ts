@@ -69,7 +69,13 @@ export const SETUP_DIMENSIONS: { id: SetupDimension; label: string }[] = [
   { id: 'asset', label: 'Parite' },
 ];
 
-export const DEFAULT_SETUP_DIMENSIONS: SetupDimension[] = ['asiaRange', 'session', 'entryModels'];
+/**
+ * Varsayılan "kurulum" tanımı: Asia Range (Range / Trend / Swept) · Trend Yapısı (Continuation / Reversal) · Entry Model.
+ * Strateji iki moda dayanır (reversal Asia high/low süpürmesi ister, continuation istemez); işlemler tek seansta
+ * (London) alındığı için Session kurulumu ayırt etmiyordu. Kurulum Karnesi'nde boyutlar yine elle değiştirilebilir.
+ */
+export const DEFAULT_SETUP_DIMENSIONS: SetupDimension[] = ['asiaRange', 'trend', 'entryModels'];
+export const DEFAULT_SETUP_LABEL = 'Asia Range · Trend · Entry Model';
 /** Bu sayıdan az işlemli kurulumlara hüküm verilmez */
 export const SETUP_MIN_SAMPLE = MIN_SAMPLE;
 export const UNSPECIFIED = 'Belirtilmemiş';

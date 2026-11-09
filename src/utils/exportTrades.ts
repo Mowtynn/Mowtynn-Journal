@@ -199,7 +199,11 @@ export const prepareTradeExportRows = (trades: Trade[], titles: Record<string, s
       'Sweep → Giriş (dk)': sweepToEntryMinutes(t) ?? '-',
       'Günün İşlemi': tradeOfDayBucket(t) || '-',
       'Kaçırılan R': t.afterExitTp === true && plannedRR(t) !== null ? Number(Math.max(0, (plannedRR(t) as number) - (typeof t.rr === 'number' ? t.rr : 0)).toFixed(2)) : '-',
-      'Süpürülen Asia Tarafı': getSweepSide(t) === 'HIGH' ? 'High' : 'Low',
+      // Yalnızca Reversal işlemlerde yönden: short → High, long → Low; Continuation işlemlerde "-"
+      'Süpürülen Asia Tarafı': (() => {
+        const side = getSweepSide(t);
+        return side === 'HIGH' ? 'High' : side === 'LOW' ? 'Low' : '-';
+      })(),
       'Veri Seti': DATASET_LABELS[getTradeDataset(t)],
       'Hızlı Kayıt': t.quickEntry ? 'Evet (eksik alan olabilir)' : 'Hayır',
       [T('notesCard', 'Analiz & Notlar')]: t.notes ? t.notes : '-',

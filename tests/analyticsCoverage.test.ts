@@ -2,7 +2,6 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { computeCoverage, indexTradeOrder, RANGE_SIZE_BUCKETS } from '../src/lib/asiaAnalytics';
 import { dimensionValue, UNSPECIFIED } from '../src/lib/setupScorecard';
-import { calculateStrategyAnalytics } from '../src/lib/strategyAnalytics';
 import { NOW, DAY, trade } from './fixtures';
 import type { Trade } from '../src/types';
 
@@ -10,11 +9,14 @@ const t = (rr: number, p: Partial<Trade> = {}, i = 0) =>
   trade({ status: rr > 0 ? 'WIN' : rr < 0 ? 'LOSS' : 'BREAKEVEN', rr, createdAt: NOW - (100 - i) * DAY, ...p });
 
 test('Asia Range büyüklüğü, gün ve giriş saati boyutları', () => {
-  // Paritenin medyanı 30 pip: 20 → Dar, 30 → Normal, 45 → Geniş
-  const list = [20, 30, 30, 30, 45].map((p, i) => t(1, { asiaRangePips: p }, i));
+  // Girişten önce bilinen: her işlem, paritenin ÖNCEKİ (en az 5) range'lerinin medyanına (30) göre: 20 → Dar, 30 → Normal, 45 → Geniş.
+  // İlk 5 işlemin öncesinde yeterli range yok: sınıflanmaz.
+  const hist = [30, 28, 32, 30, 30].map((p, i) => t(1, { asiaRangePips: p }, i));
+  const list = [20, 30, 45].map((p, i) => t(1, { asiaRangePips: p }, 5 + i));
   const noRange = t(1, {}, 9);
-  indexTradeOrder([...list, noRange]);
-  assert.deepEqual(list.map((x) => dimensionValue(x, 'rangeSize')), [RANGE_SIZE_BUCKETS[0], RANGE_SIZE_BUCKETS[1], RANGE_SIZE_BUCKETS[1], RANGE_SIZE_BUCKETS[1], RANGE_SIZE_BUCKETS[2]]);
+  indexTradeOrder([...hist, ...list, noRange]);
+  assert.deepEqual(hist.map((x) => dimensionValue(x, 'rangeSize')), Array(5).fill(UNSPECIFIED));
+  assert.deepEqual(list.map((x) => dimensionValue(x, 'rangeSize')), [RANGE_SIZE_BUCKETS[0], RANGE_SIZE_BUCKETS[1], RANGE_SIZE_BUCKETS[2]]);
   assert.equal(dimensionValue(noRange, 'rangeSize'), UNSPECIFIED);
 
   // 21 Ekim 2026 Çarşamba, 08:15 NY (EDT, UTC−4) → 12:15 UTC

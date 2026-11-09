@@ -19,8 +19,8 @@ interface AsiaEdgeLabProps {
 const signed = (v: number, digits = 2) => `${v >= 0 ? '+' : ''}${v.toFixed(digits)}`;
 const tone = (v: number) => (v > 0 ? 'text-emerald-400' : v < 0 ? 'text-rose-400' : 'text-zinc-300');
 
-const Card: React.FC<{ title: string; hint?: string; children: React.ReactNode }> = ({ title, hint, children }) => (
-  <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 space-y-3">
+const Card: React.FC<{ title: string; hint?: string; className?: string; children: React.ReactNode }> = ({ title, hint, className = '', children }) => (
+  <div className={`bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 space-y-3 ${className}`}>
     <div className="border-b border-zinc-800 pb-2">
       <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-100 font-sans">{smartUpper(title)}</h4>
       {hint && <p className="text-[10px] text-zinc-500 font-sans mt-0.5 leading-relaxed">{hint}</p>}
@@ -102,7 +102,7 @@ export const AsiaEdgeLab = React.memo(function AsiaEdgeLab({ trades }: AsiaEdgeL
             onChange={(e) => setMinSample(Number(e.target.value))}
             className={FILTER_SELECT}
           >
-            {[3, 5, 8, 10, 15, 20, 30].map((n) => (
+            {[5, 8, 10, 15, 20, 30].map((n) => (
               <option key={n} value={n}>
                 {n}
               </option>
@@ -115,24 +115,22 @@ export const AsiaEdgeLab = React.memo(function AsiaEdgeLab({ trades }: AsiaEdgeL
         <Empty text="Bu filtrelerle işlem yok." />
       ) : (
         <>
-          <Card title="Veri Eksiği Panosu" hint="Hangi alanı doldurmazsan hangi analiz çalışmıyor. Yüzde düşükse o analiz güvenilmez.">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-              {r.coverage.filter((c) => c.base > 0).map((c) => (
-                <div key={c.field} className="p-2.5 bg-zinc-900 border border-zinc-800/80 rounded-lg text-xs font-sans">
-                  <div className="flex justify-between">
-                    <span className="text-zinc-200 font-medium">{c.label}</span>
-                    <span className={c.pct >= 80 ? 'text-emerald-400' : c.pct >= 40 ? 'text-zinc-300' : 'text-rose-400'}>
-                      %{c.pct} <span className="text-zinc-600">({c.filled}/{c.base})</span>
-                    </span>
-                  </div>
-                  <div className="h-1 bg-zinc-800 rounded mt-1.5">
-                    <div className="h-1 bg-zinc-500 rounded" style={{ width: `${c.pct}%` }} />
-                  </div>
-                  <span className="text-[10px] text-zinc-500 block mt-1">{c.unlocks}</span>
-                </div>
-              ))}
-            </div>
-          </Card>
+          {/* Önce eğilim ve yönetim maliyeti yan yana, sonra ısı tablosu; veri eksiği panosu (bakım aracı) en sonda */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+            <Card className={r.missedByManagement.n > 0 ? '' : 'lg:col-span-2'} title="Kayan Beklenti (20 işlem)" hint="Edge zamanla sağlam mı, aşınıyor mu?">
+              <Sparkline points={r.rolling} />
+            </Card>
+
+            {r.missedByManagement.n > 0 && (
+              <Card title="Yönetimle Kaçırılan R" hint="Erken kapatıp ardından TP'ye giden işlemler: yönetim kararının maliyeti.">
+                <p className="text-xs text-zinc-400 font-sans">
+                  Çıkıştan sonra TP'ye giden {r.missedByManagement.n} işlem
+                  {r.missedByManagement.measured > 0 && <> · kaçırılan <span className="font-bold text-rose-300">{r.missedByManagement.missedR.toFixed(2)}R</span></>}
+                  {r.missedByManagement.measured < r.missedByManagement.n && <> ({r.missedByManagement.n - r.missedByManagement.measured} işlemde TP / Stop Pip eksik)</>}
+                </p>
+              </Card>
+            )}
+          </div>
 
           <Card title="Saat × Parite Isı Tablosu" hint="Hücre: beklenti (R) ve işlem sayısı. Soluk hücreler minimum örneklemin altındadır; onlara göre karar verme.">
             {!sparseHourPair ? (
@@ -172,18 +170,23 @@ export const AsiaEdgeLab = React.memo(function AsiaEdgeLab({ trades }: AsiaEdgeL
             )}
           </Card>
 
-          {r.missedByManagement.n > 0 && (
-            <Card title="Yönetimle Kaçırılan R" hint="Erken kapatıp ardından TP'ye giden işlemler: yönetim kararının maliyeti.">
-              <p className="text-xs text-zinc-400 font-sans">
-                Çıkıştan sonra TP'ye giden {r.missedByManagement.n} işlem
-                {r.missedByManagement.measured > 0 && <> · kaçırılan <span className="font-bold text-rose-300">{r.missedByManagement.missedR.toFixed(2)}R</span></>}
-                {r.missedByManagement.measured < r.missedByManagement.n && <> ({r.missedByManagement.n - r.missedByManagement.measured} işlemde TP / Stop Pip eksik)</>}
-              </p>
-            </Card>
-          )}
-
-          <Card title="Kayan Beklenti (20 işlem)" hint="Edge zamanla sağlam mı, aşınıyor mu?">
-            <Sparkline points={r.rolling} />
+          <Card title="Veri Eksiği Panosu" hint="Hangi alanı doldurmazsan hangi analiz çalışmıyor. Yüzde düşükse o analiz güvenilmez.">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+              {r.coverage.filter((c) => c.base > 0).map((c) => (
+                <div key={c.field} className="p-2.5 bg-zinc-900 border border-zinc-800/80 rounded-lg text-xs font-sans">
+                  <div className="flex justify-between">
+                    <span className="text-zinc-200 font-medium">{c.label}</span>
+                    <span className={c.pct >= 80 ? 'text-emerald-400' : c.pct >= 40 ? 'text-zinc-300' : 'text-rose-400'}>
+                      %{c.pct} <span className="text-zinc-600">({c.filled}/{c.base})</span>
+                    </span>
+                  </div>
+                  <div className="h-1 bg-zinc-800 rounded mt-1.5">
+                    <div className="h-1 bg-zinc-500 rounded" style={{ width: `${c.pct}%` }} />
+                  </div>
+                  <span className="text-[10px] text-zinc-500 block mt-1">{c.unlocks}</span>
+                </div>
+              ))}
+            </div>
           </Card>
         </>
       )}

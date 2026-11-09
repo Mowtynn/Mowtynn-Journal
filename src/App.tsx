@@ -36,6 +36,7 @@ import StatsDashboard from "./components/StatsDashboard";
 import TradeList from "./components/TradeList";
 import { lazyWithPreload, named, preloadWhenIdle } from "./lib/lazyWithPreload";
 import { PaneLoader } from "./components/common/Deferred";
+import { useBodyScrollLock } from "./hooks/useBodyScrollLock";
 import { SectionErrorBoundary } from "./components/SectionErrorBoundary";
 import { AccountSwitcher } from "./components/AccountSwitcher";
 import { PWAInstallButton } from "./components/PWAInstallButton";
@@ -65,6 +66,7 @@ import {
   Pencil,
   Check,
   X,
+  Database,
   User as UserIcon,
   Wallet,
 } from "lucide-react";
@@ -296,6 +298,9 @@ export default function App() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isGlobalFilterModalOpen, setIsGlobalFilterModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  // Veri & Yedekleme: her sayfanın altında duran blok yerine ayarlar menüsünden açılan pencere
+  const [isDataOpen, setIsDataOpen] = useState(false);
+  useBodyScrollLock(isDataOpen);
   const settingsRef = useRef<HTMLDivElement>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
@@ -1600,6 +1605,8 @@ export default function App() {
       if (e.key === 'Escape') {
         if (isSettingsOpen) {
           setIsSettingsOpen(false);
+        } else if (isDataOpen) {
+          setIsDataOpen(false);
         } else if (isFormOpen) {
           requestCloseForm();
         } else if (isPlatformMenuOpen) {
@@ -1618,7 +1625,7 @@ export default function App() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isSettingsOpen, isFormOpen, isPlatformMenuOpen, detailedTrade, isGlobalFilterModalOpen, isAuthModalOpen, requestCloseForm, handleCloseTradeDetail]);
+  }, [isSettingsOpen, isDataOpen, isFormOpen, isPlatformMenuOpen, detailedTrade, isGlobalFilterModalOpen, isAuthModalOpen, requestCloseForm, handleCloseTradeDetail]);
 
   // Close settings dropdown when clicking anywhere outside
   useEffect(() => {
@@ -2334,32 +2341,29 @@ export default function App() {
                     </SectionErrorBoundary>
 
 
-                    {/* 2. DYNAMIC ACTION TRIGGER (YOUTUBE PLUS BOX) */}
-                    <div
+                    {/* İşlem ekleme: tek tıklanabilir alan (iç içe buton yok), klavyeyle de çalışır */}
+                    <button
+                      type="button"
                       onClick={() => {
                         setEditingTrade(null);
                         setIsFormOpen(true);
                       }}
-                      className="relative overflow-hidden bg-zinc-900/50 hover:bg-zinc-900/80 border border-zinc-800/80 hover:border-blue-500/40 rounded-2xl p-4 sm:p-4.5 flex flex-col sm:flex-row items-center justify-between gap-3 cursor-pointer transition-ui duration-200 ease-out select-none group shadow-sm hover:shadow-lg hover:shadow-blue-500/5"
+                      className="w-full text-left relative overflow-hidden bg-zinc-900/50 hover:bg-zinc-900/80 border border-zinc-800/80 hover:border-blue-500/40 rounded-2xl p-3.5 flex items-center justify-between gap-3 cursor-pointer transition-ui duration-200 ease-out select-none group shadow-sm"
                     >
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-xl bg-blue-500/10 border border-blue-500/20 group-hover:bg-blue-500/20 group-hover:border-blue-500/40 flex items-center justify-center text-blue-400 transition-colors duration-200 ease-out shrink-0 shadow-xs">
-                          <Plus size={20} />
-                        </div>
-                        <div className="text-center sm:text-left">
-                          <h3 className="text-sm font-bold text-zinc-100 tracking-tight group-hover:text-blue-300 transition-colors font-sans">
-                            {"Yeni Pozisyon Girişi Yap"}
-                          </h3>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        className="w-full sm:w-auto h-10 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 font-bold text-xs px-5 rounded-xl transition-ui duration-200 ease-out flex items-center justify-center gap-2 shadow-xs border border-blue-500/30 tracking-wide cursor-pointer font-sans"
-                      >
-                        <Plus size={15} />
-                        {"İşlem Ekle"}
-                      </button>
-                    </div>
+                      <span className="flex items-center gap-3 min-w-0">
+                        <span className="h-9 w-9 rounded-xl bg-blue-500/10 border border-blue-500/20 group-hover:bg-blue-500/20 group-hover:border-blue-500/40 flex items-center justify-center text-blue-400 transition-colors duration-200 ease-out shrink-0">
+                          <Plus size={18} />
+                        </span>
+                        <span className="text-sm font-bold text-zinc-100 tracking-tight group-hover:text-blue-300 transition-colors font-sans truncate">
+                          Yeni Pozisyon Girişi Yap
+                        </span>
+                      </span>
+                      <span className="h-9 shrink-0 bg-blue-500/15 group-hover:bg-blue-500/25 text-blue-400 font-bold text-xs px-4 rounded-xl transition-ui duration-200 ease-out flex items-center justify-center gap-1.5 border border-blue-500/30 font-sans">
+                        <Plus size={14} />
+                        <span className="hidden sm:inline">İşlem Ekle</span>
+                        <span className="sm:hidden">Ekle</span>
+                      </span>
+                    </button>
 
                     {/* WORKSPACE DOUBLE GRID - NOW SINGLE-COLUMN EXPANDED FOR UTMOST PRECISION */}
                     <div className="w-full space-y-3">
@@ -2492,17 +2496,17 @@ export default function App() {
                 TJ
               </div>
               <div className="flex items-baseline gap-2">
-                <h1 className="page-title !text-sm !tracking-wide">
+                <h1 className="page-title !text-sm !tracking-wide !whitespace-nowrap">
                   TRADING JOURNAL
                 </h1>
-                <span className="text-[11px] font-medium tracking-normal text-zinc-400 italic">
+                <span className="hidden sm:inline text-[11px] font-medium tracking-normal text-zinc-400 italic whitespace-nowrap">
                   by Mowtynn
                 </span>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center justify-end shrink-0 select-none gap-1.5 ml-auto z-10">
+          <div className="flex items-center justify-end min-w-0 select-none gap-1.5 ml-auto z-10">
             {/* PWA Install Button (Compact) */}
             <PWAInstallButton className="hidden sm:flex" />
 
@@ -2521,6 +2525,8 @@ export default function App() {
               <button
                 type="button"
                 id="header-settings-button"
+                aria-label="Ayarlar"
+                aria-expanded={isSettingsOpen}
                 onClick={() => setIsSettingsOpen(!isSettingsOpen)}
                 className={`relative w-7 h-7 rounded-lg border transition-ui duration-150 flex items-center justify-center cursor-pointer shadow-xs ${
                   isSettingsOpen
@@ -2569,6 +2575,21 @@ export default function App() {
                       </button>
 
 
+                      {/* Veri & Yedekleme */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsSettingsOpen(false);
+                          setIsDataOpen(true);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-zinc-800/80 text-zinc-200 transition-colors duration-150 text-left font-medium text-xs cursor-pointer"
+                      >
+                        <div className="p-1 rounded-lg bg-blue-500/10 text-blue-400">
+                          <Database size={13} />
+                        </div>
+                        <span>Veri & Yedekleme</span>
+                      </button>
+
                       {/* Tanımlamaları Yönet Öğesi */}
                       <button
                         type="button"
@@ -2597,6 +2618,8 @@ export default function App() {
             <div ref={profileRef} className="relative">
               <button
                 type="button"
+                aria-label="Hesap"
+                aria-expanded={isProfileOpen}
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
                 className={`relative w-7 h-7 rounded-lg border transition-ui duration-150 flex items-center justify-center cursor-pointer shadow-xs overflow-hidden shrink-0 ${
                   isProfileOpen
@@ -2925,36 +2948,46 @@ export default function App() {
               </SectionErrorBoundary>
             )}
 
-            {/* RECOVERY BACKUP RESCUE MOD - FOOTNOTE */}
-            <SectionErrorBoundary sectionName="Yedekleme">
-            <Suspense fallback={null}>
-            <BackupRescue
-              trades={trades}
-              notes={notes}
-              journals={journals}
-              settings={backupSettings}
-              onImportTrades={handleImportTrades}
-              onClearAll={handleClearAll}
-              onEditTrade={handleStartEdit}
-            />
-            </Suspense>
-            </SectionErrorBoundary>
-
-          {/* CONTROLS AREA AND CHANNELS */}
-          {true && (
-            <div className="flex justify-center pb-8 pt-4">
-              <button
-                type="button"
-                onClick={() => setIsPlatformMenuOpen(true)}
-                className="px-4 py-2 border border-zinc-800 hover:border-zinc-700 bg-zinc-900 hover:bg-zinc-800 rounded-xl text-xs font-bold tracking-wider uppercase font-sans transition-colors duration-150 flex items-center gap-2 cursor-pointer text-zinc-400 hover:text-zinc-100 shadow-sm hover:shadow-md"
-              >
-                <SlidersHorizontal size={14} className="text-blue-400" />
-                <span>Tanımlamaları Yönet</span>
-              </button>
-            </div>
-          )}
         </div>
       </main>
+
+      {/* VERİ & YEDEKLEME penceresi (ayarlar menüsünden) */}
+      {isDataOpen && (
+        <div
+          className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm overflow-y-auto p-3 sm:p-6 flex items-start justify-center"
+          onClick={() => setIsDataOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Veri ve Yedekleme"
+        >
+          <div className="relative w-full max-w-5xl my-auto" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              aria-label="Kapat"
+              onClick={() => setIsDataOpen(false)}
+              className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
+            >
+              <X size={15} />
+            </button>
+            <SectionErrorBoundary sectionName="Yedekleme">
+              <Suspense fallback={<PaneLoader minHeight={320} />}>
+                <BackupRescue
+                  trades={trades}
+                  notes={notes}
+                  journals={journals}
+                  settings={backupSettings}
+                  onImportTrades={handleImportTrades}
+                  onClearAll={handleClearAll}
+                  onEditTrade={(t) => {
+                    setIsDataOpen(false);
+                    handleStartEdit(t);
+                  }}
+                />
+              </Suspense>
+            </SectionErrorBoundary>
+          </div>
+        </div>
+      )}
 
       {platformMenuMounted && (
         <SectionErrorBoundary sectionName="Tanımlamalar" fallback={null} notify>

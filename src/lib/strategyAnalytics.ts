@@ -1,6 +1,6 @@
 import { Trade } from '../types';
 import { calculateProfitFactor, toRR } from './statMath';
-import { bucketAsiaRanges } from './asiaAnalytics';
+import { bucketByPairMedian, PAIR_MEDIAN_MIN, indexTradeOrder, asiaRangeBucketOf, prevTradeBucket } from './asiaAnalytics';
 
 /** Bir grup hakkında yorum/kural üretmek için gereken en az işlem sayısı — projenin tek eşiği (src/lib/sampleSize.ts). */
 import { MIN_SAMPLE, EDGE_PROOF_MIN } from './sampleSize';
@@ -22,7 +22,7 @@ export interface StrategyAnalyticsResult {
     insight: string;
   };
 
-  // 17. Stop Size Volatility Brackets (<10p, 10-25p, >25p)
+  // Stop büyüklüğü: paritenin kendi medyan stop'una göre Sıkı / Normal / Geniş
   stopSizeStats: {
     hasData: boolean;
     brackets: Array<{
@@ -35,15 +35,27 @@ export interface StrategyAnalyticsResult {
       avgR: number;
       profitFactor: number;
     }>;
+    /** Paritelerin medyan stop'u (pip) — eşikler bunlardan türetilir */
+    pairMedians: Array<{ pair: string; median: number }>;
+    /** Paritesinde henüz PAIR_MEDIAN_MIN stop birikmediği için sınıflanmayan işlem sayısı */
+    unclassified: number;
     insight: string;
   };
 
-  // 18. Streak & Post-Loss / Tilt Analytics
+  // Seri ve aynı gün kayıp / kazanç sonrası (tilt) analizi
   streakStats: {
     currentStreak: { type: 'WIN' | 'LOSS' | 'NONE'; count: number };
     maxLossStreak: number;
+    /** Aynı NY günü içinde kazançtan / kayıptan sonra açılan işlemler */
+    postWinTotal: number;
+    postLossTotal: number;
     postWinWinRate: number;
     postLossWinRate: number;
+    postWinAvgR: number;
+    postLossAvgR: number;
+    /** Karşılaştırma tabanı: günün ilk işlemleri */
+    firstTradeWinRate: number;
+    firstTradeAvgR: number;
     postLossTiltRisk: 'DÜŞÜK' | 'ORTA' | 'YÜKSEK';
     insight: string;
   };
@@ -76,12 +88,18 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
       bestBracket: '-',
       insight: 'Asia Range verisi bulunamadı.',
     },
-    stopSizeStats: { hasData: false, brackets: [], insight: 'Stop Pip verisi yok.' },
+    stopSizeStats: { hasData: false, brackets: [], pairMedians: [], unclassified: 0, insight: 'Stop Pip verisi yok.' },
     streakStats: {
       currentStreak: { type: 'NONE', count: 0 },
       maxLossStreak: 0,
+      postWinTotal: 0,
+      postLossTotal: 0,
       postWinWinRate: 0,
       postLossWinRate: 0,
+      postWinAvgR: 0,
+      postLossAvgR: 0,
+      firstTradeWinRate: 0,
+      firstTradeAvgR: 0,
       postLossTiltRisk: 'DÜŞÜK',
       insight: 'İşlem geçmişi yetersiz.',
     },
@@ -111,10 +129,12 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
   };
 
   // Brackets are relative to each pair's own median Asia Range (EURCAD and EURUSD ranges differ structurally)
-  const asiaBucketMap = bucketAsiaRanges(tradesWithAsia);
-  const tightTrades = tradesWithAsia.filter(t => asiaBucketMap.get(t.id) === 'NARROW');
-  const mediumTrades = tradesWithAsia.filter(t => asiaBucketMap.get(t.id) === 'NORMAL');
-  const wideTrades = tradesWithAsia.filter(t => asiaBucketMap.get(t.id) === 'WIDE');
+  // Kurulum Karnesi / Edge Özeti ile aynı etiket: girişten önce bilinen (önceki işlemlerin medyanına göre) sınıf.
+  // Uygulamada tüm işlemler üzerinden bir kez indekslenir; burada yalnızca okunur.
+  indexTradeOrder(trades);
+  const tightTrades = tradesWithAsia.filter(t => asiaRangeBucketOf(t) === 'NARROW');
+  const mediumTrades = tradesWithAsia.filter(t => asiaRangeBucketOf(t) === 'NORMAL');
+  const wideTrades = tradesWithAsia.filter(t => asiaRangeBucketOf(t) === 'WIDE');
 
   const asiaBrackets = {
     tight: calcBucket(tightTrades, 'Dar (< 0.8× parite medyanı)'),
@@ -135,21 +155,23 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
     }
   }
 
-  // 17. Stop Size Volatility Brackets (<10p, 10-25p, >25p)
-  const tightStopTrades = trades.filter(t => (t.stopPips || 0) > 0 && (t.stopPips || 0) < 10);
-  const mediumStopTrades = trades.filter(t => (t.stopPips || 0) >= 10 && (t.stopPips || 0) <= 25);
-  const wideStopTrades = trades.filter(t => (t.stopPips || 0) > 25);
+  // Stop büyüklüğü: sabit pip eşiği (10 / 25) yerine her paritenin kendi medyan stop'una oran.
+  // Sıkı stop kullanan biri için işlemler tek gruba yığılmaz; XAUUSD ile EURUSD aynı pip ölçeğinde karışmaz.
+  const stopBuckets = bucketByPairMedian(tradesWithStop, (t) => t.stopPips);
+  const stopIn = (k: 'NARROW' | 'NORMAL' | 'WIDE') => tradesWithStop.filter((t) => stopBuckets.buckets.get(t.id) === k);
+  const STOP_LABELS = { NARROW: 'Sıkı (< 0.8× parite medyanı)', NORMAL: 'Normal (0.8× – 1.25×)', WIDE: 'Geniş (> 1.25× parite medyanı)' } as const;
+  const stopSizeBrackets = (['NARROW', 'NORMAL', 'WIDE'] as const).map((k) => ({ ...calcBucket(stopIn(k), STOP_LABELS[k]), label: STOP_LABELS[k] }));
+  const pairMedians = [...stopBuckets.medians.entries()]
+    .map(([pair, m]) => ({ pair, median: Math.round(m * 10) / 10 }))
+    .sort((x, y) => x.pair.localeCompare(y.pair));
+  const unclassified = tradesWithStop.length - stopBuckets.buckets.size;
+  const medianText = pairMedians.length ? ` Medyan stop: ${pairMedians.map((p) => `${p.pair} ${p.median} pip`).join(' · ')}.` : '';
+  const pendingText = unclassified > 0 ? ` ${unclassified} işlemin paritesinde henüz ${PAIR_MEDIAN_MIN} stop yok; sınıflanmadı.` : '';
 
-  const stopSizeBrackets = [
-    { label: 'Sıkı Stop (< 10 Pip)', ...calcBucket(tightStopTrades, 'Sıkı Stop (< 10 Pip)') },
-    { label: 'Standart Stop (10 - 25 Pip)', ...calcBucket(mediumStopTrades, 'Standart Stop (10 - 25 Pip)') },
-    { label: 'Geniş Stop (> 25 Pip)', ...calcBucket(wideStopTrades, 'Geniş Stop (> 25 Pip)') },
-  ];
-
-  let stopSizeInsight = `Pip eşikleri sabittir; farklı volatilitedeki pariteleri karıştırıyorsan Kurulum Karnesi'ndeki Stop / Asia Range alanına bak. Her grupta en az ${MIN_SAMPLE} işlem olunca yorum yapılır.`;
+  let stopSizeInsight = `Gruplar her paritenin kendi medyan stop'una göre.${medianText}${pendingText} Her grupta en az ${MIN_SAMPLE} işlem olunca yorum yapılır.`;
   const stopReliable = stopSizeBrackets.filter(b => b.count >= MIN_SAMPLE).sort((a, b) => b.avgR - a.avgR);
   if (stopReliable.length >= 2) {
-    stopSizeInsight = `İşlem başına en yüksek beklenti ${stopReliable[0].label} grubunda (${stopReliable[0].avgR} R, ${stopReliable[0].count} işlem).${earlyNote(stopReliable[0].count)}`;
+    stopSizeInsight = `İşlem başına en yüksek beklenti ${stopReliable[0].label} grubunda (${stopReliable[0].avgR} R, ${stopReliable[0].count} işlem).${earlyNote(stopReliable[0].count)}${medianText}${pendingText}`;
   }
 
   // 18. Streak & Post-Loss / Tilt Analytics
@@ -159,11 +181,6 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
   let maxLossStreak = 0;
   let tempWin = 0;
   let tempLoss = 0;
-
-  let postWinTotal = 0;
-  let postWinWins = 0;
-  let postLossTotal = 0;
-  let postLossWins = 0;
 
   for (let i = 0; i < sortedChronological.length; i++) {
     const t = sortedChronological[i];
@@ -178,17 +195,6 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
       tempWin = 0;
       tempLoss = 0;
     }
-
-    if (i > 0) {
-      const prev = sortedChronological[i - 1];
-      if (prev.status === 'WIN') {
-        postWinTotal++;
-        if (t.status === 'WIN') postWinWins++;
-      } else if (prev.status === 'LOSS') {
-        postLossTotal++;
-        if (t.status === 'WIN') postLossWins++;
-      }
-    }
   }
 
   if (sortedChronological.length > 0) {
@@ -202,24 +208,53 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
     }
   }
 
-  const postWinWinRate = postWinTotal > 0 ? Math.round((postWinWins / postWinTotal) * 1000) / 10 : overallWinRate;
-  const postLossWinRate = postLossTotal > 0 ? Math.round((postLossWins / postLossTotal) * 1000) / 10 : overallWinRate;
+  // Tilt aynı seansın olgusudur: "kayıptan sonraki işlem" yalnızca AYNI NY günündeki bir sonraki işlemdir.
+  // (Eskiden tüm geçmişte bir sonraki işlem alınıyordu; günde 1–2 işlem açan biri için bu çoğunlukla ertesi günün işlemiydi.)
+  // Seri (maks. kayıp serisi, mevcut seri) ise tüm geçmiş üzerinden sayılmaya devam eder.
+  // Edge Özeti'ndeki "Gün İçi Önceki İşlem" ile aynı tanım (aynı NY günü, aynı veri seti; hesaplar arası birlikte)
+  const first: Trade[] = [];
+  const afterWin: Trade[] = [];
+  const afterLoss: Trade[] = [];
+  for (const t of sortedChronological) {
+    const b = prevTradeBucket(t);
+    if (b === 'Günün İlk İşlemi') first.push(t);
+    else if (b === 'Önceki Kazandı') afterWin.push(t);
+    else if (b === 'Önceki Kaybetti') afterLoss.push(t);
+  }
+  const rate = (l: Trade[]) => (l.length > 0 ? Math.round((l.filter((t) => t.status === 'WIN').length / l.length) * 1000) / 10 : 0);
+  const avg = (l: Trade[]) => (l.length > 0 ? Math.round((l.reduce((s2, t) => s2 + (t.rr || 0), 0) / l.length) * 100) / 100 : 0);
+  const postWinTotal = afterWin.length;
+  const postLossTotal = afterLoss.length;
+  const postLossWins = afterLoss.filter((t) => t.status === 'WIN').length;
+  const postWinWinRate = rate(afterWin);
+  const postLossWinRate = rate(afterLoss);
+  const postWinAvgR = avg(afterWin);
+  const postLossAvgR = avg(afterLoss);
+  const firstTradeWinRate = rate(first);
+  const firstTradeAvgR = avg(first);
 
   let postLossTiltRisk: 'DÜŞÜK' | 'ORTA' | 'YÜKSEK' = 'DÜŞÜK';
-  // YÜKSEK yalnızca istatistiksel olarak anlamlıysa: kayıp sonrası kazanma oranının %95 üst sınırı bile genel oranın altında.
+  // YÜKSEK yalnızca istatistiksel olarak anlamlıysa: aynı gün kayıp sonrası kazanma oranının %95 üst sınırı bile genel oranın altında.
   // Birkaç işlemlik dalgalanma (5 işlemde 1 işlem = 20 puan) tilt sayılmaz.
   if (postLossTotal >= MIN_SAMPLE) {
     if (wilsonUpper(postLossWins, postLossTotal) * 100 < overallWinRate) postLossTiltRisk = 'YÜKSEK';
-    else if (postLossWinRate < overallWinRate - 10) postLossTiltRisk = 'ORTA';
+    else if (postLossWinRate < overallWinRate - 10 || postLossAvgR < firstTradeAvgR - 0.3) postLossTiltRisk = 'ORTA';
   }
 
-  let streakInsight = 'Kayıp ve galibiyet ardışıklık dinamikleriniz dengeli.';
+  const sR = (v: number) => `${v > 0 ? '+' : ''}${v.toFixed(2)} R`;
+  let streakInsight: string;
   if (postLossTiltRisk === 'YÜKSEK') {
-    streakInsight = `Dikkat: Kayıp sonrası işlemlerde kazanma oranın %${postLossWinRate} (genel %${overallWinRate}, ${postLossTotal} işlem) ve fark istatistiksel olarak anlamlı. Kayıptan sonra mola vermek hesabını korur.`;
+    streakInsight = `Dikkat: Aynı gün kayıptan sonra açtığın ${postLossTotal} işlemde kazanma oranın %${postLossWinRate} (genel %${overallWinRate}), işlem başı ${sR(postLossAvgR)} (günün ilk işlemi ${sR(firstTradeAvgR)}). Fark istatistiksel olarak anlamlı: kayıptan sonra o gün durmak hesabını korur.`;
   } else if (postLossTiltRisk === 'ORTA') {
-    streakInsight = `Kayıp sonrası kazanma oranın %${postLossWinRate} (genel %${overallWinRate}, ${postLossTotal} işlem). Fark henüz kesin değil; izlemeye devam et.`;
+    streakInsight = `Aynı gün kayıp sonrası ${postLossTotal} işlem: kazanma %${postLossWinRate} (genel %${overallWinRate}), işlem başı ${sR(postLossAvgR)} (günün ilk işlemi ${sR(firstTradeAvgR)}). Fark henüz kesin değil; izlemeye devam et.`;
+  } else if (postLossTotal < MIN_SAMPLE) {
+    streakInsight = postLossTotal === 0
+      ? 'Aynı gün kayıptan sonra hiç işlem açmamışsın: tilt için ölçülecek bir şey yok.'
+      : `Aynı gün kayıptan sonra ${postLossTotal} işlem açmışsın (işlem başı ${sR(postLossAvgR)}). Tilt yorumu için en az ${MIN_SAMPLE} işlem gerekir.`;
   } else if (postWinTotal >= EDGE_PROOF_MIN && postWinWinRate > overallWinRate + 10) {
-    streakInsight = `Kazanç serisi momentumunuz yüksek: Kazanç sonrası işlemlerinizin %${postWinWinRate}'i yine galibiyetle sonuçlanıyor.`;
+    streakInsight = `Aynı gün kazançtan sonraki işlemlerin %${postWinWinRate}'i yine kazanç (genel %${overallWinRate}, ${postWinTotal} işlem).`;
+  } else {
+    streakInsight = `Aynı gün kayıp sonrası işlemlerin genel performansınla uyumlu (${postLossTotal} işlem, işlem başı ${sR(postLossAvgR)}).`;
   }
 
   return {
@@ -234,13 +269,21 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
     stopSizeStats: {
       hasData: tradesWithStop.length > 0,
       brackets: stopSizeBrackets,
+      pairMedians,
+      unclassified,
       insight: stopSizeInsight,
     },
     streakStats: {
       currentStreak: { type: currentStreakType, count: currentStreakCount },
       maxLossStreak,
+      postWinTotal,
+      postLossTotal,
       postWinWinRate,
       postLossWinRate,
+      postWinAvgR,
+      postLossAvgR,
+      firstTradeWinRate,
+      firstTradeAvgR,
       postLossTiltRisk,
       insight: streakInsight,
     },

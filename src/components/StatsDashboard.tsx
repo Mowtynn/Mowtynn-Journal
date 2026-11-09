@@ -26,6 +26,12 @@ interface StatsDashboardProps {
 const fmtR = (v: number, digits = 2) => `${v > 0 ? '+' : ''}${v.toFixed(digits)} R`;
 
 const StatsDashboard = React.memo(function StatsDashboard({ stats, edge, drift }: StatsDashboardProps) {
+  // Başabaş kazanma oranı: ort. kazanç / kayıpla net R = 0 olan oran (BE işlemleri 0R olduğu için paydada nötr)
+  // BE işlemleri kazanma oranının paydasında olduğu için başabaş oranı da aynı paydaya ölçeklenir
+  const beWinRate =
+    stats.winningTrades > 0 && stats.losingTrades > 0 && stats.averageWinRR + stats.averageLossRR > 0
+      ? (stats.averageLossRR / (stats.averageWinRR + stats.averageLossRR)) * ((stats.winningTrades + stats.losingTrades) / stats.totalTrades) * 100
+      : null;
   const isPositive = stats.netR > 0;
   const isNegative = stats.netR < 0;
 
@@ -63,7 +69,7 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, edge, drift }
       <motion.div 
         variants={itemVariants}
         id="stat-net-pnl" 
-        className={`cursor-pointer bg-zinc-900/60 border border-zinc-800/80  rounded-2xl p-4 ${
+        className={`bg-zinc-900/60 border border-zinc-800/80  rounded-2xl p-4 ${
           isPositive 
             ? 'hover:bg-emerald-950/15 hover:border-emerald-500/40' 
             : isNegative 
@@ -71,7 +77,7 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, edge, drift }
               : 'hover:bg-zinc-800/40 hover:border-zinc-700/60'
         } transition-colors duration-200 ease-out flex flex-col justify-between group shadow-xs`}
       >
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-1.5">
           <p className="heading-3 text-zinc-400 tracking-wider font-sans flex items-center gap-1.5">
             <span className={`p-1.5 rounded-lg border ${
               isPositive ? 'toggle-item-win' : 
@@ -112,9 +118,9 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, edge, drift }
       <motion.div 
         variants={itemVariants}
         id="stat-win-rate" 
-        className="cursor-pointer bg-zinc-900/60 border border-zinc-800/80  hover:bg-zinc-800/50 hover:border-zinc-700/80 rounded-2xl p-4 transition-colors duration-200 ease-out flex flex-col justify-between group shadow-xs"
+        className="bg-zinc-900/60 border border-zinc-800/80  hover:bg-zinc-800/50 hover:border-zinc-700/80 rounded-2xl p-4 transition-colors duration-200 ease-out flex flex-col justify-between group shadow-xs"
       >
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-1.5">
           <p className="heading-3 text-zinc-400 tracking-wider font-sans flex items-center gap-1.5">
             <span className="p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400">
               <Percent size={12} />
@@ -128,6 +134,14 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, edge, drift }
             <span className="text-lg sm:text-xl font-bold text-blue-300">
               %{stats.winRate.toFixed(1)}
             </span>
+            {beWinRate !== null && (
+              <span
+                className={`ml-auto text-[10px] font-sans tabular-nums ${stats.winRate >= beWinRate ? 'text-emerald-400/80' : 'text-rose-400/80'}`}
+                title="Başabaş kazanma oranı: mevcut ortalama kazanç, ortalama kayıp ve BE oranıyla net R'nin tam sıfır olduğu kazanma oranı. Kazanma oranın bunun üstündeyse sistem kazandırıyor."
+              >
+                başabaş %{beWinRate.toFixed(0)}
+              </span>
+            )}
           </div>
 
           <div className="flex items-center justify-between gap-1 mt-1">
@@ -177,7 +191,7 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, edge, drift }
       <motion.div 
         variants={itemVariants}
         id="stat-edge" 
-        className="col-span-1 sm:col-span-2 bg-zinc-900/60 border border-zinc-800/80 hover:bg-zinc-800/50 hover:border-zinc-700/80 rounded-2xl p-4 transition-colors duration-200 ease-out flex flex-col justify-between gap-2 shadow-xs"
+        className="col-span-1 sm:col-span-2 bg-zinc-900/60 border border-zinc-800/80 hover:bg-zinc-800/50 hover:border-zinc-700/80 rounded-2xl p-4 transition-colors duration-200 ease-out flex flex-col justify-between gap-1.5 shadow-xs"
       >
         <p className="heading-3 text-zinc-400 tracking-wider font-sans flex items-center gap-1.5">
           <span className="p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400">
@@ -191,7 +205,7 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, edge, drift }
       {/* Secondary Row: Insights */}
       <motion.div 
         variants={itemVariants}
-        className="relative overflow-hidden col-span-1 sm:col-span-2 cursor-pointer hover:bg-zinc-800/50 hover:border-zinc-700/80 bg-zinc-900/60 border border-zinc-800/80  rounded-2xl p-4 shadow-xs transition-colors duration-200 ease-out flex flex-col justify-between group"
+        className="relative overflow-hidden col-span-1 sm:col-span-2 hover:bg-zinc-800/50 hover:border-zinc-700/80 bg-zinc-900/60 border border-zinc-800/80  rounded-2xl p-4 shadow-xs transition-colors duration-200 ease-out flex flex-col justify-between group"
       >
         <div className="flex justify-between items-center mb-3">
           <p className="heading-3 tracking-wider text-zinc-400 font-sans flex items-center gap-1.5">
@@ -200,20 +214,21 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, edge, drift }
             </span>
             {"Parite Başarı Analizi"}
           </p>
+          <span className="text-[9px] text-zinc-500 font-sans">en az {MIN_SAMPLE} işlemli · net R</span>
         </div>
         <div className="grid grid-cols-2 gap-4 mt-auto">
           <div className="flex flex-col justify-between transition-colors">
             <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold font-sans">{"En Verimli Parite"}</p>
             <p className="text-xs sm:text-sm font-bold text-emerald-400 mt-1 font-sans truncate">{stats.bestAsset || '—'}</p>
             <p className="text-[10px] text-zinc-500 font-sans tabular-nums mt-0.5 truncate">
-              {stats.bestAsset ? `${fmtR(stats.bestAssetR)} · ${stats.bestAssetCount} işlem` : 'Pozitif parite yok'}
+              {stats.bestAsset ? `${fmtR(stats.bestAssetR)} · ${stats.bestAssetCount} işlem` : `${MIN_SAMPLE}+ işlemli pozitif parite yok`}
             </p>
           </div>
           <div className="flex flex-col justify-between transition-colors border-l border-zinc-800/80 pl-4">
             <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold font-sans">{"En Verimsiz Parite"}</p>
             <p className="text-xs sm:text-sm font-bold text-rose-400 mt-1 font-sans truncate">{stats.worstAsset || '—'}</p>
             <p className="text-[10px] text-zinc-500 font-sans tabular-nums mt-0.5 truncate">
-              {stats.worstAsset ? `${fmtR(stats.worstAssetR)} · ${stats.worstAssetCount} işlem` : 'Negatif parite yok'}
+              {stats.worstAsset ? `${fmtR(stats.worstAssetR)} · ${stats.worstAssetCount} işlem` : `${MIN_SAMPLE}+ işlemli negatif parite yok`}
             </p>
           </div>
         </div>
@@ -221,7 +236,7 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, edge, drift }
 
       <motion.div 
         variants={itemVariants}
-        className="relative overflow-hidden col-span-1 sm:col-span-2 cursor-pointer hover:bg-zinc-800/50 hover:border-zinc-700/80 bg-zinc-900/60 border border-zinc-800/80  rounded-2xl p-4 shadow-xs transition-colors duration-200 ease-out flex flex-col justify-between group"
+        className="relative overflow-hidden col-span-1 sm:col-span-2 hover:bg-zinc-800/50 hover:border-zinc-700/80 bg-zinc-900/60 border border-zinc-800/80  rounded-2xl p-4 shadow-xs transition-colors duration-200 ease-out flex flex-col justify-between group"
       >
         <div className="flex justify-between items-center mb-3">
           <p className="heading-3 tracking-wider text-zinc-400 font-sans flex items-center gap-1.5">
@@ -304,24 +319,26 @@ function EdgePanel({ edge, expectancy, drift }: { edge?: EdgeStats; expectancy: 
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-2.5 font-sans">
       {/* Sol: beklenti + hüküm + ilerleme */}
       <div className="flex flex-col gap-1.5 min-w-0">
-        <div className="flex items-baseline gap-1.5">
-          <span className={`text-lg sm:text-xl font-bold tabular-nums ${expectancy >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{fmtR(expectancy)}</span>
-          <span className="text-[10px] text-zinc-500">/işlem</span>
-        </div>
-        <div className="flex items-center gap-2 min-w-0">
+        {/* Beklenti, hüküm ve kanıt sayacı tek satırda: kart (ve aynı satırdaki Net R / WR kartları) gereksiz uzamasın */}
+        <div className="flex items-center gap-x-2 gap-y-1 flex-wrap min-w-0">
+          <span className="flex items-baseline gap-1 shrink-0">
+            <span className={`text-lg sm:text-xl font-bold tabular-nums ${expectancy >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{fmtR(expectancy)}</span>
+            <span className="text-[10px] text-zinc-500">/işlem</span>
+          </span>
           <span className={`px-2 py-0.5 rounded-lg border text-[10px] font-bold uppercase shrink-0 ${v.tone}`}>{v.label}</span>
           <span className="text-[10px] text-zinc-400 tabular-nums truncate">{Math.min(n, EDGE_PROOF_MIN)}/{EDGE_PROOF_MIN} işlem</span>
         </div>
         <div className="h-1 rounded-full bg-zinc-800 overflow-hidden" aria-hidden="true">
           <div className={`h-full rounded-full ${v.bar}`} style={{ width: `${Math.max(n > 0 ? 4 : 0, Math.min(100, v.pct))}%` }} />
         </div>
+        <p className="text-[10px] text-zinc-500 leading-snug">{v.hint}</p>
       </div>
 
       {/* Sağ: güven aralığı + zamanla değişim */}
       <div className="flex flex-col justify-between gap-2 min-w-0 sm:border-l sm:border-zinc-800/80 sm:pl-5">
         <div className="flex flex-col gap-1">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-[10px] font-bold uppercase tracking-wide text-zinc-500 truncate">%95 Beklenti Aralığı</span>
+            <span className="text-[10px] font-bold uppercase tracking-wide text-zinc-500 truncate" title="Gerçek işlem başı R'nin %95 olasılıkla bulunduğu aralık. Aralığın tamamı sıfırın üstündeyse edge pozitif; sıfırı kapsıyorsa henüz kesin değil.">%95 Beklenti Aralığı</span>
             {hasCI && <span className="text-[11px] text-zinc-300 tabular-nums whitespace-nowrap shrink-0">{f(lo)} – {f(hi)} R</span>}
           </div>
           {hasCI ? (
@@ -337,7 +354,7 @@ function EdgePanel({ edge, expectancy, drift }: { edge?: EdgeStats; expectancy: 
 
         {drift && (
           <div className="flex items-center justify-between gap-2 min-w-0">
-            <span className="text-[10px] font-bold uppercase tracking-wide text-zinc-500 truncate shrink-0">Son 20 İşlem</span>
+            <span className="text-[10px] font-bold uppercase tracking-wide text-zinc-500 truncate shrink-0" title="Son 20 işlemin işlem başı R'si, öncekilerle karşılaştırılır. Fark istatistiksel olarak anlamlıysa zayıflama / güçlenme gösterilir.">Son 20 İşlem</span>
             {!drift.ready ? (
               <span className="text-[10px] text-zinc-600 tabular-nums truncate">{drift.need} işlemde açılır ({drift.n}/{drift.need})</span>
             ) : (

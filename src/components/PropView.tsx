@@ -514,7 +514,7 @@ function ChainCard({
           : 'text-zinc-400 border-zinc-700 bg-zinc-800/60';
 
   return (
-    <div className={`rounded-2xl border p-3 sm:p-4 flex flex-col gap-3 ${active && m.maxBreached ? 'border-rose-500/40 bg-rose-950/10' : 'border-zinc-800/80 bg-zinc-900/50'}`}>
+    <div className={`rounded-2xl border p-3 sm:p-4 flex flex-col gap-3 ${active && (m.maxBreached || m.dailyBreached) ? 'border-rose-500/40 bg-rose-950/10' : 'border-zinc-800/80 bg-zinc-900/50'}`}>
       {/* Başlık */}
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
@@ -599,12 +599,14 @@ function ChainCard({
       {/* Canlı R özeti */}
       {active && !archived && <PropRSummary account={a} trades={trades} />}
 
-      {active && (m.maxBreached || m.targetReached) && (
-        <div className={`flex items-start gap-2 text-[11px] rounded-xl border p-2.5 ${m.maxBreached ? 'text-rose-200 border-rose-500/30 bg-rose-500/10' : 'text-emerald-200 border-emerald-500/30 bg-emerald-500/10'}`}>
+      {active && (m.maxBreached || m.dailyBreached || m.targetReached) && (
+        <div className={`flex items-start gap-2 text-[11px] rounded-xl border p-2.5 ${m.maxBreached || m.dailyBreached ? 'text-rose-200 border-rose-500/30 bg-rose-500/10' : 'text-emerald-200 border-emerald-500/30 bg-emerald-500/10'}`}>
           <AlertTriangle size={14} className="shrink-0 mt-0.5" />
           <span>
             {m.maxBreached
               ? 'Kayıtlara göre max drawdown sınırı aşılmış görünüyor. Hesap patladıysa "Patladı" ile arşive al.'
+              : m.dailyBreached
+              ? 'Kayıtlara göre günlük kayıp limiti aşılmış görünüyor. Hesap patladıysa "Patladı" ile arşive al.'
               : lastStage
                 ? 'Hedefe ulaşıldı. Geçtiysen "Funded\'a geç" ile devam et.'
                 : `Hedefe ulaşıldı. Geçtiysen "${phaseAcc(a.stage + 1)} Başlat" ile devam et.`}

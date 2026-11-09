@@ -1,6 +1,5 @@
 import type { JournalEntry, Trade, WeeklyAnswers } from '../types';
 import { nyDateKey, getNyParts } from './tradingTime';
-import { analyzeDiscipline, type DisciplineRuleId } from './discipline';
 import { dimensionValue, DEFAULT_SETUP_DIMENSIONS, UNSPECIFIED } from './setupScorecard';
 import { computeEdgeSummary } from './edgeSummary';
 
@@ -104,8 +103,8 @@ export interface WeekSetup {
 }
 
 export interface WeekViolation {
-  /** Disiplin kuralı ya da "edge:<başlık>" (Kurallarım'daki ALMA kuralı) */
-  id: DisciplineRuleId | `edge:${string}`;
+  /** "edge:<başlık>" — Kurallarım'daki (verinden çıkan) ALMA kuralı */
+  id: `edge:${string}`;
   title: string;
   count: number;
   costR: number;
@@ -123,6 +122,9 @@ export interface WeekReview {
   worst: WeekSetup | null;
   violations: WeekViolation[];
   cleanCount: number;
+  /** Haftadan önceki işlemlerden çıkan ALMA kuralları (yalnızca başlıklar) ve incelenen işlem sayısı */
+  avoidRules: string[];
+  priorTrades: number;
 }
 
 const setupLabel = (t: Trade) => {
@@ -134,7 +136,7 @@ const setupLabel = (t: Trade) => {
   return parts.length ? parts.join(' · ') : '';
 };
 
-/** Haftanın tüm istatistikleri. Disiplin ihlalleri tüm geçmişle değerlendirilir (gün içi sayaçlar doğru kalsın), sonra haftaya süzülür. */
+/** Haftanın tüm istatistikleri. Kurallarım'daki ALMA kuralları yalnızca haftadan önceki işlemlerden çıkarılır. */
 export function computeWeekReview(allTrades: Trade[], weekStart: string): WeekReview {
   const days = weekDays(weekStart);
   const inWeek = new Set(days);
@@ -147,7 +149,7 @@ export function computeWeekReview(allTrades: Trade[], weekStart: string): WeekRe
     return { key, index, n: list.length, netR: list.reduce((s, t) => s + rOf(t), 0) };
   });
 
-  // Kurulumlar (Asia Range · seans · Entry Model) — haftalık R'ye göre en iyi / en kötü
+  // Kurulumlar (Asia Range · Trend · Entry Model) — haftalık R'ye göre en iyi / en kötü
   const groups = new Map<string, WeekSetup>();
   trades.forEach((t) => {
     const label = setupLabel(t);
@@ -162,25 +164,17 @@ export function computeWeekReview(allTrades: Trade[], weekStart: string): WeekRe
   const worstCandidate = ranked.length ? ranked[ranked.length - 1] : null;
   const worst = worstCandidate && worstCandidate.netR < 0 ? worstCandidate : null;
 
-  const weekIds = new Set(trades.map((t) => t.id));
-  const report = analyzeDiscipline(allTrades);
   const violatingIds = new Set<string>();
-  const violations: WeekViolation[] = report.rules
-    .filter((r) => r.measurable)
-    .map((r) => {
-      const ids = r.tradeIds.filter((id) => weekIds.has(id));
-      ids.forEach((id) => violatingIds.add(id));
-      const costR = trades.filter((t) => ids.includes(t.id)).reduce((s, t) => s + rOf(t), 0);
-      return { id: r.id, title: r.title, count: ids.length, costR, tradeIds: ids };
-    })
-    .filter((v) => v.count > 0);
+  const violations: WeekViolation[] = [];
 
   // Kurallarım: haftadan ÖNCEKİ işlemlerle kesinleşmiş ALMA kuralları (geriye dönük bilgi kullanılmaz)
   const before = allTrades.filter((t) => nyDateKey(t.createdAt) < weekStart);
+  const avoidRules: string[] = [];
   if (before.length) {
     computeEdgeSummary(before)
       .rules.filter((r) => r.kind === 'AVOID')
       .forEach((r) => {
+        avoidRules.push(r.title);
         const hit = trades.filter(r.match);
         if (!hit.length) return;
         hit.forEach((t) => violatingIds.add(t.id));
@@ -199,6 +193,8 @@ export function computeWeekReview(allTrades: Trade[], weekStart: string): WeekRe
     worst,
     violations,
     cleanCount: trades.length - violatingIds.size,
+    avoidRules,
+    priorTrades: before.length,
   };
 }
 

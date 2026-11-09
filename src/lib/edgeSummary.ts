@@ -26,6 +26,10 @@ export interface DimensionSlice {
   dimensionLabel: string;
   value: string;
   edge: EdgeStats;
+  /** Bu dilimin işlem başı R'si − geri kalan işlemlerin işlem başı R'si (kârlı bir sistemde "daha çok yap" buna bakar) */
+  vsRest: number;
+  /** vsRest farkının Welch z değeri (|z| ≥ 1.96 → fark %95 güvenle gerçek) */
+  vsRestZ: number;
   /** Bu işlemlerin büyük kısmı başka bir alan değeriyle örtüşüyorsa (≥ %70 ve genel orandan belirgin yüksek) */
   overlap?: { label: string; pct: number };
 }
@@ -158,8 +162,39 @@ export function computeEdgeSummary(trades: Trade[], minSample = SETUP_MIN_SAMPLE
 
   const card = buildSetupScorecard(sorted, DEFAULT_SETUP_DIMENSIONS, { minSample });
   const judged = card.rows.filter((r) => r.verdict !== 'LOW_SAMPLE');
-  const bestSetups = judged.filter((r) => r.edge.expectancy > 0).slice(0, 3);
+  // Kârlı bir sistemde neredeyse her kurulum pozitiftir: "daha çok yap" yalnızca geri kalandan daha iyi olanlar
+  const restExpOf = (n: number, netR: number) => (sorted.length - n > 0 ? (sorted.reduce((a, t) => a + rOf(t), 0) - netR) / (sorted.length - n) : 0);
+  const bestSetups = judged.filter((r) => r.edge.expectancy > 0 && r.edge.expectancy > restExpOf(r.edge.n, r.edge.netR)).slice(0, 3);
   const worstSetups = [...judged].reverse().filter((r) => r.edge.expectancy < 0).slice(0, 3);
+
+  // Geri kalanla kıyas için toplamlar (dilim − geri kalan: Welch)
+  const N = sorted.length;
+  let totSum = 0;
+  let totSq = 0;
+  for (const t of sorted) {
+    const r = rOf(t);
+    totSum += r;
+    totSq += r * r;
+  }
+  const vsRestOf = (list: Trade[]): { vsRest: number; vsRestZ: number } => {
+    const n = list.length;
+    const m = N - n;
+    if (n < 2 || m < 2) return { vsRest: 0, vsRestZ: 0 };
+    let sum = 0;
+    let sq = 0;
+    for (const t of list) {
+      const r = rOf(t);
+      sum += r;
+      sq += r * r;
+    }
+    const mean = sum / n;
+    const restMean = (totSum - sum) / m;
+    const v1 = Math.max(0, (sq - n * mean * mean) / (n - 1));
+    const v2 = Math.max(0, (totSq - sq - m * restMean * restMean) / (m - 1));
+    const se = Math.sqrt(v1 / n + v2 / m);
+    const diff = mean - restMean;
+    return { vsRest: Math.round(diff * 1000) / 1000, vsRestZ: se > 0 ? diff / se : 0 };
+  };
 
   const scan = (dims: SetupDimension[]): DimensionSlice[] => {
   const slices: DimensionSlice[] = [];
@@ -176,7 +211,7 @@ export function computeEdgeSummary(trades: Trade[], minSample = SETUP_MIN_SAMPLE
     if (groups.size < 2) continue;
     groups.forEach((list, value) => {
       if (list.length < minSample) return;
-      slices.push({ dimension: d, dimensionLabel: labelOf(d), value, edge: edgeOf(list) });
+      slices.push({ dimension: d, dimensionLabel: labelOf(d), value, edge: edgeOf(list), ...vsRestOf(list) });
     });
   }
   return slices;
@@ -189,9 +224,15 @@ export function computeEdgeSummary(trades: Trade[], minSample = SETUP_MIN_SAMPLE
     .sort((a, b) => Number(signalStrength(b.edge) === 'CONFIRMED') - Number(signalStrength(a.edge) === 'CONFIRMED') || a.edge.netR - b.edge.netR)
     .slice(0, 4);
   // Çok sayıda alan tarandığı için olumlu bulguya daha yüksek eşik: kanıtlı değilse en az 2 × minSample işlem
+  // "Daha çok yap": pozitif VE geri kalan işlemlerden daha iyi (kârlı sistemde sıfırla kıyas, ortalamanın altındaki büyük
+  // grupları öne çıkarıyordu). Sıralama: farkı kesin olanlar önce, sonra örneklemle küçültülmüş fark.
   const strengths = slices
-    .filter((s) => s.edge.expectancy > 0 && (signalStrength(s.edge) === 'CONFIRMED' || s.edge.n >= minSample * 2))
-    .sort((a, b) => Number(signalStrength(b.edge) === 'CONFIRMED') - Number(signalStrength(a.edge) === 'CONFIRMED') || b.edge.expLo - a.edge.expLo || b.edge.netR - a.edge.netR)
+    .filter((s) => s.edge.expectancy > 0 && s.vsRest > 0 && (signalStrength(s.edge) === 'CONFIRMED' || s.edge.n >= minSample * 2))
+    .sort(
+      (a, b) =>
+        Number(b.vsRestZ >= 1.96) - Number(a.vsRestZ >= 1.96) ||
+        (b.vsRest * b.edge.n) / (b.edge.n + minSample) - (a.vsRest * a.edge.n) / (a.edge.n + minSample),
+    )
     .slice(0, 4);
 
   // Birbirine bağlı alanlar: bulgu başka bir alanla büyük ölçüde örtüşüyorsa aynı etkiyi iki kez okumamak için not düşülür
@@ -267,7 +308,7 @@ export function computeEdgeSummary(trades: Trade[], minSample = SETUP_MIN_SAMPLE
     strengths,
     riskSlices,
     managementSlices,
-    rules: buildRules(sorted, card.rows, slices, pairs, val),
+    rules: buildRules(sorted, card.rows, slices, pairs, val, vsRestOf),
     timeToTarget: computeTimeToTarget(sorted),
     bestPairs,
     worstPairs,
@@ -288,7 +329,14 @@ const round = (v: number, d = 2) => (Number.isFinite(v) ? Number(v.toFixed(d)) :
 
 const DAY_MS = 86_400_000;
 
-function buildRules(sorted: Trade[], setupRows: SetupRow[], slices: DimensionSlice[], pairs: PairSlice[], val: ValueOf = dimensionValue): EdgeRule[] {
+function buildRules(
+  sorted: Trade[],
+  setupRows: SetupRow[],
+  slices: DimensionSlice[],
+  pairs: PairSlice[],
+  val: ValueOf = dimensionValue,
+  vsRest: (list: Trade[]) => { vsRest: number; vsRestZ: number } = () => ({ vsRest: 0, vsRestZ: 0 }),
+): EdgeRule[] {
   const rules: EdgeRule[] = [];
   // Dışarıya verilen eşleştirici dimensionValue ile (her işlemde çalışır); iç hesaplar önceden hesaplanmış tabloyla
   const fast = new Map<EdgeRule, (t: Trade) => boolean>();
@@ -297,19 +345,26 @@ function buildRules(sorted: Trade[], setupRows: SetupRow[], slices: DimensionSli
     rules.push(r);
     fast.set(r, quick || match);
   };
+  // AL kuralı: kanıtlı kârlı VE geri kalandan %95 güvenle daha iyi (kârlı sistemde çoğunluğu oluşturan grup, ör.
+  // "News Day: Yok", ortalamaya çok yakın olduğu için kural olmaz). Geri kalan yoksa (tek grup) kural da yok.
+  const SIG = 1.96;
   setupRows.forEach((r) => {
     const match = (t: Trade) => DEFAULT_SETUP_DIMENSIONS.every((d, i) => dimensionValue(t, d) === r.labels[i]);
     const quick = (t: Trade) => DEFAULT_SETUP_DIMENSIONS.every((d, i) => val(t, d) === r.labels[i]);
-    if (r.verdict === 'EDGE') add('TAKE', r.labels.join(' · '), 'Kurulum', r.edge, match, quick);
+    // AL: kanıtlı kârlı VE geri kalandan iyi (kârlı sistemde ortalamanın altındaki bir kurulum "AL" kuralı olmaz)
+    if (r.verdict === 'EDGE' && vsRest(sorted.filter(quick)).vsRestZ >= SIG) add('TAKE', r.labels.join(' · '), 'Kurulum', r.edge, match, quick);
     else if (r.verdict === 'LEAK') add('AVOID', r.labels.join(' · '), 'Kurulum', r.edge, match, quick);
   });
   slices.forEach((x) => {
     if (signalStrength(x.edge) !== 'CONFIRMED') return;
+    if (x.edge.expectancy > 0 && x.vsRestZ < SIG) return; // kârlı ama geri kalandan belirgin iyi değil: AL kuralı değil
     const match = (t: Trade) => dimensionValue(t, x.dimension) === x.value;
     add(x.edge.expectancy > 0 ? 'TAKE' : 'AVOID', `${x.dimensionLabel}: ${x.value}`, 'Alan', x.edge, match, (t) => val(t, x.dimension) === x.value);
   });
   pairs.forEach((p) => {
     if (Math.abs(p.lift) < PAIR_MIN_LIFT || signalStrength(p.edge) !== 'CONFIRMED') return;
+    // Kural yönü fark yönüyle aynı olmalı: alanlarından kötü bir birleşim "AL", iyi bir birleşim "ALMA" olmaz
+    if ((p.edge.expectancy > 0 && p.lift <= 0) || (p.edge.expectancy < 0 && p.lift >= 0)) return;
     const match = (t: Trade) => dimensionValue(t, p.dims[0]) === p.values[0] && dimensionValue(t, p.dims[1]) === p.values[1];
     add(p.edge.expectancy > 0 ? 'TAKE' : 'AVOID', p.title, 'Kombinasyon', p.edge, match, (t) => val(t, p.dims[0]) === p.values[0] && val(t, p.dims[1]) === p.values[1]);
   });
@@ -343,7 +398,8 @@ const p90Of = (xs: number[]) => {
   const s = [...xs].sort((a, b) => a - b);
   return s[Math.min(s.length - 1, Math.ceil(s.length * 0.9) - 1)];
 };
-const TTT_MIN_WINNERS = 3;
+/** %90 süre ancak yeterli kazananla anlamlı: 3 kazananda %90 = en uzun süre olurdu */
+export const TTT_MIN_WINNERS = 10;
 
 function timeRow(title: string, list: Trade[]): TimeToTargetRow | null {
   const held = list.filter((t) => typeof t.exitAt === 'number' && t.exitAt >= t.createdAt);
@@ -353,7 +409,7 @@ function timeRow(title: string, list: Trade[]): TimeToTargetRow | null {
   return { title, winners: win.length, medianMs: medianOf(win), p90Ms: p90Of(win), loserMedianMs: loss.length ? medianOf(loss) : null };
 }
 
-/** Kazananların girişten çıkışa süresi (medyan ve %90'ı): genel ve varsayılan kurulumlar için; en az 3 kazanan gerekir */
+/** Kazananların girişten çıkışa süresi (medyan ve %90'ı): genel ve varsayılan kurulumlar için; en az TTT_MIN_WINNERS kazanan gerekir */
 export function computeTimeToTarget(sorted: Trade[]): EdgeSummary['timeToTarget'] {
   const groups = new Map<string, Trade[]>();
   for (const t of sorted) {
@@ -493,7 +549,7 @@ export function edgeReportRows(trades: Trade[], minSample = SETUP_MIN_SAMPLE): R
       'Beklenti (R/İşlem)': round(e.expectancy, 3),
       'Beklenti Alt %95': e.n > 1 ? round(e.expLo, 3) : '-',
       'Beklenti Üst %95': e.n > 1 ? round(e.expHi, 3) : '-',
-      'Kâr Faktörü': round(e.profitFactor),
+      'Kâr Faktörü': e.profitFactor >= 999 ? '∞' : round(e.profitFactor),
       'Hüküm': VERDICT_TEXT[v] + (v !== 'LOW_SAMPLE' && signalStrength(e) === 'EARLY' ? ' (Erken Sinyal)' : ''),
     });
   };
@@ -569,7 +625,7 @@ export function edgeReportRows(trades: Trade[], minSample = SETUP_MIN_SAMPLE): R
   // Kurulumlar (varsayılan boyutların birleşimi)
   buildSetupScorecard(valid, DEFAULT_SETUP_DIMENSIONS, { minSample }).rows.forEach((r) => {
     const list = valid.filter((t) => DEFAULT_SETUP_DIMENSIONS.map((d) => val(t, d)).join(' | ') === r.key);
-    push('Kurulum (Asia Range · Session · Entry Model)', r.labels.join(' · '), list, 'Kurulum');
+    push('Kurulum (Asia Range · Trend · Entry Model)', r.labels.join(' · '), list, 'Kurulum');
   });
   return rows;
 }
@@ -630,9 +686,14 @@ export function validateOutOfSample(trades: Trade[], minSample = SETUP_MIN_SAMPL
   s.worstPairs.forEach((p) => cands.push({ title: p.title, kind: 'AVOID', source: 'Kombinasyon', discovery: p.edge, match: pairMatch(p) }));
 
   const findings: OosFinding[] = cands.map((c) => {
-    const test = edgeOf(testSet.filter(c.match));
-    const sign = c.kind === 'TAKE' ? 1 : -1;
-    const status: OosStatus = test.n < HALF_MIN ? 'UNTESTED' : Math.sign(test.expectancy) === sign ? 'HELD' : 'FAILED';
+    const hit = testSet.filter(c.match);
+    const test = edgeOf(hit);
+    const rest = testSet.filter((t) => !c.match(t));
+    const restExp = rest.length ? rest.reduce((a, t) => a + rOf(t), 0) / rest.length : 0;
+    // AL bulgusu "geri kalandan iyi" diye seçildi: ikinci yarıda da geri kalandan iyi olmalı (sıfırdan büyük olması yetmez;
+    // kârlı bir sistemde rastgele her grup pozitif çıkar). ALMA bulgusu ikinci yarıda da kaybettirmeli.
+    const held = c.kind === 'TAKE' ? test.expectancy > 0 && test.expectancy > restExp : test.expectancy < 0;
+    const status: OosStatus = test.n < HALF_MIN ? 'UNTESTED' : held ? 'HELD' : 'FAILED';
     return { ...c, test, status };
   });
   const order: Record<OosStatus, number> = { FAILED: 0, HELD: 1, UNTESTED: 2 };

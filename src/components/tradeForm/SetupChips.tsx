@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { setupQualityTier } from "../../lib/discipline";
+import { setupQualityTier } from "../../lib/setupQuality";
 import { normalizeNewsDays } from "../../constants/constants";
 import { Layers, ShieldCheck, Zap, TrendingUp, Clock, Maximize2, Target, Flag, Newspaper, Compass, MoveHorizontal, Waves, Timer } from "lucide-react";
 import { ASIA_RANGE_TYPES, MANAGEMENT_TYPES } from "../../types";

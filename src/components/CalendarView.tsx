@@ -96,7 +96,7 @@ export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], o
       }
     }
     
-    return { totalRr, tradingDays };
+    return { totalRr: Math.abs(totalRr) < 1e-9 ? 0 : totalRr, tradingDays };
   }, [dailyStats, year, month, daysInMonth]);
 
   const renderCells = () => {
@@ -122,7 +122,8 @@ export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], o
       let secondaryColor = "text-zinc-500";
       
       if (stat) {
-         const val = stat.rr;
+         // Kayan nokta toplamı (ör. +0.7 −0.4 −0.3 = −5.6e-17) sıfır sayılır: Gün Performansı ile aynı tolerans
+         const val = Math.abs(stat.rr) < 1e-9 ? 0 : stat.rr;
          if (val > 0) {
             cardStyle = "bg-emerald-500/[0.07] hover:bg-emerald-500/15 border-emerald-500/25 hover:border-emerald-500/50 cursor-pointer shadow-xs shadow-emerald-500/5";
             primaryColor = "text-emerald-400";
@@ -142,7 +143,7 @@ export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], o
         <div 
            key={`day-${day}`} 
            onClick={() => stat ? setSelectedDateStr(dateStr) : null}
-           className={`border rounded-xl p-1.5 sm:p-2 min-h-[64px] sm:min-h-[76px] flex flex-col justify-between transition-ui duration-200 ease-out group relative ${cardStyle}`}
+           className={`border rounded-xl p-1 sm:p-2 min-h-[64px] sm:min-h-[76px] flex flex-col justify-between transition-ui duration-200 ease-out group relative ${cardStyle}`}
         >
           {/* Top Row: Day Number & Trade Count */}
           <div className="flex items-start justify-between">
@@ -155,7 +156,7 @@ export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], o
             </span>
 
             {stat && (
-              <span className="text-[8.5px] sm:text-[9px] font-sans font-bold text-zinc-500 group-hover:text-zinc-300 transition-colors leading-none">
+              <span className="hidden sm:inline text-[9px] font-sans font-bold text-zinc-500 group-hover:text-zinc-300 transition-colors leading-none">
                 {stat.count} İşlem
               </span>
             )}
@@ -164,11 +165,12 @@ export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], o
           {/* Bottom Row: Trade Statistics */}
           {stat ? (
             <div className="mt-auto flex flex-col items-end text-right overflow-hidden">
-               <div className={`font-sans font-extrabold text-xs sm:text-xs leading-none ${primaryColor} tracking-tight truncate`}>
-                 {stat.rr > 0 ? '+' : ''}{stat.rr.toFixed(1)}<span className="text-[8px] font-bold ml-0.5 opacity-80">R</span>
+               <div className={`max-w-full font-sans font-extrabold text-[10px] sm:text-xs leading-none ${primaryColor} tracking-tight truncate`}>
+                 {stat.rr > 1e-9 ? '+' : ''}{(Math.abs(stat.rr) < 1e-9 ? 0 : stat.rr).toFixed(1)}<span className="hidden sm:inline text-[8px] font-bold ml-0.5 opacity-80">R</span>
                </div>
-               <div className={`font-sans text-[8.5px] sm:text-[9px] font-medium mt-0.5 ${secondaryColor} truncate leading-none`}>
-                 {stat.count} işlem
+               {/* Telefonda işlem sayısı üstte yer bulamadığı için burada, kısa biçimde */}
+               <div className={`sm:hidden font-sans text-[8.5px] font-medium mt-0.5 ${secondaryColor} truncate leading-none`}>
+                 {stat.count}×
                </div>
             </div>
           ) : (

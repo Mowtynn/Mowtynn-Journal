@@ -1,7 +1,7 @@
 import { EASE, POPOVER } from '../lib/motion';
 import { smartUpper } from '../constants/constants';
 import { FilterChip, FILTER_INPUT, FILTER_LABEL } from './filters/FilterControls';
-import React, { useMemo, useEffect } from 'react';
+import React, { Suspense, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Target, AlertTriangle, Activity, Layers, Percent, Filter, ChevronLeft, ChevronRight, Grid, Clock } from 'lucide-react';
 import { Trade } from '../types';
@@ -10,16 +10,19 @@ import { HeatmapModal } from './HeatmapModal';
 import { MIN_SAMPLE } from '../lib/sampleSize';
 import { TradeHistoryModal } from './TradeHistoryModal';
 import { lazyWithPreload, named } from '../lib/lazyWithPreload';
-import { Deferred } from './common/Deferred';
+import { Deferred, PaneLoader } from './common/Deferred';
 
 // Strateji laboratuvarı ayrı parçada; ekrana yaklaşınca indirilip çizilir
+/** breakdowns: Session · Gün · Parite kırılımları · lab: Strateji Laboratuvarı · all: ikisi */
+export type MetricsPart = 'all' | 'breakdowns' | 'lab';
+
 const StrategyOptimizerHub = lazyWithPreload(() => named(import('./StrategyOptimizerHub'), 'StrategyOptimizerHub'));
 /** Laboratuvar parçasını önden indirir (sekme arka planda hazırlanırken) */
 export const preloadStrategyHub = () => StrategyOptimizerHub.preload();
 import { nyWallDate } from '../lib/tradingTime';
 
 
-const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit }: { trades: Trade[], onMetricClick?: (id: string, val: string | number) => void, onEdit?: (trade: Trade) => void }) => {
+const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all' }: { trades: Trade[], onMetricClick?: (id: string, val: string | number) => void, onEdit?: (trade: Trade) => void, part?: MetricsPart }) => {
   const [selectedAsset, setSelectedAsset] = React.useState<string | null>(null);
 
   const [assetSort, setAssetSort] = React.useState<'pnl' | 'winrate' | 'rr' | 'trades_desc' | 'trades_asc'>('pnl');
@@ -240,8 +243,16 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit }: { trades: 
     );
   }
 
+  if (part === 'lab') {
+    return (
+      <Suspense fallback={<PaneLoader minHeight={520} />}>
+        <StrategyOptimizerHub trades={trades} onEdit={onEdit} />
+      </Suspense>
+    );
+  }
+
   return (
-    <div className="mt-4 mb-4 flex flex-col bg-zinc-900/70 border border-zinc-700/50  rounded-xl transition-ui duration-200 shadow-sm overflow-hidden divide-y divide-zinc-800/80 w-full">
+    <div className="flex flex-col bg-zinc-900/70 border border-zinc-700/50  rounded-2xl transition-ui duration-200 shadow-sm overflow-hidden divide-y divide-zinc-800/80 w-full">
       
         {/* SESSION PERFORMANSI & NET KAZANÇ GÜN DAĞILIMI */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 divide-y lg:divide-y-0 lg:divide-x divide-zinc-800/80">
@@ -251,7 +262,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit }: { trades: 
               <div className="flex justify-between items-center h-6 mb-2.5">
                 <div className="flex items-center gap-1.5">
                   <Clock size={13} className="text-emerald-400" />
-                  <h3 className="heading-2">
+                  <h3 className="heading-2" title={`Her seansın toplam R'si (çubuk) ve kazanma oranı. ${MIN_SAMPLE} işlemden azı "Az Veri".`}>
                     SESSION PERFORMANSI
                   </h3>
                   <button aria-label="Filtrele"
@@ -291,9 +302,10 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit }: { trades: 
                   )}
                 </AnimatePresence>
               </div>
+              <p className="text-[10px] text-zinc-500 -mt-1 mb-2">Seans başına toplam R ve kazanma oranı.</p>
 
-            <div className="flex-1 flex flex-col justify-between py-0.5">
-              <div className="flex flex-col gap-1 w-full h-full justify-between">
+            <div className="flex-1 flex flex-col py-0.5">
+              <div className="flex flex-col gap-2 w-full">
                 {(() => {
                   let sortedSessions = [...customMetrics.sessionRanking];
                   if (sessionSort === 'pnl') {
@@ -369,11 +381,12 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit }: { trades: 
               <div className="flex justify-between items-center h-6 mb-2.5">
                 <div className="flex items-center gap-1.5">
                   <Percent size={13} className="text-blue-400" />
-                  <h3 className="heading-2">
+                  <h3 className="heading-2" title={`Haftanın her gününün (NY) toplam R'si; parantezde işlem sayısı ve kazanma oranı. ${MIN_SAMPLE} işlemden azı "Az Veri".`}>
                     NET KAZANÇ GÜN DAĞILIMI
                   </h3>
                 </div>
               </div>
+              <p className="text-[10px] text-zinc-500 -mt-1 mb-2">Haftanın günlerine (NY) göre toplam R; parantezde işlem sayısı ve kazanma oranı.</p>
 
               <div className="flex-1 flex flex-col justify-between py-0.5 space-y-1.5">
               {['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'].map(dayKey => {
@@ -390,6 +403,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit }: { trades: 
                     <div className="flex justify-between items-baseline mb-0.5">
                       <span className="text-xs font-bold text-zinc-200 tracking-tight font-sans flex items-center gap-1.5">
                         {fullDayName}
+                        {stats.total > 0 && <span className="text-[9px] font-normal text-zinc-500 tabular-nums">({stats.total} · %{((stats.wins / stats.total) * 100).toFixed(0)} WR)</span>}
                         {stats.total > 0 && stats.total < MIN_SAMPLE && <span className="px-1 py-px rounded border border-zinc-700 bg-zinc-900 text-[8px] font-bold text-zinc-400 uppercase tracking-wide" >Az Veri</span>}
                       </span>
                       <span className={`text-[10px] font-bold font-sans flex items-center gap-1.5 ${isProfitVal ? 'text-emerald-400' : 'text-rose-400'}`}>
@@ -441,12 +455,12 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit }: { trades: 
       {/* PARİTE İSTATİSTİKLERİ SECTION - REPOSITIONED HERE */}
       <motion.div 
         variants={itemVariants} 
-        className="bg-zinc-900/70 border border-zinc-700/50  p-5 shadow-sm transition-colors duration-200 rounded-xl overflow-hidden mb-3 flex flex-col justify-between min-h-[480px]"
+        className="p-4 sm:p-5 transition-colors duration-200 overflow-hidden flex flex-col"
       >
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 relative z-20 w-full border-b border-zinc-800 pb-3">
           <div className="flex items-center gap-2">
             <Layers size={16} className="text-blue-400" />
-            <h3 className="heading-2">
+            <h3 className="heading-2" title={`Her paritenin net R'si, kazanma oranı ve işlem başı R'si. ${MIN_SAMPLE} işlemden azı "Az Veri".`}>
               Parite İstatistikleri
             </h3>
           </div>
@@ -509,12 +523,12 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit }: { trades: 
         
 
         {processedAssets.length === 0 ? (
-          <div className="text-center py-8 rounded-lg border border-dashed border-zinc-800 bg-zinc-950 flex-1 min-h-[350px] flex flex-col items-center justify-center">
+          <div className="text-center py-8 rounded-lg border border-dashed border-zinc-800 bg-zinc-950 flex-1 min-h-[160px] flex flex-col items-center justify-center">
             <AlertTriangle className="mx-auto text-amber-500/60 mb-2" size={24} />
             <p className="text-[10px] font-sans text-zinc-500 uppercase tracking-wider">{smartUpper("Seçilen kriterlere uygun parite bulunamadı.")}</p>
           </div>
         ) : (
-          <div className="space-y-4 flex-1 flex flex-col justify-between min-h-[440px]">
+          <div className="space-y-4 flex-1 flex flex-col">
             {/* Parite Kart Grubu Grid */}
             <AnimatePresence initial={false}>
               <motion.div
@@ -523,7 +537,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit }: { trades: 
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0.8 }}
                 transition={{ duration: 0.1, ease: EASE }}
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 flex-1 content-start min-h-[385px]"
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 content-start"
               >
                 {processedAssets.slice((assetsPage - 1) * 9, assetsPage * 9).map((ar) => {
                   const isSelected = selectedAsset === ar.asset;
@@ -618,12 +632,14 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit }: { trades: 
         )}
       </motion.div>
 
-      {/* Strateji & Edge Geliştirme Laboratuvarı */}
-      <motion.div variants={itemVariants} className="w-full my-3">
-        <Deferred minHeight={520} idleMs={800}>
-          <StrategyOptimizerHub trades={trades} onEdit={onEdit} />
-        </Deferred>
-      </motion.div>
+      {/* Strateji & Edge Geliştirme Laboratuvarı (yalnızca 'all' görünümünde) */}
+      {part === 'all' && (
+        <motion.div variants={itemVariants} className="w-full my-3">
+          <Deferred minHeight={520} idleMs={800}>
+            <StrategyOptimizerHub trades={trades} onEdit={onEdit} />
+          </Deferred>
+        </motion.div>
+      )}
 
       <TradeHistoryModal
         isOpen={!!selectedAsset}
@@ -675,6 +691,6 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit }: { trades: 
 /** İşlem başına ortalama R (sıralama için) */
 const avgR = (x: { rr: number; total: number }) => (x.total > 0 ? x.rr / x.total : 0);
 
-export const AdvancedMetricsDashboard = React.memo((props: { trades: Trade[], onMetricClick?: (id: string, val: string | number) => void, onEdit?: (trade: Trade) => void }) => {
+export const AdvancedMetricsDashboard = React.memo((props: { trades: Trade[], onMetricClick?: (id: string, val: string | number) => void, onEdit?: (trade: Trade) => void, part?: MetricsPart }) => {
   return <AdvancedMetricsDashboardInner {...props} />;
 });

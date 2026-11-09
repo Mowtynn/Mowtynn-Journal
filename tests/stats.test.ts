@@ -51,7 +51,7 @@ test('son 7 / 30 gün R pencereleri "şimdi"ye göre', () => {
 });
 
 test('en verimli / verimsiz parite R toplamına göre', () => {
-  const s = calculateComprehensiveStats(sample, NOW);
+  const s = calculateComprehensiveStats(sample, NOW, 1);
   assert.equal(s.bestAsset, 'EURUSD');
   assert.equal(s.worstAsset, 'USDJPY');
 });
@@ -89,7 +89,7 @@ test('kart ayrıntıları: parite R/işlem sayısı, dönem işlem/kazanç, brü
     trade({ asset: 'EURUSD', rr: 2, status: 'WIN', createdAt: NOW - 1 * DAY }),
     trade({ asset: 'EURUSD', rr: 1, status: 'WIN', createdAt: NOW - 10 * DAY }),
     trade({ asset: 'GBPUSD', rr: -1, status: 'LOSS', createdAt: NOW - 2 * DAY }),
-  ], NOW);
+  ], NOW, 1);
   assert.equal(s.bestAsset, 'EURUSD');
   assert.equal(s.bestAssetR, 3);
   assert.equal(s.bestAssetCount, 2);
@@ -99,4 +99,12 @@ test('kart ayrıntıları: parite R/işlem sayısı, dönem işlem/kazanç, brü
   assert.equal(s.monthlyCount, 3);
   assert.equal(s.grossWinR, 3);
   assert.equal(s.grossLossR, 1);
+});
+
+test('en verimli parite: varsayılan olarak en az 5 işlemli pariteler arasından', () => {
+  const eu = Array.from({ length: 5 }, (_, i) => trade({ asset: 'EURUSD', rr: i % 2 ? 2 : -1, status: i % 2 ? 'WIN' : 'LOSS', createdAt: NOW - i * DAY }));
+  const one = trade({ asset: 'XAUUSD', rr: 3, status: 'WIN', createdAt: NOW });
+  const s = calculateComprehensiveStats([...eu, one], NOW);
+  assert.equal(s.bestAsset, 'EURUSD', '1 işlemlik +3R parite seçilmez');
+  assert.equal(calculateComprehensiveStats([one], NOW).bestAsset, '');
 });

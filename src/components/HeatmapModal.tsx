@@ -6,6 +6,7 @@ import { Calendar as CalendarIcon, Info, Crown, Skull, X } from 'lucide-react';
 import { Trade } from '../types';
 import { getTradeNyWeekday } from '../lib/tradingTime';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
+import { MIN_SAMPLE } from '../lib/sampleSize';
 
 interface HeatmapModalProps {
   isOpen: boolean;
@@ -96,10 +97,10 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
     days.forEach(d => {
       sessions.forEach(s => {
         const cell = matrix[d]?.[s];
-        if (cell && cell.count > 0) {
-          const wr = cell.count > 0 ? (cell.winCount / cell.count) : 0;
-          // En iyi: pozitif R ve yeterli kazanma oranı
-          if (cell.r > maxR && cell.r > 0 && wr >= 0.4) {
+        // En iyi / en kötü yalnızca yeterli örneklemli hücrelerden (1 işlemlik +3R hücre "en iyi" olmasın).
+        // Kazanma oranı eşiği yok: R tabanlı sistemde düşük WR'li hücre de en kârlı olabilir.
+        if (cell && cell.count >= MIN_SAMPLE) {
+          if (cell.r > maxR && cell.r > 0) {
             maxR = cell.r;
             bestCellKey = `${d}-${s}`;
           }
@@ -245,7 +246,7 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
                               <div 
                                 className={`w-full h-10 rounded-xl border transition-ui duration-200 flex items-center justify-center overflow-hidden relative ${
                                   getCellColor(cell?.r || 0, cell?.count || 0)
-                                } ${isWorst ? 'ring-1 ring-rose-500/50' : ''}`}
+                                } ${isWorst ? 'ring-1 ring-rose-500/50' : ''} ${hasTrades && (cell?.count || 0) < MIN_SAMPLE ? 'opacity-50' : ''}`}
                               >
                                 {hasTrades && (
                                   <span className="text-xs font-sans font-bold text-white select-none pointer-events-none">
@@ -295,7 +296,7 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
           <div className="p-4 border-t border-zinc-700/40 bg-zinc-900/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-zinc-400 font-sans shrink-0">
             <div className="flex items-center gap-1.5 text-zinc-400">
               <Info size={13} className="text-blue-400 shrink-0" />
-              <span>Renk yoğunluğu net R büyüklüğünü, kutu içi değerler ise Başarı Oranını (Win Rate %) belirtir.</span>
+              <span>Renk yoğunluğu net R büyüklüğünü, kutu içi değerler kazanma oranını belirtir. {MIN_SAMPLE} işlemden az hücreler soluktur ve en iyi / en kötü seçimine girmez.</span>
             </div>
             <div className="flex items-center gap-2 font-sans text-[10px] shrink-0">
               <span className="text-rose-400 font-bold">Zarar</span>

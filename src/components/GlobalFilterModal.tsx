@@ -44,7 +44,7 @@ import { WEEKDAY_NAMES_TR } from '../lib/tradingTime';
 /** Gün filtresi seçenekleri Pazartesi'den başlar */
 const WEEKDAY_ORDER = [...WEEKDAY_NAMES_TR.slice(1), WEEKDAY_NAMES_TR[0]];
 import { MANAGEMENT_TYPES } from '../types';
-import { setupQualityTier } from '../lib/discipline';
+import { setupQualityTier } from '../lib/setupQuality';
 import { useNewsDayLabels } from '../hooks/useNewsDayLabels';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { PillMultiSelect, StatusMultiSelect, TypeMultiSelect, FilterAccordionRow, FilterChip, FilterChipRow, FILTER_INPUT, FILTER_LABEL } from './filters/FilterControls';

@@ -766,3 +766,61 @@ Klasik tasarım korunarak, son eklenen alanlar (risk %, hesap bağı, strateji, 
 - Sağlamlık testi: bütün analiz motorları eksik/bozuk alanlı (NaN R, geçersiz saat, negatif stop vb.) 0–400 işlemle çalıştırılıyor; çökme ya da NaN yok.
 - MAE ve MFE projeden tamamen kaldırıldı: işlem formu, işlem detayı (fiyat yolu), filtreler, Strateji Laboratuvarı (MAE/MFE kartları, TP / Stop Daraltma simülatörleri, Hedefe Ulaşma, Asia Range katı hedef), veri eksiği panosu, zorunlu alanlar ve Excel / CSV çıktıları. Eski kayıtlardaki MAE/MFE değerleri yüklenirken yok sayılır. 'MAE, MFE & Stop' sekmesi 'Stop & Range' oldu (stop mesafesi ve Asia Range genişliğine göre sonuçlar). Asia Range Pip formda Stop/TP ile aynı satıra taşındı.
 - 'Asia Range FVG' başlığı her yerde 'Asia Range FVG (1H)' (form, filtre, tanımlamalar, karne, veri eksiği, zorunlu alanlar, Excel). Eski varsayılan başlık otomatik güncellenir; başlıklardaki zaman dilimi eki (1H, 15M…) artık silinmez.
+- Akıcılık: Strateji Laboratuvarı'nda sekme değişimi çıkış animasyonunu beklemiyor (içerik anında değişir); sekmelerde iç içe çift giriş animasyonu kaldırıldı.
+- Detaylı Analiz: Setup Kalitesi satır görünümüne geçti (etiket · kazanma oranı çubuğu · % · işlem sayısı); işlem sayısı arttıkça sıkışıp okunmaz hale gelmiyor. Ort. Kazanç / Ort. Kayıp kartları, R eğrisinin yüksekliğine uzayan sütundan alt metrik satırına taşındı; R eğrisi tam genişlik.
+- Detaylı Analiz düzeni: üstte 3 özet kart (Kümülatif R · Long/Short · Sonuç Dağılımı); ortada R eğrisi (2/3) ve Setup Kalitesi (1/3) yan yana; R eğrisi sabit, dengeli yükseklikte.
+- Detaylı Analiz yeniden sıralandı: (1) performans özeti 4 kart (Kümülatif R · Profit Factor · Ort. Kazanç · Ort. Kayıp), (2) R eğrisi + yanında risk kartları (Max Drawdown · Recovery Factor · DD Toparlanma), (3) dağılımlar (Sonuç · Long/Short · Setup Kalitesi), (4) takvim.
+- Yerleşim: Detaylı Analiz dört odaklı bölüme ayrıldı (Genel Bakış · Takvim · Kırılımlar · Strateji Lab; seçim hatırlanır), sayfa tek uzun akış değil. Kırılımlar'da Session listesi ve parite kartları arasındaki zorunlu boşluklar kaldırıldı. 'Veritabanı ve Yedekleme' bloğu her sayfanın altından ayarlar menüsündeki 'Veri & Yedekleme' penceresine taşındı; sayfa altındaki tekrar eden 'Tanımlamaları Yönet' düğmesi kaldırıldı (ayarlar menüsünde var).
+
+- Detaylı Analiz: alt sekme açıklamaları kaldırıldı, sekme etiketleri ortalandı; "Kırılımlar" → "Performans Dağılımı".
+- Detaylı Analiz alt sekmeleri: ana sekme çubuğuyla aynı tasarım (kayan mavi gösterge, ok tuşlarıyla geçiş); açılan görünümler bağlı kalır, geri dönüş anında ve aynı giriş geçişiyle.
+- Günlük (mobil): kayıt listesi 0 px yüksekliğe sıkışıp görünmüyordu; liste artık tüm alanı kullanır, açık kayıt varken yalnızca kayıt gösterilir.
+- Strateji Lab: tekrarlayan başlık kaldırıldı; 7 sekme Detaylı Analiz sekme çubuğuyla aynı tasarımda (kayan gösterge, ok tuşları, açıklama ipucu olarak).
+- Ana Panel: "Yeni Pozisyon Girişi Yap" tek buton (iç içe buton kaldırıldı), daha kompakt; mobilde tek satır.
+- Strateji Lab: iç içe üçüncü kart çerçevesi kaldırıldı (mobilde içeriğe daha çok genişlik); Edge Özeti başlığındaki beklenti satırı dar ekranda taşmıyor.
+- Üst başlık (mobil): "Trading Journal" tek satır, "by Mowtynn" yalnızca geniş ekranda; hesap seçicisine yer açıldı.
+- Edge Özeti: Kurallarım / Tesadüf Testi / Kombinasyonlar / Yönetim Edge'i / Hedefe Ulaşma Süresi geniş ekranda ikişerli (sayfa ~%25 kısa).
+- Asia Edge Lab: Kayan Beklenti ve Yönetimle Kaçırılan R yan yana en üstte, ardından Saat × Parite; Veri Eksiği Panosu (bakım aracı) en sona.
+- Edge Özeti · Hedefe Ulaşma Süresi: satırlar dar ekranda alt satıra geçiyor (telefonda sayfa yana taşıyordu).
+- Hesap düzeltmeleri (stratejiye uygun):
+  - Stop & Range · Stop grupları: sabit 10/25 pip eşiği yerine her paritenin kendi medyan stop'una oran (Sıkı < 0.8×, Normal, Geniş > 1.25×); paritelerin medyan stop'u kartta yazılı. Paritesinde 5 stop birikmeyen işlem sınıflanmaz.
+  - Psikoloji & Tilt: "kazanç/kayıp sonrası" artık yalnızca aynı NY günündeki sonraki işlem (eskiden ertesi günün işlemi de sayılıyordu); kazanma oranına ek olarak işlem başı R ve günün ilk işlemi kıyası. Seri metrikleri değişmedi.
+  - Asia Range büyüklüğü: paritede 5 işlem birikmeden tüm paritelerin ortak medyanına düşülmüyor (yeni paritenin işlemleri yanlış "Geniş/Dar" sayılıyordu).
+  - Veri Eksiği Panosu: kaldırılmış özelliklere (stop simülatörü, hedef tamamlama) yapılan atıflar düzeltildi.
+- Denetim düzeltmeleri:
+  - Güven aralığı: tüm sonuçları aynı olan küçük gruplarda (ör. 5 × −1R) sapma 0 çıkıp aralık tek noktaya çöküyordu; birkaç ardışık kayıp "kesin sızıntı / Alma kuralı" oluyordu. Aralık için 1R'lik temkinli sapma (≈7+ aynı sonuçta kesinleşir).
+  - Disiplin · Normalden yüksek risk: eşik artık her hesabın kendi en sık riski (Phase 1 %1, Funded %0.5 gibi farklı riskler ihlal sayılmaz).
+  - Prop: günlük kayıp limiti tanımlı hesaplarda geçmiş aşım tespit edilir (eskiden yalnızca max DD bakılıyordu); kartta uyarı, olasılık simülasyonu durur.
+  - Asia Edge Lab veri seti adı: hesaba bağlı olmayan işlemler "Hesapsız / Demo" (eskiden "Live-Test / Demo").
+- İkinci denetim:
+  - Disiplin · Günlük işlem hakkı: sabit "günde en fazla 2 işlem" yerine kullanıcının kuralı — 1. işlem stop/BE → 2. hak, ilk iki işlem BE → 3. hak, kazanç günü kapatır (kazançtan sonra açılan işlem ihlal); üst sınır 3. Haftalık değerlendirme ve işlem detayı aynı kuralı kullanır.
+  - Excel · "Süpürülen Asia Tarafı": her işleme yönden High/Low yazılıyordu; artık yalnızca Asia Range "Swept" işlemlerinde, diğerlerinde "-".
+  - Excel · "Süpürülen Asia Tarafı": yalnızca Trend Yapısı Reversal olan işlemlerde yönden (short → High, long → Low); Continuation ve diğerlerinde "-" (Asia Range "Swept" alanından türetilmez).
+- Sabit kurallar kaldırıldı (kullanıcı isteği: kurallar değişebilir, projede sabit kural olmayacak):
+  - Strateji Lab · Disiplin sekmesi ("kurallara uysaydın" simülasyonu, işlem hakkı, günlük stop, düşük kalite, haber günü, yüksek risk ihlalleri) ve lib/discipline.ts tamamen silindi.
+  - İşlem detayındaki Disiplin rozetleri kaldırıldı.
+  - Haftalık değerlendirme: sabit kural ihlalleri kaldırıldı; yalnızca verinden çıkan Kurallarım (ALMA) eşleşmeleri gösterilir.
+  - Setup Kalitesi renk kademesi lib/setupQuality.ts'e taşındı. Kurallarım (veriden) ve Kural Simülatörü (kullanıcının seçtiği koşullar) duruyor.
+- Strateji uyumu:
+  - Varsayılan kurulum tanımı: Asia Range · Trend (Continuation / Reversal) · Entry Model (eskiden Session; işlemler tek seansta alındığı için kurulumu ayırt etmiyordu). Edge Özeti, Kurallarım, Tesadüf Testi, haftalık değerlendirme ve işlem detayındaki kurulum geçmişi bu tanımı kullanır; Kurulum Karnesi'nde boyutlar yine seçilebilir.
+  - Haftalık değerlendirme · Kurallarım: "kural yok" ile "kural var, uydun" ayrı yazılır; kurallar başlıklarıyla listelenir.
+- Üçüncü denetim (alt sınırlar ve açıklamalar):
+  - Ana Panel · Parite Başarı Analizi: en verimli / verimsiz parite yalnızca en az 5 işlemli pariteler arasından (1 işlemlik +3R parite "en verimli" olmuyor).
+  - Ana Panel · Kazanma Oranı: "başabaş %" eklendi (Ort. Kayıp ÷ (Ort. Kazanç + Ort. Kayıp)); WR bunun üstündeyse yeşil. Edge Durumu kartında hükmün açıklaması görünür; aralık ve son 20 işlem başlıklarına açıklama. Tıklanmayan kartlardaki tıklanır imleç kaldırıldı.
+  - Detaylı Analiz · Long/Short: net R ve R/işlem eklendi, 5 işlemden azı "Az Veri". Setup Kalitesi satırları: R/işlem sütunu, 5 işlemden azı soluk.
+  - Metrik açıklamaları R tabanlı sisteme göre yeniden yazıldı (WR'de BE paydada, başabaş WR; Kümülatif R adı; Long/Short); kullanılmayan iki açıklama silindi.
+  - Performans Dağılımı: gün satırlarında işlem sayısı ve WR; bölüm açıklamaları.
+  - Edge Özeti: Risk %, News Day satırları 5 işlemden azsa soluk; işlemde kalma süresi en az 5 işlemle; Hedefe Ulaşma Süresi en az 10 kazananla (3 kazananda %90 = en uzun süre oluyordu); bölüm açıklamaları.
+  - Stop & Range ve Psikoloji: 5 işlemden az gruplarda "Az Veri", bölüm açıklamaları.
+  - Prop · Canlı R özeti: kartların açıklamaları artık görünüyor (önceden hiç gösterilmiyordu); 5 işlemden azsa "Az veri".
+  - Isı haritası: en iyi / en kötü hücre yalnızca 5+ işlemli hücrelerden, sabit %40 WR şartı kaldırıldı; az veri hücreleri soluk.
+  - PDF raporu: kazanma oranı rengi sabit %50 yerine başabaş kazanma oranına göre.
+- Dördüncü denetim (bağımsız gözden geçirme bulgularıyla):
+  - Başabaş kazanma oranı BE işlemleri hesaba katıyor (×(kazanç+kayıp)/tüm işlemler); önceden BE'li sistemlerde kârlı hesap "başabaşın altında" kırmızı görünebiliyordu. Ana Panel, PDF raporu ve açıklama.
+  - Güven aralığı: 30 işlemin altındaki gruplarda sapma en az 1R alınır (−1, −1, −1, −1, −0.95R gibi neredeyse aynı 5 sonuç "kesin sızıntı / ALMA" olmuyor).
+  - Edge Özeti: "Daha çok yap" ve AL kuralları artık geri kalan işlemlerden iyi olmayı şart koşar (kârlı sistemde ortalamanın altındaki büyük grup "AL" olmuyordu); satırlarda "geri kalandan ±R/işlem". Kombinasyon kuralının yönü fark yönüyle aynı olmalı. Tesadüf Testi'nde AL bulgusu ikinci yarıda geri kalandan iyi olmalı.
+  - Asia Range büyüklüğü girişten önce bilinen haliyle: her işlem aynı veri setindeki aynı paritenin ÖNCEKİ range'lerinin medyanına göre (ilk 5 sınıflanmaz; sonraki işlemler eski etiketi değiştirmez). Gün içi sıra ve önceki işlem veri seti içinde (backtest / hesapsız prop'a karışmaz). Stop & Range ve Psikoloji, Kurulum Karnesi / Edge Özeti ile aynı etiketleri kullanır.
+  - Prop: hesap kartı ve Canlı R özeti aynı 1R birimi (işlemlerdeki risk medyanı); simülasyonda günlük işlem sayısı hesap bazında; olasılık için en az 20 işlem.
+  - Takvim: −0.0R gibi kayan nokta artıkları sıfır sayılır. Edge raporu: kayıpsız grupta PF ∞. Kurulum Karnesi "Son 10" erken sinyali "sinyal" etiketli ve soluk.
+  - Detaylı Analiz kartlarında işlem sayıları; PF / Recovery 5 işlemden azsa "az veri"; DD Toparlanma düşüş sayısıyla. Asia Edge Lab min. örneklem 5'ten başlar.
+  - Kurallarım · AL: kanıtlı kârlı olmanın yanında geri kalan işlemlerden %95 güvenle daha iyi olmayı şart koşar (işlemlerin çoğunu kapsayan, ortalamaya eşit gruplar — ör. "News Day: Yok" — AL kuralı olmuyor).

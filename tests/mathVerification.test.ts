@@ -153,24 +153,14 @@ test('zamanla değişim: z değeri iki ortalamanın Welch standart hatasıyla', 
   assert.equal(d.strength, 'CONFIRMED');
 });
 
-test('disiplin: kurala uyan + ihlal eden = gerçekleşen; ihlal maliyeti tanımla uyumlu', async () => {
-  const { analyzeDiscipline } = await import('../src/lib/discipline');
-  const trades = dataset(120);
-  const rep = analyzeDiscipline(trades);
-  close(rep.cleanEdge.netR + rep.violatingEdge.netR, rep.actualNetR, 0.03, 'temiz + ihlal');
-  close(rep.allRulesNetR, rep.cleanEdge.netR, 0.011, 'kurallara uyulsaydı');
-  for (const r of rep.rules) {
-    close(r.costR + r.withoutNetR, rep.actualNetR, 1e-6, r.title);
-    assert.equal(r.violations, r.tradeIds.length);
-  }
-});
-
 test('strateji laboratuvarı (Stop & Range, Psikoloji) tabloları işlemleri eksiksiz bölüştürür', () => {
   const trades = dataset(150);
+  setGlobalTradeOrder(trades); // uygulamadaki gibi: etiketler tüm işlemlerden bir kez indekslenir
   const s = calculateStrategyAnalytics(trades);
-  // Asia range dilimleri: aralığı girilmiş işlemleri bölüştürür
+  // Asia range dilimleri: aralığı girilmiş işlemleri bölüştürür (paritenin ilk 5 işlemi öncesinde medyan olmadığı için sınıflanmaz)
   const b = s.asiaRangeStats.brackets;
-  assert.equal(b.tight.count + b.medium.count + b.wide.count, trades.filter((t) => (t.asiaRangePips || 0) > 0).length);
+  const pairs = new Set(trades.map((t) => t.asset));
+  assert.equal(b.tight.count + b.medium.count + b.wide.count, trades.filter((t) => (t.asiaRangePips || 0) > 0).length - 5 * pairs.size);
   // Stop dilimleri stop'u girilmiş işlemleri bölüştürür
   assert.equal(s.stopSizeStats.brackets.reduce((a, x) => a + x.count, 0), trades.filter((t) => (t.stopPips || 0) > 0).length);
   // Seri: en uzun seriler toplamı aşmaz, kayıp sonrası WR 0–100
@@ -182,11 +172,11 @@ test('prop simülasyonu: uç durumlarda olasılıklar doğru yönde', async () =
   const acc = { id: 'p', chainId: 'p', chainName: 'T', name: 'T · Phase 1', size: 100000, drawdownMode: 'STATIC', stage: 1, phaseRules: [{ targetPct: 10, maxDdPct: 10 }], fundedMaxDdPct: 10, riskPct: 1, status: 'ACTIVE', createdAt: 0 } as any;
   const mk = (rr: number, i: number) => ({ id: `p${i}`, asset: 'EURUSD', type: 'LONG', status: rr > 0 ? 'WIN' : 'LOSS', rr, createdAt: Date.UTC(2026, 0, 1) + i * 86400000, notes: '', screenshot: null, accountId: 'p', accountStage: 1, riskAmount: 1000 }) as Trade;
   const good = computeAccountRInsights(acc, Array.from({ length: 30 }, (_, i) => mk(i % 4 === 0 ? -1 : 2, i)).slice(0, 4), { runs: 500 });
-  // 4 işlem: +... hesabın kendi örneklemi az → tüm prop geçmişi (aynı 4 işlem) < 10: olasılık gösterilmez
+  // 4 işlem: +... hesabın kendi örneklemi az → tüm prop geçmişi (aynı 4 işlem) < 20: olasılık gösterilmez
   assert.equal(good.simulation, undefined);
-  // 15 işlem, net +5R (hedef 10R'ye ulaşılmadı), işlem başına +0.33R: geçme olasılığı yüksek olmalı
-  const winners = computeAccountRInsights(acc, Array.from({ length: 15 }, (_, i) => mk(i % 3 === 0 ? -1 : 1, i)), { runs: 800 });
-  assert.equal(winners.targetRemainingR, 5);
+  // 21 işlem, net +7R (hedef 10R'ye ulaşılmadı), işlem başına +0.33R: geçme olasılığı yüksek olmalı
+  const winners = computeAccountRInsights(acc, Array.from({ length: 21 }, (_, i) => mk(i % 3 === 0 ? -1 : 1, i)), { runs: 800 });
+  assert.equal(winners.targetRemainingR, 3);
   assert.ok(winners.simulation && winners.simulation.kind === 'PASS' && winners.simulation.probability > 80, String(winners.simulation?.probability));
   const losers = computeAccountRInsights(acc, Array.from({ length: 6 }, (_, i) => mk(i % 3 === 0 ? 1 : -1, i)).concat(Array.from({ length: 6 }, (_, i) => mk(-1, i + 6))), { runs: 800 });
   assert.ok(losers.simulation === undefined || losers.simulation.probability < 10, String(losers.simulation?.probability));

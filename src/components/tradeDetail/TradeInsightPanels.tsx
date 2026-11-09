@@ -1,11 +1,11 @@
-import { Activity, History, ShieldCheck, ShieldAlert } from 'lucide-react';
+import { Activity, History } from 'lucide-react';
 import type { Trade } from '../../types';
 import type { TradeInsight, PricePath } from '../../lib/tradeInsight';
 import { formatDuration } from '../../lib/tradingTime';
 
 /**
  * İşlem detayı · içgörü bölümleri (klasik detay penceresi stilinde):
- * Sonuç (plan ↔ gerçekleşen), kurulum geçmişi, disiplin rozetleri.
+ * Sonuç (plan ↔ gerçekleşen) ve kurulum geçmişi.
  */
 
 const fmt = (v: number, d = 2) => v.toLocaleString('en-US', { maximumFractionDigits: d });
@@ -97,35 +97,6 @@ export function SetupHistoryPanel({ insight }: { insight: TradeInsight }) {
           </div>
         )}
       </div>
-    </section>
-  );
-}
-
-/* ---------------- Disiplin rozetleri ---------------- */
-export function RuleBadges({ insight }: { insight: TradeInsight }) {
-  if (!insight.rulesMeasured) return null;
-  return (
-    <section className="flex flex-col gap-1.5">
-      <h4 className="heading-2">
-        <ShieldCheck size={12} /> DİSİPLİN
-      </h4>
-      {insight.violations.length === 0 ? (
-        <div className="flex items-center gap-2 rounded-xl border border-emerald-500/25 bg-emerald-500/5 px-3 py-1.5 text-[11px] font-semibold text-emerald-300">
-          <ShieldCheck size={14} className="shrink-0" /> Kurallara Uygun İşlem
-        </div>
-      ) : (
-        <div className="flex flex-wrap gap-1.5">
-          {insight.violations.map((v) => (
-            <span
-              key={v.id}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-rose-500/30 bg-rose-500/10 px-2.5 py-1.5 text-[11px] font-semibold text-rose-200"
-            >
-              <ShieldAlert size={12} className="shrink-0 text-rose-300" />
-              {v.title}
-            </span>
-          ))}
-        </div>
-      )}
     </section>
   );
 }

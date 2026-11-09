@@ -122,7 +122,7 @@ export const WeeklyReview = React.memo(function WeeklyReview({
         </div>
       </div>
 
-      {/* Masaüstünde tek ekran: üstte özet, altta solda disiplin/kurulumlar, sağda sorular. Telefonda tek sütun ve kaydırma. */}
+      {/* Masaüstünde tek ekran: üstte özet, altta solda Kurallarım/kurulumlar, sağda sorular. Telefonda tek sütun ve kaydırma. */}
       <div className="flex-1 min-h-0 overflow-y-auto lg:overflow-hidden custom-scrollbar p-3.5 sm:p-4 flex flex-col gap-3">
         {/* Otomatik özet */}
         <section className={`${card} shrink-0`}>
@@ -173,7 +173,7 @@ export const WeeklyReview = React.memo(function WeeklyReview({
         </section>
 
         <div className="lg:flex-1 lg:min-h-0 grid grid-cols-1 lg:grid-cols-2 gap-3">
-          {/* Sol: disiplin + kurulumlar (uzun ihlal listesi yalnızca bu sütunda kayar) */}
+          {/* Sol: Kurallarım + kurulumlar (uzun ihlal listesi yalnızca bu sütunda kayar) */}
           <div className="flex flex-col gap-3 lg:min-h-0 lg:overflow-y-auto custom-scrollbar">
             {t.n === 0 ? (
               <div className={`${card} flex-1 flex items-center justify-center text-center text-xs text-zinc-500`}>
@@ -183,15 +183,24 @@ export const WeeklyReview = React.memo(function WeeklyReview({
               <>
                 <section className={`${card} flex flex-col gap-2`}>
                   <h4 className="heading-2">
-                    <ShieldCheck size={12} /> Disiplin
+                    <ShieldCheck size={12} /> Kurallarım
                     <span className="ml-auto text-[10px] font-bold text-zinc-500 normal-case tracking-normal">
-                      {review.cleanCount}/{t.n} işlem kurallara uygun
+                      Verinden çıkan ALMA kuralları
                     </span>
                   </h4>
                   {review.violations.length === 0 ? (
-                    <div className="flex items-center gap-2 rounded-xl border border-emerald-500/25 bg-emerald-500/5 px-3 py-2 text-xs font-semibold text-emerald-300">
-                      <ShieldCheck size={14} className="shrink-0" /> Kurallara Uygun Hafta
-                    </div>
+                    review.avoidRules.length === 0 ? (
+                      <div className="rounded-xl border border-zinc-800/70 bg-zinc-950/40 px-3 py-2 text-xs text-zinc-400">
+                        Henüz kesinleşmiş ALMA kuralı yok ({review.priorTrades} önceki işlem incelendi). Kurallar, bir grup %95 güvenle kaybettirdiğinde Edge Özeti'nde oluşur.
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-1.5 rounded-xl border border-emerald-500/25 bg-emerald-500/5 px-3 py-2">
+                        <span className="flex items-center gap-2 text-xs font-semibold text-emerald-300">
+                          <ShieldCheck size={14} className="shrink-0" /> {review.avoidRules.length} ALMA kuralı var, bu hafta hiçbirine girmedin
+                        </span>
+                        <span className="text-[11px] text-zinc-400 leading-snug">{review.avoidRules.join(' · ')}</span>
+                      </div>
+                    )
                   ) : (
                     <ul className="flex flex-col gap-1.5">
                       {review.violations.map((v) => (
@@ -212,7 +221,7 @@ export const WeeklyReview = React.memo(function WeeklyReview({
                 <section className={`${card} flex flex-col gap-2`}>
                   <h4 className="heading-2">
                     <Trophy size={12} /> Kurulumlar
-                    <span className="ml-auto text-[10px] font-bold text-zinc-500 normal-case tracking-normal truncate">Asia Range · seans · Entry Model</span>
+                    <span className="ml-auto text-[10px] font-bold text-zinc-500 normal-case tracking-normal truncate">Asia Range · Trend · Entry Model</span>
                   </h4>
                   {[
                     { label: "En iyi", row: review.best, icon: <Trophy size={13} className="text-emerald-300 shrink-0" />, empty: "Kazandıran kurulum yok" },

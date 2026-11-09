@@ -70,7 +70,7 @@ export const MemoizedEquityChart = React.memo(function MemoizedEquityChart({
 
     return (
       <div className="space-y-2 flex-1 flex flex-col relative">
-        <div className="relative bg-zinc-900/70 border border-zinc-700/50  rounded-2xl overflow-visible flex-1 min-h-[180px]">
+        <div className="relative bg-zinc-900/70 border border-zinc-700/50  rounded-2xl overflow-visible h-[200px] sm:h-[230px]">
           <svg viewBox="0 0 600 180" className="absolute inset-0 w-full h-full text-blue-500 p-2" preserveAspectRatio="none">
             <line x1="0" y1="20" x2="600" y2="20" stroke="#0f172a" strokeWidth="1" strokeDasharray="3,3" />
             <line x1="0" y1="90" x2="600" y2="90" stroke="#1e293b" strokeWidth="1" strokeDasharray="3,3" />
@@ -230,7 +230,7 @@ export const MemoizedEquityChart = React.memo(function MemoizedEquityChart({
         </div>
 
         <div className="flex justify-between items-center text-xs text-zinc-400 font-sans px-1">
-          <span>Günlük Başlangıcı (0.00 R)</span>
+          <span className="shrink-0 whitespace-nowrap"><span className="hidden sm:inline">Günlük Başlangıcı </span>(0.00 R)</span>
           <div className="flex gap-2.5 overflow-x-auto max-w-[70%] scrollbar-none justify-end">
             {(() => {
               const totalPoints = chartEquityCurve.length;

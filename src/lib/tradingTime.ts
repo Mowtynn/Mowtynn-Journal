@@ -131,7 +131,17 @@ export function normalizePair(asset?: string | null): string {
 
 export type SweepSide = 'HIGH' | 'LOW';
 /** The Asia model fades the swept side: Asia high swept -> SHORT, Asia low swept -> LONG. */
-export function getSweepSide(trade: Pick<Trade, 'type'>): SweepSide {
+/**
+ * Süpürülen Asia tarafı yalnızca REVERSAL işlemlerde anlamlıdır (Asia high/low alınıp ters yöne dönüş):
+ * short → High, long → Low. Continuation işlemlerinde Asia high/low süpürmesi girişle ilgisiz olduğu için null.
+ * (Asia Range "Swept" alanından türetilmez; Trend Yapısı alanına bakılır.)
+ */
+export function isReversalTrend(trend?: string | null): boolean {
+  const v = (trend || '').toLocaleLowerCase('tr');
+  return v.includes('reversal') || v.includes('dönüş') || v.includes('ters');
+}
+export function getSweepSide(trade: Pick<Trade, 'type' | 'trend'>): SweepSide | null {
+  if (!isReversalTrend(trade.trend)) return null;
   return trade.type === 'SHORT' ? 'HIGH' : 'LOW';
 }
 

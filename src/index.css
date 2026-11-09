@@ -285,7 +285,7 @@ body {
 /* Sekme panelleri bellekte kalır, yalnızca gizlenir. Gösterilince giriş animasyonu yeniden başlar.
    `backwards`: animasyon bitince transform kalmaz (fixed çocuklar için yeni containing block oluşmaz). */
 .tab-pane[hidden] { display: none !important; }
-.tab-pane { animation: tabPaneIn 200ms var(--ease-out-expo) backwards; }
+/* Giriş animasyonu yalnızca içerik sarmalayıcısında (.pane-content-in); iç içe ikinci animasyon gereksiz iş yapıyordu */
 @keyframes tabPaneIn {
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: none; }

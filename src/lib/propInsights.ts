@@ -1,5 +1,5 @@
 import { PropAccount, Trade } from '../types';
-import { computeAccountMetrics, defaultRiskAmount } from './propAccounts';
+import { computeAccountMetrics } from './propAccounts';
 import { getTradeAccountCategory } from '../constants/constants';
 import { nyDateKey } from './tradingTime';
 
@@ -78,7 +78,8 @@ function rng(seed: number) {
 }
 
 /** En az bu kadar R örneği olmadan olasılık gösterilmez */
-export const MIN_SIMULATION_SAMPLE = 10;
+/** Olasılık için en az R örneği: 10 işlemlik geçmişten çekilen simülasyon birkaç uç sonuca çok bağlı kalıyordu */
+export const MIN_SIMULATION_SAMPLE = 20;
 /** Hesabın kendi işlemleri bu sayıya ulaşınca örneklem hesabın kendisinden alınır */
 export const OWN_SAMPLE_THRESHOLD = 20;
 
@@ -98,8 +99,8 @@ export function computeAccountRInsights(
   const avgWinR = winsR.length ? winsR.reduce((s, r) => s + r, 0) / winsR.length : 0;
   const avgLossR = lossR.length ? lossR.reduce((s, r) => s + r, 0) / lossR.length : 0;
 
-  const riskAmounts = m.trades.map((t) => t.riskAmount).filter((x): x is number => typeof x === 'number' && x > 0);
-  const riskPerTrade = riskAmounts.length ? median(riskAmounts) : defaultRiskAmount(account);
+  // Hesap kartıyla aynı 1R birimi (computeAccountMetrics.rUnit)
+  const riskPerTrade = m.rUnit;
   const unit = riskPerTrade > 0 ? riskPerTrade : 1;
 
   const ddRemainingR = Math.max(0, m.maxLossRemaining) / unit;
@@ -130,7 +131,7 @@ export function computeAccountRInsights(
   const sample = useOwn
     ? own
     : allTrades.filter((t) => getTradeAccountCategory(t) !== 'DEMO').map(finiteR).filter((r): r is number => r !== null);
-  if (sample.length < MIN_SIMULATION_SAMPLE || m.maxBreached || m.targetReached || account.status !== 'ACTIVE') return result;
+  if (sample.length < MIN_SIMULATION_SAMPLE || m.maxBreached || m.dailyBreached || m.targetReached || account.status !== 'ACTIVE') return result;
 
   const maxDdAmount = m.maxDdAmount;
   const trailing = account.drawdownMode === 'TRAILING';
@@ -140,7 +141,9 @@ export function computeAccountRInsights(
   const dailyLimit = account.dailyLossPct && account.dailyLossPct > 0 ? (account.size * account.dailyLossPct) / 100 : 0;
   const dayCounts = new Map<string, number>();
   (useOwn ? m.trades : allTrades.filter((t) => getTradeAccountCategory(t) !== 'DEMO')).forEach((t) => {
-    const k = nyDateKey(t.createdAt);
+    // Günlük kayıp limiti hesap başınadır: gün başına işlem sayısı hesap bazında sayılır (tüm prop geçmişi kullanılırken
+    // farklı hesaplardaki aynı gün işlemleri tek hesaba yığılmasın)
+    const k = `${nyDateKey(t.createdAt)}|${t.accountId || ''}`;
     dayCounts.set(k, (dayCounts.get(k) || 0) + 1);
   });
   const tradesPerDay = Math.max(1, Math.round(median([...dayCounts.values()])));

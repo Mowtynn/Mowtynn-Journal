@@ -21,11 +21,11 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { setupQualityTier } from "../lib/discipline";
+import { setupQualityTier } from "../lib/setupQuality";
 import { useAllTrades } from "../lib/allTradesContext";
 import { nyWallDate, nyDateKey } from "../lib/tradingTime";
 import { computeTradeInsight } from "../lib/tradeInsight";
-import { ResultPanel, SetupHistoryPanel, RuleBadges, formatR } from "./tradeDetail/TradeInsightPanels";
+import { ResultPanel, SetupHistoryPanel, formatR } from "./tradeDetail/TradeInsightPanels";
 
 interface TradeDetailModalProps {
   trade: Trade | null;
@@ -195,7 +195,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
     const dir = navDirRef.current;
     navDirRef.current = 0;
     if (!dir || typeof window === 'undefined' || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
-    // Geçiş: pencere ve zemin sabit kalır (ton değişmez). Bölümler (sonuç, bağlam, disiplin, görsel, notlar)
+    // Geçiş: pencere ve zemin sabit kalır (ton değişmez). Bölümler (sonuç, bağlam, görsel, notlar)
     // geldiği yönden çok kısa bir mesafeyle, sırayla (kademeli) yerine süzülür; renkler aynı sürede karışır
     // (index.css · .detail-soft). Sayaç yeni numarayı yönüyle getirir; başlıktaki ince çizgi listedeki konumu gösterir.
     const sections = bodyRef.current
@@ -566,8 +566,6 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                     );
                   })()}
 
-                  {/* Disiplin: işlem bağlamının hemen altında */}
-                  {insight && <RuleBadges insight={insight} />}
 
                 </div>
 

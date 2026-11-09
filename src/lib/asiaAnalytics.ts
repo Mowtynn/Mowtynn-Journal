@@ -2,6 +2,7 @@ import { getNyParts } from './tradingTime';
 import { Trade } from '../types';
 import { getTradeAccountCategory, getTradeStageLabel } from '../constants/constants';
 import { calculateProfitFactor, toRR } from './statMath';
+import { EDGE_PROOF_MIN } from './sampleSize';
 import {
   getTradeHourBucket,
   nyDateKey,
@@ -17,7 +18,7 @@ export type DatasetKey = 'ALL' | 'BACKTEST' | 'LIVETEST' | 'REAL';
 export const DATASET_LABELS: Record<DatasetKey, string> = {
   ALL: 'Tüm Veri',
   BACKTEST: 'Backtest',
-  LIVETEST: 'Live-Test / Demo',
+  LIVETEST: 'Hesapsız / Demo',
   REAL: 'Funded & Challenge',
 };
 
@@ -115,7 +116,11 @@ export function edgeFromR(rs: number[], statuses?: Array<Trade['status']>): Edge
   const mean = netR / n;
   const variance = n > 1 ? rs.reduce((s, r) => s + (r - mean) * (r - mean), 0) / (n - 1) : 0;
   const sd = Math.sqrt(variance);
-  const se = n > 1 ? sd / Math.sqrt(n) : 0;
+  // Küçük örneklemde (EDGE_PROOF_MIN altı) sonuçlar neredeyse aynıysa (ör. −1, −1, −1, −1, −0.95R) örnek sapma ~0 çıkar
+  // ve güven aralığı tek noktaya çöker: birkaç ardışık kayıp "kesin sızıntı" sayılırdı. Aralık için sapma en az 1R
+  // alınır (stop'a sadık bir R sisteminde gerçekçi alt sınır); 30+ işlemde gerçek sapma kullanılır. Gösterilen sd değişmez.
+  const sdCi = n > 1 && n < EDGE_PROOF_MIN ? Math.max(sd, 1) : sd;
+  const se = n > 1 ? sdCi / Math.sqrt(n) : 0;
   const tc = tCrit95(n - 1);
   const expLo = n > 1 && Number.isFinite(tc) ? mean - tc * se : mean;
   const expHi = n > 1 && Number.isFinite(tc) ? mean + tc * se : mean;
@@ -228,23 +233,72 @@ const median = (values: number[]): number => {
 
 export type RangeBucket = 'NARROW' | 'NORMAL' | 'WIDE';
 
-/** Classifies each trade's Asia Range relative to that pair's own median, so EURCAD and EURUSD are not judged by one pip scale. */
-export function bucketAsiaRanges(trades: Trade[]): Map<string, RangeBucket> {
-  const withRange = trades.filter((t) => hasNum(t.asiaRangePips) && t.asiaRangePips > 0);
+/** Bir paritenin medyanı güvenilir sayılmadan önce gereken en az değer sayısı */
+export const PAIR_MEDIAN_MIN = 5;
+
+/**
+ * Bir pip değerini (Asia Range, Stop) paritenin KENDİ medyanına göre Dar / Normal / Geniş sınıflar.
+ * Pariteler pip ölçeğinde kıyaslanamaz (XAUUSD ≠ EURUSD); bu yüzden bir paritede PAIR_MEDIAN_MIN değer
+ * birikmeden o paritenin işlemleri sınıflanmaz (eskiden tüm paritelerin ortak medyanına düşülüyordu ve
+ * yeni bir paritenin işlemleri yanlış gruba giriyordu).
+ */
+export function bucketByPairMedian(
+  trades: Trade[],
+  value: (t: Trade) => number | undefined,
+): { buckets: Map<string, RangeBucket>; medians: Map<string, number> } {
   const byPair = new Map<string, number[]>();
-  withRange.forEach((t) => {
-    const p = normalizePair(t.asset);
-    if (!byPair.has(p)) byPair.set(p, []);
-    byPair.get(p)!.push(t.asiaRangePips as number);
+  const withVal = trades.filter((t) => {
+    const v = value(t);
+    return hasNum(v) && v > 0;
   });
-  const globalMedian = median(withRange.map((t) => t.asiaRangePips as number));
+  withVal.forEach((t) => {
+    const p = normalizePair(t.asset);
+    (byPair.get(p) || byPair.set(p, []).get(p)!).push(value(t) as number);
+  });
+  const medians = new Map<string, number>();
+  byPair.forEach((list, p) => {
+    if (list.length >= PAIR_MEDIAN_MIN) medians.set(p, median(list));
+  });
+  const buckets = new Map<string, RangeBucket>();
+  withVal.forEach((t) => {
+    const ref = medians.get(normalizePair(t.asset));
+    if (!ref || ref <= 0) return;
+    const ratio = (value(t) as number) / ref;
+    buckets.set(t.id, ratio < 0.8 ? 'NARROW' : ratio > 1.25 ? 'WIDE' : 'NORMAL');
+  });
+  return { buckets, medians };
+}
+
+/**
+ * Asia Range büyüklüğü — GİRİŞTEN ÖNCE bilinen haliyle: her işlemin range'i, aynı veri setindeki (Backtest / Hesapsız /
+ * Prop) aynı paritenin O İŞLEMDEN ÖNCEKİ range'lerinin medyanına oranlanır (en az PAIR_MEDIAN_MIN önceki değer).
+ * Böylece sonraki işlemler eski etiketleri değiştirmez, Tesadüf Testi ve Kural Simülatörü geleceği görmez,
+ * backtest / demo işlemleri gerçek hesap medyanına karışmaz.
+ */
+export function bucketAsiaRanges(trades: Trade[]): Map<string, RangeBucket> {
   const out = new Map<string, RangeBucket>();
-  withRange.forEach((t) => {
-    const list = byPair.get(normalizePair(t.asset)) || [];
-    const ref = list.length >= 5 ? median(list) : globalMedian;
-    if (ref <= 0) return;
-    const ratio = (t.asiaRangePips as number) / ref;
-    out.set(t.id, ratio < 0.8 ? 'NARROW' : ratio > 1.25 ? 'WIDE' : 'NORMAL');
+  const groups = new Map<string, Trade[]>();
+  for (const t of trades) {
+    if (!(hasNum(t.asiaRangePips) && t.asiaRangePips > 0)) continue;
+    const k = `${getTradeDataset(t)}|${normalizePair(t.asset)}`;
+    (groups.get(k) || groups.set(k, []).get(k)!).push(t);
+  }
+  groups.forEach((list) => {
+    list.sort((a, b) => a.createdAt - b.createdAt);
+    const prior: number[] = []; // sıralı tutulur
+    for (const t of list) {
+      const v = t.asiaRangePips as number;
+      if (prior.length >= PAIR_MEDIAN_MIN) {
+        const ref = median(prior);
+        if (ref > 0) {
+          const ratio = v / ref;
+          out.set(t.id, ratio < 0.8 ? 'NARROW' : ratio > 1.25 ? 'WIDE' : 'NORMAL');
+        }
+      }
+      let i = prior.length;
+      while (i > 0 && prior[i - 1] > v) i--;
+      prior.splice(i, 0, v);
+    }
   });
   return out;
 }
@@ -348,7 +402,8 @@ function buildOrder(trades: Trade[]): void {
   tradeOrder.clear();
   const byDay = new Map<string, Trade[]>();
   for (const t of trades) {
-    const k = nyDateKey(t.createdAt);
+    // Gün içi sıra veri seti içinde: backtest / hesapsız işlemler prop işlemlerinin "günün kaçıncı işlemi" sayacına karışmaz
+    const k = `${nyDateKey(t.createdAt)}|${getTradeDataset(t)}`;
     (byDay.get(k) || byDay.set(k, []).get(k)!).push(t);
   }
   prevResult.clear();
@@ -370,7 +425,7 @@ export function tradeOfDayBucket(t: Pick<Trade, 'id'>): string | null {
 }
 
 /**
- * Gün içi önceki işlemin sonucu (NY günü, hesaplardan bağımsız): kayıptan / kazançtan sonraki işlemin edge'i.
+ * Gün içi önceki işlemin sonucu (NY günü, aynı veri seti; prop hesapları kendi aralarında birlikte): kayıptan / kazançtan sonraki işlemin edge'i.
  * "Kayıptan sonra dur" kuralının veriye dayanıp dayanmadığını gösterir.
  */
 export const PREV_TRADE_BUCKETS = ['Günün İlk İşlemi', 'Önceki Kazandı', 'Önceki Kaybetti', 'Önceki BE'] as const;
@@ -387,6 +442,10 @@ const RANGE_SIZE_LABEL: Record<RangeBucket, (typeof RANGE_SIZE_BUCKETS)[number]>
   NORMAL: RANGE_SIZE_BUCKETS[1],
   WIDE: RANGE_SIZE_BUCKETS[2],
 };
+/** Asia Range büyüklüğü sınıfı (indekslenmiş listeden; strateji laboratuvarı ve kurulum karnesi aynı etiketi kullanır) */
+export function asiaRangeBucketOf(t: Pick<Trade, 'id'>): RangeBucket | null {
+  return rangeIndex.get(t.id) ?? null;
+}
 export function rangeSizeBucket(t: Pick<Trade, 'id'>): string | null {
   const b = rangeIndex.get(t.id);
   return b ? RANGE_SIZE_LABEL[b] : null;
@@ -444,8 +503,8 @@ export function computeCoverage(trades: Trade[]): CoverageRow[] {
     { field: 'afterExitTp', label: 'Çıkış Sonrası TP', unlocks: 'Yönetimle kaçırılan R (sorulduğu işlemlerde)', ok: (t) => typeof t.afterExitTp === 'boolean', asked: (t) => t.status === 'BREAKEVEN' || (Array.isArray(t.management) && (t.management.includes('Erken Kapatıldı') || t.management.includes('BE Çekildi'))) },
     { field: 'riskPct', label: 'Risk %', unlocks: 'Risk seviyesine göre edge, aşırı risk uyarısı (hesaplı işlemlerde)', ok: (t) => hasNum(t.riskPct) && t.riskPct > 0, asked: (t) => !!t.accountId },
     { field: 'exitAt', label: 'Çıkış Saati', unlocks: 'İşlem süresi, hedefe ulaşma süresi', ok: (t) => hasNum(t.exitAt) && t.exitAt >= t.createdAt },
-    { field: 'stopPips', label: 'Stop Pip', unlocks: 'Stop simülatörü, Stop / Asia Range, Planlanan R:R', ok: (t) => hasNum(t.stopPips) && t.stopPips > 0 },
-    { field: 'tpPips', label: 'TP Pip', unlocks: 'Planlanan R:R, hedef tamamlama, kaçırılan R', ok: (t) => hasNum(t.tpPips) && t.tpPips > 0 },
+    { field: 'stopPips', label: 'Stop Pip', unlocks: 'Stop büyüklüğü (parite bazlı), Stop / Asia Range, Planlanan R:R, kaçırılan R', ok: (t) => hasNum(t.stopPips) && t.stopPips > 0 },
+    { field: 'tpPips', label: 'TP Pip', unlocks: 'Planlanan R:R, kaçırılan R', ok: (t) => hasNum(t.tpPips) && t.tpPips > 0 },
     { field: 'asiaRangePips', label: 'Asia Range Pip', unlocks: 'Range büyüklüğü (parite bazlı), Stop / Asia Range', ok: (t) => hasNum(t.asiaRangePips) && t.asiaRangePips > 0 },
   ];
   return defs.map((d) => {

@@ -5,18 +5,19 @@ export const metricDetailsDict: Record<string, Omit<MetricDetail, 'value' | 'id'
   // DeepAnalysis
   winRate: {
     title: 'Kazanma Oranı (WR)',
-    description: 'Kârla kapanan işlemlerin toplam kapanan işlemlere oranıdır. Sistemin ne sıklıkla doğru tahmin yaptığını gösterir.',
+    description: 'Kazançla kapanan işlemlerin TÜM işlemlere oranı. Başabaş (BE) işlemler de paydadadır.',
     formula: '(Kazanan İşlem Sayısı / Toplam İşlem Sayısı) × 100',
     type: 'neutral',
     icon: Target,
     details: [
-      '%50 altı kazanma oranı, stratejinin zayıf olduğu anlamına gelmez, yüksek kazanç katsayısıyla desteklenebilir.',
-      '%70 üzeri kazanma oranları genellikle küçük kazanç, büyük kayıp riskleri taşıyabilir (skalping vs.).'
+      'Kazanma oranı tek başına kârlılığı söylemez: 3R hedefle çalışan bir sistem %30 civarında bile kazandırır.',
+      'Başabaş kazanma oranı = Ort. Kayıp ÷ (Ort. Kazanç + Ort. Kayıp) × (kazanç + kayıp) ÷ tüm işlemler. BE işlemleri paydada olduğu için bu düzeltme gerekir. Kazanma oranın bunun üstündeyse sistem net R kazandırır (Ana Panel\'deki "başabaş %" değeri).',
+      'Az işlemde oran çok oynar: 20 işlemde tek bir sonuç oranı 5 puan değiştirir.'
     ]
   },
   cumulativeR: {
-    title: 'Kümülatif Kazanç Oranı (R)',
-    description: 'Tüm işlemlerin risk çarpanı (R) cinsinden toplam sonucudur. Eğer hedef R 2 ise ve vurulduysa +2 eklenir. Stop olunduysa -1 düşülür.',
+    title: 'Kümülatif R (Net R)',
+    description: 'Tüm işlemlerin R cinsinden toplam sonucu. 3R hedefi vuran işlem +3, tam stop olan işlem −1, başabaş 0 ekler.',
     formula: 'Σ (İşlem Net Kazanç R) = (Kazanılan R Toplamı) - (Kaybedilen R Toplamı)',
     type: 'positive',
     icon: TrendingUp,
@@ -48,39 +49,22 @@ export const metricDetailsDict: Record<string, Omit<MetricDetail, 'value' | 'id'
   },
   longPerformance: {
     title: "Long İşlem Performansı",
-    description: "Sadece alım yönlü (Long) işlemlerin genel performansıdır.",
+    description: "Yalnızca Long işlemlerin kazanma oranı ve R sonucu.",
     type: 'info',
     icon: TrendingUp,
     details: [
-      "Boğa piyasasında ağırlıklı olarak performansın Long yönlü olması beklenir."
+      "Yön kıyası için R/işlem değerine bak; kazanma oranı tek başına yanıltabilir.",
+      "Bir yönde 5'ten az işlem varsa (Az Veri) kıyaslama yapma."
     ]
   },
   shortPerformance: {
     title: "Short İşlem Performansı",
-    description: "Sadece satım yönlü (Short) işlemlerin genel performansıdır.",
+    description: "Yalnızca Short işlemlerin kazanma oranı ve R sonucu.",
     type: 'info',
     icon: TrendingDown,
     details: [
-      "Ayı piyasasında ana performans ölçütüdür. Short yönlü analizler piyasa kırılımlarındaki yetkinliğinizi yansıtır."
-    ]
-  },
-  largestWin: {
-    title: "En Büyük Kazanç (Largest Win)",
-    description: "Tek bir işlemden elde edilen gelmiş geçmiş en büyük risk çarpanı (R-Multiple) sonucudur. (Aykırı Değer - Outlier)",
-    type: 'positive',
-    icon: Target,
-    details: [
-      "Eğer sistemin toplam kârının çok büyük bir kısmı tek bir hedefe bağlıysa (Outlier Win), kazanç oranınız şişmiş olabilir ve gerçek performanstan sapmalar olabilir."
-    ]
-  },
-  largestLoss: {
-    title: "En Büyük Kayıp (Largest Loss)",
-    description: "Tek bir işlemden kaybedilen gelmiş geçmiş en büyük risk çarpanı (R-Multiple) sonucudur. (Stop kuralının ihlali veya Slippage)",
-    type: 'negative',
-    icon: AlertTriangle,
-    details: [
-      "Manuel stop olamama, stop taşıma veya siyah kuğu olayları nedeniyle ortaya çıkar.",
-      "Tek bir devasa kayıp, aylarca süren kazancı silebilir. Risk haritasının en iyi göstergesidir."
+      "Yön kıyası için R/işlem değerine bak; kazanma oranı tek başına yanıltabilir.",
+      "Bir yönde 5'ten az işlem varsa (Az Veri) kıyaslama yapma."
     ]
   },
   pureProfitFactor: {

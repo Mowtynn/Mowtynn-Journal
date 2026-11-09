@@ -2,16 +2,18 @@ import { memo, useMemo } from 'react';
 import { smartUpper } from '../../constants/constants';
 import { Activity } from 'lucide-react';
 import { PropAccount, Trade } from '../../types';
-import { computeAccountRInsights, MAX_BUST_PCT, MIN_SURVIVE_PCT } from '../../lib/propInsights';
+import { computeAccountRInsights, MAX_BUST_PCT, MIN_SURVIVE_PCT, MIN_SIMULATION_SAMPLE } from '../../lib/propInsights';
+import { MIN_SAMPLE, EDGE_PROOF_MIN } from '../../lib/sampleSize';
 
 const r1 = (v: number) => v.toLocaleString('en-US', { maximumFractionDigits: 1 });
 const sR = (v: number) => `${v > 0 ? '+' : ''}${r1(v)}R`;
 
-function Stat({ label, value, tone = 'text-zinc-100' }: { label: string; value: string; tone?: string; hint?: string }) {
+function Stat({ label, value, tone = 'text-zinc-100', hint }: { label: string; value: string; tone?: string; hint?: string }) {
   return (
-    <div className="flex flex-col gap-0.5 min-w-0 rounded-xl border border-zinc-800/80 bg-zinc-950/40 px-2.5 py-2">
+    <div className="flex flex-col gap-0.5 min-w-0 rounded-xl border border-zinc-800/80 bg-zinc-950/40 px-2.5 py-2" title={hint}>
       <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wide text-zinc-500 truncate">{smartUpper(label)}</span>
       <span className={`text-xs sm:text-sm font-extrabold tabular-nums truncate ${tone}`}>{value}</span>
+      {hint && <span className="text-[9px] text-zinc-500 leading-snug line-clamp-2">{hint}</span>}
     </div>
   );
 }
@@ -40,6 +42,7 @@ export const PropRSummary = memo(function PropRSummary({ account, trades }: { ac
           label="Kazanma"
           value={ins.tradeCount ? `%${Math.round(ins.winRate)} · ${ins.wins}/${ins.tradeCount}` : '—'}
           tone={ins.tradeCount ? 'text-zinc-100' : 'text-zinc-500'}
+          hint={ins.tradeCount > 0 && ins.tradeCount < MIN_SAMPLE ? `Az veri: bu hesapta ${MIN_SAMPLE}'ten az işlem` : undefined}
         />
         <Stat
           label="Beklenti"
@@ -76,10 +79,11 @@ export const PropRSummary = memo(function PropRSummary({ account, trades }: { ac
           <span className="text-[10px] text-zinc-500">
             {sim.sampleSource === 'ACCOUNT' ? `Bu hesabın ${sim.sampleSize} işleminin` : `Tüm prop geçmişindeki (Challenge + Funded) ${sim.sampleSize} işlemin`} R dağılımıyla 2000 simülasyon
             {sim.kind === 'PASS' && sim.medianTrades ? ` · geçenlerde medyan ${Math.round(sim.medianTrades)} işlem` : ''}
+            {sim.sampleSize < EDGE_PROOF_MIN ? ` · ${EDGE_PROOF_MIN} işlemden az geçmiş: olasılık kaba bir tahmindir` : ''}
           </span>
         </div>
       ) : ins.ddRemainingR <= 0 || ins.targetRemainingR === 0 ? null : (
-        <span className="text-[10px] text-zinc-500">Olasılık için en az 10 işlemlik R geçmişi gerekiyor.</span>
+        <span className="text-[10px] text-zinc-500">Olasılık için en az {MIN_SIMULATION_SAMPLE} işlemlik prop R geçmişi gerekiyor.</span>
       )}
 
       {/* Risk önerisi: aynı simülasyon farklı risk seviyeleriyle; drawdown ve hedef bu hesabın kurallarından */}

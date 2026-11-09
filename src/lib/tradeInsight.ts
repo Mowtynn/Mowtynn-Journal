@@ -2,11 +2,9 @@ import { Trade } from '../types';
 import { getTradeAccountCategory } from '../constants/constants';
 import { edgeFromR, EdgeStats } from './asiaAnalytics';
 import { dimensionValue, verdictFor, DEFAULT_SETUP_DIMENSIONS, SETUP_DIMENSIONS, SETUP_MIN_SAMPLE, UNSPECIFIED, type SetupVerdict } from './setupScorecard';
-import { analyzeDiscipline, type DisciplineOptions, type DisciplineRuleId } from './discipline';
 
 /**
- * İşlem detayı için içgörü: plan ↔ gerçekleşen (R),
- * kurulumun geçmiş karnesi ve bu işlemin çiğnediği kurallar. Saf fonksiyon, testli.
+ * İşlem detayı için içgörü: plan ↔ gerçekleşen (R) ve kurulumun geçmiş karnesi. Saf fonksiyon, testli.
  */
 
 export interface PricePath {
@@ -25,9 +23,6 @@ export interface SetupHistory {
 export interface TradeInsight {
   path: PricePath;
   setup: SetupHistory | null;
-  violations: { id: DisciplineRuleId; title: string; hint: string }[];
-  /** En az bir kural ölçülebildi mi (ihlal yoksa "kurallara uygun" denebilir) */
-  rulesMeasured: boolean;
 }
 
 const pos = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : null);
@@ -49,11 +44,11 @@ export function insightPool(trade: Trade, allTrades: Trade[]): Trade[] {
   return allTrades.filter((t) => (getTradeAccountCategory(t) === 'DEMO') === isDemo);
 }
 
-export function computeTradeInsight(trade: Trade, everyTrade: Trade[], disciplineOptions: DisciplineOptions = {}): TradeInsight {
+export function computeTradeInsight(trade: Trade, everyTrade: Trade[]): TradeInsight {
   const path = computePricePath(trade);
   const allTrades = insightPool(trade, everyTrade);
 
-  // Kurulum: Asia Range · Seans · Entry Model (kurulum karnesiyle aynı tanım)
+  // Kurulum: Asia Range · Trend · Entry Model (kurulum karnesiyle aynı tanım)
   const values = DEFAULT_SETUP_DIMENSIONS.map((d) => dimensionValue(trade, d));
   let setup: SetupHistory | null = null;
   if (!values.every((v) => v === UNSPECIFIED)) {
@@ -68,11 +63,5 @@ export function computeTradeInsight(trade: Trade, everyTrade: Trade[], disciplin
     };
   }
 
-  const list = allTrades.some((t) => t.id === trade.id) ? allTrades : [...allTrades, trade];
-  const rep = analyzeDiscipline(list, disciplineOptions);
-  const violations = rep.rules
-    .filter((r) => r.measurable && r.tradeIds.includes(trade.id))
-    .map((r) => ({ id: r.id, title: r.title, hint: r.hint }));
-
-  return { path, setup, violations, rulesMeasured: rep.rules.some((r) => r.measurable) };
+  return { path, setup };
 }

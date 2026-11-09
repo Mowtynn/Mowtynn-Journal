@@ -389,7 +389,8 @@ const JournalView = memo(function JournalView({ entries: allEntries, trades = []
       className="flex flex-col md:flex-row h-[calc(100vh-170px)] min-h-[640px] bg-zinc-950/60 border border-zinc-800/80  rounded-2xl overflow-hidden text-zinc-200 shadow-sm relative"
     >
       {/* LEFT SIDEBAR: Entry List */}
-      <div className={`w-full md:w-80 lg:w-96 border-r border-zinc-800/80 flex flex-col shrink-0 ${(isEditing || weeklyWeek) ? 'hidden md:flex' : ''}`}>
+      {/* Mobilde liste tüm yüksekliği kullanır (aksi halde liste alanı 0 px kalıp kayıtlar görünmüyordu); kayıt açıkken yalnızca kayıt görünür */}
+      <div className={`w-full md:w-80 lg:w-96 flex-1 min-h-0 md:flex-none md:border-r border-zinc-800/80 flex flex-col ${(isEditing || weeklyWeek || activeEntry) ? 'hidden md:flex' : ''}`}>
         {/* Top bar */}
         <div className="px-4 py-3 shrink-0 border-b border-zinc-800/80 flex items-center justify-between relative z-30">
           <div className="flex items-center gap-2.5">

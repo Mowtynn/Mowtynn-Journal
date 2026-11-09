@@ -1,8 +1,13 @@
 import { Trade, TradeStats } from '../types';
 import { calculateProfitFactor, toRR } from './statMath';
+import { MIN_SAMPLE } from './sampleSize';
 
-/** Tüm istatistikler R cinsindendir. Kazanma oranı = kazanç / tüm işlemler (BE dahil). */
-export const calculateComprehensiveStats = (list: Trade[], now: number = Date.now()): TradeStats => {
+/**
+ * Tüm istatistikler R cinsindendir. Kazanma oranı = kazanç / tüm işlemler (BE dahil).
+ * En verimli / verimsiz parite yalnızca en az `minPairTrades` işlemli pariteler arasından seçilir
+ * (1 işlemlik +3R bir pariteyi "en verimli" ilan etmesin).
+ */
+export const calculateComprehensiveStats = (list: Trade[], now: number = Date.now(), minPairTrades: number = MIN_SAMPLE): TradeStats => {
   const totalTrades = list.length;
   let winningTrades = 0;
   let losingTrades = 0;
@@ -47,6 +52,7 @@ export const calculateComprehensiveStats = (list: Trade[], now: number = Date.no
   let maxValue = -Infinity;
   let minValue = Infinity;
   Object.entries(assetRrMap).forEach(([asset, val]) => {
+    if ((assetCount[asset] || 0) < minPairTrades) return;
     if (val > maxValue) {
       maxValue = val;
       bestAsset = val > 0 ? asset : "";

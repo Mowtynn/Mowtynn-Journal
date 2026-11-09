@@ -29,11 +29,11 @@ test('hafta sınırları: NY günüyle Pazartesi–Pazar; ay ve yıl geçişi', 
 test('haftalık özet: toplamlar, gün şeridi, önceki hafta, en iyi / en kötü kurulum', () => {
   const trades = [
     // bu hafta (19–25 Eki 2026, NY)
-    trade({ id: 'a', status: 'WIN', rr: 2, createdAt: ny('2026-10-19T09:30'), asiaRange: 'Range', session: 'London', entryModels: ['Breaker'] }),
+    trade({ id: 'a', status: 'WIN', rr: 2, createdAt: ny('2026-10-19T09:30'), asiaRange: 'Range', trend: 'Reversal', session: 'London', entryModels: ['Breaker'] }),
     trade({ id: 'b', status: 'LOSS', rr: -1, createdAt: ny('2026-10-20T09:30'), asiaRange: 'Range', session: 'NY AM', entryModels: ['FVG'] }),
     trade({ id: 'c', status: 'BREAKEVEN', rr: 0, createdAt: ny('2026-10-20T11:00') }),
     // NY'de Pazar akşamı: aynı hafta (İstanbul'da Pazartesi olsa bile)
-    trade({ id: 'd', status: 'WIN', rr: 1, createdAt: ny('2026-10-25T20:00'), asiaRange: 'Range', session: 'London', entryModels: ['Breaker'] }),
+    trade({ id: 'd', status: 'WIN', rr: 1, createdAt: ny('2026-10-25T20:00'), asiaRange: 'Range', trend: 'Reversal', session: 'London', entryModels: ['Breaker'] }),
     // geçen hafta
     trade({ id: 'p', status: 'LOSS', rr: -1, createdAt: ny('2026-10-14T10:00') }),
   ];
@@ -49,7 +49,7 @@ test('haftalık özet: toplamlar, gün şeridi, önceki hafta, en iyi / en köt�
   assert.equal(r.days[0].netR, 2);
   assert.equal(r.days[1].n, 2);
   assert.equal(r.days[6].n, 1); // Pazar
-  assert.equal(r.best?.label, 'Asia Range · London · Breaker');
+  assert.equal(r.best?.label, 'Asia Range · Reversal · Breaker');
   assert.equal(r.best?.netR, 3);
   assert.equal(r.worst?.netR, -1);
 });
@@ -73,4 +73,10 @@ test('hatırlatma: Cuma 17:00 NY öncesi yok; sonrası işlem varsa ve yazılmad
   assert.equal(weeklyReviewDue([], [], ny('2026-10-24T12:00')), null); // bu hafta işlem yok
   const written = buildWeeklyEntry('2026-10-19', { good: 'iyi', avoid: '', focus: '' }) as JournalEntry;
   assert.equal(weeklyReviewDue(trades, [written], ny('2026-10-24T12:00')), null);
+});
+
+test('haftalık Kurallarım: kural yokken bunu söyler (önceki işlem sayısıyla)', () => {
+  const r = computeWeekReview([trade({ id: 'x', status: 'WIN', rr: 2, createdAt: ny('2026-10-12T03:00') }), trade({ id: 'y', status: 'WIN', rr: 2, createdAt: ny('2026-10-20T03:00') })], '2026-10-19');
+  assert.deepEqual(r.avoidRules, []);
+  assert.equal(r.priorTrades, 1);
 });

@@ -70,6 +70,12 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
   const breakevens = activeTrades.filter((t) => t.status === 'BREAKEVEN').length;
   const winRate = totalTrades > 0 ? (wins / totalTrades) * 100 : 0;
   const totalR = activeTrades.reduce((sum, t) => sum + (t.rr || 0), 0);
+  // Kazanma oranının rengi sabit %50'ye göre değil, başabaş kazanma oranına göre (R tabanlı sistemde %30 WR kârlı olabilir)
+  const winRs = activeTrades.filter((t) => (t.rr || 0) > 0).map((t) => t.rr || 0);
+  const lossRs = activeTrades.filter((t) => (t.rr || 0) < 0).map((t) => -(t.rr || 0));
+  const avgW = winRs.length ? winRs.reduce((a, b) => a + b, 0) / winRs.length : 0;
+  const avgL = lossRs.length ? lossRs.reduce((a, b) => a + b, 0) / lossRs.length : 0;
+  const beWinRate = avgW + avgL > 0 && winRs.length && lossRs.length && totalTrades > 0 ? (avgL / (avgW + avgL)) * ((winRs.length + lossRs.length) / totalTrades) * 100 : null;
   const longs = activeTrades.filter((t) => t.type === 'LONG').length;
   // Rapordaki gerçek tarih aralığı (NY): "Bu Hafta" gibi etiketin yanında açık tarihler
   const span = (() => {
@@ -280,7 +286,8 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                   {/* Win Rate Card */}
                   <div className="border border-emerald-500/20 bg-gradient-to-b from-emerald-500/10 to-zinc-900/50 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-1.5 shadow-lg relative overflow-hidden">
                     <span className="text-[10px] font-bold tracking-wider text-emerald-400/90 font-sans uppercase">KAZANMA ORANI</span>
-                    <span className={`text-3xl font-black drop-shadow-sm font-sans tracking-tight ${winRate >= 50 ? 'text-emerald-400' : 'text-rose-400'}`}>{winRate.toFixed(1)}%</span>
+                    <span className={`text-3xl font-black drop-shadow-sm font-sans tracking-tight ${(beWinRate === null ? totalR >= 0 : winRate >= beWinRate) ? 'text-emerald-400' : 'text-rose-400'}`}>{winRate.toFixed(1)}%</span>
+                    {beWinRate !== null && <span className="text-[10px] text-zinc-500">başabaş %{beWinRate.toFixed(0)}</span>}
                     <div className="text-[11px] text-zinc-400 font-medium mt-1">
                       <span className="text-emerald-400 font-bold">{wins} W</span> <span className="text-zinc-600 mx-1">/</span> <span className="text-rose-400 font-bold">{losses} L</span> <span className="text-zinc-600 mx-1">/</span> <span className="text-amber-400 font-bold">{breakevens} BE</span>
                     </div>

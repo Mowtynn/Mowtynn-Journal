@@ -87,3 +87,13 @@ test('dışa aktarım: yeni girdiler ve türetilmiş analiz sütunları eksiksiz
   assert.equal(row['Kaçırılan R'], 3);
   assert.equal(row["Çıkış Sonrası TP'ye Ulaştı"], 'Evet');
 });
+
+test('dışa aktarım: süpürülen Asia tarafı yalnızca Reversal işlemlerde, yönden', () => {
+  const rows = prepareTradeExportRows([
+    trade({ id: 'r1', status: 'WIN', rr: 2, type: 'SHORT', trend: 'Reversal', asiaRange: 'Range' }),
+    trade({ id: 'r2', status: 'WIN', rr: 2, type: 'LONG', trend: 'Reversal' }),
+    trade({ id: 'c1', status: 'WIN', rr: 2, type: 'SHORT', trend: 'Continuation', asiaRange: 'Swept' }),
+    trade({ id: 'n1', status: 'WIN', rr: 2, type: 'LONG' }),
+  ]) as Record<string, unknown>[];
+  assert.deepEqual(rows.map((r) => r['Süpürülen Asia Tarafı']), ['High', 'Low', '-', '-']);
+});
