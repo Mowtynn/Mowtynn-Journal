@@ -119,7 +119,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
     const sessionStatsMap: Record<string, { session: string; pnl: number; total: number; wins: number; rr: number }> = {};
 
     closedTrades.forEach(t => {
-      const s = t.session || 'Bilinmeyen';
+      const s = t.session || 'Belirtilmemiş';
       if (!sessionStatsMap[s]) {
         sessionStatsMap[s] = { session: s, pnl: 0, total: 0, wins: 0, rr: 0 };
       }
@@ -203,7 +203,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
 
     if (winRate > 95 && trades.length > 5) {
       hasIntegrityIssue = true;
-      warnings.push("Kazanma oranınız çok yüksek (>95%). Girilen verilerde hatalı WIN işlemleri olabilir.");
+      warnings.push("Kazanma oranın çok yüksek (%95 üstü). Girilen verilerde hatalı WIN işlemleri olabilir.");
     }
     
     // Az işlemde (ör. henüz kayıp yokken) yüksek PF doğaldır; uyarı yalnızca yeterli örneklemde
@@ -221,7 +221,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
     const noPnlWinTrades = trades.filter(t => t.status === 'WIN' && (t.rr === 0 || !t.rr));
     if (noPnlWinTrades.length > 0) {
       hasIntegrityIssue = true;
-      warnings.push("Sıfır kâr ile kaydedilmiş 'WIN' statüsünde işlemler var. Lütfen bunları 'BREAKEVEN' olarak değiştirin veya R girin.");
+      warnings.push("Sıfır kâr ile kaydedilmiş 'WIN' statüsünde işlemler var. Bunları 'BREAKEVEN' olarak değiştir ya da R gir.");
     }
 
     return { hasIntegrityIssue, warnings };
@@ -238,7 +238,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
       <div className="flex flex-col items-center justify-center p-12 text-center bg-zinc-900/70 border border-zinc-700/50  rounded-xl transition-ui duration-200 shadow-sm mt-4">
         <Target size={32} className="text-zinc-600 mb-4 opacity-50" />
         <h3 className="text-sm font-bold text-zinc-300 font-sans mb-2">Henüz Yeterli Veri Yok</h3>
-        <p className="text-xs text-zinc-500 max-w-sm">Gelişmiş metriklerin hesaplanabilmesi için sisteme tamamlanmış (WIN/LOSS) işlemler eklemelisiniz.</p>
+        <p className="text-xs text-zinc-500 max-w-sm">Gelişmiş metriklerin hesaplanabilmesi için sonuçlanmış (WIN/LOSS) işlem eklemelisin.</p>
       </div>
     );
   }
@@ -261,9 +261,9 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
             <div className="flex flex-col h-full justify-between">
               <div className="flex justify-between items-center h-6 mb-2.5">
                 <div className="flex items-center gap-1.5">
-                  <Clock size={13} className="text-emerald-400" />
-                  <h3 className="heading-2" title={`Her seansın toplam R'si (çubuk) ve kazanma oranı. ${MIN_SAMPLE} işlemden azı "Az Veri".`}>
-                    SESSION PERFORMANSI
+                  <span className="p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center"><Clock size={12} /></span>
+                  <h3 className="heading-3 text-zinc-400 tracking-wider font-sans" title={`Her seansın toplam R'si (çubuk) ve kazanma oranı. ${MIN_SAMPLE} işlemden azı "Az Veri".`}>
+                    {smartUpper('Session Performansı')}
                   </h3>
                   <button aria-label="Filtrele"
                     onClick={() => setIsSessionFilterOpen(!isSessionFilterOpen)}
@@ -320,15 +320,14 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
 
                   return sortedSessions.map((sr, idx) => {
                     const isProfit = sr.pnl >= 0;
+                    const pnlTone = sr.pnl > 1e-9 ? 'text-emerald-400' : sr.pnl < -1e-9 ? 'text-rose-400' : 'text-zinc-400';
                     const winRate = sr.total > 0 ? (sr.wins / sr.total) * 100 : 0;
                     const barWidth = Math.min(100, (Math.abs(sr.pnl) / srMaxPnL) * 100);
 
-                    const readableSession = sr.session === 'Bilinmeyen' ? 'Diğer Seanslar' : sr.session;
+                    const readableSession = smartUpper(sr.session);
 
-                    const sessionColors = sr.session === 'Asia' ? 'text-blue-400' :
-                                          sr.session === 'London' ? 'text-purple-400' :
-                                          sr.session === 'NY AM' ? 'text-amber-400' :
-                                          sr.session === 'NY PM' ? 'text-orange-400' : 'text-zinc-300';
+                    // Seans adları nötr; renk yalnızca sonucu (çubuk) anlatır
+                    const sessionColors = 'text-zinc-200';
 
                     return (
                       <div key={idx} className="bg-zinc-800 px-2 py-1.5 flex flex-col justify-center rounded-lg border border-zinc-700/50">
@@ -339,13 +338,13 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
                               {readableSession}
                             </span>
                             <span className="text-zinc-500 font-normal text-[9px]">
-                              ({sr.total} Trade・%{winRate.toFixed(0)} WR)
+                              ({sr.total} işlem · %{winRate.toFixed(0)} WR)
                             </span>
                             {sr.total < MIN_SAMPLE && <span className="px-1 py-px rounded border border-zinc-700 bg-zinc-900 text-[8px] font-bold text-zinc-400 uppercase tracking-wide" >Az Veri</span>}
                           </div>
                           <div className="text-right">
-                            <span className={`font-black ${isProfit ? 'text-emerald-400' : 'text-rose-400'}`}>
-                              {isProfit ? '+' : ''}{(sr?.rr || 0).toFixed(2)} <span className="text-[9px] text-zinc-500">R</span>
+                            <span className={`font-black ${pnlTone}`}>
+                              {sr.pnl > 1e-9 ? '+' : ''}{(Math.abs(sr.rr) < 1e-9 ? 0 : sr.rr).toFixed(2)} <span className="text-[9px] text-zinc-500">R</span>
                             </span>
                           </div>
                         </div>
@@ -380,9 +379,9 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
             <div className="flex flex-col h-full justify-between">
               <div className="flex justify-between items-center h-6 mb-2.5">
                 <div className="flex items-center gap-1.5">
-                  <Percent size={13} className="text-blue-400" />
-                  <h3 className="heading-2" title={`Haftanın her gününün (NY) toplam R'si; parantezde işlem sayısı ve kazanma oranı. ${MIN_SAMPLE} işlemden azı "Az Veri".`}>
-                    NET KAZANÇ GÜN DAĞILIMI
+                  <span className="p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center"><Percent size={12} /></span>
+                  <h3 className="heading-3 text-zinc-400 tracking-wider font-sans" title={`Haftanın her gününün (NY) toplam R'si; parantezde işlem sayısı ve kazanma oranı. ${MIN_SAMPLE} işlemden azı "Az Veri".`}>
+                    {smartUpper('Net Kazanç Gün Dağılımı')}
                   </h3>
                 </div>
               </div>
@@ -406,11 +405,11 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
                         {stats.total > 0 && <span className="text-[9px] font-normal text-zinc-500 tabular-nums">({stats.total} · %{((stats.wins / stats.total) * 100).toFixed(0)} WR)</span>}
                         {stats.total > 0 && stats.total < MIN_SAMPLE && <span className="px-1 py-px rounded border border-zinc-700 bg-zinc-900 text-[8px] font-bold text-zinc-400 uppercase tracking-wide" >Az Veri</span>}
                       </span>
-                      <span className={`text-[10px] font-bold font-sans flex items-center gap-1.5 ${isProfitVal ? 'text-emerald-400' : 'text-rose-400'}`}>
+                      <span className={`text-[10px] font-bold font-sans flex items-center gap-1.5 ${val > 1e-9 ? 'text-emerald-400' : val < -1e-9 ? 'text-rose-400' : 'text-zinc-500'}`}>
                         {(
                           <>
                             <span>
-                              {val !== 0 ? (isProfitVal ? '+' : '') + val.toFixed(2) : '0'}{' '}
+                              {Math.abs(val) > 1e-9 ? (isProfitVal ? '+' : '') + val.toFixed(2) : '0.00'}{' '}
                               <span className="text-[9px] text-zinc-500">R</span>
                             </span>
                           </>
@@ -419,11 +418,11 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
                     </div>
 
                     {/* Dual relative progress bar */}
-                    <div className="grid grid-cols-2 gap-[2px] h-1.5 rounded-full overflow-hidden border border-zinc-850/80 p-[1px] bg-zinc-950 relative">
+                    <div className="grid grid-cols-2 gap-[2px] h-1.5 rounded-full overflow-hidden bg-zinc-800/80 relative">
                       {/* Central separator axis */}
-                      <div className="absolute left-[50%] top-0 bottom-0 w-[1px] bg-zinc-850 z-10"></div>
+                      <div className="absolute left-[50%] top-0 bottom-0 w-[1px] bg-zinc-600 z-10"></div>
                       
-                      <div className="flex justify-end pr-[1px]">
+                      <div className="flex justify-end">
                         {!isProfitVal && val !== 0 && (
                           <motion.div 
                             initial={{ scaleX: 0 }}
@@ -433,7 +432,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
                           />
                         )}
                       </div>
-                      <div className="flex justify-start pl-[1px]">
+                      <div className="flex justify-start">
                         {isProfitVal && val !== 0 && (
                           <motion.div 
                             initial={{ scaleX: 0 }}
@@ -459,9 +458,9 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
       >
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 relative z-20 w-full border-b border-zinc-800 pb-3">
           <div className="flex items-center gap-2">
-            <Layers size={16} className="text-blue-400" />
-            <h3 className="heading-2" title={`Her paritenin net R'si, kazanma oranı ve işlem başı R'si. ${MIN_SAMPLE} işlemden azı "Az Veri".`}>
-              Parite İstatistikleri
+            <span className="p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center"><Layers size={12} /></span>
+            <h3 className="heading-3 text-zinc-400 tracking-wider font-sans" title={`Her paritenin net R'si, kazanma oranı ve işlem başı R'si. ${MIN_SAMPLE} işlemden azı "Az Veri".`}>
+              {smartUpper('Parite İstatistikleri')}
             </h3>
           </div>
           
@@ -572,8 +571,8 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
                         <div className="flex flex-col gap-1 z-10">
                           <div className="flex justify-between items-center text-[9px] font-sans">
                             <span className="text-zinc-500 font-bold tracking-widest uppercase font-sans">Net R</span>
-                            <span className={`font-bold tracking-wider text-xs ${ar.rr >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>
-                              {ar.rr >= 0 ? '+' : ''}{ar.rr.toFixed(2)} R
+                            <span className={`font-bold tracking-wider text-xs ${ar.rr > 0 ? 'text-emerald-400' : ar.rr < 0 ? 'text-rose-400' : 'text-zinc-300'}`}>
+                              {ar.rr > 0 ? '+' : ''}{ar.rr.toFixed(2)} R
                             </span>
                           </div>
  
@@ -582,7 +581,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
  
                           <div className="flex justify-between items-center text-[9px] font-sans">
                             <span className="text-zinc-500 font-bold tracking-widest uppercase font-sans">WR</span>
-                            <span className={`font-bold tracking-wider text-xs ${winRate >= 50 ? 'text-emerald-400' : 'text-orange-400'}`}>
+                            <span className="font-bold tracking-wider text-xs text-zinc-200">
                               %{winRate.toFixed(1)}
                             </span>
                           </div>
@@ -645,7 +644,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
         isOpen={!!selectedAsset}
         onClose={() => setSelectedAsset(null)}
         title={selectedAsset || ""}
-        icon={<Activity size={16} className="mr-1.5 text-blue-400 shrink-0" />}
+        icon={<Activity size={16} className="shrink-0" />}
         trades={selectedAssetTrades}
         onEdit={(trade) => {
           if (onEdit) onEdit(trade);

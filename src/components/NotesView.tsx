@@ -362,7 +362,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                       </span>
                     </div>
                     <p className="text-[10px] text-zinc-400 mt-0.5 font-sans">
-                      Kişisel analizler, trade konseptleri ve strateji kayıtları.
+                      Kişisel analizler, işlem konseptleri ve strateji kayıtları.
                     </p>
                   </div>
                 </div>
@@ -622,7 +622,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                 </div>
                 <h3 className="text-xs font-bold text-zinc-200 mb-1 uppercase tracking-wider font-sans">{smartUpper("Henüz Not Eklenmedi")}</h3>
                 <p className="text-zinc-500 text-xs max-w-sm mb-5 font-sans leading-relaxed">
-                  Öğrendiğiniz işlem stratejilerini, analiz kurallarını ve konseptleri buraya kaydedebilirsiniz.
+                  Öğrendiğin işlem stratejilerini, analiz kurallarını ve konseptleri buraya kaydedebilirsin.
                 </p>
                 <button 
                   onClick={handleAddNew}
@@ -727,7 +727,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                 </h3>
                 
                 <p className="text-zinc-400 text-xs text-center mb-6 leading-relaxed">
-                  <strong className="text-zinc-200">"{noteToDelete.title}"</strong> başlıklı notu silmek istediğinize emin misiniz?
+                  <strong className="text-zinc-200">"{noteToDelete.title}"</strong> başlıklı notu silmek istediğine emin misin?
                 </p>
                 
                 <div className="flex items-center gap-2.5">

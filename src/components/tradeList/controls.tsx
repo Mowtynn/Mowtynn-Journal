@@ -51,7 +51,7 @@ export interface CustomSelectProps {
   className?: string;
 }
 
-export const CustomSelect = React.memo(function CustomSelect({ value, onChange, options, placeholder = 'Seçiniz...', className = '' }: CustomSelectProps) {
+export const CustomSelect = React.memo(function CustomSelect({ value, onChange, options, placeholder = 'Seç...', className = '' }: CustomSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 

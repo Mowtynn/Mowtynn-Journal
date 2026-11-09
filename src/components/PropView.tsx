@@ -294,7 +294,7 @@ function NewChainForm({ draft, setDraft, onCreate, onCancel }: { draft: Draft; s
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
           {draft.phases.slice(0, draft.phaseCount).map((p, i) => (
             <div key={i} className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-2 flex flex-col gap-1.5">
-              <span className="text-[10px] font-bold uppercase tracking-wide text-amber-300">Phase {i + 1}</span>
+              <span className="text-[10px] font-bold uppercase tracking-wide text-blue-300">Phase {i + 1}</span>
               <div className="grid grid-cols-2 gap-1.5">
                 <div>
                   <label className="text-[9px] font-bold uppercase text-zinc-500 block mb-0.5">Hedef %</label>
@@ -385,7 +385,7 @@ function CertificateDialog({
           <motion.div {...MODAL_PANEL} onClick={(e) => e.stopPropagation()} className="bg-zinc-900 border border-zinc-700/50 rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl p-4 flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold text-zinc-100 flex items-center gap-2">
-                {kind === 'PAYOUT' ? <Wallet size={16} className="text-emerald-400" /> : <Award size={16} className="text-amber-400" />}
+                {kind === 'PAYOUT' ? <Wallet size={16} className="text-emerald-400" /> : <Award size={16} className="text-emerald-400" />}
                 {kind === 'PAYOUT' ? 'Payout Ekle' : 'Funded Sertifikası Ekle'}
               </h3>
               <button type="button" aria-label="Kapat" onClick={onClose} className="btn-icon w-7 h-7">
@@ -489,6 +489,12 @@ function ChainCard({
   const ddUsedPct = m.maxDdAmount > 0 ? ((m.maxDdAmount - m.maxLossRemaining) / m.maxDdAmount) * 100 : 0;
   const targetPct = m.target ? Math.max(0, Math.min(100, (m.netPnl / m.target) * 100)) : 0;
   const R = (v: number) => (m.rUnit > 0 ? fmtR(v / m.rUnit) : '—');
+  // Payout hesaptan çekilir ama girilen tutar elime geçen net tutardır (brüt çekim bilinmez): payout'tan sonra gerçek
+  // bakiye girilmediyse hesaplanan bakiye ve drawdown'a kalan olduğundan yüksek görünür → uyarı
+  const lastPayoutAt = Math.max(0, ...(a.certificates || []).filter((c) => c.kind === 'PAYOUT').map((c) => c.createdAt || 0));
+  const lastSyncAt = Math.max(0, ...(a.adjustments || []).map((x) => x.at));
+  const payoutUnsynced = active && lastPayoutAt > 0 && lastPayoutAt > lastSyncAt;
+  const shownAdjustments = (a.adjustments || []).filter((x) => x.amount !== 0);
 
   const submitBalance = () => {
     const real = Number(realBalance);
@@ -496,6 +502,9 @@ function ChainCard({
     const diff = Math.round((real - m.balance) * 100) / 100;
     if (diff === 0) {
       setShowBalance(false);
+      setRealBalance('');
+      // Payout sonrası kontrol: fark yoksa da kontrol anı kaydedilir (0 tutarlı, listede görünmez) ki uyarı kalksın
+      if (payoutUnsynced) onUpdateAccount({ ...a, adjustments: [...(a.adjustments || []), { id: newId('adj'), at: Date.now(), amount: 0, realBalance: real }] });
       return toast('Bakiye zaten eşit, düzeltme gerekmedi.');
     }
     onUpdateAccount({ ...a, adjustments: [...(a.adjustments || []), { id: newId('adj'), at: Date.now(), amount: diff, realBalance: real }] });
@@ -599,6 +608,18 @@ function ChainCard({
       {/* Canlı R özeti */}
       {active && !archived && <PropRSummary account={a} trades={trades} />}
 
+      {payoutUnsynced && !showBalance && (
+        <div className="flex items-start gap-2 text-[11px] rounded-xl border p-2.5 text-amber-200 border-amber-500/30 bg-amber-500/10">
+          <AlertTriangle size={14} className="shrink-0 mt-0.5" />
+          <span className="flex-1">
+            Payout'tan sonra bakiye güncellenmedi: çekilen tutar hesaplanan bakiyeden düşmediği için bakiye ve max drawdown'a kalan olduğundan yüksek görünebilir.
+          </span>
+          <button type="button" onClick={() => setShowBalance(true)} className="shrink-0 font-bold text-amber-100 hover:text-white underline underline-offset-2 cursor-pointer">
+            Bakiyeyi gir
+          </button>
+        </div>
+      )}
+
       {active && (m.maxBreached || m.dailyBreached || m.targetReached) && (
         <div className={`flex items-start gap-2 text-[11px] rounded-xl border p-2.5 ${m.maxBreached || m.dailyBreached ? 'text-rose-200 border-rose-500/30 bg-rose-500/10' : 'text-emerald-200 border-emerald-500/30 bg-emerald-500/10'}`}>
           <AlertTriangle size={14} className="shrink-0 mt-0.5" />
@@ -682,11 +703,11 @@ function ChainCard({
           </div>
         </div>
       )}
-      {(a.adjustments?.length || 0) > 0 && !archived && (
+      {shownAdjustments.length > 0 && !archived && (
         <div className="flex flex-col gap-1">
           <span className="text-[10px] font-bold uppercase tracking-wide text-zinc-500">Bakiye düzeltmeleri · toplam {signedMoney(m.adjustmentsTotal)}</span>
           <div className="flex flex-wrap gap-1.5">
-            {a.adjustments!.map((x) => (
+            {shownAdjustments.map((x) => (
               <span key={x.id} className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border border-zinc-800 bg-zinc-950/60 text-[10px] text-zinc-300 tabular-nums">
                 {nyWallDate(x.at).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })} · {signedMoney(x.amount)}
                 {active && (
@@ -750,7 +771,7 @@ function ChainCard({
         <div className="flex flex-col gap-2">
           {fundedCerts.length > 0 && (
             <div className="flex flex-col gap-1.5">
-              <span className="text-[10px] font-bold uppercase tracking-wide text-amber-300">Funded Sertifikası</span>
+              <span className="text-[10px] font-bold uppercase tracking-wide text-emerald-300">Funded Sertifikası</span>
               {fundedCerts.map(({ c, acc }) => (
                 <CertRow key={c.id} c={c} onOpen={openImage} canDelete={!archived} onDelete={() => onUpdateAccount({ ...acc, certificates: (acc.certificates || []).filter((x) => x.id !== c.id) })} />
               ))}
@@ -774,7 +795,14 @@ function ChainCard({
         kind={certKind || 'PAYOUT'}
         onClose={() => setCertKind(null)}
         uploadImage={uploadImage}
-        onSave={(c) => onUpdateAccount({ ...a, certificates: [...(a.certificates || []), c] })}
+        onSave={(c) => {
+          onUpdateAccount({ ...a, certificates: [...(a.certificates || []), c] });
+          // Payout bakiyeden düşer: platformdaki yeni bakiyeyi girmek için alan hemen açılır
+          if (c.kind === 'PAYOUT' && active) {
+            setShowBalance(true);
+            toast('Payout bakiyenden düştü: drawdown takibi doğru kalsın diye platformdaki güncel bakiyeyi gir.');
+          }
+        }}
       />
     </div>
   );
@@ -957,7 +985,7 @@ export function PropView({ accounts, trades, onChange, uploadImage }: PropViewPr
               value: sheet.passRate === undefined ? '—' : `%${sheet.passRate.toFixed(0)}`,
               tone: 'text-blue-400',
               icon: <Trophy size={12} />,
-              chip: 'bg-amber-500/10 border-amber-500/20 text-amber-400',
+              chip: 'bg-blue-500/10 border-blue-500/20 text-blue-400',
               sub: sheet.resolvedChains > 0 ? `${sheet.fundedChains} / ${sheet.resolvedChains} funded` : 'Sonuçlanan yok',
               side: ongoing > 0 ? `${ongoing} süren` : '',
             },

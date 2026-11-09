@@ -149,8 +149,8 @@ export const ResultCard = React.memo(function ResultCard({
 
           {/* ASIA RANGE PİP */}
           <div className={isQuick ? "hidden" : ""}>
-          <label className="text-[10px] sm:text-[11px] font-bold text-amber-400 uppercase tracking-wide font-sans flex items-center gap-1 mb-2 min-w-0 whitespace-nowrap">
-              <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+          <label className="text-[10px] sm:text-[11px] font-bold text-blue-400 uppercase tracking-wide font-sans flex items-center gap-1 mb-2 min-w-0 whitespace-nowrap">
+              <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-blue-500"></span>
               <span className="truncate">{L("asiaRangePips")}</span>
             </label>
             <input
@@ -160,7 +160,7 @@ export const ResultCard = React.memo(function ResultCard({
               placeholder="örn: 18.5"
               value={asiaRangePips}
               onChange={(e) => handleAsiaRangePipsChange(e.target.value)}
-              className="w-full h-9 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 rounded-lg sm:rounded-xl px-2.5 text-xs text-zinc-100 focus:outline-none placeholder-zinc-500 font-sans shadow-inner transition-ui [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
+              className="w-full h-9 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 rounded-lg sm:rounded-xl px-2.5 text-xs text-zinc-100 focus:outline-none placeholder-zinc-500 font-sans shadow-inner transition-ui [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
             />
           </div>
         </div>

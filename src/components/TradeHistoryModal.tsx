@@ -1,5 +1,5 @@
 import { MODAL_BACKDROP, MODAL_PANEL, POPOVER } from '../lib/motion';
-import { smartUpper } from '../constants/constants';
+import { smartUpper, getTradeAccountCategory, getTradeAccountName, ACCOUNT_CATEGORY_BADGE } from '../constants/constants';
 import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
@@ -109,6 +109,9 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
   const shortWins = shortTrades.filter(t => t.status === "WIN").length;
   const shortWinRate = shortTrades.length > 0 ? (shortWins / shortTrades.length) * 100 : 0;
 
+  const netR = sortedTrades.reduce((acc, t) => acc + (typeof t.rr === "number" && Number.isFinite(t.rr) ? t.rr : 0), 0);
+  const netRShown = Math.abs(netR) < 1e-9 ? 0 : netR;
+
   const sessionBreakdown = React.useMemo(() => {
     return sortedTrades.reduce((acc, t) => {
       const s = t.session || "Belirtilmemiş";
@@ -138,35 +141,32 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
             <motion.div
               key="trade-history-modal-content"
               {...MODAL_PANEL}
-              className="w-full max-w-4xl h-[80vh] sm:h-[620px] max-h-[85vh] min-h-0 sm:min-h-[420px] flex flex-col bg-zinc-950/95 border border-zinc-800/80 rounded-2xl shadow-2xl relative overflow-hidden"
+              className="w-full max-w-4xl h-[80vh] sm:h-[620px] max-h-[85vh] min-h-0 sm:min-h-[420px] flex flex-col bg-zinc-900 border border-zinc-700/50 rounded-2xl shadow-2xl relative overflow-hidden"
               onClick={e => e.stopPropagation()}
             >
-              {/* Header */}
-              <div className="bg-zinc-950/60 border-b border-zinc-800/80 px-3 py-3 sm:px-6 sm:py-4 flex items-center justify-between gap-2 relative z-30 shrink-0 flex-wrap sm:flex-nowrap">
-                <div className="flex items-center flex-wrap gap-1.5 sm:gap-3 flex-1 min-w-0">
-                  <div className="bg-blue-500/10 border border-blue-500/20 px-2 sm:px-3 py-1.5 rounded-xl flex items-center justify-center shrink-0">
-                    <span className="text-[10px] sm:text-sm font-black text-blue-400 font-sans tracking-widest uppercase flex items-center justify-center leading-none">
-                      {activeIcon || <CalendarIcon size={16} className="mr-1.5 text-blue-400 shrink-0" />}
-                      <span className="ml-1">{activeTitle}</span>
-                    </span>
+              {/* Header — diğer pencerelerle aynı: simge kutusu + başlık, sağda eylemler */}
+              <div className="modal-header gap-2 px-3 sm:px-5 relative z-30 shrink-0">
+                <h2 className="heading-1 flex items-center gap-3 min-w-0">
+                  <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
+                    {activeIcon || <CalendarIcon size={16} />}
                   </div>
-                  <div className="flex items-center">
-                    <h2 className="text-zinc-100 font-black text-[10px] sm:text-sm uppercase tracking-wider font-sans leading-none flex items-center whitespace-nowrap">
-                      İşlem Geçmişi
-                    </h2>
-                  </div>
-                </div>
+                  <span className="min-w-0 truncate">
+                    İşlem Geçmişi
+                    {activeTitle && <span className="text-zinc-500 font-semibold"> · {activeTitle}</span>}
+                  </span>
+                </h2>
                 <div className="flex items-center gap-2 relative" ref={exportRef}>
                   <button aria-label="İndir"
                     type="button"
+                    aria-expanded={isExportOpen}
                     onClick={() => setIsExportOpen(!isExportOpen)}
-                    className={`w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl border transition-colors duration-200 ease-out cursor-pointer group shadow-xs shrink-0 ${
+                    className={`btn-icon w-8 h-8 sm:w-9 sm:h-9 ${
                       isExportOpen
-                        ? 'text-emerald-300 bg-emerald-500/20 border-emerald-500/40'
-                        : 'text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 border-blue-500/25'
+                        ? '!text-blue-300 !bg-blue-500/20 !border-blue-500/40'
+                        : '!text-blue-400 !bg-blue-500/10 !border-blue-500/25'
                     }`}
                   >
-                    <Download size={18} className="transition-colors" />
+                    <Download size={16} />
                   </button>
 
                   <AnimatePresence>
@@ -207,11 +207,11 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                             onClick={() => setExportFormatTab('pdf')}
                             className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-ui flex items-center justify-center gap-1.5 cursor-pointer border ${
                               exportFormatTab === 'pdf'
-                                ? 'bg-purple-500/20 text-purple-300 border-purple-500/40 shadow-xs'
+                                ? 'bg-blue-500/20 text-blue-300 border-blue-500/40 shadow-xs'
                                 : 'text-zinc-400 hover:text-zinc-200 border-transparent hover:bg-zinc-800/40'
                             }`}
                           >
-                            <Download size={12} className={exportFormatTab === 'pdf' ? 'text-purple-400' : 'text-zinc-500'} />
+                            <Download size={12} className={exportFormatTab === 'pdf' ? 'text-blue-400' : 'text-zinc-500'} />
                             <span>PDF</span>
                           </button>
                         </div>
@@ -287,13 +287,13 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                                 setIsPrintModalOpen(true);
                                 setIsExportOpen(false);
                               }}
-                              className="w-full px-2.5 py-2 text-left text-xs text-zinc-200 hover:bg-zinc-800/80 hover:text-purple-300 font-medium rounded-xl transition-colors flex items-center justify-between cursor-pointer group"
+                              className="w-full px-2.5 py-2 text-left text-xs text-zinc-200 hover:bg-zinc-800/80 hover:text-blue-300 font-medium rounded-xl transition-colors flex items-center justify-between cursor-pointer group"
                             >
                               <div className="flex items-center gap-2">
-                                <Download size={13} className="text-purple-400" />
+                                <Download size={13} className="text-blue-400" />
                                 <span>PDF Rapor Önizleme & Yazdır</span>
                               </div>
-                              <span className="text-[10px] font-bold font-sans px-2 py-0.5 rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                              <span className="text-[10px] font-bold font-sans px-2 py-0.5 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">
                                 {sortedTrades.length} İşlem
                               </span>
                             </button>
@@ -306,9 +306,9 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                   <button aria-label="Kapat"
                     type="button"
                     onClick={onClose}
-                    className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-zinc-400 hover:text-white bg-zinc-950 hover:bg-zinc-900/70 border border-zinc-700/50 rounded-xl transition-colors duration-200 ease-out cursor-pointer group shadow-xs shrink-0"
+                    className="btn-icon w-8 h-8 sm:w-9 sm:h-9"
                   >
-                    <X size={18} className="transition-colors" />
+                    <X size={16} />
                   </button>
                 </div>
               </div>
@@ -319,26 +319,29 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                   <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800/80 rounded-lg px-2 py-1 shrink-0">
                     <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest font-sans leading-none">Toplam:</span>
                     <span className="text-[10px] font-black text-zinc-100 font-sans leading-none">{totalCount}</span>
+                    <span className="text-[9px] text-zinc-700 font-bold mx-0.5 leading-none">|</span>
+                    <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest font-sans leading-none">Net:</span>
+                    <span className={`text-[10px] font-black font-sans leading-none ${netRShown > 0 ? "text-emerald-400" : netRShown < 0 ? "text-rose-400" : "text-zinc-300"}`}>{`${netRShown > 0 ? "+" : ""}${netRShown.toFixed(2)}R`}</span>
                   </div>
                   <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800/80 rounded-lg px-2 py-1 shrink-0">
                     <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest font-sans leading-none">Long:</span>
                     <span className="text-[10px] font-black text-emerald-400 font-sans leading-none">{longTrades.length}</span>
                     <span className="text-[9px] text-zinc-700 font-bold mx-0.5 leading-none">|</span>
                     <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest font-sans leading-none">WR:</span>
-                    <span className="text-[10px] font-black text-emerald-400 font-sans leading-none">%{longWinRate.toFixed(1)}</span>
+                    <span className="text-[10px] font-black text-zinc-100 font-sans leading-none">{longTrades.length ? `%${longWinRate.toFixed(1)}` : "—"}</span>
                   </div>
                   <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800/80 rounded-lg px-2 py-1 shrink-0">
                     <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest font-sans leading-none">Short:</span>
                     <span className="text-[10px] font-black text-rose-400 font-sans leading-none">{shortTrades.length}</span>
                     <span className="text-[9px] text-zinc-700 font-bold mx-0.5 leading-none">|</span>
                     <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest font-sans leading-none">WR:</span>
-                    <span className="text-[10px] font-black text-rose-400 font-sans leading-none">%{shortWinRate.toFixed(1)}</span>
+                    <span className="text-[10px] font-black text-zinc-100 font-sans leading-none">{shortTrades.length ? `%${shortWinRate.toFixed(1)}` : "—"}</span>
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center justify-end gap-1.5 ml-auto">
                   {Object.entries(sessionBreakdown).map(([session, vals]) => {
                     const val = vals.rr;
-                    if (val === 0) return null;
+                    if (Math.abs(val) < 1e-9) return null;
 
                     const valueColor = val > 0 ? "text-emerald-400" : "text-rose-400";
 
@@ -425,7 +428,7 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                           <td className="hidden sm:table-cell py-1 px-2 text-center text-zinc-400 font-medium sm:bg-zinc-900 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 w-[14%] min-w-[75px] align-middle">
                             <div className="flex items-center justify-center w-full">
                               <span className="inline-flex items-center justify-center min-w-[54px] max-w-[130px] h-[20px] px-2.5 py-0 text-center text-[10px] font-bold text-zinc-300 bg-zinc-800/80 border border-zinc-700/80 group-hover:border-zinc-500 rounded-full uppercase tracking-wider font-sans transition-colors whitespace-nowrap truncate">
-                                {t.session || "Diğer"}
+                                {t.session ? t.session : "—"}
                               </span>
                             </div>
                           </td>
@@ -453,8 +456,8 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                               <span className="heading-3">Hesap</span>
                             </div>
                             <div className="flex items-center justify-center w-full">
-                              <span className="inline-flex items-center justify-center min-w-[54px] max-w-[130px] h-[20px] px-2.5 py-0 text-center text-[10px] font-bold text-zinc-300 bg-zinc-800/80 border border-zinc-700/80 group-hover:border-zinc-500 rounded-full uppercase tracking-wider font-sans transition-colors whitespace-nowrap truncate">
-                                {t.platform || "Hesapsız"}
+                              <span className={`inline-flex items-center justify-center min-w-[54px] max-w-[130px] h-[20px] px-2.5 py-0 text-center text-[10px] font-bold border rounded-full uppercase tracking-wider font-sans transition-colors whitespace-nowrap truncate ${ACCOUNT_CATEGORY_BADGE[getTradeAccountCategory(t)]}`}>
+                                {getTradeAccountName(t)}
                               </span>
                             </div>
                           </td>

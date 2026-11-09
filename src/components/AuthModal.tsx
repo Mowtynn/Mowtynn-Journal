@@ -55,9 +55,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       if (err?.code === 'auth/unauthorized-domain') {
         toast.error('Bu alan adı Firebase yetkili alan adları listesinde değil.');
       } else if (err?.code === 'auth/missing-initial-state' || err?.message?.includes('missing initial state')) {
-        toast.error('Tarayıcı gizlilik/çerez kısıtlamaları nedeniyle oturum başlatılamadı. Lütfen çerez izinlerini kontrol edin.');
+        toast.error('Tarayıcı gizlilik/çerez kısıtlamaları nedeniyle oturum başlatılamadı. Lütfen çerez izinlerini kontrol et.');
       } else {
-        toast.error('Google ile giriş yapılırken bir sorun oluştu. Lütfen tekrar deneyin.');
+        toast.error('Google ile giriş yapılırken bir sorun oluştu. Lütfen tekrar dene.');
       }
     });
   };
@@ -83,9 +83,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 e.stopPropagation();
                 onClose();
               }}
-              className="absolute top-4 right-4 p-1.5 text-zinc-400 hover:text-zinc-100 bg-zinc-800 hover:bg-zinc-700 rounded-full transition-colors duration-200 ease-out cursor-pointer"
+              className="btn-icon absolute top-4 right-4 w-8 h-8"
             >
-              <X size={18} />
+              <X size={16} />
             </button>
 
             <div className="w-12 h-12 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4 text-blue-400">
@@ -96,7 +96,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               Hesabınıza Giriş Yapın
             </h2>
             <p className="text-xs text-zinc-400 mt-1.5 mb-6 font-sans leading-relaxed">
-              İşlem günlüğünüzü, analizlerinizi ve grafik notlarınızı tüm cihazlarınızda güvenle saklayın ve senkronize edin.
+              İşlem günlüğünü, analizlerini ve grafik notlarını tüm cihazlarında güvenle sakla ve senkronize et.
             </p>
 
             <button

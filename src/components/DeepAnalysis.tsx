@@ -41,6 +41,7 @@ import { MemoizedEquityChart } from './deepAnalysis/EquityChart';
 import { nyWallDate } from '../lib/tradingTime';
 import { setupQualityTier } from '../lib/setupQuality';
 import { MIN_SAMPLE } from '../lib/sampleSize';
+import { smartUpper } from '../constants/constants';
 
 type DeepView = 'overview' | 'calendar' | 'breakdowns' | 'lab';
 const DEEP_VIEWS: Array<{ id: DeepView; label: string; icon: React.ComponentType<{ size?: number; className?: string }> }> = [
@@ -311,8 +312,8 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
               <div className="p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center">
                 <LineChart size={14} />
               </div>
-              <h3 className="text-xs font-bold text-zinc-100 font-sans tracking-tight">
-                Kümülatif R Eğrisi
+              <h3 className="heading-3 text-zinc-400 tracking-wider font-sans">
+                {smartUpper('Kümülatif R Eğrisi')}
               </h3>
               
               <div className="relative ml-1">
@@ -400,7 +401,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
         >
           <div className="flex items-center justify-between mb-2">
             <p className="text-[10px] font-bold uppercase text-zinc-400 tracking-wider font-sans flex items-center gap-1.5">
-              <span className="p-1 rounded-md bg-purple-500/10 border border-purple-500/20 text-purple-400">
+              <span className="p-1 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-400">
                 <Target size={10} />
               </span>
               Sonuç Dağılımı
@@ -501,7 +502,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
         <motion.div variants={itemVariants} className="bg-transparent p-4 sm:p-5 flex flex-col relative min-w-0">
           <div className="flex items-center justify-between mb-3">
             <p className="text-[10px] font-bold uppercase text-zinc-400 tracking-wider font-sans flex items-center gap-1.5">
-              <span className="p-1 rounded-md bg-purple-500/10 border border-purple-500/20 text-purple-400">
+              <span className="p-1 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-400">
                 <Crosshair size={10} />
               </span>
               {definitionTitles.planFidelities || "Setup Kalitesi"}
@@ -641,7 +642,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
         isOpen={!!selectedEquityPoint}
         onClose={() => setSelectedEquityPoint(null)}
         title={selectedEquityPoint?.title || ""}
-        icon={<LineChart size={16} className="mr-1.5 text-blue-400 shrink-0" />}
+        icon={<LineChart size={16} className="shrink-0" />}
         trades={selectedEquityPoint?.trades || []}
         onEdit={(trade) => {
           if (onEdit) onEdit(trade);
@@ -662,7 +663,7 @@ const optionTheme = (name: string): OptionTheme => {
   if (tier === 'high') return { border: "border-emerald-500/25 hover:border-emerald-500/50", bg: "bg-zinc-950/60 hover:bg-emerald-950/20", text: "text-emerald-400", bar: "bg-emerald-500", badge: "text-emerald-400/80", type: 'positive' };
   if (tier === 'low') return { border: "border-rose-500/25 hover:border-rose-500/50", bg: "bg-zinc-950/60 hover:bg-rose-950/20", text: "text-rose-400", bar: "bg-rose-500", badge: "text-rose-400/80", type: 'negative' };
   if (tier === 'mid') return { border: "border-blue-500/25 hover:border-blue-500/50", bg: "bg-zinc-950/60 hover:bg-blue-950/20", text: "text-blue-300", bar: "bg-blue-500", badge: "text-blue-300/80", type: 'neutral' };
-  return { border: "border-purple-500/25 hover:border-purple-500/50", bg: "bg-zinc-950/60 hover:bg-purple-950/20", text: "text-purple-400", bar: "bg-purple-500", badge: "text-purple-400/80", type: 'neutral' };
+  return { border: "border-blue-500/25 hover:border-blue-500/50", bg: "bg-zinc-950/60 hover:bg-blue-950/20", text: "text-blue-400", bar: "bg-blue-500", badge: "text-blue-400/80", type: 'neutral' };
 };
 
 /**

@@ -7,6 +7,10 @@ import { Trade } from '../types';
 import { getTradeNyWeekday } from '../lib/tradingTime';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { MIN_SAMPLE } from '../lib/sampleSize';
+import { smartUpper } from '../constants/constants';
+
+/** Seansı girilmemiş işlemlerin sütunu (Kurulum Karnesi / Edge Özeti ile aynı ad) */
+const UNSPECIFIED_SESSION = 'Belirtilmemiş';
 
 interface HeatmapModalProps {
   isOpen: boolean;
@@ -45,14 +49,16 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
     const days = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
     const sessionSet = new Set<string>();
 
+    let hasUnspecified = false;
     closedTrades.forEach(t => {
       if (t.session && t.session.trim() !== '') {
         sessionSet.add(t.session);
-      }
+      } else hasUnspecified = true;
     });
 
+    // Seansı girilmemiş işlemler ayrı sütunda (eskiden seanslı işlem varsa bunlar ısı haritasından düşüyordu)
     const sessions = Array.from(sessionSet).sort();
-    if (sessions.length === 0) sessions.push("Bilinmeyen");
+    if (hasUnspecified || sessions.length === 0) sessions.push(UNSPECIFIED_SESSION);
 
     // Initialize matrix
     const matrix: { [day: string]: { [session: string]: { r: number, count: number, winCount: number, conceptCounts: Record<string, number>, planFidelityCounts: Record<string, number> } } } = {};
@@ -69,7 +75,7 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
         let dayIndex = getTradeNyWeekday(t); // 0 = Sunday, 1 = Monday
         dayIndex = dayIndex === 0 ? 6 : dayIndex - 1; // Convert to 0 = Monday
         const dayName = days[dayIndex];
-        const s = (t.session && t.session.trim() !== '') ? t.session : "Bilinmeyen";
+        const s = (t.session && t.session.trim() !== '') ? t.session : UNSPECIFIED_SESSION;
 
         if (matrix[dayName] && matrix[dayName][s]) {
           matrix[dayName][s].count += 1;
@@ -213,7 +219,7 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
                   <div className="flex gap-2 mb-2">
                     {sessions.map(session => (
                       <div key={session} className="flex-1 text-xs font-bold font-sans text-zinc-400 flex items-center justify-center whitespace-nowrap overflow-hidden text-ellipsis px-1 uppercase tracking-wider">
-                        {session}
+                        {smartUpper(session)}
                       </div>
                     ))}
                   </div>
@@ -261,9 +267,9 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
                                 <div className="space-y-0.5 text-zinc-300">
                                   <div>İşlem: <span className="text-white font-bold">{cell?.count || 0}</span></div>
                                   <div>Net R: <span className="text-blue-300 font-bold">{(cell?.r || 0).toFixed(1)} R</span></div>
-                                  <div>Başarı Oranı: <span className="text-amber-300 font-bold">%{winRatePercent}</span></div>
+                                  <div>Başarı Oranı: <span className="text-zinc-100 font-bold">%{winRatePercent}</span></div>
                                   {cell?.planFidelityCounts && Object.keys(cell.planFidelityCounts).length > 0 && (
-                                    <div className="pt-0.5 text-[11px] text-purple-300 border-t border-zinc-800/80 mt-1 uppercase font-bold">
+                                    <div className="pt-0.5 text-[11px] text-blue-300 border-t border-zinc-800/80 mt-1 uppercase font-bold">
                                       Setup: <span className="font-bold">{Object.entries(cell.planFidelityCounts).sort((a, b) => b[1] - a[1])[0][0]}</span>
                                     </div>
                                   )}

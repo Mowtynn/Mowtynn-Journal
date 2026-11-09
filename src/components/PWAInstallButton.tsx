@@ -82,7 +82,7 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
                   <button aria-label="Kapat"
                     type="button"
                     onClick={() => setShowIOSGuide(false)}
-                    className="w-7 h-7 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 flex items-center justify-center transition-colors cursor-pointer"
+                    className="btn-icon w-7 h-7"
                   >
                     <X size={14} />
                   </button>
@@ -94,7 +94,7 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
                       <Share size={12} />
                     </div>
                     <p className="text-[11px] leading-relaxed">
-                      1. Safari tarayıcısının altındaki <strong className="text-blue-400">Paylaş</strong> butonuna dokunun.
+                      1. Safari tarayıcısının altındaki <strong className="text-blue-400">Paylaş</strong> butonuna dokun.
                     </p>
                   </div>
 
@@ -103,16 +103,16 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
                       <PlusSquare size={12} />
                     </div>
                     <p className="text-[11px] leading-relaxed">
-                      2. Açılan menüyü aşağı kaydırıp <strong className="text-emerald-400">"Ana Ekrana Ekle"</strong> seçeneğini seçin.
+                      2. Açılan menüyü aşağı kaydırıp <strong className="text-blue-400">"Ana Ekrana Ekle"</strong> seçeneğini seç.
                     </p>
                   </div>
 
                   <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-zinc-950/60 border border-zinc-800/80">
-                    <div className="w-6 h-6 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center shrink-0 mt-0.5">
+                    <div className="w-6 h-6 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 mt-0.5">
                       <CheckCircle2 size={12} />
                     </div>
                     <p className="text-[11px] leading-relaxed">
-                      3. Sağ üstteki <strong className="text-purple-400">"Ekle"</strong> butonuna dokunun. Artık ana ekranınızda yerel uygulama gibi çalışacaktır.
+                      3. Sağ üstteki <strong className="text-blue-400">"Ekle"</strong> butonuna dokun. Artık ana ekranında uygulama gibi çalışır.
                     </p>
                   </div>
                 </div>

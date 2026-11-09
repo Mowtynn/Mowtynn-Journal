@@ -1,4 +1,4 @@
-import { EASE, SPRING } from '../lib/motion';
+import { SPRING } from '../lib/motion';
 import { smartUpper } from '../constants/constants';
 import React, { useState, useMemo, useCallback } from 'react';
 import { motion } from 'motion/react';
@@ -87,7 +87,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
         <Compass className="w-10 h-10 text-zinc-600 mx-auto mb-3" />
         <h4 className="text-sm font-bold text-zinc-200 font-sans">Strateji Geliştirme İçin Yeterli Veri Yok</h4>
         <p className="text-xs text-zinc-500 mt-1 max-w-md mx-auto font-sans">
-          İşlem eklerken girdiğiniz Parite, Stop/TP Pip, Asia Range, Target (çıkış hedefi), Confirmations, Onaylar ve Giriş Modelleri burada otomatik strateji önerilerine ve edge matrislerine dönüştürülür.
+          İşlem eklerken girdiğin Parite, Stop/TP Pip, Asia Range, Target (çıkış hedefi), Confirmations, Onaylar ve Giriş Modelleri burada otomatik strateji önerilerine ve edge matrislerine dönüştürülür.
         </p>
       </div>
     
@@ -102,12 +102,8 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
   if (isEmpty) return emptyState;
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 14 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25, ease: EASE }}
-      className="space-y-3"
-    >
+    // Giriş animasyonu Detaylı Analiz'in görünüm sarmalayıcısında (.pane-content-in); burada ikinci bir animasyon yok
+    <div className="space-y-3">
       
       {/* Laboratuvar sekmeleri: Detaylı Analiz sekme çubuğuyla aynı görünüm (kayan gösterge, ok tuşları) */}
       <div
@@ -181,7 +177,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
           <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 space-y-4">
             <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5">
               <div className="flex items-center gap-2">
-                <Brain size={16} className="text-purple-400" />
+                <Brain size={16} className="text-blue-400" />
                 <h4 className="text-xs font-bold text-zinc-100 font-sans uppercase tracking-wider">
                   Psikoloji, Tilt Göstergesi & Ardışık Momentum
                 </h4>
@@ -195,7 +191,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
               </span>
             </div>
 
-            <p className="text-xs text-purple-300 bg-purple-500/10 border border-purple-500/20 p-2.5 rounded-lg font-sans">
+            <p className="text-xs text-blue-300 bg-blue-500/10 border border-blue-500/20 p-2.5 rounded-lg font-sans">
               {streakStats.insight}
             </p>
             <p className="text-[10px] text-zinc-500 font-sans -mt-2">
@@ -281,7 +277,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
           <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 space-y-3">
             <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
               <span className="text-xs font-bold uppercase text-zinc-200 font-sans flex items-center gap-1.5">
-                <Activity size={14} className="text-amber-400" />
+                <Activity size={14} className="text-blue-400" />
                 Asia Range Volatilite Matrisi & Kırılım Edge'i
               </span>
               <span className="text-[10px] text-zinc-500 font-sans">{asiaRangeStats.insight}</span>
@@ -319,11 +315,11 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
         isOpen={!!shownTrades}
         onClose={() => setShownTrades(null)}
         title={shownTrades?.title || ''}
-        icon={<Compass size={16} className="mr-1.5 text-blue-400 shrink-0" />}
+        icon={<Compass size={16} className="shrink-0" />}
         trades={shownTrades?.trades || []}
         onEdit={onEdit ? (t) => { onEdit(t); setShownTrades(null); } : undefined}
       />
-    </motion.div>
+    </div>
   );
 });
 

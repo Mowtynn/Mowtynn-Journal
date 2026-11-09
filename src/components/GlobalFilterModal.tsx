@@ -424,7 +424,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
               
               {/* 1. ZAMAN ARALIĞI */}
               <FilterAccordionRow title="Zaman Aralığı" 
-                icon={<Calendar size={14} className="text-amber-400" />}
+                icon={<Calendar size={14} className="text-blue-400" />}
                 summaryText={getDateLabel(globalDateLimit)}
                 badgeCount={globalDateLimit !== DEFAULT_DATE_LIMIT ? 1 : 0}
                 isOpen={!!openSections.date}
@@ -441,7 +441,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
 
               {/* 2. PARİTE (ASSET) */}
               <FilterAccordionRow title={definitionTitles.assets || "Parite"} 
-                icon={<Coins size={14} className="text-yellow-400" />}
+                icon={<Coins size={14} className="text-blue-400" />}
                 summaryText={globalSelectedAssets.length > 0 ? globalSelectedAssets.join(', ') : 'Tümü'}
                 badgeCount={globalSelectedAssets.length}
                 isOpen={!!openSections.asset}
@@ -485,7 +485,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
 
               {/* 4b. ASIA RANGE (PİP) */}
               <FilterAccordionRow title="Asia Range (Pip)" 
-                icon={<Activity size={14} className="text-amber-400" />}
+                icon={<Activity size={14} className="text-blue-400" />}
                 summaryText={
                   (globalMinAsiaRangePips !== undefined || globalMaxAsiaRangePips !== undefined)
                     ? `${globalMinAsiaRangePips ?? '0'} - ${globalMaxAsiaRangePips ?? '∞'} Pip`
@@ -618,7 +618,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
 
               {/* 8. PD ARRAY */}
               <FilterAccordionRow title={definitionTitles.confirmations || "PD ARRAY"} 
-                icon={<Sparkles size={14} className="text-purple-400" />}
+                icon={<Sparkles size={14} className="text-blue-400" />}
                 summaryText={globalSelectedConfirmations.length > 0 ? globalSelectedConfirmations.join(', ') : 'Tümü'}
                 badgeCount={globalSelectedConfirmations.length}
                 isOpen={!!openSections.confirmation}
@@ -648,7 +648,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
 
               {/* 10. ENTRY MODEL */}
               <FilterAccordionRow title={definitionTitles.entryModels || "Entry Model"} 
-                icon={<Zap size={14} className="text-amber-400" />}
+                icon={<Zap size={14} className="text-blue-400" />}
                 summaryText={globalSelectedEntryModels.length > 0 ? globalSelectedEntryModels.join(', ') : 'Tümü'}
                 badgeCount={globalSelectedEntryModels.length}
                 isOpen={!!openSections.entry}
@@ -698,7 +698,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
 
               {/* 12. PREMIUM / DISCOUNT */}
               <FilterAccordionRow title={definitionTitles.premiumDiscounts || "Confirmations"}
-                icon={<Scale size={14} className="text-purple-400" />}
+                icon={<Scale size={14} className="text-blue-400" />}
                 summaryText={globalExtra.premiumDiscounts.length > 0 ? globalExtra.premiumDiscounts.join(', ') : 'Tümü'}
                 badgeCount={globalExtra.premiumDiscounts.length}
                 isOpen={!!openSections.pd}
@@ -713,7 +713,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
 
               {/* 13. TP TARGET */}
               <FilterAccordionRow title={definitionTitles.tpTargets || "Target"}
-                icon={<Crosshair size={14} className="text-emerald-400" />}
+                icon={<Crosshair size={14} className="text-blue-400" />}
                 summaryText={globalExtra.tpTargets.length > 0 ? globalExtra.tpTargets.join(', ') : 'Tümü'}
                 badgeCount={globalExtra.tpTargets.length}
                 isOpen={!!openSections.tpTarget}
@@ -728,7 +728,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
 
               {/* 14. ASIA RANGE FVG */}
               <FilterAccordionRow title={definitionTitles.asiaRangeFvgs || "Asia Range FVG (1H)"}
-                icon={<Layers size={14} className="text-amber-400" />}
+                icon={<Layers size={14} className="text-blue-400" />}
                 summaryText={globalExtra.asiaRangeFvgs.length > 0 ? globalExtra.asiaRangeFvgs.join(', ') : 'Tümü'}
                 badgeCount={globalExtra.asiaRangeFvgs.length}
                 isOpen={!!openSections.asiaFvg}
@@ -743,7 +743,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
 
               {/* 15. NEWS DAY */}
               <FilterAccordionRow title={definitionTitles.newsDays || "News Day"}
-                icon={<Newspaper size={14} className="text-rose-400" />}
+                icon={<Newspaper size={14} className="text-blue-400" />}
                 summaryText={newsSummary}
                 badgeCount={globalExtra.newsDay !== 'ALL' ? 1 : 0}
                 isOpen={!!openSections.newsDay}
@@ -779,7 +779,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
 
               {/* 17. HIZLI KAYIT */}
               <FilterAccordionRow title="Hızlı Kayıt"
-                icon={<PenLine size={14} className="text-amber-400" />}
+                icon={<PenLine size={14} className="text-blue-400" />}
                 summaryText={globalExtra.onlyIncomplete ? 'Yalnızca tamamlanmamışlar' : `${extraOptions.incomplete} tamamlanmamış`}
                 badgeCount={globalExtra.onlyIncomplete ? 1 : 0}
                 isOpen={!!openSections.quickEntry}
@@ -788,7 +788,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                 <label className="flex items-center gap-2 p-1 text-[11px] font-bold text-zinc-300 cursor-pointer select-none">
                   <input
                     type="checkbox"
-                    className="accent-amber-500"
+                    className="accent-blue-500"
                     checked={globalExtra.onlyIncomplete}
                     onChange={(e) => patchExtra({ onlyIncomplete: e.target.checked })}
                   />
@@ -798,7 +798,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
 
               {/* 18. İŞLEM SONUCU */}
               <FilterAccordionRow title="İşlem Sonucu" 
-                icon={<Activity size={14} className="text-emerald-400" />}
+                icon={<Activity size={14} className="text-blue-400" />}
                 summaryText={globalSelectedStatuses.length > 0 ? globalSelectedStatuses.join(', ') : 'Tümü'}
                 badgeCount={globalSelectedStatuses.length}
                 isOpen={!!openSections.status}

@@ -7,7 +7,7 @@ function notifyStorageFull(key: string, err: unknown) {
   const now = Date.now();
   if (now - lastQuotaToastAt < 30000) return; // aynı uyarı arka arkaya yığılmasın
   lastQuotaToastAt = now;
-  toast.error('Tarayıcı hafızası dolu! Veriler yerel olarak kaydedilemedi; bulut ile senkronize edebilirsiniz.');
+  toast.error('Tarayıcı hafızası dolu! Veriler yerel olarak kaydedilemedi; bulut ile senkronize edebilirsin.');
 }
 
 /**

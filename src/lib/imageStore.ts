@@ -51,7 +51,7 @@ export async function fitDataUrl(dataUrl: string, maxChars = MAX_IMAGE_CHARS): P
     if (!out.startsWith('data:image/webp')) out = canvas.toDataURL('image/jpeg', quality);
     if (out.length <= maxChars) return out;
   }
-  throw new Error('Görsel çok büyük; daha küçük bir görsel seçin.');
+  throw new Error('Görsel çok büyük; daha küçük bir görsel seç.');
 }
 
 const newId = () => `img_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;

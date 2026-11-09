@@ -135,10 +135,10 @@ export function MetricDetailModal({
               {currentMetric.formula && (
                 <div className="space-y-1.5 bg-zinc-900/40 rounded-xl p-3.5 border border-zinc-800/80">
                   <h4 className="text-xs font-bold font-sans text-zinc-300 uppercase tracking-wider flex items-center gap-2">
-                    <Target size={14} className="text-purple-400" /> Hesaplama Formülü
+                    <Target size={14} className="text-blue-400" /> Hesaplama Formülü
                   </h4>
                   <div className="bg-zinc-950/60 border border-zinc-800/80 rounded-xl p-3">
-                    <code className="text-xs text-purple-300 font-sans">
+                    <code className="text-xs text-blue-300 font-sans">
                       {currentMetric.formula}
                     </code>
                   </div>

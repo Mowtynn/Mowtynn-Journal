@@ -831,3 +831,18 @@ Klasik tasarım korunarak, son eklenen alanlar (risk %, hesap bağı, strateji, 
   - Prop: kart başlığındaki R "≈ bakiye ÷ 1R" olarak işaretli; Canlı R özetindeki Net R "işlemlerin R toplamı" açıklamalı.
   - Asia Range büyüklüğü etiketleri "önceki medyan" olarak düzeltildi.
 - Performans: Asia Range sınıflamasında her işlemde yeniden sıralama kaldırıldı (önceki değerler sıralı tutulup medyan doğrudan okunuyor; 5000 işlemde indeksleme 66 ms → 23 ms). Dayanıklılık testleri prop hesapları ve hedefe ulaşma süresini de kapsıyor.
+- Tutarlılık turu (görünüm, hareket, dil):
+  - Renk dili tek: vurgu mavi; yeşil/kırmızı yalnızca kazanç/kayıp ve yön; amber yalnızca uyarı / zayıf / hızlı kayıt / hesapsız. Dekoratif mor, turuncu, sarı ve rastgele renkli simgeler maviye çekildi (işlem detayı, filtre penceresi, analiz başlıkları, Asia Range pip alanı, prop kartları). Session etiketleri nötr; parite WR nötr, Net R yeşil/kırmızı. PDF raporu kartları uygulamadaki kartlarla aynı (nötr çerçeve, değer işarete göre renkli); BE her yerde gri.
+  - Hesap rozeti tek kaynaktan: Challenge mavi, Funded yeşil, Hesapsız amber — işlem listesi, işlem geçmişi, işlem detayı ve formda aynı. Platform adı olmayan prop işlemi artık "Hesapsız" yazmıyor; detayda "Hesapsız HESAPSIZ" tekrarı kalktı.
+  - Pencereler: tüm kapatma düğmeleri aynı (btn-icon, 16px simge); İşlem Geçmişi başlığı diğer pencerelerle aynı düzende; Veri & Yedekleme penceresi de diğerleri gibi açılıp kapanırken canlanıyor ve aynı katmanda. Satır içi vazgeç düğmelerinin erişilebilir adı "Vazgeç".
+  - Detaylı Analiz başlıkları (Kümülatif R, Performans Dağılımı bölümleri) aynı simge kutusu + başlık stilinde; Strateji Lab'daki iç içe giriş animasyonu kaldırıldı. Gün çubuğundaki tanımsız renk düzeltildi.
+  - Dil: arayüz metinleri, bildirimler ve onaylar tek hitapla ("sen"); "Trade" yerine "işlem". Günlük boş ekranı Notlar ile aynı (ilk günlüğü yaz düğmesi).
+- Metrik denetimi (hesaplama ve analiz):
+  - Ana Panel "Son 7 / 30 gün" ve tarih filtresi ("Son 1 hafta" …) uygulama günlerce açık kalınca donup kalıyordu; artık saat başı ilerliyor.
+  - Kurallarım · "son 7 gün N ihlal" son işleme göre sayılıyordu (uzun aradan sonra haftalar önceki ihlaller "son 7 gün" görünüyordu); artık bugüne göre. Edge raporu da aynı.
+  - Isı haritası: seans girilmemiş işlemler, başka işlemlerde seans varsa haritadan düşüyordu; artık "Belirtilmemiş" sütununda. Session Performansı'nda da aynı ad.
+  - Prop: payout hesaptan çekilir ama girilen tutar net olduğu için hesaplanan bakiye ve max drawdown'a kalan payout'tan sonra olduğundan yüksek görünebiliyordu. Payout eklenince bakiye girme alanı açılır; payout'tan sonra bakiye girilmediyse kartta uyarı çıkar (fark yoksa da kontrol kaydedilir, uyarı kalkar).
+  - Başabaş kazanma oranı Ana Panel ve PDF raporunda tek fonksiyondan (PDF'de 0R'lik WIN işlemlerde sonuç biraz farklı çıkabiliyordu).
+  - İşlem Geçmişi penceresi: Net R eklendi; Long / Short WR yön rengiyle (yeşil / kırmızı) değil nötr gösteriliyor (düşük WR yeşil görünmesin).
+  - 0R sonuçlar (seans, gün, günlük) yeşil "+0.00" yerine nötr "0.00"; işlem satırlarında R iki basamağa yuvarlanıyor; günlükte BE sayısı da görünüyor.
+  - Tesadüf Testi açıklaması koddaki ölçütle aynı (ALMA bulgusu ikinci yarıda kaybettirmeli VE geri kalandan kötü olmalı).

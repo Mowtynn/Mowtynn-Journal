@@ -7,7 +7,7 @@ import { createPortal } from "react-dom";
 import { motion, AnimatePresence, animate } from "motion/react";
 import toast from "react-hot-toast";
 import { Trade, DefinitionTitles } from "../types";
-import { DEFAULT_DEFINITION_TITLES, cleanDefinitionTitleString, getTradeAccountCategory, getTradeStageLabel, ACCOUNT_CATEGORY_LABELS, getNewsDayLabels, smartUpper } from "../constants/constants";
+import { DEFAULT_DEFINITION_TITLES, cleanDefinitionTitleString, getTradeAccountCategory, getTradeStageLabel, ACCOUNT_CATEGORY_LABELS, ACCOUNT_CATEGORY_BADGE, getNewsDayLabels, smartUpper } from "../constants/constants";
 import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
 import { resolveChartImage } from "../lib/chartLink";
 import { 
@@ -446,22 +446,19 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                             value={
                               (() => {
                                 const cat = getTradeAccountCategory(currentTrade);
-                                const catClass = cat === 'FUNDED'
-                                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
-                                  : cat === 'CHALLENGE'
-                                    ? 'bg-blue-500/20 text-blue-300 border-blue-500/30'
-                                    : 'bg-amber-500/20 text-amber-300 border-amber-500/30';
+                                // Hesap adı yalnızca platform girilmişse yazılır; rozet zaten hesap türünü / aşamayı söyler
+                                // ("Hesapsız HESAPSIZ" gibi tekrar ya da prop işleminde "Hesapsız" çelişkisi olmasın).
                                 return (
                                   <span className="flex items-center gap-1.5 min-w-0 max-w-full">
-                                    <span className="truncate min-w-0">{currentTrade.platform || 'Hesapsız'}</span>
-                                    <span className={`shrink-0 text-[9px] px-1.5 py-0.2 rounded-md font-bold uppercase border ${catClass}`}>
+                                    {currentTrade.platform && <span className="truncate min-w-0">{currentTrade.platform}</span>}
+                                    <span className={`shrink-0 text-[9px] px-1.5 py-0.5 rounded-md font-bold uppercase border ${ACCOUNT_CATEGORY_BADGE[cat]}`}>
                                       {getTradeStageLabel(currentTrade) || ACCOUNT_CATEGORY_LABELS[cat]}
                                     </span>
                                   </span>
                                 );
                               })()
                             } 
-                            icon={<Monitor size={14} className="text-zinc-400"/>} 
+                            icon={<Monitor size={14} className="text-blue-400"/>} 
                           />
                           <ContextRow
                             label={smartUpper(cleanDefinitionTitleString(definitionTitles.asiaRange) || "ASIA RANGE")}
@@ -477,13 +474,13 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                           <ContextRow 
                             label={smartUpper(cleanDefinitionTitleString(definitionTitles.sessions) || "SESSION")} 
                             value={currentTrade.session} 
-                            icon={<Clock size={14} className="text-purple-400"/>} 
+                            icon={<Clock size={14} className="text-blue-400"/>} 
                           />
                           {/* 8. TREND YAPISI */}
                           <ContextRow 
                             label={smartUpper(cleanDefinitionTitleString(definitionTitles.trendTypes) || "TREND YAPISI")} 
                             value={currentTrade.trend} 
-                            icon={<TrendingUp size={14} className="text-emerald-400"/>} 
+                            icon={<TrendingUp size={14} className="text-blue-400"/>} 
                             valueColor={trendColor}
                           />
                           <ContextRow
@@ -494,13 +491,13 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                               const pips = currentTrade.asiaRangePips !== undefined && currentTrade.asiaRangePips !== null ? `${currentTrade.asiaRangePips} PIP` : undefined;
                               return fvg && pips ? `${pips} · ${fvg}` : (fvg ?? pips);
                             })()}
-                            icon={<Flag size={14} className="text-orange-400"/>}
+                            icon={<Flag size={14} className="text-blue-400"/>}
                           />
                           {/* 4. TIMEFRAME */}
                           <ContextRow 
                             label={smartUpper(cleanDefinitionTitleString(definitionTitles.htfTimeframes) || "TIMEFRAME")} 
                             value={currentTrade.htfTimeframe} 
-                            icon={<Maximize2 size={14} className="text-rose-400"/>} 
+                            icon={<Maximize2 size={14} className="text-blue-400"/>} 
                           />
                           {/* 5. PD ARRAY */}
                           <ContextRow 
@@ -508,7 +505,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                             value={currentTrade.confirmations && currentTrade.confirmations.length > 0 
                               ? currentTrade.confirmations.map(c => smartUpper(c)).join(", ") 
                               : undefined} 
-                            icon={<Layers size={14} className="text-emerald-400"/>} 
+                            icon={<Layers size={14} className="text-blue-400"/>} 
                           />
                           {/* 6. ENTRY TIMEFRAME */}
                           <ContextRow 
@@ -522,7 +519,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                             value={Array.isArray(currentTrade.entryModels) && currentTrade.entryModels.length > 0 
                               ? currentTrade.entryModels.map(e => smartUpper(e)).join(", ") 
                               : undefined} 
-                            icon={<Zap size={14} className="text-amber-400"/>} 
+                            icon={<Zap size={14} className="text-blue-400"/>} 
                           />
                           {/* TARGET (çıkış hedefi) */}
                           <ContextRow
@@ -530,19 +527,19 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                             value={Array.isArray(currentTrade.tpTargets) && currentTrade.tpTargets.length > 0
                               ? currentTrade.tpTargets.map(e => smartUpper(e)).join(", ")
                               : undefined}
-                            icon={<Flag size={14} className="text-purple-400"/>}
+                            icon={<Flag size={14} className="text-blue-400"/>}
                           />
                           {/* PREMIUM / DISCOUNT */}
                           <ContextRow
                             label={smartUpper(cleanDefinitionTitleString(definitionTitles.premiumDiscounts) || "CONFIRMATIONS")}
                             value={currentTrade.premiumDiscount ? smartUpper(currentTrade.premiumDiscount) : undefined}
-                            icon={<Scale size={14} className="text-purple-400"/>}
+                            icon={<Scale size={14} className="text-blue-400"/>}
                           />
                           {/* NEWS DAY / BANK HOLIDAY */}
                           <ContextRow
                             label={smartUpper(cleanDefinitionTitleString(definitionTitles.newsDays) || "NEWS DAY/BANK HOLIDAY")}
                             value={typeof currentTrade.newsDay === "boolean" ? smartUpper(currentTrade.newsDay ? getNewsDayLabels().yes : getNewsDayLabels().no) : undefined}
-                            icon={<Clock size={14} className="text-amber-400"/>}
+                            icon={<Clock size={14} className="text-blue-400"/>}
                           />
                           {/* 9. SETUP KALİTESİ */}
                           <ContextRow 
@@ -725,7 +722,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                 {smartUpper("İşlemi Sil")}
               </h3>
               <p className="text-zinc-400 text-xs text-center mb-6 leading-relaxed font-sans">
-                <span className="font-semibold text-zinc-200">{currentTrade.asset}</span> <span className="text-zinc-300 font-bold">{currentTrade.type}</span> pozisyonunu kalıcı olarak silmek istediğinize emin misiniz?
+                <span className="font-semibold text-zinc-200">{currentTrade.asset}</span> <span className="text-zinc-300 font-bold">{currentTrade.type}</span> pozisyonunu kalıcı olarak silmek istediğine emin misin?
               </p>
               <div className="flex gap-3">
                 <button

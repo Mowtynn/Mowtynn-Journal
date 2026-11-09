@@ -162,7 +162,7 @@ export function PasswordGate({ children }: PasswordGateProps) {
         setError(false);
       } else if (response.status !== 401) {
         // 429 (sunucu limiti), 500 (SITE_PASSWORD tanımsız) vb.: parola yanlış değil, deneme hakkı düşmez
-        setErrorMessage(data.error || 'Sunucu şu an doğrulama yapamıyor. Lütfen tekrar deneyin.');
+        setErrorMessage(data.error || 'Sunucu şu an doğrulama yapamıyor. Lütfen tekrar dene.');
         setError(true);
         setTimeout(() => setError(false), 4000);
       } else {
@@ -184,7 +184,7 @@ export function PasswordGate({ children }: PasswordGateProps) {
       }
     } catch (err) {
       console.error("Verification request failed.", err);
-      setErrorMessage('Sunucuya ulaşılamadı. Bağlantınızı kontrol edin.');
+      setErrorMessage('Sunucuya ulaşılamadı. Bağlantını kontrol et.');
       setError(true);
       setTimeout(() => setError(false), 4000);
     } finally {

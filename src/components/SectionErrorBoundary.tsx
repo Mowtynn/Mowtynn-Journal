@@ -38,7 +38,7 @@ export class SectionErrorBoundary extends Component<Props, State> {
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error(`Uncaught error in ${this.props.sectionName || 'section'}:`, error, errorInfo);
     if (isStaleChunkError(error)) reloadForNewVersion();
-    else if (this.props.notify) toast.error(`${this.props.sectionName || 'Pencere'} açılırken bir hata oluştu. Sayfayı yenileyip tekrar deneyin.`);
+    else if (this.props.notify) toast.error(`${this.props.sectionName || 'Pencere'} açılırken bir hata oluştu. Sayfayı yenileyip tekrar dene.`);
   }
 
   public render() {

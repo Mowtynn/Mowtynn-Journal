@@ -275,7 +275,7 @@ export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], o
          isOpen={!!(selectedDateStr && selectedDateStats)}
          onClose={() => setSelectedDateStr(null)}
          title={selectedDateStr ? formatDisplayDate(selectedDateStr) : ""}
-         icon={<CalendarIcon size={16} className="mr-1.5 text-blue-400 shrink-0" />}
+         icon={<CalendarIcon size={16} className="shrink-0" />}
          trades={selectedDateStats?.trades || []}
          onEdit={(trade) => {
            if (onEdit) onEdit(trade);

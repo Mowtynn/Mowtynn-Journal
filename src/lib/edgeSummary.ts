@@ -156,7 +156,8 @@ const rOf = (t: Trade) => (typeof t.rr === 'number' && Number.isFinite(t.rr) ? t
 const edgeOf = (list: Trade[]) => edgeFromR(list.map(rOf), list.map((t) => t.status));
 const labelOf = (d: SetupDimension) => SETUP_DIMENSIONS.find((x) => x.id === d)?.label || d;
 
-export function computeEdgeSummary(trades: Trade[], minSample = SETUP_MIN_SAMPLE): EdgeSummary {
+/** `now`: "son 7 gün" ihlalleri bugüne göre sayılır (son işleme göre değil: uzun aradan sonra eski ihlaller "son 7 gün" görünmesin) */
+export function computeEdgeSummary(trades: Trade[], minSample = SETUP_MIN_SAMPLE, now: number = Date.now()): EdgeSummary {
   const valid = trades.filter((t) => typeof t.rr === 'number' && Number.isFinite(t.rr));
   const sorted = [...valid].sort((a, b) => a.createdAt - b.createdAt);
   indexTradeOrder(sorted);
@@ -316,7 +317,7 @@ export function computeEdgeSummary(trades: Trade[], minSample = SETUP_MIN_SAMPLE
     strengths,
     riskSlices,
     managementSlices,
-    rules: buildRules(sorted, card.rows, slices, pairs, val, vsRestOf),
+    rules: buildRules(sorted, card.rows, slices, pairs, val, vsRestOf, now),
     timeToTarget: computeTimeToTarget(sorted),
     bestPairs,
     worstPairs,
@@ -344,6 +345,7 @@ function buildRules(
   pairs: PairSlice[],
   val: ValueOf = dimensionValue,
   vsRest: (list: Trade[]) => { vsRest: number; vsRestZ: number } = () => ({ vsRest: 0, vsRestZ: 0 }),
+  now: number = Date.now(),
 ): EdgeRule[] {
   const rules: EdgeRule[] = [];
   // Dışarıya verilen eşleştirici dimensionValue ile (her işlemde çalışır); iç hesaplar önceden hesaplanmış tabloyla
@@ -386,9 +388,8 @@ function buildRules(
     const second = edgeOf(secondHalf.filter(m));
     r.halves = { first, second, status: halfStatus(first, second, r.kind === 'TAKE' ? 1 : -1) };
   });
-  // Alma kuralları: son 7 günde kurala uymayan işlemler
-  const last = sorted.length ? sorted[sorted.length - 1].createdAt : 0;
-  const recent = sorted.filter((t) => t.createdAt > last - 7 * DAY_MS);
+  // Alma kuralları: son 7 günde (bugüne göre) kurala uymayan işlemler
+  const recent = sorted.filter((t) => t.createdAt > now - 7 * DAY_MS && t.createdAt <= now);
   rules.forEach((r) => {
     if (r.kind !== 'AVOID') return;
     const hit = recent.filter(fast.get(r)!);

@@ -189,8 +189,10 @@ const JournalView = memo(function JournalView({ entries: allEntries, trades = []
     const dayTrades = getTradesForDate(dateStr);
     if (dayTrades.length === 0) return null;
 
-    const totalRR = dayTrades.reduce((acc, t) => acc + (t.rr || 0), 0);
+    const rawTotal = dayTrades.reduce((acc, t) => acc + (typeof t.rr === 'number' && Number.isFinite(t.rr) ? t.rr : 0), 0);
+    const totalRR = Math.abs(rawTotal) < 1e-9 ? 0 : rawTotal;
     const winCount = dayTrades.filter(t => t.status === 'WIN').length;
+    const beCount = dayTrades.filter(t => t.status === 'BREAKEVEN').length;
 
     return (
       <div className="mt-6 pt-5 border-t border-zinc-800/80">
@@ -203,7 +205,7 @@ const JournalView = memo(function JournalView({ entries: allEntries, trades = []
           </div>
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-sans font-bold text-zinc-400 bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded-lg">
-              {winCount}W / {dayTrades.filter(t => t.status === 'LOSS').length}L
+              {winCount}W / {dayTrades.filter(t => t.status === 'LOSS').length}L{beCount > 0 ? ` / ${beCount}BE` : ''}
             </span>
             <span className={`text-[10px] font-sans font-bold px-2 py-0.5 rounded-lg border ${
               totalRR > 0 
@@ -212,7 +214,7 @@ const JournalView = memo(function JournalView({ entries: allEntries, trades = []
                 ? 'toggle-item-loss' 
                 : 'bg-zinc-800 text-zinc-400 border-zinc-700'
             }`}>
-              {`${totalRR >= 0 ? '+' : ''}${totalRR.toFixed(2)}R`}
+              {`${totalRR > 0 ? '+' : ''}${totalRR.toFixed(2)}R`}
             </span>
           </div>
         </div>
@@ -223,7 +225,7 @@ const JournalView = memo(function JournalView({ entries: allEntries, trades = []
             const isLoss = trade.status === 'LOSS';
             const pnlColor = isWin ? 'text-emerald-400' : isLoss ? 'text-rose-400' : 'text-zinc-400';
             const pnlPrefix = isWin ? '+' : isLoss ? '-' : '';
-            const displayValue = trade.rr !== undefined && trade.rr !== null ? `${pnlPrefix}${Math.abs(trade.rr)}R` : '—';
+            const displayValue = typeof trade.rr === 'number' && Number.isFinite(trade.rr) ? `${pnlPrefix}${Number(Math.abs(trade.rr).toFixed(2))}R` : '—';
             
             return (
               <div 
@@ -706,18 +708,31 @@ const JournalView = memo(function JournalView({ entries: allEntries, trades = []
         {/* LIST AREA */}
         <div className="flex-1 relative overflow-hidden">
           {filteredEntries.length === 0 ? (
-            <div className="text-center py-10 opacity-70 absolute inset-0 flex flex-col items-center justify-center pointer-events-none px-4">
+            /* Boş durum: Notlar sekmesiyle aynı düzen (simge kutusu, başlık, açıklama, eylem butonu) */
+            <div className="text-center py-10 absolute inset-0 flex flex-col items-center justify-center px-4">
               {showOnlyFavorites ? (
                 <>
-                  <Star size={28} className="mx-auto mb-2 text-amber-400/80 fill-amber-400/20" />
-                  <p className="text-xs font-sans uppercase tracking-wider mb-1 text-amber-400 font-bold">Favori Bulunamadı</p>
-                  <p className="text-[10px] text-zinc-500 max-w-[180px]">Yıldız ikonuna tıklayarak favorilerinize ekleyebilirsiniz.</p>
+                  <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-amber-400/80 mb-3 shadow-inner">
+                    <Star size={22} className="fill-amber-400/20" />
+                  </div>
+                  <h3 className="text-xs font-bold text-zinc-200 mb-1 uppercase tracking-wider font-sans">{smartUpper('Favori Bulunamadı')}</h3>
+                  <p className="text-zinc-500 text-xs max-w-[220px] font-sans leading-relaxed">Yıldız simgesine tıklayarak günlükleri favorilere ekleyebilirsin.</p>
                 </>
               ) : (
                 <>
-                  <CalendarIcon size={28} className="mx-auto mb-2 text-zinc-600" />
-                  <p className="text-xs font-sans uppercase tracking-wider mb-1 text-zinc-400">Günlük Boş</p>
-                  <p className="text-[10px] text-zinc-500 max-w-[180px]">İlk trade günlüğünüzü oluşturmak için '+' butonuna tıklayın.</p>
+                  <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-500 mb-3 shadow-inner">
+                    <CalendarIcon size={22} />
+                  </div>
+                  <h3 className="text-xs font-bold text-zinc-200 mb-1 uppercase tracking-wider font-sans">{smartUpper('Henüz Günlük Yok')}</h3>
+                  <p className="text-zinc-500 text-xs max-w-[220px] mb-5 font-sans leading-relaxed">Günün psikolojisini ve işlem notlarını buraya kaydedebilirsin.</p>
+                  <button
+                    type="button"
+                    onClick={handleCreateNew}
+                    className="bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 px-4 py-2 rounded-xl border border-blue-500/30 text-xs font-bold font-sans uppercase tracking-wider flex items-center gap-1.5 transition-ui cursor-pointer shadow-xs"
+                  >
+                    <Plus size={14} />
+                    {smartUpper('İlk Günlüğü Yaz')}
+                  </button>
                 </>
               )}
             </div>
@@ -842,8 +857,8 @@ const JournalView = memo(function JournalView({ entries: allEntries, trades = []
                 <div className="w-14 h-14 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-500 mx-auto mb-3 shadow-inner">
                   <CalendarIcon size={26} />
                 </div>
-                <p className="text-xs font-bold uppercase tracking-wider font-sans text-zinc-300">{smartUpper("Bir günlük seçin")}</p>
-                <p className="text-[11px] text-zinc-500 mt-1 font-sans">veya yeni bir kayıt eklemek için sol üstteki '+' butonuna tıklayın.</p>
+                <p className="text-xs font-bold uppercase tracking-wider font-sans text-zinc-300">{smartUpper("Bir günlük seç")}</p>
+                <p className="text-[11px] text-zinc-500 mt-1 font-sans">veya yeni bir kayıt eklemek için sol üstteki '+' butonuna tıkla.</p>
               </div>
             </motion.div>
           ) : isEditing ? (
@@ -1101,7 +1116,7 @@ const JournalView = memo(function JournalView({ entries: allEntries, trades = []
                 </h3>
                 
                 <p className="text-zinc-400 text-xs text-center mb-6 leading-relaxed">
-                  <strong className="text-zinc-200">"{entryToDelete.title}"</strong> başlıklı günlüğü silmek istediğinize emin misiniz?
+                  <strong className="text-zinc-200">"{entryToDelete.title}"</strong> başlıklı günlüğü silmek istediğine emin misin?
                 </p>
                 
                 <div className="flex items-center gap-2.5">

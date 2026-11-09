@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { smartUpper } from '../../constants/constants';
 import { Trade } from '../../types';
-import { getTradeAccountCategory } from '../../constants/constants';
+import { getTradeAccountCategory, getTradeAccountName, ACCOUNT_CATEGORY_BADGE } from '../../constants/constants';
 import { Edit3, Trash2 } from 'lucide-react';
 import { nyWallDate } from '../../lib/tradingTime';
 
@@ -25,15 +25,11 @@ export const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
   const isBe = trade.status === 'BREAKEVEN';
 
   const category = getTradeAccountCategory(trade);
-  const categoryBadgeClass = category === 'FUNDED'
-    ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30 group-hover:border-emerald-500/60'
-    : category === 'CHALLENGE'
-      ? 'bg-blue-500/10 text-blue-300 border-blue-500/30 group-hover:border-blue-500/60'
-      : 'bg-amber-500/10 text-amber-300 border-amber-500/30 group-hover:border-amber-500/60';
+  const categoryBadgeClass = `${ACCOUNT_CATEGORY_BADGE[category]} ${category === 'FUNDED' ? 'group-hover:border-emerald-500/60' : category === 'CHALLENGE' ? 'group-hover:border-blue-500/60' : 'group-hover:border-amber-500/60'}`;
 
   // Risk sütunu: hesaplı işlemde işlem başı risk yüzdesi, hesapsızda boş
   const riskText = typeof trade.riskPct === 'number' ? `%${trade.riskPct.toLocaleString('en-US', { maximumFractionDigits: 2 })}` : '—';
-  const accountLabel = trade.platform || (category === 'DEMO' ? 'Hesapsız' : '');
+  const accountLabel = getTradeAccountName(trade);
 
   const { formattedDateOnly, formattedTimeOnly } = useMemo(() => {
     if (!trade.createdAt) return { formattedDateOnly: '—', formattedTimeOnly: '' };
@@ -81,15 +77,15 @@ export const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
             {trade.rr !== undefined && trade.rr !== null && trade.rr !== 0 ? (
               trade.rr > 0 ? (
                 <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded-full uppercase tracking-wider font-sans">
-                  +{trade.rr}R
+                  +{Number(trade.rr.toFixed(2))}R
                 </span>
               ) : trade.rr < 0 ? (
                 <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 group-hover:border-rose-500/50 rounded-full uppercase tracking-wider font-sans">
-                  {trade.rr}R
+                  {Number(trade.rr.toFixed(2))}R
                 </span>
               ) : (
                 <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-zinc-400 bg-zinc-500/10 border border-zinc-500/20 group-hover:border-zinc-500/50 rounded-full uppercase tracking-wider font-sans">
-                  {trade.rr}R
+                  {Number(trade.rr.toFixed(2))}R
                 </span>
               )
             ) : (

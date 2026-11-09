@@ -93,3 +93,32 @@ export const calculateComprehensiveStats = (list: Trade[], now: number = Date.no
     grossLossR: grossLossRR,
   };
 };
+
+/**
+ * Başabaş kazanma oranı (%): ortalama kazanç / kayıpla beklentinin sıfır olduğu kazanma oranı, BE işlemleri de
+ * paydada olduğu için tüm işlemlere ölçeklenir: Ort. Kayıp ÷ (Ort. Kazanç + Ort. Kayıp) × (kazanç + kayıp) ÷ tüm işlemler.
+ * Ortalamalar durumla (WIN / LOSS) hesaplanır; Ana Panel ve PDF raporu aynı fonksiyonu kullanır. Kazanç ya da kayıp yoksa null.
+ */
+export function breakevenWinRate(wins: number, losses: number, total: number, avgWinR: number, avgLossR: number): number | null {
+  if (!(wins > 0 && losses > 0 && total > 0) || !(avgWinR + avgLossR > 0)) return null;
+  return (avgLossR / (avgWinR + avgLossR)) * ((wins + losses) / total) * 100;
+}
+
+/** İşlem listesinden başabaş kazanma oranı (durum bazlı ortalamalarla) */
+export function breakevenWinRateOf(list: Trade[]): number | null {
+  let w = 0;
+  let l = 0;
+  let wR = 0;
+  let lR = 0;
+  for (const t of list) {
+    const r = typeof t.rr === 'number' && Number.isFinite(t.rr) ? t.rr : 0;
+    if (t.status === 'WIN') {
+      w++;
+      wR += r;
+    } else if (t.status === 'LOSS') {
+      l++;
+      lR += Math.abs(r);
+    }
+  }
+  return breakevenWinRate(w, l, list.length, w ? wR / w : 0, l ? lR / l : 0);
+}

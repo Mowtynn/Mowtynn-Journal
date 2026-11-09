@@ -16,6 +16,19 @@ export const ACCOUNT_CATEGORY_LABELS: Record<PlatformCategory, string> = {
   DEMO: 'Hesapsız',
 };
 
+/** Hesap türü rozet renkleri — her yerde aynı: Challenge mavi, Funded yeşil, Hesapsız amber */
+export const ACCOUNT_CATEGORY_BADGE: Record<PlatformCategory, string> = {
+  CHALLENGE: 'bg-blue-500/10 text-blue-300 border-blue-500/30',
+  FUNDED: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30',
+  DEMO: 'bg-amber-500/10 text-amber-300 border-amber-500/30',
+};
+
+/** İşlemin hesap adı: platform adı; yoksa hesapsızda "Hesapsız", prop işleminde hesap türü */
+export function getTradeAccountName(trade: { platform?: string; accountCategory?: PlatformCategory; accountId?: string; accountStage?: number }): string {
+  if (trade.platform) return trade.platform;
+  return ACCOUNT_CATEGORY_LABELS[getTradeAccountCategory(trade)];
+}
+
 /** İşlemin aşama etiketi: "Phase 1", "Funded"; hesapsız işlemde boş */
 export function getTradeStageLabel(trade: { accountId?: string; accountStage?: number }): string | null {
   if (!trade.accountId || typeof trade.accountStage !== 'number') return null;

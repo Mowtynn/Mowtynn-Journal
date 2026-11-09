@@ -190,19 +190,19 @@ const AddTradeForm = React.memo(function AddTradeForm({
     if (!safeAsset) {
       setPairError(true);
       assetInputRef.current?.focus();
-      toast.error("Lütfen bir parite seçin veya yazın.");
+      toast.error("Bir parite seç ya da yaz.");
       return;
     }
     if (!accountChoice || (accountChoice !== NO_ACCOUNT && !selectedAccount)) {
       setAccountError(true);
       document.getElementById("account-field")?.scrollIntoView({ behavior: "smooth", block: "center" });
-      toast.error("Hesap seçin (prop hesabı ya da Hesapsız).");
+      toast.error("Hesap seç (prop hesabı ya da Hesapsız).");
       return;
     }
     if (selectedAccount && !effectiveRiskPct) {
       setRiskError(true);
       document.getElementById("risk-field")?.scrollIntoView({ behavior: "smooth", block: "center" });
-      toast.error("Bu işlemin riskini seçin (%).");
+      toast.error("Bu işlemin riskini seç (%).");
       return;
     }
     if (selectedAccount && effectiveRiskPct && effectiveRiskPct > 10) {
@@ -213,7 +213,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
     if (!isQuick && newsDay === null) {
       setNewsDayError(true);
       document.getElementById("news-day-field")?.scrollIntoView({ behavior: "smooth", block: "center" });
-      toast.error("News Day / Bank Holiday seçimini yapın (Var / Yok).");
+      toast.error("News Day / Bank Holiday seçimini yap (Var / Yok).");
       return;
     }
     const matchedAsset = assets.find(
@@ -240,7 +240,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
       return;
     }
     if (tradeStatus === "LOSS" && numericRR >= 0) {
-      toast.error("LOSS işlemde R girin (eksi işareti koymayın; durum işareti belirler).");
+      toast.error("LOSS işlemde R gir (eksi işareti koyma; işareti durum belirler).");
       return;
     }
 
@@ -389,7 +389,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
     setSelectedTpTargets(Array.isArray(t.tpTargets) ? t.tpTargets : []);
     setPremiumDiscount(t.premiumDiscount || "");
     setSelectedAsiaFvg(t.asiaRangeFvg || "");
-    toast.success("Son işlemin kurulumu uygulandı. Riski, sonucu ve pip değerlerini girin.");
+    toast.success("Son işlemin kurulumu uygulandı. Riski, sonucu ve pip değerlerini gir.");
   };
 
   return (
@@ -446,7 +446,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
               e.stopPropagation();
               requestClose();
             }}
-            className="btn-icon w-8 h-8 text-zinc-400 hover:text-white hover:bg-zinc-800/80 rounded-xl transition-colors cursor-pointer"
+            className="btn-icon w-8 h-8"
           >
             <X size={16} />
           </button>

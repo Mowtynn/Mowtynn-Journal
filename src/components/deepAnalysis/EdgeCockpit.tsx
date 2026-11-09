@@ -250,7 +250,7 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
           )}
         </div>
         <div className="flex flex-col gap-2 min-w-0">
-          <span className={`${sectionTitle} text-amber-300`}>
+          <span className={`${sectionTitle} text-blue-300`}>
             <Newspaper size={12} /> News Day etkisi
           </span>
           <p className="text-[10px] text-zinc-500 -mt-1">Haber / tatil günü işaretli ve işaretsiz günlerde işlem başı R.</p>
@@ -362,7 +362,7 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
             <Shuffle size={12} /> Tesadüf Testi
           </span>
           <p className="text-[10px] text-zinc-500 -mt-1">
-            Bulgular işlemlerinin yalnızca ilk yarısında aranır, sonra hiç görülmemiş ikinci yarıda sınanır. AL bulgusu ikinci yarıda da geri kalandan iyi, ALMA bulgusu yine kaybettiriyorsa "Tuttu" sayılır; tutmayan şans eseri çıkmış olabilir.
+            Bulgular işlemlerinin yalnızca ilk yarısında aranır, sonra hiç görülmemiş ikinci yarıda sınanır. AL bulgusu ikinci yarıda da kârlı ve geri kalandan iyi, ALMA bulgusu yine kaybettiriyor ve geri kalandan kötüyse "Tuttu" sayılır; tutmayan şans eseri çıkmış olabilir.
           </p>
           {oos.ready ? (
             oos.findings.length ? (

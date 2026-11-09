@@ -64,16 +64,16 @@ export const loginWithGoogle = async () => {
         await signInWithRedirect(auth, googleProvider);
         return;
       }
-      alert("Giriş penceresi (Pop-up) tarayıcınız tarafından engellendi.\n\nLütfen tarayıcı ayarlarından 'Açılır Pencereleri Engelle' seçeneğini kapatıp tekrar deneyin.");
+      alert("Giriş penceresi (Pop-up) tarayıcın tarafından engellendi.\n\nLütfen tarayıcı ayarlarından 'Açılır Pencereleri Engelle' seçeneğini kapatıp tekrar dene.");
       throw error;
     }
 
     if (error?.code === 'auth/missing-initial-state' || error?.message?.includes('missing initial state')) {
-      alert("Giriş yapılamadı: Tarayıcı gizlilik/çerez kısıtlamaları nedeniyle oturum başlatılamadı.\n\nLütfen tarayıcı ayarlarınızdan çerez izinlerini veya 'Siteler Arası Takibi Engelle' seçeneğini kontrol edin.");
+      alert("Giriş yapılamadı: Tarayıcı gizlilik/çerez kısıtlamaları nedeniyle oturum başlatılamadı.\n\nLütfen tarayıcı ayarlarından çerez izinlerini veya 'Siteler Arası Takibi Engelle' seçeneğini kontrol et.");
       throw error;
     }
 
-    alert("Giriş yapılırken bir sorun oluştu. Lütfen tekrar deneyin.");
+    alert("Giriş yapılırken bir sorun oluştu. Lütfen tekrar dene.");
     throw error;
   }
 };

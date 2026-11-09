@@ -282,11 +282,11 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
             }}
             className={`shrink-0 px-2.5 rounded-lg text-xs font-semibold font-sans flex items-center gap-1 whitespace-nowrap transition-ui cursor-pointer ${
               accountChoice === NO_ACCOUNT
-                ? "bg-blue-500/15 text-amber-50 ring-1 ring-inset ring-blue-500/40"
+                ? "bg-amber-500/15 text-amber-200 ring-1 ring-inset ring-amber-500/40"
                 : "text-zinc-500 hover:text-white hover:bg-zinc-800/60"
             }`}
           >
-            <Shield size={12} className="text-blue-400 shrink-0" />
+            <Shield size={12} className="text-amber-400 shrink-0" />
             Hesapsız
           </button>
         </div>

@@ -6,11 +6,11 @@ import toast from 'react-hot-toast';
  */
 
 const MESSAGES: Record<string, string> = {
-  'permission-denied': 'Bulut erişimi reddedildi. Oturumu kapatıp yeniden giriş yapın; sorun sürerse Firebase kurallarını yayınladığınızdan emin olun.',
-  'unauthenticated': 'Oturum süresi doldu. Verilerin buluta yazılması için yeniden giriş yapın.',
+  'permission-denied': 'Bulut erişimi reddedildi. Oturumu kapatıp yeniden giriş yap; sorun sürerse Firebase kurallarını yayınladığından emin ol.',
+  'unauthenticated': 'Oturum süresi doldu. Verilerin buluta yazılması için yeniden giriş yap.',
   'unavailable': 'Buluta şu an ulaşılamıyor. Değişiklikler cihazda tutuluyor, bağlantı gelince eşitlenecek.',
   'deadline-exceeded': 'Bulut yanıt vermedi (zaman aşımı). Bağlantı gelince tekrar denenecek.',
-  'resource-exhausted': 'Firebase kotası doldu. Bir süre sonra tekrar deneyin.',
+  'resource-exhausted': 'Firebase kotası doldu. Bir süre sonra tekrar dene.',
   'invalid-argument': 'Kayıt bulutun kabul etmediği bir değer içeriyor (çok büyük not/görsel ya da geçersiz alan).',
   'failed-precondition': 'Bulut işlemi şu an yapılamıyor (başka sekme/cihaz çakışması). Sayfayı yenileyin.',
   'storage/unauthorized': 'Görsel yüklenemedi: yalnızca kendi klasörünüze, 5 MB altı görsel yüklenebilir.',

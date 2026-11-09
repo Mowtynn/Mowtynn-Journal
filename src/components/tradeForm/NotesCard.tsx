@@ -29,7 +29,7 @@ export const NotesCard = React.memo(function NotesCard({
         <span className="text-xs font-bold text-zinc-200 uppercase tracking-wider font-sans">{L("notesCard")}</span>
       </div>
       <textarea
-        placeholder="Setup kurgusu, destek/direnç, psikolojik etkenler veya FOMO notlarınız..."
+        placeholder="Setup kurgusu, destek/direnç, psikolojik etkenler veya FOMO notların..."
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
         className="w-full flex-1 min-h-[96px] bg-zinc-950/80 border border-zinc-700/70 hover:border-zinc-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 rounded-lg sm:rounded-xl p-2.5 sm:p-3 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none transition-ui resize-none leading-relaxed font-sans font-medium shadow-inner"

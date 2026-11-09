@@ -171,7 +171,7 @@ const BackupRescue = React.memo(function BackupRescue({
           { id: toastId, duration: 9000 },
         );
       } else {
-        toast.success(`Tüm verileriniz (${trades.length} işlem, ${notes.length} not, ${journals.length} günlük, prop hesapları ve ayarlar) dışa aktarıldı.`, { id: toastId });
+        toast.success(`Tüm verilerin (${trades.length} işlem, ${notes.length} not, ${journals.length} günlük, prop hesapları ve ayarlar) dışa aktarıldı.`, { id: toastId });
       }
     } catch (err) {
       console.error('Export error:', err);
@@ -197,7 +197,7 @@ const BackupRescue = React.memo(function BackupRescue({
     const reader = new FileReader();
 
     reader.onerror = () => {
-      toast.error('Dosya okunamadı. Lütfen tekrar deneyin.');
+      toast.error('Dosya okunamadı. Lütfen tekrar dene.');
       input.value = '';
     };
 
@@ -207,7 +207,7 @@ const BackupRescue = React.memo(function BackupRescue({
         try {
           parsed = JSON.parse(event.target?.result as string);
         } catch {
-          toast.error('Dosya geçerli bir JSON değil. Lütfen "Yedek İndir" ile aldığınız dosyayı seçin.');
+          toast.error('Dosya geçerli bir JSON değil. Lütfen "Yedek İndir" ile aldığın dosyayı seç.');
           return;
         }
 
@@ -343,7 +343,7 @@ const BackupRescue = React.memo(function BackupRescue({
         );
       } catch (err: any) {
         console.error('Import error:', err);
-        toast.error(err?.message || 'Dosya okunamadı. Lütfen geçerli bir yedek JSON dosyası seçin.');
+        toast.error(err?.message || 'Dosya okunamadı. Lütfen geçerli bir yedek JSON dosyası seç.');
       } finally {
         // Aynı dosya tekrar seçilebilsin
         input.value = '';
@@ -405,7 +405,7 @@ const BackupRescue = React.memo(function BackupRescue({
             <div>
               <span className="heading-3 mb-2">Günlüğü Yedekle</span>
               <p className="text-[10px] text-zinc-400 leading-relaxed">
-                Kayıtlı kullanıcılar için veriler Google Cloud altyapısında (Firebase) gerçek zamanlı yedeklenir ve korunur. Alternatif olarak çevrimdışı arşivleme ve taşıma için aşağıdaki butonu kullanarak tüm işlem, not, günlük, sertifika ve ayarlarınızı indirebilirsiniz.
+                Kayıtlı kullanıcılar için veriler Google Cloud altyapısında (Firebase) gerçek zamanlı yedeklenir ve korunur. Alternatif olarak çevrimdışı arşivleme ve taşıma için aşağıdaki butonu kullanarak tüm işlem, not, günlük, sertifika ve ayarlarını indirebilirsin.
               </p>
             </div>
 
@@ -475,7 +475,7 @@ const BackupRescue = React.memo(function BackupRescue({
                     >
                       {isWiping ? 'Siliniyor...' : 'Sil'}
                     </button>
-                    <button aria-label="Kapat"
+                    <button aria-label="Vazgeç"
                       type="button"
                       disabled={isWiping}
                       onClick={() => {

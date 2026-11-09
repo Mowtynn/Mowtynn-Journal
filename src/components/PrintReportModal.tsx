@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import { Trade } from '../types';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { nyWallDate, nyNow } from '../lib/tradingTime';
+import { breakevenWinRateOf } from '../lib/stats';
 
 
 
@@ -71,11 +72,8 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
   const winRate = totalTrades > 0 ? (wins / totalTrades) * 100 : 0;
   const totalR = activeTrades.reduce((sum, t) => sum + (t.rr || 0), 0);
   // Kazanma oranının rengi sabit %50'ye göre değil, başabaş kazanma oranına göre (R tabanlı sistemde %30 WR kârlı olabilir)
-  const winRs = activeTrades.filter((t) => (t.rr || 0) > 0).map((t) => t.rr || 0);
-  const lossRs = activeTrades.filter((t) => (t.rr || 0) < 0).map((t) => -(t.rr || 0));
-  const avgW = winRs.length ? winRs.reduce((a, b) => a + b, 0) / winRs.length : 0;
-  const avgL = lossRs.length ? lossRs.reduce((a, b) => a + b, 0) / lossRs.length : 0;
-  const beWinRate = avgW + avgL > 0 && winRs.length && lossRs.length && totalTrades > 0 ? (avgL / (avgW + avgL)) * ((winRs.length + lossRs.length) / totalTrades) * 100 : null;
+  // Ana Paneldeki başabaş oranıyla aynı fonksiyon (durum bazlı ortalamalar, BE paydada)
+  const beWinRate = breakevenWinRateOf(activeTrades);
   const longs = activeTrades.filter((t) => t.type === 'LONG').length;
   // Rapordaki gerçek tarih aralığı (NY): "Bu Hafta" gibi etiketin yanında açık tarihler
   const span = (() => {
@@ -192,7 +190,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
               <div>
                 <h3 className="text-sm font-bold tracking-wider text-white">GÖRÜNTÜ HAZIRLANIYOR</h3>
                 <p className="text-xs text-zinc-400 mt-2 leading-relaxed font-medium">
-                  İşlem verileri okunuyor ve yüksek çözünürlüklü görüntü oluşturuluyor. Lütfen pencereyi kapatmayın...
+                  İşlem verileri okunuyor ve yüksek çözünürlüklü görüntü oluşturuluyor. Lütfen pencereyi kapatma...
                 </p>
               </div>
             </div>
@@ -276,32 +274,32 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                 {/* Grid Metric Cards Dashboard Block */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
                   {/* Total Trades Card */}
-                  <div className="border border-blue-500/20 bg-gradient-to-b from-blue-500/10 to-zinc-900/50 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-1.5 shadow-lg relative overflow-hidden">
-                    <span className="text-[10px] font-bold tracking-wider text-blue-400/90 font-sans uppercase">TOPLAM İŞLEM</span>
-                    <span className="text-3xl font-black drop-shadow-sm text-blue-400 font-sans tracking-tight">{totalTrades}</span>
+                  <div className="border border-zinc-800 bg-zinc-900/60 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-1.5 shadow-lg relative overflow-hidden">
+                    <span className="text-[10px] font-bold tracking-wider text-zinc-400 font-sans uppercase">TOPLAM İŞLEM</span>
+                    <span className="text-3xl font-black drop-shadow-sm text-zinc-100 font-sans tracking-tight">{totalTrades}</span>
                     <div className="text-[11px] text-zinc-400 font-medium mt-1">
                       <span className="text-emerald-400 font-bold">{longs} L</span> <span className="text-zinc-600 mx-1">/</span> <span className="text-rose-400 font-bold">{shorts} S</span>
                     </div>
                   </div>
                   {/* Win Rate Card */}
-                  <div className="border border-emerald-500/20 bg-gradient-to-b from-emerald-500/10 to-zinc-900/50 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-1.5 shadow-lg relative overflow-hidden">
-                    <span className="text-[10px] font-bold tracking-wider text-emerald-400/90 font-sans uppercase">KAZANMA ORANI</span>
+                  <div className="border border-zinc-800 bg-zinc-900/60 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-1.5 shadow-lg relative overflow-hidden">
+                    <span className="text-[10px] font-bold tracking-wider text-zinc-400 font-sans uppercase">KAZANMA ORANI</span>
                     <span className={`text-3xl font-black drop-shadow-sm font-sans tracking-tight ${(beWinRate === null ? totalR >= 0 : winRate >= beWinRate) ? 'text-emerald-400' : 'text-rose-400'}`}>{winRate.toFixed(1)}%</span>
                     {beWinRate !== null && <span className="text-[10px] text-zinc-500">başabaş %{beWinRate.toFixed(0)}</span>}
                     <div className="text-[11px] text-zinc-400 font-medium mt-1">
-                      <span className="text-emerald-400 font-bold">{wins} W</span> <span className="text-zinc-600 mx-1">/</span> <span className="text-rose-400 font-bold">{losses} L</span> <span className="text-zinc-600 mx-1">/</span> <span className="text-amber-400 font-bold">{breakevens} BE</span>
+                      <span className="text-emerald-400 font-bold">{wins} W</span> <span className="text-zinc-600 mx-1">/</span> <span className="text-rose-400 font-bold">{losses} L</span> <span className="text-zinc-600 mx-1">/</span> <span className="text-zinc-400 font-bold">{breakevens} BE</span>
                     </div>
                   </div>
                   {/* Net Profit Card */}
-                  <div className="border border-purple-500/20 bg-gradient-to-b from-purple-500/10 to-zinc-900/50 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-1.5 shadow-lg relative overflow-hidden">
-                    <span className="text-[10px] font-bold tracking-wider text-purple-400/90 font-sans uppercase">BEKLENTİ</span>
-                    <span className={`text-3xl font-black drop-shadow-sm font-sans tracking-tight ${totalR >= 0 ? 'text-purple-400' : 'text-rose-400'}`}>{totalR >= 0 ? '+' : ''}{(totalTrades > 0 ? totalR / totalTrades : 0).toFixed(2)} R</span>
+                  <div className="border border-zinc-800 bg-zinc-900/60 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-1.5 shadow-lg relative overflow-hidden">
+                    <span className="text-[10px] font-bold tracking-wider text-zinc-400 font-sans uppercase">BEKLENTİ</span>
+                    <span className={`text-3xl font-black drop-shadow-sm font-sans tracking-tight ${totalR >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{totalR >= 0 ? '+' : ''}{(totalTrades > 0 ? totalR / totalTrades : 0).toFixed(2)} R</span>
                     <span className="text-[11px] text-zinc-400 font-medium mt-1">İşlem başına</span>
                   </div>
                   {/* Net R multiple Card */}
-                  <div className="border border-amber-500/20 bg-gradient-to-b from-amber-500/10 to-zinc-900/50 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-1.5 shadow-lg relative overflow-hidden">
-                    <span className="text-[10px] font-bold tracking-wider text-amber-400/90 font-sans uppercase">NET R KAZANIMI</span>
-                    <span className={`text-3xl font-black drop-shadow-sm font-sans tracking-tight ${totalR >= 0 ? 'text-amber-400' : 'text-rose-400'}`}>
+                  <div className="border border-zinc-800 bg-zinc-900/60 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-1.5 shadow-lg relative overflow-hidden">
+                    <span className="text-[10px] font-bold tracking-wider text-zinc-400 font-sans uppercase">NET R KAZANIMI</span>
+                    <span className={`text-3xl font-black drop-shadow-sm font-sans tracking-tight ${totalR >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                       {totalR >= 0 ? '+' : ''}
                       {totalR.toFixed(2)} R
                     </span>
@@ -384,7 +382,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                                 ) : isLoss ? (
                                   <span className="inline-flex items-center justify-center min-w-[45px] px-2 py-0.5 rounded-md border border-rose-500/20 bg-rose-500/10 text-[10px] font-black text-rose-400 uppercase tracking-wider font-sans">LOSS</span>
                                 ) : isBe ? (
-                                  <span className="inline-flex items-center justify-center min-w-[45px] px-2 py-0.5 rounded-md border border-amber-500/20 bg-amber-500/10 text-[10px] font-black text-amber-400 uppercase tracking-wider font-sans">BE</span>
+                                  <span className="inline-flex items-center justify-center min-w-[45px] px-2 py-0.5 rounded-md border border-zinc-500/20 bg-zinc-500/10 text-[10px] font-black text-zinc-400 uppercase tracking-wider font-sans">BE</span>
                                 ) : (
                                   <span className="inline-flex items-center justify-center min-w-[45px] px-2 py-0.5 rounded-md border border-blue-500/20 bg-blue-500/10 text-[10px] font-black text-blue-400 uppercase tracking-wider font-sans">{smartUpper("AÇIK")}</span>
                                 )}
@@ -395,7 +393,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                                 {(() => {
                                   const r = typeof trade.rr === 'number' && Number.isFinite(trade.rr) ? trade.rr : 0;
                                   const txt = `${r > 0 ? '+' : ''}${r.toLocaleString('en-US', { maximumFractionDigits: 2 })}R`;
-                                  const tone = r > 0 ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400' : r < 0 ? 'border-rose-500/20 bg-rose-500/10 text-rose-400' : 'border-amber-500/20 bg-amber-500/10 text-amber-400';
+                                  const tone = r > 0 ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400' : r < 0 ? 'border-rose-500/20 bg-rose-500/10 text-rose-400' : 'border-zinc-500/20 bg-zinc-500/10 text-zinc-400';
                                   return <span className={`inline-flex items-center justify-center min-w-[48px] px-2 py-0.5 rounded-md border text-[10px] font-black tracking-wider font-sans ${tone}`}>{txt}</span>;
                                 })()}
                               </td>

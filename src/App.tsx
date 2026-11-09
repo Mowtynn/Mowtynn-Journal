@@ -1,4 +1,4 @@
-import { EASE, SPRING, POPOVER } from './lib/motion';
+import { EASE, SPRING, POPOVER, MODAL_BACKDROP, MODAL_PANEL } from './lib/motion';
 import { useState, useEffect, useMemo, useCallback, useRef, Suspense, startTransition, type ReactNode, type Dispatch, type SetStateAction } from "react";
 import { createPortal } from "react-dom";
 import { Trade, Note, JournalEntry, DefinitionTitles, AccountCategory, PropAccount } from "./types";
@@ -1521,7 +1521,7 @@ export default function App() {
       const sc = scopeRef.current;
       if (!inScope(initialTrade, sc.category, sc.account, sc.unlinkedOf)) {
         const where = getTradeAccountCategory(initialTrade) === "DEMO" ? "HESAPSIZ" : "ilgili hesabı";
-        toast.success(`${isNew ? "İşlem kaydedildi" : "İşlem güncellendi"}. Seçili hesap görünümünde değil; görmek için üstten ${where} seçin.`, { duration: 5000 });
+        toast.success(`${isNew ? "İşlem kaydedildi" : "İşlem güncellendi"}. Seçili hesap görünümünde değil; görmek için üstten ${where} seç.`, { duration: 5000 });
       } else {
         toast.success(isNew ? "İşlem başarıyla kaydedildi." : "İşlem başarıyla güncellendi.");
       }
@@ -1741,7 +1741,7 @@ export default function App() {
             }
           } catch (err) {
             console.error("Failed to sync renamed definition to cloud:", err);
-            toast.error("Yeniden adlandırma buluta tam yazılamadı; bağlantı gelince bir işlemi düzenleyip tekrar deneyin.");
+            toast.error("Yeniden adlandırma buluta tam yazılamadı; bağlantı gelince bir işlemi düzenleyip tekrar dene.");
           } finally {
             changed.forEach((t) => pendingWriteIdsRef.current.delete(t.id));
           }
@@ -1986,7 +1986,7 @@ export default function App() {
         return true;
       } catch (err: any) {
         console.error("Import error in App.tsx:", err);
-        toast.error("Yedek verileri içe aktarılırken bir hata oluştu. Hiçbir veri kaybolmadı; tekrar deneyin.");
+        toast.error("Yedek verileri içe aktarılırken bir hata oluştu. Hiçbir veri kaybolmadı; tekrar dene.");
         return false;
       }
     },
@@ -2059,7 +2059,7 @@ export default function App() {
 
         // Bulut temizliği tamamlanamadıysa yerel veriyi silme: aksi halde kayıtlar bir sonraki senkronda geri gelir
         if (cloudFailed) {
-          toast.error("Bulut verileri tamamen silinemedi. Bağlantınızı kontrol edip tekrar deneyin; yerel veriler korundu.");
+          toast.error("Bulut verileri tamamen silinemedi. Bağlantını kontrol edip tekrar dene; yerel veriler korundu.");
           return false;
         }
 
@@ -2080,7 +2080,7 @@ export default function App() {
         }
 
         if (cloudFailed) {
-          toast.error("Bulut verileri tamamen silinemedi. Bağlantınızı kontrol edip tekrar deneyin; yerel veriler korundu.");
+          toast.error("Bulut verileri tamamen silinemedi. Bağlantını kontrol edip tekrar dene; yerel veriler korundu.");
           return false;
         }
       }
@@ -2193,6 +2193,14 @@ export default function App() {
   // "Günün kaçıncı işlemi" ve Asia Range büyüklüğü hesaplardan bağımsız, tüm işlemler üzerinden bir kez indekslenir.
   // Filtreden ÖNCE kurulur: Günün İşlemi / Asia Range Büyüklüğü filtreleri yeni eklenen işlemi de doğru görsün.
   useMemo(() => setGlobalTradeOrder(trades), [trades]);
+  // Kayan zaman pencereleri ("Son 7 / 30 gün", tarih filtresi "Son 1 hafta" …) uygulama günlerce açık kalsa da
+  // ilerlesin: saat başı yenilenir (aynı saat içinde değer değişmez, gereksiz yeniden hesap olmaz).
+  const [hourTick, setHourTick] = useState(() => Math.floor(Date.now() / 3_600_000));
+  useEffect(() => {
+    const id = window.setInterval(() => setHourTick(Math.floor(Date.now() / 3_600_000)), 60_000);
+    return () => window.clearInterval(id);
+  }, []);
+  const dateWindowTick = globalDateLimit === "all" ? 0 : hourTick;
   const filteredGlobalTrades = useMemo(
     () =>
       applyGlobalFilters(trades, {
@@ -2214,14 +2222,16 @@ export default function App() {
         globalMaxAsiaRangePips,
         globalExtra,
       }),
-    [trades, globalExtra, activeAccountCategory, activeAccount, activeUnlinkedOf, globalSelectedConfirmations, globalSelectedPlanFidelity, globalDateLimit, globalSelectedAssets, globalSelectedSessions, globalSelectedTimeframes, globalSelectedHtfTimeframes, globalSelectedStatuses, globalSelectedTypes, globalSelectedEntryModels, globalSelectedTrendTypes, globalMinAsiaRangePips, globalMaxAsiaRangePips],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [trades, dateWindowTick, globalExtra, activeAccountCategory, activeAccount, activeUnlinkedOf, globalSelectedConfirmations, globalSelectedPlanFidelity, globalDateLimit, globalSelectedAssets, globalSelectedSessions, globalSelectedTimeframes, globalSelectedHtfTimeframes, globalSelectedStatuses, globalSelectedTypes, globalSelectedEntryModels, globalSelectedTrendTypes, globalMinAsiaRangePips, globalMaxAsiaRangePips],
   );
 
   // Calculate comprehensive statistics (moved outside)
 
   const calculatedStats = useMemo(
     () => calculateComprehensiveStats(filteredGlobalTrades),
-    [filteredGlobalTrades],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [filteredGlobalTrades, hourTick],
   );
   // Ana panel: beklentinin güven aralığı ve Edge Durumu
   const edgeDrift = useMemo(() => computeEdgeDrift(filteredGlobalTrades), [filteredGlobalTrades]);
@@ -2599,7 +2609,7 @@ export default function App() {
                         }}
                         className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-zinc-800/80 text-zinc-200 transition-colors duration-150 text-left font-medium text-xs cursor-pointer"
                       >
-                        <div className="p-1 rounded-lg bg-purple-500/10 text-purple-400">
+                        <div className="p-1 rounded-lg bg-blue-500/10 text-blue-400">
                           <SlidersHorizontal size={13} />
                         </div>
                         <span>Tanımlamaları Yönet</span>
@@ -2689,7 +2699,7 @@ export default function App() {
                             >
                               <Check size={12} />
                             </button>
-                            <button aria-label="Kapat"
+                            <button aria-label="Vazgeç"
                               onClick={() => setIsEditingUsername(false)}
                               className="p-1 rounded-md bg-zinc-800 text-zinc-400 hover:bg-zinc-700 transition border border-zinc-700 cursor-pointer"
                             >
@@ -2952,22 +2962,25 @@ export default function App() {
       </main>
 
       {/* VERİ & YEDEKLEME penceresi (ayarlar menüsünden) */}
+      <AnimatePresence>
       {isDataOpen && (
-        <div
-          className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm overflow-y-auto p-3 sm:p-6 flex items-start justify-center"
+        <motion.div
+          key="data-dialog"
+          {...MODAL_BACKDROP}
+          className="fixed inset-0 modal-layer modal-dim z-[1500] overflow-y-auto p-3 sm:p-6 flex items-start justify-center"
           onClick={() => setIsDataOpen(false)}
           role="dialog"
           aria-modal="true"
           aria-label="Veri ve Yedekleme"
         >
-          <div className="relative w-full max-w-5xl my-auto" onClick={(e) => e.stopPropagation()}>
+          <motion.div {...MODAL_PANEL} className="relative w-full max-w-5xl my-auto" onClick={(e) => e.stopPropagation()}>
             <button
               type="button"
               aria-label="Kapat"
               onClick={() => setIsDataOpen(false)}
-              className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
+              className="btn-icon absolute top-3 right-3 z-10 w-8 h-8"
             >
-              <X size={15} />
+              <X size={16} />
             </button>
             <SectionErrorBoundary sectionName="Yedekleme">
               <Suspense fallback={<PaneLoader minHeight={320} />}>
@@ -2985,9 +2998,10 @@ export default function App() {
                 />
               </Suspense>
             </SectionErrorBoundary>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
+      </AnimatePresence>
 
       {platformMenuMounted && (
         <SectionErrorBoundary sectionName="Tanımlamalar" fallback={null} notify>

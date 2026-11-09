@@ -725,7 +725,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                         >
                           <Check size={12} /> Kaydet
                         </button>
-                        <button aria-label="Kapat"
+                        <button aria-label="Vazgeç"
                           type="button"
                           onClick={() => setIsEditingTitle(false)}
                           className="px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-xs font-sans cursor-pointer transition-colors"
@@ -767,7 +767,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                 {/* Search & Add Bar */}
                 {isFixedTab ? (
                   <div className="mb-4 px-3.5 py-2.5 rounded-xl bg-zinc-950/60 border border-zinc-800/80 text-[11px] font-sans text-zinc-400 leading-relaxed">
-                    Bu alan sabit iki durumludur: <strong className="text-zinc-200">ilk satır</strong> “evet” anlamına, <strong className="text-zinc-200">ikinci satır</strong> “hayır” (varsayılan seçili) anlamına gelir. Yalnızca butonlarda görünen etiketleri değiştirebilirsiniz; geçmiş işlemler etiketten bağımsız saklandığı için bozulmaz.
+                    Bu alan sabit iki durumludur: <strong className="text-zinc-200">ilk satır</strong> “evet” anlamına, <strong className="text-zinc-200">ikinci satır</strong> “hayır” (varsayılan seçili) anlamına gelir. Yalnızca butonlarda görünen etiketleri değiştirebilirsin; geçmiş işlemler etiketten bağımsız saklandığı için bozulmaz.
                   </div>
                 ) : (
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mb-4">
@@ -869,7 +869,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                               >
                                 <Check size={14} />
                               </button>
-                              <button aria-label="Kapat"
+                              <button aria-label="Vazgeç"
                                 onClick={() => setEditingIndex(null)}
                                 className="p-1 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
                               >
@@ -881,7 +881,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                               <div className="flex items-center gap-2.5 min-w-0">
                                 {!isFixedTab && <GripVertical size={13} className="text-zinc-600 group-hover:text-zinc-400 transition-colors cursor-grab" />}
                                 {isFixedTab && (
-                                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md border shrink-0 ${originalIndex === 0 ? 'bg-amber-500/15 text-amber-300 border-amber-500/30' : 'bg-blue-500/15 text-blue-300 border-blue-500/30'}`}>
+                                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md border shrink-0 ${originalIndex === 0 ? 'bg-zinc-800 text-zinc-300 border-zinc-700' : 'bg-blue-500/15 text-blue-300 border-blue-500/30'}`}>
                                     {originalIndex === 0 ? 'EVET' : 'HAYIR · VARSAYILAN'}
                                   </span>
                                 )}
@@ -963,7 +963,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                         Tanımı Sil
                       </h4>
                       <p className="text-xs text-zinc-400 font-sans leading-relaxed">
-                        <span className="font-sans font-bold text-zinc-200">"{deleteConfirmItem.item}"</span> tanımını silmek istediğinize emin misiniz?
+                        <span className="font-sans font-bold text-zinc-200">"{deleteConfirmItem.item}"</span> tanımını silmek istediğine emin misin?
                       </p>
                       {deleteConfirmItem.count > 0 && (
                         <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-300 text-[11px] font-sans leading-relaxed text-left flex items-start gap-2">
@@ -1027,7 +1027,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                     <div className="text-center space-y-2">
                       <h4 className="text-xs font-bold font-sans tracking-wide text-zinc-100 uppercase">Varsayılanlara Sıfırla</h4>
                       <p className="text-xs text-zinc-400 font-sans leading-relaxed">
-                        <span className="font-sans font-bold text-zinc-200">"{currentTabObj.label}"</span> kategorisindeki tüm özel tanımlar silinip varsayılan listeye dönecektir. Emin misiniz?
+                        <span className="font-sans font-bold text-zinc-200">"{currentTabObj.label}"</span> kategorisindeki tüm özel tanımlar silinip varsayılan listeye dönecek. Emin misin?
                       </p>
                     </div>
                     <div className="flex gap-2">

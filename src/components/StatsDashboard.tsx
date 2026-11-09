@@ -1,5 +1,6 @@
 import { EASE } from '../lib/motion';
 import { MIN_SAMPLE, EDGE_PROOF_MIN } from '../lib/sampleSize';
+import { breakevenWinRate } from '../lib/stats';
 import React from 'react';
 import { motion } from 'motion/react';
 import { TradeStats } from '../types';
@@ -28,10 +29,7 @@ const fmtR = (v: number, digits = 2) => `${v > 0 ? '+' : ''}${v.toFixed(digits)}
 const StatsDashboard = React.memo(function StatsDashboard({ stats, edge, drift }: StatsDashboardProps) {
   // Başabaş kazanma oranı: ort. kazanç / kayıpla net R = 0 olan oran (BE işlemleri 0R olduğu için paydada nötr)
   // BE işlemleri kazanma oranının paydasında olduğu için başabaş oranı da aynı paydaya ölçeklenir
-  const beWinRate =
-    stats.winningTrades > 0 && stats.losingTrades > 0 && stats.averageWinRR + stats.averageLossRR > 0
-      ? (stats.averageLossRR / (stats.averageWinRR + stats.averageLossRR)) * ((stats.winningTrades + stats.losingTrades) / stats.totalTrades) * 100
-      : null;
+  const beWinRate = breakevenWinRate(stats.winningTrades, stats.losingTrades, stats.totalTrades, stats.averageWinRR, stats.averageLossRR);
   const isPositive = stats.netR > 0;
   const isNegative = stats.netR < 0;
 
@@ -209,7 +207,7 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, edge, drift }
       >
         <div className="flex justify-between items-center mb-3">
           <p className="heading-3 tracking-wider text-zinc-400 font-sans flex items-center gap-1.5">
-            <span className="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400">
+            <span className="p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400">
               <Trophy size={12} />
             </span>
             {"Parite Başarı Analizi"}
