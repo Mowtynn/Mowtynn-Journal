@@ -14,17 +14,20 @@ import { nyWallDate, nyNow } from '../lib/tradingTime';
 
 function getLocalStorageUsage() {
 
-  if (typeof window === 'undefined' || !window.localStorage) {
-    return { usedBytes: 0, percentage: 0, isHeavilyUsed: false };
-  }
   let usedBytes = 0;
-  for (const key in localStorage) {
-    if (Object.prototype.hasOwnProperty.call(localStorage, key)) {
-      const val = localStorage.getItem(key);
-      if (val) {
-        usedBytes += (key.length + val.length) * 2;
-      }
+  // Depolama engelliyse (gizli mod, çerez engeli) erişimin kendisi hata fırlatır: pencere çökmesin, 0 göster
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return { usedBytes: 0, percentage: 0, isHeavilyUsed: false };
     }
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key === null) continue;
+      const val = localStorage.getItem(key);
+      if (val) usedBytes += (key.length + val.length) * 2;
+    }
+  } catch {
+    return { usedBytes: 0, percentage: 0, isHeavilyUsed: false };
   }
   const maxQuota = 5 * 1024 * 1024;
   const percentage = Math.min((usedBytes / maxQuota) * 100, 100);

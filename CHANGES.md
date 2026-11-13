@@ -873,4 +873,9 @@ Klasik tasarım korunarak, son eklenen alanlar (risk %, hesap bağı, strateji, 
   - Net R ve Kazanma Oranı kartları: yandaki Edge Durumu kartı uzadığında başlığın altında tek büyük boşluk oluşuyordu. Artık başlık / değer / alt satır üç ayrı satır; fazla yükseklik aralarında eşit dağılıyor. Edge kartının kendisi de kısaldı: "30/30 işlem" sayacı ilerleme çubuğunun yanında, üst satır ikinci satıra taşmıyor.
   - Profit factor: aynı işlemler farklı sırayla toplandığında son basamaktaki kayan nokta farkı yüzünden tam sınırdaki değer (6.375) bazen 6.37, bazen 6.38 yuvarlanabiliyordu. Toplamlar bölmeden önce temizleniyor; sonuç sıradan bağımsız.
   - Rastgele veri testleri 22 yeni tohumla koşuldu; yukarıdaki dışında bulgu yok (bir test toleransı düzeltildi: ayrı ayrı yuvarlanan iki parçanın toplamı 0.01 oynayabilir).
+- Dayanıklılık turu (olası hata senaryoları):
+  - Giriş ekranı: tarayıcı depolamayı engellediğinde (gizli mod, çerez engeli) ya da kota dolduğunda doğru parola girilse bile giriş "bağlantı hatası"na düşebiliyor, depolama tamamen kapalıysa uygulama açılışta çökebiliyordu. Depolama erişimi artık hata fırlatmıyor; yazılamazsa anahtar oturum boyunca bellekte tutuluyor.
+  - Veri & Yedek penceresindeki depolama ölçeri de aynı durumda pencereyi çökertmiyor.
+  - Tüm testler beş farklı bilgisayar saat diliminde (İstanbul, Los Angeles, Tokyo, Kiritimati, New York) koşuldu: sonuçlar aynı; New York saati hesapları bilgisayarın saat dilimine bağlı değil. Bileşenlerdeki tarih kodu tarandı: hepsi NY duvar saatini kullanıyor.
+  - Depolama / JSON okuma noktaları tarandı: korumasız okuma ya da yazma kalmadı.
 

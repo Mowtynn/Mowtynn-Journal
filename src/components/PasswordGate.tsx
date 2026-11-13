@@ -9,9 +9,23 @@ interface PasswordGateProps {
 }
 
 export const STORAGE_KEY = 'tj_access_token_v3';
+
+/**
+ * Depolama erişimi hiçbir zaman hata fırlatmaz. Tarayıcı depolamayı engellediğinde (gizli mod, çerez engeli)
+ * ya da kota dolduğunda parola doğru olsa bile giriş takılmasın, uygulama açılışta çökmesin.
+ */
+const safeStore = (pick: () => Storage) => ({
+  getItem: (k: string): string | null => { try { return pick().getItem(k); } catch { return null; } },
+  setItem: (k: string, v: string): boolean => { try { pick().setItem(k, v); return true; } catch { return false; } },
+  removeItem: (k: string): void => { try { pick().removeItem(k); } catch { /* yok say */ } },
+});
+const ls = safeStore(() => window.localStorage);
+const ss = safeStore(() => window.sessionStorage);
+/** Depolamaya yazılamadığında oturum boyunca bellekte tutulan anahtar */
+let memoryToken = '';
 export const getSiteToken = (): string => {
   if (typeof window === 'undefined') return '';
-  return localStorage.getItem(STORAGE_KEY) || sessionStorage.getItem(STORAGE_KEY) || '';
+  return ls.getItem(STORAGE_KEY) || ss.getItem(STORAGE_KEY) || memoryToken;
 };
 const LOCKOUT_KEY = 'tj_app_lockout';
 const ATTEMPTS_KEY = 'tj_app_attempts';
@@ -21,7 +35,7 @@ const LOCKOUT_DURATION_MS = 60000; // 1 minute
 // Eager token verification at parse time
 const isBrowser = typeof window !== 'undefined';
 const tokenToVerify = isBrowser 
-  ? (localStorage.getItem(STORAGE_KEY) || sessionStorage.getItem(STORAGE_KEY)) 
+  ? (ls.getItem(STORAGE_KEY) || ss.getItem(STORAGE_KEY)) 
   : null;
 
 /**
@@ -66,10 +80,10 @@ export function PasswordGate({ children }: PasswordGateProps) {
 
   useEffect(() => {
     const initGate = async () => {
-      localStorage.removeItem('tj_app_access_granted');
-      sessionStorage.removeItem('tj_app_access_granted');
-      localStorage.removeItem('tj_access_token_v2');
-      sessionStorage.removeItem('tj_access_token_v2');
+      ls.removeItem('tj_app_access_granted');
+      ss.removeItem('tj_app_access_granted');
+      ls.removeItem('tj_access_token_v2');
+      ss.removeItem('tj_access_token_v2');
 
       if (initialAuthPromise) {
         const state = await initialAuthPromise;
@@ -78,8 +92,8 @@ export function PasswordGate({ children }: PasswordGateProps) {
           setIsChecking(false);
           return;
         } else {
-          localStorage.removeItem(STORAGE_KEY);
-          sessionStorage.removeItem(STORAGE_KEY);
+          ls.removeItem(STORAGE_KEY);
+          ss.removeItem(STORAGE_KEY);
         }
       } else {
         // WARM-UP PING: Wake up the serverless function immediately when the gate mounts 
@@ -87,8 +101,8 @@ export function PasswordGate({ children }: PasswordGateProps) {
         fetch('/api/health').catch(() => {});
       }
 
-      const storedLockout = parseInt(localStorage.getItem(LOCKOUT_KEY) || '0', 10);
-      const storedAttempts = parseInt(localStorage.getItem(ATTEMPTS_KEY) || '0', 10);
+      const storedLockout = parseInt(ls.getItem(LOCKOUT_KEY) || '0', 10);
+      const storedAttempts = parseInt(ls.getItem(ATTEMPTS_KEY) || '0', 10);
       
       if (storedLockout > Date.now()) {
         setLockoutTime(storedLockout);
@@ -97,8 +111,8 @@ export function PasswordGate({ children }: PasswordGateProps) {
       } else {
         setAttempts(storedAttempts);
         if (storedLockout > 0) {
-          localStorage.removeItem(LOCKOUT_KEY);
-          localStorage.setItem(ATTEMPTS_KEY, '0');
+          ls.removeItem(LOCKOUT_KEY);
+          ls.setItem(ATTEMPTS_KEY, '0');
           setAttempts(0);
         }
       }
@@ -119,8 +133,8 @@ export function PasswordGate({ children }: PasswordGateProps) {
           setLockoutTime(0);
           setRemainingTime(0);
           setAttempts(0);
-          localStorage.removeItem(LOCKOUT_KEY);
-          localStorage.setItem(ATTEMPTS_KEY, '0');
+          ls.removeItem(LOCKOUT_KEY);
+          ls.setItem(ATTEMPTS_KEY, '0');
           clearInterval(interval);
         } else {
           setRemainingTime(remaining);
@@ -148,16 +162,17 @@ export function PasswordGate({ children }: PasswordGateProps) {
       const data = await response.json().catch(() => ({} as any));
       
       if (response.ok && data.success && typeof data.token === 'string') {
+        memoryToken = data.token;
         if (rememberMe) {
-          localStorage.setItem(STORAGE_KEY, data.token);
-          sessionStorage.removeItem(STORAGE_KEY);
+          ls.setItem(STORAGE_KEY, data.token);
+          ss.removeItem(STORAGE_KEY);
         } else {
-          sessionStorage.setItem(STORAGE_KEY, data.token);
-          localStorage.removeItem(STORAGE_KEY);
+          ss.setItem(STORAGE_KEY, data.token);
+          ls.removeItem(STORAGE_KEY);
         }
         
-        localStorage.removeItem(ATTEMPTS_KEY);
-        localStorage.removeItem(LOCKOUT_KEY);
+        ls.removeItem(ATTEMPTS_KEY);
+        ls.removeItem(LOCKOUT_KEY);
         setIsAuthenticated(true);
         setError(false);
       } else if (response.status !== 401) {
@@ -169,13 +184,13 @@ export function PasswordGate({ children }: PasswordGateProps) {
         setErrorMessage('');
         const newAttempts = attempts + 1;
         setAttempts(newAttempts);
-        localStorage.setItem(ATTEMPTS_KEY, newAttempts.toString());
+        ls.setItem(ATTEMPTS_KEY, newAttempts.toString());
         
         if (newAttempts >= MAX_ATTEMPTS) {
           const newLockout = Date.now() + LOCKOUT_DURATION_MS;
           setLockoutTime(newLockout);
           setRemainingTime(Math.ceil(LOCKOUT_DURATION_MS / 1000));
-          localStorage.setItem(LOCKOUT_KEY, newLockout.toString());
+          ls.setItem(LOCKOUT_KEY, newLockout.toString());
         }
         
         setError(true);
