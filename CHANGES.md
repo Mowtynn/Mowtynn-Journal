@@ -878,4 +878,12 @@ Klasik tasarım korunarak, son eklenen alanlar (risk %, hesap bağı, strateji, 
   - Veri & Yedek penceresindeki depolama ölçeri de aynı durumda pencereyi çökertmiyor.
   - Tüm testler beş farklı bilgisayar saat diliminde (İstanbul, Los Angeles, Tokyo, Kiritimati, New York) koşuldu: sonuçlar aynı; New York saati hesapları bilgisayarın saat dilimine bağlı değil. Bileşenlerdeki tarih kodu tarandı: hepsi NY duvar saatini kullanıyor.
   - Depolama / JSON okuma noktaları tarandı: korumasız okuma ya da yazma kalmadı.
+- Görsel konfor turu (ekran görüntüsüyle, masaüstü 1348×863 ve telefon 375×812):
+  - Genel Bakış: 863px yükseklikte 21px kaydırıyordu; risk sütunu sıkılaştı, eğrinin alt sınırı 160px. ~855px ve üstünde kaydırmadan sığıyor.
+  - Stop & Range: başlık ile uzun yorum cümlesi aynı satıra sıkışıyordu. Başlık kendi satırında (iki bölümde de ikon), yorum kartların altında not kutusu; kartlarda net R üstte, "%56.3 WR · ort. +0.74R" altta.
+  - Asia Edge Lab: "Yönetimle Kaçırılan R" kartı yandaki grafikle aynı boyda, rakam büyük ve önde, işlem başı ortalama eklendi; tarih "2026-11-11" yerine "11 Kas 2026"; değerler R birimiyle.
+  - Psikoloji & Tilt: "1 Mağlubiyet / Galibiyet" → "1 Kayıp / Kazanç" (diğer ekranlardaki terim); seri yokken "0 -" yerine "—"; yorum cümlelerinin dili düzeltildi.
+  - İşlem detayı · Hesap: "FUNDEDNEXT 50K · FUN…" + "FUNDED" rozeti yerine "FUNDEDNEXT 50K" + rozet (aşama iki kez yazılmıyor, ad kesilmiyor). İşlem listesinde hesap etiketi 1348px genişlikte kesilmiyor.
+  - Kurulum Karnesi öncelik listesi: "+1.85R · 5" → "+1.85R · 5 işlem".
+  - Telefon: üst çubukta başlık hesap seçiciye yapışıyordu (400px altında logo kutusu gizlenir); Prop kartında bakiye bloğu sağa yaslı; "payout − ücret" etiketi ve Canlı R açıklaması kesilmiyor; ana panelde "Negatif parite yok" kesilmiyor.
 

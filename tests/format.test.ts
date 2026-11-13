@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { fixed, signed, formatR, formatRAbs, formatPct, formatMoney, trPossessive } from '../src/lib/format';
+import { fixed, signed, formatR, formatRAbs, formatPct, formatMoney, trPossessive, formatDateKey } from '../src/lib/format';
 
 test('biçim: R değeri işaretli, sabit ondalık, eksi sıfır yok', () => {
   assert.equal(formatR(1.85), '+1.85R');
@@ -34,4 +34,12 @@ test('biçim: sayıdan sonra iyelik eki Türkçe okunuşa uyar', () => {
     100: 'ü', 25: 'i', 92: 'si', 66: 'sı', 73: 'ü',
   };
   for (const [n, suffix] of Object.entries(expected)) assert.equal(trPossessive(Number(n)), suffix, `%${n}`);
+});
+
+test('biçim: tarih anahtarı diğer ekranlardaki gibi yazılır', () => {
+  assert.equal(formatDateKey('2026-11-11'), '11 Kas 2026');
+  assert.equal(formatDateKey('2026-01-05'), '5 Oca 2026');
+  assert.equal(formatDateKey('2026-13-05'), '2026-13-05');
+  assert.equal(formatDateKey('bozuk'), 'bozuk');
+  assert.equal(formatDateKey(''), '');
 });

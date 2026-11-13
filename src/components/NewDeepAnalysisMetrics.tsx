@@ -61,7 +61,7 @@ function MetricCard({
           onClick?.();
         }
       }}
-      className={`min-w-0 bg-zinc-950/60 border border-zinc-800/80 rounded-2xl px-3.5 py-2.5 ${t.hover} transition-ui duration-200 ease-out flex flex-col justify-between gap-1.5 cursor-pointer shadow-xs`}
+      className={`min-w-0 bg-zinc-950/60 border border-zinc-800/80 rounded-2xl px-3.5 py-2 ${t.hover} transition-ui duration-200 ease-out flex flex-col justify-between gap-1.5 cursor-pointer shadow-xs`}
     >
       <span className="heading-3 text-zinc-400 tracking-wider font-sans flex items-center gap-1.5 min-w-0">
         <span className={`p-1.5 rounded-lg border shrink-0 ${t.icon}`}>

@@ -536,7 +536,8 @@ function ChainCard({
             {money(a.size)} · Max DD {a.drawdownMode === 'TRAILING' ? 'trailing' : 'statik'} · 1R = {money(m.rUnit)}
           </div>
         </div>
-        <div className="text-right">
+        {/* Telefonda alt satıra indiğinde de sağ kenara yaslı kalır (ortada asılı durmaz) */}
+        <div className="ml-auto text-right">
           <div className="text-base font-extrabold text-zinc-100 tabular-nums">{money(m.balance)}</div>
           <div className={`text-[11px] font-bold tabular-nums ${m.netPnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
             {signedMoney(m.netPnl)} · <span title="Bakiye değişimi ÷ 1R (düzeltmeler dahil). İşlemlerin R toplamı aşağıdaki Canlı R özetinde.">≈ {R(m.netPnl)}</span> · {m.tradeCount} işlem
@@ -1002,9 +1003,10 @@ export function PropView({ accounts, trades, onChange, uploadImage }: PropViewPr
             </div>
             <div className="flex flex-col gap-1 mt-auto pt-1">
               <span className={`text-lg sm:text-xl font-bold tabular-nums ${x.tone}`}>{x.value}</span>
-              <div className="flex items-center justify-between gap-1 mt-1 min-w-0 min-h-6">
-                <span className="bg-zinc-800/80 border border-zinc-700/60 py-0.5 px-2 rounded-lg text-[10px] font-bold text-zinc-300 truncate">{x.sub}</span>
-                {x.side && <span className="text-[10px] font-bold text-zinc-500 tabular-nums truncate shrink-0">{x.side}</span>}
+              {/* Dar kartta (telefon) etiket kesilmez: sığmayınca yan bilgi alt satıra iner */}
+              <div className="flex flex-wrap items-center justify-between gap-x-1 gap-y-1 mt-1 min-w-0 min-h-6">
+                <span className="bg-zinc-800/80 border border-zinc-700/60 py-0.5 px-2 rounded-lg text-[10px] font-bold text-zinc-300 whitespace-nowrap">{x.sub}</span>
+                {x.side && <span className="text-[10px] font-bold text-zinc-500 tabular-nums whitespace-nowrap">{x.side}</span>}
               </div>
             </div>
           </div>

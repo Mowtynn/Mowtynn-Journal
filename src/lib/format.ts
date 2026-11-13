@@ -27,6 +27,15 @@ export const formatPct = (v: number, d = 1): string => {
   return `${Number.isFinite(v) && v < 0 && Number(s) !== 0 ? '-' : ''}%${s}`;
 };
 
+const MONTHS_TR = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+/** "2026-11-11" → "11 Kas 2026" (diğer ekranlardaki tarih biçimi); tanınmayan metin aynen döner */
+export const formatDateKey = (key: string): string => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(key || '');
+  if (!m) return key || '';
+  const month = MONTHS_TR[Number(m[2]) - 1];
+  return month ? `${Number(m[3])} ${month} ${m[1]}` : key;
+};
+
 /** Dolar: tam sayıysa kuruşsuz, değilse iki hane ("$55,517.50"); eksi işaret başta ("-$540") */
 export const formatMoney = (v: number): string => {
   const x = Number.isFinite(v) ? v : 0;

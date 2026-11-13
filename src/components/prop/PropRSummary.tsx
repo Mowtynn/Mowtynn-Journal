@@ -15,7 +15,7 @@ function Stat({ label, value, tone = 'text-zinc-100', hint }: { label: string; v
     <div className="flex flex-col gap-0.5 min-w-0 rounded-xl border border-zinc-800/80 bg-zinc-950/40 px-2.5 py-2" title={hint}>
       <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wide text-zinc-500 truncate">{smartUpper(label)}</span>
       <span className={`text-xs sm:text-sm font-extrabold tabular-nums truncate ${tone}`}>{value}</span>
-      {hint && <span className="text-[9px] text-zinc-500 leading-snug line-clamp-2">{hint}</span>}
+      {hint && <span className="text-[9px] text-zinc-500 leading-snug line-clamp-3 sm:line-clamp-2">{hint}</span>}
     </div>
   );
 }

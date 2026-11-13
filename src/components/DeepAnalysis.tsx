@@ -388,7 +388,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
           </div>
         </motion.div>
         {/* Masaüstünde üç kart sütunu eşit paylaşır: eğri ekran yüksekliğine göre kısalınca kartlar da birlikte kısalır */}
-        <div className="p-3.5 sm:px-5 sm:py-4 grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 lg:grid-rows-3 gap-3">
+        <div className="p-3.5 sm:px-5 sm:py-4 lg:py-3 grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 lg:grid-rows-3 gap-3 lg:gap-2">
           <NewDeepAnalysisMetrics variant="risk" metrics={metrics} onMetricClick={handleMetricClick} />
         </div>
       </div>

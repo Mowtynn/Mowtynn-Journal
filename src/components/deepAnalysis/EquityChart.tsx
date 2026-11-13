@@ -103,9 +103,9 @@ export const MemoizedEquityChart = React.memo(function MemoizedEquityChart({
 
     return (
       <div className="space-y-1.5 flex-1 flex flex-col relative">
-        {/* Masaüstünde eğri yüksekliği ekran yüksekliğine uyar (190–240px): Genel Bakış kaydırmadan sığsın.
+        {/* Masaüstünde eğri yüksekliği ekran yüksekliğine uyar (160–240px): Genel Bakış kaydırmadan sığsın.
             704px = sayfanın geri kalanı (üst menüler + diğer bölümler + alt boşluk); bölüm yükseklikleri değişirse güncelle. */}
-        <div className="relative bg-zinc-900/70 border border-zinc-700/50  rounded-2xl overflow-visible h-[200px] sm:h-[230px] lg:h-[clamp(190px,calc(100dvh_-_704px),240px)]">
+        <div className="relative bg-zinc-900/70 border border-zinc-700/50  rounded-2xl overflow-visible h-[200px] sm:h-[230px] lg:h-[clamp(160px,calc(100dvh_-_704px),240px)]">
           <svg viewBox="0 0 600 180" className="absolute inset-0 w-full h-full text-blue-500 p-2" preserveAspectRatio="none">
             <line x1="0" y1="20" x2="600" y2="20" stroke="#0f172a" strokeWidth="1" strokeDasharray="3,3" />
             <line x1="0" y1="90" x2="600" y2="90" stroke="#1e293b" strokeWidth="1" strokeDasharray="3,3" />

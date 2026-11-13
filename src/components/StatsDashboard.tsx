@@ -218,14 +218,14 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, edge, drift }
             <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold font-sans">{"En Verimli Parite"}</p>
             <p className="text-xs sm:text-sm font-bold text-emerald-400 mt-1 font-sans truncate">{stats.bestAsset || '—'}</p>
             <p className="text-[10px] text-zinc-500 font-sans tabular-nums mt-0.5 truncate">
-              {stats.bestAsset ? `${fmtR(stats.bestAssetR)} · ${stats.bestAssetCount} işlem` : `${MIN_SAMPLE}+ işlemli pozitif parite yok`}
+              {stats.bestAsset ? `${fmtR(stats.bestAssetR)} · ${stats.bestAssetCount} işlem` : 'Pozitif parite yok'}
             </p>
           </div>
           <div className="flex flex-col justify-between transition-colors border-l border-zinc-800/80 pl-4">
             <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold font-sans">{"En Verimsiz Parite"}</p>
             <p className="text-xs sm:text-sm font-bold text-rose-400 mt-1 font-sans truncate">{stats.worstAsset || '—'}</p>
             <p className="text-[10px] text-zinc-500 font-sans tabular-nums mt-0.5 truncate">
-              {stats.worstAsset ? `${fmtR(stats.worstAssetR)} · ${stats.worstAssetCount} işlem` : `${MIN_SAMPLE}+ işlemli negatif parite yok`}
+              {stats.worstAsset ? `${fmtR(stats.worstAssetR)} · ${stats.worstAssetCount} işlem` : 'Negatif parite yok'}
             </p>
           </div>
         </div>

@@ -452,11 +452,17 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                                 const cat = getTradeAccountCategory(currentTrade);
                                 // Hesap adı yalnızca platform girilmişse yazılır; rozet zaten hesap türünü / aşamayı söyler
                                 // ("Hesapsız HESAPSIZ" gibi tekrar ya da prop işleminde "Hesapsız" çelişkisi olmasın).
+                                // Ad zaten aşamayla bitiyorsa ("Fundednext 50K · Funded") aşama yalnızca rozette yazılır:
+                                // dar hücrede ad kesilip aynı kelime iki kez görünmesin.
+                                const stage = getTradeStageLabel(currentTrade) || ACCOUNT_CATEGORY_LABELS[cat];
+                                const rawName = currentTrade.platform || '';
+                                const suffix = ` · ${stage}`;
+                                const accountName = rawName.toLocaleLowerCase('tr').endsWith(suffix.toLocaleLowerCase('tr')) ? rawName.slice(0, -suffix.length) : rawName;
                                 return (
                                   <span className="flex items-center gap-1.5 min-w-0 max-w-full">
-                                    {currentTrade.platform && <span className="truncate min-w-0">{currentTrade.platform}</span>}
+                                    {accountName && <span className="truncate min-w-0" title={rawName}>{accountName}</span>}
                                     <span className={`shrink-0 text-[9px] px-1.5 py-0.5 rounded-md font-bold uppercase border ${ACCOUNT_CATEGORY_BADGE[cat]}`}>
-                                      {getTradeStageLabel(currentTrade) || ACCOUNT_CATEGORY_LABELS[cat]}
+                                      {stage}
                                     </span>
                                   </span>
                                 );

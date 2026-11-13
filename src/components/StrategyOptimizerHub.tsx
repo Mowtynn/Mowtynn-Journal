@@ -206,7 +206,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
               <div className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-center">
                 <span className="text-[9px] uppercase tracking-wider text-zinc-500 block font-sans">{smartUpper("Mevcut Seri")}</span>
                 <span className={`text-base font-bold font-sans ${streakStats.currentStreak.type === 'WIN' ? 'text-emerald-400' : streakStats.currentStreak.type === 'LOSS' ? 'text-rose-400' : 'text-zinc-300'}`}>
-                  {streakStats.currentStreak.count} {streakStats.currentStreak.type === 'WIN' ? 'Galibiyet' : streakStats.currentStreak.type === 'LOSS' ? 'Mağlubiyet' : '-'}
+                  {streakStats.currentStreak.type === 'WIN' ? `${streakStats.currentStreak.count} Kazanç` : streakStats.currentStreak.type === 'LOSS' ? `${streakStats.currentStreak.count} Kayıp` : '—'}
                 </span>
               </div>
 
@@ -253,57 +253,65 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
         <div className="space-y-4">
           {/* Stop Size Volatility Distribution */}
           <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 space-y-3">
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
-              <span className="text-xs font-bold uppercase text-zinc-200 font-sans">{smartUpper("Stop Mesafesi (Pip) Dağılımı & Kazanma Oranı")}</span>
-              <span className="text-[10px] text-zinc-500 font-sans">{stopSizeStats.insight}</span>
+            {/* Başlık kendi satırında; uzun yorum cümlesi başlığın yanına sıkışmaz, kartların altında not olarak durur */}
+            <div className="border-b border-zinc-800 pb-2">
+              <span className="text-xs font-bold uppercase text-zinc-200 font-sans flex items-center gap-1.5">
+                <Target size={14} className="text-blue-400 shrink-0" />
+                {smartUpper("Stop Mesafesi (Pip) Dağılımı")}
+              </span>
             </div>
             <p className="text-[10px] text-zinc-500 font-sans -mt-1">Stop pip'in, paritenin kendi medyan stop'una oranına göre üç grup: her grubun net R'si, kazanma oranı ve işlem başı R'si.</p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
               {stopSizeStats.brackets.map((b) => (
-                <div key={b.label} className="p-2.5 bg-zinc-900 border border-zinc-800/80 rounded-lg text-xs flex justify-between items-center">
+                <div key={b.label} className="px-3 py-2.5 bg-zinc-900 border border-zinc-800/80 rounded-lg text-xs flex justify-between items-center gap-3">
                   <div>
                     <span className="font-bold text-zinc-200 block font-sans">{b.label}</span>
-                    <span className="text-[10px] text-zinc-500 font-sans">{b.total || b.count} İşlem</span>
+                    <span className="text-[10px] text-zinc-500 font-sans">{b.total || b.count} işlem</span>
                     {b.count < MIN_SAMPLE && <span className="ml-1.5 px-1 py-px rounded border border-zinc-700 bg-zinc-900 text-[8px] font-bold text-zinc-400 uppercase tracking-wide align-middle">Az Veri</span>}
                   </div>
                   <div className="text-right">
                     <span className={`font-bold block font-sans tabular-nums ${b.netR > 0 ? 'text-emerald-400' : b.netR < 0 ? 'text-rose-400' : 'text-zinc-300'}`}>
-                      {fmtSignedR(b.netR)} (%{fixed(b.winRate, 1)})
+                      {fmtSignedR(b.netR)}
                     </span>
-                    <span className="text-[10px] text-zinc-400 font-sans tabular-nums">Ort. {fmtSignedR(b.avgR)}</span>
+                    <span className="text-[10px] text-zinc-400 font-sans tabular-nums whitespace-nowrap">%{fixed(b.winRate, 1)} WR · ort. {fmtSignedR(b.avgR)}</span>
                   </div>
                 </div>
               ))}
             </div>
+            {stopSizeStats.insight && (
+              <p className="rounded-lg border border-blue-500/20 bg-blue-500/5 px-3 py-2 text-[11px] text-zinc-300 font-sans leading-relaxed">{stopSizeStats.insight}</p>
+            )}
           </div>
 
           {/* Asia Range Volatility Analysis */}
           <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 space-y-3">
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
+            <div className="border-b border-zinc-800 pb-2">
               <span className="text-xs font-bold uppercase text-zinc-200 font-sans flex items-center gap-1.5">
-                <Activity size={14} className="text-blue-400" />
-                Asia Range Volatilite Matrisi & Kırılım Edge'i
+                <Activity size={14} className="text-blue-400 shrink-0" />
+                {smartUpper("Asia Range Genişliği")}
               </span>
-              <span className="text-[10px] text-zinc-500 font-sans">{asiaRangeStats.insight}</span>
             </div>
             <p className="text-[10px] text-zinc-500 font-sans -mt-1">Asia Range pip'in, aynı paritenin ÖNCEKİ işlemlerindeki medyan range'e oranı (girişte bilinen; paritenin ilk 5 işlemi sınıflanmaz): dar / normal / geniş günlerde sonuçlar.</p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
               {[asiaRangeStats.brackets.tight, asiaRangeStats.brackets.medium, asiaRangeStats.brackets.wide].map((b) => (
-                <div key={b.label} className="p-2.5 bg-zinc-900 border border-zinc-800/80 rounded-lg text-xs flex justify-between items-center">
+                <div key={b.label} className="px-3 py-2.5 bg-zinc-900 border border-zinc-800/80 rounded-lg text-xs flex justify-between items-center gap-3">
                   <div>
                     <span className="font-bold text-zinc-200 block font-sans">{b.label}</span>
-                    <span className="text-[10px] text-zinc-500 font-sans">{b.count} İşlem</span>
+                    <span className="text-[10px] text-zinc-500 font-sans">{b.count} işlem</span>
                     {b.count < MIN_SAMPLE && <span className="ml-1.5 px-1 py-px rounded border border-zinc-700 bg-zinc-900 text-[8px] font-bold text-zinc-400 uppercase tracking-wide align-middle">Az Veri</span>}
                   </div>
                   <div className="text-right">
                     <span className={`font-bold block font-sans tabular-nums ${b.netR > 0 ? 'text-emerald-400' : b.netR < 0 ? 'text-rose-400' : 'text-zinc-300'}`}>
-                      {fmtSignedR(b.netR)} (%{fixed(b.winRate, 1)})
+                      {fmtSignedR(b.netR)}
                     </span>
-                    <span className="text-[10px] text-zinc-400 font-sans tabular-nums">Ort. {fmtSignedR(b.avgR)}</span>
+                    <span className="text-[10px] text-zinc-400 font-sans tabular-nums whitespace-nowrap">%{fixed(b.winRate, 1)} WR · ort. {fmtSignedR(b.avgR)}</span>
                   </div>
                 </div>
               ))}
             </div>
+            {asiaRangeStats.insight && (
+              <p className="rounded-lg border border-blue-500/20 bg-blue-500/5 px-3 py-2 text-[11px] text-zinc-300 font-sans leading-relaxed">{asiaRangeStats.insight}</p>
+            )}
           </div>
         </div>
       )}

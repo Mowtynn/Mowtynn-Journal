@@ -117,7 +117,7 @@ export const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
         <td className="hidden sm:table-cell sm:w-[22%] sm:min-w-[75px] py-1.5 px-2 text-center bg-transparent border-y border-zinc-800/80 align-middle">
           <div className="flex items-center justify-center w-full">
             {accountLabel ? (
-              <span title={accountLabel} className={`inline-block min-w-[54px] max-w-full h-[20px] leading-[18px] px-2.5 py-0 text-center text-[10px] font-bold rounded-full uppercase tracking-wider font-sans whitespace-nowrap truncate border transition-colors ${categoryBadgeClass}`}>
+              <span title={accountLabel} className={`inline-block min-w-[54px] max-w-full h-[20px] leading-[18px] px-2 py-0 text-center text-[10px] font-bold rounded-full uppercase tracking-normal font-sans whitespace-nowrap truncate border transition-colors ${categoryBadgeClass}`}>
                 {accountLabel}
               </span>
             ) : (

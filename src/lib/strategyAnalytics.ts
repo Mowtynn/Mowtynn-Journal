@@ -245,7 +245,7 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
   if (postLossTiltRisk === 'YÜKSEK') {
     streakInsight = `Dikkat: Aynı gün kayıptan sonra açtığın ${postLossTotal} işlemde kazanma oranın %${postLossWinRate} (genel %${overallWinRate}), işlem başı ${sR(postLossAvgR)} (günün ilk işlemi ${sR(firstTradeAvgR)}). Fark istatistiksel olarak anlamlı: kayıptan sonra o gün durmak hesabını korur.`;
   } else if (postLossTiltRisk === 'ORTA') {
-    streakInsight = `Aynı gün kayıp sonrası ${postLossTotal} işlem: kazanma %${postLossWinRate} (genel %${overallWinRate}), işlem başı ${sR(postLossAvgR)} (günün ilk işlemi ${sR(firstTradeAvgR)}). Fark henüz kesin değil; izlemeye devam et.`;
+    streakInsight = `Aynı gün kayıptan sonra açtığın ${postLossTotal} işlemde kazanma oranın %${postLossWinRate} (genel %${overallWinRate}), işlem başı ${sR(postLossAvgR)} (günün ilk işlemi ${sR(firstTradeAvgR)}). Fark henüz kesin değil; izlemeye devam et.`;
   } else if (postLossTotal < MIN_SAMPLE) {
     streakInsight = postLossTotal === 0
       ? 'Aynı gün kayıptan sonra hiç işlem açmamışsın: tilt için ölçülecek bir şey yok.'
@@ -253,7 +253,7 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
   } else if (postWinTotal >= EDGE_PROOF_MIN && postWinWinRate > overallWinRate + 10) {
     streakInsight = `Aynı gün kazançtan sonra açtığın ${postWinTotal} işlemde kazanma oranın %${postWinWinRate} (genel %${overallWinRate}).`;
   } else {
-    streakInsight = `Aynı gün kayıp sonrası işlemlerin genel performansınla uyumlu (${postLossTotal} işlem, işlem başı ${sR(postLossAvgR)}).`;
+    streakInsight = `Aynı gün kayıptan sonra açtığın işlemler genel performansınla uyumlu (${postLossTotal} işlem, işlem başı ${sR(postLossAvgR)}).`;
   }
 
   return {
