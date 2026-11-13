@@ -736,7 +736,7 @@ const TradeList = React.memo(function TradeList({
                   <th 
                     className={`py-2 px-3 font-sans select-none min-w-[130px] cursor-pointer group/th transition-colors hover:text-zinc-200 text-center ${
                       filter.sortBy === 'dateAsc' || filter.sortBy === 'dateDes' ? 'text-blue-400 font-bold' : 'text-zinc-400'
-                    } ${'w-[18%]'}`}
+                    } ${'w-[16%]'}`}
                     onClick={() => handleFilterChange({...filter, sortBy: filter.sortBy === 'dateDes' ? 'dateAsc' : 'dateDes'})}
                   >
                     <div className="flex items-center justify-center gap-1.5">
@@ -746,7 +746,7 @@ const TradeList = React.memo(function TradeList({
                   <th 
                     className={`py-2 px-3 font-sans select-none min-w-[90px] cursor-pointer group/th transition-colors hover:text-zinc-200 text-center ${
                       filter.sortBy === 'assetAsc' || filter.sortBy === 'assetDes' ? 'text-blue-400 font-bold' : 'text-zinc-400'
-                    } ${'w-[14%]'}`}
+                    } ${'w-[12%]'}`}
                     onClick={() => handleFilterChange({...filter, sortBy: filter.sortBy === 'assetAsc' ? 'assetDes' : 'assetAsc'})}
                   >
                     <div className="flex items-center justify-center gap-1.5">
@@ -773,11 +773,11 @@ const TradeList = React.memo(function TradeList({
                       <HeaderLabel sortState={filter.sortBy === 'rrAsc' ? 'asc' : filter.sortBy === 'rrDes' ? 'des' : null}>R</HeaderLabel>
                     </div>
                   </th>
-                  <th className={`py-2 px-2 text-center font-sans select-none min-w-[75px] ${'w-[12%]'}`}>Sonuç</th>
-                  <th className="py-2 px-3 text-center font-sans select-none min-w-[95px] text-zinc-400 w-[14%]">Risk</th>
+                  <th className={`py-2 px-2 text-center font-sans select-none min-w-[75px] ${'w-[11%]'}`}>Sonuç</th>
+                  <th className="py-2 px-3 text-center font-sans select-none min-w-[70px] text-zinc-400 w-[9%]">Risk</th>
                   {true && (
                     <th 
-                      className={`py-2 px-2 text-center font-sans select-none w-[12%] min-w-[75px] cursor-pointer group/th transition-colors hover:text-zinc-200 ${
+                      className={`py-2 px-2 text-center font-sans select-none w-[22%] min-w-[75px] cursor-pointer group/th transition-colors hover:text-zinc-200 ${
                         filter.sortBy === 'platformAsc' || filter.sortBy === 'platformDes' ? 'text-blue-400 font-bold' : 'text-zinc-400'
                       }`}
                       onClick={() => handleFilterChange({...filter, sortBy: filter.sortBy === 'platformDes' ? 'platformAsc' : 'platformDes'})}

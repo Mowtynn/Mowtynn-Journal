@@ -1,4 +1,5 @@
 import type { Trade } from '../types';
+import { byEntryTime } from './tradeModel';
 import { edgeFromR, type EdgeStats } from './asiaAnalytics';
 
 /**
@@ -27,7 +28,7 @@ export interface EdgeDrift {
 const rOf = (t: Trade) => (typeof t.rr === 'number' && Number.isFinite(t.rr) ? t.rr : 0);
 
 export function computeEdgeDrift(trades: Trade[], recentN = DRIFT_RECENT, minTotal = DRIFT_MIN_TOTAL): EdgeDrift {
-  const sorted = [...trades].filter((t) => typeof t.rr === 'number' && Number.isFinite(t.rr)).sort((a, b) => a.createdAt - b.createdAt);
+  const sorted = [...trades].filter((t) => typeof t.rr === 'number' && Number.isFinite(t.rr)).sort(byEntryTime);
   return driftFromR(sorted.map(rOf), sorted.map((t) => t.status), recentN, minTotal);
 }
 

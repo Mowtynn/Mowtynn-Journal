@@ -9,6 +9,7 @@ import { Trade } from '../types';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { nyWallDate, nyNow } from '../lib/tradingTime';
 import { breakevenWinRateOf } from '../lib/stats';
+import { formatR } from '../lib/format';
 
 
 
@@ -284,7 +285,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                   {/* Win Rate Card */}
                   <div className="border border-zinc-800 bg-zinc-900/60 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-1.5 shadow-lg relative overflow-hidden">
                     <span className="text-[10px] font-bold tracking-wider text-zinc-400 font-sans uppercase">KAZANMA ORANI</span>
-                    <span className={`text-3xl font-black drop-shadow-sm font-sans tracking-tight ${(beWinRate === null ? totalR >= 0 : winRate >= beWinRate) ? 'text-emerald-400' : 'text-rose-400'}`}>{winRate.toFixed(1)}%</span>
+                    <span className={`text-3xl font-black drop-shadow-sm font-sans tracking-tight ${(beWinRate === null ? totalR >= 0 : winRate >= beWinRate) ? 'text-emerald-400' : 'text-rose-400'}`}>%{winRate.toFixed(1)}</span>
                     {beWinRate !== null && <span className="text-[10px] text-zinc-500">başabaş %{beWinRate.toFixed(0)}</span>}
                     <div className="text-[11px] text-zinc-400 font-medium mt-1">
                       <span className="text-emerald-400 font-bold">{wins} W</span> <span className="text-zinc-600 mx-1">/</span> <span className="text-rose-400 font-bold">{losses} L</span> <span className="text-zinc-600 mx-1">/</span> <span className="text-zinc-400 font-bold">{breakevens} BE</span>
@@ -293,15 +294,14 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                   {/* Net Profit Card */}
                   <div className="border border-zinc-800 bg-zinc-900/60 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-1.5 shadow-lg relative overflow-hidden">
                     <span className="text-[10px] font-bold tracking-wider text-zinc-400 font-sans uppercase">BEKLENTİ</span>
-                    <span className={`text-3xl font-black drop-shadow-sm font-sans tracking-tight ${totalR >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{totalR >= 0 ? '+' : ''}{(totalTrades > 0 ? totalR / totalTrades : 0).toFixed(2)} R</span>
+                    <span className={`text-3xl font-black drop-shadow-sm font-sans tracking-tight ${totalR > 0 ? 'text-emerald-400' : totalR < 0 ? 'text-rose-400' : 'text-zinc-300'}`}>{formatR(totalTrades > 0 ? totalR / totalTrades : 0)}</span>
                     <span className="text-[11px] text-zinc-400 font-medium mt-1">İşlem başına</span>
                   </div>
                   {/* Net R multiple Card */}
                   <div className="border border-zinc-800 bg-zinc-900/60 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-1.5 shadow-lg relative overflow-hidden">
-                    <span className="text-[10px] font-bold tracking-wider text-zinc-400 font-sans uppercase">NET R KAZANIMI</span>
-                    <span className={`text-3xl font-black drop-shadow-sm font-sans tracking-tight ${totalR >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                      {totalR >= 0 ? '+' : ''}
-                      {totalR.toFixed(2)} R
+                    <span className="text-[10px] font-bold tracking-wider text-zinc-400 font-sans uppercase">NET R</span>
+                    <span className={`text-3xl font-black drop-shadow-sm font-sans tracking-tight ${totalR > 0 ? 'text-emerald-400' : totalR < 0 ? 'text-rose-400' : 'text-zinc-300'}`}>
+                      {formatR(totalR)}
                     </span>
                     <span className="text-[11px] text-zinc-400 font-medium mt-1">Toplam R</span>
                   </div>
@@ -392,7 +392,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                               <td className="py-2.5 px-2 text-center font-sans font-bold whitespace-nowrap">
                                 {(() => {
                                   const r = typeof trade.rr === 'number' && Number.isFinite(trade.rr) ? trade.rr : 0;
-                                  const txt = `${r > 0 ? '+' : ''}${r.toLocaleString('en-US', { maximumFractionDigits: 2 })}R`;
+                                  const txt = formatR(r);
                                   const tone = r > 0 ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400' : r < 0 ? 'border-rose-500/20 bg-rose-500/10 text-rose-400' : 'border-zinc-500/20 bg-zinc-500/10 text-zinc-400';
                                   return <span className={`inline-flex items-center justify-center min-w-[48px] px-2 py-0.5 rounded-md border text-[10px] font-black tracking-wider font-sans ${tone}`}>{txt}</span>;
                                 })()}

@@ -7,6 +7,8 @@ import {
   type SetupDimension, type SetupRow, type SetupVerdict,
 } from '../../lib/setupScorecard';
 import { useNewsDayLabels } from '../../hooks/useNewsDayLabels';
+import { fixed, formatR } from '../../lib/format';
+import { formatPF } from '../../lib/statMath';
 
 const STORAGE_KEY = 'tj_setup_scorecard_dims';
 const MAX_DIMS = 3;
@@ -20,7 +22,7 @@ const VERDICT: Record<SetupVerdict, { label: string; cls: string; hint: string }
 };
 
 const fmt = (v: number, d = 2) => v.toLocaleString('en-US', { maximumFractionDigits: d });
-const sR = (v: number) => `${v > 0 ? '+' : ''}${fmt(v)}R`;
+const sR = (v: number) => formatR(v);
 
 function loadDims(): SetupDimension[] {
   try {
@@ -182,10 +184,10 @@ export const SetupScorecardTab = React.memo(function SetupScorecardTab({ trades 
                   <span className="text-right text-zinc-300 tabular-nums">%{fmt(e.winRate, 0)}</span>
                   <span className={`md:text-right tabular-nums font-bold ${e.expectancy > 0 ? 'text-emerald-300' : e.expectancy < 0 ? 'text-rose-300' : 'text-zinc-400'}`}>
                     {sR(e.expectancy)}
-                    {e.n > 1 && <span className="text-[10px] font-normal text-zinc-500"> {fmt(e.expLo)} – {fmt(e.expHi)}</span>}
+                    {e.n > 1 && <span className="text-[10px] font-normal text-zinc-500"> {fixed(e.expLo)} – {fixed(e.expHi)}</span>}
                   </span>
                   <span className={`text-right tabular-nums ${e.netR >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>{sR(e.netR)}</span>
-                  <span className="md:text-right text-zinc-400 tabular-nums"><span className="md:hidden text-zinc-500">PF </span>{e.profitFactor >= 999 ? '∞' : fmt(e.profitFactor)}</span>
+                  <span className="md:text-right text-zinc-400 tabular-nums"><span className="md:hidden text-zinc-500">PF </span>{formatPF(e.profitFactor)}</span>
                   <span className="text-right">
                     <span className={`inline-block px-2 py-0.5 rounded-lg border text-[10px] font-bold uppercase ${v.cls}`}>{v.label}</span>
                     {r.drift.ready && r.drift.direction !== 'STABLE' && (

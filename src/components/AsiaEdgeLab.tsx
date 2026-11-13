@@ -3,6 +3,7 @@ import { smartUpper } from '../constants/constants';
 import { FilterChip, FILTER_LABEL, FILTER_SELECT } from './filters/FilterControls';
 import { Trade } from '../types';
 import { MIN_SAMPLE } from '../lib/sampleSize';
+import { signed } from '../lib/format';
 import {
   analyzeAsia,
   AsiaLabResult,
@@ -16,7 +17,6 @@ interface AsiaEdgeLabProps {
   trades: Trade[];
 }
 
-const signed = (v: number, digits = 2) => `${v >= 0 ? '+' : ''}${v.toFixed(digits)}`;
 const tone = (v: number) => (v > 0 ? 'text-emerald-400' : v < 0 ? 'text-rose-400' : 'text-zinc-300');
 
 const Card: React.FC<{ title: string; hint?: string; className?: string; children: React.ReactNode }> = ({ title, hint, className = '', children }) => (

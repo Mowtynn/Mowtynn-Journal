@@ -1,4 +1,5 @@
 import { Activity, History } from 'lucide-react';
+import { fixed, formatR as sharedFormatR } from '../../lib/format';
 import type { Trade } from '../../types';
 import type { TradeInsight, PricePath } from '../../lib/tradeInsight';
 import { formatDuration } from '../../lib/tradingTime';
@@ -9,7 +10,7 @@ import { formatDuration } from '../../lib/tradingTime';
  */
 
 const fmt = (v: number, d = 2) => v.toLocaleString('en-US', { maximumFractionDigits: d });
-export const formatR = (v: number, d = 2) => `${v > 0 ? '+' : ''}${fmt(v, d)}R`;
+export const formatR = sharedFormatR;
 const tone = (v: number) => (v > 0 ? 'text-emerald-400' : v < 0 ? 'text-rose-400' : 'text-zinc-300');
 
 // Yatay kart: etiket solda, değer sağda — dar panelde etiket taşmaz
@@ -77,7 +78,7 @@ export function SetupHistoryPanel({ insight }: { insight: TradeInsight }) {
   const v = VERDICT[s.verdict];
   // Kurulum değerleri işlem bağlamında zaten görünür; burada yalnızca ipucu olarak
   return (
-    <section className="h-full flex flex-col gap-1">
+    <section className="flex flex-col gap-2">
       <h4 className="heading-2">
         <History size={12} /> KURULUM GEÇMİŞİ
       </h4>
@@ -89,8 +90,8 @@ export function SetupHistoryPanel({ insight }: { insight: TradeInsight }) {
             <div className="min-w-0">
               <div className={`text-base font-bold tabular-nums leading-tight ${tone(e.expectancy)}`}>{formatR(e.expectancy)}<span className="text-[11px] font-medium text-zinc-500"> /işlem</span></div>
               <div className="text-[10px] text-zinc-500 tabular-nums mt-0.5">
-                diğer {e.n} işlem · %{fmt(e.winRate, 0)} kazanma · net {formatR(e.netR, 1)}
-                {e.n > 1 ? ` · GA ${fmt(e.expLo)} – ${fmt(e.expHi)}` : ''}
+                diğer {e.n} işlem · %{fmt(e.winRate, 0)} kazanma · net {formatR(e.netR)}
+                {e.n > 1 ? ` · GA ${fixed(e.expLo)} – ${fixed(e.expHi)}` : ''}
               </div>
             </div>
             <span className={`shrink-0 px-2 py-1 rounded-lg border text-[10px] font-bold uppercase ${v.cls}`}>{v.label}</span>

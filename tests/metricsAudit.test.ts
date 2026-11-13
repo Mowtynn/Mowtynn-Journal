@@ -71,3 +71,43 @@ test('zamanı bozuk kayıt: çıkış zamanı varsa onarılır, yoksa geçersiz 
   const out = applyGlobalFilters([ok, broken], base, NOW);
   assert.deepEqual(out.map((x) => x.id), ['z']);
 });
+
+test('Çıkış Sonrası TP metni: cevap varsa Evet / Hayır, soru sorulmuyorsa "Erken Çıkılmadı", bilinmiyorsa boş', async () => {
+  const { afterExitTpText, afterExitTpApplies } = await import('../src/lib/asiaAnalytics');
+  // Plana göre kapanan kazanç: erken çıkış yok
+  assert.deepEqual(afterExitTpText({ status: 'WIN', management: ['Plana Göre'] }), { text: 'Erken Çıkılmadı', answered: false });
+  // Yalnız kısmi kâr: soru sorulmaz
+  assert.deepEqual(afterExitTpText({ status: 'WIN', management: ['Kısmi Kâr'] }), { text: 'Erken Çıkılmadı', answered: false });
+  // Erken kapatıldı + cevap
+  assert.deepEqual(afterExitTpText({ status: 'WIN', management: ['Erken Kapatıldı'], afterExitTp: false }), { text: 'Hayır', answered: true });
+  assert.deepEqual(afterExitTpText({ status: 'BREAKEVEN', afterExitTp: true }), { text: 'Evet', answered: true });
+  // Soru sorulur ama cevap girilmemiş → boş (tire)
+  assert.equal(afterExitTpText({ status: 'WIN', management: ['BE Çekildi'] }), undefined);
+  // Yönetim hiç girilmemiş → bilinmiyor
+  assert.equal(afterExitTpText({ status: 'LOSS' }), undefined);
+  assert.equal(afterExitTpApplies('LOSS', ['Plana Göre']), false);
+  assert.equal(afterExitTpApplies('BREAKEVEN', undefined), true);
+});
+
+test('seriler: BE nötrdür — seriyi bozmaz, sayılmaz; kayıp serisi ancak kazançla biter', async () => {
+  const { calculateStrategyAnalytics } = await import('../src/lib/strategyAnalytics');
+  const seq = (codes: string) =>
+    codes.split('').map((c, i) => t(c === 'W' ? 2 : c === 'L' ? -1 : 0, { id: `s${i}`, createdAt: NOW - (100 - i) * DAY }));
+  // L L BE L L → 4'lük kayıp serisi (eskiden BE seriyi kesip 2 gösteriyordu)
+  let s = calculateStrategyAnalytics(seq('WLLBLLW')).streakStats;
+  assert.equal(s.maxLossStreak, 4);
+  assert.deepEqual(s.currentStreak, { type: 'WIN', count: 1 });
+  // Kazanç seriyi bitirir
+  s = calculateStrategyAnalytics(seq('LLWLLL')).streakStats;
+  assert.equal(s.maxLossStreak, 3);
+  assert.deepEqual(s.currentStreak, { type: 'LOSS', count: 3 });
+  // Sondaki BE mevcut seriyi sıfırlamaz
+  s = calculateStrategyAnalytics(seq('LWWB')).streakStats;
+  assert.deepEqual(s.currentStreak, { type: 'WIN', count: 2 });
+  s = calculateStrategyAnalytics(seq('WLLBB')).streakStats;
+  assert.deepEqual(s.currentStreak, { type: 'LOSS', count: 2 });
+  // Yalnızca BE: seri yok
+  s = calculateStrategyAnalytics(seq('BBB')).streakStats;
+  assert.deepEqual(s.currentStreak, { type: 'NONE', count: 0 });
+  assert.equal(s.maxLossStreak, 0);
+});

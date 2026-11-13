@@ -145,7 +145,7 @@ export const AccountSwitcher: React.FC<AccountSwitcherProps> = React.memo(({
   };
 
   const badge = (n: number, cls: string) => (
-    <span className={`min-w-[1.25rem] text-center text-[10px] font-bold font-mono px-1 py-px rounded-md border leading-tight ${cls}`}>{n}</span>
+    <span className={`inline-flex items-center justify-center h-[18px] min-w-[18px] px-1 text-[10px] font-bold font-sans tabular-nums leading-none rounded-md border ${cls}`}>{n}</span>
   );
 
   // Hesap sayısı artınca: arama kutusu (çok hesapta ad/firma ile süzme)
@@ -193,7 +193,7 @@ export const AccountSwitcher: React.FC<AccountSwitcherProps> = React.memo(({
             {accountShortName(account)}
           </span>
           {stageTag(account) && (
-            <span className="text-[9px] font-bold font-mono px-1 rounded border border-zinc-700 text-zinc-400 shrink-0">{stageTag(account)}</span>
+            <span className="text-[9px] font-bold font-sans px-1 rounded border border-zinc-700 text-zinc-400 shrink-0">{stageTag(account)}</span>
           )}
           {!active && <span className="text-[10px] text-zinc-600 shrink-0">{ACCOUNT_STATUS_LABEL[account.status]}</span>}
         </span>
@@ -225,9 +225,9 @@ export const AccountSwitcher: React.FC<AccountSwitcherProps> = React.memo(({
         {current.icon}
         <span className={`text-[11px] font-black font-sans tracking-wide uppercase truncate min-w-0 ${current.colorClass}`}>{triggerLabel}</span>
         {activeAccount && stageTag(activeAccount) && (
-          <span className="text-[9px] font-bold font-mono px-1 rounded border border-blue-500/30 text-blue-300 shrink-0">{stageTag(activeAccount)}</span>
+          <span className="text-[9px] font-bold font-sans px-1 rounded border border-blue-500/30 text-blue-300 shrink-0">{stageTag(activeAccount)}</span>
         )}
-        <span className="shrink-0">{badge(triggerCount, current.badgeBgClass)}</span>
+        <span className="shrink-0 flex items-center">{badge(triggerCount, current.badgeBgClass)}</span>
         <ChevronDown size={11} className={`shrink-0 text-zinc-400 transition-transform duration-150 ${isOpen ? 'rotate-180 text-zinc-200' : ''}`} />
       </button>
 
@@ -316,7 +316,7 @@ export const AccountSwitcher: React.FC<AccountSwitcherProps> = React.memo(({
                           <ChevronRight size={12} className={`transition-transform duration-150 ${closedOpen ? 'rotate-90' : ''}`} />
                           Kapanmış Hesaplar
                         </span>
-                        <span className="text-[10px] font-bold font-mono">{closed.length}</span>
+                        <span className="text-[10px] font-bold font-sans tabular-nums">{closed.length}</span>
                       </button>
                     )}
                     {closedOpen && closed.map((r) => renderAccount(opt, r))}

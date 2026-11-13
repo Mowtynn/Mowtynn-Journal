@@ -4,6 +4,7 @@ import { motion } from "motion/react";
 import { Trade, DefinitionTitles, PropAccount } from "../../types";
 import { DEFAULT_DEFINITION_TITLES, cleanDefinitionTitleString, smartUpper } from "../../constants/constants";
 import { toNyInput } from '../../lib/tradingTime';
+import { afterExitTpApplies } from '../../lib/asiaAnalytics';
 
 /** İşlem formu: bölümlerin ortak sabitleri, türleri ve yardımcıları */
 export const NO_ACCOUNT = "__none__";
@@ -113,5 +114,4 @@ export function SlideBg({ id, className, rounded = "rounded-lg" }: { id: string;
 }
 
 /** "Çıkış Sonrası TP'ye ulaştı mı?" sorusu: BE kapanan, erken kapatılan ya da stop'u BE'ye çekilen işlemlerde sorulur */
-export const afterExitTpAsked = (status: string, management: string[]) =>
-  status === "BREAKEVEN" || management.includes("Erken Kapatıldı") || management.includes("BE Çekildi");
+export const afterExitTpAsked = (status: string, management: string[]) => afterExitTpApplies(status, management);

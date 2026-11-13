@@ -20,6 +20,7 @@ const StrategyOptimizerHub = lazyWithPreload(() => named(import('./StrategyOptim
 /** Laboratuvar parçasını önden indirir (sekme arka planda hazırlanırken) */
 export const preloadStrategyHub = () => StrategyOptimizerHub.preload();
 import { nyWallDate } from '../lib/tradingTime';
+import { formatR } from '../lib/format';
 
 
 const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all' }: { trades: Trade[], onMetricClick?: (id: string, val: string | number) => void, onEdit?: (trade: Trade) => void, part?: MetricsPart }) => {
@@ -402,7 +403,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
                     <div className="flex justify-between items-baseline mb-0.5">
                       <span className="text-xs font-bold text-zinc-200 tracking-tight font-sans flex items-center gap-1.5">
                         {fullDayName}
-                        {stats.total > 0 && <span className="text-[9px] font-normal text-zinc-500 tabular-nums">({stats.total} · %{((stats.wins / stats.total) * 100).toFixed(0)} WR)</span>}
+                        {stats.total > 0 && <span className="text-[9px] font-normal text-zinc-500 tabular-nums">({stats.total} işlem · %{((stats.wins / stats.total) * 100).toFixed(0)} WR)</span>}
                         {stats.total > 0 && stats.total < MIN_SAMPLE && <span className="px-1 py-px rounded border border-zinc-700 bg-zinc-900 text-[8px] font-bold text-zinc-400 uppercase tracking-wide" >Az Veri</span>}
                       </span>
                       <span className={`text-[10px] font-bold font-sans flex items-center gap-1.5 ${val > 1e-9 ? 'text-emerald-400' : val < -1e-9 ? 'text-rose-400' : 'text-zinc-500'}`}>
@@ -572,7 +573,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
                           <div className="flex justify-between items-center text-[9px] font-sans">
                             <span className="text-zinc-500 font-bold tracking-widest uppercase font-sans">Net R</span>
                             <span className={`font-bold tracking-wider text-xs ${ar.rr > 0 ? 'text-emerald-400' : ar.rr < 0 ? 'text-rose-400' : 'text-zinc-300'}`}>
-                              {ar.rr > 0 ? '+' : ''}{ar.rr.toFixed(2)} R
+                              {formatR(ar.rr)}
                             </span>
                           </div>
  

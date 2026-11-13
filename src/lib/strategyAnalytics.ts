@@ -1,9 +1,11 @@
 import { Trade } from '../types';
+import { byEntryTime } from './tradeModel';
 import { calculateProfitFactor, toRR } from './statMath';
 import { bucketByPairMedian, PAIR_MEDIAN_MIN, indexTradeOrder, asiaRangeBucketOf, prevTradeBucket } from './asiaAnalytics';
 
 /** Bir grup hakkında yorum/kural üretmek için gereken en az işlem sayısı — projenin tek eşiği (src/lib/sampleSize.ts). */
 import { MIN_SAMPLE, EDGE_PROOF_MIN } from './sampleSize';
+import { formatR } from './format';
 export { MIN_SAMPLE };
 
 export interface StrategyAnalyticsResult {
@@ -149,7 +151,7 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
     list.sort((a, b) => b.avgR - a.avgR);
     if (list.length > 0) {
       bestAsiaBracket = list[0].label;
-      asiaInsight = `İşlem başına en yüksek beklenti ${bestAsiaBracket} aralığında (${list[0].avgR >= 0 ? '+' : ''}${list[0].avgR} R, ${list[0].count} işlem).${earlyNote(list[0].count)} Güven aralıkları için Kurulum Karnesi'nde Asia Range Büyüklüğü alanına bakın.`;
+      asiaInsight = `İşlem başına en yüksek beklenti ${bestAsiaBracket} aralığında (${formatR(list[0].avgR)}, ${list[0].count} işlem).${earlyNote(list[0].count)} Güven aralıkları için Kurulum Karnesi'nde Asia Range Büyüklüğü alanına bakın.`;
     } else {
       asiaInsight = `Her aralıkta en az ${MIN_SAMPLE} işlem birikince kıyas yapılır.`;
     }
@@ -171,17 +173,19 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
   let stopSizeInsight = `Gruplar her paritenin kendi medyan stop'una göre.${medianText}${pendingText} Her grupta en az ${MIN_SAMPLE} işlem olunca yorum yapılır.`;
   const stopReliable = stopSizeBrackets.filter(b => b.count >= MIN_SAMPLE).sort((a, b) => b.avgR - a.avgR);
   if (stopReliable.length >= 2) {
-    stopSizeInsight = `İşlem başına en yüksek beklenti ${stopReliable[0].label} grubunda (${stopReliable[0].avgR} R, ${stopReliable[0].count} işlem).${earlyNote(stopReliable[0].count)}${medianText}${pendingText}`;
+    stopSizeInsight = `İşlem başına en yüksek beklenti ${stopReliable[0].label} grubunda (${formatR(stopReliable[0].avgR)}, ${stopReliable[0].count} işlem).${earlyNote(stopReliable[0].count)}${medianText}${pendingText}`;
   }
 
   // 18. Streak & Post-Loss / Tilt Analytics
-  const sortedChronological = [...trades].sort((a, b) => a.createdAt - b.createdAt);
+  const sortedChronological = [...trades].sort(byEntryTime);
   let currentStreakType: 'WIN' | 'LOSS' | 'NONE' = 'NONE';
   let currentStreakCount = 0;
   let maxLossStreak = 0;
   let tempWin = 0;
   let tempLoss = 0;
 
+  // Başabaş (BE) işlem nötrdür: seriyi bozmaz, seriye de sayılmaz. Kayıp serisi ancak bir kazançla biter
+  // (L L BE L L → 4'lük kayıp serisi; aradaki BE hesabı toparlamadığı için "2" demek en kötü seriyi küçük gösterirdi).
   for (let i = 0; i < sortedChronological.length; i++) {
     const t = sortedChronological[i];
     if (t.status === 'WIN') {
@@ -191,21 +195,16 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
       tempLoss++;
       tempWin = 0;
       if (tempLoss > maxLossStreak) maxLossStreak = tempLoss;
-    } else {
-      tempWin = 0;
-      tempLoss = 0;
     }
   }
 
-  if (sortedChronological.length > 0) {
-    const last = sortedChronological[sortedChronological.length - 1];
-    if (last.status === 'WIN') {
-      currentStreakType = 'WIN';
-      currentStreakCount = tempWin;
-    } else if (last.status === 'LOSS') {
-      currentStreakType = 'LOSS';
-      currentStreakCount = tempLoss;
-    }
+  // Mevcut seri: son kazanç / kayıptan beri süren seri (sondaki BE'ler seriyi sıfırlamaz)
+  if (tempWin > 0) {
+    currentStreakType = 'WIN';
+    currentStreakCount = tempWin;
+  } else if (tempLoss > 0) {
+    currentStreakType = 'LOSS';
+    currentStreakCount = tempLoss;
   }
 
   // Tilt aynı seansın olgusudur: "kayıptan sonraki işlem" yalnızca AYNI NY günündeki bir sonraki işlemdir.
@@ -241,7 +240,7 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
     else if (postLossWinRate < overallWinRate - 10 || postLossAvgR < firstTradeAvgR - 0.3) postLossTiltRisk = 'ORTA';
   }
 
-  const sR = (v: number) => `${v > 0 ? '+' : ''}${v.toFixed(2)} R`;
+  const sR = (v: number) => formatR(v);
   let streakInsight: string;
   if (postLossTiltRisk === 'YÜKSEK') {
     streakInsight = `Dikkat: Aynı gün kayıptan sonra açtığın ${postLossTotal} işlemde kazanma oranın %${postLossWinRate} (genel %${overallWinRate}), işlem başı ${sR(postLossAvgR)} (günün ilk işlemi ${sR(firstTradeAvgR)}). Fark istatistiksel olarak anlamlı: kayıptan sonra o gün durmak hesabını korur.`;
@@ -252,7 +251,7 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
       ? 'Aynı gün kayıptan sonra hiç işlem açmamışsın: tilt için ölçülecek bir şey yok.'
       : `Aynı gün kayıptan sonra ${postLossTotal} işlem açmışsın (işlem başı ${sR(postLossAvgR)}). Tilt yorumu için en az ${MIN_SAMPLE} işlem gerekir.`;
   } else if (postWinTotal >= EDGE_PROOF_MIN && postWinWinRate > overallWinRate + 10) {
-    streakInsight = `Aynı gün kazançtan sonraki işlemlerin %${postWinWinRate}'i yine kazanç (genel %${overallWinRate}, ${postWinTotal} işlem).`;
+    streakInsight = `Aynı gün kazançtan sonra açtığın ${postWinTotal} işlemde kazanma oranın %${postWinWinRate} (genel %${overallWinRate}).`;
   } else {
     streakInsight = `Aynı gün kayıp sonrası işlemlerin genel performansınla uyumlu (${postLossTotal} işlem, işlem başı ${sR(postLossAvgR)}).`;
   }

@@ -1,4 +1,5 @@
 import { EASE, SPRING } from '../lib/motion';
+import { byEntryTime } from '../lib/tradeModel';
 import React, { Suspense, useState, useMemo, useEffect } from "react";
 import { nyIsoWeekKey } from "../lib/tradingTime";
 
@@ -42,6 +43,7 @@ import { nyWallDate } from '../lib/tradingTime';
 import { setupQualityTier } from '../lib/setupQuality';
 import { MIN_SAMPLE } from '../lib/sampleSize';
 import { smartUpper } from '../constants/constants';
+import { formatR } from '../lib/format';
 
 type DeepView = 'overview' | 'calendar' | 'breakdowns' | 'lab';
 const DEEP_VIEWS: Array<{ id: DeepView; label: string; icon: React.ComponentType<{ size?: number; className?: string }> }> = [
@@ -137,7 +139,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
   }, []);
 
   const closedTrades = useMemo(() => {
-    return [...trades].sort((a, b) => a.createdAt - b.createdAt);
+    return [...trades].sort(byEntryTime);
   }, [trades]);
 
   const metrics = useMemo(
@@ -294,7 +296,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
       className="flex flex-col w-full bg-zinc-900/70 border border-zinc-700/50  rounded-2xl shadow-sm overflow-hidden divide-y divide-zinc-800/80 relative"
     >
       {/* 1. Performans özeti: Kümülatif R · Profit Factor · Ort. Kazanç · Ort. Kayıp */}
-      <div className="p-3.5 sm:p-5">
+      <div className="p-3.5 sm:px-5 sm:py-4">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <NewDeepAnalysisMetrics variant="kpi" metrics={metrics} onMetricClick={handleMetricClick} />
         </div>
@@ -305,9 +307,9 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
         {/* Kümülatif Kâr / Zarar Eğrisi (Equity Curve) */}
         <motion.div
           variants={itemVariants}
-          className="bg-transparent p-4 sm:p-5 flex flex-col lg:col-span-2 min-w-0"
+          className="bg-transparent p-4 sm:px-5 sm:py-4 flex flex-col lg:col-span-2 min-w-0"
         >
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-2.5">
             <div className="flex items-center gap-2 relative">
               <div className="p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center">
                 <LineChart size={14} />
@@ -368,11 +370,10 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
               {chartEquityCurve.length > 0 && (
                 <span className="text-xs font-sans px-2.5 py-1 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-300">
                   Net:{" "}
-                  <b className={((chartEquityCurve[chartEquityCurve.length - 1]?.cumulativePnl ?? 0)) >= 0 ? "text-emerald-400" : "text-rose-400"}>
-                      {(
-                        `${(chartEquityCurve[chartEquityCurve.length - 1]?.cumulativePnl ?? 0).toFixed(2)} R`
-                      )}
-                  </b>
+                  {(() => {
+                    const net = chartEquityCurve[chartEquityCurve.length - 1]?.cumulativePnl ?? 0;
+                    return <b className={`tabular-nums ${net > 0 ? "text-emerald-400" : net < 0 ? "text-rose-400" : "text-zinc-300"}`}>{formatR(net)}</b>;
+                  })()}
                 </span>
               )}
             </div>
@@ -386,7 +387,8 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
             ) : renderEquityCurve()}
           </div>
         </motion.div>
-        <div className="p-3.5 sm:p-5 grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-3 content-between">
+        {/* Masaüstünde üç kart sütunu eşit paylaşır: eğri ekran yüksekliğine göre kısalınca kartlar da birlikte kısalır */}
+        <div className="p-3.5 sm:px-5 sm:py-4 grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 lg:grid-rows-3 gap-3">
           <NewDeepAnalysisMetrics variant="risk" metrics={metrics} onMetricClick={handleMetricClick} />
         </div>
       </div>
@@ -476,8 +478,8 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
               </div>
               <span className="text-xs font-bold text-emerald-400 block font-sans">%{metrics.longStats.winRate.toFixed(1)} WR</span>
               <span className={`block text-[10px] font-bold tabular-nums ${metrics.longStats.pnl > 0 ? 'text-emerald-300' : metrics.longStats.pnl < 0 ? 'text-rose-300' : 'text-zinc-400'}`}>
-                {metrics.longStats.pnl > 0 ? '+' : ''}{metrics.longStats.pnl.toFixed(2)} R
-                {metrics.longStats.count > 0 && <span className="text-zinc-500 font-normal"> · {(metrics.longStats.pnl / metrics.longStats.count).toFixed(2)}/işlem</span>}
+                {formatR(metrics.longStats.pnl)}
+                {metrics.longStats.count > 0 && <span className="text-zinc-500 font-normal"> · {formatR(metrics.longStats.pnl / metrics.longStats.count)}/işlem</span>}
               </span>
               {metrics.longStats.count > 0 && metrics.longStats.count < MIN_SAMPLE && <span className="mt-0.5 inline-block px-1 py-px rounded border border-zinc-700 bg-zinc-900 text-[8px] font-bold text-zinc-400 uppercase tracking-wide">Az Veri</span>}
             </div>
@@ -491,16 +493,16 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
               </div>
               <span className="text-xs font-bold text-rose-400 block font-sans">%{metrics.shortStats.winRate.toFixed(1)} WR</span>
               <span className={`block text-[10px] font-bold tabular-nums ${metrics.shortStats.pnl > 0 ? 'text-emerald-300' : metrics.shortStats.pnl < 0 ? 'text-rose-300' : 'text-zinc-400'}`}>
-                {metrics.shortStats.pnl > 0 ? '+' : ''}{metrics.shortStats.pnl.toFixed(2)} R
-                {metrics.shortStats.count > 0 && <span className="text-zinc-500 font-normal"> · {(metrics.shortStats.pnl / metrics.shortStats.count).toFixed(2)}/işlem</span>}
+                {formatR(metrics.shortStats.pnl)}
+                {metrics.shortStats.count > 0 && <span className="text-zinc-500 font-normal"> · {formatR(metrics.shortStats.pnl / metrics.shortStats.count)}/işlem</span>}
               </span>
               {metrics.shortStats.count > 0 && metrics.shortStats.count < MIN_SAMPLE && <span className="mt-0.5 inline-block px-1 py-px rounded border border-zinc-700 bg-zinc-900 text-[8px] font-bold text-zinc-400 uppercase tracking-wide">Az Veri</span>}
             </div>
           </div>
         </motion.div>
         {/* SETUP KALİTESİ İSTATİSTİKLERİ */}
-        <motion.div variants={itemVariants} className="bg-transparent p-4 sm:p-5 flex flex-col relative min-w-0">
-          <div className="flex items-center justify-between mb-3">
+        <motion.div variants={itemVariants} className="bg-transparent p-3.5 sm:p-4 flex flex-col relative min-w-0">
+          <div className="flex items-center justify-between mb-2">
             <p className="text-[10px] font-bold uppercase text-zinc-400 tracking-wider font-sans flex items-center gap-1.5">
               <span className="p-1 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-400">
                 <Crosshair size={10} />
@@ -528,16 +530,16 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
                       hasTrades ? `%${opt.winRate.toFixed(1)} WR (${opt.count} İşlem)` : "Kayıt Yok",
                       {
                         title: `${opt.name} (${definitionTitles.planFidelities || "Setup Kalitesi"})`,
-                        description: `"${opt.name}" olarak girilmiş işlemlerin başarı oranı ve kümülatif getiri detayları.`,
+                        description: `"${opt.name}" olarak girilmiş işlemlerin kazanma oranı ve kümülatif getiri detayları.`,
                         type: opt.theme.type,
                         icon: Crosshair,
                         formula: `(Kazanılan "${opt.name}" / Toplam "${opt.name}" İşlem) × 100`,
                         details: [
-                          `Toplam İşlem: ${opt.count} adet (${opt.ratio.toFixed(1)}% pay)`,
+                          `Toplam İşlem: ${opt.count} adet (%${opt.ratio.toFixed(1)} pay)`,
                           `Sonuç Dağılımı: ${opt.wins} Win, ${opt.losses} Loss, ${opt.be} BE`,
-                          `Kümülatif Getiri: ${opt.totalR > 0 ? '+' : ''}${opt.totalR.toFixed(2)} R`,
+                          `Kümülatif Getiri: ${formatR(opt.totalR)}`,
                           hasTrades 
-                            ? `İşlem Başı Ortalama: ${(opt.totalR / opt.count).toFixed(2)} R`
+                            ? `İşlem Başı Ortalama: ${formatR(opt.totalR / opt.count)}`
                             : 'Henüz bu Setup Kalitesinde kapatılmış işlem bulunmamaktadır.'
                         ]
                       }
@@ -553,7 +555,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
                   </span>
                   <span className="text-[11px] font-bold text-zinc-100 tabular-nums text-right w-9">{hasTrades ? `%${opt.winRate.toFixed(0)}` : '–'}</span>
                   <span className={`text-[10px] font-bold tabular-nums text-right w-12 ${!hasTrades ? 'text-zinc-600' : opt.totalR > 0 ? 'text-emerald-300' : opt.totalR < 0 ? 'text-rose-300' : 'text-zinc-400'}`}>
-                    {hasTrades ? `${opt.totalR / opt.count > 0 ? '+' : ''}${(opt.totalR / opt.count).toFixed(2)}R` : '–'}
+                    {hasTrades ? formatR(opt.totalR / opt.count) : '–'}
                   </span>
                   <span className="text-[10px] text-zinc-500 tabular-nums text-right w-6">{opt.count}</span>
                 </button>
@@ -566,8 +568,8 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
       {/* Gün İstatistikleri & Ekstrem Değerler */}
       <div className="w-full">
         {/* Kârlı / Zararlı Gün */}
-        <motion.div variants={itemVariants} className="bg-transparent p-4 sm:p-5 transition-colors duration-200 ease-out flex flex-col justify-center">
-          <div className="flex items-center justify-between mb-3">
+        <motion.div variants={itemVariants} className="bg-transparent p-3.5 sm:px-5 sm:py-4 transition-colors duration-200 ease-out flex flex-col justify-center">
+          <div className="flex items-center justify-between mb-2.5">
             <p className="text-[10px] font-bold uppercase text-zinc-400 tracking-wider font-sans flex items-center gap-1.5">
               <span className="p-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
                 <CalendarIcon size={11} />
@@ -582,7 +584,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
           ) : (
             <div className="grid grid-cols-2 gap-3">
               <div 
-                className="bg-zinc-950/60 border border-emerald-500/20 hover:border-emerald-500/40 p-3.5 rounded-2xl cursor-pointer hover:bg-emerald-950/10 transition-ui duration-200"
+                className="bg-zinc-950/60 border border-emerald-500/20 hover:border-emerald-500/40 px-3.5 py-2.5 rounded-2xl cursor-pointer hover:bg-emerald-950/10 transition-ui duration-200"
                 onClick={(e) => { e.stopPropagation(); handleMetricClick("profitableDays", metrics.greenDays + " Gün"); }}
               >
                 <div className="flex items-center justify-between mb-1">
@@ -594,7 +596,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
                 </span>
               </div>
               <div 
-                className="bg-zinc-950/60 border border-rose-500/20 hover:border-rose-500/40 p-3.5 rounded-2xl cursor-pointer hover:bg-rose-950/10 transition-ui duration-200"
+                className="bg-zinc-950/60 border border-rose-500/20 hover:border-rose-500/40 px-3.5 py-2.5 rounded-2xl cursor-pointer hover:bg-rose-950/10 transition-ui duration-200"
                 onClick={(e) => { e.stopPropagation(); handleMetricClick("profitableDays", metrics.redDays + " Gün"); }}
               >
                 <div className="flex items-center justify-between mb-1">

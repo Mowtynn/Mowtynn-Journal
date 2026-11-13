@@ -10,11 +10,14 @@ export const toRR = (val: number | undefined | null): RMultiple => {
 // 1. Profit Factor (Kârlılık Oranı)
 export const calculateProfitFactor = (positiveRR: RMultiple, absoluteNegativeRR: RMultiple): number => {
   if (!isFinite(positiveRR) || !isFinite(absoluteNegativeRR)) return 0;
-  const absLoss = Math.abs(absoluteNegativeRR);
+  // Toplamlar, işlemlerin toplanma sırasına göre son basamakta oynayabilir (0.1 + 0.2 gibi). Bölmeden önce
+  // bu gürültü temizlenir: aynı işlemler hangi sırayla gelirse gelsin PF aynı çıkar (6.375 → hep 6.38).
+  const clean = (v: number) => Math.round(v * 1e9) / 1e9;
+  const absLoss = clean(Math.abs(absoluteNegativeRR));
   if (absLoss === 0) {
     return positiveRR > 0 ? 999 : 0; // Return 999 instead of Infinity
   }
-  const result = Math.max(0, positiveRR) / absLoss;
+  const result = clean(clean(Math.max(0, positiveRR)) / absLoss);
   return isFinite(result) ? result : 0;
 };
 

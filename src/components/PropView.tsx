@@ -19,6 +19,7 @@ import { compressImage } from '../lib/imageCompress';
 import { StoredImage } from './common/StoredImage';
 import { useImageSrc } from '../hooks/useImageSrc';
 import { PropRSummary } from './prop/PropRSummary';
+import { formatMoney, formatPct } from '../lib/format';
 
 interface PropViewProps {
   accounts: PropAccount[];
@@ -29,7 +30,7 @@ interface PropViewProps {
 }
 
 /* ---------- biçim yardımcıları ---------- */
-const money = (v: number) => `${v < 0 ? '-' : ''}$${Math.abs(v).toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
+const money = (v: number) => formatMoney(v);
 const signedMoney = (v: number) => `${v > 0 ? '+' : ''}${money(v)}`;
 /** "Phase 2'yi", "Phase 3'ü" gibi doğru Türkçe ek */
 const phaseAcc = (n: number) => `Phase ${n}${({ 1: "'i", 2: "'yi", 3: "'ü", 4: "'ü", 5: "'i" } as Record<number, string>)[n] || "'i"}`;
@@ -978,7 +979,7 @@ export function PropView({ accounts, trades, onChange, uploadImage }: PropViewPr
             {
               label: 'Net sonuç', value: signedMoney(sheet.net), tone: sheet.net >= 0 ? 'text-emerald-400' : 'text-rose-400', icon: <Scale size={12} />,
               chip: 'bg-blue-500/10 border-blue-500/20 text-blue-400', sub: 'payout − ücret',
-              side: sheet.feeTotal > 0 ? `ROI %${((sheet.net / sheet.feeTotal) * 100).toFixed(0)}` : '',
+              side: sheet.feeTotal > 0 ? `ROI ${formatPct((sheet.net / sheet.feeTotal) * 100, 0)}` : '',
             },
             {
               label: 'Geçme oranı',

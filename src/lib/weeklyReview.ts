@@ -1,4 +1,5 @@
 import type { JournalEntry, Trade, WeeklyAnswers } from '../types';
+import { byEntryTime } from './tradeModel';
 import { nyDateKey, getNyParts } from './tradingTime';
 import { dimensionValue, DEFAULT_SETUP_DIMENSIONS, UNSPECIFIED } from './setupScorecard';
 import { computeEdgeSummary } from './edgeSummary';
@@ -141,7 +142,7 @@ export function computeWeekReview(allTrades: Trade[], weekStart: string): WeekRe
   const days = weekDays(weekStart);
   const inWeek = new Set(days);
   const prevDays = new Set(weekDays(addDays(weekStart, -7)));
-  const trades = allTrades.filter((t) => inWeek.has(nyDateKey(t.createdAt))).sort((a, b) => a.createdAt - b.createdAt);
+  const trades = allTrades.filter((t) => inWeek.has(nyDateKey(t.createdAt))).sort(byEntryTime);
   const prevTrades = allTrades.filter((t) => prevDays.has(nyDateKey(t.createdAt)));
 
   const dayRows: WeekDay[] = days.map((key, index) => {

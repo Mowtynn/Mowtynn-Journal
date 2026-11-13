@@ -25,6 +25,7 @@ import { setupQualityTier } from "../lib/setupQuality";
 import { useAllTrades } from "../lib/allTradesContext";
 import { nyWallDate, nyDateKey } from "../lib/tradingTime";
 import { computeTradeInsight } from "../lib/tradeInsight";
+import { afterExitTpText } from "../lib/asiaAnalytics";
 import { ResultPanel, SetupHistoryPanel, formatR } from "./tradeDetail/TradeInsightPanels";
 
 interface TradeDetailModalProps {
@@ -66,7 +67,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
   }, [trade]);
 
   const currentTrade = trade || displayedTrade;
-  // Tam geçmiş (App'ten): kurulum karnesi ve kural ihlalleri için. Yoksa yalnızca bu işlemin verisi kullanılır.
+  // Tam geçmiş (App'ten): kurulum geçmişi için. Yoksa yalnızca bu işlemin verisi kullanılır.
   const allTrades = useAllTrades();
   const insight = React.useMemo(
     () => (currentTrade && allTrades ? computeTradeInsight(currentTrade, allTrades) : null),
@@ -271,7 +272,9 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
               className={`w-full modal-content detail-soft relative ${
                 isExporting 
                   ? 'max-w-6xl h-auto max-h-none overflow-visible shadow-none rounded-none border-0 m-0 p-0 bg-[#0a0a0c]' 
-                  : 'max-w-6xl xl:max-w-7xl 2xl:max-w-[1440px] h-[96vh] max-h-[96vh] overflow-hidden'
+                  // Yükseklik = üst çubuğun altındaki alan − katmanın iç boşluğu (mobil 0.5rem, masaüstü 1rem; üst + alt).
+                  // Eskiden 96vh / genel sınır yalnızca 1rem düşüyordu: masaüstünde pencere 16px taşıp katmanı kaydırıyordu.
+                  : 'max-w-6xl xl:max-w-7xl 2xl:max-w-[1440px] h-[calc(100dvh_-_var(--nav-h,0px)_-_1rem)] sm:h-[calc(100dvh_-_var(--nav-h,0px)_-_2rem)] overflow-hidden'
               }`}
             >
               {/* Header */}
@@ -372,7 +375,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
               <div ref={bodyRef} className={`flex flex-col lg:flex-row flex-1 min-h-0 ${isExporting ? 'overflow-hidden' : 'overflow-y-auto lg:overflow-hidden custom-scrollbar'}`}>
                 
                 {/* Left Sidebar - Meta & Context (approx 35%) */}
-                <div className={`w-full lg:w-[40%] bg-zinc-950/30 border-r border-zinc-800/60 p-5 space-y-5 shrink-0 ${isExporting ? 'overflow-visible' : 'lg:overflow-y-auto custom-scrollbar'}`}>
+                <div className={`w-full lg:w-[40%] bg-zinc-950/30 border-r border-zinc-800/60 p-5 space-y-4 shrink-0 ${isExporting ? 'overflow-visible' : 'lg:overflow-y-auto custom-scrollbar'}`}>
                   
                   {/* Hızlı kayıt: ayrıntılar eksik */}
                   {currentTrade.quickEntry === true && !isExporting && (() => {
@@ -427,12 +430,13 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
 
                   {/* Execution Context */}
                   {(() => {
-                    // Setup Kalitesi sırası renge yansır: A+ yeşil · A mavi · B-C (ve FOMO / ihlal) kırmızı
+                    // Setup Kalitesi sırası renge yansır: A+ yeşil · A mavi · B-C kırmızı
                     const tier = setupQualityTier(currentTrade.planFidelity);
                     const planColor = tier === 'high' ? "text-emerald-400 font-bold" : tier === 'mid' ? "text-blue-300 font-bold" : tier === 'low' ? "text-rose-400 font-bold" : undefined;
                     // Trend bir kurulum tipidir, hata değil: değer yargısı içeren renk verilmez
                     const trendColor = undefined;
 
+                    const afterExit = afterExitTpText(currentTrade);
                     return (
                       <section>
                         <h4 className="heading-2 mb-2">
@@ -553,9 +557,11 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                             value={currentTrade.management?.length ? currentTrade.management.join(', ') : undefined}
                             icon={<Zap size={14} className="text-blue-400"/>}
                           />
+                          {/* Soru sorulmayan işlemde (plana göre TP / stop) tire yerine "Erken Çıkılmadı" */}
                           <ContextRow
                             label="ÇIKIŞ SONRASI TP"
-                            value={typeof currentTrade.afterExitTp === 'boolean' ? (currentTrade.afterExitTp ? 'Evet' : 'Hayır') : undefined}
+                            value={afterExit?.text}
+                            valueColor={afterExit && !afterExit.answered ? 'text-zinc-500' : undefined}
                             icon={<Target size={14} className="text-blue-400"/>}
                           />
                         </div>
@@ -564,13 +570,15 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                   })()}
 
 
+                  {/* Kurulum geçmişi (sol sütunun altında, kompakt) */}
+                  {insight?.setup && <SetupHistoryPanel insight={insight} />}
                 </div>
 
-                {/* Sağ panel: görsel → notlar → fiyat yolu · kurulum geçmişi */}
+                {/* Sağ panel: görsel (kalan alanın tamamı) → kısa notlar */}
                 <div className={`w-full lg:w-[60%] min-w-0 bg-[#0a0a0c] flex flex-col p-5 space-y-4 lg:min-h-0 ${isExporting ? 'overflow-visible' : 'lg:overflow-y-auto custom-scrollbar'}`}>
                   
-                  {/* Technical Chart */}
-                  <section className="flex-shrink-0">
+                  {/* Technical Chart — masaüstünde notlardan kalan tüm yüksekliği kaplar */}
+                  <section className={`flex flex-col ${isExporting ? 'flex-shrink-0' : 'flex-shrink-0 lg:flex-1 lg:min-h-0'}`}>
                     <div className="flex justify-between items-center mb-2">
                       <h4 className="heading-2">
                         <ImageIcon size={12}/> TEKNİK ANALİZ GÖRSELİ
@@ -586,8 +594,8 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                       isExporting 
                         ? 'h-auto max-h-none' 
                         : currentTrade.screenshot 
-                          ? 'min-h-[240px] max-h-[min(440px,45vh)]' 
-                          : 'h-[180px]'
+                          ? 'min-h-[240px] max-h-[min(440px,45vh)] lg:max-h-none lg:flex-1 lg:min-h-[260px]' 
+                          : 'h-[180px] lg:h-auto lg:flex-1 lg:min-h-[180px]'
                     }`}>
                     {currentTrade.screenshot ? (
                       <>
@@ -615,7 +623,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                           <img decoding="async" 
                             src={resolvedImageUrl} 
                             alt="Trading chart" 
-                            className={`w-auto h-auto max-w-full max-h-[min(420px,43vh)] object-contain rounded-lg transition-opacity duration-200 ${isImageLoading ? 'opacity-0' : 'opacity-100'}`}
+                            className={`object-contain rounded-lg transition-opacity duration-200 ${isExporting ? 'w-auto h-auto max-w-full' : 'w-auto h-auto max-w-full max-h-[min(420px,43vh)] lg:absolute lg:inset-0 lg:m-auto lg:w-full lg:h-full lg:max-h-none lg:p-2'} ${isImageLoading ? 'opacity-0' : 'opacity-100'}`}
                             crossOrigin="anonymous"
                             referrerPolicy="no-referrer"
                             onLoad={() => {
@@ -643,29 +651,22 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                   </section>
 
                   {/* Trading Journal / Notes */}
-                  <section className="flex-1 flex flex-col shrink-0 min-h-[120px]">
+                  <section className="flex flex-col shrink-0">
                     <h4 className="heading-2 mb-2 shrink-0">
                       <FileText size={12}/> GİRİŞ VE ANALİZ NOTLARI
                     </h4>
-                    <div className="bg-zinc-900/40 border border-zinc-800/60 rounded-xl p-4 flex-1 min-h-[80px] max-h-[200px] overflow-y-auto overflow-x-hidden custom-scrollbar">
+                    <div className={`bg-zinc-900/40 border border-zinc-800/60 rounded-xl px-4 py-3 overflow-x-hidden ${isExporting ? '' : 'max-h-[132px] overflow-y-auto custom-scrollbar'}`}>
                       {currentTrade.notes ? (
                         <p className="text-zinc-200 text-sm sm:text-[14px] leading-relaxed whitespace-pre-wrap break-words font-sans">
                           {currentTrade.notes}
                         </p>
                       ) : (
-                        <div className="flex items-center justify-center h-full text-zinc-600 text-xs italic">
+                        <div className="flex items-center justify-center py-2 text-zinc-600 text-xs italic">
                           Bu işlem için herhangi bir not girilmemiş.
                         </div>
                       )}
                     </div>
                   </section>
-
-                  {/* Notların altında: kurulum geçmişi */}
-                  {insight?.setup && (
-                    <div className="shrink-0">
-                      <SetupHistoryPanel insight={insight} />
-                    </div>
-                  )}
 
                 </div>
               </div>
@@ -772,7 +773,7 @@ function ContextRow({
   const displayValue = value !== undefined && value !== null ? value : '—';
   const text = typeof displayValue === 'string' ? smartUpper(displayValue) : displayValue;
   return (
-    <div className={`flex flex-col gap-1 px-3.5 py-2.5 bg-zinc-950/70 min-w-0 ${wide ? 'col-span-2' : ''}`}>
+    <div className={`flex flex-col gap-1 px-3.5 py-2 bg-zinc-950/70 min-w-0 ${wide ? 'col-span-2' : ''}`}>
       <div className="flex items-center gap-1.5 text-zinc-500 min-w-0 [&>svg]:w-3 [&>svg]:h-3 [&>svg]:shrink-0">
         {icon}
         <span className="text-[9px] font-bold uppercase tracking-wider font-sans truncate">{smartUpper(label)}</span>

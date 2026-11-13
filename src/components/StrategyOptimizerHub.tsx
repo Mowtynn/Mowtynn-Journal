@@ -20,6 +20,7 @@ import { EdgeSummaryCard } from './deepAnalysis/EdgeCockpit';
 import { TradeHistoryModal } from './TradeHistoryModal';
 import { RuleSimulatorTab } from './strategy/RuleSimulatorTab';
 import { SectionErrorBoundary } from './SectionErrorBoundary';
+import { fixed, formatR } from '../lib/format';
 
 
 interface StrategyOptimizerHubProps {
@@ -57,6 +58,9 @@ const loadTab = (): LabTab => {
   }
   return 'edge_summary';
 };
+
+/** R değeri: işaret + 2 basamak (projedeki diğer R gösterimleriyle aynı) */
+const fmtSignedR = (v: number) => formatR(v);
 
 export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
   trades,
@@ -195,7 +199,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
               {streakStats.insight}
             </p>
             <p className="text-[10px] text-zinc-500 font-sans -mt-2">
-              Seriler tüm geçmişten sayılır. "Aynı gün" kartları yalnızca aynı NY gününde bir kazanç / kayıptan sonra açılan işlemlere bakar; karşılaştırma tabanı günün ilk işlemidir.
+              Seriler tüm geçmişten sayılır; başabaş (BE) işlemler seriyi bozmaz, seriye de sayılmaz. "Aynı gün" kartları yalnızca aynı NY gününde bir kazanç / kayıptan sonra açılan işlemlere bakar; karşılaştırma tabanı günün ilk işlemidir.
             </p>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -215,25 +219,25 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
 
               <div className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-center">
                 <span className="text-[9px] uppercase tracking-wider text-zinc-500 block font-sans">Aynı Gün Kazanç Sonrası</span>
-                <span className="text-base font-bold text-zinc-200 font-mono">
-                  {streakStats.postWinTotal > 0 ? `%${streakStats.postWinWinRate}` : '—'}
+                <span className="text-base font-bold text-zinc-200 font-sans tabular-nums">
+                  {streakStats.postWinTotal > 0 ? `%${fixed(streakStats.postWinWinRate, 1)}` : '—'}
                 </span>
                 <span className="text-[9px] text-zinc-500 block mt-0.5">
-                  {streakStats.postWinTotal > 0 ? `${streakStats.postWinTotal} işlem · ${streakStats.postWinAvgR > 0 ? '+' : ''}${streakStats.postWinAvgR.toFixed(2)} R ort.` : 'İşlem yok'}
+                  {streakStats.postWinTotal > 0 ? `${streakStats.postWinTotal} işlem · ${formatR(streakStats.postWinAvgR)} ort.` : 'İşlem yok'}
                 </span>
                 {streakStats.postWinTotal > 0 && streakStats.postWinTotal < MIN_SAMPLE && <span className="mt-1 inline-block px-1 py-px rounded border border-zinc-700 bg-zinc-900 text-[8px] font-bold text-zinc-400 uppercase tracking-wide">Az Veri</span>}
               </div>
 
               <div className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-center">
                 <span className="text-[9px] uppercase tracking-wider text-zinc-500 block font-sans">Aynı Gün Kayıp Sonrası</span>
-                <span className={`text-base font-bold font-mono ${streakStats.postLossTiltRisk !== 'DÜŞÜK' ? 'text-rose-400' : 'text-zinc-200'}`}>
-                  {streakStats.postLossTotal > 0 ? `%${streakStats.postLossWinRate}` : '—'}
+                <span className={`text-base font-bold font-sans tabular-nums ${streakStats.postLossTiltRisk !== 'DÜŞÜK' ? 'text-rose-400' : 'text-zinc-200'}`}>
+                  {streakStats.postLossTotal > 0 ? `%${fixed(streakStats.postLossWinRate, 1)}` : '—'}
                 </span>
                 <span className="text-[9px] text-zinc-500 block mt-0.5">
-                  {streakStats.postLossTotal > 0 ? `${streakStats.postLossTotal} işlem · ${streakStats.postLossAvgR > 0 ? '+' : ''}${streakStats.postLossAvgR.toFixed(2)} R ort.` : 'İşlem yok'}
+                  {streakStats.postLossTotal > 0 ? `${streakStats.postLossTotal} işlem · ${formatR(streakStats.postLossAvgR)} ort.` : 'İşlem yok'}
                 </span>
                 <span className="text-[9px] text-zinc-600 block">
-                  Günün ilk işlemi: {streakStats.firstTradeAvgR > 0 ? '+' : ''}{streakStats.firstTradeAvgR.toFixed(2)} R ort.
+                  Günün ilk işlemi: {formatR(streakStats.firstTradeAvgR)} ort.
                 </span>
                 {streakStats.postLossTotal > 0 && streakStats.postLossTotal < MIN_SAMPLE && <span className="mt-1 inline-block px-1 py-px rounded border border-zinc-700 bg-zinc-900 text-[8px] font-bold text-zinc-400 uppercase tracking-wide">Az Veri</span>}
               </div>
@@ -250,7 +254,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
           {/* Stop Size Volatility Distribution */}
           <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 space-y-3">
             <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
-              <span className="text-xs font-bold uppercase text-zinc-200 font-sans">{smartUpper("Stop Mesafesi (Pip) Dağılımı & Başarı Oranı")}</span>
+              <span className="text-xs font-bold uppercase text-zinc-200 font-sans">{smartUpper("Stop Mesafesi (Pip) Dağılımı & Kazanma Oranı")}</span>
               <span className="text-[10px] text-zinc-500 font-sans">{stopSizeStats.insight}</span>
             </div>
             <p className="text-[10px] text-zinc-500 font-sans -mt-1">Stop pip'in, paritenin kendi medyan stop'una oranına göre üç grup: her grubun net R'si, kazanma oranı ve işlem başı R'si.</p>
@@ -263,10 +267,10 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
                     {b.count < MIN_SAMPLE && <span className="ml-1.5 px-1 py-px rounded border border-zinc-700 bg-zinc-900 text-[8px] font-bold text-zinc-400 uppercase tracking-wide align-middle">Az Veri</span>}
                   </div>
                   <div className="text-right">
-                    <span className={`font-bold block font-sans ${b.netR >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                      {b.netR >= 0 ? '+' : ''}{b.netR} R (%{b.winRate})
+                    <span className={`font-bold block font-sans tabular-nums ${b.netR > 0 ? 'text-emerald-400' : b.netR < 0 ? 'text-rose-400' : 'text-zinc-300'}`}>
+                      {fmtSignedR(b.netR)} (%{fixed(b.winRate, 1)})
                     </span>
-                    <span className="text-[10px] text-zinc-400 font-sans">Ort. {b.avgR} R</span>
+                    <span className="text-[10px] text-zinc-400 font-sans tabular-nums">Ort. {fmtSignedR(b.avgR)}</span>
                   </div>
                 </div>
               ))}
@@ -292,10 +296,10 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
                     {b.count < MIN_SAMPLE && <span className="ml-1.5 px-1 py-px rounded border border-zinc-700 bg-zinc-900 text-[8px] font-bold text-zinc-400 uppercase tracking-wide align-middle">Az Veri</span>}
                   </div>
                   <div className="text-right">
-                    <span className={`font-bold block font-sans ${b.netR >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                      {b.netR >= 0 ? '+' : ''}{b.netR} R (%{b.winRate})
+                    <span className={`font-bold block font-sans tabular-nums ${b.netR > 0 ? 'text-emerald-400' : b.netR < 0 ? 'text-rose-400' : 'text-zinc-300'}`}>
+                      {fmtSignedR(b.netR)} (%{fixed(b.winRate, 1)})
                     </span>
-                    <span className="text-[10px] text-zinc-400 font-sans">Ort. {b.avgR} R</span>
+                    <span className="text-[10px] text-zinc-400 font-sans tabular-nums">Ort. {fmtSignedR(b.avgR)}</span>
                   </div>
                 </div>
               ))}

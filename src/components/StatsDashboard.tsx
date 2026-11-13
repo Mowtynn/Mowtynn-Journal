@@ -1,11 +1,12 @@
 import { EASE } from '../lib/motion';
 import { MIN_SAMPLE, EDGE_PROOF_MIN } from '../lib/sampleSize';
 import { breakevenWinRate } from '../lib/stats';
+import { fixed, formatR, signed } from '../lib/format';
 import React from 'react';
 import { motion } from 'motion/react';
 import { TradeStats } from '../types';
 import type { EdgeStats } from '../lib/asiaAnalytics';
-import type { EdgeDrift } from '../lib/edgeDrift';
+import { DRIFT_RECENT, type EdgeDrift } from '../lib/edgeDrift';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -24,7 +25,7 @@ interface StatsDashboardProps {
   drift?: EdgeDrift;
 }
 
-const fmtR = (v: number, digits = 2) => `${v > 0 ? '+' : ''}${v.toFixed(digits)} R`;
+const fmtR = (v: number, digits = 2) => formatR(v, digits);
 
 const StatsDashboard = React.memo(function StatsDashboard({ stats, edge, drift }: StatsDashboardProps) {
   // Başabaş kazanma oranı: ort. kazanç / kayıpla net R = 0 olan oran (BE işlemleri 0R olduğu için paydada nötr)
@@ -75,7 +76,7 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, edge, drift }
               : 'hover:bg-zinc-800/40 hover:border-zinc-700/60'
         } transition-colors duration-200 ease-out flex flex-col justify-between group shadow-xs`}
       >
-        <div className="flex items-center justify-between mb-1.5">
+        <div className="flex items-center justify-between">
           <p className="heading-3 text-zinc-400 tracking-wider font-sans flex items-center gap-1.5">
             <span className={`p-1.5 rounded-lg border ${
               isPositive ? 'toggle-item-win' : 
@@ -94,22 +95,22 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, edge, drift }
           </p>
         </div>
 
-        <div className="flex flex-col gap-1 mt-auto pt-1">
-          <div className="flex items-baseline gap-1">
-            <span className={`text-lg sm:text-xl font-bold ${rColorClass}`}>
-              {stats.netR > 0 ? '+' : ''}{stats.netR.toFixed(2)}
+        {/* Başlık / değer / alt satır kartın üç ayrı satırı: yandaki Edge kartı uzadığında fazla yükseklik
+            tek bir boşluk olarak üstte toplanmaz, satırlar arasında eşit dağılır */}
+          <div className="flex items-baseline gap-1 py-1">
+            <span className={`text-lg sm:text-xl font-bold tabular-nums ${rColorClass}`}>
+              {signed(stats.netR)}
             </span>
             <span className={`text-[10px] font-bold ml-0.5 ${isPositive ? 'text-emerald-400/70' : isNegative ? 'text-rose-400/70' : 'text-zinc-400'}`}>R</span>
           </div>
 
-          <div className="flex items-center justify-between gap-1 mt-1">
+          <div className="flex items-center justify-between gap-1">
             <span className="text-[10px] text-zinc-500 font-sans truncate">Toplam sonuç</span>
             <span className="text-[10px] text-zinc-400 font-sans flex items-center gap-1">
               <span className="text-zinc-300 font-bold bg-zinc-800 px-1.5 py-0.5 rounded-lg border border-zinc-700">{stats.totalTrades}</span>
               {"İşlem"}
             </span>
           </div>
-        </div>
       </motion.div>
 
       {/* 2. Win Rate Gauge */}
@@ -118,7 +119,7 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, edge, drift }
         id="stat-win-rate" 
         className="bg-zinc-900/60 border border-zinc-800/80  hover:bg-zinc-800/50 hover:border-zinc-700/80 rounded-2xl p-4 transition-colors duration-200 ease-out flex flex-col justify-between group shadow-xs"
       >
-        <div className="flex items-center justify-between mb-1.5">
+        <div className="flex items-center justify-between">
           <p className="heading-3 text-zinc-400 tracking-wider font-sans flex items-center gap-1.5">
             <span className="p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400">
               <Percent size={12} />
@@ -127,9 +128,8 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, edge, drift }
           </p>
         </div>
 
-        <div className="flex flex-col gap-1 mt-auto pt-1">
-          <div className="flex items-baseline gap-1">
-            <span className="text-lg sm:text-xl font-bold text-blue-300">
+          <div className="flex items-baseline gap-1 py-1">
+            <span className="text-lg sm:text-xl font-bold tabular-nums text-blue-300">
               %{stats.winRate.toFixed(1)}
             </span>
             {beWinRate !== null && (
@@ -142,7 +142,7 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, edge, drift }
             )}
           </div>
 
-          <div className="flex items-center justify-between gap-1 mt-1">
+          <div className="flex items-center justify-between gap-1">
             <div className="flex items-center gap-1.5">
               <span className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold font-sans py-0.5 px-2 rounded-lg">
                 {stats.winningTrades} {"WIN"}
@@ -182,7 +182,6 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, edge, drift }
               </div>
             </div>
           </div>
-        </div>
       </motion.div>
 
       {/* 3. Edge Durumu — iki sütun genişliğinde: beklenti + kanıt durumu + güven aralığı + zamanla değişim */}
@@ -303,7 +302,7 @@ function verdictOf(edge?: EdgeStats) {
 }
 
 function EdgePanel({ edge, expectancy, drift }: { edge?: EdgeStats; expectancy: number; drift?: EdgeDrift }) {
-  const f = (v: number) => v.toLocaleString('en-US', { maximumFractionDigits: 2 });
+  const f = (v: number) => fixed(v);
   const v = verdictOf(edge);
   const n = edge?.n ?? 0;
   const hasCI = !!edge && n >= MIN_SAMPLE;
@@ -320,14 +319,17 @@ function EdgePanel({ edge, expectancy, drift }: { edge?: EdgeStats; expectancy: 
         {/* Beklenti, hüküm ve kanıt sayacı tek satırda: kart (ve aynı satırdaki Net R / WR kartları) gereksiz uzamasın */}
         <div className="flex items-center gap-x-2 gap-y-1 flex-wrap min-w-0">
           <span className="flex items-baseline gap-1 shrink-0">
-            <span className={`text-lg sm:text-xl font-bold tabular-nums ${expectancy >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{fmtR(expectancy)}</span>
-            <span className="text-[10px] text-zinc-500">/işlem</span>
+            <span className={`text-lg sm:text-xl font-bold tabular-nums ${expectancy > 0 ? 'text-emerald-400' : expectancy < 0 ? 'text-rose-400' : 'text-zinc-300'}`}>{signed(expectancy)}</span>
+            <span className="text-[10px] text-zinc-500">R/işlem</span>
           </span>
           <span className={`px-2 py-0.5 rounded-lg border text-[10px] font-bold uppercase shrink-0 ${v.tone}`}>{v.label}</span>
-          <span className="text-[10px] text-zinc-400 tabular-nums truncate">{Math.min(n, EDGE_PROOF_MIN)}/{EDGE_PROOF_MIN} işlem</span>
         </div>
-        <div className="h-1 rounded-full bg-zinc-800 overflow-hidden" aria-hidden="true">
-          <div className={`h-full rounded-full ${v.bar}`} style={{ width: `${Math.max(n > 0 ? 4 : 0, Math.min(100, v.pct))}%` }} />
+        {/* Kanıt sayacı çubuğun yanında: üst satır hiçbir genişlikte ikinci satıra taşıp kartı uzatmaz */}
+        <div className="flex items-center gap-2">
+          <div className="flex-1 h-1 rounded-full bg-zinc-800 overflow-hidden" aria-hidden="true">
+            <div className={`h-full rounded-full ${v.bar}`} style={{ width: `${Math.max(n > 0 ? 4 : 0, Math.min(100, v.pct))}%` }} />
+          </div>
+          <span className="text-[10px] text-zinc-400 tabular-nums whitespace-nowrap shrink-0">{Math.min(n, EDGE_PROOF_MIN)}/{EDGE_PROOF_MIN} işlem</span>
         </div>
         <p className="text-[10px] text-zinc-500 leading-snug">{v.hint}</p>
       </div>
@@ -337,7 +339,7 @@ function EdgePanel({ edge, expectancy, drift }: { edge?: EdgeStats; expectancy: 
         <div className="flex flex-col gap-1">
           <div className="flex items-center justify-between gap-2">
             <span className="text-[10px] font-bold uppercase tracking-wide text-zinc-500 truncate" title="Gerçek işlem başı R'nin %95 olasılıkla bulunduğu aralık. Aralığın tamamı sıfırın üstündeyse edge pozitif; sıfırı kapsıyorsa henüz kesin değil.">%95 Beklenti Aralığı</span>
-            {hasCI && <span className="text-[11px] text-zinc-300 tabular-nums whitespace-nowrap shrink-0">{f(lo)} – {f(hi)} R</span>}
+            {hasCI && <span className="text-[11px] text-zinc-300 tabular-nums whitespace-nowrap shrink-0">{f(lo)} – {f(hi)}R</span>}
           </div>
           {hasCI ? (
             <div className="relative h-2.5 rounded-full bg-zinc-800/80">
@@ -350,40 +352,55 @@ function EdgePanel({ edge, expectancy, drift }: { edge?: EdgeStats; expectancy: 
           )}
         </div>
 
-        {drift && (
-          <div className="flex items-center justify-between gap-2 min-w-0">
-            <span className="text-[10px] font-bold uppercase tracking-wide text-zinc-500 truncate shrink-0" title="Son 20 işlemin işlem başı R'si, öncekilerle karşılaştırılır. Fark istatistiksel olarak anlamlıysa zayıflama / güçlenme gösterilir.">Son 20 İşlem</span>
-            {!drift.ready ? (
-              <span className="text-[10px] text-zinc-600 tabular-nums truncate">{drift.need} işlemde açılır ({drift.n}/{drift.need})</span>
-            ) : (
-              <DriftRow drift={drift} />
-            )}
-          </div>
-        )}
+        {drift && <DriftBlock drift={drift} />}
       </div>
     </div>
   );
 }
 
-function DriftRow({ drift }: { drift: EdgeDrift }) {
-  const r = drift.recent!;
-  const b = drift.before!;
+/**
+ * Son 20 işlem ↔ öncesi. Sütun en geniş ekranda bile ~230px olduğu için hüküm ve sayılar tek satıra sığmaz:
+ * üst satırda başlık + hüküm, alt satırda karşılaştırılan iki beklenti. Hiçbir genişlikte metin kesilmez.
+ */
+function DriftBlock({ drift }: { drift: EdgeDrift }) {
+  const head = (
+    <span
+      className="text-[10px] font-bold uppercase tracking-wide text-zinc-500 whitespace-nowrap"
+      title={`Son ${DRIFT_RECENT} işlemin işlem başı R'si, öncekilerle karşılaştırılır. Fark istatistiksel olarak anlamlıysa zayıflama / güçlenme gösterilir.`}
+    >
+      Son {DRIFT_RECENT} İşlem
+    </span>
+  );
+  const r = drift.recent;
+  const b = drift.before;
+  if (!drift.ready || !r || !b) {
+    return (
+      <div className="flex items-baseline justify-between gap-x-2 gap-y-0.5 flex-wrap min-w-0">
+        {head}
+        <span className="text-[10px] text-zinc-600 tabular-nums whitespace-nowrap">{drift.need} işlemde açılır ({drift.n}/{drift.need})</span>
+      </div>
+    );
+  }
   const tone = drift.direction === 'WEAKENING' ? 'text-rose-300' : drift.direction === 'IMPROVING' ? 'text-emerald-300' : 'text-zinc-300';
   const arrow = drift.direction === 'WEAKENING' ? '↓' : drift.direction === 'IMPROVING' ? '↑' : '→';
   const label =
     drift.direction === 'STABLE'
       ? 'Stabil'
       : drift.direction === 'WEAKENING'
-        ? drift.strength === 'CONFIRMED' ? 'Edge zayıflıyor' : 'Zayıflama sinyali'
-        : drift.strength === 'CONFIRMED' ? 'Edge güçleniyor' : 'Güçlenme sinyali';
+        ? drift.strength === 'CONFIRMED' ? 'Edge Zayıflıyor' : 'Zayıflama Sinyali'
+        : drift.strength === 'CONFIRMED' ? 'Edge Güçleniyor' : 'Güçlenme Sinyali';
+  // R değeri her yerde olduğu gibi kendi işaretine göre renklenir; yön rengi yalnızca hükümde
+  const rTone = r.expectancy > 0 ? 'text-emerald-400' : r.expectancy < 0 ? 'text-rose-400' : 'text-zinc-300';
   return (
-    <span
-      className="flex items-center gap-1.5 text-[10px] tabular-nums min-w-0 truncate"
-    >
-      <b className={tone}>{fmtR(r.expectancy)}</b>
-      <span className="text-zinc-500">← {fmtR(b.expectancy)}</span>
-      <b className={tone}>{arrow} {label}</b>
-    </span>
+    <div className="flex flex-col gap-0.5 min-w-0">
+      <div className="flex items-baseline justify-between gap-x-2 gap-y-0.5 flex-wrap">
+        {head}
+        <b className={`text-[10px] whitespace-nowrap ${tone}`}>{arrow} {label}</b>
+      </div>
+      <p className="text-[10px] tabular-nums leading-snug text-zinc-500">
+        <b className={rTone}>{fmtR(r.expectancy)}</b> · önceki {b.n} işlemde {fmtR(b.expectancy)}
+      </p>
+    </div>
   );
 }
 

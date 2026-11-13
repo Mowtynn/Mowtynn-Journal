@@ -1,4 +1,5 @@
 import type { Trade } from '../types';
+import { byEntryTime } from './tradeModel';
 import { calculateProfitFactor, calculateRecoveryFactor, toRR } from './statMath';
 import { nyDateKey, nyWallDate } from './tradingTime';
 
@@ -66,7 +67,7 @@ const side = (list: Trade[]): SideStats => {
 };
 
 export function computeDeepMetrics(trades: Trade[]): DeepMetrics {
-  const sorted = [...trades].sort((a, b) => a.createdAt - b.createdAt);
+  const sorted = [...trades].sort(byEntryTime);
 
   // Sermaye eğrisi, max DD ve toparlanma süresi tek geçişte
   let equity = 0;

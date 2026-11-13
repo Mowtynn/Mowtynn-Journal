@@ -1,4 +1,5 @@
 import { Trade } from '../types';
+import { byEntryTime } from './tradeModel';
 import { edgeFromR, EdgeStats, indexTradeOrder, managementMissedR } from './asiaAnalytics';
 import { computeEdgeDrift, DRIFT_RECENT } from './edgeDrift';
 import { formatDuration } from './tradingTime';
@@ -159,7 +160,7 @@ const labelOf = (d: SetupDimension) => SETUP_DIMENSIONS.find((x) => x.id === d)?
 /** `now`: "son 7 gün" ihlalleri bugüne göre sayılır (son işleme göre değil: uzun aradan sonra eski ihlaller "son 7 gün" görünmesin) */
 export function computeEdgeSummary(trades: Trade[], minSample = SETUP_MIN_SAMPLE, now: number = Date.now()): EdgeSummary {
   const valid = trades.filter((t) => typeof t.rr === 'number' && Number.isFinite(t.rr));
-  const sorted = [...valid].sort((a, b) => a.createdAt - b.createdAt);
+  const sorted = [...valid].sort(byEntryTime);
   indexTradeOrder(sorted);
   const val = valueTable(sorted, [...SCAN_DIMENSIONS, ...MANAGEMENT_DIMENSIONS]);
 
@@ -609,9 +610,9 @@ export function edgeReportRows(trades: Trade[], minSample = SETUP_MIN_SAMPLE): R
   const drift = computeEdgeDrift(valid);
   if (drift.ready) {
     const dirText = drift.direction === 'STABLE' ? 'Stabil' : `${drift.direction === 'WEAKENING' ? 'Zayıflıyor' : 'Güçleniyor'}${drift.strength === 'EARLY' ? ' (Erken Sinyal)' : ''}`;
-    push('Zamanla Değişim', `Son ${DRIFT_RECENT} İşlem`, [...valid].sort((a, b) => a.createdAt - b.createdAt).slice(-DRIFT_RECENT), 'Zaman');
+    push('Zamanla Değişim', `Son ${DRIFT_RECENT} İşlem`, [...valid].sort(byEntryTime).slice(-DRIFT_RECENT), 'Zaman');
     rows[rows.length - 1]['Hüküm'] = dirText;
-    push('Zamanla Değişim', 'Önceki İşlemler', [...valid].sort((a, b) => a.createdAt - b.createdAt).slice(0, -DRIFT_RECENT), 'Zaman');
+    push('Zamanla Değişim', 'Önceki İşlemler', [...valid].sort(byEntryTime).slice(0, -DRIFT_RECENT), 'Zaman');
   }
   // İkili birleşimler: alanların tek başına sonucundan belirgin farklı olanlar
   // İyi ve kötü kombinasyonlar ayrı bölümler: önce en iyiler (beklentiye göre), sonra en kötüler (en çok R kaybettiren önce)
@@ -626,7 +627,7 @@ export function edgeReportRows(trades: Trade[], minSample = SETUP_MIN_SAMPLE): R
   // Tesadüf testi: ilk yarıda bulunan bulgular, ikinci yarıdaki sonuçlarıyla
   const oos = validateOutOfSample(valid, minSample);
   const OOS_TEXT: Record<OosStatus, string> = { HELD: 'Tuttu', FAILED: 'Tutmadı', UNTESTED: 'Az Veri' };
-  const testHalf = [...valid].sort((a, b) => a.createdAt - b.createdAt).slice(Math.floor(valid.length / 2));
+  const testHalf = [...valid].sort(byEntryTime).slice(Math.floor(valid.length / 2));
   oos.findings.forEach((f) => {
     push(`Tesadüf Testi · ${f.kind === 'TAKE' ? 'AL' : 'ALMA'}`, f.title, testHalf.filter(f.match), 'Tesadüf Testi');
     rows[rows.length - 1]['Hüküm'] = `${OOS_TEXT[f.status]} (ilk yarı ${round(f.discovery.expectancy, 3)}R/işlem, ${f.discovery.n} işlem → ikinci yarı)`;
@@ -673,7 +674,7 @@ export interface OosResult {
  * aynı yönde tutan bulgu gerçek olma olasılığı yüksek olandır. Tutma oranı, taramanın genel güvenilirliğini gösterir.
  */
 export function validateOutOfSample(trades: Trade[], minSample = SETUP_MIN_SAMPLE): OosResult {
-  const sorted = trades.filter((t) => typeof t.rr === 'number' && Number.isFinite(t.rr)).sort((a, b) => a.createdAt - b.createdAt);
+  const sorted = trades.filter((t) => typeof t.rr === 'number' && Number.isFinite(t.rr)).sort(byEntryTime);
   const base: OosResult = { ready: false, need: OOS_MIN_TOTAL, splitAt: null, findings: [], held: 0, failed: 0, untested: 0 };
   if (sorted.length < OOS_MIN_TOTAL) return base;
   indexTradeOrder(sorted);

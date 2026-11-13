@@ -5,6 +5,7 @@ import { Activity, ArrowDownRight, RefreshCw, TrendingUp, TrendingDown, Sigma } 
 import type { DeepMetrics } from '../lib/deepMetrics';
 import { formatPF } from '../lib/statMath';
 import { MIN_SAMPLE } from '../lib/sampleSize';
+import { fixed, signed } from '../lib/format';
 
 /**
  * Detaylı Analiz metrik kartları.
@@ -14,8 +15,7 @@ import { MIN_SAMPLE } from '../lib/sampleSize';
  */
 
 // Projedeki diğer R değerleriyle aynı biçim (nokta, 2 basamak)
-const fmtR = (v: number) => v.toFixed(2);
-const signed = (v: number) => `${v > 0 ? '+' : ''}${fmtR(v)}`;
+const fmtR = (v: number) => fixed(v);
 
 const itemVariants = {
   hidden: { opacity: 0 },
@@ -61,7 +61,7 @@ function MetricCard({
           onClick?.();
         }
       }}
-      className={`min-w-0 bg-zinc-950/60 border border-zinc-800/80 rounded-2xl p-3.5 ${t.hover} transition-ui duration-200 ease-out flex flex-col justify-between gap-2 cursor-pointer shadow-xs`}
+      className={`min-w-0 bg-zinc-950/60 border border-zinc-800/80 rounded-2xl px-3.5 py-2.5 ${t.hover} transition-ui duration-200 ease-out flex flex-col justify-between gap-1.5 cursor-pointer shadow-xs`}
     >
       <span className="heading-3 text-zinc-400 tracking-wider font-sans flex items-center gap-1.5 min-w-0">
         <span className={`p-1.5 rounded-lg border shrink-0 ${t.icon}`}>
@@ -104,7 +104,7 @@ export const NewDeepAnalysisMetrics = React.memo(
             value={signed(metrics.totalR)}
             unit="R"
             sub={`${total} işlem`}
-            onClick={click('cumulativeR', `${signed(metrics.totalR)} R`)}
+            onClick={click('cumulativeR', `${signed(metrics.totalR)}R`)}
           />
           <MetricCard
             label="Profit Factor"
@@ -117,20 +117,20 @@ export const NewDeepAnalysisMetrics = React.memo(
           <MetricCard
             label="Ort. Kazanç"
             icon={TrendingUp}
-            tone="emerald"
-            value={`+${fmtR(metrics.avgWinRR)}`}
-            unit="R"
+            tone={metrics.avgWinRR > 0 ? 'emerald' : 'zinc'}
+            value={metrics.avgWinRR > 0 ? `+${fmtR(metrics.avgWinRR)}` : '—'}
+            unit={metrics.avgWinRR > 0 ? 'R' : undefined}
             sub={`${metrics.statusAnalysis.win} kazanç`}
-            onClick={click('averageWin', `+${fmtR(metrics.avgWinRR)} R`)}
+            onClick={click('averageWin', metrics.avgWinRR > 0 ? `+${fmtR(metrics.avgWinRR)}R` : '—')}
           />
           <MetricCard
             label="Ort. Kayıp"
             icon={TrendingDown}
-            tone="rose"
-            value={`-${fmtR(metrics.avgLossRR)}`}
-            unit="R"
+            tone={metrics.avgLossRR > 0 ? 'rose' : 'zinc'}
+            value={metrics.avgLossRR > 0 ? `-${fmtR(metrics.avgLossRR)}` : '—'}
+            unit={metrics.avgLossRR > 0 ? 'R' : undefined}
             sub={`${metrics.statusAnalysis.loss} kayıp`}
-            onClick={click('averageLoss', `-${fmtR(metrics.avgLossRR)} R`)}
+            onClick={click('averageLoss', metrics.avgLossRR > 0 ? `-${fmtR(metrics.avgLossRR)}R` : '—')}
           />
         </>
       );
@@ -147,7 +147,7 @@ export const NewDeepAnalysisMetrics = React.memo(
           tone={dd > 0 ? 'rose' : 'zinc'}
           value={`${dd > 0 ? '-' : ''}${fmtR(dd)}`}
           unit="R"
-          onClick={click('maxDrawdown', `${dd > 0 ? '-' : ''}${fmtR(dd)} R`)}
+          onClick={click('maxDrawdown', `${dd > 0 ? '-' : ''}${fmtR(dd)}R`)}
         />
         <MetricCard
           label="Recovery Factor"

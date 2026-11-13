@@ -1,4 +1,5 @@
 import { Trade, JournalEntry, Note } from '../types';
+import { byEntryTime } from '../lib/tradeModel';
 import { getNyParts, getSweepSide, getTradeHourBucket, WEEKDAY_NAMES_TR, nyWallDate, formatDuration } from '../lib/tradingTime';
 import { getNewsDayLabels, getTradeAccountCategory, getTradeStageLabel, ACCOUNT_CATEGORY_LABELS } from '../constants/constants';
 import { DATASET_LABELS, getTradeDataset, plannedRR, sweepHourBucket, sweepToEntryMinutes, tradeOfDayBucket } from '../lib/asiaAnalytics';
@@ -234,7 +235,7 @@ export const tradeSummaryRows = (trades: Trade[], title?: string) => {
   const totalR = trades.reduce((acc, t) => acc + r(t), 0);
   const rWin = trades.reduce((acc, t) => acc + Math.max(0, r(t)), 0);
   const rLoss = Math.abs(trades.reduce((acc, t) => acc + Math.min(0, r(t)), 0));
-  const sorted = [...trades].sort((a, b) => a.createdAt - b.createdAt);
+  const sorted = [...trades].sort(byEntryTime);
   const range = sorted.length ? `${formatDateTime(sorted[0].createdAt).date} – ${formatDateTime(sorted[sorted.length - 1].createdAt).date}` : '-';
   return [
     { Metrik: 'Rapor Başlığı', Değer: title || 'İşlem Geçmişi Raporu' },

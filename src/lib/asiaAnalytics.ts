@@ -1,4 +1,5 @@
 import { getNyParts } from './tradingTime';
+import { byEntryTime } from './tradeModel';
 import { Trade } from '../types';
 import { getTradeAccountCategory, getTradeStageLabel } from '../constants/constants';
 import { calculateProfitFactor, toRR } from './statMath';
@@ -183,7 +184,7 @@ export function edgeFromR(rs: number[], statuses?: Array<Trade['status']>): Edge
   };
 }
 
-const chronological = (trades: Trade[]): Trade[] => [...trades].sort((a, b) => a.createdAt - b.createdAt);
+const chronological = (trades: Trade[]): Trade[] => [...trades].sort(byEntryTime);
 
 export function computeEdge(trades: Trade[]): EdgeStats {
   const sorted = chronological(trades);
@@ -284,7 +285,7 @@ export function bucketAsiaRanges(trades: Trade[]): Map<string, RangeBucket> {
     (groups.get(k) || groups.set(k, []).get(k)!).push(t);
   }
   groups.forEach((list) => {
-    list.sort((a, b) => a.createdAt - b.createdAt);
+    list.sort(byEntryTime);
     const prior: number[] = []; // sıralı tutulur
     for (const t of list) {
       const v = t.asiaRangePips as number;
@@ -417,7 +418,7 @@ function buildOrder(trades: Trade[]): void {
   prevResult.clear();
   byDay.forEach((list) =>
     list
-      .sort((x, y) => x.createdAt - y.createdAt)
+      .sort(byEntryTime)
       .forEach((t, i) => {
         tradeOrder.set(t.id, i + 1);
         const prev = i > 0 ? list[i - 1] : null;
@@ -462,6 +463,23 @@ export function rangeSizeBucket(t: Pick<Trade, 'id'>): string | null {
 /** İşlem Yönetimi: seçilen yönetim adımları birleşik ("BE Çekildi + Kısmi Kâr") */
 export function managementBucket(t: Pick<Trade, 'management'>): string | null {
   return Array.isArray(t.management) && t.management.length ? [...t.management].join(' + ') : null;
+}
+/**
+ * "Çıkış sonrası fiyat TP'ye gitti mi?" sorusu bu işlemde sorulur mu: BE kapanan, erken kapatılan ya da stop'u BE'ye
+ * çekilen işlemler. Diğerlerinde (plana göre TP / stop) erken çıkış olmadığı için soru anlamsızdır.
+ */
+export function afterExitTpApplies(status: string | undefined, management: readonly string[] | undefined): boolean {
+  return status === 'BREAKEVEN' || (Array.isArray(management) && (management.includes('Erken Kapatıldı') || management.includes('BE Çekildi')));
+}
+/**
+ * İşlem detayındaki "Çıkış Sonrası TP" metni: cevap girildiyse Evet / Hayır; soru bu işlemde sorulmuyorsa ve yönetim
+ * girilmişse "Erken Çıkılmadı" (boş tire yerine, alanın neden boş olduğu anlaşılsın). Bilinmiyorsa undefined.
+ */
+export function afterExitTpText(t: Pick<Trade, 'afterExitTp' | 'status' | 'management'>): { text: string; answered: boolean } | undefined {
+  if (afterExitTpApplies(t.status, t.management)) {
+    return typeof t.afterExitTp === 'boolean' ? { text: t.afterExitTp ? 'Evet' : 'Hayır', answered: true } : undefined;
+  }
+  return Array.isArray(t.management) && t.management.length > 0 ? { text: 'Erken Çıkılmadı', answered: false } : undefined;
 }
 export function afterExitBucket(t: Pick<Trade, 'afterExitTp'>): string | null {
   return typeof t.afterExitTp === 'boolean' ? (t.afterExitTp ? "Çıkış Sonrası TP'ye Gitti" : "Çıkış Sonrası TP'ye Gitmedi") : null;
@@ -508,7 +526,7 @@ export function computeCoverage(trades: Trade[]): CoverageRow[] {
     { field: 'tpTargets', label: 'Target', unlocks: 'Çıkış hedefi kıyası', ok: (t) => list(t.tpTargets) },
     { field: 'premiumDiscount', label: 'Confirmations', unlocks: 'Confirmations × Yön kıyası', ok: (t) => !!t.premiumDiscount },
     { field: 'management', label: 'İşlem Yönetimi', unlocks: "Yönetim edge'i", ok: (t) => list(t.management) },
-    { field: 'afterExitTp', label: 'Çıkış Sonrası TP', unlocks: 'Yönetimle kaçırılan R (sorulduğu işlemlerde)', ok: (t) => typeof t.afterExitTp === 'boolean', asked: (t) => t.status === 'BREAKEVEN' || (Array.isArray(t.management) && (t.management.includes('Erken Kapatıldı') || t.management.includes('BE Çekildi'))) },
+    { field: 'afterExitTp', label: 'Çıkış Sonrası TP', unlocks: 'Yönetimle kaçırılan R (sorulduğu işlemlerde)', ok: (t) => typeof t.afterExitTp === 'boolean', asked: (t) => afterExitTpApplies(t.status, t.management) },
     { field: 'riskPct', label: 'Risk %', unlocks: 'Risk seviyesine göre edge, aşırı risk uyarısı (hesaplı işlemlerde)', ok: (t) => hasNum(t.riskPct) && t.riskPct > 0, asked: (t) => !!t.accountId },
     { field: 'exitAt', label: 'Çıkış Saati', unlocks: 'İşlem süresi, hedefe ulaşma süresi', ok: (t) => hasNum(t.exitAt) && t.exitAt >= t.createdAt },
     { field: 'stopPips', label: 'Stop Pip', unlocks: 'Stop büyüklüğü (parite bazlı), Stop / Asia Range, Planlanan R:R, kaçırılan R', ok: (t) => hasNum(t.stopPips) && t.stopPips > 0 },

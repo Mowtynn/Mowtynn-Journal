@@ -8,6 +8,7 @@ import { getTradeNyWeekday } from '../lib/tradingTime';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { MIN_SAMPLE } from '../lib/sampleSize';
 import { smartUpper } from '../constants/constants';
+import { formatR } from '../lib/format';
 
 /** Seansı girilmemiş işlemlerin sütunu (Kurulum Karnesi / Edge Özeti ile aynı ad) */
 const UNSPECIFIED_SESSION = 'Belirtilmemiş';
@@ -266,8 +267,8 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
                                 <span className="font-bold text-blue-400 border-b border-zinc-800 pb-1 mb-1">{day} — {session}</span>
                                 <div className="space-y-0.5 text-zinc-300">
                                   <div>İşlem: <span className="text-white font-bold">{cell?.count || 0}</span></div>
-                                  <div>Net R: <span className="text-blue-300 font-bold">{(cell?.r || 0).toFixed(1)} R</span></div>
-                                  <div>Başarı Oranı: <span className="text-zinc-100 font-bold">%{winRatePercent}</span></div>
+                                  <div>Net R: <span className={`font-bold tabular-nums ${(cell?.r || 0) > 1e-9 ? 'text-emerald-400' : (cell?.r || 0) < -1e-9 ? 'text-rose-400' : 'text-zinc-300'}`}>{formatR(cell?.r || 0)}</span></div>
+                                  <div>Kazanma Oranı: <span className="text-zinc-100 font-bold">%{winRatePercent}</span></div>
                                   {cell?.planFidelityCounts && Object.keys(cell.planFidelityCounts).length > 0 && (
                                     <div className="pt-0.5 text-[11px] text-blue-300 border-t border-zinc-800/80 mt-1 uppercase font-bold">
                                       Setup: <span className="font-bold">{Object.entries(cell.planFidelityCounts).sort((a, b) => b[1] - a[1])[0][0]}</span>

@@ -4,9 +4,11 @@ import { Activity } from 'lucide-react';
 import { PropAccount, Trade } from '../../types';
 import { computeAccountRInsights, MAX_BUST_PCT, MIN_SURVIVE_PCT, MIN_SIMULATION_SAMPLE } from '../../lib/propInsights';
 import { MIN_SAMPLE, EDGE_PROOF_MIN } from '../../lib/sampleSize';
+import { fixed, formatMoney, formatR } from '../../lib/format';
 
 const r1 = (v: number) => v.toLocaleString('en-US', { maximumFractionDigits: 1 });
-const sR = (v: number) => `${v > 0 ? '+' : ''}${r1(v)}R`;
+// Beklenti, ortalamalar ve net R diğer ekranlarla aynı iki ondalıkla; sınıra / hedefe kalan mesafe yaklaşık olduğu için tek ondalık
+const sR = (v: number) => formatR(v);
 
 function Stat({ label, value, tone = 'text-zinc-100', hint }: { label: string; value: string; tone?: string; hint?: string }) {
   return (
@@ -34,7 +36,7 @@ export const PropRSummary = memo(function PropRSummary({ account, trades }: { ac
         <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-zinc-400">
           <Activity size={12} className="text-blue-400" /> Canlı R özeti
         </span>
-        <span className="text-[10px] text-zinc-500 tabular-nums">1R ≈ ${r1(ins.riskPerTrade)}</span>
+        <span className="text-[10px] text-zinc-500 tabular-nums">1R ≈ {formatMoney(ins.riskPerTrade)}</span>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
@@ -48,7 +50,7 @@ export const PropRSummary = memo(function PropRSummary({ account, trades }: { ac
           label="Beklenti"
           value={ins.tradeCount ? `${sR(ins.expectancy)}/işlem` : '—'}
           tone={ins.expectancy > 0 ? 'text-emerald-300' : ins.expectancy < 0 ? 'text-rose-300' : 'text-zinc-400'}
-          hint={`Ort. kazanç ${r1(ins.avgWinR)}R · ort. kayıp ${r1(ins.avgLossR)}R`}
+          hint={`Ort. kazanç ${fixed(ins.avgWinR)}R · ort. kayıp ${fixed(ins.avgLossR)}R`}
         />
         <Stat
           label="Sınıra kalan"
@@ -63,7 +65,7 @@ export const PropRSummary = memo(function PropRSummary({ account, trades }: { ac
             hint="Ortalama kazancınla hedefe kaç kazanç kaldı"
           />
         ) : (
-          <Stat label="Net R" value={sR(ins.netR)} tone={ins.netR >= 0 ? 'text-emerald-300' : 'text-rose-300'} hint="İşlemlerin R toplamı (bakiye düzeltmeleri hariç)" />
+          <Stat label="Net R" value={sR(ins.netR)} tone={ins.netR > 0 ? 'text-emerald-300' : ins.netR < 0 ? 'text-rose-300' : 'text-zinc-400'} hint="İşlemlerin R toplamı (bakiye düzeltmeleri hariç)" />
         )}
       </div>
 

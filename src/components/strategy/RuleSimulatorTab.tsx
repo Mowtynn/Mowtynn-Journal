@@ -8,11 +8,11 @@ import { ruleOptions, simulateRule, HALF_MIN, type RuleCondition, type HalfStatu
 import { EDGE_PROOF_MIN } from '../../lib/sampleSize';
 import type { EdgeStats } from '../../lib/asiaAnalytics';
 import { useNewsDayLabels } from '../../hooks/useNewsDayLabels';
+import { fixed, formatR, trPossessive } from '../../lib/format';
 
 const STORAGE_KEY = 'tj_rule_sim';
 const MAX_CONDS = 6;
-const fmt = (v: number, d = 2) => v.toLocaleString('en-US', { maximumFractionDigits: d });
-const sR = (v: number) => `${v > 0 ? '+' : ''}${fmt(v)}R`;
+const sR = (v: number) => formatR(v);
 const labelOf = (d: SetupDimension) => SETUP_DIMENSIONS.find((x) => x.id === d)?.label || d;
 const toneOf = (v: number) => (v > 0 ? 'text-emerald-300' : v < 0 ? 'text-rose-300' : 'text-zinc-300');
 
@@ -89,7 +89,7 @@ function Curve({ points }: { points: Array<{ all: number; rule: number }> }) {
   );
 }
 
-const ci = (e: EdgeStats) => (e.n > 1 ? `%95: ${fmt(e.expLo)} – ${fmt(e.expHi)}` : undefined);
+const ci = (e: EdgeStats) => (e.n > 1 ? `%95: ${fixed(e.expLo)} – ${fixed(e.expHi)}` : undefined);
 
 export const RuleSimulatorTab = React.memo(function RuleSimulatorTab({ trades }: { trades: Trade[] }) {
   const [conds, setConds] = useState<RuleCondition[]>(loadConds);
@@ -202,12 +202,12 @@ export const RuleSimulatorTab = React.memo(function RuleSimulatorTab({ trades }:
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2">
-          <Stat label="Kurala Uyan" value={`${res.taken.n} İşlem`} sub={`Tümünün %${takenPct}'i`} />
-          <Stat label="Beklenti" value={`${sR(res.taken.expectancy)}/İşlem`} sub={ci(res.taken)} cls={toneOf(res.taken.expectancy)} />
+          <Stat label="Kurala Uyan" value={`${res.taken.n} İşlem`} sub={`Tümünün %${takenPct}'${trPossessive(takenPct)}`} />
+          <Stat label="Beklenti" value={`${sR(res.taken.expectancy)}/işlem`} sub={ci(res.taken)} cls={toneOf(res.taken.expectancy)} />
           <Stat label="Net R" value={sR(res.taken.netR)} sub={`Tümü ${sR(res.all.netR)}`} cls={toneOf(res.taken.netR)} />
-          <Stat label="Kazanma Oranı" value={`%${fmt(res.taken.winRate, 1)}`} sub={`Tümü %${fmt(res.all.winRate, 1)}`} />
-          <Stat label="Maks. DD" value={`${fmt(res.taken.maxDrawdownR)}R`} sub={`Tümü ${fmt(res.all.maxDrawdownR)}R`} />
-          <Stat label="Vazgeçilen" value={`${res.skipped.n} İşlem`} sub={res.skipped.n ? `${sR(res.skipped.netR)} · ${sR(res.skipped.expectancy)}/İşlem` : undefined} cls={toneOf(-res.skipped.netR)} />
+          <Stat label="Kazanma Oranı" value={`%${fixed(res.taken.winRate, 1)}`} sub={`Tümü %${fixed(res.all.winRate, 1)}`} />
+          <Stat label="Max Drawdown" value={sR(-Math.abs(res.taken.maxDrawdownR))} sub={`Tümü ${sR(-Math.abs(res.all.maxDrawdownR))}`} cls={res.taken.maxDrawdownR > 0 ? 'text-rose-300' : undefined} />
+          <Stat label="Vazgeçilen" value={`${res.skipped.n} İşlem`} sub={res.skipped.n ? `${sR(res.skipped.netR)} · ${sR(res.skipped.expectancy)}/işlem` : undefined} cls={toneOf(-res.skipped.netR)} />
         </div>
 
         <Curve points={res.curve} />
@@ -217,7 +217,7 @@ export const RuleSimulatorTab = React.memo(function RuleSimulatorTab({ trades }:
             <div key={l} className="flex items-center justify-between gap-2 rounded-xl border border-zinc-800/80 bg-zinc-950/40 px-3 py-2 text-xs">
               <span className="text-zinc-400 font-bold">{l}</span>
               <span className={`tabular-nums font-bold ${toneOf(e.expectancy)}`}>
-                {e.n ? `${sR(e.expectancy)}/İşlem` : '-'} <span className="text-zinc-500 font-normal">· {e.n} işlem</span>
+                {e.n ? `${sR(e.expectancy)}/işlem` : '-'} <span className="text-zinc-500 font-normal">· {e.n} işlem</span>
               </span>
             </div>
           ))}

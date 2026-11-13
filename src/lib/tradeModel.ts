@@ -1,4 +1,12 @@
 import { ASIA_RANGE_TYPES, MANAGEMENT_TYPES, Trade } from '../types';
+
+/**
+ * Kronolojik sıra (eskiden yeniye). Aynı dakikaya girilmiş işlemlerde sıra kayıt kimliğiyle belirlenir (kimlik kayıt
+ * anını içerir: önce kaydedilen önce gelir). Böylece eğri, max drawdown, "günün kaçıncı işlemi" ve "önceki işlemin
+ * sonucu" gibi sıraya bağlı analizler işlemlerin saklandığı / buluttan geldiği sıraya göre değişmez.
+ */
+export const byEntryTime = (a: Pick<Trade, 'createdAt' | 'id'>, b: Pick<Trade, 'createdAt' | 'id'>): number =>
+  a.createdAt - b.createdAt || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
 import { canonicalAsset } from './tradingTime';
 import { titleCase } from '../constants/constants';
 

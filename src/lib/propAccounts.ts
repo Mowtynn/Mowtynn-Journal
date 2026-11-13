@@ -1,4 +1,5 @@
 import { PropAccount, PropBalanceAdjustment, PropCertificate, PropStageRule, Trade } from '../types';
+import { byEntryTime } from './tradeModel';
 import { nyDateKey } from './tradingTime';
 import { titleCase } from '../constants/constants';
 
@@ -158,7 +159,7 @@ export interface PropAccountMetrics {
  * STATIC: taban = boyut × (1 − DD%). TRAILING: taban = min(boyut, en yüksek bakiye − boyut × DD%).
  */
 export function computeAccountMetrics(a: PropAccount, allTrades: Trade[]): PropAccountMetrics {
-  const trades = allTrades.filter((t) => tradeBelongsTo(t, a)).sort((x, y) => x.createdAt - y.createdAt);
+  const trades = allTrades.filter((t) => tradeBelongsTo(t, a)).sort(byEntryTime);
   const rule = stageRule(a);
   const maxDdAmount = (a.size * rule.maxDdPct) / 100;
   const events: { at: number; amount: number }[] = [

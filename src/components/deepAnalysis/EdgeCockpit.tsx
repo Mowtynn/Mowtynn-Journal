@@ -19,6 +19,7 @@ import { EDGE_PROOF_MIN } from '../../lib/sampleSize';
 import { EdgeStats } from '../../lib/asiaAnalytics';
 import { useNewsDayLabels } from '../../hooks/useNewsDayLabels';
 import { formatDuration } from '../../lib/tradingTime';
+import { fixed, formatR, trPossessive } from '../../lib/format';
 
 /**
  * Strateji & Edge Geliştirme Laboratuvarı: Edge Özeti (neyi daha çok / neyi hiç yapmamalı).
@@ -28,7 +29,8 @@ import { formatDuration } from '../../lib/tradingTime';
 export type ShowTrades = (title: string, trades: Trade[]) => void;
 
 const fmt = (v: number, d = 2) => v.toLocaleString('en-US', { maximumFractionDigits: d });
-const sR = (v: number, d = 2) => `${v > 0 ? '+' : ''}${fmt(v, d)}R`;
+// R değerleri her yerde sabit ondalıkla: "+0.80R" ("+0.8R" değil), sütunlar hizalı okunur
+const sR = (v: number, d = 2) => formatR(v, d);
 
 /**
  * Kural sonrası performans: bir kural ilk kez oluştuğu an cihazda saklanır; sonrasındaki işlemler ayrıca ölçülür
@@ -87,8 +89,8 @@ function InsightRow({ title, sub, edge, onClick, relativeSure }: { title: string
       className="group w-full flex items-center gap-3 rounded-xl border border-zinc-800/80 bg-zinc-950/40 hover:bg-zinc-900 hover:border-zinc-700 px-3 py-2.5 text-left transition-ui cursor-pointer"
     >
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <span className="text-xs font-semibold text-zinc-200 truncate" title={title}>{title}</span>
+        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 min-w-0">
+          <span className="text-xs font-semibold text-zinc-200 break-words min-w-0">{title}</span>
           <SignalBadge edge={edge} relativeSure={relativeSure} />
         </div>
         <div className="text-[10px] text-zinc-500 mt-0.5 tabular-nums">
@@ -98,7 +100,7 @@ function InsightRow({ title, sub, edge, onClick, relativeSure }: { title: string
       </div>
       <div className="text-right shrink-0">
         <div className={`text-sm font-bold tabular-nums ${tone(edge.expectancy)}`}>{sR(edge.expectancy)}</div>
-        <div className="text-[10px] text-zinc-500 tabular-nums">net {sR(edge.netR, 1)}</div>
+        <div className="text-[10px] text-zinc-500 tabular-nums">net {sR(edge.netR)}</div>
       </div>
       <ChevronRight size={14} className="text-zinc-600 group-hover:text-zinc-300 shrink-0 transition-colors" />
     </button>
@@ -148,17 +150,21 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
 
   // Geri kalan işlemlere göre fark (kârlı sistemde "daha çok yap" buna dayanır)
   const restDiff = (e: EdgeStats) => (s.total - e.n > 0 ? e.expectancy - (s.overall.netR - e.netR) / (s.total - e.n) : 0);
-  const vsText = (d: number, sure?: boolean) => `geri kalandan ${d > 0 ? '+' : ''}${fmt(d)}R/işlem${sure === false ? ' · fark henüz kesin değil' : ''}`;
+  const vsText = (d: number, sure?: boolean) => `geri kalandan ${sR(d)}/işlem${sure === false ? ' · fark henüz kesin değil' : ''}`;
+  const overlapText = (o: { pct: number; label: string }) => {
+    const pct = Math.round(o.pct * 100);
+    return `%${pct}'${trPossessive(pct)} ${o.label}`;
+  };
   const goods = [
     ...s.bestSetups.map((r) => {
       const v = s.setupVsRest[r.key] ?? { vsRest: restDiff(r.edge), vsRestZ: 0 };
       return { key: `s:${r.key}`, title: r.labels.join(' · '), sub: `kurulum · ${vsText(v.vsRest, v.vsRestZ >= 1.96)}`, edge: r.edge, sure: v.vsRestZ >= 1.96, open: () => onShowTrades(`Kurulum: ${r.labels.join(' · ')}`, setupTrades(r)) };
     }),
-    ...s.strengths.map((x) => ({ key: `d:${x.dimension}:${x.value}`, title: `${x.dimensionLabel}: ${x.value}`, sub: [vsText(x.vsRest, x.vsRestZ >= 1.96), x.overlap ? `%${Math.round(x.overlap.pct * 100)}'i ${x.overlap.label}` : ''].filter(Boolean).join(' · '), edge: x.edge, sure: x.vsRestZ >= 1.96, open: () => onShowTrades(`${x.dimensionLabel}: ${x.value}`, sliceTrades(x)) })),
+    ...s.strengths.map((x) => ({ key: `d:${x.dimension}:${x.value}`, title: `${x.dimensionLabel}: ${x.value}`, sub: [vsText(x.vsRest, x.vsRestZ >= 1.96), x.overlap ? overlapText(x.overlap) : ''].filter(Boolean).join(' · '), edge: x.edge, sure: x.vsRestZ >= 1.96, open: () => onShowTrades(`${x.dimensionLabel}: ${x.value}`, sliceTrades(x)) })),
   ].slice(0, 4);
   const bads = [
     ...s.worstSetups.map((r) => ({ key: `s:${r.key}`, title: r.labels.join(' · '), sub: 'kurulum', edge: r.edge, open: () => onShowTrades(`Kurulum: ${r.labels.join(' · ')}`, setupTrades(r)) })),
-    ...s.leaks.map((x) => ({ key: `d:${x.dimension}:${x.value}`, title: `${x.dimensionLabel}: ${x.value}`, sub: x.overlap ? `%${Math.round(x.overlap.pct * 100)}'i ${x.overlap.label}` : undefined, edge: x.edge, open: () => onShowTrades(`${x.dimensionLabel}: ${x.value}`, sliceTrades(x)) })),
+    ...s.leaks.map((x) => ({ key: `d:${x.dimension}:${x.value}`, title: `${x.dimensionLabel}: ${x.value}`, sub: x.overlap ? overlapText(x.overlap) : undefined, edge: x.edge, open: () => onShowTrades(`${x.dimensionLabel}: ${x.value}`, sliceTrades(x)) })),
   ].slice(0, 4);
 
   return (
@@ -177,7 +183,7 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
           <div className="text-right min-w-0">
             <div className={`text-lg font-bold tabular-nums leading-tight ${tone(s.overall.expectancy)}`}>{sR(s.overall.expectancy)}</div>
             <div className="text-[10px] text-zinc-500 tabular-nums">
-              işlem başı · %95 GA {fmt(s.overall.expLo)} – {fmt(s.overall.expHi)}
+              işlem başı · %95 GA {fixed(s.overall.expLo)} – {fixed(s.overall.expHi)}
             </div>
           </div>
           <span className={`px-2 py-1 rounded-lg border text-[10px] font-bold uppercase ${pill.cls}`}>{pill.label}</span>
@@ -308,19 +314,19 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
           </span>
           <p className="text-[10px] text-zinc-500 -mt-1">Verinden otomatik çıkan sonuçlar: kanıtlı kârlı ve geri kalan işlemlerinden %95 güvenle daha iyi olan "AL", kesin kaybettiren "ALMA" olur. Sabit kural değildir; yeni işlemlerle değişir.</p>
           {s.rules.length ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
+            <div className="flex flex-col gap-1.5">
               {s.rules.slice(0, 10).map((r) => (
                 <button
                   key={`r:${r.kind}:${r.title}`}
                   type="button"
                   onClick={() => onShowTrades(r.title, trades.filter(r.match))}
-                  className="flex items-center justify-between gap-2 rounded-xl border border-zinc-800 bg-zinc-950/40 px-3 py-2 text-left hover:border-zinc-700 cursor-pointer transition-ui min-w-0"
+                  className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-xl border border-zinc-800 bg-zinc-950/40 px-3 py-2 text-left hover:border-zinc-700 cursor-pointer transition-ui min-w-0"
                 >
-                  <span className="flex items-center gap-2 min-w-0">
+                  <span className="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0">
                     <span className={`shrink-0 px-1.5 py-0.5 rounded-md border text-[10px] font-bold ${r.kind === 'TAKE' ? 'text-emerald-300 border-emerald-500/30 bg-emerald-500/10' : 'text-rose-300 border-rose-500/30 bg-rose-500/10'}`}>
                       {r.kind === 'TAKE' ? 'AL' : 'ALMA'}
                     </span>
-                    <span className="text-xs font-bold text-zinc-200 truncate">{r.title}</span>
+                    <span className="text-xs font-bold text-zinc-200 break-words min-w-0">{r.title}</span>
                     {r.halves && r.halves.status !== 'THIN' && (
                       <span
                         className={`shrink-0 px-1.5 py-0.5 rounded-md border text-[10px] font-bold ${r.halves.status === 'CONSISTENT' ? 'text-emerald-300 border-emerald-500/30' : 'text-amber-300 border-amber-500/30'}`}
@@ -329,7 +335,7 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
                       </span>
                     )}
                   </span>
-                  <span className="shrink-0 text-[10px] tabular-nums text-zinc-400">
+                  <span className="ml-auto text-right text-[10px] tabular-nums text-zinc-400">
                     {(() => {
                       const since = ruleSince[ruleKey(r.kind, r.title)];
                       const after = since !== undefined ? trades.filter((t) => t.createdAt > since && r.match(t)) : [];
@@ -373,19 +379,20 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
                   {oos.untested > 0 && <>, {oos.untested} tanesi için ikinci yarıda yeterli işlem yok (en az {HALF_MIN})</>}.
                   {oos.held + oos.failed > 0 && <> Tutma oranı <b>%{Math.round((oos.held / (oos.held + oos.failed)) * 100)}</b>.</>}
                 </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
+                {/* Tek sütun: başlık tam okunur; ilk yarı → ikinci yarı beklentisi sağda, dar ekranda alt satırda */}
+                <div className="flex flex-col gap-1.5">
                   {oos.findings.slice(0, 10).map((f) => (
                     <button
                       key={`oos:${f.kind}:${f.title}`}
                       type="button"
                       onClick={() => onShowTrades(f.title, trades.filter(f.match))}
-                      className="flex items-center justify-between gap-2 rounded-xl border border-zinc-800 bg-zinc-950/40 px-3 py-2 text-left hover:border-zinc-700 cursor-pointer transition-ui min-w-0"
+                      className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-xl border border-zinc-800 bg-zinc-950/40 px-3 py-2 text-left hover:border-zinc-700 cursor-pointer transition-ui min-w-0"
                     >
                       <span className="flex items-center gap-2 min-w-0">
-                        <span className={`shrink-0 px-1.5 py-0.5 rounded-md border text-[10px] font-bold ${OOS_PILL[f.status].cls}`}>{OOS_PILL[f.status].label}</span>
-                        <span className="text-xs font-bold text-zinc-200 truncate" title={f.title}>{f.title}</span>
+                        <span className={`shrink-0 w-[58px] text-center px-1.5 py-0.5 rounded-md border text-[10px] font-bold ${OOS_PILL[f.status].cls}`}>{OOS_PILL[f.status].label}</span>
+                        <span className="text-xs font-bold text-zinc-200 break-words min-w-0">{f.title}</span>
                       </span>
-                      <span className="shrink-0 text-[10px] tabular-nums text-zinc-400">
+                      <span className="ml-auto text-right text-[10px] tabular-nums text-zinc-400 whitespace-nowrap">
                         {sR(f.discovery.expectancy)} → <b className={tone(f.test.expectancy)}>{f.test.n ? sR(f.test.expectancy) : '-'}</b>
                         <span className="text-zinc-600"> · {f.test.n} işlem</span>
                       </span>
@@ -410,12 +417,12 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
             İki giriş alanı birlikteyken, tek başlarına olduğundan en az {PAIR_MIN_LIFT}R/işlem daha iyi ya da kötü olan birleşimler (en az {SETUP_MIN_SAMPLE * 2} işlem).
           </p>
           {s.bestPairs.length || s.worstPairs.length ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <div className="flex flex-col gap-2">
               {[...s.bestPairs, ...s.worstPairs].map((p) => (
                 <InsightRow
                   key={`p:${p.title}`}
                   title={p.title}
-                  sub={`tek başına göre ${p.lift > 0 ? '+' : ''}${fmt(p.lift)}R/işlem`}
+                  sub={`tek başına göre ${sR(p.lift)}/işlem`}
                   edge={p.edge}
                   onClick={() => onShowTrades(p.title, trades.filter((t) => dimensionValue(t, p.dims[0]) === p.values[0] && dimensionValue(t, p.dims[1]) === p.values[1]))}
                 />
@@ -435,7 +442,7 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
             İşlem Yönetimi, Çıkış Sonrası TP ve işlem süresi: işleme girdikten sonra belirlenir, bu yüzden giriş önerilerine karışmaz. Süre sonucun bir parçasıdır (kaybedenler stop'a hızlı değebilir); neden değil, ipucu olarak oku.
           </p>
           {s.managementSlices.length ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <div className="flex flex-col gap-2">
               {s.managementSlices.slice(0, 6).map((x) => (
                 <InsightRow key={`m:${x.dimension}:${x.value}`} title={`${x.dimensionLabel}: ${x.value}`} edge={x.edge} onClick={() => onShowTrades(`${x.dimensionLabel}: ${x.value}`, sliceTrades(x))} />
               ))}
@@ -446,7 +453,7 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
           {s.missed.n > 0 && (
             <p className="text-[11px] text-zinc-400">
               Çıkıştan sonra TP'ye giden {s.missed.n} işlem
-              {s.missed.measured > 0 && <> · yönetimle kaçırılan <span className="font-bold text-rose-300 tabular-nums">{s.missed.missedR.toFixed(2)}R</span></>}
+              {s.missed.measured > 0 && <> · yönetimle kaçırılan <span className="font-bold text-rose-300 tabular-nums">{fixed(s.missed.missedR)}R</span></>}
               {s.missed.measured < s.missed.n && <> ({s.missed.n - s.missed.measured} işlemde TP / Stop Pip eksik)</>}
             </p>
           )}
@@ -465,7 +472,7 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
               <div className="flex flex-col gap-1">
                 {[s.timeToTarget.overall, ...s.timeToTarget.setups].map((r) => (
                   <div key={`ttt:${r.title}`} className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 rounded-xl border border-zinc-800 bg-zinc-950/40 px-3 py-1.5 text-[11px] tabular-nums min-w-0">
-                    <span className="font-bold text-zinc-200 truncate min-w-0">{r.title}</span>
+                    <span className="font-bold text-zinc-200 break-words min-w-0">{r.title}</span>
                     <span className="text-zinc-400 min-w-0">
                       medyan <b className="text-zinc-200">{formatDuration(r.medianMs)}</b> · %90 <b className="text-blue-300">{formatDuration(r.p90Ms)}</b>
                       {r.loserMedianMs !== null && <> · kaybeden <b className="text-rose-300">{formatDuration(r.loserMedianMs)}</b></>}

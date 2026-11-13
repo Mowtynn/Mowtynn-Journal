@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-reac
 import { Trade } from '../types';
 import { TradeHistoryModal } from './TradeHistoryModal';
 import { nyWallDate, nyNow } from '../lib/tradingTime';
+import { formatR, signed } from '../lib/format';
 
 const DAYS_OF_WEEK = ['PZT', 'SAL', 'ÇAR', 'PER', 'CUM', 'CMT', 'PAZ'];
 
@@ -166,7 +167,10 @@ export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], o
           {stat ? (
             <div className="mt-auto flex flex-col items-end text-right overflow-hidden">
                <div className={`max-w-full font-sans font-extrabold text-[10px] sm:text-xs leading-none ${primaryColor} tracking-tight truncate`}>
-                 {stat.rr > 1e-9 ? '+' : ''}{(Math.abs(stat.rr) < 1e-9 ? 0 : stat.rr).toFixed(1)}<span className="hidden sm:inline text-[8px] font-bold ml-0.5 opacity-80">R</span>
+                 {/* Telefonda hücre dar: tek ondalık; geniş ekranda diğer ekranlarla aynı iki ondalık */}
+                 <span className="sm:hidden">{signed(stat.rr, 1)}</span>
+                 <span className="hidden sm:inline">{signed(stat.rr)}</span>
+                 <span className="hidden sm:inline text-[8px] font-bold ml-0.5 opacity-80">R</span>
                </div>
                {/* Telefonda işlem sayısı üstte yer bulamadığı için burada, kısa biçimde */}
                <div className={`sm:hidden font-sans text-[8.5px] font-medium mt-0.5 ${secondaryColor} truncate leading-none`}>
@@ -239,8 +243,8 @@ export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], o
                <div className="flex items-center gap-2 px-3 py-1.5 bg-zinc-900/80 border border-zinc-800/80 rounded-xl shadow-xs overflow-hidden">
                  <div className="flex items-center gap-2">
                    <span className="text-zinc-500 font-bold uppercase text-[10px] tracking-wider">{smartUpper("Aylık R:")}</span>
-                   <span className={`font-black font-sans text-xs ${monthlyStats.totalRr >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                     {monthlyStats.totalRr >= 0 ? '+' : ''}{monthlyStats.totalRr.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} R
+                   <span className={`font-black font-sans text-xs tabular-nums ${monthlyStats.totalRr > 1e-9 ? 'text-emerald-400' : monthlyStats.totalRr < -1e-9 ? 'text-rose-400' : 'text-zinc-400'}`}>
+                     {formatR(monthlyStats.totalRr)}
                    </span>
                  </div>
                </div>

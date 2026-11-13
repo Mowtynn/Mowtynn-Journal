@@ -1,6 +1,7 @@
 import { EASE } from '../../lib/motion';
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import { formatR } from "../../lib/format";
 
 export const MemoizedEquityChart = React.memo(function MemoizedEquityChart({ 
   chartEquityCurve, 
@@ -12,6 +13,38 @@ export const MemoizedEquityChart = React.memo(function MemoizedEquityChart({
   setSelectedEquityPoint: (val: any) => void; 
 }) {
     const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+
+    // Eksen etiketleri: şeridin genişliğine sığacak kadar, döneme eşit yayılmış nokta (ilk ve son dahil).
+    // Sabit 15 etiket şeride sığmıyor, baştaki tarihler görünmüyor ve biri yarım kesiliyordu.
+    const stripRef = useRef<HTMLDivElement>(null);
+    const [stripWidth, setStripWidth] = useState(0);
+    useEffect(() => {
+      const el = stripRef.current;
+      if (!el) return;
+      const measure = () => setStripWidth(Math.round(el.getBoundingClientRect().width));
+      measure();
+      if (typeof ResizeObserver === 'undefined') return;
+      const ro = new ResizeObserver(measure);
+      ro.observe(el);
+      return () => ro.disconnect();
+    }, []);
+    const axisLabels = useMemo(() => {
+      const list = chartEquityCurve || [];
+      const total = list.length;
+      if (total === 0) return [] as { item: any; index: number }[];
+      const longest = list.reduce((m: number, d: any) => Math.max(m, String(d?.label ?? '').length), 1);
+      const perLabel = longest * 6.8 + 16 + 2 + 10; // 12px yazı + yatay iç boşluk + kenarlık + aralık
+      const fit = stripWidth > 0 ? Math.floor((stripWidth + 10) / perLabel) : 6;
+      const count = Math.max(1, Math.min(15, fit, total));
+      if (count >= total) return list.map((item: any, index: number) => ({ item, index }));
+      if (count === 1) return [{ item: list[total - 1], index: total - 1 }];
+      const out: { item: any; index: number }[] = [];
+      for (let k = 0; k < count; k++) {
+        const index = Math.round((k * (total - 1)) / (count - 1));
+        if (!out.length || out[out.length - 1].index !== index) out.push({ item: list[index], index });
+      }
+      return out;
+    }, [chartEquityCurve, stripWidth]);
 
   
 
@@ -69,8 +102,10 @@ export const MemoizedEquityChart = React.memo(function MemoizedEquityChart({
     const hoveredItem = hoveredIndex !== null ? chartEquityCurve[hoveredIndex] : null;
 
     return (
-      <div className="space-y-2 flex-1 flex flex-col relative">
-        <div className="relative bg-zinc-900/70 border border-zinc-700/50  rounded-2xl overflow-visible h-[200px] sm:h-[230px]">
+      <div className="space-y-1.5 flex-1 flex flex-col relative">
+        {/* Masaüstünde eğri yüksekliği ekran yüksekliğine uyar (190–240px): Genel Bakış kaydırmadan sığsın.
+            704px = sayfanın geri kalanı (üst menüler + diğer bölümler + alt boşluk); bölüm yükseklikleri değişirse güncelle. */}
+        <div className="relative bg-zinc-900/70 border border-zinc-700/50  rounded-2xl overflow-visible h-[200px] sm:h-[230px] lg:h-[clamp(190px,calc(100dvh_-_704px),240px)]">
           <svg viewBox="0 0 600 180" className="absolute inset-0 w-full h-full text-blue-500 p-2" preserveAspectRatio="none">
             <line x1="0" y1="20" x2="600" y2="20" stroke="#0f172a" strokeWidth="1" strokeDasharray="3,3" />
             <line x1="0" y1="90" x2="600" y2="90" stroke="#1e293b" strokeWidth="1" strokeDasharray="3,3" />
@@ -169,41 +204,42 @@ export const MemoizedEquityChart = React.memo(function MemoizedEquityChart({
                 </div>
 
                 <div className="flex justify-between items-center text-xs mt-1">
-                  <span className="text-zinc-400 font-medium font-sans">Kümülatif R:</span>
-                  <span className={`font-black font-sans text-xs ${(hoveredItem.cumulativePnl) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                    {`${hoveredItem.cumulativePnl >= 0 ? '+' : ''}${hoveredItem.cumulativePnl.toFixed(2)} R`}
+                  <span className="text-zinc-500 font-medium font-sans">Kümülatif R</span>
+                  <span className={`font-black font-sans text-xs tabular-nums ${hoveredItem.cumulativePnl > 0 ? 'text-emerald-400' : hoveredItem.cumulativePnl < 0 ? 'text-rose-400' : 'text-zinc-300'}`}>
+                    {formatR(hoveredItem.cumulativePnl)}
                   </span>
                 </div>
 
                 {(() => {
                   const prevItem = hoveredIndex > 0 ? chartEquityCurve[hoveredIndex - 1] : { cumulativePnl: 0 };
                   const diffPnl = hoveredItem.cumulativePnl - prevItem.cumulativePnl;
-                  const isPositive = diffPnl >= 0;
                   return (
                     <div className="flex justify-between items-center text-xs pt-1 mt-0.5 border-t border-zinc-800/50">
-                      <span className="text-zinc-500 font-medium font-sans">Değişim:</span>
-                      <span className={`font-black font-sans text-xs ${isPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
-                        {`${isPositive ? '+' : ''}${diffPnl.toFixed(2)} R`}
+                      <span className="text-zinc-500 font-medium font-sans">Değişim</span>
+                      <span className={`font-black font-sans text-xs tabular-nums ${diffPnl > 0 ? 'text-emerald-400' : diffPnl < 0 ? 'text-rose-400' : 'text-zinc-300'}`}>
+                        {formatR(diffPnl)}
                       </span>
                     </div>
                   );
                 })()}
 
                 <div className="flex justify-between items-center text-xs">
-                  <span className="text-zinc-500 font-bold">Drawdown</span>
-                  <span className="text-rose-400/80 font-black font-sans">
-                    {`${(hoveredItem.drawdown ?? 0).toFixed(2)} R`}
+                  <span className="text-zinc-500 font-medium font-sans">Drawdown</span>
+                  <span className={`font-black font-sans tabular-nums ${(hoveredItem.drawdown ?? 0) !== 0 ? 'text-rose-400/80' : 'text-zinc-400'}`}>
+                    {formatR(hoveredItem.drawdown ?? 0)}
                   </span>
                 </div>
 
                 {hoveredItem.trades && hoveredItem.trades.length > 1 && (() => {
+                  // BE işlemler kayıp sayılmaz: ayrı gösterilir
                   const wins = hoveredItem.trades.filter((t: any) => t.status === 'WIN').length;
-                  const losses = hoveredItem.trades.length - wins;
+                  const losses = hoveredItem.trades.filter((t: any) => t.status === 'LOSS').length;
+                  const bes = hoveredItem.trades.length - wins - losses;
                   return (
                     <div className="flex justify-between items-center text-xs border-t border-zinc-900/60 pt-1.5 mt-0.5">
-                      <span className="text-zinc-500 font-bold">İşlemler</span>
-                      <span className="text-zinc-300 font-black font-sans">
-                        {hoveredItem.trades.length} (<span className="text-emerald-400">{wins}W</span>/<span className="text-rose-400">{losses}L</span>)
+                      <span className="text-zinc-500 font-medium font-sans">İşlemler</span>
+                      <span className="text-zinc-300 font-black font-sans tabular-nums">
+                        {hoveredItem.trades.length} (<span className="text-emerald-400">{wins}W</span>/<span className="text-rose-400">{losses}L</span>{bes > 0 && <>/<span className="text-zinc-400">{bes}BE</span></>})
                       </span>
                     </div>
                   );
@@ -211,14 +247,14 @@ export const MemoizedEquityChart = React.memo(function MemoizedEquityChart({
 
                 {hoveredItem.trades && hoveredItem.trades.length === 1 && equityFilter !== 'trade' && (
                   <div className="flex justify-between items-center text-xs border-t border-zinc-900/60 pt-1.5 mt-0.5">
-                    <span className="text-zinc-500 font-bold">İşlemler</span>
+                    <span className="text-zinc-500 font-medium font-sans">İşlemler</span>
                     <span className="text-zinc-300 font-black font-sans">1</span>
                   </div>
                 )}
 
                 {equityFilter === 'trade' && hoveredItem.trades && hoveredItem.trades.length === 1 && (
                   <div className="flex justify-between items-center text-[10px] border-t border-zinc-900/60 pt-1.5 mt-0.5">
-                    <span className="text-zinc-500 font-bold">Parite</span>
+                    <span className="text-zinc-500 font-medium font-sans">Parite</span>
                     <span className="text-zinc-400 font-bold font-sans">
                       {hoveredItem.trades[0].asset} <span className={hoveredItem.trades[0].type === 'LONG' ? 'text-emerald-400' : 'text-rose-400'}>({hoveredItem.trades[0].type})</span>
                     </span>
@@ -229,58 +265,27 @@ export const MemoizedEquityChart = React.memo(function MemoizedEquityChart({
           </AnimatePresence>
         </div>
 
-        <div className="flex justify-between items-center text-xs text-zinc-400 font-sans px-1">
-          <span className="shrink-0 whitespace-nowrap"><span className="hidden sm:inline">Günlük Başlangıcı </span>(0.00 R)</span>
-          <div className="flex gap-2.5 overflow-x-auto max-w-[70%] scrollbar-none justify-end">
-            {(() => {
-              const totalPoints = chartEquityCurve.length;
-              const maxLabels = 15;
-              if (totalPoints <= maxLabels) {
-                return chartEquityCurve.map((d: any, i: number) => (
-                  <span 
-                    key={i} 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (d.trades && d.trades.length > 0) {
-                        setSelectedEquityPoint({
-                          title: d.fullTitle || d.label || "İşlem Geçmişi",
-                          trades: d.trades
-                        });
-                      }
-                    }}
-                    className="shrink-0 bg-zinc-800/30 border border-transparent hover:border-zinc-700 hover:bg-zinc-800/80 text-zinc-300 px-2 py-0.5 rounded-lg cursor-pointer transition-colors"
-                  >
-                    {d.label}
-                  </span>
-                ));
-              } else {
-                const step = Math.ceil(totalPoints / maxLabels);
-                const sampled: any[] = [];
-                for (let i = 0; i < totalPoints; i += step) {
-                  sampled.push({ item: chartEquityCurve[i], index: i });
-                }
-                if (sampled.length > 0 && sampled[sampled.length - 1].index !== totalPoints - 1) {
-                  sampled.push({ item: chartEquityCurve[totalPoints - 1], index: totalPoints - 1 });
-                }
-                return sampled.map(({ item, index }) => (
-                  <span 
-                    key={index} 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (item.trades && item.trades.length > 0) {
-                        setSelectedEquityPoint({
-                          title: item.fullTitle || item.label || "İşlem Geçmişi",
-                          trades: item.trades
-                        });
-                      }
-                    }}
-                    className="shrink-0 bg-zinc-800/30 border border-transparent hover:border-zinc-700 hover:bg-zinc-800/80 text-zinc-300 px-2 py-0.5 rounded-lg cursor-pointer transition-colors"
-                  >
-                    {item.label}
-                  </span>
-                ));
-              }
-            })()}
+        <div className="flex justify-between items-center gap-3 text-xs text-zinc-400 font-sans px-1">
+          <span className="shrink-0 whitespace-nowrap"><span className="hidden sm:inline">Günlük Başlangıcı </span>(0.00R)</span>
+          {/* Sağdan sola dizilir: ölçüm tutmazsa en eski etiket alt satıra düşer ve gizlenir, hiçbir etiket yarım kesilmez */}
+          <div ref={stripRef} className="flex-1 min-w-0 h-[22px] overflow-hidden flex flex-row-reverse flex-wrap gap-x-2.5 gap-y-2">
+            {[...axisLabels].reverse().map(({ item, index }) => (
+              <span
+                key={index}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (item.trades && item.trades.length > 0) {
+                    setSelectedEquityPoint({
+                      title: item.fullTitle || item.label || "İşlem Geçmişi",
+                      trades: item.trades
+                    });
+                  }
+                }}
+                className="shrink-0 whitespace-nowrap bg-zinc-800/30 border border-transparent hover:border-zinc-700 hover:bg-zinc-800/80 text-zinc-300 px-2 py-0.5 rounded-lg cursor-pointer transition-colors"
+              >
+                {item.label}
+              </span>
+            ))}
           </div>
         </div>
       </div>

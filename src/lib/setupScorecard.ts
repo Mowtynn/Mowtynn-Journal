@@ -1,4 +1,5 @@
 import { Trade } from '../types';
+import { byEntryTime } from './tradeModel';
 import { edgeFromR, EdgeStats, sweepHourBucket, sweepDelayBucket, holdBucket, stageBucket, plannedRRBucket, stopToRangeBucket, tradeOfDayBucket, managementBucket, afterExitBucket, indexTradeOrder, rangeSizeBucket, prevTradeBucket } from './asiaAnalytics';
 import { getTradeHourBucket, getTradeNyWeekday, WEEKDAY_NAMES_TR } from './tradingTime';
 import { getNewsDayLabels } from '../constants/constants';
@@ -190,7 +191,7 @@ export function buildSetupScorecard(trades: Trade[], dims: SetupDimension[], opt
   let total = 0;
 
   // R sırası için kronolojik
-  const sorted = [...trades].sort((a, b) => a.createdAt - b.createdAt);
+  const sorted = [...trades].sort(byEntryTime);
   if (useDims.some((d) => d === 'tradeOfDay' || d === 'prevTrade' || d === 'rangeSize')) indexTradeOrder(sorted);
   for (const t of sorted) {
     if (typeof t.rr !== 'number' || !Number.isFinite(t.rr)) continue;

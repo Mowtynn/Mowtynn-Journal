@@ -1,4 +1,5 @@
 import type { Trade } from '../types';
+import { byEntryTime } from './tradeModel';
 import { edgeFromR, indexTradeOrder, type EdgeStats } from './asiaAnalytics';
 import { dimensionValue, UNSPECIFIED, type SetupDimension } from './setupScorecard';
 
@@ -70,7 +71,7 @@ export function halfStatus(first: EdgeStats, second: EdgeStats, sign: number): H
 }
 
 export function simulateRule(trades: Trade[], conds: RuleCondition[]): RuleSimResult {
-  const sorted = trades.filter((t) => typeof t.rr === 'number' && Number.isFinite(t.rr)).sort((a, b) => a.createdAt - b.createdAt);
+  const sorted = trades.filter((t) => typeof t.rr === 'number' && Number.isFinite(t.rr)).sort(byEntryTime);
   indexTradeOrder(sorted);
   const taken: Trade[] = [];
   const skipped: Trade[] = [];

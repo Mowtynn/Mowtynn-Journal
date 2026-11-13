@@ -122,7 +122,8 @@ for (const weird of [false, true]) {
         const sim = simulateRule(trades, [{ dim: d.id, values: [opts[0]] } as any]);
         assert.equal(sim.taken.n + sim.skipped.n, sim.total, `kural ${d.id}: alınan + atlanan`);
         assert.equal(sim.total, trades.length);
-        assert.ok(near(sim.taken.netR + sim.skipped.netR, sim.all.netR), `kural ${d.id}: R korunumu`);
+        // Her parça ayrı ayrı 2 ondalığa yuvarlandığı için toplamda en fazla 0.01 fark olabilir
+        assert.ok(Math.abs(sim.taken.netR + sim.skipped.netR - sim.all.netR) < 0.011 || near(sim.taken.netR + sim.skipped.netR, sim.all.netR), `kural ${d.id}: R korunumu (${sim.taken.netR} + ${sim.skipped.netR} vs ${sim.all.netR}; n ${sim.taken.n}+${sim.skipped.n})`);
       }
       const wk = computeWeekReview(trades, weekStartOf(nyDateKey(NOW)));
       assert.equal(wk.totals.wins + wk.totals.losses + wk.totals.breakevens, wk.totals.n);

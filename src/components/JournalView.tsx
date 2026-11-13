@@ -37,6 +37,7 @@ import { exportJournalsToExcel, exportJournalsToCSV } from '../utils/exportTrade
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { localDateKey } from '../utils/math';
 import { nyWallDate, nyNow } from '../lib/tradingTime';
+import { formatR } from '../lib/format';
 import { WeeklyReview } from './journal/WeeklyReview';
 import { currentWeekStart, isWeeklyEntry, weeklyEntryScope } from '../lib/weeklyReview';
 
@@ -214,7 +215,7 @@ const JournalView = memo(function JournalView({ entries: allEntries, trades = []
                 ? 'toggle-item-loss' 
                 : 'bg-zinc-800 text-zinc-400 border-zinc-700'
             }`}>
-              {`${totalRR > 0 ? '+' : ''}${totalRR.toFixed(2)}R`}
+              {formatR(totalRR)}
             </span>
           </div>
         </div>
@@ -388,7 +389,7 @@ const JournalView = memo(function JournalView({ entries: allEntries, trades = []
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.15, ease: EASE }}
-      className="flex flex-col md:flex-row h-[calc(100vh-170px)] min-h-[640px] bg-zinc-950/60 border border-zinc-800/80  rounded-2xl overflow-hidden text-zinc-200 shadow-sm relative"
+      className="flex flex-col md:flex-row h-[calc(100dvh-170px)] min-h-[560px] bg-zinc-950/60 border border-zinc-800/80  rounded-2xl overflow-hidden text-zinc-200 shadow-sm relative"
     >
       {/* LEFT SIDEBAR: Entry List */}
       {/* Mobilde liste tüm yüksekliği kullanır (aksi halde liste alanı 0 px kalıp kayıtlar görünmüyordu); kayıt açıkken yalnızca kayıt görünür */}
