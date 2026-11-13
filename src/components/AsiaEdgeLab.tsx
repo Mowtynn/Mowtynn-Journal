@@ -3,7 +3,7 @@ import { smartUpper } from '../constants/constants';
 import { FilterChip, FILTER_LABEL, FILTER_SELECT } from './filters/FilterControls';
 import { Trade } from '../types';
 import { MIN_SAMPLE } from '../lib/sampleSize';
-import { formatDateKey, formatR, formatRAbs, signed } from '../lib/format';
+import { formatDateKey, formatPct, formatR, signed } from '../lib/format';
 import {
   analyzeAsia,
   AsiaLabResult,
@@ -117,29 +117,25 @@ export const AsiaEdgeLab = React.memo(function AsiaEdgeLab({ trades }: AsiaEdgeL
         <>
           {/* Önce eğilim ve yönetim maliyeti yan yana, sonra ısı tablosu; veri eksiği panosu (bakım aracı) en sonda */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
-            <Card className={r.missedByManagement.n > 0 ? '' : 'lg:col-span-2'} title="Kayan Beklenti (20 işlem)" hint="Edge zamanla sağlam mı, aşınıyor mu?">
+            <Card className={r.beAfterTp.answered > 0 ? '' : 'lg:col-span-2'} title="Kayan Beklenti (20 işlem)" hint="Edge zamanla sağlam mı, aşınıyor mu?">
               <Sparkline points={r.rolling} />
             </Card>
 
-            {r.missedByManagement.n > 0 && (
-              <Card title="Yönetimle Kaçırılan R" hint="Erken kapatıp ardından TP'ye giden işlemler: yönetim kararının maliyeti.">
-                {/* Rakam önde: kart yandaki grafikle aynı boyda, boş kalmasın */}
-                {r.missedByManagement.measured > 0 && (
-                  <p className="flex items-baseline gap-2">
-                    <span className="text-2xl font-bold tabular-nums text-rose-300">{formatRAbs(r.missedByManagement.missedR)}</span>
-                    <span className="text-[11px] text-zinc-500 font-sans">kaçırıldı</span>
-                  </p>
-                )}
+            {r.beAfterTp.answered > 0 && (
+              <Card title="BE Sonrası TP" hint="Başabaş kapattığın işlemlerde fiyat sonradan TP'ye gitti mi?">
+                <p className="flex items-baseline gap-2">
+                  <span className="text-2xl font-bold tabular-nums text-zinc-100">{formatPct((r.beAfterTp.wentTp / r.beAfterTp.answered) * 100, 0)}</span>
+                  <span className="text-[11px] text-zinc-500 font-sans">sonradan TP'ye gitti</span>
+                </p>
                 <p className="text-xs text-zinc-400 font-sans leading-relaxed">
-                  Çıkıştan sonra TP'ye giden {r.missedByManagement.n} işlem
-                  {r.missedByManagement.measured > 0 && <> · işlem başına ortalama <span className="font-bold tabular-nums text-zinc-200">{formatRAbs(r.missedByManagement.missedR / r.missedByManagement.measured)}</span></>}
-                  {r.missedByManagement.measured < r.missedByManagement.n && <> ({r.missedByManagement.n - r.missedByManagement.measured} işlemde TP / Stop Pip eksik)</>}
+                  Yanıtlanan {r.beAfterTp.answered} BE işlemin {r.beAfterTp.wentTp} tanesi
+                  {r.beAfterTp.answered < r.beAfterTp.be && <> ({r.beAfterTp.be - r.beAfterTp.answered} BE işlemde soru boş)</>}
                 </p>
               </Card>
             )}
           </div>
 
-          <Card title="Saat × Parite Isı Tablosu" hint="Hücre: beklenti (R) ve işlem sayısı. Soluk hücreler minimum örneklemin altındadır; onlara göre karar verme.">
+          <Card title="Sweep Saati × Parite Isı Tablosu" hint="Satır: sweep saati (NY). Hücre: beklenti (R) ve işlem sayısı. Soluk hücreler minimum örneklemin altındadır; onlara göre karar verme. Sweep Time girilmemiş işlemler tabloda yer almaz.">
             {!sparseHourPair ? (
               <Empty text="Yeterli veri yok." />
             ) : (
@@ -147,7 +143,7 @@ export const AsiaEdgeLab = React.memo(function AsiaEdgeLab({ trades }: AsiaEdgeL
                 <table className="w-full text-xs font-sans">
                   <thead>
                     <tr className="text-[10px] uppercase text-zinc-500">
-                      <th className="text-left font-medium pb-1.5">Saat</th>
+                      <th className="text-left font-medium pb-1.5">Sweep Saati</th>
                       {r.hourPair.pairs.map((p) => (
                         <th key={p} className="font-medium pb-1.5 text-center">
                           {p}

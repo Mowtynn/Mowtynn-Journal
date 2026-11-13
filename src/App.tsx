@@ -2912,9 +2912,6 @@ export default function App() {
             <GlobalFilterModal
               isOpen={isGlobalFilterModalOpen}
               onClose={closeGlobalFilter}
-              timeframes={timeframes}
-              htfTimeframes={htfTimeframes}
-              confirmations={confirmations}
               sessions={sessions}
               assets={assets}
               planFidelities={planFidelities}
@@ -3066,10 +3063,7 @@ export default function App() {
                     onSave={handleSaveTradeAndClose}
                     editingTrade={formSlot.editing}
                     onCancelEdit={handleCancelEdit}
-                    timeframes={timeframes}
-                    htfTimeframes={htfTimeframes}
                     sessions={sessions}
-                    confirmations={confirmations}
                     assets={assets}
                     planFidelities={planFidelities}
                     entryModels={entryModels}

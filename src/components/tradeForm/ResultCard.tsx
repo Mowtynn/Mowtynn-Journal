@@ -8,7 +8,7 @@ const RESULT_TONE: Record<Status, { box: string; field: string; text: string; si
   BREAKEVEN: { box: "border-blue-500/25 bg-blue-500/[0.06]", field: "focus-within:border-blue-500/70", text: "text-blue-300", sign: "" },
 };
 
-/* ================= 2. KART: SONUÇ (durum, pipler, R) ================= */
+/* ================= 2. KART: SONUÇ (durum, Asia Range Pip, R) ================= */
 export const ResultCard = React.memo(function ResultCard({
   titles,
   isQuick,
@@ -16,10 +16,6 @@ export const ResultCard = React.memo(function ResultCard({
   setTradeStatus,
   rrValue,
   setRrValue,
-  stopPips,
-  setStopPips,
-  tpPips,
-  setTpPips,
   asiaRangePips,
   setAsiaRangePips,
 }: {
@@ -29,29 +25,10 @@ export const ResultCard = React.memo(function ResultCard({
   setTradeStatus: SetState<Status>;
   rrValue: Num;
   setRrValue: SetState<Num>;
-  stopPips: Num;
-  setStopPips: SetState<Num>;
-  tpPips: Num;
-  setTpPips: SetState<Num>;
   asiaRangePips: Num;
   setAsiaRangePips: SetState<Num>;
 }) {
   const { L } = titles;
-  // Stop ve TP Pip girilince WIN işlemde R önerilir (TP ÷ Stop)
-  const handleStopPipsChange = (val: string) => {
-    const num = parsePip(val);
-    setStopPips(num);
-    if (typeof num === "number" && num > 0 && typeof tpPips === "number" && tradeStatus === "WIN") {
-      setRrValue(parseFloat((tpPips / num).toFixed(2)));
-    }
-  };
-  const handleTpPipsChange = (val: string) => {
-    const num = parsePip(val);
-    setTpPips(num);
-    if (typeof num === "number" && typeof stopPips === "number" && stopPips > 0 && tradeStatus === "WIN") {
-      setRrValue(parseFloat((num / stopPips).toFixed(2)));
-    }
-  };
   const handleAsiaRangePipsChange = (val: string) => setAsiaRangePips(parsePip(val));
 
   return (
@@ -88,11 +65,7 @@ export const ResultCard = React.memo(function ResultCard({
                   } else if (sVal === "LOSS") {
                     setRrValue(1);
                   } else if (sVal === "WIN") {
-                    if (stopPips !== "" && tpPips !== "" && typeof stopPips === 'number' && typeof tpPips === 'number' && stopPips > 0) {
-                      setRrValue(parseFloat((tpPips / stopPips).toFixed(2)));
-                    } else if (rrValue === 0 || rrValue === 1) {
-                      setRrValue("");
-                    }
+                    if (rrValue === 0 || rrValue === 1) setRrValue("");
                   }
                 }}
                 className={`relative h-full min-w-0 px-1 text-[11px] tracking-wide whitespace-nowrap font-bold font-sans rounded-lg border border-transparent uppercase transition-ui cursor-pointer ${
@@ -109,75 +82,35 @@ export const ResultCard = React.memo(function ResultCard({
         </div>
       </div>
 
-      {/* PİP HESAPLAYICI & DEĞERLERİ — hızlı kayıtta yalnızca stop/TP (plan R:R ve önerilen R için) */}
-      <div className="bg-zinc-950/40 p-2 sm:p-2.5 rounded-xl border border-zinc-800/70 space-y-2">
-        {/* STOP · TP · ASIA RANGE (tek satır; hızlı kayıtta yalnızca stop/TP) */}
-        <div className={`grid gap-2 ${isQuick ? "grid-cols-2" : "grid-cols-[1fr_1fr_1.25fr]"}`}>
-          {/* STOP PİP */}
-          <div>
-            <label className="text-[10px] sm:text-[11px] font-bold text-rose-400 uppercase tracking-wide font-sans flex items-center gap-1 mb-2 min-w-0 whitespace-nowrap">
-              <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-              <span className="truncate">{L("stopPips")}</span>
-            </label>
-            <input
-              type="number"
-              step="any"
-              min="0"
-              placeholder="örn: 10"
-              value={stopPips}
-              onChange={(e) => handleStopPipsChange(e.target.value)}
-              className="w-full h-9 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-rose-500 focus:ring-1 focus:ring-rose-500/30 rounded-lg sm:rounded-xl px-2.5 text-xs text-zinc-100 focus:outline-none placeholder-zinc-500 font-sans shadow-inner transition-ui [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
-            />
-          </div>
-
-          {/* TP PİP */}
-          <div>
-            <label className="text-[10px] sm:text-[11px] font-bold text-emerald-400 uppercase tracking-wide font-sans flex items-center gap-1 mb-2 min-w-0 whitespace-nowrap">
-              <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-              <span className="truncate">{L("tpPips")}</span>
-            </label>
-            <input
-              type="number"
-              step="any"
-              min="0"
-              placeholder="örn: 30"
-              value={tpPips}
-              onChange={(e) => handleTpPipsChange(e.target.value)}
-              className="w-full h-9 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 rounded-lg sm:rounded-xl px-2.5 text-xs text-zinc-100 focus:outline-none placeholder-zinc-500 font-sans shadow-inner transition-ui [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
-            />
-          </div>
-
-          {/* ASIA RANGE PİP */}
-          <div className={isQuick ? "hidden" : ""}>
-          <label className="text-[10px] sm:text-[11px] font-bold text-blue-400 uppercase tracking-wide font-sans flex items-center gap-1 mb-2 min-w-0 whitespace-nowrap">
-              <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-              <span className="truncate">{L("asiaRangePips")}</span>
-            </label>
-            <input
-              type="number"
-              step="any"
-              min="0"
-              placeholder="örn: 18.5"
-              value={asiaRangePips}
-              onChange={(e) => handleAsiaRangePipsChange(e.target.value)}
-              className="w-full h-9 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 rounded-lg sm:rounded-xl px-2.5 text-xs text-zinc-100 focus:outline-none placeholder-zinc-500 font-sans shadow-inner transition-ui [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
-            />
-          </div>
+      {/* ASIA RANGE PİP — tam kayıtta; hızlı kayıtta sorulmaz */}
+      {!isQuick && (
+        <div className="bg-zinc-950/40 px-3 py-2.5 rounded-xl border border-zinc-800/70 flex items-center gap-3">
+          <label htmlFor="tf-asia-pip" className="min-w-0 flex-1 text-[10px] sm:text-[11px] font-bold text-blue-400 uppercase tracking-wide font-sans flex items-center gap-1.5 whitespace-nowrap">
+            <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+            <span className="truncate">{L("asiaRangePips")}</span>
+          </label>
+          <input
+            id="tf-asia-pip"
+            type="number"
+            step="any"
+            min="0"
+            placeholder="örn: 18.5"
+            value={asiaRangePips}
+            onChange={(e) => handleAsiaRangePipsChange(e.target.value)}
+            className="w-[6.5rem] shrink-0 h-9 bg-zinc-900 border border-zinc-700/70 hover:border-zinc-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 rounded-lg px-2.5 text-xs text-center text-zinc-100 focus:outline-none placeholder-zinc-500 font-sans shadow-inner transition-ui [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-bold"
+          />
         </div>
-      </div>
+      )}
 
       {/* SONUÇ (R) — kartın asıl çıktısı: duruma göre renklenen, büyük yazılı alan. BE her zaman 0R. */}
       {(() => {
         const t = RESULT_TONE[tradeStatus];
-        const plan = typeof stopPips === "number" && stopPips > 0 && typeof tpPips === "number" && tpPips > 0 ? tpPips / stopPips : null;
         const [hint] =
           tradeStatus === "BREAKEVEN"
             ? ["Her zaman 0R", "Breakeven işlem her zaman 0R kaydedilir."]
             : tradeStatus === "LOSS"
               ? ["Pozitif yaz", "Kaybı pozitif sayı olarak yaz; eksi işareti durumdan gelir."]
-              : plan !== null
-                ? [`Plan 1:${plan.toFixed(2)}`, "Stop ve TP Piplerinden hesaplanan plan R:R"]
-                : ["Kazanç, R olarak", "Kazancı R cinsinden yaz."];
+              : ["Kazanç, R olarak", "Kazancı R cinsinden yaz."];
         return (
           <div className={`rounded-xl border px-3 py-2.5 flex items-center gap-3 transition-ui ${t.box}`}>
             <div className="min-w-0 flex-1">

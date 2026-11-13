@@ -6,9 +6,10 @@ import type { Trade } from '../src/types';
 
 const t = (rr: number, p: Partial<Trade> = {}) => trade({ status: rr > 0 ? 'WIN' : rr < 0 ? 'LOSS' : 'BREAKEVEN', rr, ...p });
 
-test('sonuç: plan R:R = TP / Stop; stop yoksa plan yok', () => {
-  assert.equal(computePricePath(t(2, { stopPips: 10, tpPips: 30 })).plannedRR, 3);
-  assert.equal(computePricePath(t(2, { tpPips: 30 })).plannedRR, null);
+test('sonuç: gerçekleşen R; plan R:R artık hesaplanmaz', () => {
+  const p = computePricePath(t(2, { stopPips: 10, tpPips: 30 }));
+  assert.equal(p.realizedR, 2);
+  assert.ok(!('plannedRR' in p));
   assert.equal(computePricePath(t(-1, {})).realizedR, -1);
 });
 

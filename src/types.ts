@@ -4,6 +4,8 @@ export type AccountCategory = 'ALL' | 'FUNDED' | 'CHALLENGE' | 'DEMO';
 
 export const ASIA_RANGE_TYPES = ['Range', 'Trend', 'Swept'] as const;
 export type AsiaRangeType = (typeof ASIA_RANGE_TYPES)[number];
+/** Formda seçilebilenler. "Swept" kaldırıldı: yalnızca eski kayıtlarda görünür. */
+export const ASIA_RANGE_FORM_TYPES: readonly AsiaRangeType[] = ['Range', 'Trend'];
 
 export const MANAGEMENT_TYPES = ['Plana Göre', "BE Çekildi", 'Kısmi Kâr', 'Erken Kapatıldı'] as const;
 export type ManagementType = (typeof MANAGEMENT_TYPES)[number];

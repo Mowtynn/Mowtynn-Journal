@@ -1,11 +1,10 @@
-import { getNyParts } from './tradingTime';
 import { byEntryTime } from './tradeModel';
 import { Trade } from '../types';
 import { getTradeAccountCategory, getTradeStageLabel } from '../constants/constants';
 import { calculateProfitFactor, toRR } from './statMath';
 import { EDGE_PROOF_MIN } from './sampleSize';
 import {
-  getTradeHourBucket,
+  hourToBucket,
   nyDateKey,
   normalizePair,
 } from './tradingTime';
@@ -341,53 +340,9 @@ export function sweepBucketOrder(key: string): number {
   return (Number(m[1]) * 60 + Number(m[2]) - 18 * 60 + 1440) % 1440;
 }
 
-/** Sweep'ten girişe geçen süre (dk, NY; gece yarısını aşabilir: Asia'daki sweep → London/NY girişi). 18 saatten uzaksa null. */
-export function sweepToEntryMinutes(t: Pick<Trade, 'createdAt' | 'sweepTime'>): number | null {
-  const m = typeof t.sweepTime === 'string' ? t.sweepTime.match(/^(\d{2}):(\d{2})$/) : null;
-  const p = getNyParts(t.createdAt);
-  if (!m || !p) return null;
-  const d = p.hour * 60 + p.minute - (Number(m[1]) * 60 + Number(m[2]));
-  const diff = d < 0 ? d + 1440 : d;
-  return diff <= 1080 ? diff : null;
-}
-
-export const SWEEP_DELAY_BUCKETS = ['0–15 dk', '15–30 dk', '30–60 dk', '1–2 sa', '2–4 sa', '4–8 sa', '8 sa+'] as const;
-export function sweepDelayBucket(t: Pick<Trade, 'createdAt' | 'sweepTime'>): string | null {
-  const d = sweepToEntryMinutes(t);
-  if (d === null) return null;
-  return SWEEP_DELAY_BUCKETS[d < 15 ? 0 : d < 30 ? 1 : d < 60 ? 2 : d < 120 ? 3 : d < 240 ? 4 : d < 480 ? 5 : 6];
-}
-
-/** İşlemde kalma süresi dilimi (çıkış saati girilmiş işlemler) */
-export const HOLD_BUCKETS = ['<15 dk', '15–30 dk', '30–60 dk', '1–2 sa', '2–4 sa', '4 sa+'] as const;
-export function holdBucket(t: Pick<Trade, 'createdAt' | 'exitAt'>): string | null {
-  if (typeof t.exitAt !== 'number' || !Number.isFinite(t.exitAt) || t.exitAt < t.createdAt) return null;
-  const m = (t.exitAt - t.createdAt) / 60000;
-  return HOLD_BUCKETS[m < 15 ? 0 : m < 30 ? 1 : m < 60 ? 2 : m < 120 ? 3 : m < 240 ? 4 : 5];
-}
-
 /** Hesap Aşaması: Phase 1 / Phase 2 / Funded; hesapsız işlemler bu boyutta yer almaz */
 export function stageBucket(t: Pick<Trade, 'accountId' | 'accountStage'>): string | null {
   return getTradeStageLabel(t) || null;
-}
-
-/** Planlanan R:R = TP Pip ÷ Stop Pip */
-export const PLANNED_RR_BUCKETS = ['< 1:1.5', '1:1.5–2', '1:2–3', '1:3–4', '1:4+'] as const;
-export function plannedRR(t: Pick<Trade, 'tpPips' | 'stopPips'>): number | null {
-  return typeof t.tpPips === 'number' && typeof t.stopPips === 'number' && t.tpPips > 0 && t.stopPips > 0 ? t.tpPips / t.stopPips : null;
-}
-export function plannedRRBucket(t: Pick<Trade, 'tpPips' | 'stopPips'>): string | null {
-  const r = plannedRR(t);
-  if (r === null) return null;
-  return PLANNED_RR_BUCKETS[r < 1.5 ? 0 : r < 2 ? 1 : r < 3 ? 2 : r < 4 ? 3 : 4];
-}
-
-/** Stop büyüklüğü ÷ o günün Asia Range büyüklüğü (%) */
-export const STOP_RANGE_BUCKETS = ['< %20', '%20–35', '%35–50', '%50–75', '%75+'] as const;
-export function stopToRangeBucket(t: Pick<Trade, 'stopPips' | 'asiaRangePips'>): string | null {
-  if (!(typeof t.stopPips === 'number' && t.stopPips > 0 && typeof t.asiaRangePips === 'number' && t.asiaRangePips > 0)) return null;
-  const p = (t.stopPips / t.asiaRangePips) * 100;
-  return STOP_RANGE_BUCKETS[p < 20 ? 0 : p < 35 ? 1 : p < 50 ? 2 : p < 75 ? 3 : 4];
 }
 
 /**
@@ -460,48 +415,31 @@ export function rangeSizeBucket(t: Pick<Trade, 'id'>): string | null {
   return b ? RANGE_SIZE_LABEL[b] : null;
 }
 
-/** İşlem Yönetimi: seçilen yönetim adımları birleşik ("BE Çekildi + Kısmi Kâr") */
-export function managementBucket(t: Pick<Trade, 'management'>): string | null {
-  return Array.isArray(t.management) && t.management.length ? [...t.management].join(' + ') : null;
+/** "Çıkış sonrası fiyat TP'ye gitti mi?" sorusu yalnızca başabaş (BE) kapanan işlemde sorulur */
+export function afterExitTpApplies(status: string | undefined): boolean {
+  return status === 'BREAKEVEN';
 }
-/**
- * "Çıkış sonrası fiyat TP'ye gitti mi?" sorusu bu işlemde sorulur mu: BE kapanan, erken kapatılan ya da stop'u BE'ye
- * çekilen işlemler. Diğerlerinde (plana göre TP / stop) erken çıkış olmadığı için soru anlamsızdır.
- */
-export function afterExitTpApplies(status: string | undefined, management: readonly string[] | undefined): boolean {
-  return status === 'BREAKEVEN' || (Array.isArray(management) && (management.includes('Erken Kapatıldı') || management.includes('BE Çekildi')));
-}
-/**
- * İşlem detayındaki "Çıkış Sonrası TP" metni: cevap girildiyse Evet / Hayır; soru bu işlemde sorulmuyorsa ve yönetim
- * girilmişse "Erken Çıkılmadı" (boş tire yerine, alanın neden boş olduğu anlaşılsın). Bilinmiyorsa undefined.
- */
-export function afterExitTpText(t: Pick<Trade, 'afterExitTp' | 'status' | 'management'>): { text: string; answered: boolean } | undefined {
-  if (afterExitTpApplies(t.status, t.management)) {
-    return typeof t.afterExitTp === 'boolean' ? { text: t.afterExitTp ? 'Evet' : 'Hayır', answered: true } : undefined;
-  }
-  return Array.isArray(t.management) && t.management.length > 0 ? { text: 'Erken Çıkılmadı', answered: false } : undefined;
+/** İşlem detayındaki "Çıkış Sonrası TP" metni: yalnızca yanıtlanmış BE işlemde yazılır */
+export function afterExitTpText(t: Pick<Trade, 'afterExitTp' | 'status'>): { text: string; answered: boolean } | undefined {
+  return afterExitTpApplies(t.status) && typeof t.afterExitTp === 'boolean' ? { text: t.afterExitTp ? 'Evet' : 'Hayır', answered: true } : undefined;
 }
 export function afterExitBucket(t: Pick<Trade, 'afterExitTp'>): string | null {
   return typeof t.afterExitTp === 'boolean' ? (t.afterExitTp ? "Çıkış Sonrası TP'ye Gitti" : "Çıkış Sonrası TP'ye Gitmedi") : null;
 }
 
-/**
- * Yönetimle kaçırılan R: çıkıştan sonra TP'ye ulaşan işlemlerde planlanan R ile gerçekleşen R farkı.
- * Planlanan R yoksa (TP / Stop Pip girilmemiş) işlem sayılır ama R'ı hesaba katılmaz.
- */
-export function managementMissedR(trades: Trade[]): { n: number; measured: number; missedR: number } {
-  let n = 0;
-  let measured = 0;
-  let missedR = 0;
+/** BE kapanan işlemlerden kaçı sonradan TP'ye gitti (soru yanıtlanmış olanlar üzerinden) */
+export function beAfterTpStats(trades: Trade[]): { be: number; answered: number; wentTp: number } {
+  let be = 0;
+  let answered = 0;
+  let wentTp = 0;
   for (const t of trades) {
-    if (t.afterExitTp !== true) continue;
-    n++;
-    const p = plannedRR(t);
-    if (p === null) continue;
-    measured++;
-    missedR += Math.max(0, p - (typeof t.rr === 'number' && Number.isFinite(t.rr) ? t.rr : 0));
+    if (t.status !== 'BREAKEVEN') continue;
+    be++;
+    if (typeof t.afterExitTp !== 'boolean') continue;
+    answered++;
+    if (t.afterExitTp) wentTp++;
   }
-  return { n, measured, missedR };
+  return { be, answered, wentTp };
 }
 
 /**
@@ -516,22 +454,15 @@ export function computeCoverage(trades: Trade[]): CoverageRow[] {
     { field: 'trend', label: 'Trend', unlocks: 'Trend kıyası, reversal maliyeti', ok: (t) => !!t.trend },
     { field: 'newsDay', label: 'News Day', unlocks: 'Haber günü – normal gün kıyası', ok: (t) => typeof t.newsDay === 'boolean' },
     { field: 'asiaRangeFvg', label: 'Asia Range FVG (1H)', unlocks: 'Asia Range FVG (1H) kıyası', ok: (t) => !!t.asiaRangeFvg },
-    { field: 'asiaRange', label: 'Asia Range', unlocks: 'Range / Trend / Swept kıyası', ok: (t) => !!t.asiaRange },
-    { field: 'sweepTime', label: 'Sweep Time', unlocks: 'Sweep saati (30 dk) ve Sweep → Giriş süresi', ok: (t) => !!t.sweepTime },
+    { field: 'asiaRange', label: 'Asia Range', unlocks: 'Range / Trend kıyası', ok: (t) => !!t.asiaRange },
+    { field: 'sweepTime', label: 'Sweep Time', unlocks: 'Sweep saati (30 dk), Sweep saati × parite tablosu', ok: (t) => !!t.sweepTime },
     { field: 'session', label: 'Session', unlocks: 'Session ve Session × Yön kıyası', ok: (t) => !!t.session },
-    { field: 'htfTimeframe', label: 'HTF', unlocks: 'HTF kıyası, HTF × Entry TF matrisi', ok: (t) => !!t.htfTimeframe },
-    { field: 'confirmations', label: 'PD Array', unlocks: 'PD Array türü kıyası', ok: (t) => list(t.confirmations) },
-    { field: 'timeframe', label: 'Entry TF', unlocks: 'Entry TF kıyası, HTF × Entry TF matrisi', ok: (t) => !!t.timeframe },
     { field: 'entryModels', label: 'Entry Model', unlocks: 'Entry Model kıyası', ok: (t) => list(t.entryModels) },
     { field: 'tpTargets', label: 'Target', unlocks: 'Çıkış hedefi kıyası', ok: (t) => list(t.tpTargets) },
     { field: 'premiumDiscount', label: 'Confirmations', unlocks: 'Confirmations × Yön kıyası', ok: (t) => !!t.premiumDiscount },
-    { field: 'management', label: 'İşlem Yönetimi', unlocks: "Yönetim edge'i", ok: (t) => list(t.management) },
-    { field: 'afterExitTp', label: 'Çıkış Sonrası TP', unlocks: 'Yönetimle kaçırılan R (sorulduğu işlemlerde)', ok: (t) => typeof t.afterExitTp === 'boolean', asked: (t) => afterExitTpApplies(t.status, t.management) },
+    { field: 'afterExitTp', label: 'Çıkış Sonrası TP', unlocks: "BE sonrası TP'ye gitme oranı (BE işlemlerde)", ok: (t) => typeof t.afterExitTp === 'boolean', asked: (t) => afterExitTpApplies(t.status) },
     { field: 'riskPct', label: 'Risk %', unlocks: 'Risk seviyesine göre edge, aşırı risk uyarısı (hesaplı işlemlerde)', ok: (t) => hasNum(t.riskPct) && t.riskPct > 0, asked: (t) => !!t.accountId },
-    { field: 'exitAt', label: 'Çıkış Saati', unlocks: 'İşlem süresi, hedefe ulaşma süresi', ok: (t) => hasNum(t.exitAt) && t.exitAt >= t.createdAt },
-    { field: 'stopPips', label: 'Stop Pip', unlocks: 'Stop büyüklüğü (parite bazlı), Stop / Asia Range, Planlanan R:R, kaçırılan R', ok: (t) => hasNum(t.stopPips) && t.stopPips > 0 },
-    { field: 'tpPips', label: 'TP Pip', unlocks: 'Planlanan R:R, kaçırılan R', ok: (t) => hasNum(t.tpPips) && t.tpPips > 0 },
-    { field: 'asiaRangePips', label: 'Asia Range Pip', unlocks: 'Range büyüklüğü (parite bazlı), Stop / Asia Range', ok: (t) => hasNum(t.asiaRangePips) && t.asiaRangePips > 0 },
+    { field: 'asiaRangePips', label: 'Asia Range Pip', unlocks: 'Range büyüklüğü (parite bazlı)', ok: (t) => hasNum(t.asiaRangePips) && t.asiaRangePips > 0 },
   ];
   return defs.map((d) => {
     const pool = d.asked ? trades.filter(d.asked) : trades;
@@ -554,7 +485,7 @@ export interface AsiaLabResult {
   trades: Trade[];
   overall: EdgeStats;
   hourPair: { hours: string[]; pairs: string[]; cells: Record<string, HourPairCell> };
-  missedByManagement: { n: number; measured: number; missedR: number };
+  beAfterTp: { be: number; answered: number; wentTp: number };
   rolling: Array<{ index: number; date: string; expectancy: number }>;
   coverage: CoverageRow[];
 }
@@ -588,7 +519,12 @@ export function analyzeAsia(allTrades: Trade[], opts: AsiaLabOptions): AsiaLabRe
 
   const pairRows = groupTrades(trades, (t) => normalizePair(t.asset));
 
-  const hours = groupTrades(trades, (t) => getTradeHourBucket(t)).sort((a, b) => a.key.localeCompare(b.key));
+  // Saat ekseni sweep saatidir (giriş saati artık tutulmuyor); sweep saati girilmemiş işlem tabloda yer almaz
+  const sweepHour = (t: Trade): string | null => {
+    const m = typeof t.sweepTime === 'string' ? t.sweepTime.match(/^(\d{2}):\d{2}$/) : null;
+    return m ? hourToBucket(Number(m[1])) : null;
+  };
+  const hours = groupTrades(trades, (t) => sweepHour(t)).sort((a, b) => sweepBucketOrder(a.key) - sweepBucketOrder(b.key));
 
   // Hour x pair matrix
   const pairKeys = pairRows.map((p) => p.key);
@@ -597,7 +533,9 @@ export function analyzeAsia(allTrades: Trade[], opts: AsiaLabOptions): AsiaLabRe
   const cells: Record<string, HourPairCell> = {};
   const cellLists = new Map<string, Trade[]>();
   trades.forEach((t) => {
-    const k = `${getTradeHourBucket(t)}|${normalizePair(t.asset)}`;
+    const h = sweepHour(t);
+    if (h === null) return;
+    const k = `${h}|${normalizePair(t.asset)}`;
     (cellLists.get(k) || cellLists.set(k, []).get(k)!).push(t);
   });
   cellLists.forEach((list, k) => {
@@ -621,7 +559,7 @@ export function analyzeAsia(allTrades: Trade[], opts: AsiaLabOptions): AsiaLabRe
     trades,
     overall,
     hourPair: { hours: hourKeys, pairs: pairKeys, cells },
-    missedByManagement: managementMissedR(trades),
+    beAfterTp: beAfterTpStats(trades),
     rolling: rolling.slice(-80),
     coverage: computeCoverage(trades),
   };

@@ -22,7 +22,7 @@ export const withSelected = (list: string[], selected: string[]) => {
   return extra.length > 0 ? [...list, ...extra] : list;
 };
 
-/** Kurulum çiplerinin ortak ölçüsü (Sweep Time, Session, Timeframe, PD Array, Entry, Target, Confirmations hepsi aynı) */
+/** Kurulum çiplerinin ortak ölçüsü (Sweep Time, Session, Entry, Target, Confirmations hepsi aynı) */
 export const CHIP_BASE = "relative px-3 py-1.5 text-[11px] rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase";
 
 export const numOr = (v: unknown): Num => (typeof v === "number" && Number.isFinite(v) ? v : "");
@@ -46,10 +46,7 @@ export function buildInitial(t: Trade | null, riskPresets: number[]) {
     accountChoice: (t ? (t.accountId ? t.accountId : t.accountCategory === "DEMO" ? NO_ACCOUNT : null) : null) as string | null,
     riskChoice: (hasRisk ? (riskPresets.includes(rp as number) ? rp : "CUSTOM") : null) as number | "CUSTOM" | null,
     customRiskPct: (hasRisk && !riskPresets.includes(rp as number) ? rp : "") as Num,
-    timeframe: t?.timeframe || "",
-    htfTimeframe: t?.htfTimeframe || "",
     session: t?.session || "",
-    confirmations: t?.confirmations || [],
     entries: Array.isArray(t?.entryModels) ? (t!.entryModels as string[]) : [],
     trend: t?.trend || "",
     planFidelity: t?.planFidelity || null,
@@ -58,18 +55,14 @@ export function buildInitial(t: Trade | null, riskPresets: number[]) {
     newsDay: (typeof t?.newsDay === "boolean" ? t.newsDay : null) as boolean | null,
     asiaRange: (t?.asiaRange || "") as string,
     sweepTime: t?.sweepTime || "",
-    management: (Array.isArray(t?.management) ? t!.management : []) as string[],
     afterExitTp: (typeof t?.afterExitTp === "boolean" ? t.afterExitTp : null) as boolean | null,
     asiaFvg: t?.asiaRangeFvg || "",
-    stopPips: numOr(t?.stopPips),
-    tpPips: numOr(t?.tpPips),
     asiaRangePips: numOr(t?.asiaRangePips),
     rrValue: (t && typeof t.rr === "number" ? Math.abs(t.rr) : "") as Num,
     status: (t ? t.status || (t.rr < 0 ? "LOSS" : t.rr === 0 ? "BREAKEVEN" : "WIN") : "WIN") as Status,
     notes: t?.notes || "",
     screenshot: t?.screenshot || null,
     tradeDate: toNyInput(t?.createdAt || Date.now()),
-    exitDate: typeof t?.exitAt === "number" ? toNyInput(t.exitAt) : "",
   };
 }
 
@@ -113,5 +106,5 @@ export function SlideBg({ id, className, rounded = "rounded-lg" }: { id: string;
   );
 }
 
-/** "Çıkış Sonrası TP'ye ulaştı mı?" sorusu: BE kapanan, erken kapatılan ya da stop'u BE'ye çekilen işlemlerde sorulur */
-export const afterExitTpAsked = (status: string, management: string[]) => afterExitTpApplies(status, management);
+/** "Çıkış Sonrası TP'ye ulaştı mı?" sorusu yalnızca başabaş (BE) kapanan işlemde sorulur */
+export const afterExitTpAsked = (status: string) => afterExitTpApplies(status);

@@ -4,12 +4,10 @@ import { edgeFromR, EdgeStats } from './asiaAnalytics';
 import { dimensionValue, verdictFor, DEFAULT_SETUP_DIMENSIONS, SETUP_DIMENSIONS, SETUP_MIN_SAMPLE, UNSPECIFIED, type SetupVerdict } from './setupScorecard';
 
 /**
- * İşlem detayı için içgörü: plan ↔ gerçekleşen (R) ve kurulumun geçmiş karnesi. Saf fonksiyon, testli.
+ * İşlem detayı için içgörü: gerçekleşen R ve kurulumun geçmiş karnesi. Saf fonksiyon, testli.
  */
 
 export interface PricePath {
-  /** Planlanan R:R = TP Pip / Stop Pip */
-  plannedRR: number | null;
   realizedR: number;
 }
 
@@ -25,17 +23,9 @@ export interface TradeInsight {
   setup: SetupHistory | null;
 }
 
-const pos = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : null);
-const round = (v: number, d = 2) => Math.round(v * 10 ** d) / 10 ** d;
-
 export function computePricePath(t: Trade): PricePath {
-  const stop = pos(t.stopPips);
-  const tp = pos(t.tpPips);
   const realizedR = typeof t.rr === 'number' && Number.isFinite(t.rr) ? t.rr : 0;
-  return {
-    plannedRR: stop && tp ? round(tp / stop) : null,
-    realizedR,
-  };
+  return { realizedR };
 }
 
 /** Karşılaştırma havuzu: hesapsız (demo) işlem yalnızca hesapsızlarla, prop işlemi yalnızca prop işlemleriyle (Challenge + Funded) */

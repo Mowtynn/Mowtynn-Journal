@@ -5,7 +5,7 @@ import { canonicalAsset } from './tradeModel';
 import { dimensionValue, type SetupDimension } from './setupScorecard';
 
 /** Global filtrede türetilmiş / yeni girdiler: değer, kurulum karnesindeki boyut değeriyle aynı (tek tanım) */
-export const FILTER_DIMENSIONS = ['sweepHour', 'sweepDelay', 'rangeSize', 'plannedRR', 'stopToRange', 'tradeOfDay', 'prevTrade', 'weekday', 'entryHour', 'management', 'afterExitTp', 'holdTime'] as const;
+export const FILTER_DIMENSIONS = ['sweepHour', 'rangeSize', 'tradeOfDay', 'prevTrade', 'weekday', 'afterExitTp'] as const;
 export type FilterDimension = (typeof FILTER_DIMENSIONS)[number] & SetupDimension;
 
 /** Varsayılan tarih aralığı: tüm zamanlar (sayılar üst menüdeki hesap sayılarıyla tutarlı kalsın) */
@@ -31,7 +31,7 @@ export const getMinTimestamp = (limit: string, now: number = Date.now()): number
 
 /** Sonradan eklenen alanların filtreleri (Asia Range, News Day, P/D, TP target, Asia FVG, risk %, hızlı kayıt) */
 export interface ExtraTradeFilters {
-  /** Range / Trend / Swept */
+  /** Range / Trend (eski kayıtlarda Swept) */
   asiaRanges: string[];
   premiumDiscounts: string[];
   tpTargets: string[];
@@ -41,7 +41,7 @@ export interface ExtraTradeFilters {
   riskPcts: number[];
   /** Yalnızca hızlı kayıtla girilip ayrıntısı tamamlanmamış işlemler */
   onlyIncomplete: boolean;
-  /** Türetilmiş boyut filtreleri (Sweep Saati, Planlanan R:R, İşlem Yönetimi …) */
+  /** Türetilmiş boyut filtreleri (Sweep Saati, Asia Range Büyüklüğü, Günün İşlemi …) */
   dims: Partial<Record<FilterDimension, string[]>>;
 }
 
@@ -258,11 +258,8 @@ export function applyGlobalFilters(trades: Trade[], filters: GlobalTradeFilters,
       if (fvgSet && (!t.asiaRangeFvg || !fvgSet.has(normalizeSearchString(t.asiaRangeFvg)))) return false;
       if (tpSet && (!t.tpTargets || !t.tpTargets.some((x) => tpSet.has(normalizeSearchString(x))))) return false;
       if (riskSet && (typeof t.riskPct !== 'number' || !riskSet.has(riskKey(t.riskPct)))) return false;
-      // İşlem Yönetimi çoklu: seçilen adımlardan herhangi biri işlemde varsa eşleşir; diğerleri tek değer
       for (const [d, set] of dimSets) {
-        if (d === 'management') {
-          if (!t.management || !t.management.some((m) => set.has(m))) return false;
-        } else if (!set.has(dimensionValue(t, d))) return false;
+        if (!set.has(dimensionValue(t, d))) return false;
       }
       return true;
     });

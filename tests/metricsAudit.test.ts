@@ -72,21 +72,17 @@ test('zamanı bozuk kayıt: çıkış zamanı varsa onarılır, yoksa geçersiz 
   assert.deepEqual(out.map((x) => x.id), ['z']);
 });
 
-test('Çıkış Sonrası TP metni: cevap varsa Evet / Hayır, soru sorulmuyorsa "Erken Çıkılmadı", bilinmiyorsa boş', async () => {
+test('BE sonrası TP: yalnızca BE işlemde sorulur ve yazılır', async () => {
   const { afterExitTpText, afterExitTpApplies } = await import('../src/lib/asiaAnalytics');
-  // Plana göre kapanan kazanç: erken çıkış yok
-  assert.deepEqual(afterExitTpText({ status: 'WIN', management: ['Plana Göre'] }), { text: 'Erken Çıkılmadı', answered: false });
-  // Yalnız kısmi kâr: soru sorulmaz
-  assert.deepEqual(afterExitTpText({ status: 'WIN', management: ['Kısmi Kâr'] }), { text: 'Erken Çıkılmadı', answered: false });
-  // Erken kapatıldı + cevap
-  assert.deepEqual(afterExitTpText({ status: 'WIN', management: ['Erken Kapatıldı'], afterExitTp: false }), { text: 'Hayır', answered: true });
   assert.deepEqual(afterExitTpText({ status: 'BREAKEVEN', afterExitTp: true }), { text: 'Evet', answered: true });
-  // Soru sorulur ama cevap girilmemiş → boş (tire)
-  assert.equal(afterExitTpText({ status: 'WIN', management: ['BE Çekildi'] }), undefined);
-  // Yönetim hiç girilmemiş → bilinmiyor
-  assert.equal(afterExitTpText({ status: 'LOSS' }), undefined);
-  assert.equal(afterExitTpApplies('LOSS', ['Plana Göre']), false);
-  assert.equal(afterExitTpApplies('BREAKEVEN', undefined), true);
+  assert.deepEqual(afterExitTpText({ status: 'BREAKEVEN', afterExitTp: false }), { text: 'Hayır', answered: true });
+  // Sorulur ama cevap girilmemiş → boş
+  assert.equal(afterExitTpText({ status: 'BREAKEVEN' }), undefined);
+  // Kazanç / kayıpta soru yok; eski kayıttaki yanıt da gösterilmez
+  assert.equal(afterExitTpText({ status: 'WIN', afterExitTp: true }), undefined);
+  assert.equal(afterExitTpApplies('LOSS'), false);
+  assert.equal(afterExitTpApplies('WIN'), false);
+  assert.equal(afterExitTpApplies('BREAKEVEN'), true);
 });
 
 test('seriler: BE nötrdür — seriyi bozmaz, sayılmaz; kayıp serisi ancak kazançla biter', async () => {

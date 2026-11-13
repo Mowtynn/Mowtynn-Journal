@@ -1,7 +1,7 @@
 import { Trade } from '../types';
 import { byEntryTime } from './tradeModel';
 import { calculateProfitFactor, toRR } from './statMath';
-import { bucketByPairMedian, PAIR_MEDIAN_MIN, indexTradeOrder, asiaRangeBucketOf, prevTradeBucket } from './asiaAnalytics';
+import { indexTradeOrder, asiaRangeBucketOf, prevTradeBucket } from './asiaAnalytics';
 
 /** Bir grup hakkında yorum/kural üretmek için gereken en az işlem sayısı — projenin tek eşiği (src/lib/sampleSize.ts). */
 import { MIN_SAMPLE, EDGE_PROOF_MIN } from './sampleSize';
@@ -24,25 +24,6 @@ export interface StrategyAnalyticsResult {
     insight: string;
   };
 
-  // Stop büyüklüğü: paritenin kendi medyan stop'una göre Sıkı / Normal / Geniş
-  stopSizeStats: {
-    hasData: boolean;
-    brackets: Array<{
-      label: string;
-      total: number;
-      count: number;
-      wins: number;
-      winRate: number;
-      netR: number;
-      avgR: number;
-      profitFactor: number;
-    }>;
-    /** Paritelerin medyan stop'u (pip) — eşikler bunlardan türetilir */
-    pairMedians: Array<{ pair: string; median: number }>;
-    /** Paritesinde henüz PAIR_MEDIAN_MIN stop birikmediği için sınıflanmayan işlem sayısı */
-    unclassified: number;
-    insight: string;
-  };
 
   // Seri ve aynı gün kayıp / kazanç sonrası (tilt) analizi
   streakStats: {
@@ -90,7 +71,6 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
       bestBracket: '-',
       insight: 'Asia Range verisi bulunamadı.',
     },
-    stopSizeStats: { hasData: false, brackets: [], pairMedians: [], unclassified: 0, insight: 'Stop Pip verisi yok.' },
     streakStats: {
       currentStreak: { type: 'NONE', count: 0 },
       maxLossStreak: 0,
@@ -112,8 +92,6 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
   // General Performance
   const totalWins = trades.filter(t => t.status === 'WIN').length;
   const overallWinRate = Math.round((totalWins / totalTrades) * 1000) / 10;
-
-  const tradesWithStop = trades.filter(t => typeof t.stopPips === 'number' && !isNaN(t.stopPips) && t.stopPips > 0);
 
   // Asia Range Volatility Matrix
   const tradesWithAsia = trades.filter(t => typeof t.asiaRangePips === 'number' && !isNaN(t.asiaRangePips) && t.asiaRangePips > 0);
@@ -155,25 +133,6 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
     } else {
       asiaInsight = `Her aralıkta en az ${MIN_SAMPLE} işlem birikince kıyas yapılır.`;
     }
-  }
-
-  // Stop büyüklüğü: sabit pip eşiği (10 / 25) yerine her paritenin kendi medyan stop'una oran.
-  // Sıkı stop kullanan biri için işlemler tek gruba yığılmaz; XAUUSD ile EURUSD aynı pip ölçeğinde karışmaz.
-  const stopBuckets = bucketByPairMedian(tradesWithStop, (t) => t.stopPips);
-  const stopIn = (k: 'NARROW' | 'NORMAL' | 'WIDE') => tradesWithStop.filter((t) => stopBuckets.buckets.get(t.id) === k);
-  const STOP_LABELS = { NARROW: 'Sıkı (< 0.8× parite medyanı)', NORMAL: 'Normal (0.8× – 1.25×)', WIDE: 'Geniş (> 1.25× parite medyanı)' } as const;
-  const stopSizeBrackets = (['NARROW', 'NORMAL', 'WIDE'] as const).map((k) => ({ ...calcBucket(stopIn(k), STOP_LABELS[k]), label: STOP_LABELS[k] }));
-  const pairMedians = [...stopBuckets.medians.entries()]
-    .map(([pair, m]) => ({ pair, median: Math.round(m * 10) / 10 }))
-    .sort((x, y) => x.pair.localeCompare(y.pair));
-  const unclassified = tradesWithStop.length - stopBuckets.buckets.size;
-  const medianText = pairMedians.length ? ` Medyan stop: ${pairMedians.map((p) => `${p.pair} ${p.median} pip`).join(' · ')}.` : '';
-  const pendingText = unclassified > 0 ? ` ${unclassified} işlemin paritesinde henüz ${PAIR_MEDIAN_MIN} stop yok; sınıflanmadı.` : '';
-
-  let stopSizeInsight = `Gruplar her paritenin kendi medyan stop'una göre.${medianText}${pendingText} Her grupta en az ${MIN_SAMPLE} işlem olunca yorum yapılır.`;
-  const stopReliable = stopSizeBrackets.filter(b => b.count >= MIN_SAMPLE).sort((a, b) => b.avgR - a.avgR);
-  if (stopReliable.length >= 2) {
-    stopSizeInsight = `İşlem başına en yüksek beklenti ${stopReliable[0].label} grubunda (${formatR(stopReliable[0].avgR)}, ${stopReliable[0].count} işlem).${earlyNote(stopReliable[0].count)}${medianText}${pendingText}`;
   }
 
   // 18. Streak & Post-Loss / Tilt Analytics
@@ -264,13 +223,6 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
       brackets: asiaBrackets,
       bestBracket: bestAsiaBracket,
       insight: asiaInsight,
-    },
-    stopSizeStats: {
-      hasData: tradesWithStop.length > 0,
-      brackets: stopSizeBrackets,
-      pairMedians,
-      unclassified,
-      insight: stopSizeInsight,
     },
     streakStats: {
       currentStreak: { type: currentStreakType, count: currentStreakCount },

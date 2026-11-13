@@ -81,6 +81,10 @@ export const useAppStore = create<AppState>()(
         ...current,
         ...(persisted as object),
         globalExtra: sanitizeExtraFilters((persisted as any)?.globalExtra),
+        // PD Array, Entry Timeframe ve Timeframe projeden kaldırıldı: eskiden kalmış bir seçim görünmeden süzmeye devam etmesin
+        globalSelectedConfirmations: [],
+        globalSelectedTimeframes: [],
+        globalSelectedHtfTimeframes: [],
         globalDateLimit: DEFAULT_DATE_LIMIT,
       }),
       // v3: Liquidity Sweep filtresi düştü · v4: ek alan filtreleri (globalExtra)

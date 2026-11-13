@@ -22,10 +22,10 @@ test('sızıntı ve güç: yeterli örneklemli tekil alan değerleri', () => {
   // olumlu bulguya yüksek eşik: kanıtlanmamış 8 işlemli pozitif alan "daha çok yap"a girmez
   const few = computeEdgeSummary(list.filter((x) => x.session !== 'London' || x.createdAt > NOW - 200 * DAY));
   assert.ok(!few.strengths.some((x) => x.value === 'London'));
-  // yönetim boyutları giriş önerilerine karışmaz
-  const m = computeEdgeSummary(Array.from({ length: 12 }, (_, i) => t(i % 3 ? 2 : -1, { management: ["BE Çekildi"] }, i)).concat(Array.from({ length: 12 }, (_, i) => t(-1, { management: ['Plana Göre'] }, i + 20))));
-  assert.ok(!m.strengths.concat(m.leaks).some((x) => x.dimension === 'management'));
-  assert.ok(m.managementSlices.some((x) => x.dimension === 'management'));
+  // sonuç boyutu (BE sonrası TP) giriş önerilerine karışmaz
+  const m = computeEdgeSummary(Array.from({ length: 12 }, (_, i) => t(0, { afterExitTp: true }, i)).concat(Array.from({ length: 12 }, (_, i) => t(i % 3 ? 2 : -1, {}, 20 + i))));
+  assert.ok(!m.strengths.concat(m.leaks).some((x) => x.dimension === 'afterExitTp'));
+  assert.deepEqual(m.beAfterTp, { be: 12, answered: 12, wentTp: 12 });
   assert.deepEqual(s.riskSlices.map((r) => [r.riskPct, r.edge.n]), [[0.5, 10], [1, 8]]);
 });
 
@@ -44,16 +44,3 @@ test('boş liste güvenli', () => {
   assert.deepEqual(s.bestSetups, []);
 });
 
-test('işlemde kalma süresi: kazanan / kaybeden ortalaması', () => {
-  const H = 3600000;
-  const list = [
-    t(2, { createdAt: NOW - 10 * DAY, exitAt: NOW - 10 * DAY + 2 * H }, 1),
-    t(1, { createdAt: NOW - 9 * DAY, exitAt: NOW - 9 * DAY + 4 * H }, 2),
-    t(-1, { createdAt: NOW - 8 * DAY, exitAt: NOW - 8 * DAY + H }, 3),
-    t(1, {}, 4),
-  ];
-  const s = computeEdgeSummary(list);
-  assert.equal(s.holding.n, 3);
-  assert.equal(s.holding.winAvgMs, 3 * H);
-  assert.equal(s.holding.lossAvgMs, H);
-});

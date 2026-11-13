@@ -119,10 +119,10 @@ for (const n of [7, 60, 250]) {
     close(sim.taken.netR + sim.skipped.netR, net, 0.02, 'kural net R');
     close(sim.curve[sim.curve.length - 1].all, net, 1e-6, 'eğri sonu');
 
-    // Saat × parite ısı tablosu hücreleri tüm işlemleri bölüştürür
+    // Sweep saati × parite ısı tablosu hücreleri sweep saati girilmiş işlemleri bölüştürür
     const lab = analyzeAsia(trades, { dataset: 'ALL', pair: 'ALL', minSample: 3 });
     const cellN = Object.values(lab.hourPair.cells).reduce((s, c) => s + c.n, 0);
-    assert.equal(cellN, n, 'ısı tablosu');
+    assert.equal(cellN, trades.filter((t) => /^\d{2}:\d{2}$/.test(t.sweepTime || '')).length, 'ısı tablosu (sweep saati girilmiş işlemler)');
 
     // İkili birleşim taraması: her birleşimin işlem sayısı doğrudan sayımla aynı, lift tanıma uygun
     const pairs = scanPairs(trades, 3);
@@ -162,7 +162,6 @@ test('strateji laboratuvarı (Stop & Range, Psikoloji) tabloları işlemleri eks
   const pairs = new Set(trades.map((t) => t.asset));
   assert.equal(b.tight.count + b.medium.count + b.wide.count, trades.filter((t) => (t.asiaRangePips || 0) > 0).length - 5 * pairs.size);
   // Stop dilimleri stop'u girilmiş işlemleri bölüştürür
-  assert.equal(s.stopSizeStats.brackets.reduce((a, x) => a + x.count, 0), trades.filter((t) => (t.stopPips || 0) > 0).length);
   // Seri: en uzun seriler toplamı aşmaz, kayıp sonrası WR 0–100
   assert.ok(s.streakStats.maxLossStreak <= s.totalTrades && s.streakStats.postLossWinRate >= 0 && s.streakStats.postLossWinRate <= 100);
 });

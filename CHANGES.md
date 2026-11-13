@@ -886,4 +886,12 @@ Klasik tasarım korunarak, son eklenen alanlar (risk %, hesap bağı, strateji, 
   - İşlem detayı · Hesap: "FUNDEDNEXT 50K · FUN…" + "FUNDED" rozeti yerine "FUNDEDNEXT 50K" + rozet (aşama iki kez yazılmıyor, ad kesilmiyor). İşlem listesinde hesap etiketi 1348px genişlikte kesilmiyor.
   - Kurulum Karnesi öncelik listesi: "+1.85R · 5" → "+1.85R · 5 işlem".
   - Telefon: üst çubukta başlık hesap seçiciye yapışıyordu (400px altında logo kutusu gizlenir); Prop kartında bakiye bloğu sağa yaslı; "payout − ücret" etiketi ve Canlı R açıklaması kesilmiyor; ana panelde "Negatif parite yok" kesilmiyor.
+- Form sadeleştirme (kullanıcı isteği): projeden kaldırılan girdiler
+  - Giriş / çıkış saati: formda yalnızca tarih (NY günü). Günün içindeki sıra kayıt anından gelir. İşlem listesi, işlem detayı ve yazdırma raporunda saat yazmıyor; işlem süresi ve "hedefe ulaşma süresi" analizleri kalktı.
+  - Timeframe, Entry Timeframe, PD Array: form, filtre menüsü, Tanımlamalar, işlem detayı, Kurulum Karnesi / Edge Özeti / Kural Simülatörü boyutları ve Excel sütunları kaldırıldı. Depoda kalmış eski filtre seçimleri sıfırlanır.
+  - İşlem Yönetimi: kaldırıldı. "Sonra TP'ye gitti mi?" sorusu artık yalnızca BREAKEVEN işlemde ("BE Sonrası TP'ye Gitti mi?"). Edge Özeti ve Asia Edge Lab'de "kaçırılan R" yerine BE işlemlerin sonradan TP'ye gitme oranı.
+  - Stop Pip, TP Pip ve Planlanan R:R: kaldırıldı (Sonuç kartında yalnızca Asia Range Pip). Stop & Range ekranı "Asia Range" oldu (yalnızca range genişliği); Planlanan R:R, Stop / Asia Range karne boyutları ve işlem detayındaki Plan R:R kalktı.
+  - Asia Range: formda yalnızca Range ve Trend. "Swept" eski kayıtlarda korunur, filtrede yalnızca öyle bir kayıt varsa görünür, eski kayıt düzenlenirken seçili gösterilir.
+  - Saat × Parite ısı tablosu artık Sweep Saati × Parite (giriş saati tutulmadığı için).
+  - Zorunlu alan listesinden kaldırılan alanlar çıktı. Eski işlemlerdeki değerler silinmedi; yalnızca formda ve analizlerde kullanılmıyor.
 

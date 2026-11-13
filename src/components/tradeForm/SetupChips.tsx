@@ -1,8 +1,8 @@
 import React, { useMemo } from "react";
 import { setupQualityTier } from "../../lib/setupQuality";
 import { normalizeNewsDays } from "../../constants/constants";
-import { Layers, ShieldCheck, Zap, TrendingUp, Clock, Maximize2, Target, Flag, Newspaper, Compass, MoveHorizontal, Waves, Timer } from "lucide-react";
-import { ASIA_RANGE_TYPES, MANAGEMENT_TYPES } from "../../types";
+import { Layers, ShieldCheck, Zap, TrendingUp, Clock, Flag, Newspaper, Compass, MoveHorizontal, Waves, Timer } from "lucide-react";
+import { ASIA_RANGE_TYPES, ASIA_RANGE_FORM_TYPES } from "../../types";
 import { SweepTimePicker } from "./SweepTimePicker";
 import { CHIP_BASE, SetState, withSelected, Titles, SlideBg, afterExitTpAsked } from './shared';
 
@@ -31,8 +31,6 @@ export const SetupChips = React.memo(function SetupChips({
   setAsiaRange,
   sweepTime,
   setSweepTime,
-  management,
-  setManagement,
   afterExitTp,
   setAfterExitTp,
   tradeStatus,
@@ -42,15 +40,6 @@ export const SetupChips = React.memo(function SetupChips({
   sessions,
   selectedSession,
   setSelectedSession,
-  htfTimeframes,
-  selectedHtfTimeframe,
-  setSelectedHtfTimeframe,
-  timeframes,
-  selectedTimeframe,
-  setSelectedTimeframe,
-  confirmations,
-  selectedConfirmations,
-  setSelectedConfirmations,
   entryModels,
   selectedEntries,
   setSelectedEntries,
@@ -77,8 +66,6 @@ export const SetupChips = React.memo(function SetupChips({
   setAsiaRange: SetState<string>;
   sweepTime: string;
   setSweepTime: SetState<string>;
-  management: string[];
-  setManagement: SetState<string[]>;
   afterExitTp: boolean | null;
   setAfterExitTp: SetState<boolean | null>;
   tradeStatus: string;
@@ -88,15 +75,6 @@ export const SetupChips = React.memo(function SetupChips({
   sessions: string[];
   selectedSession: string;
   setSelectedSession: SetState<string>;
-  htfTimeframes: string[];
-  selectedHtfTimeframe: string;
-  setSelectedHtfTimeframe: SetState<string>;
-  timeframes: string[];
-  selectedTimeframe: string;
-  setSelectedTimeframe: SetState<string>;
-  confirmations: string[];
-  selectedConfirmations: string[];
-  setSelectedConfirmations: SetState<string[]>;
   entryModels: string[];
   selectedEntries: string[];
   setSelectedEntries: SetState<string[]>;
@@ -245,14 +223,15 @@ export const SetupChips = React.memo(function SetupChips({
         </div>
       </div>
 
-      {/* ASIA RANGE: Range · Trend · Swept (geniş, rahat butonlar) */}
+      {/* ASIA RANGE: Range · Trend (geniş, rahat butonlar) */}
       <div>
         <label lang="en" className="text-[10px] sm:text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-2 flex items-center gap-1.5 font-sans">
           <Compass size={13} className="text-blue-400" />
           {L("asiaRange")}
         </label>
-        <div role="radiogroup" className="w-full grid grid-cols-3 bg-zinc-950/80 border border-zinc-800/90 rounded-xl p-1 gap-1.5 h-10 sm:h-11 shadow-inner">
-          {ASIA_RANGE_TYPES.map((opt) => {
+        {/* "Swept" yalnızca eski bir kayıt düzenlenirken ve o kayıtta seçiliyse görünür */}
+        <div role="radiogroup" className={`w-full grid ${asiaRange === "Swept" ? "grid-cols-3" : "grid-cols-2"} bg-zinc-950/80 border border-zinc-800/90 rounded-xl p-1 gap-1.5 h-10 sm:h-11 shadow-inner`}>
+          {(asiaRange === "Swept" ? ASIA_RANGE_TYPES : ASIA_RANGE_FORM_TYPES).map((opt) => {
             const isSelected = asiaRange === opt;
             const meta = ASIA_RANGE_META[opt];
             const Icon = meta.icon;
@@ -310,92 +289,6 @@ export const SetupChips = React.memo(function SetupChips({
               >
                 {sess === selectedSession && <SlideBg id="sessionSlide" rounded="rounded-xl" className="bg-blue-500/20 border-blue-500/60 shadow-xs" />}
                 <span className="relative z-10">{sess}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* TIMEFRAME (HTF) */}
-        <div className="flex flex-col">
-          <span lang="en" className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
-            <Maximize2 size={12} className="text-blue-400 shrink-0" />
-            {H("htfTimeframes", "TIMEFRAME")}
-          </span>
-          <div className="flex flex-wrap gap-1.5">
-            {htfTimeframes.map((tf, idx) => (
-              <button lang="en"
-                key={idx}
-                type="button"
-                data-selected={tf === selectedHtfTimeframe}
-                onClick={() => setSelectedHtfTimeframe(tf === selectedHtfTimeframe ? "" : tf)}
-                className={`${CHIP_BASE} ${
-                  tf === selectedHtfTimeframe
-                    ? "text-blue-300 border-transparent"
-                    : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
-                }`}
-              >
-                {tf === selectedHtfTimeframe && <SlideBg id="htfSlide" rounded="rounded-xl" className="bg-blue-500/20 border-blue-500/60 shadow-xs" />}
-                <span className="relative z-10">{tf}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* PD ARRAY */}
-        <div className="flex flex-col">
-          <span lang="en" className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
-            <Layers size={12} className="text-blue-400 shrink-0" />
-            {H("confirmations", "PD ARRAY")}
-          </span>
-          <div className="flex flex-wrap gap-1.5">
-            {confirmations.map((c, idx) => {
-              const isActive = selectedConfirmations.includes(c);
-              return (
-                <button lang="en"
-                  key={idx}
-                  type="button"
-                  data-selected={isActive}
-                  onClick={() =>
-                    setSelectedConfirmations(
-                      isActive
-                        ? selectedConfirmations.filter((x) => x !== c)
-                        : [...selectedConfirmations, c]
-                    )
-                  }
-                  className={`px-3 py-1.5 text-[11px] rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
-                    isActive
-                      ? "bg-blue-500/20 text-blue-300 border-blue-500/60 shadow-xs"
-                      : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
-                  }`}
-                >
-                  {c}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* ENTRY TIMEFRAME */}
-        <div className="flex flex-col">
-          <span lang="en" className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
-            <Target size={12} className="text-blue-400 shrink-0" />
-            {H("timeframes", "ENTRY TIMEFRAME")}
-          </span>
-          <div className="flex flex-wrap gap-1.5">
-            {timeframes.map((tf, idx) => (
-              <button lang="en"
-                key={idx}
-                type="button"
-                data-selected={tf === selectedTimeframe}
-                onClick={() => setSelectedTimeframe(tf === selectedTimeframe ? "" : tf)}
-                className={`${CHIP_BASE} ${
-                  tf === selectedTimeframe
-                    ? "text-blue-300 border-transparent"
-                    : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
-                }`}
-              >
-                {tf === selectedTimeframe && <SlideBg id="ltfSlide" rounded="rounded-xl" className="bg-blue-500/20 border-blue-500/60 shadow-xs" />}
-                <span className="relative z-10">{tf}</span>
               </button>
             ))}
           </div>
@@ -499,67 +392,35 @@ export const SetupChips = React.memo(function SetupChips({
 
       </div>
 
-      {/* İŞLEM YÖNETİMİ (çoklu) + Çıkış Sonrası TP sorusu aynı satırda: soru açılınca kart uzamaz */}
-      <div className="pt-3 border-t border-zinc-800/60 flex flex-col">
-        <div className="flex items-center justify-between gap-2 mb-1 h-6">
-          <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide flex items-center gap-1.5 font-sans">
+      {/* ÇIKIŞ SONRASI TP: yalnızca başabaş (BE) kapanan işlemde sorulur */}
+      {afterExitTpAsked(tradeStatus) && (
+        <div className="pt-3 border-t border-zinc-800/60 flex items-center justify-between gap-3">
+          <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide flex items-center gap-1.5 font-sans min-w-0">
             <Zap size={12} className="text-blue-400 shrink-0" />
-            {L("management")}
+            <span className="truncate">BE Sonrası TP'ye Gitti mi?</span>
           </span>
-          {afterExitTpAsked(tradeStatus, management) && (
-            <span className="flex items-center gap-1.5 min-w-0">
-              <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide font-sans truncate">
-                Sonra TP'ye Gitti mi?
-              </span>
-              <span className="flex items-center bg-zinc-950/80 border border-zinc-800/90 rounded-lg p-0.5 gap-0.5 shrink-0">
-                {([true, false] as const).map((v) => {
-                  const isSelected = afterExitTp === v;
-                  return (
-                    <button
-                      key={String(v)}
-                      type="button"
-                      data-selected={isSelected}
-                      onClick={() => setAfterExitTp(isSelected ? null : v)}
-                      className={`h-5 px-2 rounded-md text-[10px] font-sans font-bold uppercase transition-ui select-none border cursor-pointer ${
-                        isSelected
-                          ? "bg-blue-500/20 text-blue-300 border-blue-500/40"
-                          : "border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
-                      }`}
-                    >
-                      {v ? "Evet" : "Hayır"}
-                    </button>
-                  );
-                })}
-              </span>
-            </span>
-          )}
+          <span className="flex items-center bg-zinc-950/80 border border-zinc-800/90 rounded-lg p-0.5 gap-0.5 shrink-0">
+            {([true, false] as const).map((v) => {
+              const isSelected = afterExitTp === v;
+              return (
+                <button
+                  key={String(v)}
+                  type="button"
+                  data-selected={isSelected}
+                  onClick={() => setAfterExitTp(isSelected ? null : v)}
+                  className={`h-6 px-2.5 rounded-md text-[10px] font-sans font-bold uppercase transition-ui select-none border cursor-pointer ${
+                    isSelected
+                      ? "bg-blue-500/20 text-blue-300 border-blue-500/40"
+                      : "border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
+                  }`}
+                >
+                  {v ? "Evet" : "Hayır"}
+                </button>
+              );
+            })}
+          </span>
         </div>
-        <div className="flex flex-wrap gap-1.5">
-          {MANAGEMENT_TYPES.map((m) => {
-            const isActive = management.includes(m);
-            return (
-              <button
-                key={m}
-                type="button"
-                data-selected={isActive}
-                onClick={() => {
-                  if (isActive) setManagement(management.filter((x) => x !== m));
-                  // "Plana Göre" tek başına; diğerleri seçilince kalkar
-                  else if (m === "Plana Göre") setManagement([m]);
-                  else setManagement([...management.filter((x) => x !== "Plana Göre"), m]);
-                }}
-                className={`${CHIP_BASE} ${
-                  isActive
-                    ? "bg-blue-500/20 text-blue-300 border-blue-500/60 shadow-xs"
-                    : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
-                }`}
-              >
-                {m}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      )}
 
     </div>
   );

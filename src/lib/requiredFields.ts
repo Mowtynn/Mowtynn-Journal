@@ -9,16 +9,9 @@ export const REQUIRABLE_FIELDS = [
   { id: 'sweepTime', label: 'Sweep Time', missing: (t: Partial<Trade>) => !t.sweepTime },
   { id: 'session', label: 'Session', missing: (t: Partial<Trade>) => !t.session },
   { id: 'entryModels', label: 'Entry Model', missing: (t: Partial<Trade>) => !t.entryModels?.length },
-  { id: 'confirmations', label: 'PD Array', missing: (t: Partial<Trade>) => !t.confirmations?.length },
-  { id: 'stopPips', label: 'Stop Pip', missing: (t: Partial<Trade>) => !(typeof t.stopPips === 'number' && t.stopPips > 0) },
-  { id: 'tpPips', label: 'TP Pip', missing: (t: Partial<Trade>) => !(typeof t.tpPips === 'number' && t.tpPips > 0) },
   { id: 'asiaRangePips', label: 'Asia Range Pip', missing: (t: Partial<Trade>) => !(typeof t.asiaRangePips === 'number' && t.asiaRangePips > 0) },
   { id: 'planFidelity', label: 'Setup Kalitesi', missing: (t: Partial<Trade>) => !t.planFidelity },
-  { id: 'management', label: 'İşlem Yönetimi', missing: (t: Partial<Trade>) => !t.management?.length },
-  { id: 'exitAt', label: 'Çıkış Saati', missing: (t: Partial<Trade>) => typeof t.exitAt !== 'number' },
   { id: 'trend', label: 'Trend Yapısı', missing: (t: Partial<Trade>) => !t.trend },
-  { id: 'htfTimeframe', label: 'Timeframe', missing: (t: Partial<Trade>) => !t.htfTimeframe },
-  { id: 'timeframe', label: 'Entry Timeframe', missing: (t: Partial<Trade>) => !t.timeframe },
   { id: 'tpTargets', label: 'Target', missing: (t: Partial<Trade>) => !t.tpTargets?.length },
   { id: 'premiumDiscount', label: 'Confirmations', missing: (t: Partial<Trade>) => !t.premiumDiscount },
   { id: 'asiaRangeFvg', label: 'Asia Range FVG (1H)', missing: (t: Partial<Trade>) => !t.asiaRangeFvg },
@@ -27,7 +20,7 @@ export const REQUIRABLE_FIELDS = [
 export type RequirableField = (typeof REQUIRABLE_FIELDS)[number]['id'];
 
 export const DEFAULT_REQUIRED_FIELDS: RequirableField[] = [
-  'asiaRange', 'sweepTime', 'session', 'entryModels', 'confirmations', 'stopPips', 'tpPips', 'asiaRangePips', 'planFidelity', 'management',
+  'asiaRange', 'sweepTime', 'session', 'entryModels', 'asiaRangePips', 'planFidelity',
 ];
 
 const KEY = 'tj_required_fields';

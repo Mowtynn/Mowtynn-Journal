@@ -17,16 +17,20 @@ test('dışa aktarım: formdaki her girdi bir sütunda, değerler eksiksiz', () 
   });
   const row = prepareTradeExportRows([t])[0] as Record<string, unknown>;
   const values = Object.values(row).map(String);
-  for (const expected of ['XAUUSD', 'SHORT', 'WIN', '2.5', 'FTMO 10K · Phase 1', 'acc1', '0.5', '50', '10', '30', '18',
-    'Trend', '02:15', 'A+', 'Continuation', 'Var', 'London', '1H', '5M', 'FVG, OB', 'Breaker', 'PDH / PDL', 'Discount',
-    'satır 1\nsatır 2', 'https://www.tradingview.com/x/abc/', '19.10.2026', '09:30']) {
+  for (const expected of ['XAUUSD', 'SHORT', 'WIN', '2.5', 'FTMO 10K · Phase 1', 'acc1', '0.5', '50', '18',
+    'Trend', '02:15', 'A+', 'Continuation', 'Var', 'London', 'Breaker', 'PDH / PDL', 'Discount',
+    'satır 1\nsatır 2', 'https://www.tradingview.com/x/abc/', '19.10.2026']) {
     assert.ok(values.includes(expected), `eksik: ${expected}`);
   }
-  assert.equal(row['Süre'], '1 sa 15 dk');
+  // kaldırılan girdiler (saat, çıkış, süre, timeframe'ler, PD Array, stop / TP pip, işlem yönetimi) sütun değildir
+  for (const gone of ['Saat', 'Çıkış', 'Süre', 'Giriş Saati (saatlik)', 'Timeframe', 'Entry Timeframe', 'PD Array', 'Stop Pip', 'TP Pip', 'İşlem Yönetimi', 'Planlanan R:R', 'Kaçırılan R']) {
+    assert.ok(!(gone in row), `sütun kaldırılmalıydı: ${gone}`);
+  }
+  assert.ok(!values.includes('09:30') && !values.includes('FVG, OB') && !values.includes('1H'));
   assert.match(String(row['Hızlı Kayıt']), /Evet/);
   // kullanıcının başlıkları sütun adı olur
-  const titled = prepareTradeExportRows([t], { confirmations: 'PD Dizisi' })[0] as Record<string, unknown>;
-  assert.equal(titled['PD Dizisi'], 'FVG, OB');
+  const titled = prepareTradeExportRows([t], { sessions: 'Seans' })[0] as Record<string, unknown>;
+  assert.equal(titled['Seans'], 'London');
   assert.ok(!Object.keys(row).some((k) => /NY/.test(k)), 'sütun adlarında NY etiketi yok');
 });
 
@@ -36,12 +40,12 @@ test('Excel hücre sınırı: çok uzun metin kısaltılır', () => {
 });
 
 test('dışa aktarım: aynı başlık verilen iki alan birbirini ezmez', () => {
-  const t = trade({ id: 'x', status: 'WIN', rr: 1, htfTimeframe: '1H', timeframe: '5M' });
-  const row = prepareTradeExportRows([t], { htfTimeframes: 'Timeframe', timeframes: 'Timeframe' })[0] as Record<string, unknown>;
+  const t = trade({ id: 'x', status: 'WIN', rr: 1, session: 'London', trend: 'Reversal' });
+  const row = prepareTradeExportRows([t], { sessions: 'Bağlam', trendTypes: 'Bağlam' })[0] as Record<string, unknown>;
   const vals = Object.values(row);
-  assert.ok(vals.includes('1H') && vals.includes('5M'), 'iki timeframe de var');
-  const clash = prepareTradeExportRows([t], { assets: 'Saat' })[0] as Record<string, unknown>;
-  assert.ok(Object.values(clash).includes(t.asset) && typeof clash['Saat'] === 'string' && /\d{2}:\d{2}/.test(String(clash['Saat'])));
+  assert.ok(vals.includes('London') && vals.includes('Reversal'), 'iki alan da var');
+  const clash = prepareTradeExportRows([t], { assets: 'Gün' })[0] as Record<string, unknown>;
+  assert.ok(Object.values(clash).includes(t.asset) && typeof clash['Gün'] === 'string' && clash['Gün'] !== t.asset);
 });
 
 test('CSV: Türkçe Excel için ondalık virgül, formül enjeksiyonu engelli, satır sonu korunur', () => {
@@ -73,18 +77,14 @@ test('dışa aktarım: yeni girdiler ve türetilmiş analiz sütunları eksiksiz
   const { prepareTradeExportRows } = await import('../src/utils/exportTrades');
   const { trade } = await import('./fixtures');
   const t = trade({
-    status: 'BREAKEVEN', rr: 0, stopPips: 10, tpPips: 30, asiaRangePips: 40, asiaRange: 'Swept', sweepTime: '02:40',
-    management: ['BE Çekildi'], afterExitTp: true, createdAt: Date.UTC(2026, 9, 20, 7, 10), exitAt: Date.UTC(2026, 9, 20, 7, 55),
+    status: 'BREAKEVEN', rr: 0, asiaRangePips: 40, asiaRange: 'Trend', sweepTime: '02:40',
+    afterExitTp: true, createdAt: Date.UTC(2026, 9, 20, 7, 10),
   });
   const row = prepareTradeExportRows([t])[0] as Record<string, unknown>;
-  for (const k of ['Asia Range', 'Sweep Time', 'İşlem Yönetimi', "Çıkış Sonrası TP'ye Ulaştı", 'Planlanan R:R', 'Stop / Asia Range (%)', 'Sweep Saati (30 dk)', 'Sweep → Giriş (dk)', 'Günün İşlemi', 'Kaçırılan R', 'Süre']) {
+  for (const k of ['Asia Range', 'Sweep Time', "Çıkış Sonrası TP'ye Ulaştı", 'Sweep Saati (30 dk)', 'Günün İşlemi', 'Asia Range Pip']) {
     assert.ok(k in row, `sütun yok: ${k}`);
   }
-  assert.equal(row['Planlanan R:R'], 3);
-  assert.equal(row['Stop / Asia Range (%)'], 25);
   assert.equal(row['Sweep Saati (30 dk)'], '02:30–03:00');
-  assert.equal(row['Sweep → Giriş (dk)'], 30);
-  assert.equal(row['Kaçırılan R'], 3);
   assert.equal(row["Çıkış Sonrası TP'ye Ulaştı"], 'Evet');
 });
 

@@ -7,18 +7,6 @@ import { trade } from './fixtures';
 const DAY = 86400000;
 const D0 = Date.UTC(2026, 5, 1, 7, 0);
 
-test('stop grupları: hepsi 10 pip altındaki stoplar paritenin kendi medyanına göre ayrışır; az verili parite sınıflanmaz', () => {
-  const eu = [5, 6, 7, 7, 7, 8, 9, 6, 7, 8].map((sp, i) => trade({ id: 'e' + i, asset: 'EURUSD', stopPips: sp, status: 'WIN', rr: 2, createdAt: D0 + i * DAY }));
-  const xau = [40, 45, 50].map((sp, i) => trade({ id: 'x' + i, asset: 'XAUUSD', stopPips: sp, status: 'LOSS', rr: -1, createdAt: D0 + (20 + i) * DAY }));
-  const s = calculateStrategyAnalytics([...eu, ...xau]).stopSizeStats;
-  const [tight, normal, wide] = s.brackets.map((b) => b.count);
-  // medyan 7 pip → sıkı < 5.6, geniş > 8.75: eski sabit eşikte (< 10 pip) hepsi "Sıkı" olurdu
-  assert.deepEqual([tight, normal, wide], [1, 8, 1]);
-  assert.equal(tight + normal + wide, eu.length, 'XAUUSD (3 işlem) sınıflanmaz');
-  assert.equal(s.unclassified, 3);
-  assert.deepEqual(s.pairMedians, [{ pair: 'EURUSD', median: 7 }]);
-});
-
 test('Asia Range büyüklüğü: yeni paritenin ilk işlemleri ortak medyana göre yanlış sınıflanmaz', () => {
   const eu = [20, 22, 25, 24, 23, 21, 40].map((r, i) => trade({ id: 'e' + i, asset: 'EURUSD', status: 'WIN', rr: 1, asiaRangePips: r, createdAt: D0 + i * DAY }));
   const xau = trade({ id: 'x', asset: 'XAUUSD', status: 'WIN', rr: 1, asiaRangePips: 300, createdAt: D0 + 10 * DAY });
@@ -76,14 +64,6 @@ test('prop: günlük kayıp limiti aşımı ayrıca tespit edilir', async () => 
   const oneDay = computeAccountMetrics(a, mk(5, 0, 'c'));
   assert.equal(oneDay.dailyBreached, true);
   assert.equal(oneDay.maxBreached, false);
-});
-
-test('hedefe ulaşma süresi: %90 süre için en az 10 kazanan gerekir', async () => {
-  const { computeTimeToTarget, TTT_MIN_WINNERS } = await import('../src/lib/edgeSummary');
-  assert.equal(TTT_MIN_WINNERS, 10);
-  const mk = (n: number) => Array.from({ length: n }, (_, i) => trade({ id: 'w' + i, status: 'WIN', rr: 2, createdAt: D0 + i * DAY, exitAt: D0 + i * DAY + (30 + i) * 60000 }));
-  assert.equal(computeTimeToTarget(mk(9)).overall, null);
-  assert.equal(computeTimeToTarget(mk(10)).overall?.winners, 10);
 });
 
 test('güven aralığı: neredeyse aynı 5 kayıp (−0.95 dahil) da "kesin" sayılmaz', async () => {

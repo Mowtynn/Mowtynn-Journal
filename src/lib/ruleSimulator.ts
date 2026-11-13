@@ -19,7 +19,6 @@ export interface RuleCondition {
 /** Çoklu seçimli alanlar tek tek değerlere ayrılır (Entry Model: FVG seçilince FVG içeren her işlem) */
 const MULTI: Partial<Record<SetupDimension, (t: Trade) => string[] | undefined>> = {
   entryModels: (t) => t.entryModels,
-  confirmations: (t) => t.confirmations,
   tpTargets: (t) => t.tpTargets,
 };
 

@@ -2,7 +2,6 @@ import { Activity, History } from 'lucide-react';
 import { fixed, formatR as sharedFormatR } from '../../lib/format';
 import type { Trade } from '../../types';
 import type { TradeInsight, PricePath } from '../../lib/tradeInsight';
-import { formatDuration } from '../../lib/tradingTime';
 
 /**
  * İşlem detayı · içgörü bölümleri (klasik detay penceresi stilinde):
@@ -32,33 +31,14 @@ export function ResultPanel({ trade, path }: { trade: Trade; path: PricePath }) 
           <span className={statLabel}>Gerçekleşen</span>
           <span className={`${statValue} ${tone(path.realizedR)}`}>{formatR(path.realizedR)}</span>
         </div>
-        {path.plannedRR !== null && (
-          <div className={statCard}>
-            <span className={statLabel}>Plan R:R</span>
-            <span className={`${statValue} text-zinc-200`}>1:{fmt(path.plannedRR)}</span>
-          </div>
-        )}
         {hasRisk && (
           <div className={statCard}>
             <span className={statLabel}>Risk</span>
             <span className={`${statValue} text-zinc-200`}>%{fmt(trade.riskPct as number)}</span>
           </div>
         )}
-        <ExitRow trade={trade} />
       </div>
     </section>
-  );
-}
-
-/** İşlemde kalma süresi · çıkış saati (NY) — Target işlem bağlamında gösterilir */
-function ExitRow({ trade }: { trade: Trade }) {
-  const hasExit = typeof trade.exitAt === 'number' && trade.exitAt >= trade.createdAt;
-  if (!hasExit) return null;
-  return (
-    <div className={statCard}>
-      <span className={statLabel}>Süre</span>
-      <span className={`${statValue} text-zinc-200`}>{formatDuration((trade.exitAt as number) - trade.createdAt)}</span>
-    </div>
   );
 }
 

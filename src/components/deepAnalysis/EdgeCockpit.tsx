@@ -12,14 +12,13 @@ import {
   Shuffle,
 } from 'lucide-react';
 import { Trade } from '../../types';
-import { computeEdgeSummary, validateOutOfSample, PAIR_MIN_LIFT, TTT_MIN_WINNERS, type DimensionSlice, type OosStatus } from '../../lib/edgeSummary';
+import { computeEdgeSummary, validateOutOfSample, PAIR_MIN_LIFT, type DimensionSlice, type OosStatus } from '../../lib/edgeSummary';
 import { HALF_MIN } from '../../lib/ruleSimulator';
 import { dimensionValue, verdictFor, signalStrength, DEFAULT_SETUP_DIMENSIONS, SETUP_MIN_SAMPLE, type SetupRow } from '../../lib/setupScorecard';
 import { EDGE_PROOF_MIN } from '../../lib/sampleSize';
 import { EdgeStats } from '../../lib/asiaAnalytics';
 import { useNewsDayLabels } from '../../hooks/useNewsDayLabels';
-import { formatDuration } from '../../lib/tradingTime';
-import { fixed, formatR, trPossessive } from '../../lib/format';
+import { fixed, formatPct, formatR, trPossessive } from '../../lib/format';
 
 /**
  * Strateji & Edge Geliştirme Laboratuvarı: Edge Özeti (neyi daha çok / neyi hiç yapmamalı).
@@ -228,8 +227,8 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
         </p>
       )}
 
-      {/* Risk %, News Day etkisi ve işlemde kalma süresi */}
-      <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4 pt-3 border-t border-zinc-800/70">
+      {/* Risk % ve News Day etkisi */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-zinc-800/70">
         <div className="flex flex-col gap-2 min-w-0">
           <span className={`${sectionTitle} text-blue-300`}>
             <Percent size={12} /> Risk %'sine göre
@@ -282,30 +281,9 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
             <p className="text-[11px] text-zinc-500">News Day girilmiş işlem yok.</p>
           )}
         </div>
-        <div className="flex flex-col gap-2 min-w-0">
-          <span className={`${sectionTitle} text-blue-300`}>
-            <Clock size={12} /> İşlemde kalma süresi
-          </span>
-          <p className="text-[10px] text-zinc-500 -mt-1">Kazanan ve kaybeden işlemlerin girişten çıkışa ortalama süresi.</p>
-          {s.holding.n >= SETUP_MIN_SAMPLE ? (
-            <div className="flex flex-wrap gap-1.5 text-[11px] tabular-nums">
-              <span className="px-2.5 py-1.5 rounded-lg border border-zinc-800 bg-zinc-950/40">
-                <span className="text-zinc-400 font-semibold">Kazanan</span>{' '}
-                <span className="font-bold text-emerald-300">{s.holding.winAvgMs !== null ? formatDuration(s.holding.winAvgMs) : '—'}</span>
-              </span>
-              <span className="px-2.5 py-1.5 rounded-lg border border-zinc-800 bg-zinc-950/40">
-                <span className="text-zinc-400 font-semibold">Kaybeden</span>{' '}
-                <span className="font-bold text-rose-300">{s.holding.lossAvgMs !== null ? formatDuration(s.holding.lossAvgMs) : '—'}</span>
-              </span>
-              <span className="px-2 py-1.5 text-zinc-600">{s.holding.n} işlem</span>
-            </div>
-          ) : (
-            <p className="text-[11px] text-zinc-500">Çıkış saati girilmiş en az {SETUP_MIN_SAMPLE} işlem gerekli (şu an {s.holding.n}).</p>
-          )}
-        </div>
       </div>
 
-      {/* Kurallar, tesadüf testi, kombinasyonlar, yönetim ve süre: geniş ekranda ikişerli (sayfa yarı uzunlukta) */}
+      {/* Kurallar, tesadüf testi, kombinasyonlar ve BE sonrası TP: geniş ekranda ikişerli (sayfa yarı uzunlukta) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4 items-start">
         {/* Kural kartı: kesinleşmiş bulgulardan "Al / Alma" kuralları; Alma kurallarında son 7 günün ihlalleri */}
         <div className="flex flex-col gap-2 pt-3 border-t border-zinc-800/70">
@@ -433,59 +411,27 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
           )}
         </div>
 
-        {/* Yönetim edge'i: girişten sonra belirlenen alanlar (giriş önerilerinden ayrı) */}
+        {/* BE sonrası TP: işlem kapandıktan sonra belirlenir (giriş önerilerinden ayrı) */}
         <div className="flex flex-col gap-2 pt-3 border-t border-zinc-800/70">
           <span className={`${sectionTitle} text-blue-300`}>
-            <Clock size={12} /> Yönetim edge'i
+            <Clock size={12} /> BE sonrası TP
           </span>
           <p className="text-[10px] text-zinc-500 -mt-1">
-            İşlem Yönetimi, Çıkış Sonrası TP ve işlem süresi: işleme girdikten sonra belirlenir, bu yüzden giriş önerilerine karışmaz. Süre sonucun bir parçasıdır (kaybedenler stop'a hızlı değebilir); neden değil, ipucu olarak oku.
+            Başabaş kapattığın işlemlerde fiyat sonradan TP'ye gitti mi. Oran yükseldikçe BE'ye çekmek sana R kaybettiriyor demektir.
           </p>
-          {s.managementSlices.length ? (
-            <div className="flex flex-col gap-2">
-              {s.managementSlices.slice(0, 6).map((x) => (
-                <InsightRow key={`m:${x.dimension}:${x.value}`} title={`${x.dimensionLabel}: ${x.value}`} edge={x.edge} onClick={() => onShowTrades(`${x.dimensionLabel}: ${x.value}`, sliceTrades(x))} />
-              ))}
+          {s.beAfterTp.answered > 0 ? (
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-xl border border-zinc-800 bg-zinc-950/40 px-3 py-2 text-[11px] tabular-nums">
+              <span className="text-lg font-bold text-zinc-100">{formatPct((s.beAfterTp.wentTp / s.beAfterTp.answered) * 100, 0)}</span>
+              <span className="text-zinc-400">
+                yanıtlanan {s.beAfterTp.answered} BE işlemin {s.beAfterTp.wentTp} tanesi sonradan TP'ye gitti
+                {s.beAfterTp.answered < s.beAfterTp.be && <span className="text-zinc-600"> · {s.beAfterTp.be - s.beAfterTp.answered} BE işlemde soru boş</span>}
+              </span>
             </div>
           ) : (
-            <p className="text-[11px] text-zinc-500">En az {SETUP_MIN_SAMPLE} işlemli yönetim verisi yok.</p>
-          )}
-          {s.missed.n > 0 && (
-            <p className="text-[11px] text-zinc-400">
-              Çıkıştan sonra TP'ye giden {s.missed.n} işlem
-              {s.missed.measured > 0 && <> · yönetimle kaçırılan <span className="font-bold text-rose-300 tabular-nums">{fixed(s.missed.missedR)}R</span></>}
-              {s.missed.measured < s.missed.n && <> ({s.missed.n - s.missed.measured} işlemde TP / Stop Pip eksik)</>}
-            </p>
+            <p className="text-[11px] text-zinc-500">{s.beAfterTp.be > 0 ? `${s.beAfterTp.be} BE işlem var, "BE Sonrası TP'ye Gitti mi?" sorusu yanıtlanmamış.` : 'Henüz BE kapanan işlem yok.'}</p>
           )}
         </div>
 
-        {/* Hedefe ulaşma süresi: kazananların girişten çıkışa süresi → zaman stop'u */}
-        <div className="flex flex-col gap-2 pt-3 border-t border-zinc-800/70">
-          <span className={`${sectionTitle} text-blue-300`}>
-            <Clock size={12} /> Hedefe ulaşma süresi
-          </span>
-          {s.timeToTarget.overall ? (
-            <>
-              <p className="text-[10px] text-zinc-500 -mt-1">
-                Kazananların %90'ı bu sürede sonuçlanıyor; işlem bu süreyi geçtiyse hedefe gitme olasılığı düşer (zaman stop'u için ipucu).
-              </p>
-              <div className="flex flex-col gap-1">
-                {[s.timeToTarget.overall, ...s.timeToTarget.setups].map((r) => (
-                  <div key={`ttt:${r.title}`} className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 rounded-xl border border-zinc-800 bg-zinc-950/40 px-3 py-1.5 text-[11px] tabular-nums min-w-0">
-                    <span className="font-bold text-zinc-200 break-words min-w-0">{r.title}</span>
-                    <span className="text-zinc-400 min-w-0">
-                      medyan <b className="text-zinc-200">{formatDuration(r.medianMs)}</b> · %90 <b className="text-blue-300">{formatDuration(r.p90Ms)}</b>
-                      {r.loserMedianMs !== null && <> · kaybeden <b className="text-rose-300">{formatDuration(r.loserMedianMs)}</b></>}
-                      <span className="text-zinc-600"> · {r.winners} kazanan</span>
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </>
-          ) : (
-            <p className="text-[11px] text-zinc-500">Çıkış saati girilmiş en az {TTT_MIN_WINNERS} kazanan işlem gerekli.</p>
-          )}
-        </div>
       </div>
     </section>
   );

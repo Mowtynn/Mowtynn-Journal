@@ -43,7 +43,7 @@ const SUBTABS: Array<{ id: LabTab; label: string; desc: string; icon: React.Comp
   { id: 'edge_summary', label: 'Edge Özeti', desc: 'Ne çalışıyor, ne sızdırıyor', icon: Sparkles },
   { id: 'setup_scorecard', label: 'Kurulum Karnesi', desc: 'Kurulumları karşılaştır', icon: ClipboardList },
   { id: 'asia_lab', label: 'Asia Edge Lab', desc: "Asia Range'e özgü analiz", icon: Compass },
-  { id: 'stop_range', label: 'Stop & Range', desc: 'Stop ve range genişliği', icon: Target },
+  { id: 'stop_range', label: 'Asia Range', desc: 'Range genişliğine göre sonuç', icon: Target },
   { id: 'rule_sim', label: 'Kural Simülatörü', desc: 'Bir kuralı geçmişte dene', icon: FlaskConical },
   { id: 'psychology', label: 'Psikoloji & Tilt', desc: 'Seri ve kayıp sonrası', icon: Brain },
 ];
@@ -91,7 +91,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
         <Compass className="w-10 h-10 text-zinc-600 mx-auto mb-3" />
         <h4 className="text-sm font-bold text-zinc-200 font-sans">Strateji Geliştirme İçin Yeterli Veri Yok</h4>
         <p className="text-xs text-zinc-500 mt-1 max-w-md mx-auto font-sans">
-          İşlem eklerken girdiğin Parite, Stop/TP Pip, Asia Range, Target (çıkış hedefi), Confirmations, Onaylar ve Giriş Modelleri burada otomatik strateji önerilerine ve edge matrislerine dönüştürülür.
+          İşlem eklerken girdiğin Parite, Asia Range, Sweep Time, Target, Confirmations ve Entry Model burada otomatik strateji önerilerine ve edge matrislerine dönüştürülür.
         </p>
       </div>
     
@@ -99,7 +99,6 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
 
   const { 
     asiaRangeStats, 
-    stopSizeStats,
     streakStats,
   } = stats;
 
@@ -248,41 +247,9 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
 
 
 
-      {/* STOP & ASIA RANGE: stop mesafesi ve range genişliğine göre sonuç */}
+      {/* ASIA RANGE: range genişliğine göre sonuç */}
       {activeSubTab === 'stop_range' && (
         <div className="space-y-4">
-          {/* Stop Size Volatility Distribution */}
-          <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 space-y-3">
-            {/* Başlık kendi satırında; uzun yorum cümlesi başlığın yanına sıkışmaz, kartların altında not olarak durur */}
-            <div className="border-b border-zinc-800 pb-2">
-              <span className="text-xs font-bold uppercase text-zinc-200 font-sans flex items-center gap-1.5">
-                <Target size={14} className="text-blue-400 shrink-0" />
-                {smartUpper("Stop Mesafesi (Pip) Dağılımı")}
-              </span>
-            </div>
-            <p className="text-[10px] text-zinc-500 font-sans -mt-1">Stop pip'in, paritenin kendi medyan stop'una oranına göre üç grup: her grubun net R'si, kazanma oranı ve işlem başı R'si.</p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
-              {stopSizeStats.brackets.map((b) => (
-                <div key={b.label} className="px-3 py-2.5 bg-zinc-900 border border-zinc-800/80 rounded-lg text-xs flex justify-between items-center gap-3">
-                  <div>
-                    <span className="font-bold text-zinc-200 block font-sans">{b.label}</span>
-                    <span className="text-[10px] text-zinc-500 font-sans">{b.total || b.count} işlem</span>
-                    {b.count < MIN_SAMPLE && <span className="ml-1.5 px-1 py-px rounded border border-zinc-700 bg-zinc-900 text-[8px] font-bold text-zinc-400 uppercase tracking-wide align-middle">Az Veri</span>}
-                  </div>
-                  <div className="text-right">
-                    <span className={`font-bold block font-sans tabular-nums ${b.netR > 0 ? 'text-emerald-400' : b.netR < 0 ? 'text-rose-400' : 'text-zinc-300'}`}>
-                      {fmtSignedR(b.netR)}
-                    </span>
-                    <span className="text-[10px] text-zinc-400 font-sans tabular-nums whitespace-nowrap">%{fixed(b.winRate, 1)} WR · ort. {fmtSignedR(b.avgR)}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-            {stopSizeStats.insight && (
-              <p className="rounded-lg border border-blue-500/20 bg-blue-500/5 px-3 py-2 text-[11px] text-zinc-300 font-sans leading-relaxed">{stopSizeStats.insight}</p>
-            )}
-          </div>
-
           {/* Asia Range Volatility Analysis */}
           <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 space-y-3">
             <div className="border-b border-zinc-800 pb-2">

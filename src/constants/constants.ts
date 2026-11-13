@@ -97,7 +97,7 @@ export const normalizeRiskPresets = (list: unknown): string[] => {
 /** Listesi olmayan form alanlarının başlıkları: Tanımlamalar > Form Başlıkları'ndan değiştirilir. */
 export const FORM_LABEL_KEYS = [
   "basicInfoCard", "financialCard", "notesCard", "direction", "tradeDate", "tradeStatus",
-  "stopPips", "tpPips", "asiaRangePips", "rr", "chartLink", "asiaRange", "sweepTime", "management",
+  "asiaRangePips", "rr", "chartLink", "asiaRange", "sweepTime",
 ] as const;
 
 export const DEFAULT_NEWS_DAYS = ["Var", "Yok"];

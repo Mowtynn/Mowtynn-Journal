@@ -3,11 +3,10 @@ import { smartUpper } from '../../constants/constants';
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { canonicalAsset } from "../../lib/tradeModel";
-import { TurkishDateTimePicker } from "../TurkishDateTimePicker";
+import { TurkishDatePicker } from "../TurkishDateTimePicker";
 import { ScrollStrip } from "../common/ScrollStrip";
-import { Search, Layers, Check, Shield, X, Plus } from "lucide-react";
+import { Search, Layers, Check, Shield } from "lucide-react";
 import { NO_ACCOUNT, Num, SetState, AccountOption, Titles, SlideBg } from './shared';
-import { isNyWallTimeValid, nyInputToTs, toNyInput } from '../../lib/tradingTime';
 
 /* ================= 1. KART: TEMEL BİLGİLER (parite, yön, hesap, risk, tarih) ================= */
 export const BasicInfoCard = React.memo(function BasicInfoCard({
@@ -38,8 +37,6 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
   riskDollar,
   tradeDate,
   setTradeDate,
-  exitDate,
-  setExitDate,
 }: {
   titles: Titles;
   assets: string[];
@@ -68,8 +65,6 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
   riskDollar: number | null;
   tradeDate: string;
   setTradeDate: SetState<string>;
-  exitDate: string;
-  setExitDate: SetState<string>;
 }) {
   const { L, H } = titles;
   const assetDropdownRef = useRef<HTMLDivElement>(null);
@@ -387,57 +382,20 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
         );
       })()}
 
-      {/* Satır 3: Giriş ve çıkış — New York saatiyle (yaz/kış saati geçişinde var olmayan saat uyarılır) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div className="min-w-0">
-          <label className="text-[10px] sm:text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-2 flex items-center gap-1.5 font-sans">
-            {smartUpper("Giriş")}
-          </label>
-          <div className="h-9 flex items-center">
-            <TurkishDateTimePicker value={tradeDate} onChange={setTradeDate} className="w-full" />
-          </div>
-        </div>
-        <div className="min-w-0">
-          <label className="text-[10px] sm:text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-2 flex items-center gap-1.5 font-sans">
-            Çıkış
-          </label>
-          {exitDate ? (
-            <div className="h-9 flex items-center gap-1.5">
-              <TurkishDateTimePicker value={exitDate} onChange={setExitDate} className="w-full min-w-0" />
-              <button
-                type="button"
-                onClick={() => setExitDate("")}
-                aria-label="Çıkış saatini kaldır"
-                className="h-9 w-9 shrink-0 rounded-lg border border-zinc-700/70 bg-zinc-950/80 text-zinc-400 hover:text-white hover:border-zinc-500 flex items-center justify-center cursor-pointer"
-              >
-                <X size={13} />
-              </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setExitDate(tradeDate)}
-              className="h-9 w-full rounded-lg border border-dashed border-zinc-700/70 text-[11px] font-semibold text-zinc-400 hover:text-white hover:border-zinc-500 flex items-center justify-center gap-1.5 cursor-pointer transition-ui"
-            >
-              <Plus size={13} /> Çıkış Saati Ekle
-            </button>
-          )}
+      {/* Satır 3: Tarih (New York günü). Saat sorulmaz: kaydın günün içindeki sırası, girildiği andan gelir. */}
+      <div className="min-w-0">
+        <label className="text-[10px] sm:text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-2 flex items-center gap-1.5 font-sans">
+          {smartUpper("Tarih")}
+        </label>
+        <div className="h-9 flex items-center">
+          <TurkishDatePicker
+            value={tradeDate.slice(0, 10)}
+            onChange={(val) => { if (val) setTradeDate(val + (tradeDate.slice(10) || "T12:00")); }}
+            className="w-full"
+            showPresets={false}
+          />
         </div>
       </div>
-      <DstNote label="Giriş" value={tradeDate} />
-      {exitDate && <DstNote label="Çıkış" value={exitDate} />}
     </div>
   );
 });
-
-/** NY'de saat ileri alındığı gece (mart) 02:00–02:59 hiç yaşanmaz: kullanıcıya hangi saate kaydedileceği söylenir */
-function DstNote({ label, value }: { label: string; value: string }) {
-  if (!value || isNyWallTimeValid(value)) return null;
-  const ts = nyInputToTs(value);
-  const fixed = ts !== null ? toNyInput(ts).slice(11, 16) : '—';
-  return (
-    <p className="-mt-1 text-[10px] text-blue-300/90 font-sans">
-      {label}: {value.slice(11, 16)} yaz saati geçişinde yok (saat ileri alındı); {fixed} olarak kaydedilir.
-    </p>
-  );
-}

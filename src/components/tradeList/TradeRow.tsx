@@ -6,7 +6,6 @@ import { Edit3, Trash2 } from 'lucide-react';
 import { nyWallDate } from '../../lib/tradingTime';
 
 export const tradeRowDateFormatter = new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' });
-export const tradeRowTimeFormatter = new Intl.DateTimeFormat('tr-TR', { hour: '2-digit', minute: '2-digit', hour12: false });
 export const TR_COLLATOR = new Intl.Collator('tr', { sensitivity: 'base' });
 
 export const MemoizedTradeRow = React.memo(function MemoizedTradeRow({ 
@@ -31,14 +30,10 @@ export const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
   const riskText = typeof trade.riskPct === 'number' ? `%${trade.riskPct.toLocaleString('en-US', { maximumFractionDigits: 2 })}` : '—';
   const accountLabel = getTradeAccountName(trade);
 
-  const { formattedDateOnly, formattedTimeOnly } = useMemo(() => {
-    if (!trade.createdAt) return { formattedDateOnly: '—', formattedTimeOnly: '' };
-    const dateObj = nyWallDate(trade.createdAt);
-    return {
-      formattedDateOnly: tradeRowDateFormatter.format(dateObj),
-      formattedTimeOnly: tradeRowTimeFormatter.format(dateObj)
-    };
-  }, [trade.createdAt]);
+  const formattedDateOnly = useMemo(
+    () => (trade.createdAt ? tradeRowDateFormatter.format(nyWallDate(trade.createdAt)) : '—'),
+    [trade.createdAt],
+  );
 
   return (
     <tr 
@@ -50,8 +45,6 @@ export const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
           <span className="sm:hidden flex items-center gap-1.5"><span className="text-white font-bold text-xs uppercase">{trade.asset}</span>{trade.quickEntry === true && <span className="px-1 py-px rounded text-[8px] font-bold uppercase border border-amber-500/30 bg-amber-500/10 text-amber-300 leading-none">{smartUpper("Hızlı")}</span>}</span>
           <span className="text-[10px] sm:text-[10px] flex items-center gap-1.5">
             <span className="text-zinc-400 font-medium">{formattedDateOnly}</span>
-            <span className="text-zinc-600 font-bold">•</span>
-            <span className="text-zinc-500 font-sans">{formattedTimeOnly}</span>
           </span>
         </div>
       </td>

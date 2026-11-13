@@ -63,53 +63,35 @@ test('kanıtlı edge en az 30 işlem ister; zarar uyarısı eşiği beklemez', (
   assert.equal(buildSetupScorecard(losing, ['asiaRange', 'session']).rows[0].verdict, 'LEAK');
 });
 
-test('sweep saati ve sweep→giriş gecikmesi boyutları', async () => {
-  const { sweepToEntryMinutes } = await import('../src/lib/asiaAnalytics');
-  const created = Date.UTC(2026, 9, 20, 7, 40); // 03:40 NY (EDT)
-  const x = t(1, { sweepTime: '03:15', createdAt: created });
-  assert.equal(sweepToEntryMinutes(x), 25);
-  assert.equal(dimensionValue(x, 'sweepHour'), '03:00–03:30');
+test('sweep saati boyutu: 30 dakikalık dönemler', () => {
+  assert.equal(dimensionValue(t(1, { sweepTime: '03:15' }), 'sweepHour'), '03:00–03:30');
   assert.equal(dimensionValue(t(1, { sweepTime: '23:45' }), 'sweepHour'), '23:30–00:00');
-  assert.equal(dimensionValue(x, 'sweepDelay'), '15–30 dk');
-  assert.equal(dimensionValue(t(1), 'sweepDelay'), UNSPECIFIED);
+  assert.equal(dimensionValue(t(1), 'sweepHour'), UNSPECIFIED);
 });
 
-test('işlem süresi ve hesap aşaması boyutları', () => {
-  const x = t(1, { createdAt: NOW, exitAt: NOW + 45 * 60000, accountId: 'a', accountStage: 0 });
-  assert.equal(dimensionValue(x, 'holdTime'), '30–60 dk');
-  assert.notEqual(dimensionValue(x, 'accountStage'), UNSPECIFIED);
-  assert.equal(dimensionValue(t(1), 'holdTime'), UNSPECIFIED);
+test('hesap aşaması boyutu', () => {
+  assert.notEqual(dimensionValue(t(1, { accountId: 'a', accountStage: 0 }), 'accountStage'), UNSPECIFIED);
   assert.equal(dimensionValue(t(1, { accountCategory: 'DEMO' }), 'accountStage'), UNSPECIFIED);
 });
 
-test('PD Array boyutu', () => {
-  assert.equal(dimensionValue(t(1, { confirmations: ['OB', 'FVG'] }), 'confirmations'), 'FVG + OB');
-});
-
-test('Asia içindeki sweep → NY AM girişi gece yarısını aşsa da ölçülür', async () => {
-  const { sweepToEntryMinutes, sweepDelayBucket } = await import('../src/lib/asiaAnalytics');
-  const entry = Date.UTC(2026, 9, 20, 13, 45); // 09:45 NY
-  assert.equal(sweepToEntryMinutes({ createdAt: entry, sweepTime: '20:15' }), 810);
-  assert.equal(sweepDelayBucket({ createdAt: entry, sweepTime: '20:15' }), '8 sa+');
-  assert.equal(sweepDelayBucket({ createdAt: entry, sweepTime: '08:30' }), '1–2 sa');
-});
-
-test('planlanan R:R, stop / Asia range, günün işlemi, işlem yönetimi', async () => {
-  const { managementMissedR, indexTradeOrder } = await import('../src/lib/asiaAnalytics');
-  const { normalizeTrade } = await import('../src/lib/tradeModel');
-  const x = t(1, { stopPips: 10, tpPips: 25, asiaRangePips: 40 });
-  assert.equal(dimensionValue(x, 'plannedRR'), '1:2–3');
-  assert.equal(dimensionValue(x, 'stopToRange'), '%20–35');
+test('kaldırılan girdiler karne boyutu değildir; günün işlemi ve BE sonrası TP boyutları çalışır', async () => {
+  const { indexTradeOrder, beAfterTpStats } = await import('../src/lib/asiaAnalytics');
+  const { SETUP_DIMENSIONS } = await import('../src/lib/setupScorecard');
+  const ids = SETUP_DIMENSIONS.map((d) => d.id as string);
+  for (const gone of ['sweepDelay', 'holdTime', 'plannedRR', 'stopToRange', 'management', 'confirmations', 'timeframe', 'htfTimeframe', 'entryHour']) {
+    assert.ok(!ids.includes(gone), `${gone} hâlâ boyut`);
+  }
   const a = t(1, { id: 'a', createdAt: NOW });
   const b = t(-1, { id: 'b', createdAt: NOW + 3600000 });
   indexTradeOrder([b, a]);
   assert.equal(dimensionValue(a, 'tradeOfDay'), '1. İşlem');
   assert.equal(dimensionValue(b, 'tradeOfDay'), '2. İşlem');
-  const n = normalizeTrade({ ...x, management: ['Plana Göre', "be'ye çekildi", 'x'] } as any);
-  assert.deepEqual(n.management, ["BE Çekildi"]);
-  const be = t(0, { status: 'BREAKEVEN', stopPips: 10, tpPips: 30, afterExitTp: true, management: ["BE Çekildi"] });
-  assert.deepEqual(managementMissedR([be, x]), { n: 1, measured: 1, missedR: 3 });
+  const be = t(0, { status: 'BREAKEVEN', afterExitTp: true });
+  const be2 = t(0, { status: 'BREAKEVEN', afterExitTp: false });
+  const be3 = t(0, { status: 'BREAKEVEN' });
   assert.equal(dimensionValue(be, 'afterExitTp'), "Çıkış Sonrası TP'ye Gitti");
+  // Yalnızca BE işlemler sayılır; kazanan işlemdeki eski yanıt hesaba girmez
+  assert.deepEqual(beAfterTpStats([be, be2, be3, t(2, { afterExitTp: true })]), { be: 3, answered: 2, wentTp: 1 });
 });
 
 test('günün işlemi: uygulama genelinde tüm hesaplar birlikte sayılır', async () => {

@@ -341,13 +341,10 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                       ) : (
                         activeTrades.map((trade) => {
                           const dateObj = nyWallDate(trade.createdAt);
-                          const dateStr = dateObj.toLocaleString('tr-TR', {
+                          const dateStr = dateObj.toLocaleDateString('tr-TR', {
                             day: '2-digit',
                             month: '2-digit',
                             year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            hour12: false,
                           });
                           
                           const isWin = trade.status === 'WIN';

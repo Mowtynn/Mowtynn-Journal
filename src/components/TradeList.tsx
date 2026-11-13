@@ -242,8 +242,7 @@ const TradeList = React.memo(function TradeList({
           caseInsensitiveMatch(trade.platform, deferredFilter.search) ||
           caseInsensitiveMatch(trade.planFidelity, deferredFilter.search) ||
           caseInsensitiveMatch(trade.trend, deferredFilter.search) ||
-          (trade.entryModels && trade.entryModels.some(em => caseInsensitiveMatch(em, deferredFilter.search))) ||
-          (trade.confirmations && trade.confirmations.some(c => caseInsensitiveMatch(c, deferredFilter.search)));
+          (trade.entryModels && trade.entryModels.some(em => caseInsensitiveMatch(em, deferredFilter.search)));
         
         if (!matchesSearch) return false;
 

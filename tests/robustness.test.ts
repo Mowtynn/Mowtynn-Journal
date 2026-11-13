@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { calculateComprehensiveStats } from '../src/lib/stats';
 import { computeDeepMetrics } from '../src/lib/deepMetrics';
-import { computeEdgeSummary, validateOutOfSample, edgeReportRows, computeTimeToTarget } from '../src/lib/edgeSummary';
+import { computeEdgeSummary, validateOutOfSample, edgeReportRows } from '../src/lib/edgeSummary';
 import { computeAccountMetrics } from '../src/lib/propAccounts';
 import { computeAccountRInsights } from '../src/lib/propInsights';
 import { buildSetupScorecard, SETUP_DIMENSIONS } from '../src/lib/setupScorecard';
@@ -84,7 +84,6 @@ for (const size of [0, 1, 2, 7, 60, 400]) {
     finiteDeep(calculateStrategyAnalytics(trades), 'strategy');
     finiteDeep(computeWeekReview(trades, currentWeekStart(NOW)), 'week');
     if (trades.length) finiteDeep(computeTradeInsight(trades[0], trades), 'insight');
-    finiteDeep(computeTimeToTarget(trades), 'ttt');
     const acc = account({ id: 'acc1', size: 10000, riskPct: 1, dailyLossPct: 5 });
     const accTrades = trades.map((t) => ({ ...t, accountId: 'acc1' }));
     finiteDeep(computeAccountMetrics(acc, accTrades), 'propMetrics');

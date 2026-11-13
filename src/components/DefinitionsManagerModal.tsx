@@ -7,9 +7,6 @@ import {
   SlidersHorizontal,
   X,
   LineChart,
-  Clock,
-  ArrowUpRight,
-  Lightbulb,
   Sun,
   Plus,
   Search,
@@ -33,9 +30,6 @@ import {
 import { Trade, DefinitionTitles } from '../types';
 import { REQUIRABLE_FIELDS, DEFAULT_REQUIRED_FIELDS, loadRequiredFields, saveRequiredFields, type RequirableField } from '../lib/requiredFields';
 import {
-  DEFAULT_TIMEFRAMES,
-  DEFAULT_HTF_TIMEFRAMES,
-  DEFAULT_CONFIRMATIONS,
   DEFAULT_SESSIONS,
   DEFAULT_ASSETS,
   DEFAULT_PLAN_FIDELITIES,
@@ -106,16 +100,13 @@ const FORM_LABEL_HINTS: Record<string, string> = {
   financialCard: 'Kart başlığı: Sonuç & Risk',
   notesCard: 'Kart başlığı: Analiz & Notlar',
   direction: 'LONG / SHORT seçimi',
-  tradeDate: 'Tarih ve saat seçici',
+  tradeDate: 'Tarih seçici',
   tradeStatus: 'WIN / LOSS / BREAKEVEN seçimi',
-  stopPips: 'Stop mesafesi',
-  tpPips: 'Take profit mesafesi',
   asiaRangePips: 'Asia Range büyüklüğü',
   rr: 'Sonuç R',
   chartLink: 'Grafik bağlantısı alanı',
-  asiaRange: 'Range / Trend / Swept seçimi',
+  asiaRange: 'Range / Trend seçimi',
   sweepTime: 'Sweep saati (NY)',
-  management: 'BE / kısmi kâr / erken kapama',
 };
 
 /** Zorunlu alanlar: tam kayıtta boş bırakılamayacak alanlar (Hızlı Kayıt muaf) */
@@ -314,9 +305,6 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
     { id: 'riskPresets', label: definitionTitles.riskPresets || DEFAULT_DEFINITION_TITLES.riskPresets || "Risk", icon: Percent, list: riskPresets, persist: persistRiskPresets, defaultList: DEFAULT_RISK_PRESETS },
     { id: 'trendTypes', label: definitionTitles.trendTypes || DEFAULT_DEFINITION_TITLES.trendTypes || "Trend Yapısı", icon: TrendingUp, list: trendTypes, persist: persistTrendTypes, defaultList: DEFAULT_TREND_TYPES },
     { id: 'entryModels', label: definitionTitles.entryModels || DEFAULT_DEFINITION_TITLES.entryModels || "Entry Model", icon: Zap, list: entryModels, persist: persistEntryModels, defaultList: DEFAULT_ENTRY_MODELS },
-    { id: 'timeframes', label: definitionTitles.timeframes || DEFAULT_DEFINITION_TITLES.timeframes, icon: Clock, list: timeframes, persist: persistTimeframes, defaultList: DEFAULT_TIMEFRAMES },
-    { id: 'htfTimeframes', label: definitionTitles.htfTimeframes || DEFAULT_DEFINITION_TITLES.htfTimeframes, icon: ArrowUpRight, list: htfTimeframes, persist: persistHtfTimeframes, defaultList: DEFAULT_HTF_TIMEFRAMES },
-    { id: 'confirmations', label: definitionTitles.confirmations || DEFAULT_DEFINITION_TITLES.confirmations, icon: Lightbulb, list: confirmations, persist: persistConfirmations, defaultList: DEFAULT_CONFIRMATIONS },
     { id: 'sessions', label: definitionTitles.sessions || DEFAULT_DEFINITION_TITLES.sessions, icon: Sun, list: sessions, persist: persistSessions, defaultList: DEFAULT_SESSIONS },
     { id: 'planFidelities', label: definitionTitles.planFidelities || DEFAULT_DEFINITION_TITLES.planFidelities, icon: Crosshair, list: planFidelities, persist: persistPlanFidelities, defaultList: DEFAULT_PLAN_FIDELITIES },
     { id: 'tpTargets', label: definitionTitles.tpTargets || DEFAULT_DEFINITION_TITLES.tpTargets || "Target", icon: Flag, list: tpTargets, persist: persistTpTargets, defaultList: DEFAULT_TP_TARGETS },

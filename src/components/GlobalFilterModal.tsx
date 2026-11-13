@@ -15,8 +15,6 @@ import { SlidersHorizontal,
   Flame,
   Eye,
   EyeOff,
-  Clock,
-  Sparkles,
   X,
   Target,
   Zap,
@@ -35,15 +33,14 @@ import {
   DEFAULT_TREND_TYPES,
   DEFAULT_DEFINITION_TITLES,
 } from '../constants/constants';
-import { ASIA_RANGE_TYPES, DefinitionTitles } from '../types';
+import { ASIA_RANGE_FORM_TYPES, DefinitionTitles } from '../types';
 import { DEFAULT_DATE_LIMIT, EMPTY_EXTRA_FILTERS, countExtraFilters, FILTER_DIMENSIONS, type ExtraTradeFilters, type FilterDimension } from '../lib/tradeFilters';
 import { dimensionValue, SETUP_DIMENSIONS, UNSPECIFIED } from '../lib/setupScorecard';
-import { HOLD_BUCKETS, PLANNED_RR_BUCKETS, PREV_TRADE_BUCKETS, RANGE_SIZE_BUCKETS, STOP_RANGE_BUCKETS, SWEEP_DELAY_BUCKETS, sweepBucketOrder } from '../lib/asiaAnalytics';
+import { PREV_TRADE_BUCKETS, RANGE_SIZE_BUCKETS, sweepBucketOrder } from '../lib/asiaAnalytics';
 import { WEEKDAY_NAMES_TR } from '../lib/tradingTime';
 
 /** Gün filtresi seçenekleri Pazartesi'den başlar */
 const WEEKDAY_ORDER = [...WEEKDAY_NAMES_TR.slice(1), WEEKDAY_NAMES_TR[0]];
-import { MANAGEMENT_TYPES } from '../types';
 import { setupQualityTier } from '../lib/setupQuality';
 import { useNewsDayLabels } from '../hooks/useNewsDayLabels';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
@@ -54,9 +51,6 @@ interface GlobalFilterModalProps {
   onClose: () => void;
   trades?: any[];
   // Options
-  timeframes: string[];
-  htfTimeframes: string[];
-  confirmations: string[];
   sessions: string[];
   assets: string[];
   planFidelities?: string[];
@@ -103,9 +97,6 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
   isOpen,
   onClose,
   trades = [],
-  timeframes,
-  htfTimeframes,
-  confirmations,
   sessions,
   assets,
   planFidelities = DEFAULT_PLAN_FIDELITIES,
@@ -146,37 +137,12 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
   }, [ready, assets, trades]);
 
 
-  const dynamicConfirmations = React.useMemo(() => {
-    if (!ready) return confirmations || [];
-    const set = new Set(confirmations || []);
-    trades.forEach(t => {
-      if (t.confirmations && Array.isArray(t.confirmations)) {
-        t.confirmations.forEach(c => set.add(c));
-      }
-    });
-    return Array.from(set);
-  }, [ready, confirmations, trades]);
-
   const dynamicSessions = React.useMemo(() => {
     if (!ready) return sessions || [];
     const set = new Set(sessions || []);
     trades.forEach(t => { if (t.session) set.add(t.session); });
     return Array.from(set);
   }, [ready, sessions, trades]);
-
-  const dynamicTimeframes = React.useMemo(() => {
-    if (!ready) return timeframes || [];
-    const set = new Set(timeframes || []);
-    trades.forEach(t => { if (t.timeframe) set.add(t.timeframe); });
-    return Array.from(set);
-  }, [ready, timeframes, trades]);
-
-  const dynamicHtfTimeframes = React.useMemo(() => {
-    if (!ready) return htfTimeframes || [];
-    const set = new Set(htfTimeframes || []);
-    trades.forEach(t => { if (t.htfTimeframe) set.add(t.htfTimeframe); });
-    return Array.from(set);
-  }, [ready, htfTimeframes, trades]);
 
   const dynamicPlanFidelities = React.useMemo(() => {
     if (!ready) return planFidelities || [];
@@ -210,19 +176,13 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
     FILTER_DIMENSIONS.forEach((d) => {
       const set = new Set<string>();
       if (ready) {
-        if (d === 'management') trades.forEach((t) => (t.management || []).forEach((m: string) => set.add(m)));
-        else trades.forEach((t) => {
+        trades.forEach((t) => {
           const v = dimensionValue(t, d);
           if (v !== UNSPECIFIED) set.add(v);
         });
       }
       const vals = [...set];
       if (d === 'sweepHour') vals.sort((a, b) => sweepBucketOrder(a) - sweepBucketOrder(b));
-      else if (d === 'sweepDelay') vals.sort(orderBy(SWEEP_DELAY_BUCKETS));
-      else if (d === 'plannedRR') vals.sort(orderBy(PLANNED_RR_BUCKETS));
-      else if (d === 'stopToRange') vals.sort(orderBy(STOP_RANGE_BUCKETS));
-      else if (d === 'holdTime') vals.sort(orderBy(HOLD_BUCKETS));
-      else if (d === 'management') vals.sort(orderBy(MANAGEMENT_TYPES));
       else if (d === 'rangeSize') vals.sort(orderBy(RANGE_SIZE_BUCKETS));
       else if (d === 'prevTrade') vals.sort(orderBy(PREV_TRADE_BUCKETS));
       else if (d === 'weekday') vals.sort(orderBy(WEEKDAY_ORDER));
@@ -251,7 +211,8 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
       });
     }
     return {
-      asiaRanges: [...ASIA_RANGE_TYPES] as string[],
+      // "Swept" formdan kaldırıldı: yalnızca eski kayıtlarda varsa seçenek olarak görünür
+      asiaRanges: [...ASIA_RANGE_FORM_TYPES, ...(ready && trades.some((t) => t.asiaRange === 'Swept') ? ['Swept'] : [])] as string[],
       premiumDiscounts: Array.from(pd),
       tpTargets: Array.from(tp),
       asiaRangeFvgs: Array.from(fvg),
@@ -547,36 +508,6 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
               </FilterAccordionRow>
 
 
-              {/* 5. TIMEFRAME */}
-              <FilterAccordionRow title={definitionTitles.htfTimeframes || "Timeframe"} 
-                icon={<Clock size={14} className="text-blue-400" />}
-                summaryText={globalSelectedHtfTimeframes.length > 0 ? globalSelectedHtfTimeframes.join(', ') : 'Tümü'}
-                badgeCount={globalSelectedHtfTimeframes.length}
-                isOpen={!!openSections.htfTf}
-                onToggle={() => toggleSection('htfTf')}
-              >
-                <PillMultiSelect
-                  options={dynamicHtfTimeframes}
-                  selectedValues={globalSelectedHtfTimeframes}
-                  onChange={setGlobalSelectedHtfTimeframes}
-                />
-              </FilterAccordionRow>
-
-              {/* 6. ENTRY TIMEFRAME */}
-              <FilterAccordionRow title={definitionTitles.timeframes || "Entry Timeframe"} 
-                icon={<Clock size={14} className="text-blue-400" />}
-                summaryText={globalSelectedTimeframes.length > 0 ? globalSelectedTimeframes.join(', ') : 'Tümü'}
-                badgeCount={globalSelectedTimeframes.length}
-                isOpen={!!openSections.entryTf}
-                onToggle={() => toggleSection('entryTf')}
-              >
-                <PillMultiSelect
-                  options={dynamicTimeframes}
-                  selectedValues={globalSelectedTimeframes}
-                  onChange={setGlobalSelectedTimeframes}
-                />
-              </FilterAccordionRow>
-
               {/* 7. SETUP KALİTESİ */}
               <FilterAccordionRow title={definitionTitles.planFidelities || "SETUP KALİTESİ"} 
                 icon={<Target size={14} className="text-blue-400" />}
@@ -614,21 +545,6 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                     );
                   })}
                 </div>
-              </FilterAccordionRow>
-
-              {/* 8. PD ARRAY */}
-              <FilterAccordionRow title={definitionTitles.confirmations || "PD ARRAY"} 
-                icon={<Sparkles size={14} className="text-blue-400" />}
-                summaryText={globalSelectedConfirmations.length > 0 ? globalSelectedConfirmations.join(', ') : 'Tümü'}
-                badgeCount={globalSelectedConfirmations.length}
-                isOpen={!!openSections.confirmation}
-                onToggle={() => toggleSection('confirmation')}
-              >
-                <PillMultiSelect
-                  options={dynamicConfirmations}
-                  selectedValues={globalSelectedConfirmations}
-                  onChange={setGlobalSelectedConfirmations}
-                />
               </FilterAccordionRow>
 
               {/* 9. TREND YAPISI */}
@@ -676,7 +592,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                 />
               </FilterAccordionRow>
 
-              {/* Türetilmiş / yeni girdiler: Sweep Saati, Sweep → Giriş, Asia Range Büyüklüğü, Planlanan R:R, Stop / Asia Range, Günün İşlemi, Gün İçi Önceki İşlem, Gün, Giriş Saati, İşlem Yönetimi, Çıkış Sonrası TP, İşlem Süresi */}
+              {/* Türetilmiş girdiler: Sweep Saati, Asia Range Büyüklüğü, Günün İşlemi, Gün İçi Önceki İşlem, Gün, Çıkış Sonrası TP */}
               {FILTER_DIMENSIONS.map((d) => {
                 const sel = globalExtra.dims?.[d] || [];
                 return (

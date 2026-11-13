@@ -14,7 +14,7 @@ import {
 
 
   X, Edit3, Trash2, Calendar, Clock, Target, 
-  Maximize2, ExternalLink, Image as ImageIcon, FileText, 
+  ExternalLink, Image as ImageIcon, FileText, 
   Activity, Layers, Monitor, ShieldCheck, AlertCircle,
   Download, Loader2, Trophy, TrendingDown, Minus, Zap, TrendingUp,
   Flag, Scale, PenLine,
@@ -223,16 +223,13 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
     ? currentTrade.rr > 0 ? 'text-emerald-400' : currentTrade.rr < 0 ? 'text-rose-400' : 'text-zinc-400'
     : 'text-zinc-600';
 
-  // Tarih/saat New York saatiyle gösterilir (giriş ve çıkış NY saatiyle girilir)
+  // Tarih New York gününe göre gösterilir (saat tutulmuyor)
   const formatDate = (timestamp: number) => {
-    return nyWallDate(timestamp).toLocaleString('tr-TR', {
+    return nyWallDate(timestamp).toLocaleDateString('tr-TR', {
       weekday: 'short',
       day: 'numeric',
       month: 'short',
       year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false
     });
   };
 
@@ -383,7 +380,6 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                       !currentTrade.session && (cleanDefinitionTitleString(definitionTitles.sessions) || "Seans"),
                       !currentTrade.asiaRange && (cleanDefinitionTitleString(definitionTitles.asiaRange) || "Asia Range"),
                       !(currentTrade.entryModels && currentTrade.entryModels.length) && (cleanDefinitionTitleString(definitionTitles.entryModels) || "Entry Model"),
-                      !currentTrade.timeframe && (cleanDefinitionTitleString(definitionTitles.timeframes) || "Entry TF"),
                       !currentTrade.planFidelity && (cleanDefinitionTitleString(definitionTitles.planFidelities) || "Setup Kalitesi"),
                       !currentTrade.premiumDiscount && (cleanDefinitionTitleString(definitionTitles.premiumDiscounts) || "Confirmations"),
                     ].filter(Boolean) as string[];
@@ -503,26 +499,6 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                             })()}
                             icon={<Flag size={14} className="text-blue-400"/>}
                           />
-                          {/* 4. TIMEFRAME */}
-                          <ContextRow 
-                            label={smartUpper(cleanDefinitionTitleString(definitionTitles.htfTimeframes) || "TIMEFRAME")} 
-                            value={currentTrade.htfTimeframe} 
-                            icon={<Maximize2 size={14} className="text-blue-400"/>} 
-                          />
-                          {/* 5. PD ARRAY */}
-                          <ContextRow 
-                            label={smartUpper(cleanDefinitionTitleString(definitionTitles.confirmations) || "PD ARRAY")} 
-                            value={currentTrade.confirmations && currentTrade.confirmations.length > 0 
-                              ? currentTrade.confirmations.map(c => smartUpper(c)).join(", ") 
-                              : undefined} 
-                            icon={<Layers size={14} className="text-blue-400"/>} 
-                          />
-                          {/* 6. ENTRY TIMEFRAME */}
-                          <ContextRow 
-                            label={smartUpper(cleanDefinitionTitleString(definitionTitles.timeframes) || "ENTRY TIMEFRAME")} 
-                            value={currentTrade.timeframe} 
-                            icon={<Target size={14} className="text-blue-400"/>} 
-                          />
                           {/* 7. ENTRY MODEL */}
                           <ContextRow 
                             label={smartUpper(cleanDefinitionTitleString(definitionTitles.entryModels) || "ENTRY MODEL")} 
@@ -558,18 +534,14 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                             icon={<ShieldCheck size={14} className="text-blue-400"/>} 
                             valueColor={planColor}
                           />
-                          <ContextRow
-                            label={smartUpper(cleanDefinitionTitleString(definitionTitles.management) || "İŞLEM YÖNETİMİ")}
-                            value={currentTrade.management?.length ? currentTrade.management.join(', ') : undefined}
-                            icon={<Zap size={14} className="text-blue-400"/>}
-                          />
-                          {/* Soru sorulmayan işlemde (plana göre TP / stop) tire yerine "Erken Çıkılmadı" */}
-                          <ContextRow
-                            label="ÇIKIŞ SONRASI TP"
-                            value={afterExit?.text}
-                            valueColor={afterExit && !afterExit.answered ? 'text-zinc-500' : undefined}
-                            icon={<Target size={14} className="text-blue-400"/>}
-                          />
+                          {/* Yalnızca başabaş (BE) işlemde sorulur; diğer işlemlerde satır hiç görünmez */}
+                          {currentTrade.status === 'BREAKEVEN' && (
+                            <ContextRow
+                              label="BE SONRASI TP"
+                              value={afterExit?.text}
+                              icon={<Target size={14} className="text-blue-400"/>}
+                            />
+                          )}
                         </div>
                       </section>
                     );

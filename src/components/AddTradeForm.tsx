@@ -35,10 +35,7 @@ interface AddTradeFormProps {
   ) => void;
   editingTrade: Trade | null;
   onCancelEdit: () => void;
-  timeframes: string[];
-  htfTimeframes?: string[];
   sessions: string[];
-  confirmations: string[];
   assets: string[];
   planFidelities?: string[];
   entryModels?: string[];
@@ -73,10 +70,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
   onSave,
   editingTrade,
   onCancelEdit,
-  timeframes,
-  htfTimeframes = [],
   sessions,
-  confirmations,
   assets,
   planFidelities = DEFAULT_PLAN_FIDELITIES,
   entryModels = DEFAULT_ENTRY_MODELS,
@@ -119,10 +113,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
   const [customRiskPct, setCustomRiskPct] = useState<Num>(init.customRiskPct);
   const [riskError, setRiskError] = useState(false);
 
-  const [selectedTimeframe, setSelectedTimeframe] = useState(init.timeframe);
-  const [selectedHtfTimeframe, setSelectedHtfTimeframe] = useState(init.htfTimeframe);
   const [selectedSession, setSelectedSession] = useState(init.session);
-  const [selectedConfirmations, setSelectedConfirmations] = useState<string[]>(init.confirmations);
   const [selectedEntries, setSelectedEntries] = useState<string[]>(init.entries);
   const [selectedTrend, setSelectedTrend] = useState(init.trend);
   const [planFidelity, setPlanFidelity] = useState<string | null>(init.planFidelity);
@@ -133,12 +124,9 @@ const AddTradeForm = React.memo(function AddTradeForm({
   const [newsDayError, setNewsDayError] = useState(false);
   const [asiaRange, setAsiaRange] = useState(init.asiaRange);
   const [sweepTime, setSweepTime] = useState(init.sweepTime);
-  const [management, setManagement] = useState<string[]>(init.management);
   const [afterExitTp, setAfterExitTp] = useState<boolean | null>(init.afterExitTp);
   const [selectedAsiaFvg, setSelectedAsiaFvg] = useState(init.asiaFvg);
 
-  const [stopPips, setStopPips] = useState<Num>(init.stopPips);
-  const [tpPips, setTpPips] = useState<Num>(init.tpPips);
   const [asiaRangePips, setAsiaRangePips] = useState<Num>(init.asiaRangePips);
   const [rrValue, setRrValue] = useState<Num>(init.rrValue);
   const [tradeStatus, setTradeStatus] = useState<Status>(init.status);
@@ -146,8 +134,6 @@ const AddTradeForm = React.memo(function AddTradeForm({
   const [notes, setNotes] = useState(init.notes);
   const [screenshot, setScreenshot] = useState<string | null>(init.screenshot);
   const [tradeDate, setTradeDate] = useState(init.tradeDate);
-  // Çıkış (NY): isteğe bağlı; boşsa işlemde kalma süresi hesaplanmaz
-  const [exitDate, setExitDate] = useState<string>(init.exitDate);
 
   const [isAssetDropdownOpen, setIsAssetDropdownOpen] = useState(false);
   const [pairError, setPairError] = useState(false);
@@ -244,14 +230,9 @@ const AddTradeForm = React.memo(function AddTradeForm({
       return;
     }
 
-    // Giriş ve çıkış NY saatiyle girilir; gerçek ana (UTC) çevrilerek saklanır
+    // Tarih NY günü olarak seçilir; günün içindeki an kayıt anından gelir (aynı günün işlemleri giriliş sırasıyla dizilir)
     const parsedTime = tradeDate ? nyInputToTs(tradeDate) : null;
     const safeCreatedAt = parsedTime !== null && parsedTime > 0 ? parsedTime : Date.now();
-    const exitTs = exitDate ? nyInputToTs(exitDate) : null;
-    if (exitTs !== null && exitTs < safeCreatedAt) {
-      toast.error("Çıkış saati girişten önce olamaz.");
-      return;
-    }
 
     const record: Partial<Trade> = {
       ...(editingTrade?.id ? { id: editingTrade.id } : {}),
@@ -260,13 +241,8 @@ const AddTradeForm = React.memo(function AddTradeForm({
       type,
       status: tradeStatus,
       rr: Number(numericRR.toFixed(2)),
-      stopPips: stopPips !== "" && typeof stopPips === 'number' ? stopPips : undefined,
-      tpPips: tpPips !== "" && typeof tpPips === 'number' ? tpPips : undefined,
       asiaRangePips: asiaRangePips !== "" && typeof asiaRangePips === 'number' ? asiaRangePips : undefined,
-      timeframe: selectedTimeframe || undefined,
-      htfTimeframe: selectedHtfTimeframe || undefined,
       session: selectedSession || undefined,
-      confirmations: selectedConfirmations.length > 0 ? selectedConfirmations : undefined,
       entryModels: selectedEntries.length > 0 ? selectedEntries : undefined,
       trend: selectedTrend || undefined,
       planFidelity: planFidelity || undefined,
@@ -277,9 +253,8 @@ const AddTradeForm = React.memo(function AddTradeForm({
       strategy: editingTrade?.strategy || undefined,
       asiaRange: (asiaRange || undefined) as Trade["asiaRange"],
       sweepTime: sweepTime || undefined,
-      management: management.length ? (management as Trade["management"]) : undefined,
-      // Çıkış Sonrası TP sorusu yalnızca BE / erken kapama / BE'ye çekilen işlemlerde anlamlı
-      afterExitTp: afterExitTpAsked(tradeStatus, management) ? afterExitTp ?? undefined : undefined,
+      // Çıkış Sonrası TP sorusu yalnızca başabaş (BE) işlemde anlamlı
+      afterExitTp: afterExitTpAsked(tradeStatus) ? afterExitTp ?? undefined : undefined,
       asiaRangeFvg: selectedAsiaFvg || undefined,
       notes: safeNotes || undefined,
       screenshot: screenshot || undefined,
@@ -287,7 +262,6 @@ const AddTradeForm = React.memo(function AddTradeForm({
       ...accountSnapshot(),
       // Hızlı kayıt işareti; tam formla kaydedilince kalkar. Hızlı kayıtta girilmeyen alanlar düzenlemede korunur.
       quickEntry: isQuick ? true : undefined,
-      exitAt: exitTs ?? undefined,
     };
     // Zorunlu alanlar (Tanımlamalar > Zorunlu Alanlar): tam kayıtta boş bırakılamaz; Hızlı Kayıt muaf
     if (!isQuick) {
@@ -319,10 +293,10 @@ const AddTradeForm = React.memo(function AddTradeForm({
 
   // Kaydedilmemiş değişiklik takibi: ilk çizimdeki durum temel alınır (ek çizim yok)
   const snapshot = JSON.stringify([
-    asset, type, accountChoice, riskChoice, customRiskPct, tradeDate, exitDate, tradeStatus, stopPips, tpPips, asiaRangePips,
-    rrValue, notes, screenshot, selectedTimeframe, selectedHtfTimeframe, selectedSession,
-    selectedConfirmations, selectedEntries, selectedTrend, planFidelity,
-    selectedTpTargets, premiumDiscount, newsDay, asiaRange, sweepTime, management, afterExitTp, selectedAsiaFvg,
+    asset, type, accountChoice, riskChoice, customRiskPct, tradeDate, tradeStatus, asiaRangePips,
+    rrValue, notes, screenshot, selectedSession,
+    selectedEntries, selectedTrend, planFidelity,
+    selectedTpTargets, premiumDiscount, newsDay, asiaRange, sweepTime, afterExitTp, selectedAsiaFvg,
   ]);
   const baselineRef = useRef(snapshot);
   // Hazır bekleyen form açılınca tarih "şimdi"ye çekilir; bu değişiklik kirli sayılmasın diye taban yenilenir
@@ -381,15 +355,12 @@ const AddTradeForm = React.memo(function AddTradeForm({
     if (t.accountId && accountOptions.some((o) => o.id === t.accountId)) setAccountChoice(t.accountId);
     else if (!t.accountId && t.accountCategory === "DEMO") setAccountChoice(NO_ACCOUNT);
     setSelectedSession(t.session || "");
-    setSelectedHtfTimeframe(t.htfTimeframe || "");
-    setSelectedTimeframe(t.timeframe || "");
-    setSelectedConfirmations(Array.isArray(t.confirmations) ? t.confirmations : []);
     setSelectedEntries(Array.isArray(t.entryModels) ? t.entryModels : []);
     setSelectedTrend(t.trend || "");
     setSelectedTpTargets(Array.isArray(t.tpTargets) ? t.tpTargets : []);
     setPremiumDiscount(t.premiumDiscount || "");
     setSelectedAsiaFvg(t.asiaRangeFvg || "");
-    toast.success("Son işlemin kurulumu uygulandı. Riski, sonucu ve pip değerlerini gir.");
+    toast.success("Son işlemin kurulumu uygulandı. Riski ve sonucu gir.");
   };
 
   return (
@@ -487,8 +458,6 @@ const AddTradeForm = React.memo(function AddTradeForm({
               riskDollar={riskDollar}
               tradeDate={tradeDate}
               setTradeDate={setTradeDate}
-              exitDate={exitDate}
-              setExitDate={setExitDate}
             />
             {!isQuick && <NotesCard titles={titles} notes={notes} setNotes={setNotes} />}
             {isQuick && (
@@ -499,10 +468,6 @@ const AddTradeForm = React.memo(function AddTradeForm({
                 setTradeStatus={setTradeStatus}
                 rrValue={rrValue}
                 setRrValue={setRrValue}
-                stopPips={stopPips}
-                setStopPips={setStopPips}
-                tpPips={tpPips}
-                setTpPips={setTpPips}
                 asiaRangePips={asiaRangePips}
                 setAsiaRangePips={setAsiaRangePips}
               />
@@ -529,8 +494,6 @@ const AddTradeForm = React.memo(function AddTradeForm({
                   setAsiaRange={setAsiaRange}
                   sweepTime={sweepTime}
                   setSweepTime={setSweepTime}
-                  management={management}
-                  setManagement={setManagement}
                   afterExitTp={afterExitTp}
                   setAfterExitTp={setAfterExitTp}
                   tradeStatus={tradeStatus}
@@ -540,15 +503,6 @@ const AddTradeForm = React.memo(function AddTradeForm({
                   sessions={sessions}
                   selectedSession={selectedSession}
                   setSelectedSession={setSelectedSession}
-                  htfTimeframes={htfTimeframes}
-                  selectedHtfTimeframe={selectedHtfTimeframe}
-                  setSelectedHtfTimeframe={setSelectedHtfTimeframe}
-                  timeframes={timeframes}
-                  selectedTimeframe={selectedTimeframe}
-                  setSelectedTimeframe={setSelectedTimeframe}
-                  confirmations={confirmations}
-                  selectedConfirmations={selectedConfirmations}
-                  setSelectedConfirmations={setSelectedConfirmations}
                   entryModels={entryModels}
                   selectedEntries={selectedEntries}
                   setSelectedEntries={setSelectedEntries}
@@ -572,10 +526,6 @@ const AddTradeForm = React.memo(function AddTradeForm({
                 setTradeStatus={setTradeStatus}
                 rrValue={rrValue}
                 setRrValue={setRrValue}
-                stopPips={stopPips}
-                setStopPips={setStopPips}
-                tpPips={tpPips}
-                setTpPips={setTpPips}
                 asiaRangePips={asiaRangePips}
                 setAsiaRangePips={setAsiaRangePips}
               />

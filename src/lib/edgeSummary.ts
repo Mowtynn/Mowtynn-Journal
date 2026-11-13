@@ -1,8 +1,7 @@
 import { Trade } from '../types';
 import { byEntryTime } from './tradeModel';
-import { edgeFromR, EdgeStats, indexTradeOrder, managementMissedR } from './asiaAnalytics';
+import { beAfterTpStats, edgeFromR, EdgeStats, indexTradeOrder } from './asiaAnalytics';
 import { computeEdgeDrift, DRIFT_RECENT } from './edgeDrift';
-import { formatDuration } from './tradingTime';
 import { halfStatus, HALF_MIN, type HalfStatus } from './ruleSimulator';
 import {
   buildSetupScorecard,
@@ -40,7 +39,7 @@ export interface RiskSlice {
   edge: EdgeStats;
 }
 
-/** İki giriş alanının birleşimi (ör. Asia Range: Swept + Sweep Saati: 02:00–02:30) */
+/** İki giriş alanının birleşimi (ör. Asia Range: Trend + Sweep Saati: 02:00–02:30) */
 export interface PairSlice {
   dims: [SetupDimension, SetupDimension];
   values: [string, string];
@@ -66,14 +65,6 @@ export interface EdgeRule {
   halves?: { first: EdgeStats; second: EdgeStats; status: HalfStatus };
 }
 
-/** Hedefe ulaşma süresi: kurulum bazında kazananların girişten çıkışa süresi */
-export interface TimeToTargetRow {
-  title: string;
-  winners: number;
-  medianMs: number;
-  p90Ms: number;
-  loserMedianMs: number | null;
-}
 
 export interface EdgeSummary {
   total: number;
@@ -87,52 +78,37 @@ export interface EdgeSummary {
   /** Pozitif beklentili, yeterli örneklemli tekil alan değerleri (en güçlü önce) */
   strengths: DimensionSlice[];
   riskSlices: RiskSlice[];
-  /** Yönetim edge'i: İşlem Yönetimi, Çıkış Sonrası TP, işlem süresi (en az minSample işlemli değerler) */
-  managementSlices: DimensionSlice[];
-  /** Çıkıştan sonra TP'ye giden işlemlerde kaçırılan R */
-  missed: { n: number; measured: number; missedR: number };
+  /** BE kapanan işlemlerden kaçı sonradan TP'ye gitti (BE işlemler 0R olduğundan R kıyası değil, oran) */
+  beAfterTp: { be: number; answered: number; wentTp: number };
   /** Kendi alanlarından belirgin iyi / kötü ikili birleşimler (en az 2 × minSample işlem) */
   bestPairs: PairSlice[];
   worstPairs: PairSlice[];
   rules: EdgeRule[];
-  timeToTarget: { overall: TimeToTargetRow | null; setups: TimeToTargetRow[] };
   /** Taramada karşılaştırılan alan değeri sayısı (çoklu karşılaştırma uyarısı için) */
   testedSlices: number;
   news: { yes: EdgeStats; no: EdgeStats; unknown: number };
-  /** İşlemde kalma süresi (çıkış saati girilmiş işlemler) */
-  holding: { n: number; avgMs: number | null; winAvgMs: number | null; lossAvgMs: number | null };
 }
 
-/**
- * Yönetim / sonuç boyutları: işleme girdikten sonra belirlenir (süre, yönetim, Çıkış Sonrası TP).
- * Giriş kararlarıyla aynı listede "daha çok yap" önerisi üretmezler; ayrı bölümde gösterilir.
- */
-export const MANAGEMENT_DIMENSIONS: SetupDimension[] = ['management', 'afterExitTp', 'holdTime'];
+/** Sonuç boyutu: işlem kapandıktan sonra belirlenir (BE sonrası TP). Giriş kararlarıyla aynı listede "daha çok yap" önerisi üretmez. */
+export const MANAGEMENT_DIMENSIONS: SetupDimension[] = ['afterExitTp'];
 
 /** Sızıntı / güç taramasında bakılan tekil alanlar (yalnızca işleme girmeden önce bilinenler) */
 export const SCAN_DIMENSIONS: SetupDimension[] = [
   'asiaRange',
   'rangeSize',
   'sweepHour',
-  'sweepDelay',
   'planFidelity',
-  'plannedRR',
-  'stopToRange',
   'tradeOfDay',
   'prevTrade',
   'accountStage',
   'session',
   'entryModels',
-  'confirmations',
   'premiumDiscount',
-  'timeframe',
-  'htfTimeframe',
   'trend',
   'tpTargets',
   'asiaRangeFvg',
   'newsDay',
   'weekday',
-  'entryHour',
   'type',
   'asset',
 ];
@@ -226,7 +202,6 @@ export function computeEdgeSummary(trades: Trade[], minSample = SETUP_MIN_SAMPLE
   return slices;
   };
   const slices = scan(SCAN_DIMENSIONS);
-  const managementSlices = scan(MANAGEMENT_DIMENSIONS).sort((a, b) => b.edge.expectancy - a.edge.expectancy);
   const leaks = slices
     .filter((s) => s.edge.expectancy < 0)
     // kesinleşmiş sızıntılar önce, sonra en çok R kaybettiren
@@ -299,16 +274,7 @@ export function computeEdgeSummary(trades: Trade[], minSample = SETUP_MIN_SAMPLE
   const yes = sorted.filter((t) => t.newsDay === true);
   const no = sorted.filter((t) => t.newsDay === false);
 
-  const held = sorted.filter((t) => typeof t.exitAt === 'number' && t.exitAt >= t.createdAt);
-  const avg = (list: Trade[]) => (list.length ? list.reduce((s, t) => s + ((t.exitAt as number) - t.createdAt), 0) / list.length : null);
-
   return {
-    holding: {
-      n: held.length,
-      avgMs: avg(held),
-      winAvgMs: avg(held.filter((t) => rOf(t) > 0)),
-      lossAvgMs: avg(held.filter((t) => rOf(t) < 0)),
-    },
     total: sorted.length,
     overall: edgeOf(sorted),
     bestSetups,
@@ -317,12 +283,10 @@ export function computeEdgeSummary(trades: Trade[], minSample = SETUP_MIN_SAMPLE
     leaks,
     strengths,
     riskSlices,
-    managementSlices,
+    beAfterTp: beAfterTpStats(sorted),
     rules: buildRules(sorted, card.rows, slices, pairs, val, vsRestOf, now),
-    timeToTarget: computeTimeToTarget(sorted),
     bestPairs,
     worstPairs,
-    missed: managementMissedR(sorted),
     testedSlices: slices.length + pairs.tested,
     news: { yes: edgeOf(yes), no: edgeOf(no), unknown: sorted.length - yes.length - no.length },
   };
@@ -397,43 +361,6 @@ function buildRules(
     r.recentViolations = { n: hit.length, r: hit.reduce((s, t) => s + rOf(t), 0) };
   });
   return rules.sort((a, b) => (a.kind === b.kind ? b.edge.n - a.edge.n : a.kind === 'TAKE' ? -1 : 1));
-}
-
-const medianOf = (xs: number[]) => {
-  const s = [...xs].sort((a, b) => a - b);
-  const m = Math.floor(s.length / 2);
-  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
-};
-const p90Of = (xs: number[]) => {
-  const s = [...xs].sort((a, b) => a - b);
-  return s[Math.min(s.length - 1, Math.ceil(s.length * 0.9) - 1)];
-};
-/** %90 süre ancak yeterli kazananla anlamlı: 3 kazananda %90 = en uzun süre olurdu */
-export const TTT_MIN_WINNERS = 10;
-
-function timeRow(title: string, list: Trade[]): TimeToTargetRow | null {
-  const held = list.filter((t) => typeof t.exitAt === 'number' && t.exitAt >= t.createdAt);
-  const win = held.filter((t) => rOf(t) > 0).map((t) => (t.exitAt as number) - t.createdAt);
-  if (win.length < TTT_MIN_WINNERS) return null;
-  const loss = held.filter((t) => rOf(t) < 0).map((t) => (t.exitAt as number) - t.createdAt);
-  return { title, winners: win.length, medianMs: medianOf(win), p90Ms: p90Of(win), loserMedianMs: loss.length ? medianOf(loss) : null };
-}
-
-/** Kazananların girişten çıkışa süresi (medyan ve %90'ı): genel ve varsayılan kurulumlar için; en az TTT_MIN_WINNERS kazanan gerekir */
-export function computeTimeToTarget(sorted: Trade[]): EdgeSummary['timeToTarget'] {
-  const groups = new Map<string, Trade[]>();
-  for (const t of sorted) {
-    const labels = DEFAULT_SETUP_DIMENSIONS.map((d) => dimensionValue(t, d));
-    if (labels.every((l) => l === UNSPECIFIED)) continue;
-    const k = labels.join(' · ');
-    (groups.get(k) || groups.set(k, []).get(k)!).push(t);
-  }
-  const setups = [...groups.entries()]
-    .map(([k, list]) => timeRow(k, list))
-    .filter((r): r is TimeToTargetRow => !!r)
-    .sort((a, b) => b.winners - a.winners)
-    .slice(0, 5);
-  return { overall: timeRow('Tüm İşlemler', sorted), setups };
 }
 
 /**
@@ -584,27 +511,12 @@ export function edgeReportRows(trades: Trade[], minSample = SETUP_MIN_SAMPLE): R
     (byRisk.get(k) || byRisk.set(k, []).get(k)!).push(t);
   }
   [...byRisk.entries()].sort((a, b) => a[0] - b[0]).forEach(([k, list]) => push('Risk %', `%${k}`, list, 'Risk'));
-  // Yönetimle kaçırılan R (çıkıştan sonra TP'ye giden işlemler)
-  const miss = managementMissedR(valid);
-  if (miss.n) {
-    rows.push({ Tür: 'Yönetim', Girdi: 'İşlem Yönetimi', Değer: "Kaçırılan R (Çıkış Sonrası TP'ye Giden)", 'İşlem': miss.n, 'Net R': -round(miss.missedR), 'Hüküm': miss.measured < miss.n ? `${miss.n - miss.measured} işlemde TP/Stop Pip yok` : '-' });
-  }
-  // Kurallarım ve hedefe ulaşma süresi (ekrandaki Edge Özeti ile aynı)
+  // Kurallarım (ekrandaki Edge Özeti ile aynı)
   const summary = computeEdgeSummary(valid, minSample);
   summary.rules.forEach((r) => {
     push(r.kind === 'TAKE' ? 'Kural · AL' : 'Kural · ALMA', r.title, valid.filter(r.match), 'Kural');
     if (r.halves && r.halves.status !== 'THIN') rows[rows.length - 1]['Hüküm'] = `${rows[rows.length - 1]['Hüküm']} · ${r.halves.status === 'CONSISTENT' ? 'iki yarıda tutarlı' : 'şans olabilir'}`;
     if (r.recentViolations?.n) rows[rows.length - 1]['Hüküm'] = `${rows[rows.length - 1]['Hüküm']} · son 7 gün ${r.recentViolations.n} ihlal (${round(r.recentViolations.r)}R)`;
-  });
-  [summary.timeToTarget.overall, ...summary.timeToTarget.setups].forEach((r) => {
-    if (!r) return;
-    rows.push({
-      Tür: 'Süre',
-      Girdi: 'Hedefe Ulaşma Süresi',
-      Değer: r.title,
-      'İşlem': r.winners,
-      'Hüküm': `Kazanan medyan ${formatDuration(r.medianMs)} · %90 ${formatDuration(r.p90Ms)}${r.loserMedianMs !== null ? ` · kaybeden medyan ${formatDuration(r.loserMedianMs)}` : ''}`,
-    });
   });
   // Zamanla değişim: son 20 işlem ↔ öncesi
   const drift = computeEdgeDrift(valid);

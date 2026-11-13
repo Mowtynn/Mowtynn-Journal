@@ -1,7 +1,7 @@
 import { Trade } from '../types';
 import { byEntryTime } from './tradeModel';
-import { edgeFromR, EdgeStats, sweepHourBucket, sweepDelayBucket, holdBucket, stageBucket, plannedRRBucket, stopToRangeBucket, tradeOfDayBucket, managementBucket, afterExitBucket, indexTradeOrder, rangeSizeBucket, prevTradeBucket } from './asiaAnalytics';
-import { getTradeHourBucket, getTradeNyWeekday, WEEKDAY_NAMES_TR } from './tradingTime';
+import { edgeFromR, EdgeStats, sweepHourBucket, stageBucket, tradeOfDayBucket, afterExitBucket, indexTradeOrder, rangeSizeBucket, prevTradeBucket } from './asiaAnalytics';
+import { getTradeNyWeekday, WEEKDAY_NAMES_TR } from './tradingTime';
 import { getNewsDayLabels } from '../constants/constants';
 import { EDGE_PROOF_MIN, MIN_SAMPLE } from './sampleSize';
 import { driftFromR, type EdgeDrift } from './edgeDrift';
@@ -14,64 +14,46 @@ import { driftFromR, type EdgeDrift } from './edgeDrift';
 export type SetupDimension =
   | 'asiaRange'
   | 'sweepHour'
-  | 'sweepDelay'
   | 'planFidelity'
-  | 'holdTime'
-  | 'plannedRR'
-  | 'stopToRange'
   | 'tradeOfDay'
   | 'prevTrade'
-  | 'management'
   | 'afterExitTp'
   | 'accountStage'
   | 'session'
   | 'entryModels'
-  | 'confirmations'
   | 'premiumDiscount'
   | 'trend'
-  | 'timeframe'
-  | 'htfTimeframe'
   | 'tpTargets'
   | 'asiaRangeFvg'
   | 'newsDay'
   | 'rangeSize'
   | 'weekday'
-  | 'entryHour'
   | 'type'
   | 'asset';
 
 export const SETUP_DIMENSIONS: { id: SetupDimension; label: string }[] = [
   { id: 'asiaRange', label: 'Asia Range' },
   { id: 'sweepHour', label: 'Sweep Saati (NY, 30 dk)' },
-  { id: 'sweepDelay', label: 'Sweep→Giriş' },
   { id: 'planFidelity', label: 'Setup Kalitesi' },
-  { id: 'holdTime', label: 'İşlem Süresi' },
-  { id: 'plannedRR', label: 'Planlanan R:R' },
-  { id: 'stopToRange', label: 'Stop / Asia Range' },
   { id: 'tradeOfDay', label: 'Günün İşlemi' },
   { id: 'prevTrade', label: 'Gün İçi Önceki İşlem' },
-  { id: 'management', label: 'İşlem Yönetimi' },
   { id: 'afterExitTp', label: 'Çıkış Sonrası TP' },
   { id: 'accountStage', label: 'Hesap Aşaması' },
   { id: 'session', label: 'Session' },
   { id: 'entryModels', label: 'Entry Model' },
-  { id: 'confirmations', label: 'PD Array' },
   { id: 'premiumDiscount', label: 'Confirmations' },
   { id: 'trend', label: 'Trend' },
-  { id: 'timeframe', label: 'Entry TF' },
-  { id: 'htfTimeframe', label: 'HTF' },
   { id: 'tpTargets', label: 'Target' },
   { id: 'asiaRangeFvg', label: 'Asia Range FVG (1H)' },
   { id: 'newsDay', label: 'News Day' },
   { id: 'rangeSize', label: 'Asia Range Büyüklüğü' },
   { id: 'weekday', label: 'Gün' },
-  { id: 'entryHour', label: 'Giriş Saati (NY)' },
   { id: 'type', label: 'Yön' },
   { id: 'asset', label: 'Parite' },
 ];
 
 /**
- * Varsayılan "kurulum" tanımı: Asia Range (Range / Trend / Swept) · Trend Yapısı (Continuation / Reversal) · Entry Model.
+ * Varsayılan "kurulum" tanımı: Asia Range (Range / Trend) · Trend Yapısı (Continuation / Reversal) · Entry Model.
  * Strateji iki moda dayanır (reversal Asia high/low süpürmesi ister, continuation istemez); işlemler tek seansta
  * (London) alındığı için Session kurulumu ayırt etmiyordu. Kurulum Karnesi'nde boyutlar yine elle değiştirilebilir.
  */
@@ -106,26 +88,14 @@ export function dimensionValue(t: Trade, d: SetupDimension): string {
       return joinList(t.entryModels);
     case 'tpTargets':
       return joinList(t.tpTargets);
-    case 'confirmations':
-      return joinList(t.confirmations);
     case 'sweepHour':
       return sweepHourBucket(t.sweepTime) ?? UNSPECIFIED;
-    case 'sweepDelay':
-      return sweepDelayBucket(t) ?? UNSPECIFIED;
-    case 'plannedRR':
-      return plannedRRBucket(t) ?? UNSPECIFIED;
-    case 'stopToRange':
-      return stopToRangeBucket(t) ?? UNSPECIFIED;
     case 'tradeOfDay':
       return tradeOfDayBucket(t) ?? UNSPECIFIED;
     case 'prevTrade':
       return prevTradeBucket(t) ?? UNSPECIFIED;
-    case 'management':
-      return managementBucket(t) ?? UNSPECIFIED;
     case 'afterExitTp':
       return afterExitBucket(t) ?? UNSPECIFIED;
-    case 'holdTime':
-      return holdBucket(t) ?? UNSPECIFIED;
     case 'accountStage':
       return stageBucket(t) ?? UNSPECIFIED;
     case 'rangeSize':
@@ -133,10 +103,6 @@ export function dimensionValue(t: Trade, d: SetupDimension): string {
     case 'weekday': {
       const d = getTradeNyWeekday(t);
       return Number.isInteger(d) ? WEEKDAY_NAMES_TR[d] : UNSPECIFIED;
-    }
-    case 'entryHour': {
-      const h = getTradeHourBucket(t);
-      return h && h !== 'Belirsiz' ? h : UNSPECIFIED;
     }
     case 'newsDay': {
       if (typeof t.newsDay !== 'boolean') return UNSPECIFIED;

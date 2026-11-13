@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { normalizeTrade } from '../src/lib/tradeModel';
 import { calculateComprehensiveStats, breakevenWinRateOf } from '../src/lib/stats';
 import { computeDeepMetrics } from '../src/lib/deepMetrics';
-import { computeEdge, edgeFromR, tCrit95, analyzeAsia, computeCoverage, setGlobalTradeOrder, managementMissedR } from '../src/lib/asiaAnalytics';
+import { computeEdge, edgeFromR, tCrit95, analyzeAsia, computeCoverage, setGlobalTradeOrder, beAfterTpStats } from '../src/lib/asiaAnalytics';
 import { calculateStrategyAnalytics } from '../src/lib/strategyAnalytics';
 import { computeEdgeSummary, validateOutOfSample } from '../src/lib/edgeSummary';
 import { buildSetupScorecard, SETUP_DIMENSIONS, DEFAULT_SETUP_DIMENSIONS } from '../src/lib/setupScorecard';
@@ -125,7 +125,7 @@ function snapshot(trades: Trade[]) {
     summary: computeEdgeSummary(trades, undefined, NOW),
     oos: validateOutOfSample(trades),
     coverage: computeCoverage(trades),
-    mgmt: managementMissedR(trades),
+    beAfterTp: beAfterTpStats(trades),
     // `trades` alanı süzülen girdinin kendisidir (analiz değil): sıra karşılaştırmasına girmez
     asia: { ...analyzeAsia(trades, { dataset: 'ALL', pair: 'ALL', minSample: 5 }), trades: undefined },
     week: computeWeekReview(trades, week),
