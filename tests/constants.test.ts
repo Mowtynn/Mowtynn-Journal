@@ -118,3 +118,10 @@ test('başlık: eski "Sweep Time" adı POI Sweep Time olur, kullanıcının öze
   assert.equal(sanitizeDefinitionTitles({} as any).sweepTime, 'POI Sweep Time');
   assert.equal(sanitizeDefinitionTitles({ sweepTime: 'Likidite Saati' } as any).sweepTime, 'Likidite Saati');
 });
+
+test('başlık: eski "Trend Yapısı" adı İşlem Tipi olur, özel ad korunur', async () => {
+  const { sanitizeDefinitionTitles } = await import('../src/constants/constants');
+  assert.equal(sanitizeDefinitionTitles({ trendTypes: 'Trend Yapısı' } as any).trendTypes, 'İşlem Tipi');
+  assert.equal(sanitizeDefinitionTitles({} as any).trendTypes, 'İşlem Tipi');
+  assert.equal(sanitizeDefinitionTitles({ trendTypes: 'Yapı' } as any).trendTypes, 'Yapı');
+});

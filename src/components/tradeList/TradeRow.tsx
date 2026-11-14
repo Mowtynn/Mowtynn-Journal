@@ -69,7 +69,7 @@ export const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
         </div>
       </td>
       <td className="w-1/2 min-w-[75px] flex justify-end sm:justify-center items-center sm:table-cell order-4 py-1 px-0 sm:px-2 text-center sm:bg-transparent sm:border-y sm:border-zinc-800/80 mt-1.5 sm:mt-0 align-middle sm:w-[15%]">
-        <span className="sm:hidden heading-3 mr-2">Trend</span>
+        <span className="sm:hidden heading-3 mr-2">İşlem Tipi</span>
         <div className="flex items-center justify-end sm:justify-center w-full h-[20px] min-w-0">
           <TrendBadge trend={trade.trend} />
         </div>

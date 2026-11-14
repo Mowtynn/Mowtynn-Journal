@@ -282,7 +282,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
     { id: 'assets', label: definitionTitles.assets || DEFAULT_DEFINITION_TITLES.assets, icon: LineChart, list: assets, persist: persistAssets, defaultList: DEFAULT_ASSETS },
     // İşlem formundaki hazır risk yüzdeleri (en fazla 5; formda tek satıra sığar)
     { id: 'riskPresets', label: definitionTitles.riskPresets || DEFAULT_DEFINITION_TITLES.riskPresets || "Risk", icon: Percent, list: riskPresets, persist: persistRiskPresets, defaultList: DEFAULT_RISK_PRESETS },
-    { id: 'trendTypes', label: definitionTitles.trendTypes || DEFAULT_DEFINITION_TITLES.trendTypes || "Trend Yapısı", icon: TrendingUp, list: trendTypes, persist: persistTrendTypes, defaultList: DEFAULT_TREND_TYPES },
+    { id: 'trendTypes', label: definitionTitles.trendTypes || DEFAULT_DEFINITION_TITLES.trendTypes || "İşlem Tipi", icon: TrendingUp, list: trendTypes, persist: persistTrendTypes, defaultList: DEFAULT_TREND_TYPES },
     { id: 'entryModels', label: definitionTitles.entryModels || DEFAULT_DEFINITION_TITLES.entryModels || "Entry Model", icon: Zap, list: entryModels, persist: persistEntryModels, defaultList: DEFAULT_ENTRY_MODELS },
     { id: 'sessions', label: definitionTitles.sessions || DEFAULT_DEFINITION_TITLES.sessions, icon: Sun, list: sessions, persist: persistSessions, defaultList: DEFAULT_SESSIONS },
     { id: 'planFidelities', label: definitionTitles.planFidelities || DEFAULT_DEFINITION_TITLES.planFidelities, icon: Crosshair, list: planFidelities, persist: persistPlanFidelities, defaultList: DEFAULT_PLAN_FIDELITIES },

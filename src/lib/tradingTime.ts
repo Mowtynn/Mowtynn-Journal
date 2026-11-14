@@ -154,6 +154,36 @@ export function toNyInput(ts: number): string {
   return `${p.date}T${pad(p.hour)}:${pad(p.minute)}`;
 }
 
+const IST_DATE_FMT = (() => {
+  try {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Istanbul', year: 'numeric', month: '2-digit', day: '2-digit' });
+  } catch {
+    return null;
+  }
+})();
+
+/** Türkiye (Europe/Istanbul) takvim günü "YYYY-MM-DD"; dönüşüm olmazsa yerel gün */
+export function istanbulDateKey(ts: number): string {
+  if (IST_DATE_FMT) {
+    const parts = IST_DATE_FMT.formatToParts(new Date(ts));
+    const get = (t: string) => parts.find((p) => p.type === t)?.value;
+    const y = get('year'), m = get('month'), d = get('day');
+    if (y && m && d) return `${y}-${m}-${d}`;
+  }
+  const d = new Date(ts);
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+/**
+ * Yeni işlem formunun başlangıç değeri: GÜN Türkiye takvimine göre (gece yarısından sonra yeni gün görünür),
+ * günün içindeki an NY saatinden (kayıt sırası girildiği andan gelir). Kayıt seçilen günü NY işlem günü sayar:
+ * nyInputToTs bu değeri o NY gününün içinde bir ana çevirir, yani haftanın günü / gün analizleri seçilen güne düşer.
+ */
+export function newTradeDateInput(ts: number): string {
+  const ny = toNyInput(ts);
+  return `${istanbulDateKey(ts)}${ny.slice(10)}`;
+}
+
 /**
  * NY duvar saati "YYYY-MM-DDTHH:mm" → gerçek zaman damgası. Yaz/kış saati geçişlerine karşı korumalı:
  * - Normal saat: tek karşılığı vardır.

@@ -43,3 +43,16 @@ test('saat geri alınınca (kasım) iki kez yaşanan 01:30 → ilk geçiş (EDT)
   // Geçiş gecesi süresi gerçek zamandan hesaplanır: 00:30 → 02:30 = 3 saat (01:xx iki kez yaşandı)
   assert.equal((nyInputToTs('2026-11-01T02:30')! - nyInputToTs('2026-11-01T00:30')!) / 3600000, 3);
 });
+
+test('yeni işlem tarihi: gün Türkiye takviminden, kayıt seçilen güne düşer', async () => {
+  const { newTradeDateInput, istanbulDateKey, nyInputToTs, nyDateKey } = await import('../src/lib/tradingTime');
+  // 15 Kasım 2026 01:30 Türkiye = 14 Kasım 17:30 NY: form 15 Kasım'ı gösterir
+  const ts = Date.UTC(2026, 10, 14, 22, 30);
+  assert.equal(istanbulDateKey(ts), '2026-11-15');
+  const v = newTradeDateInput(ts);
+  assert.equal(v, '2026-11-15T17:30');
+  // Kaydedilen an seçilen günün NY işlem gününe düşer (haftanın günü analizi kaymaz)
+  assert.equal(nyDateKey(nyInputToTs(v)!), '2026-11-15');
+  // Öğlen Türkiye = aynı gün NY sabahı
+  assert.equal(newTradeDateInput(Date.UTC(2026, 10, 14, 9, 0)), '2026-11-14T04:00');
+});

@@ -3,7 +3,7 @@ import React, { useMemo } from "react";
 import { motion } from "motion/react";
 import { Trade, DefinitionTitles, PropAccount } from "../../types";
 import { DEFAULT_DEFINITION_TITLES, cleanDefinitionTitleString, smartUpper } from "../../constants/constants";
-import { toNyInput } from '../../lib/tradingTime';
+import { toNyInput, newTradeDateInput } from '../../lib/tradingTime';
 
 /** İşlem formu: bölümlerin ortak sabitleri, türleri ve yardımcıları */
 export const NO_ACCOUNT = "__none__";
@@ -53,7 +53,8 @@ export function buildInitial(t: Trade | null, riskPresets: number[]) {
     rrValue: numOr(t?.rr),
     notes: t?.notes || "",
     screenshot: t?.screenshot || null,
-    tradeDate: toNyInput(t?.createdAt || Date.now()),
+    // Düzenlemede işlemin NY işlem günü; yeni işlemde bugünün Türkiye takvim günü
+    tradeDate: t?.createdAt ? toNyInput(t.createdAt) : newTradeDateInput(Date.now()),
   };
 }
 

@@ -22,7 +22,7 @@ export interface Trade {
   session?: string;         // Trading session (e.g., London, New York)
   planFidelity?: string | null; // Setup Kalitesi (Plan fidelity)
   entryModels?: string[];   // Birden fazla Giriş Modeli (Multiple Entry Models)
-  trend?: string;           // Trend Yapısı (Trend Type e.g. Continuation, Reversal)
+  trend?: string;           // İşlem Tipi (eski adı Trend Yapısı): Continuation / Reversal
   tpTargets?: string[];     // Target — çıkış hedefi / seviye (e.g. PDH / PDL, Asia High / Low)
   premiumDiscount?: string; // Premium / Discount zone (e.g. Premium, Discount, Equilibrium / OTE)
   /** Eski sürümün strateji alanı: artık formda, filtrelerde ve analizlerde yok; eski kayıtlarda saklı kalır. */

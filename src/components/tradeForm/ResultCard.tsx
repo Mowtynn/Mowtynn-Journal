@@ -82,22 +82,16 @@ export const ResultCard = React.memo(function ResultCard({
   };
 
   return (
-    <div className="tf-card flex-1 bg-zinc-900/50 border border-zinc-800/80 rounded-2xl p-4 flex flex-col gap-3 shadow-sm">
+    <div className="tf-card flex-1 bg-zinc-900/50 border border-zinc-800/80 rounded-2xl p-4 flex flex-col gap-2.5 shadow-sm">
       <div className="flex items-center gap-2 pb-2.5 border-b border-zinc-800/60">
         <Activity size={14} className="text-blue-400" />
         <span className="text-xs font-bold text-zinc-200 uppercase tracking-wider font-sans">{L("financialCard")}</span>
       </div>
 
       {/* Kart sütun yüksekliğini doldurur (altta boşluk kalmaz); içerik ortada durur */}
-      <div className={`flex-1 rounded-xl border px-3 py-2.5 flex flex-col justify-center gap-2 transition-ui duration-500 ease-out ${tone.box}`}>
-        <div className="flex items-center gap-2">
-          <label htmlFor="tf-result-r" className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-zinc-400 font-sans">
-            {L("rr")}
-          </label>
-        </div>
-
+      <div className={`flex-1 rounded-xl border p-2.5 flex flex-col justify-center gap-2 transition-ui duration-500 ease-out ${tone.box}`}>
         {/* Giriş: solda Kazanç / Kayıp anahtarı, ortada büyük sayı, sağda birim */}
-        <div className={`flex items-stretch h-11 rounded-xl bg-zinc-950/80 border border-zinc-700/60 shadow-inner overflow-hidden transition-ui duration-500 ease-out ${tone.field}`}>
+        <div className={`flex items-stretch h-10 rounded-xl bg-zinc-950/80 border border-zinc-700/60 shadow-inner overflow-hidden transition-ui duration-500 ease-out ${tone.field}`}>
           <div role="group" aria-label="Sonucun yönü" className="flex flex-col shrink-0 border-r border-zinc-800">
             <button
               type="button"
@@ -127,6 +121,7 @@ export const ResultCard = React.memo(function ResultCard({
               inputMode="decimal"
               autoComplete="off"
               placeholder="0"
+              aria-label={L("rr")}
               aria-describedby="tf-result-hint"
               value={text}
               onChange={(e) => onType(e.target.value)}

@@ -14,6 +14,20 @@ const ASIA_RANGE_META: Record<(typeof ASIA_RANGE_TYPES)[number], { icon: typeof 
 };
 
 /* ================= 2. SÜTUN: KURULUM ÇİPLERİ ================= */
+
+/**
+ * Bilinen session adlarının New York saatiyle aralığı (ICT kill zone'ları). Çip üzerinde küçük yazılır; tanımlarda
+ * özel ad verilmiş session'larda saat gösterilmez.
+ */
+const SESSION_HOURS_NY: [RegExp, string][] = [
+  [/^asia/i, '20–00'],
+  [/^london/i, '02–05'],
+  [/^(ny|new york)\s*am/i, '07–10'],
+  [/^(ny\s*)?lunch/i, '12–13'],
+  [/^(ny|new york)\s*pm/i, '13:30–16'],
+];
+const sessionHoursNy = (name: string): string | null => SESSION_HOURS_NY.find(([re]) => re.test(name.trim()))?.[1] ?? null;
+
 export const SetupChips = React.memo(function SetupChips({
   titles,
   newsDays,
@@ -82,12 +96,12 @@ export const SetupChips = React.memo(function SetupChips({
   const { L, H } = titles;
   const [newsYesLabel, newsNoLabel] = useMemo(() => normalizeNewsDays(newsDays), [newsDays]);
 
-  // Üst bölümler (Setup Kalitesi, News Day, Asia Range) sıkı durur. Kart komşularından kısa kalırsa artan boşluk
-  // yalnızca alttaki kurulum ızgarasının satırları arasına dağılır (Target altında tek büyük boşluk kalmaz)
+  // Bölümler doğal aralıklarıyla sıkı durur (boşluk dağıtılmaz); form boyunu bu kart belirleyecek şekilde
+  // sol sütun (Temel Bilgiler + Sonuç) kısa tutulur, yan kartlar bu boya uyar
   return (
     <div className="tf-card bg-zinc-900/50 border border-zinc-800/80 rounded-2xl p-4 flex flex-col gap-3.5 shadow-sm h-full">
       
-      {/* 1-2. SETUP KALİTESİ + TREND YAPISI (yan yana) */}
+      {/* 1-2. SETUP KALİTESİ + İŞLEM TİPİ (yan yana) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-4">
         {/* 1. SETUP KALİTESİ */}
         <div>
@@ -119,7 +133,7 @@ export const SetupChips = React.memo(function SetupChips({
           </div>
         </div>
 
-        {/* 2. TREND YAPISI */}
+        {/* 2. İŞLEM TİPİ */}
         <div>
           <label lang="en" className="text-[10px] sm:text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-2 flex items-center gap-1.5 font-sans">
             <TrendingUp size={13} className="text-blue-400" />
@@ -254,7 +268,7 @@ export const SetupChips = React.memo(function SetupChips({
       </div>
 
       {/* KURULUM SIRASI: POI Sweep Time · Session · Entry Model · Confirmations · Target (tam genişlik) */}
-      <div className="flex-1 grid grid-cols-2 content-between gap-x-4 gap-y-3 pt-1 border-t border-zinc-800/60">
+      <div className="grid grid-cols-2 content-start gap-x-4 gap-y-3 pt-1 border-t border-zinc-800/60">
         {/* SWEEP TIME (NY) */}
         <div className="flex flex-col">
           <span lang="en" className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
@@ -269,6 +283,7 @@ export const SetupChips = React.memo(function SetupChips({
           <span lang="en" className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
             <Clock size={12} className="text-blue-400 shrink-0" />
             {H("sessions", "SESSION")}
+            <span className="text-[9px] font-bold text-zinc-500 border border-zinc-800 rounded-md px-1 py-px">NY</span>
           </span>
           <div className="flex flex-wrap gap-1.5">
             {sessions.map((sess, idx) => (
@@ -285,6 +300,11 @@ export const SetupChips = React.memo(function SetupChips({
               >
                 {sess === selectedSession && <SlideBg id="sessionSlide" rounded="rounded-xl" className="bg-blue-500/20 border-blue-500/60 shadow-xs" />}
                 <span className="relative z-10">{sess}</span>
+                {sessionHoursNy(sess) && (
+                  <span className={`relative z-10 ml-1.5 text-[9px] font-semibold tabular-nums ${sess === selectedSession ? "text-blue-200/70" : "text-zinc-500"}`}>
+                    {sessionHoursNy(sess)}
+                  </span>
+                )}
               </button>
             ))}
           </div>

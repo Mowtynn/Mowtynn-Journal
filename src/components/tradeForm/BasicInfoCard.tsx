@@ -223,13 +223,14 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
       </div>
 
       {/* Satır 2: Hesap seçimi — aktif prop hesapları ve en sonda Hesapsız aynı ızgarada (başlıksız; alanın kendisi anlatır).
-          SABİT yükseklik (iki satır): fazlası kendi içinde kayar, hesap sayısı ya da seçim pencere boyunu değiştirmez. */}
+          Yükseklik formdaki hiçbir seçimle değişmez: tek satır (en çok bir hesap + Hesapsız) ya da iki satır;
+          fazlası kendi içinde kayar. Satır sayısı yalnızca Prop sekmesinde hesap eklenince değişir. */}
       <div id="account-field">
         <div
           role="radiogroup"
           aria-label={H("platforms", "Hesap")}
           aria-invalid={accountError || undefined}
-          className={`grid grid-cols-2 auto-rows-[2.25rem] content-start gap-1.5 h-[5.375rem] overflow-y-auto overscroll-contain custom-scrollbar rounded-xl p-1 border bg-zinc-950/60 transition-ui ${accountError ? "border-rose-500/60" : "border-zinc-800"}`}
+          className={`grid grid-cols-2 auto-rows-[2.25rem] content-start gap-1.5 ${accountOptions.length + 1 > 2 ? "h-[5.375rem]" : "h-[2.75rem]"} overflow-y-auto overscroll-contain custom-scrollbar rounded-xl p-1 border bg-zinc-950/60 transition-ui ${accountError ? "border-rose-500/60" : "border-zinc-800"}`}
         >
           {accountOptions.map((a) => {
             const sel = accountChoice === a.id;
@@ -378,7 +379,7 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
         );
       })()}
 
-      {/* Satır 3: Tarih (New York günü). Saat sorulmaz: kaydın günün içindeki sırası, girildiği andan gelir. */}
+      {/* Satır 3: Tarih (Türkiye takvim günü; işlem bu güne kaydedilir). Saat sorulmaz: kaydın günün içindeki sırası, girildiği andan gelir. */}
       <div className="min-w-0">
         <label className="text-[10px] sm:text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-2 flex items-center gap-1.5 font-sans">
           {smartUpper("Tarih")}

@@ -8,8 +8,8 @@ export function migrateRuleSince(raw: unknown): Record<string, number> {
   if (!raw || typeof raw !== 'object') return out;
   Object.entries(raw as Record<string, unknown>).forEach(([k, v]) => {
     if (typeof v !== 'number' || !Number.isFinite(v) || REMOVED_RULE_DIMS.test(k)) return;
-    // Sweep Saati → POI Sweep Saati (alan adı değişti; kuralın ilk görülme zamanı korunur)
-    const key = k.replace(/(\||\+ )Sweep Saati/g, '$1POI Sweep Saati');
+    // Sweep Saati → POI Sweep Saati, Trend → İşlem Tipi (alan adları değişti; kuralın ilk görülme zamanı korunur)
+    const key = k.replace(/(\||\+ )Sweep Saati/g, '$1POI Sweep Saati').replace(/(\||\+ )Trend:/g, '$1İşlem Tipi:');
     out[key] = out[key] === undefined ? v : Math.min(out[key], v);
   });
   return out;

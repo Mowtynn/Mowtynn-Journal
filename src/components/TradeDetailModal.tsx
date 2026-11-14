@@ -425,9 +425,9 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                             value={currentTrade.session} 
                             icon={<Clock size={14} className="text-blue-400"/>} 
                           />
-                          {/* 8. TREND YAPISI */}
+                          {/* 8. İŞLEM TİPİ */}
                           <ContextRow 
-                            label={smartUpper(cleanDefinitionTitleString(definitionTitles.trendTypes) || "TREND YAPISI")} 
+                            label={smartUpper(cleanDefinitionTitleString(definitionTitles.trendTypes) || "İŞLEM TİPİ")} 
                             value={currentTrade.trend} 
                             icon={<TrendingUp size={14} className="text-blue-400"/>} 
                             valueColor={trendColor}

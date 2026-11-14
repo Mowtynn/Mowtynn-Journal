@@ -141,7 +141,7 @@ export const DEFAULT_DEFINITION_TITLES: DefinitionTitles = {
   sessions: "Session",
   planFidelities: "Setup Kalitesi",
   entryModels: "Entry Model",
-  trendTypes: "Trend Yapısı",
+  trendTypes: "İşlem Tipi",
   tpTargets: "Target",
   premiumDiscounts: "Confirmations",
   newsDays: "News Day/Bank Holiday",
@@ -340,6 +340,8 @@ export const sanitizeDefinitionTitles = (raw: Partial<DefinitionTitles> = {}): D
 
   // Sweep Time → POI Sweep Time: kayıtlı eski varsayılan yeni adı alır (kullanıcının kendi verdiği farklı ad korunur)
   if (/^sweep time$/i.test(result.sweepTime || '')) result.sweepTime = DEFAULT_DEFINITION_TITLES.sweepTime;
+  // Trend Yapısı → İşlem Tipi (Continuation / Reversal): eski varsayılan ad yenilenir, özel ad korunur
+  if (/^trend (yapısı|yapisi|type)$/i.test((result.trendTypes || '').trim())) result.trendTypes = DEFAULT_DEFINITION_TITLES.trendTypes;
 
   // Kaldırılan Liquidity Sweep başlıkları eski kayıtlardan düşer
   delete (result as any).liquiditySweeps;

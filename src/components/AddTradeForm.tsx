@@ -22,7 +22,7 @@ import { missingRequired } from "../lib/requiredFields";
 import { Plus, X, Zap, Copy } from "lucide-react";
 import { NO_ACCOUNT, Num, AccountOption, buildInitial, useTitles, statusOfR } from './tradeForm/shared';
 import { roundR } from '../lib/tradeModel';
-import { toNyInput, nyInputToTs } from '../lib/tradingTime';
+import { nyInputToTs, newTradeDateInput } from '../lib/tradingTime';
 import { BasicInfoCard } from './tradeForm/BasicInfoCard';
 import { ResultCard } from './tradeForm/ResultCard';
 import { SetupChips } from './tradeForm/SetupChips';
@@ -234,7 +234,8 @@ const AddTradeForm = React.memo(function AddTradeForm({
       return;
     }
 
-    // Tarih NY günü olarak seçilir; günün içindeki an kayıt anından gelir (aynı günün işlemleri giriliş sırasıyla dizilir)
+    // Seçilen gün işlemin günüdür (yeni işlemde Türkiye takvim gününden başlar); günün içindeki an kayıt anının NY saatinden
+    // gelir: kayıt seçilen NY gününe düşer ve aynı günün işlemleri giriliş sırasıyla dizilir
     const parsedTime = tradeDate ? nyInputToTs(tradeDate) : null;
     const safeCreatedAt = parsedTime !== null && parsedTime > 0 ? parsedTime : Date.now();
 
@@ -328,7 +329,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
   // Arka planda hazır tutulan yeni işlem formu açıldığında: dokunulmamışsa tarih/saat açılış anına güncellenir
   useEffect(() => {
     if (!active || editingTrade || guardStateRef.current.isDirty) return;
-    const now = toNyInput(Date.now());
+    const now = newTradeDateInput(Date.now());
     if (now !== tradeDate) {
       rebaseRef.current = true;
       setTradeDate(now);

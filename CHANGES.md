@@ -952,3 +952,9 @@ Klasik tasarım korunarak, son eklenen alanlar (risk %, hesap bağı, strateji, 
   - İşlem listesi / geçmişi: Trend sütunu genişledi, rozet metni kesilmez (Continuation tam görünür).
   - Araç ipuçları: yalnızca analiz metriklerini açıklayanlar kaldı (beklenti aralığı, başabaş kazanma oranı, eğilim, az veri uyarıları, panel açıklamaları). Hesap adı, sekme açıklaması, kesilen metin gibi gereksiz ipuçları kaldırıldı.
   - Ölü kod: yalnızca kendi dosyasında kullanılan 71 dışa aktarım kapatıldı, kullanılmayan FilterChip başlık özelliği silindi; kullanılmayan dosya / bağımlılık yok.
+
+- İşlem Tipi, Türkiye günü, NY session saatleri ve formun sıkılaşması
+  - Trend Yapısı → İşlem Tipi: form, işlem listesi / geçmişi, detay, filtre, Tanımlamalar, Kurulum Karnesi / Edge Özeti, eksik alan uyarıları ve Excel. Kayıtlı eski varsayılan ad ve Edge Özeti kural kayıtları yeni ada taşınır; özel ad korunur.
+  - Tarih: yeni işlemde gün Türkiye takvimine göre başlar (gece yarısından sonra yeni gün); işlem seçilen güne kaydedilir, gün içi sıra girildiği andan (NY) gelir.
+  - Session: başlıkta NY rozeti; bilinen session'larda NY saat aralığı çipte yazar (Asia 20–00, London 02–05, NY AM 07–10, Lunch 12–13, NY PM 13:30–16). POI Sweep Time zaten NY.
+  - Form: Sonuç kartı küçüldü (ayrı "Sonuç R" etiketi kalktı, alan inceldi); orta kartta bölümler doğal aralıkla sıkı (boşluk dağıtılmaz); hesap alanı en çok bir hesapta tek satır. Sağdaki Grafik ve Notlar aynı boya uyar. Hızlı Kayıt değişmedi.

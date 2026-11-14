@@ -368,7 +368,7 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                       <th className="py-2 px-2 text-center font-sans select-none w-[10%] min-w-[65px]">Yön</th>
                       <th className="py-2 px-2 text-center font-sans select-none w-[10%] min-w-[65px]">R</th>
                       <th className="py-2 px-2 text-center font-sans select-none w-[13%] min-w-[75px]">Session</th>
-                      <th className="py-2 px-2 text-center font-sans select-none w-[15%] min-w-[110px]">Trend</th>
+                      <th className="py-2 px-2 text-center font-sans select-none w-[15%] min-w-[110px]">İşlem Tipi</th>
                       <th className="py-2 px-3 text-center font-sans select-none w-[13%] min-w-[80px]">
                         <div className="flex items-center justify-center w-full">Risk</div>
                       </th>
@@ -416,7 +416,7 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                             </div>
                           </td>
                           <td className="w-1/2 sm:w-[15%] sm:min-w-[110px] flex justify-end sm:justify-center items-center sm:table-cell order-4 py-1 px-0 sm:px-2 text-center sm:bg-zinc-900 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 align-middle">
-                            <span className="sm:hidden heading-3 mr-2">Trend</span>
+                            <span className="sm:hidden heading-3 mr-2">İşlem Tipi</span>
                             <div className="flex items-center justify-end sm:justify-center w-full h-[20px] min-w-0">
                               <TrendBadge trend={t.trend} />
                             </div>

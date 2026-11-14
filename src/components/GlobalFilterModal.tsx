@@ -458,8 +458,8 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                 </div>
               </FilterAccordionRow>
 
-              {/* 9. TREND YAPISI */}
-              <FilterAccordionRow title={definitionTitles.trendTypes || "Trend Yapısı"} 
+              {/* 9. İŞLEM TİPİ */}
+              <FilterAccordionRow title={definitionTitles.trendTypes || "İşlem Tipi"} 
                 icon={<TrendingUp size={14} className="text-blue-400" />}
                 summaryText={globalSelectedTrendTypes.length > 0 ? globalSelectedTrendTypes.join(', ') : 'Tümü'}
                 badgeCount={globalSelectedTrendTypes.length}

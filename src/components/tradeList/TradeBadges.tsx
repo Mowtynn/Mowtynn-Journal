@@ -18,7 +18,7 @@ export function RBadge({ rr }: { rr: unknown }) {
 }
 
 /**
- * Trend yapısı: Continuation / Reversal (formdaki Trend Yapısı). İkisi de mavi; ayrımı ikon yapar
+ * İşlem Tipi: Continuation / Reversal. İkisi de mavi; ayrımı ikon yapar
  * (Continuation: aynı yönde devam eden ok, Reversal: dönüş oku). Metin kesilmez (sütun buna göre geniş). Girilmemişse tire.
  */
 export function TrendBadge({ trend }: { trend?: string }) {

@@ -54,7 +54,7 @@ test('kural zamanları: kaldırılan girdiler temizlenir, Sweep Saati → POI Sw
   });
   assert.deepEqual(out, {
     'TAKE|POI Sweep Saati (NY, 30 dk): 02:00–02:30': 5,
-    'AVOID|Trend: Reversal + POI Sweep Saati (NY, 30 dk): 03:00–03:30': 3,
+    'AVOID|İşlem Tipi: Reversal + POI Sweep Saati (NY, 30 dk): 03:00–03:30': 3,
     'TAKE|Session: London': 2,
   });
   assert.deepEqual(migrateRuleSince(null), {});

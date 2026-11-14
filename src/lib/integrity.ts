@@ -9,7 +9,7 @@ export function missingFields(t: Trade): string[] {
   if (!t.accountId && t.accountCategory !== 'DEMO') out.push('Hesap');
   if (t.accountId && !hasNum(t.riskPct)) out.push('Risk %');
   if (!t.asiaRange) out.push('Asia Range');
-  if (!t.trend) out.push('Trend');
+  if (!t.trend) out.push('İşlem Tipi');
   if (typeof t.newsDay !== 'boolean') out.push('News Day');
   if (!Array.isArray(t.entryModels) || t.entryModels.length === 0) out.push('Entry Model');
   return out;

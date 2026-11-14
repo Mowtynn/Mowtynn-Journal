@@ -39,7 +39,7 @@ export const SETUP_DIMENSIONS: { id: SetupDimension; label: string }[] = [
   { id: 'session', label: 'Session' },
   { id: 'entryModels', label: 'Entry Model' },
   { id: 'premiumDiscount', label: 'Confirmations' },
-  { id: 'trend', label: 'Trend' },
+  { id: 'trend', label: 'İşlem Tipi' },
   { id: 'tpTargets', label: 'Target' },
   { id: 'asiaRangeFvg', label: 'Asia Range FVG (1H)' },
   { id: 'newsDay', label: 'News Day' },
