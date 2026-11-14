@@ -113,9 +113,10 @@ export const ResultCard = React.memo(function ResultCard({
               −
             </button>
           </div>
-          {/* İşaret, sayı ve "R" aynı taban çizgisinde (items-baseline + leading-none): farklı boyutlar hizalı durur */}
-          <div className={`flex-1 min-w-0 flex items-baseline justify-center gap-1 leading-none cursor-text transition-ui duration-500 ease-out ${tone.text}`} onClick={() => inputRef.current?.focus()}>
-            <span className="text-xl font-bold leading-none opacity-80 select-none" aria-hidden>{text !== "" && Number(text) !== 0 ? (neg ? "−" : "+") : ""}</span>
+          {/* "−2" tek parça (işaret sayıyla aynı boyutta, aralıksız); "R" de aynı boyut ve taban çizgisinde, yalnızca soluk:
+              üstü ve altı sayıyla tam aynı hizada durur */}
+          <div className={`flex-1 min-w-0 flex items-baseline justify-center leading-none cursor-text transition-ui duration-500 ease-out ${tone.text}`} onClick={() => inputRef.current?.focus()}>
+            <span className="text-2xl font-bold leading-none tabular-nums select-none" aria-hidden>{text !== "" && Number(text) !== 0 ? (neg ? "−" : "+") : ""}</span>
             <input
               ref={inputRef}
               id="tf-result-r"
@@ -133,10 +134,10 @@ export const ResultCard = React.memo(function ResultCard({
                 if (r !== rrValue) setRrValue(r);
                 setText(String(Math.abs(r)));
               }}
-              style={{ width: `${Math.max(1, text.length || 1) + 0.5}ch` }}
-              className="min-w-[2ch] max-w-full p-0 bg-transparent text-center text-2xl font-bold leading-none tabular-nums [color:inherit] focus:outline-none placeholder:text-zinc-600"
+              style={{ width: `${Math.max(1, text.length || 1) + 0.15}ch` }}
+              className="min-w-[1ch] max-w-full p-0 bg-transparent text-center text-2xl font-bold leading-none tabular-nums [color:inherit] focus:outline-none placeholder:text-zinc-600"
             />
-            <span className="text-base font-bold leading-none opacity-50 select-none" aria-hidden>R</span>
+            <span className="ml-1 text-2xl font-bold leading-none opacity-60 select-none" aria-hidden>R</span>
           </div>
           {/* Sağ köşe: yuvarlanacaksa kaydedilecek değer, hesaplıysa dolar etkisi (yer kaplamaz, satır eklemez) */}
           {rounded !== null && (rounded !== Number(rrValue) || riskDollar) ? (

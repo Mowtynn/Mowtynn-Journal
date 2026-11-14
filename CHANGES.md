@@ -974,3 +974,4 @@ Klasik tasarım korunarak, son eklenen alanlar (risk %, hesap bağı, strateji, 
   - iPhone'da bir alana dokununca sayfanın kendiliğinden yakınlaşması kapatıldı (viewport maximum-scale=1); Android için mobile-web-app-capable eklendi.
   - Güvenli alan: ana ekrana eklenmiş uygulamada (PWA) telefonda işlem formu, detay ve diğer pencereler çentiğin / ana ekran çubuğunun altında kalmaz; sayfa yatay çentik ve alt çubuk payı bırakır; bildirimler (toast) ana ekran çubuğunun üstünde çıkar.
   - Metrik doğrulaması: 40 işlemlik örnekle Net R, WR, BE oranı, başabaş WR, beklenti, %95 aralık, son 20 / önceki 20, Profit Factor, ort. kazanç / kayıp, Max DD, Recovery Factor, Long / Short, parite ve gün performansı elle hesaplananla birebir aynı.
+  - Sonuç girişi: işaret sayıyla aynı boyutta ve bitişik ("−2"), "R" sayıyla aynı boyutta ve hizada (soluk), 4px aralıkla; değer tek parça okunur.
