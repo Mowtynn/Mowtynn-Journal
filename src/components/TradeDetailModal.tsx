@@ -1,7 +1,10 @@
+import { saveBlob, dataUrlToBlob, waitForPaint } from "../lib/download";
+import { fileSlug } from "../utils/exportTrades";
+import { EASE } from '../lib/motion';
 import { MODAL_BACKDROP, MODAL_PANEL } from '../lib/motion';
 
 /** İşlemler arası geçiş eğrisi: expo'dan daha yumuşak başlayan, uzun süzülen bir yavaşlama */
-const NAV_EASE: [number, number, number, number] = [0.16, 1, 0.3, 1];
+
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, animate } from "motion/react";
@@ -123,7 +126,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
       
       // Wait a moment for DOM to update with isExporting classes and base64 image
       // Ultimate Optimization: Use double requestAnimationFrame to wait for the exact moment the browser paints the new layout, 0ms idle time.
-      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      await waitForPaint();
       // Görsel kütüphanesi yalnızca indirme anında yüklenir (açılış paketinde yok)
       const htmlToImage = await import("html-to-image");
       const dataUrl = await htmlToImage.toPng(contentRef.current, {
@@ -139,13 +142,8 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
         }
       });
       
-      const link = document.createElement("a");
-      link.href = dataUrl;
       const dateStr = currentTrade?.createdAt ? nyDateKey(currentTrade.createdAt) : 'export';
-      link.download = `${(currentTrade?.asset || 'Trade').replace('/', '_')}_${dateStr}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      await saveBlob(dataUrlToBlob(dataUrl), `${fileSlug(currentTrade?.asset || 'Trade')}_${dateStr}.png`);
     } catch (error) {
       console.error("Görsel oluşturulurken hata:", error);
       toast.error("Görsel oluşturulamadı. Harici URL'den gelen görseller (CORS) buna sebep olabilir.");
@@ -199,9 +197,9 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
     // hızlı bir solmayla yerine oturur (kademesiz, ~0.2 sn): art arda ok tuşuyla gezerken bile takılmaz,
     // her basış önceki animasyonu keser. Sayaç yeni numarayı yönüyle getirir.
     const controls = [
-      bodyRef.current && animate(bodyRef.current, { opacity: [0.35, 1], x: [dir * 18, 0] }, { duration: 0.22, ease: NAV_EASE }),
-      headInfoRef.current && animate(headInfoRef.current, { opacity: [0.35, 1], x: [dir * 10, 0] }, { duration: 0.2, ease: NAV_EASE }),
-      counterRef.current && animate(counterRef.current, { opacity: [0, 1], y: [dir * 6, 0] }, { duration: 0.18, ease: NAV_EASE }),
+      bodyRef.current && animate(bodyRef.current, { opacity: [0.35, 1], x: [dir * 18, 0] }, { duration: 0.22, ease: EASE }),
+      headInfoRef.current && animate(headInfoRef.current, { opacity: [0.35, 1], x: [dir * 10, 0] }, { duration: 0.2, ease: EASE }),
+      counterRef.current && animate(counterRef.current, { opacity: [0, 1], y: [dir * 6, 0] }, { duration: 0.18, ease: EASE }),
     ];
     return () => controls.forEach((c) => c && c.stop());
   }, [currentTrade?.id]);

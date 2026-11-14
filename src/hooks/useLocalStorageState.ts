@@ -33,6 +33,16 @@ export function useLocalStorageState<T>(
       }
     } catch (err) {
       console.error(`Failed to load ${key} from localStorage:`, err);
+      // Okunamayan ham veriyi yedekle; sonraki ilk yazma onu geri dönülmez şekilde ezmesin.
+      try {
+        const raw = localStorage.getItem(key);
+        if (raw && !localStorage.getItem(`${key}__corrupt_backup`)) {
+          localStorage.setItem(`${key}__corrupt_backup`, raw);
+          setTimeout(() => toast.error('Yerel verinin bir kısmı okunamadı; ham kopyası yedeklendi.'), 0);
+        }
+      } catch {
+        /* yedekleme de başarısızsa yapacak bir şey yok */
+      }
     }
     return defaultValue;
   });

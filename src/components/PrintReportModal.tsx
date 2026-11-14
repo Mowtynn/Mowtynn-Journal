@@ -10,6 +10,8 @@ import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { nyWallDate, nyNow } from '../lib/tradingTime';
 import { breakevenWinRateOf } from '../lib/stats';
 import { formatR } from '../lib/format';
+import { fileSlug } from '../utils/exportTrades';
+import { saveBlob, dataUrlToBlob, waitForPaint } from '../lib/download';
 
 
 
@@ -30,6 +32,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
 }) => {
   useBodyScrollLock(isOpen);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
 
   // Preserve displayed state so that content remains intact during exit animation when props are cleared
@@ -94,39 +97,60 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
    * Gerçek PDF: rapor ayrı bir pencerede uygulamanın stilleriyle açılır ve tarayıcının yazdırma penceresi
    * gelir ("PDF olarak kaydet"). Metin seçilebilir/aranabilir kalır, uzun tablolar sayfalara bölünür.
    */
-  const handlePrintPdf = () => {
+  const handlePrintPdf = async () => {
     const node = reportRef.current;
-    if (!node) return;
-    const w = window.open('', '_blank', 'width=1200,height=900');
-    if (!w) {
-      toast.error('Açılır pencere engellendi. Bu site için açılır pencerelere izin verip tekrar dene.');
-      return;
-    }
-    const esc = (v: string) => v.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] as string);
-    const styles = Array.from(document.querySelectorAll('link[rel="stylesheet"], style')).map((n) => n.outerHTML).join('\n');
-    w.document.open();
-    w.document.write(`<!doctype html><html lang="tr" class="${esc(document.documentElement.className)}"><head><meta charset="utf-8"><title>${esc(activeTitle)} · İşlem Raporu</title><base href="${esc(window.location.origin)}/">${styles}<style>
-      @page { size: A4 landscape; margin: 10mm; }
-      html, body { background: #09090b !important; margin: 0; }
-      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      #print-report-root { min-width: 0 !important; overflow: visible !important; }
-      #print-report-root * { overflow: visible !important; }
-      tr { break-inside: avoid; }
-      thead { display: table-header-group; }
-      .no-print { display: none !important; }
-    </style></head><body class="${esc(document.body.className)}">${node.outerHTML}</body></html>`);
-    w.document.close();
-    let printed = false;
-    const go = () => {
-      if (printed || w.closed) return;
-      printed = true;
-      w.focus();
-      w.print();
+    if (!node || isPrinting) return;
+    setIsPrinting(true);
+    // Gizli çerçeve: açılır pencere engelleyicisine takılmaz, ana ekrana eklenmiş uygulamada (PWA) da çalışır.
+    // Genişlik A4 yatay sayfa genişliği: rapor masaüstü düzeniyle (4 sütun kart) basılır.
+    const frame = document.createElement('iframe');
+    frame.setAttribute('aria-hidden', 'true');
+    frame.tabIndex = -1;
+    frame.style.cssText = 'position:fixed;left:-10000px;top:0;width:1123px;height:794px;border:0;opacity:0;pointer-events:none;';
+    document.body.appendChild(frame);
+    let cleaned = false;
+    const cleanup = () => {
+      if (cleaned) return;
+      cleaned = true;
+      setIsPrinting(false);
+      window.setTimeout(() => frame.remove(), 500);
     };
-    w.addEventListener('afterprint', () => w.close());
-    // Stiller ve yazı tipi yüklenince yazdır; yükleme olayı gelmezse kısa bir beklemeyle
-    w.addEventListener('load', () => w.setTimeout(go, 250));
-    window.setTimeout(go, 1500);
+    try {
+      const doc = frame.contentDocument;
+      const win = frame.contentWindow;
+      if (!doc || !win) throw new Error('frame');
+      const esc = (v: string) => v.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] as string);
+      const styles = Array.from(document.querySelectorAll('link[rel="stylesheet"], style')).map((n) => n.outerHTML).join('\n');
+      doc.open();
+      doc.write(`<!doctype html><html lang="tr" class="${esc(document.documentElement.className)}"><head><meta charset="utf-8"><title>${esc(activeTitle)} · İşlem Raporu</title><base href="${esc(window.location.origin)}/">${styles}<style>
+        @page { size: A4 landscape; margin: 10mm; }
+        html, body { background: #09090b !important; margin: 0; }
+        body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        #print-report-root { min-width: 0 !important; overflow: visible !important; }
+        #print-report-root * { overflow: visible !important; }
+        tr { break-inside: avoid; }
+        thead { display: table-header-group; }
+        .no-print { display: none !important; }
+      </style></head><body class="${esc(document.body.className)}">${node.outerHTML}</body></html>`);
+      doc.close();
+      // Stil dosyaları ve yazı tipi yüklenmeden basılırsa rapor stilsiz çıkar: hepsini bekle (en fazla 4 sn)
+      const links = Array.from(doc.querySelectorAll('link[rel="stylesheet"]')) as HTMLLinkElement[];
+      const loaded = Promise.all(
+        links.map((l) => (l.sheet ? Promise.resolve() : new Promise<void>((r) => { l.addEventListener('load', () => r(), { once: true }); l.addEventListener('error', () => r(), { once: true }); }))),
+      ).then(() => (doc.fonts?.ready ? doc.fonts.ready.then(() => undefined) : undefined));
+      await Promise.race([loaded, new Promise((r) => window.setTimeout(r, 4000))]);
+      await new Promise((r) => window.setTimeout(r, 120));
+      win.addEventListener('afterprint', cleanup, { once: true });
+      win.focus();
+      win.print();
+      // afterprint gelmeyen tarayıcılar için güvenlik: çerçeve en geç 1 dk sonra kaldırılır
+      window.setTimeout(cleanup, 60000);
+      // print() bazı tarayıcılarda engellemez; düğme hemen yeniden kullanılabilir olsun
+      window.setTimeout(() => setIsPrinting(false), 1500);
+    } catch {
+      cleanup();
+      toast.error('PDF hazırlanamadı. Sayfayı yenileyip tekrar dene.');
+    }
   };
 
   const handleDownloadImage = async () => {
@@ -135,7 +159,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
       setIsGenerating(true);
       // Wait a moment for DOM to update with isGenerating classes and base64 images
       // Ultimate Optimization: Use double requestAnimationFrame to wait for the exact moment the browser paints the new layout, 0ms idle time.
-      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      await waitForPaint();
       // Görsel kütüphanesi yalnızca indirme anında yüklenir (açılış paketinde yok)
       const htmlToImage = await import("html-to-image");
       const dataUrl = await htmlToImage.toPng(reportRef.current, {
@@ -150,10 +174,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
         }
       });
       
-      const link = document.createElement("a");
-      link.download = `${activeTitle.toLowerCase().replace(/\s+/g, '_')}_islem_raporu.png`;
-      link.href = dataUrl;
-      link.click();
+      await saveBlob(dataUrlToBlob(dataUrl), `${fileSlug(activeTitle)}_islem_raporu.png`);
       toast.success("Rapor başarıyla indirildi.");
     } catch (error) {
       console.error('Failed to generate image:', error);
@@ -215,12 +236,12 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
             </h2>
             <div className="flex items-center gap-2 shrink-0">
               <button
-                onClick={handlePrintPdf}
+                onClick={() => void handlePrintPdf()}
                 aria-label="PDF olarak kaydet / yazdır"
-                disabled={isGenerating || activeTrades.length === 0}
+                disabled={isGenerating || isPrinting || activeTrades.length === 0}
                 className="flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl border transition-colors cursor-pointer shrink-0 text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 border-blue-500/20 disabled:opacity-50 text-[11px] font-bold uppercase tracking-wide"
               >
-                <Printer size={15} /> PDF
+                {isPrinting ? <Loader2 size={15} className="animate-spin" /> : <Printer size={15} />} PDF
               </button>
               <button
                 onClick={handleDownloadImage}
@@ -366,22 +387,22 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                               {/* Direction (Yön) */}
                               <td className="py-2.5 px-2 text-center whitespace-nowrap">
                                 {trade.type === 'LONG' ? (
-                                  <span className="inline-flex items-center justify-center min-w-[50px] px-2.5 py-0.5 rounded-md border border-emerald-500/20 bg-emerald-500/10 text-[10px] font-black text-emerald-400 uppercase tracking-wider font-sans">LONG</span>
+                                  <span className="whitespace-nowrap inline-flex items-center justify-center min-w-[50px] px-2.5 py-0.5 rounded-md border border-emerald-500/20 bg-emerald-500/10 text-[10px] font-black text-emerald-400 uppercase tracking-wider font-sans">LONG</span>
                                 ) : (
-                                  <span className="inline-flex items-center justify-center min-w-[50px] px-2.5 py-0.5 rounded-md border border-rose-500/20 bg-rose-500/10 text-[10px] font-black text-rose-400 uppercase tracking-wider font-sans">SHORT</span>
+                                  <span className="whitespace-nowrap inline-flex items-center justify-center min-w-[50px] px-2.5 py-0.5 rounded-md border border-rose-500/20 bg-rose-500/10 text-[10px] font-black text-rose-400 uppercase tracking-wider font-sans">SHORT</span>
                                 )}
                               </td>
 
                               {/* Result Status */}
                               <td className="py-2.5 px-2 text-center whitespace-nowrap">
                                 {isWin ? (
-                                  <span className="inline-flex items-center justify-center min-w-[45px] px-2 py-0.5 rounded-md border border-emerald-500/20 bg-emerald-500/10 text-[10px] font-black text-emerald-400 uppercase tracking-wider font-sans">{smartUpper("WIN")}</span>
+                                  <span className="whitespace-nowrap inline-flex items-center justify-center min-w-[45px] px-2 py-0.5 rounded-md border border-emerald-500/20 bg-emerald-500/10 text-[10px] font-black text-emerald-400 uppercase tracking-wider font-sans">{smartUpper("WIN")}</span>
                                 ) : isLoss ? (
-                                  <span className="inline-flex items-center justify-center min-w-[45px] px-2 py-0.5 rounded-md border border-rose-500/20 bg-rose-500/10 text-[10px] font-black text-rose-400 uppercase tracking-wider font-sans">LOSS</span>
+                                  <span className="whitespace-nowrap inline-flex items-center justify-center min-w-[45px] px-2 py-0.5 rounded-md border border-rose-500/20 bg-rose-500/10 text-[10px] font-black text-rose-400 uppercase tracking-wider font-sans">LOSS</span>
                                 ) : isBe ? (
-                                  <span className="inline-flex items-center justify-center min-w-[45px] px-2 py-0.5 rounded-md border border-zinc-500/20 bg-zinc-500/10 text-[10px] font-black text-zinc-400 uppercase tracking-wider font-sans">BE</span>
+                                  <span className="whitespace-nowrap inline-flex items-center justify-center min-w-[45px] px-2 py-0.5 rounded-md border border-zinc-500/20 bg-zinc-500/10 text-[10px] font-black text-zinc-400 uppercase tracking-wider font-sans">BE</span>
                                 ) : (
-                                  <span className="inline-flex items-center justify-center min-w-[45px] px-2 py-0.5 rounded-md border border-blue-500/20 bg-blue-500/10 text-[10px] font-black text-blue-400 uppercase tracking-wider font-sans">{smartUpper("AÇIK")}</span>
+                                  <span className="whitespace-nowrap inline-flex items-center justify-center min-w-[45px] px-2 py-0.5 rounded-md border border-blue-500/20 bg-blue-500/10 text-[10px] font-black text-blue-400 uppercase tracking-wider font-sans">{smartUpper("AÇIK")}</span>
                                 )}
                               </td>
 
@@ -391,7 +412,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                                   const r = typeof trade.rr === 'number' && Number.isFinite(trade.rr) ? trade.rr : 0;
                                   const txt = formatR(r);
                                   const tone = r > 0 ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400' : r < 0 ? 'border-rose-500/20 bg-rose-500/10 text-rose-400' : 'border-zinc-500/20 bg-zinc-500/10 text-zinc-400';
-                                  return <span className={`inline-flex items-center justify-center min-w-[48px] px-2 py-0.5 rounded-md border text-[10px] font-black tracking-wider font-sans ${tone}`}>{txt}</span>;
+                                  return <span className={`whitespace-nowrap inline-flex items-center justify-center min-w-[48px] px-2 py-0.5 rounded-md border text-[10px] font-black tracking-wider font-sans ${tone}`}>{txt}</span>;
                                 })()}
                               </td>
 
@@ -403,7 +424,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                               {/* Platform */}
                               <td className="py-2.5 px-3 text-right text-zinc-400 font-medium uppercase font-sans tracking-wider">
                                 {trade.platform ? (
-                                  <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-md bg-zinc-800/80 border border-zinc-700/60 text-zinc-300 text-[9px] font-bold uppercase font-sans">
+                                  <span className="whitespace-nowrap inline-flex items-center justify-center px-2 py-0.5 rounded-md bg-zinc-800/80 border border-zinc-700/60 text-zinc-300 text-[9px] font-bold uppercase font-sans">
                                     {trade.platform}
                                   </span>
                                 ) : (

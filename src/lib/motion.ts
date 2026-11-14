@@ -30,6 +30,9 @@ export const MODAL_BACKDROP = {
 } as const;
 
 export const MODAL_PANEL = {
+  // Erişilebilirlik: her pencere ekran okuyuculara modal diyalog olarak bildirilir
+  role: 'dialog',
+  'aria-modal': true,
   initial: { opacity: 0, scale: 0.96, y: 16 },
   animate: { opacity: 1, scale: 1, y: 0, transition: { duration: 0.28, ease: EASE } },
   exit: { opacity: 0, scale: 0.97, y: 10, transition: { duration: 0.18, ease: EASE_IN } },
@@ -57,4 +60,10 @@ export const PANE = {
   initial: { opacity: 0, y: 6 },
   animate: { opacity: 1, y: 0, transition: { duration: 0.22, ease: EASE } },
   exit: { opacity: 0, transition: { duration: 0.1, ease: EASE_IN } },
+} as const;
+
+/** Kademeli liste / kart girişi (analiz panoları): tüm panolarda aynı ritim */
+export const ITEM_VARIANTS = {
+  hidden: { opacity: 0, y: 6 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.22, ease: EASE } },
 } as const;

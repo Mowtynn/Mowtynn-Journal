@@ -184,8 +184,11 @@ const AddTradeForm = React.memo(function AddTradeForm({
     };
   }, [asset, type, rrValue, riskDollar]);
 
+  // Çift tıklama / Enter tekrarı aynı işlemi iki kez kaydetmesin
+  const submitLockRef = useRef(false);
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitLockRef.current) return;
 
     const safeAsset = (asset || "").trim();
     const safeNotes = (notes || "").trim();
@@ -278,6 +281,11 @@ const AddTradeForm = React.memo(function AddTradeForm({
         return;
       }
     }
+    submitLockRef.current = true;
+    // Kayıt başarısız olup form açık kalırsa kilit kendiliğinden kalkar
+    window.setTimeout(() => {
+      submitLockRef.current = false;
+    }, 1200);
     onSave(record as any);
   };
 

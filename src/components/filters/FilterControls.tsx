@@ -162,7 +162,7 @@ export const FilterAccordionRow: React.FC<FilterAccordionRowProps> = ({
 
         <div className="flex items-center gap-2 shrink-0 ml-2">
           {badgeCount > 0 ? (
-            <span className="px-2 py-0.5 rounded-full text-[9px] font-sans font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">
+            <span className="whitespace-nowrap px-2 py-0.5 rounded-full text-[9px] font-sans font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">
               {badgeCount} seçili
             </span>
           ) : (

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { prepareTradeExportRows, fitCell, csvCell, rowsToCsv, tradeSummaryRows, prepareJournalExportRows } from '../src/utils/exportTrades';
+import { prepareTradeExportRows, fitCell, csvCell, rowsToCsv, tradeSummaryRows, prepareJournalExportRows, fileSlug, maxDrawdownR } from '../src/utils/exportTrades';
 import { nyInputToTs } from '../src/lib/tradingTime';
 import { trade } from './fixtures';
 
@@ -93,4 +93,33 @@ test('dışa aktarım: süpürülen Asia tarafı yalnızca Reversal işlemlerde,
     trade({ id: 'n1', status: 'WIN', rr: 2, type: 'LONG' }),
   ]) as Record<string, unknown>[];
   assert.deepEqual(rows.map((r) => r['Süpürülen Asia Tarafı']), ['High', 'Low', '-', '-']);
+});
+
+test('CSV: boş alan "-" ve düz sayı metni tırnaklanmaz; formül yine tırnaklanır', () => {
+  assert.equal(csvCell('-'), '"-"');
+  assert.equal(csvCell('-1,5'), '"-1,5"');
+  assert.equal(csvCell('+2'), '"+2"');
+  assert.equal(csvCell('-1+cmd'), '"\'-1+cmd"');
+  assert.equal(csvCell('@SUM(A1)'), '"\'@SUM(A1)"');
+});
+
+test('dosya adı: Türkçe harf / boşluk / işaret güvenli, boş ad "rapor"', () => {
+  assert.equal(fileSlug('Haftalık İşlem Raporu'), 'Haftalik_Islem_Raporu');
+  assert.equal(fileSlug('14 Kasım 2026: Özet/Şube'), '14_Kasim_2026_Ozet_Sube');
+  assert.equal(fileSlug('[3_islem]'), '3_islem');
+  assert.equal(fileSlug('***'), 'rapor');
+});
+
+test('özet sayfası: ortalama kazanç / kayıp, başabaş WR ve maks. düşüş elle hesaplananla aynı', () => {
+  const mk = (i: number, rr: number) => ({ id: `t${i}`, asset: 'EURUSD', type: 'LONG', status: rr > 0 ? 'WIN' : rr < 0 ? 'LOSS' : 'BREAKEVEN', rr, createdAt: 1_790_000_000_000 + i * 3_600_000 }) as any;
+  // Eğri: 2, 1, 0, -1(dip), 2, 2 → zirve 2, dip -1 → MDD 3
+  const trades = [mk(1, 2), mk(2, -1), mk(3, -1), mk(4, -1), mk(5, 3), mk(6, 0)];
+  const rows = Object.fromEntries(tradeSummaryRows(trades).map((r) => [r.Metrik, r.Değer]));
+  assert.equal(rows['Ortalama Kazanç (R)'], 2.5);
+  assert.equal(rows['Ortalama Kayıp (R)'], -1);
+  assert.equal(rows['Maks. Düşüş (R)'], 3);
+  assert.equal(rows['Toplam Net R'], 2);
+  // Başabaş WR = 1/(2.5+1) × (2+3)/6 × 100 = 23.8
+  assert.equal(rows['Başabaş Kazanma Oranı (%)'], 23.8);
+  assert.equal(maxDrawdownR(trades), 3);
 });

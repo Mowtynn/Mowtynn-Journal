@@ -194,11 +194,11 @@ export const RuleSimulatorTab = React.memo(function RuleSimulatorTab({ trades }:
 
       <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-4 space-y-4">
         <div className="flex flex-wrap items-center gap-2">
-          <span className={`px-2 py-0.5 rounded-lg border text-[10px] font-bold uppercase ${v.cls}`}>{v.label}</span>
+          <span className={`whitespace-nowrap px-2 py-0.5 rounded-lg border text-[10px] font-bold uppercase ${v.cls}`}>{v.label}</span>
           {res.taken.n > 0 && signalStrength(res.taken) === 'EARLY' && res.taken.expectancy > 0 && (
             <span className="text-[10px] text-zinc-500">Kanıt için en az {EDGE_PROOF_MIN} işlem ve sıfırın üstünde güven aralığı gerekir.</span>
           )}
-          <span className={`px-2 py-0.5 rounded-lg border text-[10px] font-bold uppercase ${half.cls}`}>{half.label}</span>
+          <span className={`whitespace-nowrap px-2 py-0.5 rounded-lg border text-[10px] font-bold uppercase ${half.cls}`}>{half.label}</span>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2">

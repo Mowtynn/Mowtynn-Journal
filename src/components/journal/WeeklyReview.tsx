@@ -151,7 +151,7 @@ export const WeeklyReview = React.memo(function WeeklyReview({
             </div>
             <div className={tile}>
               <p className="heading-3">Kazanma oranı</p>
-              <p className="text-lg font-bold tabular-nums leading-tight text-blue-300">%{t.winRate.toFixed(0)}</p>
+              <p className="text-lg font-bold tabular-nums leading-tight text-blue-300">{t.n ? `%${t.winRate.toFixed(0)}` : "—"}</p>
               <p className="text-[10px] text-zinc-500 tabular-nums truncate">{p.n > 0 ? `geçen hafta %${p.winRate.toFixed(0)}` : "—"}</p>
             </div>
             <div className={tile}>

@@ -1,4 +1,4 @@
-import { EASE, SPRING, MODAL_BACKDROP, MODAL_PANEL, POPOVER } from '../lib/motion';
+import { EASE, SPRING, MODAL_BACKDROP, MODAL_PANEL, POPOVER, PANE } from '../lib/motion';
 import { smartUpper } from '../constants/constants';
 import { nyWallDate } from '../lib/tradingTime';
 import React, { useState, memo, useMemo, useRef, useLayoutEffect } from 'react';
@@ -33,12 +33,7 @@ interface NotesViewProps {
 }
 
 // Not ekranları (liste / okuma / düzenleme) arası geçiş: eski ekran önce yumuşakça çıkar, yenisi hafif yükselerek girer.
-const NOTE_EASE = EASE;
-const noteViewMotion = {
-  initial: { opacity: 0, y: 14, scale: 0.985 },
-  animate: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.25, ease: NOTE_EASE } },
-  exit: { opacity: 0, y: -8, scale: 0.99, transition: { duration: 0.15, ease: NOTE_EASE } },
-};
+const noteViewMotion = PANE;
 
 const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: NotesViewProps) {
   const [activeNote, setActiveNote] = useState<Note | null>(null);
@@ -286,7 +281,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                         {activeNote.title}
                       </h2>
                       {activeNote.isPinned && (
-                        <span className="px-2 py-0.5 rounded-full text-[9px] font-sans font-bold toggle-item-brand border border-blue-500/30 flex items-center gap-1 shrink-0">
+                        <span className="whitespace-nowrap px-2 py-0.5 rounded-full text-[9px] font-sans font-bold toggle-item-brand border border-blue-500/30 flex items-center gap-1 shrink-0">
                           <Pin size={10} className="fill-current" />
                           SABİTLENDİ
                         </span>
@@ -357,7 +352,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                       <h2 className="text-sm font-bold uppercase tracking-wide text-zinc-100">
                         Konsept & Notlar
                       </h2>
-                      <span className="px-2 py-0.5 rounded-md text-[9px] font-sans font-bold toggle-item-brand border border-blue-500/20">
+                      <span className="whitespace-nowrap px-2 py-0.5 rounded-md text-[9px] font-sans font-bold toggle-item-brand border border-blue-500/20">
                         {notes.length} NOT
                       </span>
                     </div>
@@ -643,7 +638,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                     key={note.id}
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.25, ease: NOTE_EASE, delay: Math.min(noteIdx, 8) * 0.03 }}
+                    transition={{ duration: 0.22, ease: EASE, delay: Math.min(noteIdx, 8) * 0.03 }}
                     onClick={() => handleOpenNote(note)}
                     className={`group relative bg-zinc-950/60 border ${
                       note.isPinned 

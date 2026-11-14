@@ -108,7 +108,7 @@ export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], o
        cells.push(
          <div 
            key={`empty-${i}`} 
-           className="bg-zinc-900 border border-zinc-900/60 rounded-xl min-h-[64px] sm:min-h-[88px] opacity-40 pointer-events-none"
+           className="rounded-[10px] sm:rounded-xl min-h-[60px] sm:min-h-[88px] sm:bg-zinc-900 sm:border sm:border-zinc-900/60 sm:opacity-40 pointer-events-none"
          />
        );
     }
@@ -144,13 +144,13 @@ export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], o
         <div 
            key={`day-${day}`} 
            onClick={() => stat ? setSelectedDateStr(dateStr) : null}
-           className={`border rounded-xl p-1 sm:p-2.5 min-h-[64px] sm:min-h-[88px] flex flex-col justify-between transition-ui duration-200 ease-out group relative ${cardStyle}`}
+           className={`min-w-0 border rounded-[10px] sm:rounded-xl p-1.5 sm:p-2.5 min-h-[60px] sm:min-h-[88px] flex flex-col justify-between transition-ui duration-200 ease-out group relative ${cardStyle}`}
         >
           {/* Top Row: Day Number & Trade Count */}
           <div className="flex items-start justify-between">
-            <span className={`font-sans text-[10px] sm:text-xs leading-none transition-ui ${
+            <span className={`whitespace-nowrap font-sans text-[10px] sm:text-xs leading-none transition-ui ${
               isToday 
-                ? 'toggle-item-brand border border-blue-500/40 font-black px-1.5 py-0.5 rounded-lg shadow-xs' 
+                ? 'toggle-item-brand border border-blue-500/40 font-black px-1 sm:px-1.5 py-0.5 rounded-md sm:rounded-lg shadow-xs' 
                 : stat ? 'text-zinc-300 font-bold' : 'text-zinc-600 font-medium'
             }`}>
               {day}
@@ -166,20 +166,20 @@ export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], o
 
           {/* Bottom Row: Trade Statistics */}
           {stat ? (
-            <div className="mt-auto flex flex-col items-end text-right overflow-hidden">
+            <div className="mt-auto flex flex-col items-center sm:items-end text-center sm:text-right min-w-0 overflow-hidden">
                {/* Telefonda hücre dar: tek ondalık; masaüstünde büyük ve okunur, "R" aynı taban çizgisinde */}
-               <div className={`max-w-full flex items-baseline justify-end gap-0.5 font-sans font-extrabold text-[10px] sm:text-base lg:text-lg leading-none ${primaryColor} tracking-tight tabular-nums truncate`}>
+               <div className={`max-w-full flex items-baseline justify-center sm:justify-end gap-0.5 font-sans font-extrabold text-[11px] sm:text-base lg:text-lg leading-none ${primaryColor} tracking-tight tabular-nums truncate`}>
                  <span className="sm:hidden">{rsigned(stat.rr, 1)}</span>
                  <span className="hidden sm:inline">{rsigned(stat.rr)}</span>
                  <span className="hidden sm:inline text-[11px] font-bold opacity-70">R</span>
                </div>
                {/* Telefonda işlem sayısı üstte yer bulamadığı için burada, kısa biçimde */}
-               <div className={`sm:hidden font-sans text-[8.5px] font-medium mt-0.5 ${secondaryColor} truncate leading-none`}>
+               <div className={`sm:hidden font-sans text-[9px] font-semibold mt-1 ${secondaryColor} truncate leading-none`}>
                  {stat.count}×
                </div>
             </div>
           ) : (
-            <div className="mt-auto text-right text-[10px] text-zinc-800/80 font-sans select-none pointer-events-none leading-none">—</div>
+            <div className="hidden sm:block mt-auto text-right text-[10px] text-zinc-800/80 font-sans select-none pointer-events-none leading-none">—</div>
           )}
         </div>
       );
@@ -192,7 +192,7 @@ export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], o
          cells.push(
            <div 
              key={`empty-end-${i}`} 
-             className="bg-zinc-900 border border-zinc-900/60 rounded-xl min-h-[64px] sm:min-h-[88px] opacity-40 pointer-events-none"
+             className="rounded-[10px] sm:rounded-xl min-h-[60px] sm:min-h-[88px] sm:bg-zinc-900 sm:border sm:border-zinc-900/60 sm:opacity-40 pointer-events-none"
            />
          );
        }
@@ -205,11 +205,11 @@ export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], o
 
   return (
     <div className="w-full flex flex-col gap-3">
-       <div className="flex-1 flex flex-col bg-zinc-900/70 border border-zinc-700/50 /80 rounded-2xl p-3 sm:p-5 shadow-xl">
+       <div className="flex-1 flex flex-col">
           {/* Header Controls & Summary Stats */}
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-4">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 sm:gap-3 mb-3 sm:mb-4">
              {/* Navigation */}
-             <div className="flex items-center gap-2">
+             <div className="flex items-center gap-2 w-full lg:w-auto">
                <button 
                  type="button"
                  onClick={goToToday}
@@ -217,7 +217,7 @@ export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], o
                >
                  Bugün
                </button>
-               <div className="flex items-center gap-1.5 bg-zinc-900 border border-zinc-700/50 rounded-xl p-1 shadow-xs">
+               <div className="flex-1 lg:flex-none flex items-center justify-between gap-1.5 bg-zinc-900 border border-zinc-700/50 rounded-xl p-1 shadow-xs">
                  <button aria-label="Önceki" 
                    type="button"
                    onClick={prevMonth} 
@@ -239,9 +239,9 @@ export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], o
              </div>
              
              {/* Monthly Summary Badges */}
-             <div className="flex flex-wrap items-center gap-2.5 text-xs font-sans">
+             <div className="grid grid-cols-2 lg:flex lg:flex-wrap items-center gap-2 sm:gap-2.5 text-xs font-sans">
                {/* Total PnL / RR */}
-               <div className="flex items-center gap-2 px-3 py-1.5 bg-zinc-900/80 border border-zinc-800/80 rounded-xl shadow-xs overflow-hidden">
+               <div className="flex items-center justify-center lg:justify-start gap-2 px-3 py-1.5 bg-zinc-900/80 border border-zinc-800/80 rounded-xl shadow-xs overflow-hidden">
                  <div className="flex items-center gap-2">
                    <span className="text-zinc-500 font-bold uppercase text-[10px] tracking-wider">{smartUpper("Aylık R:")}</span>
                    <span className={`font-black font-sans text-xs tabular-nums ${monthlyStats.totalRr > 1e-9 ? 'text-emerald-400' : monthlyStats.totalRr < -1e-9 ? 'text-rose-400' : 'text-zinc-400'}`}>
@@ -251,7 +251,7 @@ export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], o
                </div>
 
                {/* Trading Days */}
-               <div className="flex items-center gap-2 px-3 py-1.5 bg-zinc-900/80 border border-zinc-800/80 rounded-xl shadow-xs">
+               <div className="flex items-center justify-center lg:justify-start gap-2 px-3 py-1.5 bg-zinc-900/80 border border-zinc-800/80 rounded-xl shadow-xs">
                  <span className="text-zinc-500 font-bold uppercase text-[10px] tracking-wider">İşlem Günü:</span>
                  <span className="font-extrabold text-zinc-200 font-sans text-xs">{monthlyStats.tradingDays} Gün</span>
                </div>
@@ -259,7 +259,7 @@ export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], o
           </div>
           
           {/* Calendar Grid Container */}
-          <div className="w-full rounded-2xl bg-zinc-950/80 p-2 sm:p-3 border border-zinc-800/80 shadow-2xl">
+          <div className="w-full rounded-xl sm:rounded-2xl bg-zinc-950/80 p-1.5 sm:p-3 border border-zinc-800/80 shadow-2xl">
              {/* Days of week header */}
              <div className="grid grid-cols-7 mb-1.5 pb-1.5 border-b border-zinc-800/60">
                {DAYS_OF_WEEK.map(day => (
@@ -269,7 +269,7 @@ export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], o
                ))}
              </div>
              {/* Cells */}
-             <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
+             <div className="grid grid-cols-7 gap-1 sm:gap-1.5 [&>*]:min-w-0">
                {renderCells()}
              </div>
           </div>

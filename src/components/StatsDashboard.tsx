@@ -1,4 +1,4 @@
-import { EASE } from '../lib/motion';
+import { ITEM_VARIANTS } from '../lib/motion';
 import { MIN_SAMPLE, EDGE_PROOF_MIN } from '../lib/sampleSize';
 import { breakevenWinRate } from '../lib/stats';
 import { formatR, rnum, rsigned } from '../lib/format';
@@ -44,18 +44,11 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, edge, drift }
     hidden: { opacity: 0 },
     show: { 
       opacity: 1,
-      transition: { staggerChildren: 0.015 }
+      transition: { staggerChildren: 0.03 }
     }
   };
 
-  const itemVariants = {
-    hidden: { opacity: 0, y: 4 },
-    show: { 
-      opacity: 1, 
-      y: 0,
-      transition: { duration: 0.12, ease: EASE }
-    }
-  };
+  const itemVariants = ITEM_VARIANTS;
 
   return (
     <motion.div 
@@ -322,7 +315,7 @@ function EdgePanel({ edge, expectancy, drift }: { edge?: EdgeStats; expectancy: 
             <span className={`text-lg sm:text-xl font-bold tabular-nums ${expectancy > 0 ? 'text-emerald-400' : expectancy < 0 ? 'text-rose-400' : 'text-zinc-300'}`}>{rsigned(expectancy)}</span>
             <span className="text-[10px] text-zinc-500">R/işlem</span>
           </span>
-          <span className={`px-2 py-0.5 rounded-lg border text-[10px] font-bold uppercase shrink-0 ${v.tone}`}>{v.label}</span>
+          <span className={`whitespace-nowrap px-2 py-0.5 rounded-lg border text-[10px] font-bold uppercase shrink-0 ${v.tone}`}>{v.label}</span>
         </div>
         {/* Kanıt sayacı çubuğun yanında: üst satır hiçbir genişlikte ikinci satıra taşıp kartı uzatmaz */}
         <div className="flex items-center gap-2">

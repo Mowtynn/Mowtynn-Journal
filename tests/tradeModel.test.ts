@@ -83,3 +83,11 @@ test('görsel referansı (fsimg:) kabul edilir; bozuk referans düşer', () => {
   assert.equal(normalizeTrade({ ...trade({ id: 'g', status: 'WIN', rr: 1 }), screenshot: 'fsimg:img_abc_123' } as any).screenshot, 'fsimg:img_abc_123');
   assert.equal(normalizeTrade({ ...trade({ id: 'h', status: 'WIN', rr: 1 }), screenshot: 'fsimg:../x y' } as any).screenshot, null);
 });
+
+test('0R kaydedilmiş WIN / LOSS başabaş sayılır (ortalama kazanç / kaybı bozmaz)', () => {
+  const w = normalizeTrade({ id: 'z1', asset: 'EURUSD', type: 'LONG', status: 'WIN', rr: 0, createdAt: 1 } as any);
+  const l = normalizeTrade({ id: 'z2', asset: 'EURUSD', type: 'LONG', status: 'LOSS', rr: 0.04, createdAt: 1 } as any);
+  assert.equal(w.status, 'BREAKEVEN');
+  assert.equal(l.status, 'BREAKEVEN');
+  assert.ok(Object.is(l.rr, 0));
+});

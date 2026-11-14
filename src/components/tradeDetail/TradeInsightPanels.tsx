@@ -38,7 +38,7 @@ export function ResultPanel({ trade, realizedR }: { trade: Trade; realizedR: num
       <div className="min-w-0 flex flex-col items-end gap-1.5 text-right">
         <span className="flex items-center justify-end gap-1.5 min-w-0 max-w-full text-xs font-bold text-zinc-200">
           {accountName && <span className="truncate min-w-0">{accountName}</span>}
-          <span className={`shrink-0 text-[9px] px-1.5 py-0.5 rounded-md font-bold uppercase border ${ACCOUNT_CATEGORY_BADGE[cat]}`}>{stage}</span>
+          <span className={`whitespace-nowrap shrink-0 text-[9px] px-1.5 py-0.5 rounded-md font-bold uppercase border ${ACCOUNT_CATEGORY_BADGE[cat]}`}>{stage}</span>
         </span>
         {(hasRisk || dollars !== null) && (
           <span className="text-[11px] text-zinc-400 tabular-nums">
@@ -84,7 +84,7 @@ export function SetupHistoryPanel({ insight }: { insight: TradeInsight }) {
                 {e.n > 1 ? ` · GA ${rnum(e.expLo)} – ${rnum(e.expHi)}` : ''}
               </div>
             </div>
-            <span className={`shrink-0 px-2 py-1 rounded-lg border text-[10px] font-bold uppercase ${v.cls}`}>{v.label}</span>
+            <span className={`whitespace-nowrap shrink-0 px-2 py-1 rounded-lg border text-[10px] font-bold uppercase ${v.cls}`}>{v.label}</span>
           </div>
         )}
       </div>

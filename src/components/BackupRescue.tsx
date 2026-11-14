@@ -1,3 +1,4 @@
+import { saveBlob } from '../lib/download';
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { smartUpper } from '../constants/constants';
 import { Download, Upload, Database, AlertTriangle, Cloud, X, CheckCircle2, Pencil, ChevronDown } from 'lucide-react';
@@ -149,21 +150,11 @@ const BackupRescue = React.memo(function BackupRescue({
 
       const jsonStr = JSON.stringify(payload, null, 2);
       const blob = new Blob([jsonStr], { type: 'application/json' });
-      const downloadUrl = URL.createObjectURL(blob);
-      const downloadAnchor = document.createElement('a');
-      
       const now = nyNow();
       const dateStr = localDateKey(now);
       const timeStr = now.toTimeString().slice(0, 5).replace(':', '-');
       const fileName = `trading_journal_backup_${dateStr}_${timeStr}_[${trades.length}_trades]_[${notes.length}_notes]_[${journals.length}_journals].json`;
-      
-      downloadAnchor.setAttribute('href', downloadUrl);
-      downloadAnchor.setAttribute('download', fileName);
-      document.body.appendChild(downloadAnchor);
-      downloadAnchor.click();
-      downloadAnchor.remove();
-      // İndirme tıklamadan sonra başlar; adres hemen iptal edilirse bazı tarayıcılarda dosya boş iner
-      window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+      await saveBlob(blob, fileName);
 
       if (missingImages > 0) {
         toast.error(
@@ -548,10 +539,10 @@ function IntegrityPanel({ trades, onEditTrade }: { trades: Trade[]; onEditTrade?
                       <span className="text-xs font-bold text-zinc-200 truncate">{t.asset || 'Bilinmiyor'}</span>
                       <span className="text-[10px] text-zinc-500 tabular-nums">{nyWallDate(t.createdAt).toLocaleDateString('tr-TR')}</span>
                       <span className="text-[9px] font-bold uppercase text-zinc-500 truncate">{t.platform || ACCOUNT_CATEGORY_LABELS[getTradeAccountCategory(t)]}</span>
-                      {t.quickEntry && <span className="px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase border border-amber-500/30 bg-amber-500/10 text-amber-300">{smartUpper("Hızlı")}</span>}
+                      {t.quickEntry && <span className="whitespace-nowrap px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase border border-amber-500/30 bg-amber-500/10 text-amber-300">{smartUpper("Hızlı")}</span>}
                     </div>
                     <div className="flex-1 min-w-0 flex flex-wrap gap-1">
-                      {problem && <span className="px-1.5 py-0.5 rounded-md text-[10px] font-bold border border-rose-500/30 bg-rose-500/10 text-rose-300">{problem}</span>}
+                      {problem && <span className="whitespace-nowrap px-1.5 py-0.5 rounded-md text-[10px] font-bold border border-rose-500/30 bg-rose-500/10 text-rose-300">{problem}</span>}
                       {missing.map((m) => (
                         <span key={m} className="px-1.5 py-0.5 rounded-md text-[10px] font-bold border border-zinc-700 bg-zinc-900 text-zinc-400">{m}</span>
                       ))}

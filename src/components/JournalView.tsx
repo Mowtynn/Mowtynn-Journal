@@ -1,4 +1,4 @@
-import { EASE, MODAL_BACKDROP, MODAL_PANEL, POPOVER } from '../lib/motion';
+import { EASE, MODAL_BACKDROP, MODAL_PANEL, POPOVER, PANE } from '../lib/motion';
 import { smartUpper } from '../constants/constants';
 import React, { useState, memo, useMemo } from 'react';
 import { createPortal } from 'react-dom';
@@ -60,17 +60,8 @@ const dateFromKey = (key: string) => {
 };
 
 // Günlük sağ panel geçişi: kayıt sağdan kayarak açılır, kapanırken hafifçe sola çekilip solar.
-const JOURNAL_EASE = EASE;
-const journalPaneMotion = {
-  initial: { opacity: 0, x: 28, scale: 0.99 },
-  animate: { opacity: 1, x: 0, scale: 1, transition: { duration: 0.3, ease: JOURNAL_EASE } },
-  exit: { opacity: 0, x: -16, scale: 0.995, transition: { duration: 0.15, ease: JOURNAL_EASE } },
-};
-const journalEmptyMotion = {
-  initial: { opacity: 0, y: 8 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.25, ease: JOURNAL_EASE } },
-  exit: { opacity: 0, y: -6, transition: { duration: 0.12, ease: JOURNAL_EASE } },
-};
+const journalPaneMotion = PANE;
+const journalEmptyMotion = PANE;
 
 const moodIcons = {
   terrible: <Activity size={15} className="text-rose-400" />,
@@ -238,7 +229,7 @@ const JournalView = memo(function JournalView({ entries: allEntries, trades = []
                   <div className="min-w-0">
                     <span className="text-[11px] font-bold text-zinc-200 font-sans tracking-wider block truncate">{trade.asset || 'Bilinmiyor'}</span>
                   </div>
-                  <span className={`text-[9px] px-1.5 py-0.5 rounded-md border font-sans font-bold shrink-0 ${
+                  <span className={`whitespace-nowrap text-[9px] px-1.5 py-0.5 rounded-md border font-sans font-bold shrink-0 ${
                     trade.type === 'LONG' 
                       ? 'toggle-item-win' 
                       : 'toggle-item-loss'
@@ -405,7 +396,7 @@ const JournalView = memo(function JournalView({ entries: allEntries, trades = []
                 <h2 className="text-sm font-bold uppercase tracking-wide text-zinc-100 leading-none">
                   GÜNLÜK
                 </h2>
-                <span className="px-1.5 py-0.2 rounded-md text-[9px] font-sans font-bold toggle-item-brand border border-blue-500/20">
+                <span className="whitespace-nowrap px-1.5 py-0.2 rounded-md text-[9px] font-sans font-bold toggle-item-brand border border-blue-500/20">
                   {entries.length}
                 </span>
               </div>

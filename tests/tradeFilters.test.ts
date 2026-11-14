@@ -86,3 +86,9 @@ test('türetilmiş boyut filtreleri: sweep saati; eski kayıtlı kaldırılmış
   const clean = sanitizeExtraFilters({ dims: { management: ['Kısmi Kâr'], plannedRR: ['1:4+'], afterExitTp: ['x'], rangeSize: ['Dar (< 0.8×)'] } });
   assert.deepEqual(clean.dims, {});
 });
+
+test('durumu ya da yönü bozuk kayıt analizlere girmez (net R ile WR / Long-Short toplamları tutarlı kalır)', () => {
+  const badStatus = trade({ status: 'OPEN' as any, rr: 5, accountCategory: 'CHALLENGE', createdAt: NOW - DAY });
+  const badType = trade({ type: 'X' as any, status: 'WIN', rr: 2, accountCategory: 'CHALLENGE', createdAt: NOW - DAY });
+  assert.deepEqual(ids(applyGlobalFilters([...all, badStatus, badType], none, NOW)), ids([p1, p2, fu]));
+});

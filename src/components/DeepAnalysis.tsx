@@ -1,4 +1,4 @@
-import { EASE, SPRING } from '../lib/motion';
+import { EASE, SPRING, ITEM_VARIANTS } from '../lib/motion';
 import { byEntryTime } from '../lib/tradeModel';
 import React, { Suspense, useState, useMemo, useEffect } from "react";
 import { nyIsoWeekKey } from "../lib/tradingTime";
@@ -205,18 +205,11 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
     hidden: { opacity: 0 },
     show: { 
       opacity: 1,
-      transition: { staggerChildren: 0.05 }
+      transition: { staggerChildren: 0.03 }
     }
   };
 
-  const itemVariants = {
-    hidden: { opacity: 0, y: 8 },
-    show: { 
-      opacity: 1, 
-      y: 0,
-      transition: { duration: 0.3, ease: EASE }
-    }
-  };
+  const itemVariants = ITEM_VARIANTS;
 
   if (trades.length === 0) {
     return (
@@ -470,13 +463,13 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
           <div className="grid grid-cols-2 gap-2 font-sans text-[10px]">
             <div 
               className="bg-zinc-950/60 border border-emerald-500/20 hover:border-emerald-500/40 p-2 rounded-xl cursor-pointer hover:bg-emerald-950/10 transition-ui"
-              onClick={() => handleMetricClick("longPerformance", `%${metrics.longStats.winRate.toFixed(1)} WR`)}
+              onClick={() => handleMetricClick("longPerformance", (metrics.longStats.count ? `%${metrics.longStats.winRate.toFixed(1)} WR` : "İşlem yok"))}
             >
               <div className="flex items-center justify-between mb-0.5">
                 <span className="text-emerald-400 font-bold uppercase tracking-wider text-[9px]">LONG</span>
                 <span className="text-zinc-500 text-[8.5px]">{metrics.longStats.count} işlem</span>
               </div>
-              <span className="text-xs font-bold text-emerald-400 block font-sans">%{metrics.longStats.winRate.toFixed(1)} WR</span>
+              <span className="text-xs font-bold text-emerald-400 block font-sans">{metrics.longStats.count ? `%${metrics.longStats.winRate.toFixed(1)} WR` : "—"}</span>
               <span className={`block text-[10px] font-bold tabular-nums ${metrics.longStats.pnl > 0 ? 'text-emerald-300' : metrics.longStats.pnl < 0 ? 'text-rose-300' : 'text-zinc-400'}`}>
                 {formatR(metrics.longStats.pnl)}
                 {metrics.longStats.count > 0 && <span className="text-zinc-500 font-normal"> · {formatR(metrics.longStats.pnl / metrics.longStats.count)}/işlem</span>}
@@ -485,13 +478,13 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
             </div>
             <div 
               className="bg-zinc-950/60 border border-rose-500/20 hover:border-rose-500/40 p-2 rounded-xl cursor-pointer hover:bg-rose-950/10 transition-ui"
-              onClick={() => handleMetricClick("shortPerformance", `%${metrics.shortStats.winRate.toFixed(1)} WR`)}
+              onClick={() => handleMetricClick("shortPerformance", (metrics.shortStats.count ? `%${metrics.shortStats.winRate.toFixed(1)} WR` : "İşlem yok"))}
             >
               <div className="flex items-center justify-between mb-0.5">
                 <span className="text-rose-400 font-bold uppercase tracking-wider text-[9px]">SHORT</span>
                 <span className="text-zinc-500 text-[8.5px]">{metrics.shortStats.count} işlem</span>
               </div>
-              <span className="text-xs font-bold text-rose-400 block font-sans">%{metrics.shortStats.winRate.toFixed(1)} WR</span>
+              <span className="text-xs font-bold text-rose-400 block font-sans">{metrics.shortStats.count ? `%${metrics.shortStats.winRate.toFixed(1)} WR` : "—"}</span>
               <span className={`block text-[10px] font-bold tabular-nums ${metrics.shortStats.pnl > 0 ? 'text-emerald-300' : metrics.shortStats.pnl < 0 ? 'text-rose-300' : 'text-zinc-400'}`}>
                 {formatR(metrics.shortStats.pnl)}
                 {metrics.shortStats.count > 0 && <span className="text-zinc-500 font-normal"> · {formatR(metrics.shortStats.pnl / metrics.shortStats.count)}/işlem</span>}
@@ -619,7 +612,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
       )}
 
       {visited.has('calendar') && (
-        <div id="deep-view-calendar" role="tabpanel" hidden={view !== 'calendar'} className="pane-content-in bg-zinc-900/70 border border-zinc-700/50 rounded-2xl shadow-sm p-3.5 sm:p-5">
+        <div id="deep-view-calendar" role="tabpanel" hidden={view !== 'calendar'} className="pane-content-in bg-zinc-900/70 border border-zinc-700/50 rounded-2xl shadow-sm p-2.5 sm:p-5">
           <CalendarView trades={trades} onEdit={onEdit} />
         </div>
       )}

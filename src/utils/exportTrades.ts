@@ -4,6 +4,21 @@ import { getNyParts, getSweepSide, WEEKDAY_NAMES_TR, nyWallDate } from '../lib/t
 import { getNewsDayLabels, getTradeAccountCategory, getTradeStageLabel, ACCOUNT_CATEGORY_LABELS } from '../constants/constants';
 import { DATASET_LABELS, getTradeDataset, sweepHourBucket, tradeOfDayBucket } from '../lib/asiaAnalytics';
 import { edgeReportRows } from '../lib/edgeSummary';
+import { breakevenWinRateOf } from '../lib/stats';
+import { saveBlob } from '../lib/download';
+
+/** Kronolojik kümülatif R eğrisinde zirveden en derin düşüş (R, pozitif sayı) */
+export const maxDrawdownR = (sortedTrades: Trade[]): number => {
+  let cum = 0;
+  let peak = 0;
+  let mdd = 0;
+  for (const t of sortedTrades) {
+    cum += typeof t.rr === 'number' && Number.isFinite(t.rr) ? t.rr : 0;
+    if (cum > peak) peak = cum;
+    if (peak - cum > mdd) mdd = peak - cum;
+  }
+  return mdd;
+};
 
 // Excel kütüphanesi (xlsx, ~400 kB) yalnızca Excel'e aktarırken indirilir; uygulama açılışını yavaşlatmaz.
 // PWA önbelleği ilk ziyaretten sonra dosyayı arka planda saklar, sonraki aktarımlar anında olur.
@@ -16,6 +31,19 @@ const loadXlsx = () => {
     });
   }
   return xlsxPromise;
+};
+
+/** Dosya adı için güvenli metin: Türkçe harfler sadeleşir, boşluk / işaretler "_" olur (her işletim sisteminde açılır) */
+export const fileSlug = (v: string): string => {
+  const map: Record<string, string> = { ç: 'c', Ç: 'C', ğ: 'g', Ğ: 'G', ı: 'i', İ: 'I', ö: 'o', Ö: 'O', ş: 's', Ş: 'S', ü: 'u', Ü: 'U' };
+  const out = v
+    .replace(/[çÇğĞıİöÖşŞüÜ]/g, (c) => map[c])
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^A-Za-z0-9_-]+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_|_$/g, '');
+  return out.slice(0, 80) || 'rapor';
 };
 
 interface ExportOptions {
@@ -62,7 +90,8 @@ export const csvCell = (v: unknown): string => {
   if (typeof v === 'number') str = Number.isFinite(v) ? String(v).replace('.', ',') : '';
   else {
     str = String(v);
-    if (/^[=+\-@\t\r]/.test(str)) str = `'${str}`;
+    // Boş alan yer tutucusu "-" ve düz sayı metni (ör. "-1,5") formül değildir; tırnakla bozulmaz
+    if (/^[=+\-@\t\r]/.test(str) && str !== '-' && !/^[+-]?\d+([.,]\d+)?$/.test(str)) str = `'${str}`;
   }
   return `"${str.replace(/"/g, '""')}"`;
 };
@@ -75,16 +104,13 @@ export const rowsToCsv = (rows: Row[]): string => {
 
 const downloadCsv = (rows: Row[], filename: string) => {
   const blob = new Blob([rowsToCsv(rows)], { type: 'text/csv;charset=utf-8;' });
-  const cleanFilename = filename.endsWith('.csv') ? filename : `${filename}.csv`;
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.setAttribute('href', url);
-  link.setAttribute('download', cleanFilename);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  // Bazı tarayıcılar indirmeyi tıklamadan sonra başlatır; adres hemen iptal edilirse dosya boş iner
-  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  void saveBlob(blob, `${fileSlug(filename.replace(/\.csv$/i, ''))}.csv`);
+};
+
+/** Excel dosyasını bellekte üretip ortak kaydetme yolundan teslim eder (iPhone PWA'da paylaş menüsü) */
+const saveWorkbook = async (XLSX: typeof import('xlsx'), workbook: import('xlsx').WorkBook, filename: string) => {
+  const data = XLSX.write(workbook, { bookType: 'xlsx', type: 'array', compression: true }) as ArrayBuffer;
+  await saveBlob(new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), xlsxName(filename));
 };
 
 /** Excel sayfası: uzun metin kısaltılır, sütun genişliği içeriğe göre (en fazla 60) */
@@ -113,7 +139,7 @@ const nowText = () => {
   const x = formatDateTime(Date.now());
   return `${x.date} ${x.time} (New York)`;
 };
-const xlsxName = (filename: string) => (filename.endsWith('.xlsx') ? filename : `${filename}.xlsx`);
+const xlsxName = (filename: string) => `${fileSlug(filename.replace(/\.xlsx$/i, ''))}.xlsx`;
 
 // ==========================================
 // 📊 TRADE (İŞLEM GEÇMİŞİ) EXPORT UTILITIES
@@ -203,7 +229,7 @@ export const exportTradesToExcel = async (trades: Trade[], filename: string, opt
   XLSX.utils.book_append_sheet(workbook, summarySheet(XLSX, tradeSummaryRows(trades, options?.title)), 'Özet İstatistikler');
   const edgeRows = edgeReportRows(trades);
   if (edgeRows.length) XLSX.utils.book_append_sheet(workbook, sheetFromRows(XLSX, edgeRows, 1), 'Edge Raporu');
-  XLSX.writeFile(workbook, xlsxName(filename));
+  await saveWorkbook(XLSX, workbook, filename);
 };
 
 /** Özet sayfası: projedeki tanımlarla aynı (kazanma oranı = kazanç / tüm işlemler, PF kayıp yoksa ∞) */
@@ -230,6 +256,10 @@ export const tradeSummaryRows = (trades: Trade[], title?: string) => {
     { Metrik: 'Toplam Net R', Değer: Number(totalR.toFixed(2)) },
     { Metrik: 'Beklenti (R / işlem)', Değer: n > 0 ? Number((totalR / n).toFixed(3)) : 0 },
     { Metrik: 'Kâr Faktörü (R bazlı)', Değer: rLoss > 0 ? Number((rWin / rLoss).toFixed(2)) : rWin > 0 ? '∞' : 0 },
+    { Metrik: 'Ortalama Kazanç (R)', Değer: wins > 0 ? Number((rWin / wins).toFixed(2)) : 0 },
+    { Metrik: 'Ortalama Kayıp (R)', Değer: losses > 0 ? Number((-rLoss / losses).toFixed(2)) : 0 },
+    { Metrik: 'Başabaş Kazanma Oranı (%)', Değer: (() => { const b = breakevenWinRateOf(trades); return b === null ? '-' : Number(b.toFixed(1)); })() },
+    { Metrik: 'Maks. Düşüş (R)', Değer: Number(maxDrawdownR(sorted).toFixed(2)) },
   ];
 };
 
@@ -294,7 +324,7 @@ export const exportJournalsToExcel = async (journals: JournalEntry[], filename: 
     ]),
     'Psikoloji Özeti',
   );
-  XLSX.writeFile(workbook, xlsxName(filename));
+  await saveWorkbook(XLSX, workbook, filename);
 };
 
 export const exportJournalsToCSV = (journals: JournalEntry[], filename: string) => {
@@ -339,7 +369,7 @@ export const exportNotesToExcel = async (notes: Note[], filename: string): Promi
     ]),
     'Notlar Özeti',
   );
-  XLSX.writeFile(workbook, xlsxName(filename));
+  await saveWorkbook(XLSX, workbook, filename);
 };
 
 export const exportNotesToCSV = (notes: Note[], filename: string) => {

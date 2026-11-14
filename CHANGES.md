@@ -979,3 +979,23 @@ Klasik tasarım korunarak, son eklenen alanlar (risk %, hesap bağı, strateji, 
   - Hesap seçimi: iki satırlık ızgara yerine tek satırlık kompakt açılır seçici. Seçili hesap adı, bakiyesi (5K) ve aşamasıyla (Faz 1 / Funded) görünür; listede her hesap tam adıyla, çok hesapta (6+) arama kutusuyla seçilir, klavyeyle de (↑ ↓ Enter Esc). Hesapsız listenin sonunda, ayraçla. Alan yüksekliği hesap sayısından bağımsız.
   - İşlem formu (kısa masaüstü ekranları, ör. 1366×768): aralıklar hafifçe açıldı — alan yüksekliği 32 → 34px, kart içi boşluklar, çip ve satır aralıkları biraz arttı; form yine kaydırmasız sığar (598px / 768px).
   - Setup Kalitesi, İşlem Tipi, News Day, Asia Range FVG ve Asia Range seçimleri Long / Short gibi kayan arka planla geçer (seçim bir seçenekten diğerine yumuşakça kayar); renkler tek tip mavi, kullanılmayan renk kodları temizlendi.
+
+- Son hesap, bütünlük ve stres testi
+  - Yeni işlem eklerken en son işlem eklenen hesap otomatik seçili gelir (Hesapsız dahil). Hesap arşivlenmiş / kapanmışsa ya da silinmişse seçim boş gelir; eski bir işlemi düzenlemek "son hesap"ı değiştirmez. Panelde belirli bir hesap seçiliyse o hesap öncelikli.
+  - Tek hareket sistemi: notlar ve günlük ekran geçişleri ile analiz panolarının kart girişleri aynı ortak presetleri kullanır (ekrana göre değişen 0.12 / 0.25 / 0.3 sn süreler ve yerel eğri takma adları kalktı; kademeli giriş ritmi her panoda aynı).
+  - Erişilebilirlik: tüm pencereler ekran okuyuculara modal diyalog olarak bildirilir (role=dialog, aria-modal).
+  - Çift tıklama / Enter tekrarı aynı işlemi iki kez kaydetmez (gönderim kilidi).
+  - Bozuk yerel veri: okunamayan kayıt artık sessizce boş listeyle ezilmez; ham kopyası `<anahtar>__corrupt_backup` olarak saklanır ve kullanıcı uyarılır.
+  - Stres testi: 3000 işlem + bozuk kayıtlar (null, sayı, geçersiz tarih, metin R, gelecek tarih, ±100R, 5000 karakter not, mükerrer id) ile tüm sekmeler masaüstü ve telefonda gezildi: hata yok, NaN/undefined yok, taşma yok; sekme geçişleri ~70 ms (Edge Özeti ~275 ms), form ~180 ms'de açılır; işlem detayında 40 hızlı ok tuşu geçişi hatasız. 25 fuzz/property tohumu geçti.
+
+- Takvim (telefon / PWA), çıktılar ve metrik denetimi
+  - Takvim telefonda: iç içe üç kart iki katmana indi (yatay alan genişledi); hücreler dar kapsül yerine düzgün köşeli kutu (tema --radius-lg 16px'i 41px'lik hücreyi kapsüle çeviriyordu); değer ve işlem sayısı ortada ve bir tık büyük; ay başı / sonu dolgu hücreleri telefonda gizli; üst kısım tam genişlik (Bugün + ay seçici, Aylık R / İşlem Günü iki eşit kutu).
+  - Görsel çıktı (işlem detayı / rapor PNG): "Az örneklem" gibi rozetler görsel çıktıda ikiye bölünüyordu (html-to-image metni bir tık geniş ölçer) → tüm rozet / çip etiketleri satır kırmaz (15 dosya). Yakalamadan önce yazı tiplerinin yüklenmesi beklenir.
+  - Tüm indirmeler tek yoldan (lib/download.ts): iPhone / iPad'de (özellikle ana ekrana eklenmiş PWA) paylaş menüsü ("Dosyalara Kaydet"), diğerlerinde Blob indirme. PNG artık veri adresine gidilerek indirilmiyor (PWA'da uygulamadan çıkılamayan sayfa açıyordu). Excel, CSV, PNG, yedek JSON ve tanımlamalar JSON bu yolu kullanır.
+  - PDF: açılır pencere yerine gizli çerçeveyle yazdırılır (açılır pencere engelleyicisine takılmaz, PWA'da çalışır); stil ve yazı tipi yüklenmeden basılmaz; A4 yatay genişlikte 4 sütun kart düzeni; çift tıklamada iki yazdırma açılmaz.
+  - CSV: boş alan "-" formül korumasına takılıp her hücrede "'-" yazılıyordu → düz "-"; düz sayı metni de tırnaklanmaz, formüller yine etkisiz.
+  - Dosya adları: Türkçe harf / boşluk / işaretler güvenli ("Haftalık İşlem Raporu" → Haftalik_Islem_Raporu); PNG raporda "İ" küçültülünce bozuk harf (i̇) oluşuyordu.
+  - "Bu Hafta" / "Bu Ay" çıktıları ileri tarihli kayıtları almıyor (üst sınır); "Son N işlem" negatif / geçersiz değerde güvenli; aynı zamanlı kayıtlar kararlı sırada.
+  - Excel özet sayfası: Ortalama Kazanç / Kayıp, Başabaş Kazanma Oranı ve Maks. Düşüş eklendi (uygulamadaki tanımlarla aynı).
+  - Metrik doğruluğu: 0R kaydedilmiş WIN / LOSS (eski / içe aktarılan kayıt) artık başabaş sayılır (ortalama kazanç / kaybı düşürüyordu). Durumu ya da yönü bozuk kayıt analizlere girmez (net R'ye girip WR / Long-Short toplamına girmiyordu; Yedek Kurtarma'da görünür). İşlemi olmayan taraf (Long / Short, haftalık WR) "%0" yerine "—".
+  - Doğrulama: 25 işlemlik örnekle Net R, WR, başabaş WR, beklenti, %95 aralık (t), son 7 gün, PF, ort. kazanç / kayıp, Max DD, Recovery Factor, DD toparlanma, kârlı / zararlı gün, takvim aylık R ve Excel özet sayfası bağımsız hesapla birebir aynı. CSV dosyası üretilip geri okundu (31 sütun, her satır eşit); Excel çalışma kitabı tarayıcıda üretilip geri okundu; PDF çerçevesi stil, yazı tipi, düzen ve satır sayısı için ölçüldü.

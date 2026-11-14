@@ -28,6 +28,14 @@ import { HeaderLabel, CustomSelect } from './tradeList/controls';
 import { FILTER_LABEL } from './filters/FilterControls';
 import { nyWallDate, nyInputToTs, nyDateKey } from '../lib/tradingTime';
 
+/** "Son N işlem": geçersiz / negatif / aşırı değer güvenli aralığa çekilir (boş → 7) */
+const lastCount = (v: string): number => {
+  const n = parseInt(v, 10);
+  return Number.isFinite(n) && n > 0 ? Math.min(n, 5000) : 7;
+};
+/** En yeni önce; aynı zamanlı kayıtlar id ile kararlı sırada */
+const byEntryTimeDesc = (a: Trade, b: Trade) => b.createdAt - a.createdAt || (a.id < b.id ? 1 : a.id > b.id ? -1 : 0);
+
 interface TradeListProps {
   trades: Trade[];
   onEdit: (trade: Trade) => void;
@@ -109,13 +117,16 @@ const TradeList = React.memo(function TradeList({
     const day = nowNy.getDay();
     const monday = new Date(nowNy.getFullYear(), nowNy.getMonth(), nowNy.getDate() - (day === 0 ? 6 : day - 1));
     const start = nyStartTs(monday);
-    return trades.filter(t => t.createdAt >= start).sort((a, b) => b.createdAt - a.createdAt);
+    // Üst sınır: ileri tarihli kayıt "bu hafta" raporuna girmesin
+    const end = nyStartTs(new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 7));
+    return trades.filter(t => t.createdAt >= start && t.createdAt < end).sort(byEntryTimeDesc);
   }, [trades]);
 
   const getMonthlyTrades = useCallback(() => {
     const nowNy = nyWallDate(Date.now());
     const start = nyStartTs(new Date(nowNy.getFullYear(), nowNy.getMonth(), 1));
-    return trades.filter(t => t.createdAt >= start).sort((a, b) => b.createdAt - a.createdAt);
+    const end = nyStartTs(new Date(nowNy.getFullYear(), nowNy.getMonth() + 1, 1));
+    return trades.filter(t => t.createdAt >= start && t.createdAt < end).sort(byEntryTimeDesc);
   }, [trades]);
 
   const handleExport = (format: 'excel' | 'csv', scope: 'filtered' | 'all' | 'weekly' | 'monthly' | 'custom') => {
@@ -137,8 +148,8 @@ const TradeList = React.memo(function TradeList({
         targetList = getMonthlyTrades();
         scopeName = 'Bu_Ay';
       } else if (scope === 'custom') {
-        const count = parseInt(customLastCount) || 7;
-        const sorted = [...trades].sort((a, b) => b.createdAt - a.createdAt);
+        const count = lastCount(customLastCount);
+        const sorted = [...trades].sort(byEntryTimeDesc);
         targetList = sorted.slice(0, count);
         scopeName = `Son_${count}_Islem`;
       }
@@ -622,8 +633,8 @@ const TradeList = React.memo(function TradeList({
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              const count = parseInt(customLastCount) || 7;
-                              const sorted = [...trades].sort((a, b) => b.createdAt - a.createdAt);
+                              const count = lastCount(customLastCount);
+                              const sorted = [...trades].sort(byEntryTimeDesc);
                               const selectedTrades = sorted.slice(0, count);
                               setPrintModalState({
                                 isOpen: true,

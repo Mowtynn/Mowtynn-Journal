@@ -68,7 +68,7 @@ function SignalBadge({ edge, relativeSure }: { edge: EdgeStats; relativeSure?: b
   const neg = edge.expectancy < 0;
   if (strong) {
     return (
-      <span className={`shrink-0 px-1.5 py-px rounded-md border text-[9px] font-bold uppercase ${neg ? 'text-rose-300 border-rose-500/30 bg-rose-500/10' : 'text-emerald-300 border-emerald-500/30 bg-emerald-500/10'}`}>
+      <span className={`whitespace-nowrap shrink-0 px-1.5 py-px rounded-md border text-[9px] font-bold uppercase ${neg ? 'text-rose-300 border-rose-500/30 bg-rose-500/10' : 'text-emerald-300 border-emerald-500/30 bg-emerald-500/10'}`}>
         {neg ? 'Kesin' : 'Kanıtlı'}
       </span>
     );
@@ -188,7 +188,7 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
               işlem başı · %95 GA {rnum(s.overall.expLo)} – {rnum(s.overall.expHi)}
             </div>
           </div>
-          <span className={`px-2 py-1 rounded-lg border text-[10px] font-bold uppercase ${pill.cls}`}>{pill.label}</span>
+          <span className={`whitespace-nowrap px-2 py-1 rounded-lg border text-[10px] font-bold uppercase ${pill.cls}`}>{pill.label}</span>
         </div>
       </header>
 
@@ -304,7 +304,7 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
                   className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-xl border border-zinc-800 bg-zinc-950/40 px-3 py-2 text-left hover:border-zinc-700 cursor-pointer transition-ui min-w-0"
                 >
                   <span className="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0">
-                    <span className={`shrink-0 px-1.5 py-0.5 rounded-md border text-[10px] font-bold ${r.kind === 'TAKE' ? 'text-emerald-300 border-emerald-500/30 bg-emerald-500/10' : 'text-rose-300 border-rose-500/30 bg-rose-500/10'}`}>
+                    <span className={`whitespace-nowrap shrink-0 px-1.5 py-0.5 rounded-md border text-[10px] font-bold ${r.kind === 'TAKE' ? 'text-emerald-300 border-emerald-500/30 bg-emerald-500/10' : 'text-rose-300 border-rose-500/30 bg-rose-500/10'}`}>
                       {r.kind === 'TAKE' ? 'AL' : 'ALMA'}
                     </span>
                     <span className="text-xs font-bold text-zinc-200 break-words min-w-0">{r.title}</span>
@@ -370,7 +370,7 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
                       className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-xl border border-zinc-800 bg-zinc-950/40 px-3 py-2 text-left hover:border-zinc-700 cursor-pointer transition-ui min-w-0"
                     >
                       <span className="flex items-center gap-2 min-w-0">
-                        <span className={`shrink-0 w-[58px] text-center px-1.5 py-0.5 rounded-md border text-[10px] font-bold ${OOS_PILL[f.status].cls}`}>{OOS_PILL[f.status].label}</span>
+                        <span className={`whitespace-nowrap shrink-0 w-[58px] text-center px-1.5 py-0.5 rounded-md border text-[10px] font-bold ${OOS_PILL[f.status].cls}`}>{OOS_PILL[f.status].label}</span>
                         <span className="text-xs font-bold text-zinc-200 break-words min-w-0">{f.title}</span>
                       </span>
                       <span className="ml-auto text-right text-[10px] tabular-nums text-zinc-400 whitespace-nowrap">

@@ -116,6 +116,12 @@ export function normalizeTrade<T extends Partial<Trade> & Record<string, any>>(r
   // İşaret durumla tutarlı: WIN pozitif, LOSS negatif (eski / içe aktarılan kayıtta ters işaret istatistiği bozmasın)
   else if (t.status === 'WIN' && t.rr < 0) t.rr = -t.rr;
   else if (t.status === 'LOSS' && t.rr > 0) t.rr = -t.rr;
+  // Durum R'den türetilir (formda seçilmez): 0R'lik bir WIN / LOSS ortalama kazanç / kaybı bozmasın, başabaştır.
+  // (Tanımsız durum ise kaydı geçersiz bırakır: Yedek Kurtarma'da görünür, analizlere girmez.)
+  if ((t.status === 'WIN' || t.status === 'LOSS') && t.rr === 0) {
+    t.status = 'BREAKEVEN';
+    t.rr = 0;
+  }
   if (t.newsDay !== true && t.newsDay !== false) delete t.newsDay;
   // Asia Range: yalnızca Range / Trend / Swept (harf farkı onarılır); Sweep Time: NY saati "HH:mm"
   if (t.asiaRange !== undefined) {

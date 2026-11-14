@@ -1,3 +1,4 @@
+import { saveBlob } from '../lib/download';
 import { EASE, SPRING, MODAL_BACKDROP, MODAL_PANEL } from '../lib/motion';
 import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
@@ -469,14 +470,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
       exportedAt: new Date().toISOString(),
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Trading_Journal_Definitions_${localDateKey()}.json`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    void saveBlob(blob, `Trading_Journal_Definitions_${localDateKey()}.json`);
     toast.success('Tüm tanımlamalar ve başlıklar JSON olarak indirildi.');
   };
 
@@ -635,7 +629,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                         <span>{tab.label}</span>
                       </span>
 
-                      <span className={`relative z-10 text-[10px] font-sans px-2 py-0.5 rounded-md border ${
+                      <span className={`whitespace-nowrap relative z-10 text-[10px] font-sans px-2 py-0.5 rounded-md border ${
                         isActive
                           ? 'bg-blue-500/20 text-blue-300 border-blue-500/30 font-bold'
                           : 'bg-zinc-800 text-zinc-500 border-zinc-700/60'

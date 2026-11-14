@@ -208,6 +208,7 @@ const SETTINGS_LIST_KEYS: [string, string][] = [
 ];
 /** Cihazdaki işlem/not/günlük verisinin hangi hesaba ait olduğu (hesaplar arası karışmayı önler) */
 const DATA_OWNER_KEY = "tj_data_owner";
+const LAST_TRADE_ACCOUNT_KEY = "tj_last_trade_account";
 const reviveNotes = (v: unknown): Note[] => normalizeNotes(v);
 const reviveJournals = (v: unknown): JournalEntry[] => normalizeJournals(v);
 const onlyStrings = (v: unknown[]) => v.filter((x): x is string => typeof x === "string");
@@ -960,9 +961,26 @@ export default function App() {
     }
   }
   const formSlot = formSlotRef.current;
-  // Yeni işlem formu üst çubuktaki kapsama göre hesabı önceden seçer (aktif tek hesap ya da Hesapsız)
+  // Son işlem eklenen hesap: yeni işlem formu bu hesapla açılır (üst çubukta tek hesap seçili değilse)
+  const [lastTradeAccount, setLastTradeAccount] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem(LAST_TRADE_ACCOUNT_KEY);
+    } catch {
+      return null;
+    }
+  });
+  // Yeni işlem formunun hesabı: üst çubukta tek bir aktif hesap (ya da Hesapsız) seçiliyse o; değilse son işlem
+  // eklenen hesap (hâlâ aktifse). Arşivlenen / silinen hesap önerilmez.
+  const lastAccountStillActive =
+    lastTradeAccount === NO_ACCOUNT || (!!lastTradeAccount && propAccounts.some((a) => a.id === lastTradeAccount && a.status === "ACTIVE"));
   const defaultAccountChoice =
-    activeAccount && activeAccount.status === "ACTIVE" ? activeAccount.id : !activeAccount && activeAccountCategory === "DEMO" ? NO_ACCOUNT : null;
+    activeAccount && activeAccount.status === "ACTIVE"
+      ? activeAccount.id
+      : !activeAccount && activeAccountCategory === "DEMO"
+        ? NO_ACCOUNT
+        : lastAccountStillActive
+          ? lastTradeAccount
+          : null;
   const formKey = formSlot.editing ? `edit-${formSlot.editing.id}-${formSlot.seq}` : `new-${formSlot.seq}-${defaultAccountChoice || ""}`;
   useEffect(() => {
     if (isFormOpen) return;
@@ -1474,6 +1492,16 @@ export default function App() {
   const handleSaveTradeAndClose = useCallback(async (tradeData: any) => {
     await handleSaveTrade(tradeData);
     setIsFormOpen(false);
+    const acc: string | null = tradeData?.accountId ? String(tradeData.accountId) : tradeData?.accountCategory === "DEMO" ? NO_ACCOUNT : null;
+    // Yalnızca yeni eklenen işlem belirler (eski bir işlemi düzenlemek "son hesap"ı değiştirmez)
+    if (acc && !tradeData?.id) {
+      setLastTradeAccount(acc);
+      try {
+        localStorage.setItem(LAST_TRADE_ACCOUNT_KEY, acc);
+      } catch {
+        /* depolama kapalıysa yalnızca bu oturumda hatırlanır */
+      }
+    }
   }, [handleSaveTrade]);
 
   const handleCancelEdit = useCallback(() => {

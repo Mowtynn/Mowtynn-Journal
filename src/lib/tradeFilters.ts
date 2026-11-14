@@ -113,6 +113,11 @@ export interface GlobalTradeFilters {
  * Üst filtreler (hesap kapsamı, tarih, parite, seans, …) — App'teki listenin tek kaynağı.
  * Saf fonksiyon: aynı girdi her zaman aynı sonucu verir (testlerde `now` sabitlenir).
  */
+const isAnalyzable = (t: Trade): boolean =>
+  Number.isFinite(t.createdAt) &&
+  (t.status === 'WIN' || t.status === 'LOSS' || t.status === 'BREAKEVEN') &&
+  (t.type === 'LONG' || t.type === 'SHORT');
+
 export function applyGlobalFilters(trades: Trade[], filters: GlobalTradeFilters, now: number = Date.now()): Trade[] {
   const {
     activeAccountCategory,
@@ -155,8 +160,9 @@ export function applyGlobalFilters(trades: Trade[], filters: GlobalTradeFilters,
       hasMinTime ||
       hasExtra;
 
-    // Giriş zamanı bozuk kayıt (Yedek Kurtarma'da onarılır) analizlere girmez: sıralamayı ve eğriyi NaN ile bozmasın
-    const timed = trades.every((t) => Number.isFinite(t.createdAt)) ? trades : trades.filter((t) => Number.isFinite(t.createdAt));
+    // Giriş zamanı, durumu ya da yönü bozuk kayıt (Yedek Kurtarma'da onarılır) analizlere girmez: sıralamayı ve eğriyi
+    // NaN ile bozmasın; net R'ye girip WR / Long-Short toplamlarına girmeyen "yarım" kayıt metrikleri tutarsızlaştırmasın.
+    const timed = trades.every(isAnalyzable) ? trades : trades.filter(isAnalyzable);
     if (!hasAnyFilter) {
       return timed;
     }
