@@ -115,7 +115,6 @@ export const SweepTimePicker = React.memo(function SweepTimePicker({
             {cur ? value : "Saat Seç"}
           </span>
           <span className="flex items-center gap-1.5 shrink-0">
-            <span className="text-[9px] font-bold text-zinc-500 border border-zinc-800 rounded-md px-1 py-px">NY</span>
             <Clock size={13} className={cur ? "text-blue-400" : "text-zinc-500"} />
           </span>
         </button>
@@ -152,7 +151,7 @@ export const SweepTimePicker = React.memo(function SweepTimePicker({
                     <span className="text-xl font-bold tabular-nums text-zinc-100">
                       {draft.h === null ? "--" : pad(draft.h)}:<span className={waitingMinute ? "text-blue-300 animate-pulse" : ""}>{draft.m === null ? "--" : pad(draft.m)}</span>
                     </span>
-                    <span className="text-[10px] font-bold text-zinc-500">{waitingMinute ? "dakikayı seç" : "NY"}</span>
+                    {waitingMinute && <span className="text-[10px] font-bold text-zinc-500">dakikayı seç</span>}
                   </div>
                   <div className="flex items-center gap-1">
                     <button type="button" disabled={draft.h === null} onClick={() => nudge(-1)} aria-label="1 dakika geri" className="disabled:opacity-40 disabled:cursor-default h-7 w-7 flex items-center justify-center rounded-lg border border-zinc-700/70 bg-zinc-950 text-zinc-300 hover:text-white hover:border-zinc-500 cursor-pointer transition-ui">

@@ -56,3 +56,16 @@ test('yeni işlem tarihi: gün Türkiye takviminden, kayıt seçilen güne düş
   // Öğlen Türkiye = aynı gün NY sabahı
   assert.equal(newTradeDateInput(Date.UTC(2026, 10, 14, 9, 0)), '2026-11-14T04:00');
 });
+
+test('session önerisi: NY saati bilinen session aralığına düşerse o ad döner', async () => {
+  const { sessionForNyTime } = await import('../src/lib/sessions');
+  const list = ['London', 'Lunch', 'NY AM'];
+  assert.equal(sessionForNyTime('03:15', list), 'London');
+  assert.equal(sessionForNyTime('05:00', list), null);
+  assert.equal(sessionForNyTime('08:30', list), 'NY AM');
+  assert.equal(sessionForNyTime('12:10', list), 'Lunch');
+  assert.equal(sessionForNyTime('21:00', list), null); // Asia tanımlı değil
+  assert.equal(sessionForNyTime('21:00', ['Asia']), 'Asia');
+  assert.equal(sessionForNyTime('bozuk', list), null);
+  assert.equal(sessionForNyTime('03:00', ['Kendi Seansım']), null);
+});

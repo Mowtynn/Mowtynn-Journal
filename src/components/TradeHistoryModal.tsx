@@ -227,7 +227,7 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                                   const dateStr = localDateKey();
                                   void toast.promise(exportTradesToExcel(sortedTrades, `Islem_Gecmisi_${(activeTitle || 'Rapor').replace(/\s+/g, '_')}_${dateStr}`, {
                                     title: `${activeTitle} İşlem Geçmişi`,
-                                    definitionTitles: definitionTitles as any
+                                    definitionTitles: definitionTitles as unknown as Record<string, string>
                                   }), {
                                     loading: 'Excel hazırlanıyor…',
                                     success: `Excel tablosu (.xlsx) indirildi (${sortedTrades.length} işlem).`,
@@ -260,7 +260,7 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                                   const dateStr = localDateKey();
                                   exportTradesToCSV(sortedTrades, `Islem_Gecmisi_${(activeTitle || 'Rapor').replace(/\s+/g, '_')}_${dateStr}`, {
                                     title: `${activeTitle} İşlem Geçmişi`,
-                                    definitionTitles: definitionTitles as any
+                                    definitionTitles: definitionTitles as unknown as Record<string, string>
                                   });
                                   toast.success(`CSV dosyası (.csv) indirildi (${sortedTrades.length} işlem).`);
                                   setIsExportOpen(false);

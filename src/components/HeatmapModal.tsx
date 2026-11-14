@@ -177,7 +177,7 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
                 ].map(f => (
                   <button
                     key={f.id}
-                    onClick={() => setTimeFilter(f.id as any)}
+                    onClick={() => setTimeFilter(f.id as typeof timeFilter)}
                     className={`px-2.5 py-1 rounded-lg text-[10px] font-sans font-bold transition-ui duration-150 ${
                       timeFilter === f.id 
                         ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' 

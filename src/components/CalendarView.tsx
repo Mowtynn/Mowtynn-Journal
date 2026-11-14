@@ -108,7 +108,7 @@ export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], o
        cells.push(
          <div 
            key={`empty-${i}`} 
-           className="bg-zinc-900 border border-zinc-900/60 rounded-xl min-h-[64px] sm:min-h-[76px] opacity-40 pointer-events-none"
+           className="bg-zinc-900 border border-zinc-900/60 rounded-xl min-h-[64px] sm:min-h-[88px] opacity-40 pointer-events-none"
          />
        );
     }
@@ -144,7 +144,7 @@ export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], o
         <div 
            key={`day-${day}`} 
            onClick={() => stat ? setSelectedDateStr(dateStr) : null}
-           className={`border rounded-xl p-1 sm:p-2 min-h-[64px] sm:min-h-[76px] flex flex-col justify-between transition-ui duration-200 ease-out group relative ${cardStyle}`}
+           className={`border rounded-xl p-1 sm:p-2.5 min-h-[64px] sm:min-h-[88px] flex flex-col justify-between transition-ui duration-200 ease-out group relative ${cardStyle}`}
         >
           {/* Top Row: Day Number & Trade Count */}
           <div className="flex items-start justify-between">
@@ -157,8 +157,9 @@ export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], o
             </span>
 
             {stat && (
-              <span className="hidden sm:inline text-[9px] font-sans font-bold text-zinc-500 group-hover:text-zinc-300 transition-colors leading-none">
-                {stat.count} İşlem
+              <span className="hidden sm:inline-flex items-baseline gap-1 px-2 py-1 rounded-lg bg-zinc-950/50 border border-zinc-800/80 text-[10px] font-sans font-semibold text-zinc-400 group-hover:text-zinc-200 transition-colors leading-none tabular-nums whitespace-nowrap">
+                <span className="text-[11px] font-bold text-zinc-200">{stat.count}</span>
+                işlem
               </span>
             )}
           </div>
@@ -166,11 +167,11 @@ export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], o
           {/* Bottom Row: Trade Statistics */}
           {stat ? (
             <div className="mt-auto flex flex-col items-end text-right overflow-hidden">
-               <div className={`max-w-full font-sans font-extrabold text-[10px] sm:text-xs leading-none ${primaryColor} tracking-tight truncate`}>
-                 {/* Telefonda hücre dar: tek ondalık; geniş ekranda diğer ekranlarla aynı iki ondalık */}
+               {/* Telefonda hücre dar: tek ondalık; masaüstünde büyük ve okunur, "R" aynı taban çizgisinde */}
+               <div className={`max-w-full flex items-baseline justify-end gap-0.5 font-sans font-extrabold text-[10px] sm:text-base lg:text-lg leading-none ${primaryColor} tracking-tight tabular-nums truncate`}>
                  <span className="sm:hidden">{rsigned(stat.rr, 1)}</span>
                  <span className="hidden sm:inline">{rsigned(stat.rr)}</span>
-                 <span className="hidden sm:inline text-[8px] font-bold ml-0.5 opacity-80">R</span>
+                 <span className="hidden sm:inline text-[11px] font-bold opacity-70">R</span>
                </div>
                {/* Telefonda işlem sayısı üstte yer bulamadığı için burada, kısa biçimde */}
                <div className={`sm:hidden font-sans text-[8.5px] font-medium mt-0.5 ${secondaryColor} truncate leading-none`}>
@@ -191,7 +192,7 @@ export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], o
          cells.push(
            <div 
              key={`empty-end-${i}`} 
-             className="bg-zinc-900 border border-zinc-900/60 rounded-xl min-h-[64px] sm:min-h-[76px] opacity-40 pointer-events-none"
+             className="bg-zinc-900 border border-zinc-900/60 rounded-xl min-h-[64px] sm:min-h-[88px] opacity-40 pointer-events-none"
            />
          );
        }

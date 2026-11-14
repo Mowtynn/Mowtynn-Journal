@@ -15,18 +15,6 @@ const ASIA_RANGE_META: Record<(typeof ASIA_RANGE_TYPES)[number], { icon: typeof 
 
 /* ================= 2. SÜTUN: KURULUM ÇİPLERİ ================= */
 
-/**
- * Bilinen session adlarının New York saatiyle aralığı (ICT kill zone'ları). Çip üzerinde küçük yazılır; tanımlarda
- * özel ad verilmiş session'larda saat gösterilmez.
- */
-const SESSION_HOURS_NY: [RegExp, string][] = [
-  [/^asia/i, '20–00'],
-  [/^london/i, '02–05'],
-  [/^(ny|new york)\s*am/i, '07–10'],
-  [/^(ny\s*)?lunch/i, '12–13'],
-  [/^(ny|new york)\s*pm/i, '13:30–16'],
-];
-const sessionHoursNy = (name: string): string | null => SESSION_HOURS_NY.find(([re]) => re.test(name.trim()))?.[1] ?? null;
 
 export const SetupChips = React.memo(function SetupChips({
   titles,
@@ -283,7 +271,6 @@ export const SetupChips = React.memo(function SetupChips({
           <span lang="en" className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
             <Clock size={12} className="text-blue-400 shrink-0" />
             {H("sessions", "SESSION")}
-            <span className="text-[9px] font-bold text-zinc-500 border border-zinc-800 rounded-md px-1 py-px">NY</span>
           </span>
           <div className="flex flex-wrap gap-1.5">
             {sessions.map((sess, idx) => (
@@ -300,11 +287,6 @@ export const SetupChips = React.memo(function SetupChips({
               >
                 {sess === selectedSession && <SlideBg id="sessionSlide" rounded="rounded-xl" className="bg-blue-500/20 border-blue-500/60 shadow-xs" />}
                 <span className="relative z-10">{sess}</span>
-                {sessionHoursNy(sess) && (
-                  <span className={`relative z-10 ml-1.5 text-[9px] font-semibold tabular-nums ${sess === selectedSession ? "text-blue-200/70" : "text-zinc-500"}`}>
-                    {sessionHoursNy(sess)}
-                  </span>
-                )}
               </button>
             ))}
           </div>

@@ -669,10 +669,18 @@ input:focus-visible, textarea:focus-visible { outline: none; }
 .tracking-wide { letter-spacing: 0.025em; }
 .tracking-tight { letter-spacing: -0.01em; }
 
-/* Küçük boyutlar biraz büyütüldü: sıkışık/basık görünüm yerine nefes alan etiketler */
-.text-\[8px\], .text-\[8\.5px\], .text-\[9px\] { font-size: 9.5px; }
-.text-\[9\.5px\], .text-\[10px\] { font-size: 10.5px; }
-.text-\[10\.5px\], .text-\[11px\] { font-size: 11.5px; }
+/* Küçük boyutlar biraz büyütüldü: sıkışık/basık görünüm yerine nefes alan etiketler.
+   Duyarlı boyutu olan öğeler (sm:/md:/lg:/xl:text-…) hariç: bu kurallar katmansız olduğu için Tailwind'in
+   sm:text-base gibi sınıflarını eziyordu (ör. takvimde R değeri masaüstünde de küçük kalıyordu). */
+:is(.text-\[8px\], .text-\[8\.5px\], .text-\[9px\]):not([class*="sm:text-"], [class*="md:text-"], [class*="lg:text-"], [class*="xl:text-"]) { font-size: 9.5px; }
+:is(.text-\[9\.5px\], .text-\[10px\]):not([class*="sm:text-"], [class*="md:text-"], [class*="lg:text-"], [class*="xl:text-"]) { font-size: 10.5px; }
+:is(.text-\[10\.5px\], .text-\[11px\]):not([class*="sm:text-"], [class*="md:text-"], [class*="lg:text-"], [class*="xl:text-"]) { font-size: 11.5px; }
+/* Masaüstünde (≥1024px) okunabilirlik tabanı bir kademe daha yukarı: işlem sayıları, WR, örneklem gibi
+   küçük metrikler rahat okunur. Telefonda dar alan için yukarıdaki boyutlar kalır. */
+@media (min-width: 1024px) {
+  :is(.text-\[8px\], .text-\[8\.5px\], .text-\[9px\]):not([class*="sm:text-"], [class*="md:text-"], [class*="lg:text-"], [class*="xl:text-"]) { font-size: 10.5px; }
+  :is(.text-\[9\.5px\], .text-\[10px\]):not([class*="sm:text-"], [class*="md:text-"], [class*="lg:text-"], [class*="xl:text-"]) { font-size: 11px; }
+}
 .text-xs { line-height: 1.45; }
 /* Tek satırlık sıkı etiketler: harfler üst üste binmesin */
 .leading-none { line-height: 1.1; }

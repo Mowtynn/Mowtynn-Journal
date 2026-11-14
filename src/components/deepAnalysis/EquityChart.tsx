@@ -2,15 +2,25 @@ import { EASE } from '../../lib/motion';
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { formatR } from "../../lib/format";
+import type { Trade } from "../../types";
+
+/** Eğrinin bir noktası (işlem, gün, hafta ya da ay): o ana kadarki kümülatif R ve noktaya düşen işlemler */
+export interface EquityChartPoint {
+  label: string;
+  fullTitle: string;
+  cumulativePnl: number;
+  drawdown: number;
+  trades: Trade[];
+}
 
 export const MemoizedEquityChart = React.memo(function MemoizedEquityChart({ 
   chartEquityCurve, 
   equityFilter, 
   setSelectedEquityPoint 
 }: { 
-  chartEquityCurve: any[]; 
-  equityFilter: string; 
-  setSelectedEquityPoint: (val: any) => void; 
+  chartEquityCurve: EquityChartPoint[];
+  equityFilter: string;
+  setSelectedEquityPoint: (val: { title: string; trades: Trade[] } | null) => void;
 }) {
     const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
@@ -31,14 +41,14 @@ export const MemoizedEquityChart = React.memo(function MemoizedEquityChart({
     const axisLabels = useMemo(() => {
       const list = chartEquityCurve || [];
       const total = list.length;
-      if (total === 0) return [] as { item: any; index: number }[];
-      const longest = list.reduce((m: number, d: any) => Math.max(m, String(d?.label ?? '').length), 1);
+      if (total === 0) return [] as { item: EquityChartPoint; index: number }[];
+      const longest = list.reduce((m: number, d: EquityChartPoint) => Math.max(m, String(d?.label ?? '').length), 1);
       const perLabel = longest * 6.8 + 16 + 2 + 10; // 12px yazı + yatay iç boşluk + kenarlık + aralık
       const fit = stripWidth > 0 ? Math.floor((stripWidth + 10) / perLabel) : 6;
       const count = Math.max(1, Math.min(15, fit, total));
-      if (count >= total) return list.map((item: any, index: number) => ({ item, index }));
+      if (count >= total) return list.map((item: EquityChartPoint, index: number) => ({ item, index }));
       if (count === 1) return [{ item: list[total - 1], index: total - 1 }];
-      const out: { item: any; index: number }[] = [];
+      const out: { item: EquityChartPoint; index: number }[] = [];
       for (let k = 0; k < count; k++) {
         const index = Math.round((k * (total - 1)) / (count - 1));
         if (!out.length || out[out.length - 1].index !== index) out.push({ item: list[index], index });
@@ -49,7 +59,7 @@ export const MemoizedEquityChart = React.memo(function MemoizedEquityChart({
   
 
     const chartData = useMemo(() => {
-      const values = (chartEquityCurve || []).map((d: any) => (d.cumulativePnl ?? 0));
+      const values = (chartEquityCurve || []).map((d) => (d.cumulativePnl ?? 0));
       let maxVal = 0;
       let minVal = 0;
       for (let i = 0; i < values.length; i++) {
@@ -63,20 +73,25 @@ export const MemoizedEquityChart = React.memo(function MemoizedEquityChart({
 
       const pts = [
         { x: 20, y: height - padding - ((0 - minVal) / range) * (height - 2*padding) },
-        ...(chartEquityCurve || []).map((pt: any, i: number) => ({
+        ...(chartEquityCurve || []).map((pt, i: number) => ({
           x: padding + ((i + 1) / curveLen) * (width - 2 * padding),
           y: height - padding - ((((pt?.cumulativePnl ?? 0)) - minVal) / range) * (height - 2 * padding)
         }))
       ];
 
+      // Kesikli çizgi: kümülatif R'nin 10 noktalık hareketli ortalaması (eğrinin genel yönü). Önceden ortalama hiç
+      // hesaplanmıyordu ve kesikli çizgi eğrinin tam üstüne çiziliyordu.
+      const cum = (chartEquityCurve || []).map((pt) => pt?.cumulativePnl ?? 0);
       const smaPts = [
         { x: 20, y: height - padding - ((0 - minVal) / range) * (height - 2*padding) },
-        ...(chartEquityCurve || []).map((pt: any, i: number) => {
-          const rawVal = (pt?.cumulativePnl ?? 0);
-          const smaVal = (pt?.sma10 ?? rawVal);
+        ...cum.map((_, i: number) => {
+          const from = Math.max(0, i - 9);
+          let sum = 0;
+          for (let k = from; k <= i; k++) sum += cum[k];
+          const smaVal = sum / (i - from + 1);
           return {
             x: padding + ((i + 1) / curveLen) * (width - 2 * padding),
-            y: height - padding - (((smaVal ?? rawVal) - minVal) / range) * (height - 2 * padding)
+            y: height - padding - ((smaVal - minVal) / range) * (height - 2 * padding)
           };
         })
       ];
@@ -85,7 +100,7 @@ export const MemoizedEquityChart = React.memo(function MemoizedEquityChart({
 
       const peakPts = pts.map((p, i) => {
         if (i === 0) return { x: p.x, y: p.y };
-        const pt = chartEquityCurve?.[i - 1] as any;
+        const pt = chartEquityCurve?.[i - 1];
         const peakPnl = ((pt?.cumulativePnl ?? 0)) - ((pt?.drawdown ?? 0));
         const peakY = height - padding - ((peakPnl - minVal) / range) * (height - 2 * padding);
         return { x: p.x, y: peakY };
@@ -124,7 +139,7 @@ export const MemoizedEquityChart = React.memo(function MemoizedEquityChart({
                    return null;
                  }
                }
-               const item = chartEquityCurve[i] as any;
+               const item = chartEquityCurve[i];
                return (
                  <g
                    key={i}
@@ -232,8 +247,8 @@ export const MemoizedEquityChart = React.memo(function MemoizedEquityChart({
 
                 {hoveredItem.trades && hoveredItem.trades.length > 1 && (() => {
                   // BE işlemler kayıp sayılmaz: ayrı gösterilir
-                  const wins = hoveredItem.trades.filter((t: any) => t.status === 'WIN').length;
-                  const losses = hoveredItem.trades.filter((t: any) => t.status === 'LOSS').length;
+                  const wins = hoveredItem.trades.filter((t) => t.status === 'WIN').length;
+                  const losses = hoveredItem.trades.filter((t) => t.status === 'LOSS').length;
                   const bes = hoveredItem.trades.length - wins - losses;
                   return (
                     <div className="flex justify-between items-center text-xs border-t border-zinc-900/60 pt-1.5 mt-0.5">

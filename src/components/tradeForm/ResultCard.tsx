@@ -8,10 +8,10 @@ import { roundR } from '../../lib/tradeModel';
 const QUICK_R = [-1, 0, 1, 2, 3] as const;
 
 const RESULT_TONE = {
-  WIN: { box: "border-emerald-500/25 bg-emerald-500/[0.06]", field: "focus-within:border-emerald-500/70", text: "text-emerald-300" },
-  LOSS: { box: "border-rose-500/25 bg-rose-500/[0.06]", field: "focus-within:border-rose-500/70", text: "text-rose-300" },
-  BREAKEVEN: { box: "border-blue-500/25 bg-blue-500/[0.06]", field: "focus-within:border-blue-500/70", text: "text-blue-300" },
-  EMPTY: { box: "border-zinc-800/80 bg-zinc-950/40", field: "focus-within:border-blue-500/70", text: "text-zinc-300" },
+  WIN: { box: "border-emerald-500/35 bg-emerald-500/[0.07]", field: "focus-within:border-emerald-500/70", text: "text-emerald-300" },
+  LOSS: { box: "border-rose-500/35 bg-rose-500/[0.07]", field: "focus-within:border-rose-500/70", text: "text-rose-300" },
+  BREAKEVEN: { box: "border-blue-500/35 bg-blue-500/[0.07]", field: "focus-within:border-blue-500/70", text: "text-blue-300" },
+  EMPTY: { box: "border-zinc-700/60 bg-zinc-950/80", field: "focus-within:border-blue-500/70", text: "text-zinc-300" },
 } as const;
 
 /** Yazılan metni R değerine çevirir: virgül ondalık sayılır, baştaki eksi korunur, yarım kalmış giriş ("-", "1.") bozulmaz */
@@ -88,17 +88,18 @@ export const ResultCard = React.memo(function ResultCard({
         <span className="text-xs font-bold text-zinc-200 uppercase tracking-wider font-sans">{L("financialCard")}</span>
       </div>
 
-      {/* Kart sütun yüksekliğini doldurur (altta boşluk kalmaz); içerik ortada durur */}
-      <div className={`flex-1 rounded-xl border p-2.5 flex flex-col justify-center gap-2 transition-ui duration-500 ease-out ${tone.box}`}>
-        {/* Giriş: solda Kazanç / Kayıp anahtarı, ortada büyük sayı, sağda birim */}
-        <div className={`flex items-stretch h-10 rounded-xl bg-zinc-950/80 border border-zinc-700/60 shadow-inner overflow-hidden transition-ui duration-500 ease-out ${tone.field}`}>
-          <div role="group" aria-label="Sonucun yönü" className="flex flex-col shrink-0 border-r border-zinc-800">
+      {/* Gövde: giriş alanı + hızlı seçim. Kart sütunu doldurursa içerik dikeyde ortalanır (iç içe kutu ve ara boşluk yok) */}
+      <div className="flex-1 flex flex-col justify-center gap-3">
+        {/* Giriş: solda Kazanç / Kayıp anahtarı, ortada sayı; sağda gerekirse kaydedilecek değer ya da dolar etkisi.
+            Renk (yeşil / kırmızı / mavi) yalnızca alanın çerçevesi ve sayıda; geçişler yumuşak */}
+        <div className={`relative flex items-center gap-2 h-12 pl-1.5 pr-3 rounded-xl border shadow-inner transition-ui duration-500 ease-out ${tone.box} ${tone.field}`}>
+          <div role="group" aria-label="Sonucun yönü" className="flex items-center gap-1 shrink-0 p-0.5 rounded-lg bg-zinc-900/80 border border-zinc-800">
             <button
               type="button"
               aria-pressed={!neg}
               aria-label="Kazanç (+)"
               onClick={() => setSign(false)}
-              className={`flex-1 w-9 text-xs font-bold leading-none transition-ui duration-300 ease-out cursor-pointer ${!neg ? "bg-emerald-500/15 text-emerald-300" : "text-zinc-500 hover:text-zinc-200 hover:bg-zinc-900"}`}
+              className={`w-7 h-7 rounded-md text-sm font-bold leading-none transition-ui duration-300 ease-out cursor-pointer ${!neg ? "bg-emerald-500/20 text-emerald-300" : "text-zinc-500 hover:text-zinc-200"}`}
             >
               +
             </button>
@@ -107,13 +108,14 @@ export const ResultCard = React.memo(function ResultCard({
               aria-pressed={neg}
               aria-label="Kayıp (−)"
               onClick={() => setSign(true)}
-              className={`flex-1 w-9 text-xs font-bold leading-none border-t border-zinc-800 transition-ui duration-300 ease-out cursor-pointer ${neg ? "bg-rose-500/15 text-rose-300" : "text-zinc-500 hover:text-zinc-200 hover:bg-zinc-900"}`}
+              className={`w-7 h-7 rounded-md text-sm font-bold leading-none transition-ui duration-300 ease-out cursor-pointer ${neg ? "bg-rose-500/20 text-rose-300" : "text-zinc-500 hover:text-zinc-200"}`}
             >
               −
             </button>
           </div>
-          <div className={`flex-1 min-w-0 flex items-baseline justify-center gap-1 px-3 cursor-text transition-ui duration-500 ease-out ${tone.text}`} onClick={() => inputRef.current?.focus()}>
-            <span className="self-center text-lg font-bold opacity-80 select-none" aria-hidden>{text !== "" && Number(text) !== 0 ? (neg ? "−" : "+") : ""}</span>
+          {/* İşaret, sayı ve "R" aynı taban çizgisinde (items-baseline + leading-none): farklı boyutlar hizalı durur */}
+          <div className={`flex-1 min-w-0 flex items-baseline justify-center gap-1 leading-none cursor-text transition-ui duration-500 ease-out ${tone.text}`} onClick={() => inputRef.current?.focus()}>
+            <span className="text-xl font-bold leading-none opacity-80 select-none" aria-hidden>{text !== "" && Number(text) !== 0 ? (neg ? "−" : "+") : ""}</span>
             <input
               ref={inputRef}
               id="tf-result-r"
@@ -122,7 +124,6 @@ export const ResultCard = React.memo(function ResultCard({
               autoComplete="off"
               placeholder="0"
               aria-label={L("rr")}
-              aria-describedby="tf-result-hint"
               value={text}
               onChange={(e) => onType(e.target.value)}
               onBlur={() => {
@@ -133,30 +134,20 @@ export const ResultCard = React.memo(function ResultCard({
                 setText(String(Math.abs(r)));
               }}
               style={{ width: `${Math.max(1, text.length || 1) + 0.5}ch` }}
-              className="self-center min-w-[2ch] max-w-full bg-transparent text-center text-xl font-bold tabular-nums [color:inherit] focus:outline-none placeholder:text-zinc-600"
+              className="min-w-[2ch] max-w-full p-0 bg-transparent text-center text-2xl font-bold leading-none tabular-nums [color:inherit] focus:outline-none placeholder:text-zinc-600"
             />
-            <span className="self-center text-sm font-bold opacity-50 select-none" aria-hidden>R</span>
+            <span className="text-base font-bold leading-none opacity-50 select-none" aria-hidden>R</span>
           </div>
+          {/* Sağ köşe: yuvarlanacaksa kaydedilecek değer, hesaplıysa dolar etkisi (yer kaplamaz, satır eklemez) */}
+          {rounded !== null && (rounded !== Number(rrValue) || riskDollar) ? (
+            <span className="shrink-0 text-[10px] font-semibold tabular-nums text-zinc-500">
+              {rounded !== Number(rrValue) ? `→ ${rounded}R` : formatMoney(rounded * (riskDollar || 0), true)}
+            </span>
+          ) : null}
         </div>
 
-        {/* Açıklama satırı hep yerinde ve tek satır (yüksekliği sabit: içerik değişince pencere boyu oynamaz).
-            Boşken boş; yuvarlanacaksa kaydedilecek değer, hesaplıysa dolar etkisi; yoksa 1R'nin anlamı. */}
-        <p id="tf-result-hint" className="h-4 text-[10px] text-zinc-500 font-sans leading-4 tabular-nums truncate">
-          {rounded === null ? (
-            ""
-          ) : rounded !== Number(rrValue) || riskDollar ? (
-            <>
-              {rounded !== Number(rrValue) && <>{rounded}R olarak kaydedilir</>}
-              {rounded !== Number(rrValue) && riskDollar ? " · " : null}
-              {riskDollar ? <span className={`transition-ui duration-500 ease-out ${tone.text}`}>hesaba etkisi {formatMoney(rounded * riskDollar, true)}</span> : null}
-            </>
-          ) : (
-            "1R = işleme girerken aldığın risk"
-          )}
-        </p>
-
         {/* Hızlı seçim: çoğu işlem −1R, başabaş ya da tam hedef; tek dokunuş yeter */}
-        <div role="group" aria-label="Hızlı sonuç" className="grid grid-cols-5 gap-1.5">
+        <div role="group" aria-label="Hızlı sonuç" className="grid grid-cols-5 gap-2">
           {QUICK_R.map((v) => {
             const on = rrValue !== "" && Number(rrValue) === v;
             const cls = v > 0 ? "text-emerald-300" : v < 0 ? "text-rose-300" : "text-blue-300";
@@ -166,7 +157,7 @@ export const ResultCard = React.memo(function ResultCard({
                 type="button"
                 aria-pressed={on}
                 onClick={() => setRrValue(v)}
-                className={`h-7 rounded-lg border text-[11px] font-bold tabular-nums transition-ui duration-300 ease-out cursor-pointer ${
+                className={`h-9 rounded-xl border text-xs font-bold tabular-nums transition-ui duration-300 ease-out cursor-pointer ${
                   on ? `bg-zinc-800 border-zinc-500 ${cls}` : `bg-zinc-950/60 border-zinc-800 ${cls} opacity-75 hover:opacity-100 hover:border-zinc-600`
                 }`}
               >

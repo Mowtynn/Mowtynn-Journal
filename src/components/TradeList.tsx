@@ -153,7 +153,7 @@ const TradeList = React.memo(function TradeList({
       if (format === 'excel') {
         void toast.promise(exportTradesToExcel(targetList, filename, {
           title: `İşlem Geçmişi (${scopeName.replace(/_/g, ' ')})`,
-          definitionTitles: definitionTitles as any
+          definitionTitles: definitionTitles as unknown as Record<string, string>
         }), {
           loading: 'Excel hazırlanıyor…',
           success: `Excel tablosu (.xlsx) başarıyla indirildi (${targetList.length} işlem).`,
@@ -162,7 +162,7 @@ const TradeList = React.memo(function TradeList({
       } else {
         exportTradesToCSV(targetList, filename, {
           title: `İşlem Geçmişi (${scopeName.replace(/_/g, ' ')})`,
-          definitionTitles: definitionTitles as any
+          definitionTitles: definitionTitles as unknown as Record<string, string>
         });
         toast.success(`CSV dosyası (.csv) başarıyla indirildi (${targetList.length} işlem).`);
       }
@@ -679,7 +679,7 @@ const TradeList = React.memo(function TradeList({
                 <span className={FILTER_LABEL}>Sıralama</span>
                 <CustomSelect
                   value={filter.sortBy}
-                  onChange={(val) => handleFilterChange({ ...filter, sortBy: val as any })}
+                  onChange={(val) => handleFilterChange({ ...filter, sortBy: val as typeof filter.sortBy })}
                   options={sortByOptions}
                   className="w-full"
                 />

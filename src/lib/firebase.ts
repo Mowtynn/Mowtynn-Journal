@@ -50,9 +50,9 @@ export const loginWithGoogle = async () => {
       return;
     }
     return await signInWithPopup(auth, googleProvider);
-  } catch (error: any) {
+  } catch (err: unknown) {
+    const error = err as { code?: string; message?: string } | null;
     if (error?.code === 'auth/popup-closed-by-user' || error?.code === 'auth/cancelled-popup-request') {
-      console.log('User closed Google sign-in popup.');
       throw error;
     }
 
@@ -60,7 +60,6 @@ export const loginWithGoogle = async () => {
 
     if (error?.code === 'auth/popup-blocked' || error?.code === 'auth/operation-not-supported-in-this-environment') {
       if (!isInIframe()) {
-        console.log('Popup blocked, falling back to redirect...');
         await signInWithRedirect(auth, googleProvider);
         return;
       }

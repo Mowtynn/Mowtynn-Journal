@@ -958,3 +958,14 @@ Klasik tasarım korunarak, son eklenen alanlar (risk %, hesap bağı, strateji, 
   - Tarih: yeni işlemde gün Türkiye takvimine göre başlar (gece yarısından sonra yeni gün); işlem seçilen güne kaydedilir, gün içi sıra girildiği andan (NY) gelir.
   - Session: başlıkta NY rozeti; bilinen session'larda NY saat aralığı çipte yazar (Asia 20–00, London 02–05, NY AM 07–10, Lunch 12–13, NY PM 13:30–16). POI Sweep Time zaten NY.
   - Form: Sonuç kartı küçüldü (ayrı "Sonuç R" etiketi kalktı, alan inceldi); orta kartta bölümler doğal aralıkla sıkı (boşluk dağıtılmaz); hesap alanı en çok bir hesapta tek satır. Sağdaki Grafik ve Notlar aynı boya uyar. Hızlı Kayıt değişmedi.
+
+- Eksikler ve iyileştirmeler
+  - Session önerisi: POI Sweep Time seçilince Session boşsa saatin düştüğü NY session'ı otomatik seçilir (seçili Session değiştirilmez).
+  - Kümülatif R grafiği: kesikli trend çizgisi hiç hesaplanmıyordu, eğrinin tam üstüne çiziliyordu; artık gerçek 10 noktalık hareketli ortalama.
+  - Tip güvenliği: grafik noktaları, filtre / sıralama seçimleri ve dışa aktarma seçeneklerindeki "any" kullanımları gerçek tiplerle değiştirildi; Firebase girişindeki gereksiz konsol çıktıları kaldırıldı.
+  - Sonuç kartı yeniden: iç içe renkli kutu ve açıklama satırı kalktı; renk (yeşil / kırmızı / mavi) giriş alanının çerçevesinde. Yön anahtarı alanın içinde yan yana +/−; yuvarlama (→ 2.1R) ya da dolar etkisi alanın sağ köşesinde.
+  - İşlem detayı: alan başlıkları ve değerleri kesilmez, dar ekranda alt satıra kayar ("News Day/Bank Holiday", çoklu Target); POI Sweep Time değerinin yanındaki "NY" kalktı.
+  - Sonuç girişi: işaret, sayı ve "R" aynı taban çizgisinde (önceden farklı boyutlar dikeyde kayık görünüyordu); alan ve hızlı seçim düğmeleri biraz büyüdü, kart içinde boşluk kalmaz.
+  - Tüm sayfalar ve sekmeler (13 ekran, masaüstü ve telefon genişliği) hizalama, taşma ve ikon-metin ortalaması için tarandı; başka sorun bulunmadı.
+  - Takvim (masaüstü): gün hücreleri biraz daha yüksek; işlem sayısı ferah bir rozet içinde ("3 işlem", sayı vurgulu), günün R'si büyük ve okunur (18px), "R" aynı taban çizgisinde.
+  - Okunabilirlik: küçük metin tabanı masaüstünde bir kademe büyüdü (işlem sayıları, WR, örneklem etiketleri). Önceki taban kuralı sm:/lg: duyarlı boyutları eziyordu (takvimde R masaüstünde de küçük kalıyordu); artık duyarlı boyutu olan öğelere dokunmuyor. 13 ekran masaüstü ve telefon genişliğinde taşma / kesilme için yeniden tarandı: sorun yok.

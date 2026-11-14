@@ -416,7 +416,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                           />
                           <ContextRow
                             label={smartUpper(cleanDefinitionTitleString(definitionTitles.sweepTime) || "POI SWEEP TIME")}
-                            value={currentTrade.sweepTime ? `${currentTrade.sweepTime} NY` : undefined}
+                            value={currentTrade.sweepTime || undefined}
                             icon={<Clock size={14} className="text-blue-400"/>}
                           />
                           {/* 3. SESSION */}
@@ -693,13 +693,14 @@ function ContextRow({
 }) {
   const displayValue = value !== undefined && value !== null ? value : '—';
   const text = typeof displayValue === 'string' ? smartUpper(displayValue) : displayValue;
+  // Başlık ve değer kesilmez, gerekirse alt satıra kayar (dar ekranda "News Day/Bank Holiday", çoklu Target)
   return (
     <div className={`flex flex-col gap-1 px-3.5 py-2 bg-zinc-950/70 min-w-0 ${wide ? 'col-span-2' : ''}`}>
       <div className="flex items-center gap-1.5 text-zinc-500 min-w-0 [&>svg]:w-3 [&>svg]:h-3 [&>svg]:shrink-0">
         {icon}
-        <span className="text-[9px] font-bold uppercase tracking-wider font-sans truncate">{smartUpper(label)}</span>
+        <span className="text-[9px] font-bold uppercase tracking-wider font-sans leading-tight break-words min-w-0">{smartUpper(label)}</span>
       </div>
-      <div className={`text-[11px] font-bold font-sans uppercase truncate ${valueColor || 'text-zinc-300'}`}>
+      <div className={`text-[11px] font-bold font-sans uppercase leading-snug break-words ${valueColor || 'text-zinc-300'}`}>
         {text}
       </div>
     </div>

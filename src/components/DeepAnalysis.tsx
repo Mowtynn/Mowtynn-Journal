@@ -38,7 +38,7 @@ export const preloadDeepAnalysisParts = () =>
     .then((m) => m.preloadStrategyHub());
 import { CalendarView } from "./CalendarView";
 import { TradeHistoryModal } from "./TradeHistoryModal";
-import { MemoizedEquityChart } from './deepAnalysis/EquityChart';
+import { MemoizedEquityChart, type EquityChartPoint } from './deepAnalysis/EquityChart';
 import { nyWallDate } from '../lib/tradingTime';
 import { setupQualityTier } from '../lib/setupQuality';
 import { MIN_SAMPLE } from '../lib/sampleSize';
@@ -147,7 +147,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
     [closedTrades, planFidelities],
   );
 
-  const chartEquityCurve = useMemo(() => {
+  const chartEquityCurve = useMemo((): EquityChartPoint[] => {
     if (!metrics?.equityCurve) return [];
     if (equityFilter === 'trade') {
       return metrics.equityCurve.map((pt) => ({
@@ -159,7 +159,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
       }));
     }
 
-    const grouped: Record<string, any> = {};
+    const grouped: Record<string, EquityChartPoint> = {};
     metrics.equityCurve.forEach(pt => {
       const date = nyWallDate(pt.timestamp);
       let key = '';
@@ -214,7 +214,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
     show: { 
       opacity: 1, 
       y: 0,
-      transition: { duration: 0.3, ease: EASE as any }
+      transition: { duration: 0.3, ease: EASE }
     }
   };
 
@@ -350,7 +350,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
                         <button
                           key={opt.id}
                           type="button"
-                          onClick={(e) => { e.stopPropagation(); setEquityFilter(opt.id as any); }}
+                          onClick={(e) => { e.stopPropagation(); setEquityFilter(opt.id as typeof equityFilter); }}
                           className={`px-2 py-0.5 text-[9px] font-bold font-sans tracking-wider uppercase rounded-lg transition-ui duration-150 ${
                             equityFilter === opt.id 
                               ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' 

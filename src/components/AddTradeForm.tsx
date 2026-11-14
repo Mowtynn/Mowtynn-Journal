@@ -1,5 +1,5 @@
 import { PANE } from '../lib/motion';
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "motion/react";
 import { Trade, DefinitionTitles, PropAccount } from "../types";
@@ -22,6 +22,7 @@ import { missingRequired } from "../lib/requiredFields";
 import { Plus, X, Zap, Copy } from "lucide-react";
 import { NO_ACCOUNT, Num, AccountOption, buildInitial, useTitles, statusOfR } from './tradeForm/shared';
 import { roundR } from '../lib/tradeModel';
+import { sessionForNyTime } from '../lib/sessions';
 import { nyInputToTs, newTradeDateInput } from '../lib/tradingTime';
 import { BasicInfoCard } from './tradeForm/BasicInfoCard';
 import { ResultCard } from './tradeForm/ResultCard';
@@ -116,6 +117,8 @@ const AddTradeForm = React.memo(function AddTradeForm({
   const [riskError, setRiskError] = useState(false);
 
   const [selectedSession, setSelectedSession] = useState(init.session);
+  const selectedSessionRef = useRef(selectedSession);
+  selectedSessionRef.current = selectedSession;
   const [selectedEntries, setSelectedEntries] = useState<string[]>(init.entries);
   const [selectedTrend, setSelectedTrend] = useState(init.trend);
   const [planFidelity, setPlanFidelity] = useState<string | null>(init.planFidelity);
@@ -126,6 +129,8 @@ const AddTradeForm = React.memo(function AddTradeForm({
   const [newsDayError, setNewsDayError] = useState(false);
   const [asiaRange, setAsiaRange] = useState(init.asiaRange);
   const [sweepTime, setSweepTime] = useState(init.sweepTime);
+  const sweepTimeRef = useRef(sweepTime);
+  sweepTimeRef.current = sweepTime;
   const [selectedAsiaFvg, setSelectedAsiaFvg] = useState(init.asiaFvg);
 
   const [rrValue, setRrValue] = useState<Num>(init.rrValue);
@@ -337,6 +342,17 @@ const AddTradeForm = React.memo(function AddTradeForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active]);
 
+  // POI Sweep Time seçilince Session boşsa, saatin düştüğü NY session'ı önerilir (London 02–05, NY AM 07–10 …).
+  // Seçili bir Session varsa değiştirilmez; öneri yalnızca bilinen adlı session'larda yapılır.
+  const setSweepTimeAndSuggest = useCallback<React.Dispatch<React.SetStateAction<string>>>((next) => {
+    const value = typeof next === "function" ? next(sweepTimeRef.current) : next;
+    setSweepTime(value);
+    if (value && !selectedSessionRef.current) {
+      const s = sessionForNyTime(value, sessions);
+      if (s) setSelectedSession(s);
+    }
+  }, [sessions]);
+
   const requestClose = () => onCancelEdit();
 
   // Yeni işlemde imleç doğrudan pariteye (yalnızca fare/klavye cihazlarında; telefonda klavye kendiliğinden açılmasın)
@@ -488,7 +504,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                   asiaRange={asiaRange}
                   setAsiaRange={setAsiaRange}
                   sweepTime={sweepTime}
-                  setSweepTime={setSweepTime}
+                  setSweepTime={setSweepTimeAndSuggest}
                   asiaRangeFvgs={asiaRangeFvgs}
                   selectedAsiaFvg={selectedAsiaFvg}
                   setSelectedAsiaFvg={setSelectedAsiaFvg}
