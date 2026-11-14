@@ -1,4 +1,4 @@
-import { saveBlob, dataUrlToBlob, waitForPaint } from "../lib/download";
+import { saveBlob, dataUrlToBlob, waitForPaint, withExportSafeText } from "../lib/download";
 import { fileSlug } from "../utils/exportTrades";
 import { EASE } from '../lib/motion';
 import { MODAL_BACKDROP, MODAL_PANEL } from '../lib/motion';
@@ -129,7 +129,9 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
       await waitForPaint();
       // Görsel kütüphanesi yalnızca indirme anında yüklenir (açılış paketinde yok)
       const htmlToImage = await import("html-to-image");
-      const dataUrl = await htmlToImage.toPng(contentRef.current, {
+      const node = contentRef.current;
+      if (!node) return; // pencere bu arada kapandıysa
+      const dataUrl = await withExportSafeText(node, () => htmlToImage.toPng(node, {
         backgroundColor: "#0a0a0c",
         pixelRatio: 2,
         // Removed cacheBust: true to prevent TradingView S3 403 Forbidden errors
@@ -140,7 +142,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
           }
           return true;
         }
-      });
+      }));
       
       const dateStr = currentTrade?.createdAt ? nyDateKey(currentTrade.createdAt) : 'export';
       await saveBlob(dataUrlToBlob(dataUrl), `${fileSlug(currentTrade?.asset || 'Trade')}_${dateStr}.png`);

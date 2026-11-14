@@ -68,3 +68,34 @@ export async function waitForPaint(): Promise<void> {
   }
   await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 }
+
+/**
+ * Görsel çıktı (html-to-image) sırasında tek satır kalması gereken metinleri korur.
+ * Kütüphane her öğenin hesaplanmış stilini kopyalar, ama bazı tarayıcılarda "white-space: nowrap"
+ * (yeni Chrome'da text-wrap-mode) kopyaya geçmez; kopyadaki yazı genişliği canlıdan birkaç alt piksel
+ * farklı olunca sabit genişlikli rozet metni ikinci satıra kayar ("AZ / ÖRNEKLEM"). Klonlama style
+ * özniteliğini olduğu gibi taşıdığı için kuralı yakalama süresince satır içi stile yazıp sonra geri alırız.
+ */
+export async function withExportSafeText<T>(root: HTMLElement, run: () => Promise<T>): Promise<T> {
+  const touched: Array<[HTMLElement, string]> = [];
+  try {
+    root.querySelectorAll<HTMLElement>('*').forEach((el) => {
+      const cs = getComputedStyle(el);
+      const ws = cs.whiteSpace || '';
+      const mode = cs.getPropertyValue('text-wrap-mode');
+      if (ws === 'nowrap' || ws === 'pre' || mode === 'nowrap') {
+        touched.push([el, el.style.whiteSpace]);
+        el.style.whiteSpace = 'nowrap';
+      }
+    });
+  } catch {
+    /* stil okunamazsa olduğu gibi yakala */
+  }
+  try {
+    return await run();
+  } finally {
+    touched.forEach(([el, prev]) => {
+      el.style.whiteSpace = prev;
+    });
+  }
+}

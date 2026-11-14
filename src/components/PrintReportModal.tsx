@@ -11,7 +11,7 @@ import { nyWallDate, nyNow } from '../lib/tradingTime';
 import { breakevenWinRateOf } from '../lib/stats';
 import { formatR } from '../lib/format';
 import { fileSlug } from '../utils/exportTrades';
-import { saveBlob, dataUrlToBlob, waitForPaint } from '../lib/download';
+import { saveBlob, dataUrlToBlob, waitForPaint, withExportSafeText } from '../lib/download';
 
 
 
@@ -99,6 +99,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
    */
   const handlePrintPdf = async () => {
     const node = reportRef.current;
+      if (!node) return; // pencere bu arada kapandıysa
     if (!node || isPrinting) return;
     setIsPrinting(true);
     // Gizli çerçeve: açılır pencere engelleyicisine takılmaz, ana ekrana eklenmiş uygulamada (PWA) da çalışır.
@@ -162,7 +163,8 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
       await waitForPaint();
       // Görsel kütüphanesi yalnızca indirme anında yüklenir (açılış paketinde yok)
       const htmlToImage = await import("html-to-image");
-      const dataUrl = await htmlToImage.toPng(reportRef.current, {
+      const node = reportRef.current;
+      const dataUrl = await withExportSafeText(node, () => htmlToImage.toPng(node, {
         backgroundColor: "#09090b",
         pixelRatio: 2,
         imagePlaceholder: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
@@ -172,7 +174,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
           }
           return true;
         }
-      });
+      }));
       
       await saveBlob(dataUrlToBlob(dataUrl), `${fileSlug(activeTitle)}_islem_raporu.png`);
       toast.success("Rapor başarıyla indirildi.");
