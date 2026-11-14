@@ -644,19 +644,21 @@ input:focus-visible, textarea:focus-visible { outline: none; }
   .tf-card .py-1\.5 { padding-top: 0.3125rem; padding-bottom: 0.3125rem; }
 }
 @media (min-width: 1024px) and (max-height: 820px) {
-  .tf-card .h-9, .tf-card .sm\:h-9, .tf-card .sm\:h-10 { height: 2rem; }
-  .tf-card .h-8 { height: 1.75rem; }
-  .tf-card .h-10 { height: 2.25rem; }
-  .tf-card { padding: 0.5rem 0.75rem; row-gap: 0.4375rem; }
-  .tf-card .gap-y-4 { row-gap: 0.375rem; }
-  .tf-card .mb-2 { margin-bottom: 0.25rem; }
-  .tf-card .py-1\.5 { padding-top: 0.1875rem; padding-bottom: 0.1875rem; }
-  .tf-card .pt-3 { padding-top: 0.375rem; }
-  .tf-card button.text-\[11px\] { font-size: 10px; }
-  .tf-card button.px-3 { padding-left: 0.5rem; padding-right: 0.5rem; }
-  .tf-card .flex-wrap.gap-1\.5 { gap: 0.25rem; }
-  .tf-head, .tf-foot { padding-top: 0.375rem; padding-bottom: 0.375rem; }
-  .tf-body { padding: 0.375rem 0.875rem; gap: 0.5rem; }
+  /* Kısa masaüstü ekranı (ör. 1366×768): form pencereye sığsın ama sıkışık görünmesin. Form kısaldığı için
+     aralıklar bir önceki sürüme göre biraz açıldı (alan yüksekliği 32 → 34px, kart içi ve çip aralıkları). */
+  .tf-card .h-9, .tf-card .sm\:h-9, .tf-card .sm\:h-10 { height: 2.125rem; }
+  .tf-card .h-8 { height: 1.875rem; }
+  .tf-card .h-10 { height: 2.375rem; }
+  .tf-card { padding: 0.625rem 0.875rem; row-gap: 0.5625rem; }
+  .tf-card .gap-y-4 { row-gap: 0.5rem; }
+  .tf-card .mb-2 { margin-bottom: 0.3125rem; }
+  .tf-card .py-1\.5 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+  .tf-card .pt-3 { padding-top: 0.5rem; }
+  .tf-card button.text-\[11px\] { font-size: 10.5px; }
+  .tf-card button.px-3 { padding-left: 0.625rem; padding-right: 0.625rem; }
+  .tf-card .flex-wrap.gap-1\.5 { gap: 0.3125rem; }
+  .tf-head, .tf-foot { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+  .tf-body { padding: 0.5rem 1rem; gap: 0.75rem; }
   .form-modal { padding-top: 0.25rem; padding-bottom: 0.25rem; }
   .form-modal-panel { max-height: calc(100dvh - 0.5rem); }
 }

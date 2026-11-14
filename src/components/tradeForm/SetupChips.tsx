@@ -1,5 +1,4 @@
 import React, { useMemo } from "react";
-import { setupQualityTier } from "../../lib/setupQuality";
 import { normalizeNewsDays } from "../../constants/constants";
 import { Layers, ShieldCheck, Zap, TrendingUp, Clock, Flag, Newspaper, Compass, MoveHorizontal, Waves, Timer } from "lucide-react";
 import { ASIA_RANGE_TYPES, ASIA_RANGE_FORM_TYPES } from "../../types";
@@ -7,10 +6,10 @@ import { SweepTimePicker } from "./SweepTimePicker";
 import { CHIP_BASE, SetState, withSelected, Titles, SlideBg } from './shared';
 
 /* Asia Range seçeneklerinin görünümü */
-const ASIA_RANGE_META: Record<(typeof ASIA_RANGE_TYPES)[number], { icon: typeof Compass; active: string }> = {
-  Range: { icon: MoveHorizontal, active: "bg-blue-500/20 text-blue-300 border-blue-500/40" },
-  Trend: { icon: TrendingUp, active: "bg-blue-500/20 text-blue-300 border-blue-500/40" },
-  Swept: { icon: Waves, active: "bg-blue-500/20 text-blue-300 border-blue-500/40" },
+const ASIA_RANGE_META: Record<(typeof ASIA_RANGE_TYPES)[number], { icon: typeof Compass }> = {
+  Range: { icon: MoveHorizontal },
+  Trend: { icon: TrendingUp },
+  Swept: { icon: Waves },
 };
 
 /* ================= 2. SÜTUN: KURULUM ÇİPLERİ ================= */
@@ -100,21 +99,18 @@ export const SetupChips = React.memo(function SetupChips({
           <div className="w-full grid grid-flow-col auto-cols-fr bg-zinc-950/80 border border-zinc-800/90 rounded-xl p-1 gap-1.5 h-9 sm:h-10 shadow-inner">
             {planFidelities.map((item) => {
               const isSelected = planFidelity === item;
-              const tier = setupQualityTier(item);
-              const activeStyle = tier === "high" ? "bg-blue-500/20 text-blue-300 border-blue-500/40 font-bold shadow-xs"
-                : tier === "low" ? "bg-blue-500/20 text-blue-300 border-blue-500/40 font-bold shadow-xs"
-                : "bg-blue-500/20 text-blue-300 border-blue-500/40 font-bold shadow-xs";
               return (
                 <button lang="en"
                   key={item}
                   type="button"
                   data-selected={isSelected}
                   onClick={() => setPlanFidelity(isSelected ? null : item)}
-                  className={`min-w-0 h-full flex items-center justify-center px-2 rounded-lg text-xs font-sans font-bold tracking-wide uppercase transition-ui duration-150 select-none border cursor-pointer ${
-                    isSelected ? activeStyle : "border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
+                  className={`relative min-w-0 h-full flex items-center justify-center px-2 rounded-lg text-xs font-sans font-bold tracking-wide uppercase transition-ui duration-150 select-none border border-transparent cursor-pointer ${
+                    isSelected ? "text-blue-300" : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
                   }`}
                 >
-                  <span className="truncate">{item}</span>
+                  {isSelected && <SlideBg id="planFidelitySlide" className="bg-blue-500/20 border-blue-500/40 shadow-xs" />}
+                  <span className="relative z-10 truncate">{item}</span>
                 </button>
               );
             })}
@@ -128,15 +124,8 @@ export const SetupChips = React.memo(function SetupChips({
             {H("trendTypes", "TREND")}
           </label>
           <div className="w-full grid grid-flow-col auto-cols-fr bg-zinc-950/80 border border-zinc-800/90 rounded-xl p-1 gap-1 h-9 sm:h-10 shadow-inner">
-            {(trendTypes.length > 0 ? trendTypes : ["Continuation", "Reversal"]).map((tr, idx) => {
+            {(trendTypes.length > 0 ? trendTypes : ["Continuation", "Reversal"]).map((tr) => {
               const isSelected = selectedTrend === tr;
-              const lower = tr.toLowerCase();
-              const isContinuation = lower.includes("continuation") || lower.includes("devam") || lower.includes("trend");
-              const isReversal = lower.includes("reversal") || lower.includes("dönüş") || lower.includes("ters");
-
-              const activeStyle = (isReversal || (!isContinuation && idx === 1))
-                ? "bg-blue-500/20 text-blue-300 border-blue-500/40 font-bold shadow-xs"
-                : "bg-blue-500/20 text-blue-300 border-blue-500/40 font-bold shadow-xs";
 
               return (
                 <button lang="en"
@@ -145,13 +134,12 @@ export const SetupChips = React.memo(function SetupChips({
                   data-selected={isSelected}
                   onClick={() => setSelectedTrend(isSelected ? "" : tr)}
                   aria-label={tr}
-                  className={`min-w-0 h-full flex items-center justify-center px-1 rounded-lg text-[11px] font-sans font-bold tracking-normal uppercase transition-ui duration-150 select-none border cursor-pointer ${
-                    isSelected
-                      ? activeStyle
-                      : "border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
+                  className={`relative min-w-0 h-full flex items-center justify-center px-1 rounded-lg text-[11px] font-sans font-bold tracking-normal uppercase transition-ui duration-150 select-none border border-transparent cursor-pointer ${
+                    isSelected ? "text-blue-300" : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
                   }`}
                 >
-                  <span className="truncate">{tr}</span>
+                  {isSelected && <SlideBg id="trendSlide" className="bg-blue-500/20 border-blue-500/40 shadow-xs" />}
+                  <span className="relative z-10 truncate">{tr}</span>
                 </button>
               );
             })}
@@ -168,8 +156,8 @@ export const SetupChips = React.memo(function SetupChips({
           </label>
           <div className={`w-full grid grid-flow-col auto-cols-fr bg-zinc-950/80 border rounded-xl p-1 gap-1.5 h-9 sm:h-10 shadow-inner ${newsDayError ? "border-rose-500/60" : "border-zinc-800/90"}`}>
             {([
-              { value: true, label: newsYesLabel, active: "bg-blue-500/20 text-blue-300 border-blue-500/40" },
-              { value: false, label: newsNoLabel, active: "bg-blue-500/20 text-blue-300 border-blue-500/40" },
+              { value: true, label: newsYesLabel },
+              { value: false, label: newsNoLabel },
             ] as const).map((opt) => {
               const isSelected = newsDay === opt.value;
               return (
@@ -181,13 +169,12 @@ export const SetupChips = React.memo(function SetupChips({
                     setNewsDay(opt.value);
                     setNewsDayError(false);
                   }}
-                  className={`min-w-0 h-full flex items-center justify-center px-2 rounded-lg text-xs font-sans font-bold tracking-wide uppercase transition-ui duration-150 select-none border cursor-pointer ${
-                    isSelected
-                      ? `${opt.active} font-bold shadow-xs`
-                      : "border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
+                  className={`relative min-w-0 h-full flex items-center justify-center px-2 rounded-lg text-xs font-sans font-bold tracking-wide uppercase transition-ui duration-150 select-none border border-transparent cursor-pointer ${
+                    isSelected ? "text-blue-300" : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
                   }`}
                 >
-                  <span className="truncate">{opt.label}</span>
+                  {isSelected && <SlideBg id="newsDaySlide" className="bg-blue-500/20 border-blue-500/40 shadow-xs" />}
+                  <span className="relative z-10 truncate">{opt.label}</span>
                 </button>
               );
             })}
@@ -207,13 +194,12 @@ export const SetupChips = React.memo(function SetupChips({
                   type="button"
                   data-selected={isSelected}
                   onClick={() => setSelectedAsiaFvg(isSelected ? "" : fv)}
-                  className={`min-w-0 h-full flex items-center justify-center px-2 rounded-lg text-xs font-sans font-bold tracking-wide uppercase transition-ui duration-150 select-none border cursor-pointer ${
-                    isSelected
-                      ? "bg-blue-500/20 text-blue-300 border-blue-500/40 font-bold shadow-xs"
-                      : "border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
+                  className={`relative min-w-0 h-full flex items-center justify-center px-2 rounded-lg text-xs font-sans font-bold tracking-wide uppercase transition-ui duration-150 select-none border border-transparent cursor-pointer ${
+                    isSelected ? "text-blue-300" : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
                   }`}
                 >
-                  <span className="truncate">{fv}</span>
+                  {isSelected && <SlideBg id="asiaFvgSlide" className="bg-blue-500/20 border-blue-500/40 shadow-xs" />}
+                  <span className="relative z-10 truncate">{fv}</span>
                 </button>
               );
             })}
@@ -241,14 +227,13 @@ export const SetupChips = React.memo(function SetupChips({
                 aria-checked={isSelected}
                 data-selected={isSelected}
                 onClick={() => setAsiaRange(isSelected ? "" : opt)}
-                className={`min-w-0 h-full flex items-center justify-center gap-1.5 px-2 rounded-lg text-xs font-sans font-bold tracking-wide uppercase transition-ui duration-150 select-none border cursor-pointer ${
-                  isSelected
-                    ? `${meta.active} shadow-xs`
-                    : "border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
+                className={`relative min-w-0 h-full flex items-center justify-center gap-1.5 px-2 rounded-lg text-xs font-sans font-bold tracking-wide uppercase transition-ui duration-150 select-none border border-transparent cursor-pointer ${
+                  isSelected ? "text-blue-300" : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
                 }`}
               >
-                <Icon size={13} className="shrink-0" />
-                <span className="truncate">{opt}</span>
+                {isSelected && <SlideBg id="asiaRangeSlide" className="bg-blue-500/20 border-blue-500/40 shadow-xs" />}
+                <Icon size={13} className="relative z-10 shrink-0" />
+                <span className="relative z-10 truncate">{opt}</span>
               </button>
             );
           })}

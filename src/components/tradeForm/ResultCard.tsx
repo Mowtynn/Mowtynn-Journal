@@ -7,11 +7,15 @@ import { roundR } from '../../lib/tradeModel';
 /** Tek dokunuşla en sık sonuçlar; farklı bir değer alana yazılır */
 const QUICK_R = [-1, 0, 1, 2, 3] as const;
 
+/**
+ * Sonuç rengi yalnızca sayıda ve yön anahtarının işaretinde: alan zemini ve çerçevesi nötr kalır (renkli zemin
+ * formun geri kalanından fazla dikkat çekiyordu). Odakta çerçeve hafifçe sonucun rengini alır.
+ */
 const RESULT_TONE = {
-  WIN: { box: "border-emerald-500/35 bg-emerald-500/[0.07]", field: "focus-within:border-emerald-500/70", text: "text-emerald-300" },
-  LOSS: { box: "border-rose-500/35 bg-rose-500/[0.07]", field: "focus-within:border-rose-500/70", text: "text-rose-300" },
-  BREAKEVEN: { box: "border-blue-500/35 bg-blue-500/[0.07]", field: "focus-within:border-blue-500/70", text: "text-blue-300" },
-  EMPTY: { box: "border-zinc-700/60 bg-zinc-950/80", field: "focus-within:border-blue-500/70", text: "text-zinc-300" },
+  WIN: { box: "border-zinc-700/60 bg-zinc-950/80", field: "focus-within:border-emerald-500/40", text: "text-emerald-300" },
+  LOSS: { box: "border-zinc-700/60 bg-zinc-950/80", field: "focus-within:border-rose-500/40", text: "text-rose-300" },
+  BREAKEVEN: { box: "border-zinc-700/60 bg-zinc-950/80", field: "focus-within:border-blue-500/40", text: "text-blue-300" },
+  EMPTY: { box: "border-zinc-700/60 bg-zinc-950/80", field: "focus-within:border-blue-500/40", text: "text-zinc-300" },
 } as const;
 
 /** Yazılan metni R değerine çevirir: virgül ondalık sayılır, baştaki eksi korunur, yarım kalmış giriş ("-", "1.") bozulmaz */
@@ -99,7 +103,7 @@ export const ResultCard = React.memo(function ResultCard({
               aria-pressed={!neg}
               aria-label="Kazanç (+)"
               onClick={() => setSign(false)}
-              className={`w-7 h-7 rounded-md text-sm font-bold leading-none transition-ui duration-300 ease-out cursor-pointer ${!neg ? "bg-emerald-500/20 text-emerald-300" : "text-zinc-500 hover:text-zinc-200"}`}
+              className={`w-7 h-7 rounded-md text-sm font-bold leading-none transition-ui duration-300 ease-out cursor-pointer ${!neg ? "bg-zinc-800 text-emerald-300" : "text-zinc-500 hover:text-zinc-200"}`}
             >
               +
             </button>
@@ -108,7 +112,7 @@ export const ResultCard = React.memo(function ResultCard({
               aria-pressed={neg}
               aria-label="Kayıp (−)"
               onClick={() => setSign(true)}
-              className={`w-7 h-7 rounded-md text-sm font-bold leading-none transition-ui duration-300 ease-out cursor-pointer ${neg ? "bg-rose-500/20 text-rose-300" : "text-zinc-500 hover:text-zinc-200"}`}
+              className={`w-7 h-7 rounded-md text-sm font-bold leading-none transition-ui duration-300 ease-out cursor-pointer ${neg ? "bg-zinc-800 text-rose-300" : "text-zinc-500 hover:text-zinc-200"}`}
             >
               −
             </button>

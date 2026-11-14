@@ -4,8 +4,9 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { canonicalAsset } from "../../lib/tradeModel";
 import { TurkishDatePicker } from "../TurkishDateTimePicker";
-import { Search, Layers, Check, Shield } from "lucide-react";
+import { Search, Layers, Check } from "lucide-react";
 import { NO_ACCOUNT, Num, SetState, AccountOption, Titles, SlideBg } from './shared';
+import { AccountPicker } from './AccountPicker';
 
 /* ================= 1. KART: TEMEL BİLGİLER (parite, yön, hesap, risk, tarih) ================= */
 export const BasicInfoCard = React.memo(function BasicInfoCard({
@@ -222,69 +223,20 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
         </div>
       </div>
 
-      {/* Satır 2: Hesap seçimi — aktif prop hesapları ve en sonda Hesapsız aynı ızgarada (başlıksız; alanın kendisi anlatır).
-          Yükseklik formdaki hiçbir seçimle değişmez: tek satır (en çok bir hesap + Hesapsız) ya da iki satır;
-          fazlası kendi içinde kayar. Satır sayısı yalnızca Prop sekmesinde hesap eklenince değişir. */}
+      {/* Satır 2: Hesap seçimi — tek satırlık açılır seçici (sabit yükseklik): seçili hesap adı, bakiyesi ve aşamasıyla
+          görünür; listede her hesap tam adıyla, çok hesapta arama kutusuyla seçilir. Hesapsız listenin sonunda. */}
       <div id="account-field">
-        <div
-          role="radiogroup"
-          aria-label={H("platforms", "Hesap")}
-          aria-invalid={accountError || undefined}
-          className={`grid grid-cols-2 auto-rows-[2.25rem] content-start gap-1.5 ${accountOptions.length + 1 > 2 ? "h-[5.375rem]" : "h-[2.75rem]"} overflow-y-auto overscroll-contain custom-scrollbar rounded-xl p-1 border bg-zinc-950/60 transition-ui ${accountError ? "border-rose-500/60" : "border-zinc-800"}`}
-        >
-          {accountOptions.map((a) => {
-            const sel = accountChoice === a.id;
-            const funded = a.stage === 0;
-            const size = typeof a.size === "number" && a.size > 0 ? (a.size >= 1000 ? `${Math.round(a.size / 1000)}K` : String(a.size)) : null;
-            return (
-              <button
-                key={a.id}
-                type="button"
-                role="radio"
-                aria-checked={sel}
-                data-selected={sel}
-                onClick={() => {
-                  setAccountChoice(a.id);
-                  setAccountError(false);
-                }}
-                className={`min-w-0 h-full px-2 rounded-lg border text-xs font-semibold font-sans flex items-center gap-1.5 transition-ui cursor-pointer ${
-                  sel ? "bg-blue-500/15 text-blue-50 border-blue-500/45" : "bg-zinc-900/60 border-transparent text-zinc-300 hover:text-white hover:bg-zinc-800/70"
-                }`}
-              >
-                <span aria-hidden className={`w-1.5 h-1.5 rounded-full shrink-0 ${funded ? "bg-emerald-400" : "bg-blue-400"}`} />
-                <span className="truncate flex-1 text-left">{a.label}</span>
-                {size && <span className="shrink-0 text-[10px] text-zinc-500 tabular-nums">{size}</span>}
-                <span className={`shrink-0 text-[10px] font-bold px-1 rounded ${sel ? "bg-blue-500/25 text-blue-200" : "bg-zinc-800 text-zinc-400"}`}>
-                  {funded ? "F" : `P${a.stage}`}
-                </span>
-              </button>
-            );
-          })}
-          <button
-            type="button"
-            role="radio"
-            aria-checked={accountChoice === NO_ACCOUNT}
-            data-selected={accountChoice === NO_ACCOUNT}
-            onClick={() => {
-              setAccountChoice(NO_ACCOUNT);
-              setAccountError(false);
-              setRiskError(false);
-            }}
-            className={`min-w-0 h-full px-2 rounded-lg border text-xs font-semibold font-sans flex items-center gap-1.5 transition-ui cursor-pointer ${
-              accountChoice === NO_ACCOUNT
-                ? "bg-amber-500/15 text-amber-200 border-amber-500/40"
-                : "bg-zinc-900/60 border-transparent text-zinc-300 hover:text-white hover:bg-zinc-800/70"
-            }`}
-          >
-            <Shield size={12} className="text-amber-400 shrink-0" />
-            <span className="truncate flex-1 text-left">Hesapsız</span>
-          </button>
-          {accountOptions.length === 0 && (
-            <div className="min-w-0 h-full px-2 flex items-center text-[10px] leading-tight text-zinc-500 font-sans">
-              Aktif prop hesabı yok · Prop sekmesinden ekle
-            </div>
-          )}
-        </div>
+        <AccountPicker
+          options={accountOptions}
+          value={accountChoice}
+          error={accountError}
+          label={H("platforms", "Hesap")}
+          onChange={(id) => {
+            setAccountChoice(id);
+            setAccountError(false);
+            if (id === NO_ACCOUNT) setRiskError(false);
+          }}
+        />
       </div>
 
       {/* Risk satırı: her zaman yerinde durur (hesap ↔ Hesapsız geçişinde pencere yeniden boyutlanmasın).
