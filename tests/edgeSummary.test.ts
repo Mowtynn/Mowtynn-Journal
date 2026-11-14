@@ -22,10 +22,6 @@ test('sızıntı ve güç: yeterli örneklemli tekil alan değerleri', () => {
   // olumlu bulguya yüksek eşik: kanıtlanmamış 8 işlemli pozitif alan "daha çok yap"a girmez
   const few = computeEdgeSummary(list.filter((x) => x.session !== 'London' || x.createdAt > NOW - 200 * DAY));
   assert.ok(!few.strengths.some((x) => x.value === 'London'));
-  // sonuç boyutu (BE sonrası TP) giriş önerilerine karışmaz
-  const m = computeEdgeSummary(Array.from({ length: 12 }, (_, i) => t(0, { afterExitTp: true }, i)).concat(Array.from({ length: 12 }, (_, i) => t(i % 3 ? 2 : -1, {}, 20 + i))));
-  assert.ok(!m.strengths.concat(m.leaks).some((x) => x.dimension === 'afterExitTp'));
-  assert.deepEqual(m.beAfterTp, { be: 12, answered: 12, wentTp: 12 });
   assert.deepEqual(s.riskSlices.map((r) => [r.riskPct, r.edge.n]), [[0.5, 10], [1, 8]]);
 });
 
@@ -44,3 +40,22 @@ test('boş liste güvenli', () => {
   assert.deepEqual(s.bestSetups, []);
 });
 
+
+test('kural zamanları: kaldırılan girdiler temizlenir, Sweep Saati → POI Sweep Saati (birleşik kurallarda da)', async () => {
+  const { migrateRuleSince } = await import('../src/lib/ruleSince');
+  const out = migrateRuleSince({
+    'TAKE|Sweep Saati (NY, 30 dk): 02:00–02:30': 5,
+    'TAKE|POI Sweep Saati (NY, 30 dk): 02:00–02:30': 7,
+    'TAKE|Entry TF: 5M': 1,
+    'AVOID|Trend: Reversal + Sweep Saati (NY, 30 dk): 03:00–03:30': 3,
+    'AVOID|Trend: Reversal + PD Array: Premium': 4,
+    'TAKE|Session: London': 2,
+    bozuk: 'x',
+  });
+  assert.deepEqual(out, {
+    'TAKE|POI Sweep Saati (NY, 30 dk): 02:00–02:30': 5,
+    'AVOID|Trend: Reversal + POI Sweep Saati (NY, 30 dk): 03:00–03:30': 3,
+    'TAKE|Session: London': 2,
+  });
+  assert.deepEqual(migrateRuleSince(null), {});
+});

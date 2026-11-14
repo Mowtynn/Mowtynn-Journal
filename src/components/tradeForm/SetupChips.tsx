@@ -4,7 +4,7 @@ import { normalizeNewsDays } from "../../constants/constants";
 import { Layers, ShieldCheck, Zap, TrendingUp, Clock, Flag, Newspaper, Compass, MoveHorizontal, Waves, Timer } from "lucide-react";
 import { ASIA_RANGE_TYPES, ASIA_RANGE_FORM_TYPES } from "../../types";
 import { SweepTimePicker } from "./SweepTimePicker";
-import { CHIP_BASE, SetState, withSelected, Titles, SlideBg, afterExitTpAsked } from './shared';
+import { CHIP_BASE, SetState, withSelected, Titles, SlideBg } from './shared';
 
 /* Asia Range seçeneklerinin görünümü */
 const ASIA_RANGE_META: Record<(typeof ASIA_RANGE_TYPES)[number], { icon: typeof Compass; active: string }> = {
@@ -31,9 +31,6 @@ export const SetupChips = React.memo(function SetupChips({
   setAsiaRange,
   sweepTime,
   setSweepTime,
-  afterExitTp,
-  setAfterExitTp,
-  tradeStatus,
   asiaRangeFvgs,
   selectedAsiaFvg,
   setSelectedAsiaFvg,
@@ -66,9 +63,6 @@ export const SetupChips = React.memo(function SetupChips({
   setAsiaRange: SetState<string>;
   sweepTime: string;
   setSweepTime: SetState<string>;
-  afterExitTp: boolean | null;
-  setAfterExitTp: SetState<boolean | null>;
-  tradeStatus: string;
   asiaRangeFvgs: string[];
   selectedAsiaFvg: string;
   setSelectedAsiaFvg: SetState<string>;
@@ -88,6 +82,8 @@ export const SetupChips = React.memo(function SetupChips({
   const { L, H } = titles;
   const [newsYesLabel, newsNoLabel] = useMemo(() => normalizeNewsDays(newsDays), [newsDays]);
 
+  // Üst bölümler (Setup Kalitesi, News Day, Asia Range) sıkı durur. Kart komşularından kısa kalırsa artan boşluk
+  // yalnızca alttaki kurulum ızgarasının satırları arasına dağılır (Target altında tek büyük boşluk kalmaz)
   return (
     <div className="tf-card bg-zinc-900/50 border border-zinc-800/80 rounded-2xl p-4 flex flex-col gap-3.5 shadow-sm h-full">
       
@@ -257,8 +253,8 @@ export const SetupChips = React.memo(function SetupChips({
         </div>
       </div>
 
-      {/* KURULUM SIRASI: Sweep Time · Session · Timeframe · PD Array · Entry Timeframe · Entry Model · Target · Confirmations */}
-      <div className="grid grid-cols-2 gap-x-4 gap-y-4 pt-1 border-t border-zinc-800/60">
+      {/* KURULUM SIRASI: POI Sweep Time · Session · Entry Model · Confirmations · Target (tam genişlik) */}
+      <div className="flex-1 grid grid-cols-2 content-between gap-x-4 gap-y-4 pt-1 border-t border-zinc-800/60">
         {/* SWEEP TIME (NY) */}
         <div className="flex flex-col">
           <span lang="en" className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
@@ -328,8 +324,37 @@ export const SetupChips = React.memo(function SetupChips({
           </div>
         </div>
 
-        {/* TARGET — çıkış hedefi (çoklu) */}
+        {/* CONFIRMATIONS (eski adı Premium / Discount) */}
         <div className="flex flex-col">
+          <span lang="en" className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
+            <ShieldCheck size={12} className="text-blue-400 shrink-0" />
+            {H("premiumDiscounts", "CONFIRMATIONS")}
+          </span>
+          <div className="flex flex-wrap gap-1.5">
+            {withSelected(premiumDiscounts, premiumDiscount ? [premiumDiscount] : []).map((zone) => {
+              const isSelected = premiumDiscount === zone;
+              return (
+                <button lang="en"
+                  key={zone}
+                  type="button"
+                  data-selected={isSelected}
+                  onClick={() => setPremiumDiscount(isSelected ? "" : zone)}
+                  className={`${CHIP_BASE} ${
+                    isSelected
+                      ? "bg-blue-500/20 text-blue-300 border-blue-500/60 shadow-xs"
+                      : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
+                  }`}
+                >
+                  {zone}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+
+        {/* TARGET — çıkış hedefi (çoklu). En altta tam genişlik: seçenekler yan yana uzar, sıkışmaz */}
+        <div className="col-span-2 flex flex-col pt-3 border-t border-zinc-800/60">
           <span lang="en" className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
             <Flag size={12} className="text-blue-400 shrink-0" />
             {H("tpTargets", "TARGET")}
@@ -362,65 +387,7 @@ export const SetupChips = React.memo(function SetupChips({
           </div>
         </div>
 
-        {/* CONFIRMATIONS (eski adı Premium / Discount) */}
-        <div className="flex flex-col">
-          <span lang="en" className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
-            <ShieldCheck size={12} className="text-blue-400 shrink-0" />
-            {H("premiumDiscounts", "CONFIRMATIONS")}
-          </span>
-          <div className="flex flex-wrap gap-1.5">
-            {withSelected(premiumDiscounts, premiumDiscount ? [premiumDiscount] : []).map((zone) => {
-              const isSelected = premiumDiscount === zone;
-              return (
-                <button lang="en"
-                  key={zone}
-                  type="button"
-                  data-selected={isSelected}
-                  onClick={() => setPremiumDiscount(isSelected ? "" : zone)}
-                  className={`${CHIP_BASE} ${
-                    isSelected
-                      ? "bg-blue-500/20 text-blue-300 border-blue-500/60 shadow-xs"
-                      : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
-                  }`}
-                >
-                  {zone}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
       </div>
-
-      {/* ÇIKIŞ SONRASI TP: yalnızca başabaş (BE) kapanan işlemde sorulur */}
-      {afterExitTpAsked(tradeStatus) && (
-        <div className="pt-3 border-t border-zinc-800/60 flex items-center justify-between gap-3">
-          <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide flex items-center gap-1.5 font-sans min-w-0">
-            <Zap size={12} className="text-blue-400 shrink-0" />
-            <span className="truncate">BE Sonrası TP'ye Gitti mi?</span>
-          </span>
-          <span className="flex items-center bg-zinc-950/80 border border-zinc-800/90 rounded-lg p-0.5 gap-0.5 shrink-0">
-            {([true, false] as const).map((v) => {
-              const isSelected = afterExitTp === v;
-              return (
-                <button
-                  key={String(v)}
-                  type="button"
-                  data-selected={isSelected}
-                  onClick={() => setAfterExitTp(isSelected ? null : v)}
-                  className={`h-6 px-2.5 rounded-md text-[10px] font-sans font-bold uppercase transition-ui select-none border cursor-pointer ${
-                    isSelected
-                      ? "bg-blue-500/20 text-blue-300 border-blue-500/40"
-                      : "border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
-                  }`}
-                >
-                  {v ? "Evet" : "Hayır"}
-                </button>
-              );
-            })}
-          </span>
-        </div>
-      )}
 
     </div>
   );

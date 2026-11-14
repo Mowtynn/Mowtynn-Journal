@@ -74,11 +74,11 @@ test('hesap aşaması boyutu', () => {
   assert.equal(dimensionValue(t(1, { accountCategory: 'DEMO' }), 'accountStage'), UNSPECIFIED);
 });
 
-test('kaldırılan girdiler karne boyutu değildir; günün işlemi ve BE sonrası TP boyutları çalışır', async () => {
-  const { indexTradeOrder, beAfterTpStats } = await import('../src/lib/asiaAnalytics');
+test('kaldırılan girdiler karne boyutu değildir; günün işlemi boyutu çalışır', async () => {
+  const { indexTradeOrder } = await import('../src/lib/asiaAnalytics');
   const { SETUP_DIMENSIONS } = await import('../src/lib/setupScorecard');
   const ids = SETUP_DIMENSIONS.map((d) => d.id as string);
-  for (const gone of ['sweepDelay', 'holdTime', 'plannedRR', 'stopToRange', 'management', 'confirmations', 'timeframe', 'htfTimeframe', 'entryHour']) {
+  for (const gone of ['sweepDelay', 'holdTime', 'plannedRR', 'stopToRange', 'management', 'confirmations', 'timeframe', 'htfTimeframe', 'entryHour', 'afterExitTp', 'rangeSize']) {
     assert.ok(!ids.includes(gone), `${gone} hâlâ boyut`);
   }
   const a = t(1, { id: 'a', createdAt: NOW });
@@ -86,12 +86,6 @@ test('kaldırılan girdiler karne boyutu değildir; günün işlemi ve BE sonras
   indexTradeOrder([b, a]);
   assert.equal(dimensionValue(a, 'tradeOfDay'), '1. İşlem');
   assert.equal(dimensionValue(b, 'tradeOfDay'), '2. İşlem');
-  const be = t(0, { status: 'BREAKEVEN', afterExitTp: true });
-  const be2 = t(0, { status: 'BREAKEVEN', afterExitTp: false });
-  const be3 = t(0, { status: 'BREAKEVEN' });
-  assert.equal(dimensionValue(be, 'afterExitTp'), "Çıkış Sonrası TP'ye Gitti");
-  // Yalnızca BE işlemler sayılır; kazanan işlemdeki eski yanıt hesaba girmez
-  assert.deepEqual(beAfterTpStats([be, be2, be3, t(2, { afterExitTp: true })]), { be: 3, answered: 2, wentTp: 1 });
 });
 
 test('günün işlemi: uygulama genelinde tüm hesaplar birlikte sayılır', async () => {

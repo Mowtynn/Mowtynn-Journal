@@ -8,7 +8,6 @@ export function missingFields(t: Trade): string[] {
   // Hesap seçimi zorunlu: prop hesabı (accountId) ya da açıkça "Hesapsız" (DEMO)
   if (!t.accountId && t.accountCategory !== 'DEMO') out.push('Hesap');
   if (t.accountId && !hasNum(t.riskPct)) out.push('Risk %');
-  if (!hasNum(t.asiaRangePips)) out.push('Asia Range Pip');
   if (!t.asiaRange) out.push('Asia Range');
   if (!t.trend) out.push('Trend');
   if (typeof t.newsDay !== 'boolean') out.push('News Day');

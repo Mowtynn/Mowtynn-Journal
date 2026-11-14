@@ -20,7 +20,7 @@ const StrategyOptimizerHub = lazyWithPreload(() => named(import('./StrategyOptim
 /** Laboratuvar parçasını önden indirir (sekme arka planda hazırlanırken) */
 export const preloadStrategyHub = () => StrategyOptimizerHub.preload();
 import { nyWallDate } from '../lib/tradingTime';
-import { formatR } from '../lib/format';
+import { formatR, rsigned } from '../lib/format';
 
 
 const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all' }: { trades: Trade[], onMetricClick?: (id: string, val: string | number) => void, onEdit?: (trade: Trade) => void, part?: MetricsPart }) => {
@@ -76,14 +76,14 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
       'Paz': 'Pazar'
     };
     
-    const dayStats: Record<string, { total: number; wins: number; pnl: number; rr: number }> = {
-      'Pzt': { total: 0, wins: 0, pnl: 0, rr: 0 },
-      'Sal': { total: 0, wins: 0, pnl: 0, rr: 0 },
-      'Çar': { total: 0, wins: 0, pnl: 0, rr: 0 },
-      'Per': { total: 0, wins: 0, pnl: 0, rr: 0 },
-      'Cum': { total: 0, wins: 0, pnl: 0, rr: 0 },
-      'Cmt': { total: 0, wins: 0, pnl: 0, rr: 0 },
-      'Paz': { total: 0, wins: 0, pnl: 0, rr: 0 },
+    const dayStats: Record<string, { total: number; wins: number; rr: number }> = {
+      'Pzt': { total: 0, wins: 0, rr: 0 },
+      'Sal': { total: 0, wins: 0, rr: 0 },
+      'Çar': { total: 0, wins: 0, rr: 0 },
+      'Per': { total: 0, wins: 0, rr: 0 },
+      'Cum': { total: 0, wins: 0, rr: 0 },
+      'Cmt': { total: 0, wins: 0, rr: 0 },
+      'Paz': { total: 0, wins: 0, rr: 0 },
     };
 
     closedTrades.forEach(t => {
@@ -93,7 +93,6 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
       
       if (dayStats[dayKey] !== undefined) {
         dayStats[dayKey].total++;
-        dayStats[dayKey].pnl += t.rr || 0;
         dayStats[dayKey].rr += t.rr || 0;   // Accumulates R ratio
         if (t.status === 'WIN') {
           dayStats[dayKey].wins++;
@@ -102,12 +101,11 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
     });
 
     // 3. Parite Temizliği (Net kâr/zarar sıralaması in R)
-    const assetStatsMap: Record<string, { asset: string; pnl: number; total: number; wins: number; rr: number }> = {};
+    const assetStatsMap: Record<string, { asset: string; total: number; wins: number; rr: number }> = {};
     closedTrades.forEach(t => {
       if (!assetStatsMap[t.asset]) {
-        assetStatsMap[t.asset] = { asset: t.asset, pnl: 0, total: 0, wins: 0, rr: 0 };
+        assetStatsMap[t.asset] = { asset: t.asset, total: 0, wins: 0, rr: 0 };
       }
-      assetStatsMap[t.asset].pnl += t.rr || 0;
       assetStatsMap[t.asset].rr += t.rr || 0;
       assetStatsMap[t.asset].total++;
       if (t.status === 'WIN') {
@@ -117,14 +115,13 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
     const assetRanking = Object.values(assetStatsMap).sort((a, b) => b.rr - a.rr);
 
     // 4. En kârlı sessionlar (in R)
-    const sessionStatsMap: Record<string, { session: string; pnl: number; total: number; wins: number; rr: number }> = {};
+    const sessionStatsMap: Record<string, { session: string; total: number; wins: number; rr: number }> = {};
 
     closedTrades.forEach(t => {
       const s = t.session || 'Belirtilmemiş';
       if (!sessionStatsMap[s]) {
-        sessionStatsMap[s] = { session: s, pnl: 0, total: 0, wins: 0, rr: 0 };
+        sessionStatsMap[s] = { session: s, total: 0, wins: 0, rr: 0 };
       }
-      sessionStatsMap[s].pnl += t.rr || 0;
       sessionStatsMap[s].rr += t.rr || 0;
       sessionStatsMap[s].total++;
       if (t.status === 'WIN') {
@@ -134,11 +131,31 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
     });
     const sessionRanking = Object.values(sessionStatsMap).sort((a, b) => b.rr - a.rr);
 
+    // 5. Giriş modeli ve hedef: çoklu seçimde işlem her etikete bir kez sayılır (formdaki son girdiler)
+    const rankBy = (labelsOf: (t: Trade) => string[] | undefined) => {
+      const m = new Map<string, { label: string; total: number; wins: number; rr: number }>();
+      closedTrades.forEach((t) => {
+        const labels = Array.from(new Set((labelsOf(t) || []).filter(Boolean)));
+        labels.forEach((l) => {
+          const row = m.get(l) || { label: l, total: 0, wins: 0, rr: 0 };
+          row.total++;
+          row.rr += t.rr || 0;
+          if (t.status === 'WIN') row.wins++;
+          m.set(l, row);
+        });
+      });
+      return [...m.values()].sort((x, y) => y.rr - x.rr);
+    };
+    const entryRanking = rankBy((t) => t.entryModels);
+    const targetRanking = rankBy((t) => t.tpTargets);
+
     return {
       dayStats,
       TurkishDayFullNames,
       assetRanking,
       sessionRanking,
+      entryRanking,
+      targetRanking,
     };
   }, [trades]);
 
@@ -161,7 +178,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
 
     return [...filtered].sort((a, b) => {
       if (assetSort === 'pnl') {
-        return assetFilter === 'loss' ? (a.pnl - b.pnl) : (b.pnl - a.pnl);
+        return assetFilter === 'loss' ? (a.rr - b.rr) : (b.rr - a.rr);
       }
       if (assetSort === 'winrate') {
         const wrA = a.total > 0 ? a.wins / a.total : 0;
@@ -310,20 +327,20 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
                 {(() => {
                   let sortedSessions = [...customMetrics.sessionRanking];
                   if (sessionSort === 'pnl') {
-                    sortedSessions.sort((a, b) => b.pnl - a.pnl);
+                    sortedSessions.sort((a, b) => b.rr - a.rr);
                   } else if (sessionSort === 'loss') {
-                    sortedSessions.sort((a, b) => a.pnl - b.pnl);
+                    sortedSessions.sort((a, b) => a.rr - b.rr);
                   } else if (sessionSort === 'winrate') {
                     sortedSessions.sort((a, b) => (b.total > 0 ? b.wins / b.total : 0) - (a.total > 0 ? a.wins / a.total : 0));
                   }
                   
-                  const srMaxPnL = Math.max(...sortedSessions.map(sr => Math.abs(sr.pnl)), 1);
+                  const srMaxPnL = Math.max(...sortedSessions.map(sr => Math.abs(sr.rr)), 1);
 
                   return sortedSessions.map((sr, idx) => {
-                    const isProfit = sr.pnl >= 0;
-                    const pnlTone = sr.pnl > 1e-9 ? 'text-emerald-400' : sr.pnl < -1e-9 ? 'text-rose-400' : 'text-zinc-400';
+                    const isProfit = sr.rr >= 0;
+                    const pnlTone = sr.rr > 1e-9 ? 'text-emerald-400' : sr.rr < -1e-9 ? 'text-rose-400' : 'text-zinc-400';
                     const winRate = sr.total > 0 ? (sr.wins / sr.total) * 100 : 0;
-                    const barWidth = Math.min(100, (Math.abs(sr.pnl) / srMaxPnL) * 100);
+                    const barWidth = Math.min(100, (Math.abs(sr.rr) / srMaxPnL) * 100);
 
                     const readableSession = smartUpper(sr.session);
 
@@ -345,7 +362,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
                           </div>
                           <div className="text-right">
                             <span className={`font-black ${pnlTone}`}>
-                              {sr.pnl > 1e-9 ? '+' : ''}{(Math.abs(sr.rr) < 1e-9 ? 0 : sr.rr).toFixed(2)} <span className="text-[9px] text-zinc-500">R</span>
+                              {rsigned(sr.rr)} <span className="text-[9px] text-zinc-500">R</span>
                             </span>
                           </div>
                         </div>
@@ -372,6 +389,13 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
                 )}
               </div>
             </div>
+            {/* Giriş modeli ve hedef: formdaki kurulum girdilerinin sonuca katkısı (seans listesinin altındaki boşluğu da doldurur) */}
+            {(customMetrics.entryRanking.length > 0 || customMetrics.targetRanking.length > 0) && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3 pt-3 border-t border-zinc-800/70">
+                <MiniRanking title="Entry Model" rows={customMetrics.entryRanking} />
+                <MiniRanking title="Target" rows={customMetrics.targetRanking} />
+              </div>
+            )}
             </div>
           </motion.div>
 
@@ -390,7 +414,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
 
               <div className="flex-1 flex flex-col justify-between py-0.5 space-y-1.5">
               {['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'].map(dayKey => {
-                const stats = customMetrics.dayStats[dayKey] || { total: 0, wins: 0, pnl: 0, rr: 0 };
+                const stats = customMetrics.dayStats[dayKey] || { total: 0, wins: 0, rr: 0 };
                 const fullDayName = customMetrics.TurkishDayFullNames[dayKey];
 
                 const maxDayPnlAbs = Math.max(...Object.values(customMetrics.dayStats).map(d => Math.abs(d.rr)), 1);
@@ -410,7 +434,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
                         {(
                           <>
                             <span>
-                              {Math.abs(val) > 1e-9 ? (isProfitVal ? '+' : '') + val.toFixed(2) : '0.00'}{' '}
+                              {rsigned(val)}{' '}
                               <span className="text-[9px] text-zinc-500">R</span>
                             </span>
                           </>
@@ -542,7 +566,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
                 {processedAssets.slice((assetsPage - 1) * 9, assetsPage * 9).map((ar) => {
                   const isSelected = selectedAsset === ar.asset;
                   const winRate = ar.total > 0 ? (ar.wins / ar.total) * 100 : 0;
-                  const isProfit = ar.pnl >= 0;
+                  const isProfit = ar.rr >= 0;
                   
                   return (
                     <button
@@ -690,6 +714,36 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
 
 /** İşlem başına ortalama R (sıralama için) */
 const avgR = (x: { rr: number; total: number }) => (x.total > 0 ? x.rr / x.total : 0);
+
+/** Kısa sıralı liste: etiket, işlem sayısı · WR ve net R; çubuk en büyük mutlak R'ye göre */
+function MiniRanking({ title, rows }: { title: string; rows: { label: string; total: number; wins: number; rr: number }[] }) {
+  const max = Math.max(...rows.map((r) => Math.abs(r.rr)), 1);
+  return (
+    <div className="min-w-0">
+      <div className="heading-3 text-zinc-500 mb-1.5">{smartUpper(title)}</div>
+      {rows.length === 0 ? (
+        <div className="text-[10px] text-zinc-600">Veri yok</div>
+      ) : (
+        <ul className="flex flex-col gap-1.5">
+          {rows.slice(0, 5).map((r) => (
+            <li key={r.label} className="min-w-0">
+              <div className="flex items-baseline justify-between gap-2 text-[10px]">
+                <span className="font-bold text-zinc-200 uppercase tracking-wide truncate">{r.label}</span>
+                <span className={`font-bold tabular-nums shrink-0 ${r.rr > 1e-9 ? 'text-emerald-400' : r.rr < -1e-9 ? 'text-rose-400' : 'text-zinc-400'}`}>{formatR(r.rr)}</span>
+              </div>
+              <div className="flex items-center gap-2 mt-0.5">
+                <div className="flex-1 h-1 bg-zinc-950 rounded-full overflow-hidden">
+                  <div className={`h-full rounded-full ${r.rr >= 0 ? 'bg-emerald-500/70' : 'bg-rose-500/70'}`} style={{ width: `${Math.min(100, (Math.abs(r.rr) / max) * 100)}%` }} />
+                </div>
+                <span className="text-[9px] text-zinc-500 tabular-nums shrink-0">{r.total} · %{r.total ? Math.round((r.wins / r.total) * 100) : 0}</span>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 export const AdvancedMetricsDashboard = React.memo((props: { trades: Trade[], onMetricClick?: (id: string, val: string | number) => void, onEdit?: (trade: Trade) => void, part?: MetricsPart }) => {
   return <AdvancedMetricsDashboardInner {...props} />;

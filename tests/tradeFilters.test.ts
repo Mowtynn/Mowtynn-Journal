@@ -5,19 +5,14 @@ import { NOW, DAY, trade } from './fixtures';
 
 const none: GlobalTradeFilters = {
   activeAccountCategory: 'ALL',
-  globalSelectedConfirmations: [],
   globalSelectedPlanFidelity: [],
   globalDateLimit: 'all',
   globalSelectedAssets: [],
   globalSelectedSessions: [],
-  globalSelectedTimeframes: [],
-  globalSelectedHtfTimeframes: [],
   globalSelectedStatuses: [],
   globalSelectedTypes: [],
   globalSelectedEntryModels: [],
   globalSelectedTrendTypes: [],
-  globalMinAsiaRangePips: undefined,
-  globalMaxAsiaRangePips: undefined,
 };
 const f = (p: Partial<GlobalTradeFilters>) => ({ ...none, ...p });
 
@@ -46,11 +41,6 @@ test('tarih aralığı "şimdi"ye göre', () => {
   assert.deepEqual(ids(applyGlobalFilters(all, f({ globalDateLimit: '1m' }), NOW)), ids([p1, p2]));
   assert.equal(getMinTimestamp('all', NOW), 0);
   assert.equal(getMinTimestamp('1w', NOW), NOW - 7 * DAY);
-});
-
-test('sayısal aralık: değeri girilmemiş işlem aralık filtresinden geçmez', () => {
-  assert.deepEqual(ids(applyGlobalFilters(all, f({ globalMinAsiaRangePips: 5 }), NOW)), ids([fu]));
-  assert.deepEqual(ids(applyGlobalFilters(all, f({ globalMaxAsiaRangePips: 5 }), NOW)), ids([p1]));
 });
 
 test('filtreler birlikte VE ile çalışır', () => {
@@ -85,15 +75,14 @@ test('ek alan filtreleri: strateji, News day, P/D, TP target, Asia FVG, risk %, 
   assert.deepEqual(sanitizeExtraFilters({ newsDay: 'X', riskPcts: [1, 'a', -2], asiaRanges: ['A', 3] }), { ...EMPTY_EXTRA_FILTERS, riskPcts: [1], asiaRanges: ['A'] });
 });
 
-test('türetilmiş boyut filtreleri: sweep saati ve BE sonrası TP; eski kayıtlı kaldırılmış boyut yok sayılır', async () => {
+test('türetilmiş boyut filtreleri: sweep saati; eski kayıtlı kaldırılmış boyut yok sayılır', async () => {
   const { EMPTY_EXTRA_FILTERS, sanitizeExtraFilters } = await import('../src/lib/tradeFilters');
   const a = trade({ id: 'fa', status: 'BREAKEVEN', rr: 0, sweepTime: '02:10', afterExitTp: true });
   const b = trade({ id: 'fb', status: 'LOSS', rr: -1, sweepTime: '03:40' });
   const run = (dims: any) => ids(applyGlobalFilters([a, b], f({ activeAccountCategory: 'DEMO', globalExtra: { ...EMPTY_EXTRA_FILTERS, dims } }), NOW));
   assert.deepEqual(run({ sweepHour: ['02:00–02:30'] }), ['fa']);
-  assert.deepEqual(run({ afterExitTp: ["Çıkış Sonrası TP'ye Gitti"] }), ['fa']);
   assert.deepEqual(run({}), ['fa', 'fb']);
   // Depoda kalmış eski "İşlem Yönetimi" / "Planlanan R:R" seçimi temizlenir, listeyi gizlice süzmez
-  const clean = sanitizeExtraFilters({ dims: { management: ['Kısmi Kâr'], plannedRR: ['1:4+'] } });
+  const clean = sanitizeExtraFilters({ dims: { management: ['Kısmi Kâr'], plannedRR: ['1:4+'], afterExitTp: ['x'], rangeSize: ['Dar (< 0.8×)'] } });
   assert.deepEqual(clean.dims, {});
 });

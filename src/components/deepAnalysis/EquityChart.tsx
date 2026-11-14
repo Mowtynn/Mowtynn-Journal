@@ -266,7 +266,7 @@ export const MemoizedEquityChart = React.memo(function MemoizedEquityChart({
         </div>
 
         <div className="flex justify-between items-center gap-3 text-xs text-zinc-400 font-sans px-1">
-          <span className="shrink-0 whitespace-nowrap"><span className="hidden sm:inline">Günlük Başlangıcı </span>(0.00R)</span>
+          <span className="shrink-0 whitespace-nowrap"><span className="hidden sm:inline">Günlük Başlangıcı </span>(0R)</span>
           {/* Sağdan sola dizilir: ölçüm tutmazsa en eski etiket alt satıra düşer ve gizlenir, hiçbir etiket yarım kesilmez */}
           <div ref={stripRef} className="flex-1 min-w-0 h-[22px] overflow-hidden flex flex-row-reverse flex-wrap gap-x-2.5 gap-y-2">
             {[...axisLabels].reverse().map(({ item, index }) => (

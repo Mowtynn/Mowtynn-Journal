@@ -8,7 +8,6 @@ import {
   Percent,
   ChevronRight,
   Info,
-  Clock,
   Shuffle,
 } from 'lucide-react';
 import { Trade } from '../../types';
@@ -18,7 +17,7 @@ import { dimensionValue, verdictFor, signalStrength, DEFAULT_SETUP_DIMENSIONS, S
 import { EDGE_PROOF_MIN } from '../../lib/sampleSize';
 import { EdgeStats } from '../../lib/asiaAnalytics';
 import { useNewsDayLabels } from '../../hooks/useNewsDayLabels';
-import { fixed, formatPct, formatR, trPossessive } from '../../lib/format';
+import { formatR, trPossessive, rnum } from '../../lib/format';
 
 /**
  * Strateji & Edge Geliştirme Laboratuvarı: Edge Özeti (neyi daha çok / neyi hiç yapmamalı).
@@ -35,12 +34,16 @@ const sR = (v: number, d = 2) => formatR(v, d);
  * Kural sonrası performans: bir kural ilk kez oluştuğu an cihazda saklanır; sonrasındaki işlemler ayrıca ölçülür
  * (kural kendi türetildiği veriyle değil, sonraki işlemlerle doğrulanır).
  */
+import { migrateRuleSince } from '../../lib/ruleSince';
 const RULE_SINCE_KEY = 'tj_rule_since';
 const ruleKey = (kind: string, title: string) => `${kind}|${title}`;
 function loadRuleSince(): Record<string, number> {
   try {
-    const v = JSON.parse(localStorage.getItem(RULE_SINCE_KEY) || '{}');
-    return v && typeof v === 'object' ? v : {};
+    const raw = localStorage.getItem(RULE_SINCE_KEY) || '{}';
+    const map = migrateRuleSince(JSON.parse(raw));
+    const next = JSON.stringify(map);
+    if (next !== raw) localStorage.setItem(RULE_SINCE_KEY, next);
+    return map;
   } catch {
     return {};
   }
@@ -182,7 +185,7 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
           <div className="text-right min-w-0">
             <div className={`text-lg font-bold tabular-nums leading-tight ${tone(s.overall.expectancy)}`}>{sR(s.overall.expectancy)}</div>
             <div className="text-[10px] text-zinc-500 tabular-nums">
-              işlem başı · %95 GA {fixed(s.overall.expLo)} – {fixed(s.overall.expHi)}
+              işlem başı · %95 GA {rnum(s.overall.expLo)} – {rnum(s.overall.expHi)}
             </div>
           </div>
           <span className={`px-2 py-1 rounded-lg border text-[10px] font-bold uppercase ${pill.cls}`}>{pill.label}</span>
@@ -283,7 +286,7 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
         </div>
       </div>
 
-      {/* Kurallar, tesadüf testi, kombinasyonlar ve BE sonrası TP: geniş ekranda ikişerli (sayfa yarı uzunlukta) */}
+      {/* Kurallar, tesadüf testi ve kombinasyonlar: geniş ekranda ikişerli (sayfa yarı uzunlukta) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4 items-start">
         {/* Kural kartı: kesinleşmiş bulgulardan "Al / Alma" kuralları; Alma kurallarında son 7 günün ihlalleri */}
         <div className="flex flex-col gap-2 pt-3 border-t border-zinc-800/70">
@@ -410,28 +413,6 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
             <p className="text-[11px] text-zinc-500">Henüz en az {SETUP_MIN_SAMPLE * 2} işlemli, belirgin fark yaratan bir birleşim yok.</p>
           )}
         </div>
-
-        {/* BE sonrası TP: işlem kapandıktan sonra belirlenir (giriş önerilerinden ayrı) */}
-        <div className="flex flex-col gap-2 pt-3 border-t border-zinc-800/70">
-          <span className={`${sectionTitle} text-blue-300`}>
-            <Clock size={12} /> BE sonrası TP
-          </span>
-          <p className="text-[10px] text-zinc-500 -mt-1">
-            Başabaş kapattığın işlemlerde fiyat sonradan TP'ye gitti mi. Oran yükseldikçe BE'ye çekmek sana R kaybettiriyor demektir.
-          </p>
-          {s.beAfterTp.answered > 0 ? (
-            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-xl border border-zinc-800 bg-zinc-950/40 px-3 py-2 text-[11px] tabular-nums">
-              <span className="text-lg font-bold text-zinc-100">{formatPct((s.beAfterTp.wentTp / s.beAfterTp.answered) * 100, 0)}</span>
-              <span className="text-zinc-400">
-                yanıtlanan {s.beAfterTp.answered} BE işlemin {s.beAfterTp.wentTp} tanesi sonradan TP'ye gitti
-                {s.beAfterTp.answered < s.beAfterTp.be && <span className="text-zinc-600"> · {s.beAfterTp.be - s.beAfterTp.answered} BE işlemde soru boş</span>}
-              </span>
-            </div>
-          ) : (
-            <p className="text-[11px] text-zinc-500">{s.beAfterTp.be > 0 ? `${s.beAfterTp.be} BE işlem var, "BE Sonrası TP'ye Gitti mi?" sorusu yanıtlanmamış.` : 'Henüz BE kapanan işlem yok.'}</p>
-          )}
-        </div>
-
       </div>
     </section>
   );

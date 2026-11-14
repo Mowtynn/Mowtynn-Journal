@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-reac
 import { Trade } from '../types';
 import { TradeHistoryModal } from './TradeHistoryModal';
 import { nyWallDate, nyNow } from '../lib/tradingTime';
-import { formatR, signed } from '../lib/format';
+import { formatR, rsigned } from '../lib/format';
 
 const DAYS_OF_WEEK = ['PZT', 'SAL', 'ÇAR', 'PER', 'CUM', 'CMT', 'PAZ'];
 
@@ -168,8 +168,8 @@ export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], o
             <div className="mt-auto flex flex-col items-end text-right overflow-hidden">
                <div className={`max-w-full font-sans font-extrabold text-[10px] sm:text-xs leading-none ${primaryColor} tracking-tight truncate`}>
                  {/* Telefonda hücre dar: tek ondalık; geniş ekranda diğer ekranlarla aynı iki ondalık */}
-                 <span className="sm:hidden">{signed(stat.rr, 1)}</span>
-                 <span className="hidden sm:inline">{signed(stat.rr)}</span>
+                 <span className="sm:hidden">{rsigned(stat.rr, 1)}</span>
+                 <span className="hidden sm:inline">{rsigned(stat.rr)}</span>
                  <span className="hidden sm:inline text-[8px] font-bold ml-0.5 opacity-80">R</span>
                </div>
                {/* Telefonda işlem sayısı üstte yer bulamadığı için burada, kısa biçimde */}

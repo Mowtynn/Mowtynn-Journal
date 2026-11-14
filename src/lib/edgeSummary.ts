@@ -1,6 +1,6 @@
 import { Trade } from '../types';
 import { byEntryTime } from './tradeModel';
-import { beAfterTpStats, edgeFromR, EdgeStats, indexTradeOrder } from './asiaAnalytics';
+import { edgeFromR, EdgeStats, indexTradeOrder } from './asiaAnalytics';
 import { computeEdgeDrift, DRIFT_RECENT } from './edgeDrift';
 import { halfStatus, HALF_MIN, type HalfStatus } from './ruleSimulator';
 import {
@@ -39,7 +39,7 @@ export interface RiskSlice {
   edge: EdgeStats;
 }
 
-/** İki giriş alanının birleşimi (ör. Asia Range: Trend + Sweep Saati: 02:00–02:30) */
+/** İki giriş alanının birleşimi (ör. Asia Range: Trend + POI Sweep Saati: 02:00–02:30) */
 export interface PairSlice {
   dims: [SetupDimension, SetupDimension];
   values: [string, string];
@@ -78,8 +78,6 @@ export interface EdgeSummary {
   /** Pozitif beklentili, yeterli örneklemli tekil alan değerleri (en güçlü önce) */
   strengths: DimensionSlice[];
   riskSlices: RiskSlice[];
-  /** BE kapanan işlemlerden kaçı sonradan TP'ye gitti (BE işlemler 0R olduğundan R kıyası değil, oran) */
-  beAfterTp: { be: number; answered: number; wentTp: number };
   /** Kendi alanlarından belirgin iyi / kötü ikili birleşimler (en az 2 × minSample işlem) */
   bestPairs: PairSlice[];
   worstPairs: PairSlice[];
@@ -89,13 +87,9 @@ export interface EdgeSummary {
   news: { yes: EdgeStats; no: EdgeStats; unknown: number };
 }
 
-/** Sonuç boyutu: işlem kapandıktan sonra belirlenir (BE sonrası TP). Giriş kararlarıyla aynı listede "daha çok yap" önerisi üretmez. */
-export const MANAGEMENT_DIMENSIONS: SetupDimension[] = ['afterExitTp'];
-
 /** Sızıntı / güç taramasında bakılan tekil alanlar (yalnızca işleme girmeden önce bilinenler) */
 export const SCAN_DIMENSIONS: SetupDimension[] = [
   'asiaRange',
-  'rangeSize',
   'sweepHour',
   'planFidelity',
   'tradeOfDay',
@@ -138,7 +132,7 @@ export function computeEdgeSummary(trades: Trade[], minSample = SETUP_MIN_SAMPLE
   const valid = trades.filter((t) => typeof t.rr === 'number' && Number.isFinite(t.rr));
   const sorted = [...valid].sort(byEntryTime);
   indexTradeOrder(sorted);
-  const val = valueTable(sorted, [...SCAN_DIMENSIONS, ...MANAGEMENT_DIMENSIONS]);
+  const val = valueTable(sorted, SCAN_DIMENSIONS);
 
   const card = buildSetupScorecard(sorted, DEFAULT_SETUP_DIMENSIONS, { minSample });
   const judged = card.rows.filter((r) => r.verdict !== 'LOW_SAMPLE');
@@ -283,7 +277,6 @@ export function computeEdgeSummary(trades: Trade[], minSample = SETUP_MIN_SAMPLE
     leaks,
     strengths,
     riskSlices,
-    beAfterTp: beAfterTpStats(sorted),
     rules: buildRules(sorted, card.rows, slices, pairs, val, vsRestOf, now),
     bestPairs,
     worstPairs,
@@ -502,7 +495,7 @@ export function edgeReportRows(trades: Trade[], minSample = SETUP_MIN_SAMPLE): R
     [...groups.entries()]
       .map(([value, list]) => ({ value, list, exp: edgeOf(list).expectancy }))
       .sort((a, b) => b.exp - a.exp)
-      .forEach(({ value, list }) => push(d.label, value, list, MANAGEMENT_DIMENSIONS.includes(d.id) ? 'Yönetim' : d.id === 'accountStage' ? 'Bağlam' : 'Giriş'));
+      .forEach(({ value, list }) => push(d.label, value, list, d.id === 'accountStage' ? 'Bağlam' : 'Giriş'));
   }
   const byRisk = new Map<number, Trade[]>();
   for (const t of valid) {

@@ -1,15 +1,12 @@
 import { EASE, SPRING, POPOVER, MODAL_BACKDROP, MODAL_PANEL } from './lib/motion';
 import { useState, useEffect, useMemo, useCallback, useRef, Suspense, startTransition, type ReactNode, type Dispatch, type SetStateAction } from "react";
-import { createPortal } from "react-dom";
+import { createPortal, flushSync } from "react-dom";
 import { Trade, Note, JournalEntry, DefinitionTitles, AccountCategory, PropAccount } from "./types";
 import { loadPropAccounts, sanitizePropAccounts, PROP_ACCOUNTS_KEY, collectAccountImages } from "./lib/propAccounts";
 import { calculateComprehensiveStats } from "./lib/stats";
 import { edgeFromR } from "./lib/asiaAnalytics";
 import { applyGlobalFilters, countExtraFilters, DEFAULT_DATE_LIMIT, EMPTY_EXTRA_FILTERS } from "./lib/tradeFilters";
 import {
-  DEFAULT_TIMEFRAMES,
-  DEFAULT_HTF_TIMEFRAMES,
-  DEFAULT_CONFIRMATIONS,
   DEFAULT_SESSIONS,
   DEFAULT_ASSETS,
   DEFAULT_PLAN_FIDELITIES,
@@ -197,9 +194,6 @@ const readStoredArray = (key: string): unknown[] | null => {
 };
 /** Ayar belgesindeki tanım listeleri ↔ yerel anahtarları */
 const SETTINGS_LIST_KEYS: [string, string][] = [
-  ["timeframes", "trading_timeframes_list"],
-  ["htfTimeframes", "trading_htf_timeframes_list"],
-  ["confirmations", "trading_confirmations_list"],
   ["sessions", "trading_sessions_list"],
   ["assets", "trading_assets_list"],
   ["planFidelities", "trading_plan_fidelities_list"],
@@ -256,7 +250,7 @@ const sanitizeImportedSettings = (raw: any) => {
   };
   const out: Record<string, any> = {};
   const listKeys = [
-    "timeframes", "htfTimeframes", "confirmations", "sessions", "assets",
+    "sessions", "assets",
     "planFidelities", "entryModels", "trendTypes", "tpTargets", "premiumDiscounts", "asiaRangeFvgs",
   ];
   listKeys.forEach((k) => {
@@ -359,18 +353,12 @@ export default function App() {
   }, [trades]);
 
     const {
-    globalSelectedConfirmations,
-    setGlobalSelectedConfirmations,
     globalSelectedPlanFidelity,
     setGlobalSelectedPlanFidelity,
     globalSelectedAssets,
     setGlobalSelectedAssets,
     globalSelectedSessions,
     setGlobalSelectedSessions,
-    globalSelectedTimeframes,
-    setGlobalSelectedTimeframes,
-    globalSelectedHtfTimeframes,
-    setGlobalSelectedHtfTimeframes,
     globalSelectedStatuses,
     setGlobalSelectedStatuses,
     globalSelectedTypes,
@@ -381,10 +369,6 @@ export default function App() {
     setGlobalSelectedTrendTypes,
     globalDateLimit,
     setGlobalDateLimit,
-    globalMinAsiaRangePips,
-    setGlobalMinAsiaRangePips,
-    globalMaxAsiaRangePips,
-    setGlobalMaxAsiaRangePips,
     globalExtra,
     setGlobalExtra,
   } = useAppStore();
@@ -450,81 +434,6 @@ export default function App() {
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
-
-  const [timeframes, setTimeframes] = useState<string[]>(() => {
-    try {
-      const stored = localStorage.getItem("trading_timeframes_list");
-      if (stored) { const v = JSON.parse(stored); if (Array.isArray(v)) return titleCaseList(v); }
-    } catch (e) {
-      console.error(e);
-    }
-    return DEFAULT_TIMEFRAMES;
-  });
-
-  const persistTimeframes = useCallback((incoming: string[], syncCloud = true) => {
-    // Her kelimenin ilk harfi büyük (Asia Range, Entry Model); harf farkıyla tekrar edenler tek kalır
-    const updated = titleCaseList(incoming);
-    setTimeframes(updated);
-    try {
-      localStorage.setItem("trading_timeframes_list", JSON.stringify(updated));
-      if (syncCloud && user) {
-        setDoc(doc(db, "settings", user.uid), cleanForFirestore({ timeframes: updated, userId: user.uid }), { merge: true })
-          .catch(err => reportCloudError("ayar kaydı", err, "Tanımlamalar buluta kaydedilemedi; cihazda tutuluyor."));
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  }, [user]);
-
-  const [htfTimeframes, setHtfTimeframes] = useState<string[]>(() => {
-    try {
-      const stored = localStorage.getItem("trading_htf_timeframes_list");
-      if (stored) { const v = JSON.parse(stored); if (Array.isArray(v)) return titleCaseList(v); }
-    } catch (e) {
-      console.error(e);
-    }
-    return DEFAULT_HTF_TIMEFRAMES;
-  });
-
-  const persistHtfTimeframes = useCallback((incoming: string[], syncCloud = true) => {
-    // Her kelimenin ilk harfi büyük (Asia Range, Entry Model); harf farkıyla tekrar edenler tek kalır
-    const updated = titleCaseList(incoming);
-    setHtfTimeframes(updated);
-    try {
-      localStorage.setItem("trading_htf_timeframes_list", JSON.stringify(updated));
-      if (syncCloud && user) {
-        setDoc(doc(db, "settings", user.uid), cleanForFirestore({ htfTimeframes: updated, userId: user.uid }), { merge: true })
-          .catch(err => reportCloudError("ayar kaydı", err, "Tanımlamalar buluta kaydedilemedi; cihazda tutuluyor."));
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  }, [user]);
-
-  const [confirmations, setConfirmations] = useState<string[]>(() => {
-    try {
-      const stored = localStorage.getItem("trading_confirmations_list");
-      if (stored) { const v = JSON.parse(stored); if (Array.isArray(v)) return titleCaseList(v); }
-    } catch (e) {
-      console.error(e);
-    }
-    return DEFAULT_CONFIRMATIONS;
-  });
-
-  const persistConfirmations = useCallback((incoming: string[], syncCloud = true) => {
-    // Her kelimenin ilk harfi büyük (Asia Range, Entry Model); harf farkıyla tekrar edenler tek kalır
-    const updated = titleCaseList(incoming);
-    setConfirmations(updated);
-    try {
-      localStorage.setItem("trading_confirmations_list", JSON.stringify(updated));
-      if (syncCloud && user) {
-        setDoc(doc(db, "settings", user.uid), cleanForFirestore({ confirmations: updated, userId: user.uid }), { merge: true })
-          .catch(err => reportCloudError("ayar kaydı", err, "Tanımlamalar buluta kaydedilemedi; cihazda tutuluyor."));
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  }, [user]);
 
   const [sessions, setSessions] = useState<string[]>(() => {
     try {
@@ -950,10 +859,6 @@ export default function App() {
         // Eski sürümler burada kullanıcının listelerini varsayılana çeviriyordu (veri kaybı). Artık yalnızca sürüm işaretlenir
         // ve başlık adı göçü yapılır; kullanıcının kendi tanımlamalarına dokunulmaz.
         localStorage.setItem("trading_definitions_revision", DEFINITIONS_REVISION);
-        setDefinitionTitles(prev => sanitizeDefinitionTitles({ ...prev, timeframes: "Entry Timeframe" }));
-        const storedTitles = localStorage.getItem("trading_definition_titles");
-        const parsedTitles = storedTitles ? JSON.parse(storedTitles) : {};
-        localStorage.setItem("trading_definition_titles", JSON.stringify(sanitizeDefinitionTitles({ ...parsedTitles, timeframes: "Entry Timeframe" })));
       }
     } catch (e) {
       console.error(e);
@@ -981,6 +886,45 @@ export default function App() {
       localStorage.setItem("trading_form_quick_mode", v ? "1" : "0");
     } catch (e) {}
   }, []);
+  // Hızlı Kayıt aç / kapa geçişi: içerik çok kısa solar, düzen görünmezken tek seferde değişir, pencere eski boyutundan
+  // yenisine (FLIP: yalnızca transform) yumuşakça oturur ve içerik yeniden belirir. Eskiden genişlik 300 ms boyunca
+  // animasyonla değişiyor, form her karede yeniden diziliyordu (takılma + yavaşlık).
+  const formPanelRef = useRef<HTMLDivElement>(null);
+  const quickSwapBusy = useRef(false);
+  const swapFormQuickMode = useCallback((next: boolean) => {
+    const panel = formPanelRef.current;
+    const content = panel?.firstElementChild as HTMLElement | null;
+    const reduce = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (!panel || !content || reduce || typeof panel.animate !== "function") {
+      setFormQuickMode(next);
+      return;
+    }
+    if (quickSwapBusy.current) return;
+    quickSwapBusy.current = true;
+    const first = panel.getBoundingClientRect();
+    const fadeOut = content.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 90, easing: "cubic-bezier(0.4, 0, 1, 1)", fill: "forwards" });
+    let done = false;
+    const run = () => {
+      if (done) return;
+      done = true;
+      flushSync(() => setFormQuickMode(next));
+      const last = panel.getBoundingClientRect();
+      fadeOut.cancel();
+      if (last.width > 0 && last.height > 0) {
+        panel.animate(
+          [{ transform: `scale(${first.width / last.width}, ${first.height / last.height})` }, { transform: "none" }],
+          { duration: 260, easing: "cubic-bezier(0.16, 1, 0.3, 1)" },
+        );
+      }
+      const fadeIn = content.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, delay: 70, easing: "cubic-bezier(0, 0, 0.2, 1)", fill: "backwards" });
+      fadeIn.finished.catch(() => {}).finally(() => { quickSwapBusy.current = false; });
+      // Sekme arka plandaysa animasyon ilerlemeyebilir: kilit her durumda kısa süre sonra açılır
+      window.setTimeout(() => { quickSwapBusy.current = false; }, 400);
+    };
+    fadeOut.finished.then(run, run);
+    // Güvence: animasyon zamanlayıcısı durmuşsa (gizli sekme) mod yine de değişir
+    window.setTimeout(run, 140);
+  }, [setFormQuickMode]);
   const [isLoading, setIsLoading] = useState(false);
 
   // İşlem formu HAZIR bekler: yeni işlem formu açılıştan kısa süre sonra arka planda (gizli) kurulur,
@@ -1137,9 +1081,6 @@ export default function App() {
                 } catch (e) {}
                 apply(value as string[], false);
               };
-              applyList(data.timeframes, "trading_timeframes_list", persistTimeframes);
-              applyList(data.htfTimeframes, "trading_htf_timeframes_list", persistHtfTimeframes);
-              applyList(data.confirmations, "trading_confirmations_list", persistConfirmations);
               applyList(data.sessions, "trading_sessions_list", persistSessions);
               // Buluttaki eski yazımlar (EUR/USD) tek biçime çevrilip buluta da geri yazılır
               // (bu dinleyici ilk çizimde kurulduğu için kullanıcıyı persistAssets'ten değil doğrudan currentUser'dan alır)
@@ -1318,9 +1259,6 @@ export default function App() {
       const journalsRaw = readStoredArray("trading_journal_journals");
       if (journalsRaw) setJournals(normalizeJournals(journalsRaw));
       const simple: [string, (v: string[]) => void][] = [
-        ["trading_timeframes_list", setTimeframes],
-        ["trading_htf_timeframes_list", setHtfTimeframes],
-        ["trading_confirmations_list", setConfirmations],
         ["trading_sessions_list", setSessions],
         ["trading_assets_list", (v) => setAssets(canonicalAssetList(v))],
       ];
@@ -1476,24 +1414,6 @@ export default function App() {
         persistSessions(newSessions, false);
         settingsUpdates = { ...settingsUpdates, sessions: titleCaseList(newSessions) };
       }
-      if (tradeData.timeframe && !timeframes.includes(tradeData.timeframe)) {
-        const newTimeframes = [...timeframes, tradeData.timeframe];
-        persistTimeframes(newTimeframes, false);
-        settingsUpdates = { ...settingsUpdates, timeframes: titleCaseList(newTimeframes) };
-      }
-      if (tradeData.htfTimeframe && !htfTimeframes.includes(tradeData.htfTimeframe)) {
-        const newHtfTimeframes = [...htfTimeframes, tradeData.htfTimeframe];
-        persistHtfTimeframes(newHtfTimeframes, false);
-        settingsUpdates = { ...settingsUpdates, htfTimeframes: titleCaseList(newHtfTimeframes) };
-      }
-      if (tradeData.confirmations && tradeData.confirmations.length > 0) {
-        const newConfs = tradeData.confirmations.filter(c => !confirmations.includes(c));
-        if (newConfs.length > 0) {
-          const mergedConfs = [...confirmations, ...newConfs];
-          persistConfirmations(mergedConfs, false);
-          settingsUpdates = { ...settingsUpdates, confirmations: titleCaseList(mergedConfs) };
-        }
-      }
       if (tradeData.planFidelity && !planFidelities.includes(tradeData.planFidelity)) {
         const newFidelities = [...planFidelities, tradeData.planFidelity];
         persistPlanFidelities(newFidelities, false);
@@ -1533,17 +1453,11 @@ export default function App() {
       trades,
       assets,
       sessions,
-      timeframes,
-      htfTimeframes,
-      confirmations,
       planFidelities,
       entryModels,
       trendTypes,
       persistAssets,
       persistSessions,
-      persistTimeframes,
-      persistHtfTimeframes,
-      persistConfirmations,
       persistPlanFidelities,
       persistEntryModels,
       persistTrendTypes,
@@ -1704,14 +1618,11 @@ export default function App() {
       const patchFor = (t: Trade): Partial<Trade> | null => {
         switch (category) {
           case "assets": return same(t.asset) ? { asset: to } : null;
-          case "timeframes": return same(t.timeframe) ? { timeframe: to } : null;
-          case "htfTimeframes": return same(t.htfTimeframe) ? { htfTimeframe: to } : null;
           case "sessions": return same(t.session) ? { session: to } : null;
           case "planFidelities": return same(t.planFidelity) ? { planFidelity: to } : null;
           case "trendTypes": return same(t.trend) ? { trend: to } : null;
           case "premiumDiscounts": return same(t.premiumDiscount) ? { premiumDiscount: to } : null;
           case "asiaRangeFvgs": return same(t.asiaRangeFvg) ? { asiaRangeFvg: to } : null;
-          case "confirmations": return hasInArr(t.confirmations) ? { confirmations: mapArr(t.confirmations) } : null;
           case "tpTargets": return hasInArr(t.tpTargets) ? { tpTargets: mapArr(t.tpTargets) } : null;
           case "entryModels": return hasInArr(t.entryModels) ? { entryModels: mapArr(t.entryModels) } : null;
           default: return null;
@@ -1958,9 +1869,6 @@ export default function App() {
 
         if (importedSettings) {
           const sync = !!user;
-          if (importedSettings.timeframes) persistTimeframes(importedSettings.timeframes, sync);
-          if (importedSettings.htfTimeframes) persistHtfTimeframes(importedSettings.htfTimeframes, sync);
-          if (importedSettings.confirmations) persistConfirmations(importedSettings.confirmations, sync);
           if (importedSettings.sessions) persistSessions(importedSettings.sessions, sync);
           if (importedSettings.assets) persistAssets(importedSettings.assets, sync);
           if (importedSettings.planFidelities) persistPlanFidelities(importedSettings.planFidelities, sync);
@@ -1992,9 +1900,6 @@ export default function App() {
     },
     [
       user,
-      persistTimeframes,
-      persistHtfTimeframes,
-      persistConfirmations,
       persistSessions,
       persistAssets,
       persistPlanFidelities,
@@ -2106,9 +2011,6 @@ export default function App() {
 
       handleAccountScopeChange('ALL');
 
-      persistTimeframes(DEFAULT_TIMEFRAMES, !!user);
-      persistHtfTimeframes(DEFAULT_HTF_TIMEFRAMES, !!user);
-      persistConfirmations(DEFAULT_CONFIRMATIONS, !!user);
       persistSessions(DEFAULT_SESSIONS, !!user);
       persistAssets(DEFAULT_ASSETS, !!user);
       persistPlanFidelities(DEFAULT_PLAN_FIDELITIES, !!user);
@@ -2121,19 +2023,14 @@ export default function App() {
       persistRiskPresets(DEFAULT_RISK_PRESETS, !!user);
       persistDefinitionTitles(DEFAULT_DEFINITION_TITLES, !!user);
 
-      setGlobalSelectedConfirmations([]);
       setGlobalSelectedPlanFidelity([]);
       setGlobalSelectedAssets([]);
       setGlobalSelectedSessions([]);
-      setGlobalSelectedTimeframes([]);
-      setGlobalSelectedHtfTimeframes([]);
       setGlobalSelectedStatuses([]);
       setGlobalSelectedTypes([]);
       setGlobalSelectedEntryModels([]);
       setGlobalSelectedTrendTypes([]);
       setGlobalDateLimit(DEFAULT_DATE_LIMIT);
-      setGlobalMinAsiaRangePips(undefined);
-      setGlobalMaxAsiaRangePips(undefined);
       setGlobalExtra(EMPTY_EXTRA_FILTERS);
 
       setEditingTrade(null);
@@ -2156,26 +2053,18 @@ export default function App() {
     }
   }, [
     user,
-    setGlobalSelectedConfirmations,
     setGlobalSelectedAssets,
     setGlobalSelectedSessions,
-    setGlobalSelectedTimeframes,
-    setGlobalSelectedHtfTimeframes,
     setGlobalSelectedStatuses,
     setGlobalSelectedTypes,
     setGlobalSelectedEntryModels,
     setGlobalSelectedTrendTypes,
     setGlobalDateLimit,
-    setGlobalMinAsiaRangePips,
-    setGlobalMaxAsiaRangePips,
     setGlobalExtra,
     setTrades,
     setNotes,
     setJournals,
     persistPropAccounts,
-    persistTimeframes,
-    persistHtfTimeframes,
-    persistConfirmations,
     persistSessions,
     persistAssets,
     persistPlanFidelities,
@@ -2191,7 +2080,7 @@ export default function App() {
   ]);
 
   // "Günün kaçıncı işlemi" ve Asia Range büyüklüğü hesaplardan bağımsız, tüm işlemler üzerinden bir kez indekslenir.
-  // Filtreden ÖNCE kurulur: Günün İşlemi / Asia Range Büyüklüğü filtreleri yeni eklenen işlemi de doğru görsün.
+  // Filtreden ÖNCE kurulur: Günün İşlemi / Gün İçi Önceki İşlem filtreleri yeni eklenen işlemi de doğru görsün.
   useMemo(() => setGlobalTradeOrder(trades), [trades]);
   // Kayan zaman pencereleri ("Son 7 / 30 gün", tarih filtresi "Son 1 hafta" …) uygulama günlerce açık kalsa da
   // ilerlesin: saat başı yenilenir (aynı saat içinde değer değişmez, gereksiz yeniden hesap olmaz).
@@ -2207,23 +2096,18 @@ export default function App() {
         activeAccountCategory,
         activeAccount,
         activeUnlinkedOf,
-        globalSelectedConfirmations,
         globalSelectedPlanFidelity,
         globalDateLimit,
         globalSelectedAssets,
         globalSelectedSessions,
-        globalSelectedTimeframes,
-        globalSelectedHtfTimeframes,
         globalSelectedStatuses,
         globalSelectedTypes,
         globalSelectedEntryModels,
         globalSelectedTrendTypes,
-        globalMinAsiaRangePips,
-        globalMaxAsiaRangePips,
         globalExtra,
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [trades, dateWindowTick, globalExtra, activeAccountCategory, activeAccount, activeUnlinkedOf, globalSelectedConfirmations, globalSelectedPlanFidelity, globalDateLimit, globalSelectedAssets, globalSelectedSessions, globalSelectedTimeframes, globalSelectedHtfTimeframes, globalSelectedStatuses, globalSelectedTypes, globalSelectedEntryModels, globalSelectedTrendTypes, globalMinAsiaRangePips, globalMaxAsiaRangePips],
+    [trades, dateWindowTick, globalExtra, activeAccountCategory, activeAccount, activeUnlinkedOf, globalSelectedPlanFidelity, globalDateLimit, globalSelectedAssets, globalSelectedSessions, globalSelectedStatuses, globalSelectedTypes, globalSelectedEntryModels, globalSelectedTrendTypes],
   );
 
   // Calculate comprehensive statistics (moved outside)
@@ -2242,41 +2126,29 @@ export default function App() {
 
   const activeFilterCount = useMemo(
     () =>
-      globalSelectedConfirmations.length +
       globalSelectedPlanFidelity.length +
       globalSelectedAssets.length +
       globalSelectedSessions.length +
-      globalSelectedTimeframes.length +
-      globalSelectedHtfTimeframes.length +
       globalSelectedStatuses.length +
       globalSelectedTypes.length +
       globalSelectedEntryModels.length +
       globalSelectedTrendTypes.length +
       (globalDateLimit !== DEFAULT_DATE_LIMIT ? 1 : 0) +
-      (globalMinAsiaRangePips !== undefined || globalMaxAsiaRangePips !== undefined ? 1 : 0) +
       countExtraFilters(globalExtra),
     [
       globalExtra,
-      globalSelectedConfirmations,
       globalSelectedPlanFidelity,
       globalSelectedAssets,
       globalSelectedSessions,
-      globalSelectedTimeframes,
-      globalSelectedHtfTimeframes,
       globalSelectedStatuses,
       globalSelectedTypes,
       globalSelectedEntryModels,
       globalSelectedTrendTypes,
       globalDateLimit,
-      globalMinAsiaRangePips,
-      globalMaxAsiaRangePips,
     ],
   );
 
   const backupSettings = useMemo(() => ({
-    timeframes,
-    htfTimeframes,
-    confirmations,
     sessions,
     assets,
     planFidelities,
@@ -2290,9 +2162,6 @@ export default function App() {
     definitionTitles,
     propAccounts,
   }), [
-    timeframes,
-    htfTimeframes,
-    confirmations,
     sessions,
     assets,
     planFidelities,
@@ -2918,18 +2787,12 @@ export default function App() {
               entryModels={entryModels}
               trendTypes={trendTypes}
               definitionTitles={definitionTitles}
-              globalSelectedConfirmations={globalSelectedConfirmations}
-              setGlobalSelectedConfirmations={setGlobalSelectedConfirmations}
               globalSelectedPlanFidelity={globalSelectedPlanFidelity}
               setGlobalSelectedPlanFidelity={setGlobalSelectedPlanFidelity}
               globalSelectedAssets={globalSelectedAssets}
               setGlobalSelectedAssets={setGlobalSelectedAssets}
               globalSelectedSessions={globalSelectedSessions}
               setGlobalSelectedSessions={setGlobalSelectedSessions}
-              globalSelectedTimeframes={globalSelectedTimeframes}
-              setGlobalSelectedTimeframes={setGlobalSelectedTimeframes}
-              globalSelectedHtfTimeframes={globalSelectedHtfTimeframes}
-              setGlobalSelectedHtfTimeframes={setGlobalSelectedHtfTimeframes}
               globalSelectedStatuses={globalSelectedStatuses}
               setGlobalSelectedStatuses={setGlobalSelectedStatuses}
               globalSelectedTypes={globalSelectedTypes}
@@ -2940,10 +2803,6 @@ export default function App() {
               setGlobalSelectedTrendTypes={setGlobalSelectedTrendTypes}
               globalDateLimit={globalDateLimit}
               setGlobalDateLimit={setGlobalDateLimit}
-              globalMinAsiaRangePips={globalMinAsiaRangePips}
-              setGlobalMinAsiaRangePips={setGlobalMinAsiaRangePips}
-              globalMaxAsiaRangePips={globalMaxAsiaRangePips}
-              setGlobalMaxAsiaRangePips={setGlobalMaxAsiaRangePips}
               trades={scopedTrades}
               premiumDiscounts={premiumDiscounts}
               tpTargets={tpTargets}
@@ -3007,9 +2866,6 @@ export default function App() {
           isOpen={isPlatformMenuOpen}
           onClose={closePlatformMenu}
           trades={trades}
-          timeframes={timeframes}
-          htfTimeframes={htfTimeframes}
-          confirmations={confirmations}
           sessions={sessions}
           assets={assets}
           planFidelities={planFidelities}
@@ -3021,9 +2877,6 @@ export default function App() {
           asiaRangeFvgs={asiaRangeFvgs}
           riskPresets={riskPresets}
           definitionTitles={definitionTitles}
-          persistTimeframes={persistTimeframes}
-          persistHtfTimeframes={persistHtfTimeframes}
-          persistConfirmations={persistConfirmations}
           persistSessions={persistSessions}
           persistAssets={persistAssets}
           persistPlanFidelities={persistPlanFidelities}
@@ -3053,6 +2906,7 @@ export default function App() {
               onClick={requestCloseForm}
             >
               <div
+                ref={formPanelRef}
                 onClick={(e) => e.stopPropagation()}
                 className={`form-modal-panel w-full ${formQuickMode && !formSlot.editing ? "max-w-4xl" : "max-w-6xl xl:max-w-7xl 2xl:max-w-[1440px]"} h-auto max-h-[96vh] overflow-hidden bg-[#0a0a0c] border border-zinc-800/80 rounded-2xl relative shadow-2xl flex flex-col cursor-default my-auto`}
               >
@@ -3079,7 +2933,7 @@ export default function App() {
                     propAccounts={propAccounts}
                     defaultAccountChoice={defaultAccountChoice}
                     quickMode={formQuickMode}
-                    onQuickModeChange={setFormQuickMode}
+                    onQuickModeChange={swapFormQuickMode}
                     active={isFormOpen}
                   />
                 </Suspense>

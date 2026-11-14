@@ -64,25 +64,22 @@ test('zamanı bozuk kayıt: çıkış zamanı varsa onarılır, yoksa geçersiz 
   assert.equal(isValidTrade(broken), false);
   const ok = t(1, { id: 'z', accountCategory: 'CHALLENGE' });
   const base: any = {
-    activeAccountCategory: 'ALL', activeAccount: null, globalSelectedConfirmations: [], globalSelectedPlanFidelity: [], globalDateLimit: 'all',
-    globalSelectedAssets: [], globalSelectedSessions: [], globalSelectedTimeframes: [], globalSelectedHtfTimeframes: [], globalSelectedStatuses: [],
-    globalSelectedTypes: [], globalSelectedEntryModels: [], globalSelectedTrendTypes: [], globalMinAsiaRangePips: undefined, globalMaxAsiaRangePips: undefined,
+    activeAccountCategory: 'ALL', activeAccount: null, globalSelectedPlanFidelity: [], globalDateLimit: 'all',
+    globalSelectedAssets: [], globalSelectedSessions: [], globalSelectedStatuses: [],
+    globalSelectedTypes: [], globalSelectedEntryModels: [], globalSelectedTrendTypes: [],
   };
   const out = applyGlobalFilters([ok, broken], base, NOW);
   assert.deepEqual(out.map((x) => x.id), ['z']);
 });
 
-test('BE sonrası TP: yalnızca BE işlemde sorulur ve yazılır', async () => {
-  const { afterExitTpText, afterExitTpApplies } = await import('../src/lib/asiaAnalytics');
-  assert.deepEqual(afterExitTpText({ status: 'BREAKEVEN', afterExitTp: true }), { text: 'Evet', answered: true });
-  assert.deepEqual(afterExitTpText({ status: 'BREAKEVEN', afterExitTp: false }), { text: 'Hayır', answered: true });
-  // Sorulur ama cevap girilmemiş → boş
-  assert.equal(afterExitTpText({ status: 'BREAKEVEN' }), undefined);
-  // Kazanç / kayıpta soru yok; eski kayıttaki yanıt da gösterilmez
-  assert.equal(afterExitTpText({ status: 'WIN', afterExitTp: true }), undefined);
-  assert.equal(afterExitTpApplies('LOSS'), false);
-  assert.equal(afterExitTpApplies('WIN'), false);
-  assert.equal(afterExitTpApplies('BREAKEVEN'), true);
+test("formda durum R'nin işaretinden gelir: artı kazanç, eksi kayıp, 0 başabaş", async () => {
+  const { statusOfR } = await import('../src/lib/tradeModel');
+  assert.equal(statusOfR(2.5), 'WIN');
+  assert.equal(statusOfR(0.01), 'WIN');
+  assert.equal(statusOfR(-1), 'LOSS');
+  assert.equal(statusOfR(-0.5), 'LOSS');
+  assert.equal(statusOfR(0), 'BREAKEVEN');
+  assert.equal(statusOfR(-0), 'BREAKEVEN');
 });
 
 test('seriler: BE nötrdür — seriyi bozmaz, sayılmaz; kayıp serisi ancak kazançla biter', async () => {

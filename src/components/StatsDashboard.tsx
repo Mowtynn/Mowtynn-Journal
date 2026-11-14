@@ -1,7 +1,7 @@
 import { EASE } from '../lib/motion';
 import { MIN_SAMPLE, EDGE_PROOF_MIN } from '../lib/sampleSize';
 import { breakevenWinRate } from '../lib/stats';
-import { fixed, formatR, signed } from '../lib/format';
+import { formatR, rnum, rsigned } from '../lib/format';
 import React from 'react';
 import { motion } from 'motion/react';
 import { TradeStats } from '../types';
@@ -99,7 +99,7 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, edge, drift }
             tek bir boşluk olarak üstte toplanmaz, satırlar arasında eşit dağılır */}
           <div className="flex items-baseline gap-1 py-1">
             <span className={`text-lg sm:text-xl font-bold tabular-nums ${rColorClass}`}>
-              {signed(stats.netR)}
+              {rsigned(stats.netR)}
             </span>
             <span className={`text-[10px] font-bold ml-0.5 ${isPositive ? 'text-emerald-400/70' : isNegative ? 'text-rose-400/70' : 'text-zinc-400'}`}>R</span>
           </div>
@@ -302,7 +302,7 @@ function verdictOf(edge?: EdgeStats) {
 }
 
 function EdgePanel({ edge, expectancy, drift }: { edge?: EdgeStats; expectancy: number; drift?: EdgeDrift }) {
-  const f = (v: number) => fixed(v);
+  const f = (v: number) => rnum(v);
   const v = verdictOf(edge);
   const n = edge?.n ?? 0;
   const hasCI = !!edge && n >= MIN_SAMPLE;
@@ -319,7 +319,7 @@ function EdgePanel({ edge, expectancy, drift }: { edge?: EdgeStats; expectancy: 
         {/* Beklenti, hüküm ve kanıt sayacı tek satırda: kart (ve aynı satırdaki Net R / WR kartları) gereksiz uzamasın */}
         <div className="flex items-center gap-x-2 gap-y-1 flex-wrap min-w-0">
           <span className="flex items-baseline gap-1 shrink-0">
-            <span className={`text-lg sm:text-xl font-bold tabular-nums ${expectancy > 0 ? 'text-emerald-400' : expectancy < 0 ? 'text-rose-400' : 'text-zinc-300'}`}>{signed(expectancy)}</span>
+            <span className={`text-lg sm:text-xl font-bold tabular-nums ${expectancy > 0 ? 'text-emerald-400' : expectancy < 0 ? 'text-rose-400' : 'text-zinc-300'}`}>{rsigned(expectancy)}</span>
             <span className="text-[10px] text-zinc-500">R/işlem</span>
           </span>
           <span className={`px-2 py-0.5 rounded-lg border text-[10px] font-bold uppercase shrink-0 ${v.tone}`}>{v.label}</span>

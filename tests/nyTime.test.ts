@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { toNyInput, nyInputToTs, nyDateKey, formatDuration, getTradeHourBucket } from '../src/lib/tradingTime';
+import { toNyInput, nyInputToTs, nyDateKey, getNyParts } from '../src/lib/tradingTime';
 
 test('NY duvar saati ↔ zaman damgası: kış (UTC−5) ve yaz (UTC−4)', () => {
   const winter = nyInputToTs('2026-01-15T09:30')!;
@@ -15,20 +15,13 @@ test('yaz saati geçiş haftası (ABD ile Avrupa farklı) doğru', () => {
   // 2026-03-09: ABD yaz saatinde, Avrupa henüz değil
   const ts = nyInputToTs('2026-03-09T08:00')!;
   assert.equal(new Date(ts).toISOString(), '2026-03-09T12:00:00.000Z');
-  assert.equal(getTradeHourBucket({ createdAt: ts }), '08:00-09:00');
+  assert.equal(getNyParts(ts)?.hour, 8);
 });
 
 test('NY günü: gece yarısı sınırı', () => {
   // 2026-10-22 02:00 UTC = NY 21 Ekim 22:00
   assert.equal(nyDateKey(Date.UTC(2026, 9, 22, 2, 0)), '2026-10-21');
   assert.equal(nyInputToTs('bozuk'), null);
-});
-
-test('süre biçimi', () => {
-  assert.equal(formatDuration(45 * 60000), '45 dk');
-  assert.equal(formatDuration(130 * 60000), '2 sa 10 dk');
-  assert.equal(formatDuration(27 * 3600000), '1 g 3 sa');
-  assert.equal(formatDuration(-1), '—');
 });
 
 test('saat ileri alınınca (mart) var olmayan 02:30 → 03:30 EDT; uyarı için geçersiz sayılır', async () => {

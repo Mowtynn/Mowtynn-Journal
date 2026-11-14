@@ -4,7 +4,6 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { canonicalAsset } from "../../lib/tradeModel";
 import { TurkishDatePicker } from "../TurkishDateTimePicker";
-import { ScrollStrip } from "../common/ScrollStrip";
 import { Search, Layers, Check, Shield } from "lucide-react";
 import { NO_ACCOUNT, Num, SetState, AccountOption, Titles, SlideBg } from './shared';
 
@@ -124,9 +123,13 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
                 setIsAssetDropdownOpen(true);
                 setAssetActiveIndex(0);
               }}
-              onFocus={() => {
-                setIsAssetDropdownOpen(true);
-                setAssetActiveIndex(0);
+              // Öneriler odakla değil tıklama / yazma / ok tuşuyla açılır: form açılırken alan kendiliğinden odaklanıyor,
+              // liste pencerenin açılış animasyonuyla aynı anda açılınca takılıyordu
+              onClick={() => {
+                if (!isAssetDropdownOpen) {
+                  setIsAssetDropdownOpen(true);
+                  setAssetActiveIndex(0);
+                }
               }}
               onKeyDown={(e) => {
                 if (e.key === "ArrowDown" || e.key === "ArrowUp") {
@@ -219,52 +222,44 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
         </div>
       </div>
 
-      {/* Satır 2: Hesap (aktif prop hesapları + Hesapsız) */}
+      {/* Satır 2: Hesap seçimi — aktif prop hesapları ve en sonda Hesapsız aynı ızgarada (başlıksız; alanın kendisi anlatır).
+          SABİT yükseklik (iki satır): fazlası kendi içinde kayar, hesap sayısı ya da seçim pencere boyunu değiştirmez. */}
       <div id="account-field">
-        <label className="text-[10px] sm:text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-2 block font-sans">
-          {H("platforms", "HESAP")}
-        </label>
-        {/* Tek satır segmentli seçim (İşlem Durumu ile aynı dil). Sığmayan hesaplar ok butonları ve fare tekerleğiyle
-            kaydırılır; "Hesapsız" sağda sabit. Renkli nokta = hesap türü (yeşil Funded, mavi değerlendirme). */}
         <div
           role="radiogroup"
+          aria-label={H("platforms", "Hesap")}
           aria-invalid={accountError || undefined}
-          className={`flex items-stretch h-10 gap-1 bg-zinc-950/80 border rounded-xl p-1 shadow-inner transition-ui ${accountError ? "border-rose-500/60" : "border-zinc-700/70"}`}
+          className={`grid grid-cols-2 auto-rows-[2.25rem] content-start gap-1.5 h-[5.375rem] overflow-y-auto overscroll-contain custom-scrollbar rounded-xl p-1 border bg-zinc-950/60 transition-ui ${accountError ? "border-rose-500/60" : "border-zinc-800"}`}
         >
-          <ScrollStrip className="flex-1" activeKey={accountChoice} ariaLabel="Hesaplar">
-            {accountOptions.map((a) => {
-              const sel = accountChoice === a.id;
-              const funded = a.stage === 0;
-              return (
-                <button
-                  key={a.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={sel}
-                  data-selected={sel}
-                  data-strip-active={sel}
-                  onClick={() => {
-                    setAccountChoice(a.id);
-                    setAccountError(false);
-                  }}
-                  className={`shrink-0 px-2.5 rounded-lg text-xs font-semibold font-sans flex items-center gap-1.5 whitespace-nowrap transition-ui cursor-pointer ${
-                    sel
-                      ? funded
-                        ? "bg-blue-500/15 text-emerald-50 ring-1 ring-inset ring-blue-500/40"
-                        : "bg-blue-500/15 text-blue-50 ring-1 ring-inset ring-blue-500/40"
-                      : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
-                  }`}
-                >
-                  <span aria-hidden className={`w-1.5 h-1.5 rounded-full shrink-0 ${funded ? "bg-blue-400" : "bg-blue-400"}`} />
-                  <span className="max-w-[9rem] truncate">{a.label}</span>
-                  <span className={`shrink-0 text-[10px] font-bold px-1 rounded ${sel ? (funded ? "bg-blue-500/25 text-blue-200" : "bg-blue-500/25 text-blue-200") : "bg-zinc-800 text-zinc-400"}`}>
-                    {funded ? "F" : `P${a.stage}`}
-                  </span>
-                </button>
-              );
-            })}
-          </ScrollStrip>
-          <span aria-hidden className="w-px my-1 bg-zinc-800 shrink-0" />
+          {accountOptions.map((a) => {
+            const sel = accountChoice === a.id;
+            const funded = a.stage === 0;
+            const size = typeof a.size === "number" && a.size > 0 ? (a.size >= 1000 ? `${Math.round(a.size / 1000)}K` : String(a.size)) : null;
+            return (
+              <button
+                key={a.id}
+                type="button"
+                role="radio"
+                aria-checked={sel}
+                data-selected={sel}
+                title={a.label}
+                onClick={() => {
+                  setAccountChoice(a.id);
+                  setAccountError(false);
+                }}
+                className={`min-w-0 h-full px-2 rounded-lg border text-xs font-semibold font-sans flex items-center gap-1.5 transition-ui cursor-pointer ${
+                  sel ? "bg-blue-500/15 text-blue-50 border-blue-500/45" : "bg-zinc-900/60 border-transparent text-zinc-300 hover:text-white hover:bg-zinc-800/70"
+                }`}
+              >
+                <span aria-hidden className={`w-1.5 h-1.5 rounded-full shrink-0 ${funded ? "bg-emerald-400" : "bg-blue-400"}`} />
+                <span className="truncate flex-1 text-left">{a.label}</span>
+                {size && <span className="shrink-0 text-[10px] text-zinc-500 tabular-nums">{size}</span>}
+                <span className={`shrink-0 text-[10px] font-bold px-1 rounded ${sel ? "bg-blue-500/25 text-blue-200" : "bg-zinc-800 text-zinc-400"}`}>
+                  {funded ? "F" : `P${a.stage}`}
+                </span>
+              </button>
+            );
+          })}
           <button
             type="button"
             role="radio"
@@ -275,19 +270,21 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
               setAccountError(false);
               setRiskError(false);
             }}
-            className={`shrink-0 px-2.5 rounded-lg text-xs font-semibold font-sans flex items-center gap-1 whitespace-nowrap transition-ui cursor-pointer ${
+            className={`min-w-0 h-full px-2 rounded-lg border text-xs font-semibold font-sans flex items-center gap-1.5 transition-ui cursor-pointer ${
               accountChoice === NO_ACCOUNT
-                ? "bg-amber-500/15 text-amber-200 ring-1 ring-inset ring-amber-500/40"
-                : "text-zinc-500 hover:text-white hover:bg-zinc-800/60"
+                ? "bg-amber-500/15 text-amber-200 border-amber-500/40"
+                : "bg-zinc-900/60 border-transparent text-zinc-300 hover:text-white hover:bg-zinc-800/70"
             }`}
           >
             <Shield size={12} className="text-amber-400 shrink-0" />
-            Hesapsız
+            <span className="truncate flex-1 text-left">Hesapsız</span>
           </button>
+          {accountOptions.length === 0 && (
+            <div className="min-w-0 h-full px-2 flex items-center text-[10px] leading-tight text-zinc-500 font-sans">
+              Aktif prop hesabı yok · Prop sekmesinden ekle
+            </div>
+          )}
         </div>
-        {accountOptions.length === 0 && (
-          <p className="text-[10px] text-zinc-500 mt-1 font-sans">Aktif prop hesabı yok. Prop sekmesinden ekleyebilirsin.</p>
-        )}
       </div>
 
       {/* Risk satırı: her zaman yerinde durur (hesap ↔ Hesapsız geçişinde pencere yeniden boyutlanmasın).

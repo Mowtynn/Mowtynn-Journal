@@ -111,3 +111,10 @@ test('Asia Range FVG başlığı: eski varsayılan "Asia Range FVG (1H)" olur, z
   assert.equal(sanitizeDefinitionTitles({ asiaRangeFvgs: 'Asia Range FVG (1H)' }).asiaRangeFvgs, 'Asia Range FVG (1H)');
   assert.equal(cleanDefinitionTitleString('Parite (Varlık)'), 'Parite');
 });
+
+test('başlık: eski "Sweep Time" adı POI Sweep Time olur, kullanıcının özel adı korunur', async () => {
+  const { sanitizeDefinitionTitles } = await import('../src/constants/constants');
+  assert.equal(sanitizeDefinitionTitles({ sweepTime: 'Sweep Time' } as any).sweepTime, 'POI Sweep Time');
+  assert.equal(sanitizeDefinitionTitles({} as any).sweepTime, 'POI Sweep Time');
+  assert.equal(sanitizeDefinitionTitles({ sweepTime: 'Likidite Saati' } as any).sweepTime, 'Likidite Saati');
+});

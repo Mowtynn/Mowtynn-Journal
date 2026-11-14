@@ -133,7 +133,7 @@ const numOr = (v: unknown): number | '-' => (typeof v === 'number' && Number.isF
 export const prepareTradeExportRows = (trades: Trade[], titles: Record<string, string> = {}) => {
   // Kullanıcının verdiği başlık başka bir sütunla aynıysa (ör. iki alana da "Timeframe" denmiş) sütun EZİLMEZ:
   // ikinci sütun "(Alan adı)" ekiyle ayrışır. Sabit sütun adları da (Gün, Aşama…) korunur.
-  const FIXED = new Set(['Sıra', 'İşlem ID', 'Gün', 'Hesap ID', 'Hesap Türü', 'Aşama', 'Risk (%)', 'Risk ($)', 'Süpürülen Asia Tarafı', 'Veri Seti', 'Hızlı Kayıt', 'Sweep Saati (30 dk)', 'Günün İşlemi']);
+  const FIXED = new Set(['Sıra', 'İşlem ID', 'Gün', 'Hesap ID', 'Hesap Türü', 'Aşama', 'Risk (%)', 'Risk ($)', 'Süpürülen Asia Tarafı', 'Veri Seti', 'Hızlı Kayıt', 'POI Sweep Saati (30 dk)', 'Günün İşlemi']);
   const usedLabels = new Map<string, string>();
   const T = (key: string, fallback: string) => {
     const want = (titles[key] && String(titles[key]).trim()) || fallback;
@@ -158,7 +158,8 @@ export const prepareTradeExportRows = (trades: Trade[], titles: Record<string, s
       'Gün': ny ? WEEKDAY_NAMES_TR[ny.weekday] : '-',
       [T('assets', 'Parite')]: t.asset || '-',
       [T('direction', 'Yön')]: t.type || '-',
-      [T('tradeStatus', 'İşlem Durumu')]: t.status || '-',
+      // Durum formda seçilmez; R'nin işaretinden gelir (kayıtta tutulur)
+      'Durum': t.status || '-',
       [T('rr', 'Sonuç R')]: Number(t.rr) || 0,
       [T('platforms', 'Hesap')]: t.platform || 'Hesapsız',
       'Hesap ID': t.accountId || '-',
@@ -172,16 +173,13 @@ export const prepareTradeExportRows = (trades: Trade[], titles: Record<string, s
       [T('newsDays', 'News Day/Bank Holiday')]: typeof t.newsDay === 'boolean' ? (t.newsDay ? news.yes : news.no) : '-',
       [T('asiaRangeFvgs', 'Asia Range FVG (1H)')]: t.asiaRangeFvg || '-',
       [T('asiaRange', 'Asia Range')]: t.asiaRange || '-',
-      [T('sweepTime', 'Sweep Time')]: t.sweepTime || '-',
+      [T('sweepTime', 'POI Sweep Time')]: t.sweepTime || '-',
       [T('sessions', 'Session')]: t.session || '-',
       [T('entryModels', 'Entry Model')]: listText(t.entryModels),
       [T('tpTargets', 'Target')]: listText(t.tpTargets),
       [T('premiumDiscounts', 'Confirmations')]: t.premiumDiscount || '-',
-      "Çıkış Sonrası TP'ye Ulaştı": typeof t.afterExitTp === 'boolean' ? (t.afterExitTp ? 'Evet' : 'Hayır') : '-',
-      // Pip ölçümü
-      [T('asiaRangePips', 'Asia Range Pip')]: numOr(t.asiaRangePips),
       // Analizlerde kullanılan türetilmiş değerler (Excel'de ayrıca süzülüp pivotlanabilsin)
-      'Sweep Saati (30 dk)': sweepHourBucket(t.sweepTime) || '-',
+      'POI Sweep Saati (30 dk)': sweepHourBucket(t.sweepTime) || '-',
       'Günün İşlemi': tradeOfDayBucket(t) || '-',
       // Yalnızca Reversal işlemlerde yönden: short → High, long → Low; Continuation işlemlerde "-"
       'Süpürülen Asia Tarafı': (() => {

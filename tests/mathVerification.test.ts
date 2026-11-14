@@ -119,7 +119,7 @@ for (const n of [7, 60, 250]) {
     close(sim.taken.netR + sim.skipped.netR, net, 0.02, 'kural net R');
     close(sim.curve[sim.curve.length - 1].all, net, 1e-6, 'eğri sonu');
 
-    // Sweep saati × parite ısı tablosu hücreleri sweep saati girilmiş işlemleri bölüştürür
+    // POI Sweep saati × parite ısı tablosu hücreleri sweep saati girilmiş işlemleri bölüştürür
     const lab = analyzeAsia(trades, { dataset: 'ALL', pair: 'ALL', minSample: 3 });
     const cellN = Object.values(lab.hourPair.cells).reduce((s, c) => s + c.n, 0);
     assert.equal(cellN, trades.filter((t) => /^\d{2}:\d{2}$/.test(t.sweepTime || '')).length, 'ısı tablosu (sweep saati girilmiş işlemler)');
@@ -153,15 +153,10 @@ test('zamanla değişim: z değeri iki ortalamanın Welch standart hatasıyla', 
   assert.equal(d.strength, 'CONFIRMED');
 });
 
-test('strateji laboratuvarı (Stop & Range, Psikoloji) tabloları işlemleri eksiksiz bölüştürür', () => {
+test('strateji laboratuvarı (Psikoloji) seri ve kayıp sonrası değerleri sınırlar içinde', () => {
   const trades = dataset(150);
   setGlobalTradeOrder(trades); // uygulamadaki gibi: etiketler tüm işlemlerden bir kez indekslenir
   const s = calculateStrategyAnalytics(trades);
-  // Asia range dilimleri: aralığı girilmiş işlemleri bölüştürür (paritenin ilk 5 işlemi öncesinde medyan olmadığı için sınıflanmaz)
-  const b = s.asiaRangeStats.brackets;
-  const pairs = new Set(trades.map((t) => t.asset));
-  assert.equal(b.tight.count + b.medium.count + b.wide.count, trades.filter((t) => (t.asiaRangePips || 0) > 0).length - 5 * pairs.size);
-  // Stop dilimleri stop'u girilmiş işlemleri bölüştürür
   // Seri: en uzun seriler toplamı aşmaz, kayıp sonrası WR 0–100
   assert.ok(s.streakStats.maxLossStreak <= s.totalTrades && s.streakStats.postLossWinRate >= 0 && s.streakStats.postLossWinRate <= 100);
 });

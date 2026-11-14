@@ -100,15 +100,6 @@ export function hourToBucket(hour: number): string {
   return `${pad2(h)}:00-${pad2((h + 1) % 24)}:00`;
 }
 
-/**
- * Giriş saati dilimi (NY). Tek kaynak işlem zamanıdır (formda NY saatiyle girilir); ayrı "Entry Time"
- * alanı kaldırıldı. Yaz/kış saati geçişleri Intl ile doğru çözülür.
- */
-export function getTradeHourBucket(trade: Pick<Trade, 'createdAt'>): string {
-  const ny = getNyParts(trade.createdAt);
-  return ny ? hourToBucket(ny.hour) : 'Belirsiz';
-}
-
 /** Weekday (0-6) of the trade in NY time; falls back to the local weekday if conversion fails. */
 export function getTradeNyWeekday(trade: Pick<Trade, 'createdAt'>): number {
   const ny = getNyParts(trade.createdAt);
@@ -218,19 +209,6 @@ export function nyDateKey(ts: number): string {
   if (p) return p.date;
   const d = new Date(ts);
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-}
-
-/** Süre biçimi: "45 dk", "2 sa 10 dk", "1 g 3 sa" */
-export function formatDuration(ms: number): string {
-  if (!Number.isFinite(ms) || ms < 0) return '—';
-  const min = Math.round(ms / 60000);
-  if (min < 60) return `${min} dk`;
-  const h = Math.floor(min / 60);
-  const rm = min % 60;
-  if (h < 24) return rm ? `${h} sa ${rm} dk` : `${h} sa`;
-  const d = Math.floor(h / 24);
-  const rh = h % 24;
-  return rh ? `${d} g ${rh} sa` : `${d} g`;
 }
 
 /** ISO hafta anahtarı, New York takvim gününe göre (tarayıcının saat diliminden bağımsız) */

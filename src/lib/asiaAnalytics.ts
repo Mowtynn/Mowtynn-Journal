@@ -221,96 +221,6 @@ function groupTrades(trades: Trade[], keyFn: (t: Trade) => string | string[] | n
 const hasNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 
 /* ------------------------------------------------------------------ */
-/* Range size normalisation (per pair)                                 */
-/* ------------------------------------------------------------------ */
-
-const median = (values: number[]): number => {
-  if (values.length === 0) return 0;
-  const s = [...values].sort((a, b) => a - b);
-  const mid = Math.floor(s.length / 2);
-  return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
-};
-
-export type RangeBucket = 'NARROW' | 'NORMAL' | 'WIDE';
-
-/** Bir paritenin medyanı güvenilir sayılmadan önce gereken en az değer sayısı */
-export const PAIR_MEDIAN_MIN = 5;
-
-/**
- * Bir pip değerini (Asia Range, Stop) paritenin KENDİ medyanına göre Dar / Normal / Geniş sınıflar.
- * Pariteler pip ölçeğinde kıyaslanamaz (XAUUSD ≠ EURUSD); bu yüzden bir paritede PAIR_MEDIAN_MIN değer
- * birikmeden o paritenin işlemleri sınıflanmaz (eskiden tüm paritelerin ortak medyanına düşülüyordu ve
- * yeni bir paritenin işlemleri yanlış gruba giriyordu).
- */
-export function bucketByPairMedian(
-  trades: Trade[],
-  value: (t: Trade) => number | undefined,
-): { buckets: Map<string, RangeBucket>; medians: Map<string, number> } {
-  const byPair = new Map<string, number[]>();
-  const withVal = trades.filter((t) => {
-    const v = value(t);
-    return hasNum(v) && v > 0;
-  });
-  withVal.forEach((t) => {
-    const p = normalizePair(t.asset);
-    (byPair.get(p) || byPair.set(p, []).get(p)!).push(value(t) as number);
-  });
-  const medians = new Map<string, number>();
-  byPair.forEach((list, p) => {
-    if (list.length >= PAIR_MEDIAN_MIN) medians.set(p, median(list));
-  });
-  const buckets = new Map<string, RangeBucket>();
-  withVal.forEach((t) => {
-    const ref = medians.get(normalizePair(t.asset));
-    if (!ref || ref <= 0) return;
-    const ratio = (value(t) as number) / ref;
-    buckets.set(t.id, ratio < 0.8 ? 'NARROW' : ratio > 1.25 ? 'WIDE' : 'NORMAL');
-  });
-  return { buckets, medians };
-}
-
-/**
- * Asia Range büyüklüğü — GİRİŞTEN ÖNCE bilinen haliyle: her işlemin range'i, aynı veri setindeki (Backtest / Hesapsız /
- * Prop) aynı paritenin O İŞLEMDEN ÖNCEKİ range'lerinin medyanına oranlanır (en az PAIR_MEDIAN_MIN önceki değer).
- * Böylece sonraki işlemler eski etiketleri değiştirmez, Tesadüf Testi ve Kural Simülatörü geleceği görmez,
- * backtest / demo işlemleri gerçek hesap medyanına karışmaz.
- */
-export function bucketAsiaRanges(trades: Trade[]): Map<string, RangeBucket> {
-  const out = new Map<string, RangeBucket>();
-  const groups = new Map<string, Trade[]>();
-  for (const t of trades) {
-    if (!(hasNum(t.asiaRangePips) && t.asiaRangePips > 0)) continue;
-    const k = `${getTradeDataset(t)}|${normalizePair(t.asset)}`;
-    (groups.get(k) || groups.set(k, []).get(k)!).push(t);
-  }
-  groups.forEach((list) => {
-    list.sort(byEntryTime);
-    const prior: number[] = []; // sıralı tutulur
-    for (const t of list) {
-      const v = t.asiaRangePips as number;
-      if (prior.length >= PAIR_MEDIAN_MIN) {
-        // prior zaten sıralı: medyan doğrudan okunur (her işlemde yeniden sıralama yok)
-        const m = prior.length >> 1;
-        const ref = prior.length % 2 ? prior[m] : (prior[m - 1] + prior[m]) / 2;
-        if (ref > 0) {
-          const ratio = v / ref;
-          out.set(t.id, ratio < 0.8 ? 'NARROW' : ratio > 1.25 ? 'WIDE' : 'NORMAL');
-        }
-      }
-      let lo = 0;
-      let hi = prior.length;
-      while (lo < hi) {
-        const mid = (lo + hi) >> 1;
-        if (prior[mid] <= v) lo = mid + 1;
-        else hi = mid;
-      }
-      prior.splice(lo, 0, v);
-    }
-  });
-  return out;
-}
-
-/* ------------------------------------------------------------------ */
 /* Data completeness                                                   */
 /* ------------------------------------------------------------------ */
 
@@ -324,7 +234,7 @@ export interface CoverageRow {
   unlocks: string;
 }
 
-/** Sweep saati (NY) 30 dakikalık dönemlere: 02:15 → "02:00–02:30", 02:40 → "02:30–03:00"; geçersizse null */
+/** POI Sweep saati (NY) 30 dakikalık dönemlere: 02:15 → "02:00–02:30", 02:40 → "02:30–03:00"; geçersizse null */
 export function sweepHourBucket(v?: string): string | null {
   const m = typeof v === 'string' ? v.match(/^(\d{2}):(\d{2})$/) : null;
   if (!m) return null;
@@ -380,8 +290,6 @@ function buildOrder(trades: Trade[]): void {
         prevResult.set(t.id, !prev ? PREV_TRADE_BUCKETS[0] : prev.status === 'WIN' ? PREV_TRADE_BUCKETS[1] : prev.status === 'LOSS' ? PREV_TRADE_BUCKETS[2] : PREV_TRADE_BUCKETS[3]);
       }),
   );
-  // Asia Range büyüklüğü de aynı listeden, girişten önce bilinen haliyle (önceki range'lerin medyanına oranla) bir kez sınıflanır
-  rangeIndex = bucketAsiaRanges(trades);
 }
 export function tradeOfDayBucket(t: Pick<Trade, 'id'>): string | null {
   const n = tradeOrder.get(t.id);
@@ -398,54 +306,9 @@ export function prevTradeBucket(t: Pick<Trade, 'id'>): string | null {
   return prevResult.get(t.id) ?? null;
 }
 
-/** Asia Range büyüklüğü (paritenin önceki range'lerinin medyanına göre): kurulum karnesi, Edge Özeti, Stop & Range ve filtrelerde tek tanım */
-let rangeIndex = new Map<string, RangeBucket>();
-export const RANGE_SIZE_BUCKETS = ['Dar (< 0.8×)', 'Normal (0.8–1.25×)', 'Geniş (> 1.25×)'] as const;
-const RANGE_SIZE_LABEL: Record<RangeBucket, (typeof RANGE_SIZE_BUCKETS)[number]> = {
-  NARROW: RANGE_SIZE_BUCKETS[0],
-  NORMAL: RANGE_SIZE_BUCKETS[1],
-  WIDE: RANGE_SIZE_BUCKETS[2],
-};
-/** Asia Range büyüklüğü sınıfı (indekslenmiş listeden; strateji laboratuvarı ve kurulum karnesi aynı etiketi kullanır) */
-export function asiaRangeBucketOf(t: Pick<Trade, 'id'>): RangeBucket | null {
-  return rangeIndex.get(t.id) ?? null;
-}
-export function rangeSizeBucket(t: Pick<Trade, 'id'>): string | null {
-  const b = rangeIndex.get(t.id);
-  return b ? RANGE_SIZE_LABEL[b] : null;
-}
-
-/** "Çıkış sonrası fiyat TP'ye gitti mi?" sorusu yalnızca başabaş (BE) kapanan işlemde sorulur */
-export function afterExitTpApplies(status: string | undefined): boolean {
-  return status === 'BREAKEVEN';
-}
-/** İşlem detayındaki "Çıkış Sonrası TP" metni: yalnızca yanıtlanmış BE işlemde yazılır */
-export function afterExitTpText(t: Pick<Trade, 'afterExitTp' | 'status'>): { text: string; answered: boolean } | undefined {
-  return afterExitTpApplies(t.status) && typeof t.afterExitTp === 'boolean' ? { text: t.afterExitTp ? 'Evet' : 'Hayır', answered: true } : undefined;
-}
-export function afterExitBucket(t: Pick<Trade, 'afterExitTp'>): string | null {
-  return typeof t.afterExitTp === 'boolean' ? (t.afterExitTp ? "Çıkış Sonrası TP'ye Gitti" : "Çıkış Sonrası TP'ye Gitmedi") : null;
-}
-
-/** BE kapanan işlemlerden kaçı sonradan TP'ye gitti (soru yanıtlanmış olanlar üzerinden) */
-export function beAfterTpStats(trades: Trade[]): { be: number; answered: number; wentTp: number } {
-  let be = 0;
-  let answered = 0;
-  let wentTp = 0;
-  for (const t of trades) {
-    if (t.status !== 'BREAKEVEN') continue;
-    be++;
-    if (typeof t.afterExitTp !== 'boolean') continue;
-    answered++;
-    if (t.afterExitTp) wentTp++;
-  }
-  return { be, answered, wentTp };
-}
-
 /**
  * Veri eksiği panosu: formdaki her girdinin doluluk oranı (form sırasıyla) ve o girdinin açtığı analiz.
- * Yalnızca belirli işlemlerde sorulan alanlar kendi paydasıyla ölçülür (ör. Risk % hesaplı işlemlerde,
- * Çıkış Sonrası TP yalnızca BE / erken kapanış / BE Çekildi işlemlerinde).
+ * Yalnızca belirli işlemlerde sorulan alanlar kendi paydasıyla ölçülür (Risk % yalnızca hesaplı işlemlerde).
  */
 export function computeCoverage(trades: Trade[]): CoverageRow[] {
   const list = (v?: string[]) => Array.isArray(v) && v.length > 0;
@@ -455,14 +318,12 @@ export function computeCoverage(trades: Trade[]): CoverageRow[] {
     { field: 'newsDay', label: 'News Day', unlocks: 'Haber günü – normal gün kıyası', ok: (t) => typeof t.newsDay === 'boolean' },
     { field: 'asiaRangeFvg', label: 'Asia Range FVG (1H)', unlocks: 'Asia Range FVG (1H) kıyası', ok: (t) => !!t.asiaRangeFvg },
     { field: 'asiaRange', label: 'Asia Range', unlocks: 'Range / Trend kıyası', ok: (t) => !!t.asiaRange },
-    { field: 'sweepTime', label: 'Sweep Time', unlocks: 'Sweep saati (30 dk), Sweep saati × parite tablosu', ok: (t) => !!t.sweepTime },
+    { field: 'sweepTime', label: 'POI Sweep Time', unlocks: 'POI Sweep saati (30 dk), POI Sweep saati × parite tablosu', ok: (t) => !!t.sweepTime },
     { field: 'session', label: 'Session', unlocks: 'Session ve Session × Yön kıyası', ok: (t) => !!t.session },
     { field: 'entryModels', label: 'Entry Model', unlocks: 'Entry Model kıyası', ok: (t) => list(t.entryModels) },
     { field: 'tpTargets', label: 'Target', unlocks: 'Çıkış hedefi kıyası', ok: (t) => list(t.tpTargets) },
     { field: 'premiumDiscount', label: 'Confirmations', unlocks: 'Confirmations × Yön kıyası', ok: (t) => !!t.premiumDiscount },
-    { field: 'afterExitTp', label: 'Çıkış Sonrası TP', unlocks: "BE sonrası TP'ye gitme oranı (BE işlemlerde)", ok: (t) => typeof t.afterExitTp === 'boolean', asked: (t) => afterExitTpApplies(t.status) },
     { field: 'riskPct', label: 'Risk %', unlocks: 'Risk seviyesine göre edge, aşırı risk uyarısı (hesaplı işlemlerde)', ok: (t) => hasNum(t.riskPct) && t.riskPct > 0, asked: (t) => !!t.accountId },
-    { field: 'asiaRangePips', label: 'Asia Range Pip', unlocks: 'Range büyüklüğü (parite bazlı)', ok: (t) => hasNum(t.asiaRangePips) && t.asiaRangePips > 0 },
   ];
   return defs.map((d) => {
     const pool = d.asked ? trades.filter(d.asked) : trades;
@@ -485,7 +346,6 @@ export interface AsiaLabResult {
   trades: Trade[];
   overall: EdgeStats;
   hourPair: { hours: string[]; pairs: string[]; cells: Record<string, HourPairCell> };
-  beAfterTp: { be: number; answered: number; wentTp: number };
   rolling: Array<{ index: number; date: string; expectancy: number }>;
   coverage: CoverageRow[];
 }
@@ -559,7 +419,6 @@ export function analyzeAsia(allTrades: Trade[], opts: AsiaLabOptions): AsiaLabRe
     trades,
     overall,
     hourPair: { hours: hourKeys, pairs: pairKeys, cells },
-    beAfterTp: beAfterTpStats(trades),
     rolling: rolling.slice(-80),
     coverage: computeCoverage(trades),
   };

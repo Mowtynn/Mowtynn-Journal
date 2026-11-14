@@ -1,3 +1,4 @@
+import { RBadge, TrendBadge } from "./tradeList/TradeBadges";
 import { MODAL_BACKDROP, MODAL_PANEL, POPOVER } from '../lib/motion';
 import { formatR } from '../lib/format';
 import { smartUpper, getTradeAccountCategory, getTradeAccountName, ACCOUNT_CATEGORY_BADGE } from '../constants/constants';
@@ -367,7 +368,7 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                       <th className="py-2 px-2 text-center font-sans select-none w-[10%] min-w-[65px]">Yön</th>
                       <th className="py-2 px-2 text-center font-sans select-none w-[10%] min-w-[65px]">R</th>
                       <th className="py-2 px-2 text-center font-sans select-none w-[13%] min-w-[75px]">Session</th>
-                      <th className="py-2 px-2 text-center font-sans select-none w-[11%] min-w-[75px]">Sonuç</th>
+                      <th className="py-2 px-2 text-center font-sans select-none w-[11%] min-w-[75px]">Trend</th>
                       <th className="py-2 px-3 text-center font-sans select-none w-[13%] min-w-[80px]">
                         <div className="flex items-center justify-center w-full">Risk</div>
                       </th>
@@ -376,9 +377,6 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                   </thead>
                   <tbody className="block sm:table-row-group">
                     {sortedTrades.slice(0, 100).map((t, idx) => {
-                      const isWin = t.status === "WIN";
-                      const isLoss = t.status === "LOSS";
-                      const isBe = t.status === "BREAKEVEN";
                       const pnlText = typeof t.riskPct === "number" ? `%${t.riskPct.toLocaleString("en-US", { maximumFractionDigits: 2 })}` : "—";
                       const pnlColor = "text-zinc-300 font-bold";
 
@@ -406,23 +404,7 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-1.5 w-full justify-start sm:justify-center">
                               <span className="sm:hidden heading-3 h-[10px]">R</span>
                               <div className="flex items-center justify-center w-full h-[18px]">
-                                {t.rr !== undefined && t.rr !== null && t.rr !== 0 ? (
-                                  t.rr > 0 ? (
-                                    <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded-full uppercase tracking-wider font-sans transition-colors">
-                                      +{t.rr}R
-                                    </span>
-                                  ) : t.rr < 0 ? (
-                                    <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 group-hover:border-rose-500/50 rounded-full uppercase tracking-wider font-sans transition-colors">
-                                      {t.rr}R
-                                    </span>
-                                  ) : (
-                                    <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-zinc-400 bg-zinc-500/10 border border-zinc-500/20 group-hover:border-zinc-500/50 rounded-full uppercase tracking-wider font-sans transition-colors">
-                                      {t.rr}R
-                                    </span>
-                                  )
-                                ) : (
-                                  <span className="inline-flex items-center justify-center w-[38px] sm:w-[44px] h-[18px] text-center text-[9px] sm:text-[10px] font-medium text-zinc-500 rounded-md">—</span>
-                                )}
+                                <RBadge rr={t.rr} />
                               </div>
                             </div>
                           </td>
@@ -434,16 +416,9 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                             </div>
                           </td>
                           <td className="w-1/2 sm:w-[11%] sm:min-w-[75px] flex justify-end sm:justify-center items-center sm:table-cell order-4 py-1 px-0 sm:px-2 text-center sm:bg-zinc-900 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 align-middle">
-                            <div className="flex items-center justify-center w-full h-[18px]">
-                              {isWin ? (
-                                <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded-full uppercase tracking-wider font-sans transition-colors">{smartUpper("WIN")}</span>
-                              ) : isLoss ? (
-                                <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 group-hover:border-rose-500/50 rounded-full uppercase tracking-wider font-sans transition-colors">LOSS</span>
-                              ) : isBe ? (
-                                <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-zinc-400 bg-zinc-500/10 border border-zinc-500/20 group-hover:border-zinc-500/50 rounded-full uppercase tracking-wider font-sans transition-colors">BE</span>
-                              ) : (
-                                <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 group-hover:border-blue-500/50 rounded-full uppercase tracking-wider font-sans transition-colors">{smartUpper("AÇIK")}</span>
-                              )}
+                            <span className="sm:hidden heading-3 mr-2">Trend</span>
+                            <div className="flex items-center justify-end sm:justify-center w-full h-[20px] min-w-0">
+                              <TrendBadge trend={t.trend} />
                             </div>
                           </td>
                           <td className={`w-full sm:w-[13%] sm:min-w-[80px] flex justify-between sm:justify-center items-center sm:table-cell order-5 py-1 px-0 sm:px-3 text-right sm:text-center ${pnlColor} sm:bg-zinc-900 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 max-sm:pt-3 max-sm:border-t max-sm:border-zinc-800/50 sm:py-1 align-middle`}>

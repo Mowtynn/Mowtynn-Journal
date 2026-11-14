@@ -36,7 +36,7 @@ import {
 import { ASIA_RANGE_FORM_TYPES, DefinitionTitles } from '../types';
 import { DEFAULT_DATE_LIMIT, EMPTY_EXTRA_FILTERS, countExtraFilters, FILTER_DIMENSIONS, type ExtraTradeFilters, type FilterDimension } from '../lib/tradeFilters';
 import { dimensionValue, SETUP_DIMENSIONS, UNSPECIFIED } from '../lib/setupScorecard';
-import { PREV_TRADE_BUCKETS, RANGE_SIZE_BUCKETS, sweepBucketOrder } from '../lib/asiaAnalytics';
+import { PREV_TRADE_BUCKETS, sweepBucketOrder } from '../lib/asiaAnalytics';
 import { WEEKDAY_NAMES_TR } from '../lib/tradingTime';
 
 /** Gün filtresi seçenekleri Pazartesi'den başlar */
@@ -44,7 +44,7 @@ const WEEKDAY_ORDER = [...WEEKDAY_NAMES_TR.slice(1), WEEKDAY_NAMES_TR[0]];
 import { setupQualityTier } from '../lib/setupQuality';
 import { useNewsDayLabels } from '../hooks/useNewsDayLabels';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
-import { PillMultiSelect, StatusMultiSelect, TypeMultiSelect, FilterAccordionRow, FilterChip, FilterChipRow, FILTER_INPUT, FILTER_LABEL } from './filters/FilterControls';
+import { PillMultiSelect, StatusMultiSelect, TypeMultiSelect, FilterAccordionRow, FilterChip, FilterChipRow } from './filters/FilterControls';
 
 interface GlobalFilterModalProps {
   isOpen: boolean;
@@ -58,18 +58,12 @@ interface GlobalFilterModalProps {
   trendTypes?: string[];
   definitionTitles?: DefinitionTitles;
   // Selected
-  globalSelectedConfirmations: string[];
-  setGlobalSelectedConfirmations: (v: string[]) => void;
   globalSelectedPlanFidelity: string[];
   setGlobalSelectedPlanFidelity: (v: string[]) => void;
   globalSelectedAssets: string[];
   setGlobalSelectedAssets: (v: string[]) => void;
   globalSelectedSessions: string[];
   setGlobalSelectedSessions: (v: string[]) => void;
-  globalSelectedTimeframes: string[];
-  setGlobalSelectedTimeframes: (v: string[]) => void;
-  globalSelectedHtfTimeframes: string[];
-  setGlobalSelectedHtfTimeframes: (v: string[]) => void;
   globalSelectedStatuses: string[];
   setGlobalSelectedStatuses: (v: string[]) => void;
   globalSelectedTypes: string[];
@@ -80,10 +74,6 @@ interface GlobalFilterModalProps {
   setGlobalSelectedTrendTypes?: (v: string[]) => void;
   globalDateLimit: string;
   setGlobalDateLimit: (v: string) => void;
-  globalMinAsiaRangePips?: number;
-  setGlobalMinAsiaRangePips?: (v?: number) => void;
-  globalMaxAsiaRangePips?: number;
-  setGlobalMaxAsiaRangePips?: (v?: number) => void;
   // Sonradan eklenen alanlar
   premiumDiscounts?: string[];
   tpTargets?: string[];
@@ -103,19 +93,14 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
   entryModels = DEFAULT_ENTRY_MODELS,
   trendTypes = DEFAULT_TREND_TYPES,
   definitionTitles = DEFAULT_DEFINITION_TITLES,
-  globalSelectedConfirmations, setGlobalSelectedConfirmations,
   globalSelectedPlanFidelity, setGlobalSelectedPlanFidelity,
   globalSelectedAssets, setGlobalSelectedAssets,
   globalSelectedSessions, setGlobalSelectedSessions,
-  globalSelectedTimeframes, setGlobalSelectedTimeframes,
-  globalSelectedHtfTimeframes, setGlobalSelectedHtfTimeframes,
   globalSelectedStatuses, setGlobalSelectedStatuses,
   globalSelectedTypes, setGlobalSelectedTypes,
   globalSelectedEntryModels = [], setGlobalSelectedEntryModels,
   globalSelectedTrendTypes = [], setGlobalSelectedTrendTypes,
   globalDateLimit, setGlobalDateLimit,
-  globalMinAsiaRangePips, setGlobalMinAsiaRangePips,
-  globalMaxAsiaRangePips, setGlobalMaxAsiaRangePips,
   premiumDiscounts = [],
   tpTargets = [],
   asiaRangeFvgs = [],
@@ -183,7 +168,6 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
       }
       const vals = [...set];
       if (d === 'sweepHour') vals.sort((a, b) => sweepBucketOrder(a) - sweepBucketOrder(b));
-      else if (d === 'rangeSize') vals.sort(orderBy(RANGE_SIZE_BUCKETS));
       else if (d === 'prevTrade') vals.sort(orderBy(PREV_TRADE_BUCKETS));
       else if (d === 'weekday') vals.sort(orderBy(WEEKDAY_ORDER));
       else vals.sort((a, b) => a.localeCompare(b, 'tr'));
@@ -265,19 +249,14 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
   };
 
   const handleReset = () => {
-    setGlobalSelectedConfirmations([]);
     setGlobalSelectedPlanFidelity([]);
     setGlobalSelectedAssets([]);
     setGlobalSelectedSessions([]);
-    setGlobalSelectedTimeframes([]);
-    setGlobalSelectedHtfTimeframes([]);
     setGlobalSelectedStatuses([]);
     setGlobalSelectedTypes([]);
     setGlobalSelectedEntryModels?.([]);
     setGlobalSelectedTrendTypes?.([]);
     setGlobalDateLimit(DEFAULT_DATE_LIMIT);
-    setGlobalMinAsiaRangePips?.(undefined);
-    setGlobalMaxAsiaRangePips?.(undefined);
     setGlobalExtra?.(EMPTY_EXTRA_FILTERS);
   };
 
@@ -296,18 +275,14 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
   }, [isOpen, onClose]);
 
   const activeFilterCount = 
-    globalSelectedConfirmations.length + 
     globalSelectedPlanFidelity.length +
     globalSelectedAssets.length + 
     globalSelectedSessions.length + 
-    globalSelectedTimeframes.length + 
-    globalSelectedHtfTimeframes.length + 
     globalSelectedStatuses.length + 
     globalSelectedTypes.length + 
     (globalSelectedEntryModels?.length || 0) + 
     (globalSelectedTrendTypes?.length || 0) + 
     (globalDateLimit !== DEFAULT_DATE_LIMIT ? 1 : 0) +
-    (globalMinAsiaRangePips !== undefined || globalMaxAsiaRangePips !== undefined ? 1 : 0) +
     countExtraFilters(globalExtra);
 
   const dateOptions = [
@@ -444,70 +419,6 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                 />
               </FilterAccordionRow>
 
-              {/* 4b. ASIA RANGE (PİP) */}
-              <FilterAccordionRow title="Asia Range (Pip)" 
-                icon={<Activity size={14} className="text-blue-400" />}
-                summaryText={
-                  (globalMinAsiaRangePips !== undefined || globalMaxAsiaRangePips !== undefined)
-                    ? `${globalMinAsiaRangePips ?? '0'} - ${globalMaxAsiaRangePips ?? '∞'} Pip`
-                    : 'Tümü'
-                }
-                badgeCount={(globalMinAsiaRangePips !== undefined || globalMaxAsiaRangePips !== undefined) ? 1 : 0}
-                isOpen={!!openSections.asiaRange}
-                onToggle={() => toggleSection('asiaRange')}
-              >
-                <div className="bg-zinc-950/60 p-3 rounded-xl border border-zinc-800/80 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-zinc-400 font-sans font-bold uppercase tracking-wider">{smartUpper("Aralık (En Az - En Çok)")}</span>
-                    {(globalMinAsiaRangePips !== undefined || globalMaxAsiaRangePips !== undefined) && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setGlobalMinAsiaRangePips?.(undefined);
-                          setGlobalMaxAsiaRangePips?.(undefined);
-                        }}
-                        className="text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer"
-                      >
-                        Temizle
-                      </button>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <div>
-                      <label className={`${FILTER_LABEL} mb-1 block`}>En Az (Min Pip)</label>
-                      <input
-                        type="number"
-                        step="any"
-                        min="0"
-                        placeholder="Min Pip"
-                        value={globalMinAsiaRangePips ?? ''}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setGlobalMinAsiaRangePips?.(val !== '' ? parseFloat(val) : undefined);
-                        }}
-                        className={FILTER_INPUT}
-                      />
-                    </div>
-                    <div>
-                      <label className={`${FILTER_LABEL} mb-1 block`}>En Çok (Maks Pip)</label>
-                      <input
-                        type="number"
-                        step="any"
-                        min="0"
-                        placeholder="Maks Pip"
-                        value={globalMaxAsiaRangePips ?? ''}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setGlobalMaxAsiaRangePips?.(val !== '' ? parseFloat(val) : undefined);
-                        }}
-                        className={FILTER_INPUT}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </FilterAccordionRow>
-
-
               {/* 7. SETUP KALİTESİ */}
               <FilterAccordionRow title={definitionTitles.planFidelities || "SETUP KALİTESİ"} 
                 icon={<Target size={14} className="text-blue-400" />}
@@ -592,7 +503,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                 />
               </FilterAccordionRow>
 
-              {/* Türetilmiş girdiler: Sweep Saati, Asia Range Büyüklüğü, Günün İşlemi, Gün İçi Önceki İşlem, Gün, Çıkış Sonrası TP */}
+              {/* Türetilmiş girdiler: POI Sweep Saati, Günün İşlemi, Gün İçi Önceki İşlem, Gün */}
               {FILTER_DIMENSIONS.map((d) => {
                 const sel = globalExtra.dims?.[d] || [];
                 return (

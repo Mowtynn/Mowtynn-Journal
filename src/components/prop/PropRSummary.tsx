@@ -4,7 +4,7 @@ import { Activity } from 'lucide-react';
 import { PropAccount, Trade } from '../../types';
 import { computeAccountRInsights, MAX_BUST_PCT, MIN_SURVIVE_PCT, MIN_SIMULATION_SAMPLE } from '../../lib/propInsights';
 import { MIN_SAMPLE, EDGE_PROOF_MIN } from '../../lib/sampleSize';
-import { fixed, formatMoney, formatR } from '../../lib/format';
+import { formatMoney, formatR, rnum } from '../../lib/format';
 
 const r1 = (v: number) => v.toLocaleString('en-US', { maximumFractionDigits: 1 });
 // Beklenti, ortalamalar ve net R diğer ekranlarla aynı iki ondalıkla; sınıra / hedefe kalan mesafe yaklaşık olduğu için tek ondalık
@@ -50,7 +50,7 @@ export const PropRSummary = memo(function PropRSummary({ account, trades }: { ac
           label="Beklenti"
           value={ins.tradeCount ? `${sR(ins.expectancy)}/işlem` : '—'}
           tone={ins.expectancy > 0 ? 'text-emerald-300' : ins.expectancy < 0 ? 'text-rose-300' : 'text-zinc-400'}
-          hint={`Ort. kazanç ${fixed(ins.avgWinR)}R · ort. kayıp ${fixed(ins.avgLossR)}R`}
+          hint={`Ort. kazanç ${rnum(ins.avgWinR)}R · ort. kayıp ${rnum(ins.avgLossR)}R`}
         />
         <Stat
           label="Sınıra kalan"

@@ -5,7 +5,7 @@ import { Activity, ArrowDownRight, RefreshCw, TrendingUp, TrendingDown, Sigma } 
 import type { DeepMetrics } from '../lib/deepMetrics';
 import { formatPF } from '../lib/statMath';
 import { MIN_SAMPLE } from '../lib/sampleSize';
-import { fixed, signed } from '../lib/format';
+import { rnum, rsigned } from '../lib/format';
 
 /**
  * Detaylı Analiz metrik kartları.
@@ -15,7 +15,7 @@ import { fixed, signed } from '../lib/format';
  */
 
 // Projedeki diğer R değerleriyle aynı biçim (nokta, 2 basamak)
-const fmtR = (v: number) => fixed(v);
+const fmtR = (v: number) => rnum(v);
 
 const itemVariants = {
   hidden: { opacity: 0 },
@@ -101,10 +101,10 @@ export const NewDeepAnalysisMetrics = React.memo(
             label="Kümülatif R"
             icon={Sigma}
             tone={toneOf(metrics.totalR)}
-            value={signed(metrics.totalR)}
+            value={rsigned(metrics.totalR)}
             unit="R"
             sub={`${total} işlem`}
-            onClick={click('cumulativeR', `${signed(metrics.totalR)}R`)}
+            onClick={click('cumulativeR', `${rsigned(metrics.totalR)}R`)}
           />
           <MetricCard
             label="Profit Factor"

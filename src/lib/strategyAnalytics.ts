@@ -1,7 +1,6 @@
 import { Trade } from '../types';
 import { byEntryTime } from './tradeModel';
-import { calculateProfitFactor, toRR } from './statMath';
-import { indexTradeOrder, asiaRangeBucketOf, prevTradeBucket } from './asiaAnalytics';
+import { indexTradeOrder, prevTradeBucket } from './asiaAnalytics';
 
 /** Bir grup hakkında yorum/kural üretmek için gereken en az işlem sayısı — projenin tek eşiği (src/lib/sampleSize.ts). */
 import { MIN_SAMPLE, EDGE_PROOF_MIN } from './sampleSize';
@@ -11,21 +10,6 @@ export { MIN_SAMPLE };
 export interface StrategyAnalyticsResult {
   totalTrades: number;
   
-  // Asia Range Volatility Matrix
-  asiaRangeStats: {
-    hasData: boolean;
-    tradeCount: number;
-    brackets: {
-      tight: { label: string; count: number; wins: number; winRate: number; netR: number; avgR: number; profitFactor: number };
-      medium: { label: string; count: number; wins: number; winRate: number; netR: number; avgR: number; profitFactor: number };
-      wide: { label: string; count: number; wins: number; winRate: number; netR: number; avgR: number; profitFactor: number };
-    };
-    bestBracket: string;
-    insight: string;
-  };
-
-
-  // Seri ve aynı gün kayıp / kazanç sonrası (tilt) analizi
   streakStats: {
     currentStreak: { type: 'WIN' | 'LOSS' | 'NONE'; count: number };
     maxLossStreak: number;
@@ -45,8 +29,6 @@ export interface StrategyAnalyticsResult {
 
 }
 
-/** Küçük örneklemli sıralama cümlelerine eklenen not (EDGE_PROOF_MIN altı = erken sinyal) */
-const earlyNote = (n: number) => (n < EDGE_PROOF_MIN ? ` Erken sinyal (${n}/${EDGE_PROOF_MIN} işlem): kural yapmadan önce doğrula.` : '');
 
 /** Wilson %95 aralığının üst sınırı (oran 0–1) */
 const wilsonUpper = (wins: number, n: number) => {
@@ -60,17 +42,6 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
 
   const defaultEmptyResult: StrategyAnalyticsResult = {
     totalTrades: 0,
-    asiaRangeStats: {
-      hasData: false,
-      tradeCount: 0,
-      brackets: {
-        tight: { label: 'Dar (< 0.8× önceki medyan)', count: 0, wins: 0, winRate: 0, netR: 0, avgR: 0, profitFactor: 0 },
-        medium: { label: 'Normal (0.8× – 1.25×)', count: 0, wins: 0, winRate: 0, netR: 0, avgR: 0, profitFactor: 0 },
-        wide: { label: 'Geniş (> 1.25× önceki medyan)', count: 0, wins: 0, winRate: 0, netR: 0, avgR: 0, profitFactor: 0 },
-      },
-      bestBracket: '-',
-      insight: 'Asia Range verisi bulunamadı.',
-    },
     streakStats: {
       currentStreak: { type: 'NONE', count: 0 },
       maxLossStreak: 0,
@@ -93,47 +64,8 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
   const totalWins = trades.filter(t => t.status === 'WIN').length;
   const overallWinRate = Math.round((totalWins / totalTrades) * 1000) / 10;
 
-  // Asia Range Volatility Matrix
-  const tradesWithAsia = trades.filter(t => typeof t.asiaRangePips === 'number' && !isNaN(t.asiaRangePips) && t.asiaRangePips > 0);
-  
-  const calcBucket = (bucketTrades: Trade[], label: string) => {
-    const count = bucketTrades.length;
-    const wins = bucketTrades.filter(t => t.status === 'WIN').length;
-    const winRate = count > 0 ? (wins / count) * 100 : 0;
-    const netR = Math.round(bucketTrades.reduce((s, t) => s + (t.rr || 0), 0) * 100) / 100;
-    const avgR = count > 0 ? Math.round((netR / count) * 100) / 100 : 0;
-    const pR = bucketTrades.filter(t => (t.rr || 0) > 0).reduce((s, t) => s + (t.rr || 0), 0);
-    const nR = Math.abs(bucketTrades.filter(t => (t.rr || 0) < 0).reduce((s, t) => s + (t.rr || 0), 0));
-    const profitFactor = calculateProfitFactor(toRR(pR), toRR(nR));
-    return { label, count, total: count, wins, winRate: Math.round(winRate * 10) / 10, netR, avgR, profitFactor: Math.round(profitFactor * 100) / 100 };
-  };
-
-  // Brackets are relative to each pair's own median Asia Range (EURCAD and EURUSD ranges differ structurally)
-  // Kurulum Karnesi / Edge Özeti ile aynı etiket: girişten önce bilinen (önceki işlemlerin medyanına göre) sınıf.
-  // Uygulamada tüm işlemler üzerinden bir kez indekslenir; burada yalnızca okunur.
+  // Gün içi önceki işlem sonucu (kayıp / kazanç sonrası) için işlem sırası bir kez indekslenir
   indexTradeOrder(trades);
-  const tightTrades = tradesWithAsia.filter(t => asiaRangeBucketOf(t) === 'NARROW');
-  const mediumTrades = tradesWithAsia.filter(t => asiaRangeBucketOf(t) === 'NORMAL');
-  const wideTrades = tradesWithAsia.filter(t => asiaRangeBucketOf(t) === 'WIDE');
-
-  const asiaBrackets = {
-    tight: calcBucket(tightTrades, 'Dar (< 0.8× önceki medyan)'),
-    medium: calcBucket(mediumTrades, 'Normal (0.8× – 1.25×)'),
-    wide: calcBucket(wideTrades, 'Geniş (> 1.25× önceki medyan)'),
-  };
-
-  let bestAsiaBracket = '-';
-  let asiaInsight = 'Yeterli Asia Range verisi yok.';
-  if (tradesWithAsia.length >= MIN_SAMPLE) {
-    const list = [asiaBrackets.tight, asiaBrackets.medium, asiaBrackets.wide].filter(b => b.count >= MIN_SAMPLE);
-    list.sort((a, b) => b.avgR - a.avgR);
-    if (list.length > 0) {
-      bestAsiaBracket = list[0].label;
-      asiaInsight = `İşlem başına en yüksek beklenti ${bestAsiaBracket} aralığında (${formatR(list[0].avgR)}, ${list[0].count} işlem).${earlyNote(list[0].count)} Güven aralıkları için Kurulum Karnesi'nde Asia Range Büyüklüğü alanına bakın.`;
-    } else {
-      asiaInsight = `Her aralıkta en az ${MIN_SAMPLE} işlem birikince kıyas yapılır.`;
-    }
-  }
 
   // 18. Streak & Post-Loss / Tilt Analytics
   const sortedChronological = [...trades].sort(byEntryTime);
@@ -217,13 +149,6 @@ export function calculateStrategyAnalytics(trades: Trade[]): StrategyAnalyticsRe
 
   return {
     totalTrades,
-    asiaRangeStats: {
-      hasData: tradesWithAsia.length > 0,
-      tradeCount: tradesWithAsia.length,
-      brackets: asiaBrackets,
-      bestBracket: bestAsiaBracket,
-      insight: asiaInsight,
-    },
     streakStats: {
       currentStreak: { type: currentStreakType, count: currentStreakCount },
       maxLossStreak,

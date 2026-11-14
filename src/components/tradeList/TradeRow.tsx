@@ -1,3 +1,4 @@
+import { RBadge, TrendBadge } from "./TradeBadges";
 import React, { useMemo } from 'react';
 import { smartUpper } from '../../constants/constants';
 import { Trade } from '../../types';
@@ -19,10 +20,6 @@ export const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
   onEdit: (trade: Trade) => void; 
   setTradeToDelete: (trade: Trade) => void; 
 }) {
-  const isWin = trade.status === 'WIN';
-  const isLoss = trade.status === 'LOSS';
-  const isBe = trade.status === 'BREAKEVEN';
-
   const category = getTradeAccountCategory(trade);
   const categoryBadgeClass = `${ACCOUNT_CATEGORY_BADGE[category]} ${category === 'FUNDED' ? 'group-hover:border-emerald-500/60' : category === 'CHALLENGE' ? 'group-hover:border-blue-500/60' : 'group-hover:border-amber-500/60'}`;
 
@@ -67,37 +64,14 @@ export const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-1.5 w-full justify-start sm:justify-center">
           <span className="sm:hidden text-[9px] font-bold text-zinc-500 uppercase tracking-widest leading-none h-[10px]">R</span>
           <div className="flex items-center justify-center w-full h-[18px]">
-            {trade.rr !== undefined && trade.rr !== null && trade.rr !== 0 ? (
-              trade.rr > 0 ? (
-                <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded-full uppercase tracking-wider font-sans">
-                  +{Number(trade.rr.toFixed(2))}R
-                </span>
-              ) : trade.rr < 0 ? (
-                <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 group-hover:border-rose-500/50 rounded-full uppercase tracking-wider font-sans">
-                  {Number(trade.rr.toFixed(2))}R
-                </span>
-              ) : (
-                <span className="inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-zinc-400 bg-zinc-500/10 border border-zinc-500/20 group-hover:border-zinc-500/50 rounded-full uppercase tracking-wider font-sans">
-                  {Number(trade.rr.toFixed(2))}R
-                </span>
-              )
-            ) : (
-              <span className="inline-flex items-center justify-center w-[38px] sm:w-[44px] h-[18px] text-center text-[9px] sm:text-[10px] font-medium text-zinc-500 rounded-md">—</span>
-            )}
+            <RBadge rr={trade.rr} />
           </div>
         </div>
       </td>
       <td className="w-1/2 min-w-[75px] flex justify-end sm:justify-center items-center sm:table-cell order-4 py-1 px-0 sm:px-2 text-center sm:bg-transparent sm:border-y sm:border-zinc-800/80 mt-1.5 sm:mt-0 align-middle sm:w-[11%]">
-        <div className="flex items-center justify-center w-full h-[18px]">
-          {isWin ? (
-            <span className="inline-flex items-center justify-center h-[20px] px-2 py-0 text-center text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded-full uppercase tracking-wider font-sans w-[46px] sm:w-[54px]">{smartUpper("WIN")}</span>
-          ) : isLoss ? (
-            <span className="inline-flex items-center justify-center h-[20px] px-2 py-0 text-center text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 group-hover:border-rose-500/50 rounded-full uppercase tracking-wider font-sans w-[46px] sm:w-[54px]">LOSS</span>
-          ) : isBe ? (
-            <span className="inline-flex items-center justify-center h-[20px] px-2 py-0 text-center text-[10px] font-bold text-zinc-400 bg-zinc-500/10 border border-zinc-500/20 group-hover:border-zinc-500/50 rounded-full uppercase tracking-wider font-sans w-[46px] sm:w-[54px]">BE</span>
-          ) : (
-            <span className="inline-flex items-center justify-center h-[20px] px-2 py-0 text-center text-[10px] font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 group-hover:border-blue-500/50 rounded-full uppercase tracking-wider font-sans w-[46px] sm:w-[54px]">{smartUpper("AÇIK")}</span>
-          )}
+        <span className="sm:hidden heading-3 mr-2">Trend</span>
+        <div className="flex items-center justify-end sm:justify-center w-full h-[20px] min-w-0">
+          <TrendBadge trend={trade.trend} />
         </div>
       </td>
       <td className={`w-full min-w-[70px] flex justify-between sm:justify-center items-center sm:table-cell order-5 py-1 px-0 sm:px-3 text-right sm:text-center text-zinc-300 font-bold sm:bg-transparent sm:border-y sm:border-zinc-800/80 mt-1.5 sm:mt-0 max-sm:pt-3 max-sm:border-t max-sm:border-zinc-800/50 sm:py-1 align-middle sm:w-[9%]`}>
@@ -106,7 +80,7 @@ export const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
           <span className="text-sm sm:text-xs font-bold font-sans inline-flex items-center justify-center h-[20px] leading-none tracking-tight">{riskText}</span>
         </div>
       </td>
-      {true && (
+      {(
         <td className="hidden sm:table-cell sm:w-[22%] sm:min-w-[75px] py-1.5 px-2 text-center bg-transparent border-y border-zinc-800/80 align-middle">
           <div className="flex items-center justify-center w-full">
             {accountLabel ? (

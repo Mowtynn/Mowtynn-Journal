@@ -1,4 +1,20 @@
-import { ASIA_RANGE_TYPES, MANAGEMENT_TYPES, Trade } from '../types';
+import { ASIA_RANGE_TYPES, Trade } from '../types';
+
+/** İşlem durumu R'nin işaretinden gelir (formda ayrıca seçilmez): artı kazanç, eksi kayıp, 0 başabaş */
+/**
+ * R tek ondalığa yuvarlanır (2.08 → 2.1, 2.04 → 2, -1.25 → -1.3): kayıt, hesap ve görünüm aynı sayıyı kullanır.
+ * Yarım değerler sıfırdan uzağa gider (işaretten bağımsız); kayan nokta hatası (2.05 → 20.4999…) küçük payla düzeltilir.
+ */
+export const roundR = (v: number): number => {
+  if (!Number.isFinite(v)) return 0;
+  const r = (Math.sign(v) * Math.round(Math.abs(v) * 10 + 1e-9)) / 10;
+  return r === 0 ? 0 : r;
+};
+
+export const statusOfR = (r: number): Trade['status'] => (r > 0 ? 'WIN' : r < 0 ? 'LOSS' : 'BREAKEVEN');
+
+/** Kaldırılmış "İşlem Yönetimi" alanının eski kayıtlardaki geçerli değerleri (Firestore kuralı bu listeyi denetler) */
+const MANAGEMENT_TYPES = ['Plana Göre', 'BE Çekildi', 'Kısmi Kâr', 'Erken Kapatıldı'] as const;
 
 /**
  * Kronolojik sıra (eskiden yeniye). Aynı dakikaya girilmiş işlemlerde sıra kayıt kimliğiyle belirlenir (kimlik kayıt
@@ -88,6 +104,12 @@ export function normalizeTrade<T extends Partial<Trade> & Record<string, any>>(r
     const n = Number(t.rr);
     t.rr = Number.isFinite(n) ? n : 0;
   }
+  // Tek ondalık: eski kayıtlardaki 2.08 gibi değerler de 2.1 olarak hesaplanır ve görünür.
+  // Yuvarlanınca 0 olan küçük sonuç (0.04) başabaştır.
+  if (t.rr !== 0) {
+    t.rr = roundR(t.rr);
+    if (t.rr === 0) t.status = 'BREAKEVEN';
+  }
   // Proje R tabanlı: dolar sonucu tutulmaz. BE her zaman 0R.
   delete t.pnl;
   if (t.status === 'BREAKEVEN') t.rr = 0;
@@ -102,7 +124,7 @@ export function normalizeTrade<T extends Partial<Trade> & Record<string, any>>(r
     if (hit) t.asiaRange = hit;
     else delete t.asiaRange;
   }
-  // İşlem Yönetimi: yalnızca tanımlı seçenekler; "Plana Göre" diğerleriyle birlikte olamaz
+  // Eski kayıtlardaki İşlem Yönetimi: yalnızca tanımlı seçenekler; "Plana Göre" diğerleriyle birlikte olamaz
   if (t.management !== undefined) {
     // Eski adı "BE'ye Çekildi" → "BE Çekildi"
     const norm = (v: string) => v.trim().toLocaleLowerCase('tr-TR').replace("be'ye çekildi", 'be çekildi');

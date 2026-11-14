@@ -1,13 +1,13 @@
 import { MODAL_BACKDROP, MODAL_PANEL } from '../lib/motion';
 
 /** İşlemler arası geçiş eğrisi: expo'dan daha yumuşak başlayan, uzun süzülen bir yavaşlama */
-const SOFT_EASE: [number, number, number, number] = [0.25, 0.8, 0.3, 1];
+const NAV_EASE: [number, number, number, number] = [0.16, 1, 0.3, 1];
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, animate } from "motion/react";
 import toast from "react-hot-toast";
 import { Trade, DefinitionTitles } from "../types";
-import { DEFAULT_DEFINITION_TITLES, cleanDefinitionTitleString, getTradeAccountCategory, getTradeStageLabel, ACCOUNT_CATEGORY_LABELS, ACCOUNT_CATEGORY_BADGE, getNewsDayLabels, smartUpper } from "../constants/constants";
+import { DEFAULT_DEFINITION_TITLES, cleanDefinitionTitleString, getNewsDayLabels, smartUpper } from "../constants/constants";
 import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
 import { resolveChartImage } from "../lib/chartLink";
 import { 
@@ -16,7 +16,7 @@ import {
   X, Edit3, Trash2, Calendar, Clock, Target, 
   ExternalLink, Image as ImageIcon, FileText, 
   Activity, Layers, Monitor, ShieldCheck, AlertCircle,
-  Download, Loader2, Trophy, TrendingDown, Minus, Zap, TrendingUp,
+  Download, Loader2, Zap, TrendingUp,
   Flag, Scale, PenLine,
   ChevronLeft,
   ChevronRight,
@@ -25,8 +25,7 @@ import { setupQualityTier } from "../lib/setupQuality";
 import { useAllTrades } from "../lib/allTradesContext";
 import { nyWallDate, nyDateKey } from "../lib/tradingTime";
 import { computeTradeInsight } from "../lib/tradeInsight";
-import { afterExitTpText } from "../lib/asiaAnalytics";
-import { ResultPanel, SetupHistoryPanel, formatR } from "./tradeDetail/TradeInsightPanels";
+import { ResultPanel, SetupHistoryPanel } from "./tradeDetail/TradeInsightPanels";
 
 interface TradeDetailModalProps {
   trade: Trade | null;
@@ -196,32 +195,36 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
     const dir = navDirRef.current;
     navDirRef.current = 0;
     if (!dir || typeof window === 'undefined' || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
-    // Geçiş: pencere ve zemin sabit kalır (ton değişmez). Bölümler (sonuç, bağlam, görsel, notlar)
-    // geldiği yönden çok kısa bir mesafeyle, sırayla (kademeli) yerine süzülür; renkler aynı sürede karışır
-    // (index.css · .detail-soft). Sayaç yeni numarayı yönüyle getirir; başlıktaki ince çizgi listedeki konumu gösterir.
-    const sections = bodyRef.current
-      ? Array.from(bodyRef.current.querySelectorAll<HTMLElement>('section')).filter((el) => !el.parentElement?.closest('section'))
-      : [];
+    // Geçiş: pencere ve zemin sabit kalır. İçerik tek parça halinde, geldiği yönden kısa bir kaymayla ve
+    // hızlı bir solmayla yerine oturur (kademesiz, ~0.2 sn): art arda ok tuşuyla gezerken bile takılmaz,
+    // her basış önceki animasyonu keser. Sayaç yeni numarayı yönüyle getirir.
     const controls = [
-      ...sections.slice(0, 8).map((el, i) =>
-        animate(el, { opacity: [0.82, 1], x: [dir * 5, 0], y: [3, 0] }, { duration: 0.46, ease: SOFT_EASE, delay: i * 0.035 }),
-      ),
-      headInfoRef.current && animate(headInfoRef.current, { opacity: [0.85, 1], x: [dir * 3, 0] }, { duration: 0.4, ease: SOFT_EASE }),
-      counterRef.current && animate(counterRef.current, { opacity: [0, 1], y: [dir * 6, 0] }, { duration: 0.32, ease: SOFT_EASE }),
+      bodyRef.current && animate(bodyRef.current, { opacity: [0.35, 1], x: [dir * 18, 0] }, { duration: 0.22, ease: NAV_EASE }),
+      headInfoRef.current && animate(headInfoRef.current, { opacity: [0.35, 1], x: [dir * 10, 0] }, { duration: 0.2, ease: NAV_EASE }),
+      counterRef.current && animate(counterRef.current, { opacity: [0, 1], y: [dir * 6, 0] }, { duration: 0.18, ease: NAV_EASE }),
     ];
     return () => controls.forEach((c) => c && c.stop());
   }, [currentTrade?.id]);
 
+  // Dokunmatik ekranda yatay kaydırmayla işlemler arası geçiş (sola: sonraki, sağa: önceki); dikey kaydırma etkilenmez
+  const swipeRef = React.useRef<{ x: number; y: number; t: number } | null>(null);
+  const onSwipeStart = (e: React.TouchEvent) => {
+    const p = e.touches[0];
+    swipeRef.current = e.touches.length === 1 ? { x: p.clientX, y: p.clientY, t: Date.now() } : null;
+  };
+  const onSwipeEnd = (e: React.TouchEvent) => {
+    const s0 = swipeRef.current;
+    swipeRef.current = null;
+    if (!s0 || !canNav) return;
+    const p = e.changedTouches[0];
+    const dx = p.clientX - s0.x;
+    const dy = p.clientY - s0.y;
+    if (Date.now() - s0.t > 600 || Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    if (dx < 0) goNext(); else goPrev();
+  };
+
   if (!currentTrade) return null;
 
-  const isWin = currentTrade.status === 'WIN';
-  const isLoss = currentTrade.status === 'LOSS';
-  const isBe = currentTrade.status === 'BREAKEVEN';
-  const isOpen = (currentTrade.status as any) === 'OPEN';
-
-  const rrColorClass = currentTrade.rr !== undefined && currentTrade.rr !== null 
-    ? currentTrade.rr > 0 ? 'text-emerald-400' : currentTrade.rr < 0 ? 'text-rose-400' : 'text-zinc-400'
-    : 'text-zinc-600';
 
   // Tarih New York gününe göre gösterilir (saat tutulmuyor)
   const formatDate = (timestamp: number) => {
@@ -232,12 +235,6 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
       year: 'numeric',
     });
   };
-
-  const riskFormatted = typeof currentTrade.riskPct === 'number'
-    ? `%${currentTrade.riskPct.toLocaleString('en-US', { maximumFractionDigits: 2 })}`
-    : '—';
-
-  const rrFormatted = currentTrade.rr !== undefined && currentTrade.rr !== null ? formatR(currentTrade.rr) : `—`;
 
   return createPortal(
     <>
@@ -296,17 +293,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                       <span className={`badge-base ${currentTrade.type === 'LONG' ? 'badge-win' : 'badge-loss'}`}>
                         {currentTrade.type}
                       </span>
-                      <span className={`badge-base flex items-center gap-1.5 ${
-                        isWin ? 'badge-win' : 
-                        isLoss ? 'badge-loss' : 
-                        isBe ? 'bg-zinc-800 text-zinc-300 border border-zinc-700' :
-                        'toggle-item-brand border border-blue-500/20'
-                      }`}>
-                        {isWin && <><Trophy size={12} className="mr-1"/> WIN</>}
-                        {isLoss && <><TrendingDown size={12} className="mr-1"/> LOSS</>}
-                        {isBe && <><Minus size={12} className="mr-1"/> BREAKEVEN</>}
-                        {isOpen && <><Clock size={12} className="mr-1"/> OPEN</>}
-                      </span>
+                      {/* Durum rozeti yok: sonuç kartı R ile birlikte Kazanç / Kayıp / Breakeven gösteriyor */}
                     </div>
                   </div>
                   <div className="hidden xl:block w-px h-8 bg-zinc-800"></div>
@@ -369,7 +356,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                 </div>
               </div>
               {/* Main Content Layout */}
-              <div ref={bodyRef} className={`flex flex-col lg:flex-row flex-1 min-h-0 ${isExporting ? 'overflow-hidden' : 'overflow-y-auto lg:overflow-hidden custom-scrollbar'}`}>
+              <div ref={bodyRef} onTouchStart={onSwipeStart} onTouchEnd={onSwipeEnd} className={`flex flex-col lg:flex-row flex-1 min-h-0 ${isExporting ? 'overflow-hidden' : 'overflow-y-auto lg:overflow-hidden custom-scrollbar'}`}>
                 
                 {/* Left Sidebar - Meta & Context (approx 35%) */}
                 <div className={`w-full lg:w-[40%] bg-zinc-950/30 border-r border-zinc-800/60 p-5 space-y-4 shrink-0 ${isExporting ? 'overflow-visible' : 'lg:overflow-y-auto custom-scrollbar'}`}>
@@ -403,76 +390,32 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                     );
                   })()}
 
-                  {/* Sonuç: gerçekleşen ↔ plan R:R, risk */}
-                  {insight ? (
-                    <ResultPanel trade={currentTrade} path={insight.path} />
-                  ) : (
-                    <section>
-                      <h4 className="heading-2 mb-3">
-                        <Activity size={12}/> SONUÇ
-                      </h4>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-xl p-4 flex flex-col justify-center">
-                          <span className="heading-3 mb-1.5">SONUÇ (R)</span>
-                          <span className={`text-2xl font-bold ${rrColorClass}`}>{rrFormatted}</span>
-                        </div>
-                        <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-xl p-4 flex flex-col justify-center">
-                          <span className="heading-3 mb-1.5">İŞLEM BAŞI RİSK</span>
-                          <span className="text-2xl font-bold text-zinc-200">{riskFormatted}</span>
-                        </div>
-                      </div>
-                    </section>
-                  )}
+                  {/* Sonuç kartı: R, durum, hesap, risk ve hesaba dolar etkisi */}
+                  <ResultPanel trade={currentTrade} realizedR={insight ? insight.path.realizedR : (Number(currentTrade.rr) || 0)} />
 
                   {/* Execution Context */}
                   {(() => {
-                    // Setup Kalitesi sırası renge yansır: A+ yeşil · A mavi · B-C kırmızı
+                    // Setup Kalitesi sırası renge yansır: A+ yeşil · A mavi · B-C kırmızı (formdaki, filtredeki ve listedeki renklerle aynı)
                     const tier = setupQualityTier(currentTrade.planFidelity);
                     const planColor = tier === 'high' ? "text-emerald-400 font-bold" : tier === 'mid' ? "text-blue-300 font-bold" : tier === 'low' ? "text-rose-400 font-bold" : undefined;
                     // Trend bir kurulum tipidir, hata değil: değer yargısı içeren renk verilmez
                     const trendColor = undefined;
 
-                    const afterExit = afterExitTpText(currentTrade);
                     return (
+                      <>
+                      {/* KURULUM: girişten önce piyasanın durumu (Asia Range, sweep, seans, trend, FVG, haber) */}
                       <section>
                         <h4 className="heading-2 mb-2">
-                          <Layers size={12}/> İŞLEM BAĞLAMI
+                          <Layers size={12}/> KURULUM
                         </h4>
-                        {/* Hesap tek satır; diğerleri sırayla ikili döşeme */}
-                        <div className="grid grid-cols-2 gap-px bg-zinc-800/60 border border-zinc-800/60 rounded-xl overflow-hidden">
-                          {/* 1. PLATFORM & HESAP TÜRÜ */}
-                          <ContextRow 
-                            label={smartUpper(cleanDefinitionTitleString(definitionTitles.platforms) || "HESAP")} 
-                            value={
-                              (() => {
-                                const cat = getTradeAccountCategory(currentTrade);
-                                // Hesap adı yalnızca platform girilmişse yazılır; rozet zaten hesap türünü / aşamayı söyler
-                                // ("Hesapsız HESAPSIZ" gibi tekrar ya da prop işleminde "Hesapsız" çelişkisi olmasın).
-                                // Ad zaten aşamayla bitiyorsa ("Fundednext 50K · Funded") aşama yalnızca rozette yazılır:
-                                // dar hücrede ad kesilip aynı kelime iki kez görünmesin.
-                                const stage = getTradeStageLabel(currentTrade) || ACCOUNT_CATEGORY_LABELS[cat];
-                                const rawName = currentTrade.platform || '';
-                                const suffix = ` · ${stage}`;
-                                const accountName = rawName.toLocaleLowerCase('tr').endsWith(suffix.toLocaleLowerCase('tr')) ? rawName.slice(0, -suffix.length) : rawName;
-                                return (
-                                  <span className="flex items-center gap-1.5 min-w-0 max-w-full">
-                                    {accountName && <span className="truncate min-w-0" title={rawName}>{accountName}</span>}
-                                    <span className={`shrink-0 text-[9px] px-1.5 py-0.5 rounded-md font-bold uppercase border ${ACCOUNT_CATEGORY_BADGE[cat]}`}>
-                                      {stage}
-                                    </span>
-                                  </span>
-                                );
-                              })()
-                            } 
-                            icon={<Monitor size={14} className="text-blue-400"/>} 
-                          />
+                        <div className={CONTEXT_GRID}>
                           <ContextRow
                             label={smartUpper(cleanDefinitionTitleString(definitionTitles.asiaRange) || "ASIA RANGE")}
                             value={currentTrade.asiaRange}
                             icon={<Target size={14} className="text-blue-400"/>}
                           />
                           <ContextRow
-                            label={smartUpper(cleanDefinitionTitleString(definitionTitles.sweepTime) || "SWEEP TIME")}
+                            label={smartUpper(cleanDefinitionTitleString(definitionTitles.sweepTime) || "POI SWEEP TIME")}
                             value={currentTrade.sweepTime ? `${currentTrade.sweepTime} NY` : undefined}
                             icon={<Clock size={14} className="text-blue-400"/>}
                           />
@@ -491,14 +434,24 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                           />
                           <ContextRow
                             label={smartUpper(cleanDefinitionTitleString(definitionTitles.asiaRangeFvgs) || "ASIA RANGE FVG")}
-                            value={(() => {
-                              // Asia Range genişliği (pip) önce, ardından FVG var/yok
-                              const fvg = currentTrade.asiaRangeFvg ? smartUpper(currentTrade.asiaRangeFvg) : undefined;
-                              const pips = currentTrade.asiaRangePips !== undefined && currentTrade.asiaRangePips !== null ? `${currentTrade.asiaRangePips} PIP` : undefined;
-                              return fvg && pips ? `${pips} · ${fvg}` : (fvg ?? pips);
-                            })()}
+                            value={currentTrade.asiaRangeFvg ? smartUpper(currentTrade.asiaRangeFvg) : undefined}
                             icon={<Flag size={14} className="text-blue-400"/>}
                           />
+                          {/* NEWS DAY / BANK HOLIDAY */}
+                          <ContextRow
+                            label={smartUpper(cleanDefinitionTitleString(definitionTitles.newsDays) || "NEWS DAY/BANK HOLIDAY")}
+                            value={typeof currentTrade.newsDay === "boolean" ? smartUpper(currentTrade.newsDay ? getNewsDayLabels().yes : getNewsDayLabels().no) : undefined}
+                            icon={<Clock size={14} className="text-blue-400"/>}
+                          />
+                        </div>
+                      </section>
+
+                      {/* GİRİŞ: tetik ve yönetim kararları */}
+                      <section>
+                        <h4 className="heading-2 mb-2">
+                          <Zap size={12}/> GİRİŞ
+                        </h4>
+                        <div className={CONTEXT_GRID}>
                           {/* 7. ENTRY MODEL */}
                           <ContextRow 
                             label={smartUpper(cleanDefinitionTitleString(definitionTitles.entryModels) || "ENTRY MODEL")} 
@@ -521,12 +474,6 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                             value={currentTrade.premiumDiscount ? smartUpper(currentTrade.premiumDiscount) : undefined}
                             icon={<Scale size={14} className="text-blue-400"/>}
                           />
-                          {/* NEWS DAY / BANK HOLIDAY */}
-                          <ContextRow
-                            label={smartUpper(cleanDefinitionTitleString(definitionTitles.newsDays) || "NEWS DAY/BANK HOLIDAY")}
-                            value={typeof currentTrade.newsDay === "boolean" ? smartUpper(currentTrade.newsDay ? getNewsDayLabels().yes : getNewsDayLabels().no) : undefined}
-                            icon={<Clock size={14} className="text-blue-400"/>}
-                          />
                           {/* 9. SETUP KALİTESİ */}
                           <ContextRow 
                             label={smartUpper(cleanDefinitionTitleString(definitionTitles.planFidelities) || "SETUP KALİTESİ")} 
@@ -534,16 +481,9 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                             icon={<ShieldCheck size={14} className="text-blue-400"/>} 
                             valueColor={planColor}
                           />
-                          {/* Yalnızca başabaş (BE) işlemde sorulur; diğer işlemlerde satır hiç görünmez */}
-                          {currentTrade.status === 'BREAKEVEN' && (
-                            <ContextRow
-                              label="BE SONRASI TP"
-                              value={afterExit?.text}
-                              icon={<Target size={14} className="text-blue-400"/>}
-                            />
-                          )}
                         </div>
                       </section>
+                      </>
                     );
                   })()}
 
@@ -735,6 +675,9 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
 });
 
 // Helper component for Context rows
+/** İşlem detayı · bağlam ızgarası (Kurulum ve Giriş grupları aynı döşemeyi kullanır) */
+const CONTEXT_GRID = "grid grid-cols-2 gap-px bg-zinc-800/60 border border-zinc-800/60 rounded-xl overflow-hidden";
+
 function ContextRow({ 
   label, 
   value, 

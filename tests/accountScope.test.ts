@@ -42,19 +42,14 @@ test('üst filtre: hesap seçimi diğer filtrelerle birlikte uygulanır', () => 
   const base: GlobalTradeFilters = {
     activeAccountCategory: 'CHALLENGE',
     activeAccount: ch1,
-    globalSelectedConfirmations: [],
     globalSelectedPlanFidelity: [],
     globalDateLimit: 'ALL',
     globalSelectedAssets: [],
     globalSelectedSessions: [],
-    globalSelectedTimeframes: [],
-    globalSelectedHtfTimeframes: [],
     globalSelectedStatuses: [],
     globalSelectedTypes: [],
     globalSelectedEntryModels: [],
     globalSelectedTrendTypes: [],
-    globalMinAsiaRangePips: undefined,
-    globalMaxAsiaRangePips: undefined,
   };
   assert.equal(ids(applyGlobalFilters(trades, base, NOW)), 'a');
   assert.equal(ids(applyGlobalFilters(trades, { ...base, activeAccount: null }, NOW)), 'a,b');

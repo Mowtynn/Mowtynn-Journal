@@ -1,6 +1,6 @@
 import { Trade } from '../types';
 import { byEntryTime } from './tradeModel';
-import { edgeFromR, EdgeStats, sweepHourBucket, stageBucket, tradeOfDayBucket, afterExitBucket, indexTradeOrder, rangeSizeBucket, prevTradeBucket } from './asiaAnalytics';
+import { edgeFromR, EdgeStats, sweepHourBucket, stageBucket, tradeOfDayBucket, indexTradeOrder, prevTradeBucket } from './asiaAnalytics';
 import { getTradeNyWeekday, WEEKDAY_NAMES_TR } from './tradingTime';
 import { getNewsDayLabels } from '../constants/constants';
 import { EDGE_PROOF_MIN, MIN_SAMPLE } from './sampleSize';
@@ -17,7 +17,6 @@ export type SetupDimension =
   | 'planFidelity'
   | 'tradeOfDay'
   | 'prevTrade'
-  | 'afterExitTp'
   | 'accountStage'
   | 'session'
   | 'entryModels'
@@ -26,18 +25,16 @@ export type SetupDimension =
   | 'tpTargets'
   | 'asiaRangeFvg'
   | 'newsDay'
-  | 'rangeSize'
   | 'weekday'
   | 'type'
   | 'asset';
 
 export const SETUP_DIMENSIONS: { id: SetupDimension; label: string }[] = [
   { id: 'asiaRange', label: 'Asia Range' },
-  { id: 'sweepHour', label: 'Sweep Saati (NY, 30 dk)' },
+  { id: 'sweepHour', label: 'POI Sweep Saati (NY, 30 dk)' },
   { id: 'planFidelity', label: 'Setup Kalitesi' },
   { id: 'tradeOfDay', label: 'Günün İşlemi' },
   { id: 'prevTrade', label: 'Gün İçi Önceki İşlem' },
-  { id: 'afterExitTp', label: 'Çıkış Sonrası TP' },
   { id: 'accountStage', label: 'Hesap Aşaması' },
   { id: 'session', label: 'Session' },
   { id: 'entryModels', label: 'Entry Model' },
@@ -46,7 +43,6 @@ export const SETUP_DIMENSIONS: { id: SetupDimension; label: string }[] = [
   { id: 'tpTargets', label: 'Target' },
   { id: 'asiaRangeFvg', label: 'Asia Range FVG (1H)' },
   { id: 'newsDay', label: 'News Day' },
-  { id: 'rangeSize', label: 'Asia Range Büyüklüğü' },
   { id: 'weekday', label: 'Gün' },
   { id: 'type', label: 'Yön' },
   { id: 'asset', label: 'Parite' },
@@ -58,7 +54,6 @@ export const SETUP_DIMENSIONS: { id: SetupDimension; label: string }[] = [
  * (London) alındığı için Session kurulumu ayırt etmiyordu. Kurulum Karnesi'nde boyutlar yine elle değiştirilebilir.
  */
 export const DEFAULT_SETUP_DIMENSIONS: SetupDimension[] = ['asiaRange', 'trend', 'entryModels'];
-export const DEFAULT_SETUP_LABEL = 'Asia Range · Trend · Entry Model';
 /** Bu sayıdan az işlemli kurulumlara hüküm verilmez */
 export const SETUP_MIN_SAMPLE = MIN_SAMPLE;
 export const UNSPECIFIED = 'Belirtilmemiş';
@@ -94,12 +89,8 @@ export function dimensionValue(t: Trade, d: SetupDimension): string {
       return tradeOfDayBucket(t) ?? UNSPECIFIED;
     case 'prevTrade':
       return prevTradeBucket(t) ?? UNSPECIFIED;
-    case 'afterExitTp':
-      return afterExitBucket(t) ?? UNSPECIFIED;
     case 'accountStage':
       return stageBucket(t) ?? UNSPECIFIED;
-    case 'rangeSize':
-      return rangeSizeBucket(t) ?? UNSPECIFIED;
     case 'weekday': {
       const d = getTradeNyWeekday(t);
       return Number.isInteger(d) ? WEEKDAY_NAMES_TR[d] : UNSPECIFIED;
@@ -158,7 +149,7 @@ export function buildSetupScorecard(trades: Trade[], dims: SetupDimension[], opt
 
   // R sırası için kronolojik
   const sorted = [...trades].sort(byEntryTime);
-  if (useDims.some((d) => d === 'tradeOfDay' || d === 'prevTrade' || d === 'rangeSize')) indexTradeOrder(sorted);
+  if (useDims.some((d) => d === 'tradeOfDay' || d === 'prevTrade')) indexTradeOrder(sorted);
   for (const t of sorted) {
     if (typeof t.rr !== 'number' || !Number.isFinite(t.rr)) continue;
     const labels = useDims.map((d) => dimensionValue(t, d));

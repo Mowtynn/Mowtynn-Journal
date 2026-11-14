@@ -772,7 +772,7 @@ const TradeList = React.memo(function TradeList({
                       <HeaderLabel sortState={filter.sortBy === 'rrAsc' ? 'asc' : filter.sortBy === 'rrDes' ? 'des' : null}>R</HeaderLabel>
                     </div>
                   </th>
-                  <th className={`py-2 px-2 text-center font-sans select-none min-w-[75px] ${'w-[11%]'}`}>Sonuç</th>
+                  <th className="py-2 px-2 text-center font-sans select-none min-w-[75px] w-[11%] text-zinc-400">{definitionTitles.trendTypes || "Trend"}</th>
                   <th className="py-2 px-3 text-center font-sans select-none min-w-[70px] text-zinc-400 w-[9%]">Risk</th>
                   {true && (
                     <th 

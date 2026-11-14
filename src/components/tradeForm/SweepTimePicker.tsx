@@ -5,8 +5,9 @@ import { Clock, Minus, Plus, X, Check } from "lucide-react";
 import { POPOVER } from "../../lib/motion";
 
 /**
- * Sweep Time: New York saatiyle "HH:mm" seçici. Tıklayınca saat (00–23) ve dakika (5'er) ızgarası açılır;
- * dakika ±1 ile ince ayarlanır. Değer boşsa "Saat Seç" görünür, çarpı ile temizlenir.
+ * POI Sweep Time: New York saatiyle "HH:mm" seçici. Tıklayınca saat (00–23) ve dakika (5'er) ızgarası açılır;
+ * dakika ±1 ile ince ayarlanır. Saat seçmek dakikayı kendiliğinden seçmez: değer ancak dakika da seçilince kaydedilir
+ * (saat değiştirilirse dakika yeniden seçilir). Değer boşsa "Saat Seç" görünür, çarpı ile temizlenir.
  */
 const pad = (n: number) => String(n).padStart(2, "0");
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
@@ -30,6 +31,12 @@ export const SweepTimePicker = React.memo(function SweepTimePicker({
   const btnRef = useRef<HTMLButtonElement>(null);
   const popRef = useRef<HTMLDivElement>(null);
   const cur = parse(value);
+  // Seçim taslağı: saat seçilince dakika boş kalır; dakika seçilince değer kaydedilir
+  const [draft, setDraft] = useState<{ h: number | null; m: number | null }>({ h: cur?.h ?? null, m: cur?.m ?? null });
+  useEffect(() => {
+    if (open) setDraft({ h: cur?.h ?? null, m: cur?.m ?? null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const place = useCallback(() => {
     const r = btnRef.current?.getBoundingClientRect();
@@ -67,12 +74,22 @@ export const SweepTimePicker = React.memo(function SweepTimePicker({
     };
   }, [open, place]);
 
-  const set = (h: number, m: number) => onChange(`${pad(h)}:${pad(m)}`);
+  const set = (h: number, m: number) => {
+    setDraft({ h, m });
+    onChange(`${pad(h)}:${pad(m)}`);
+  };
+  const pickHour = (h: number) => setDraft({ h, m: null });
+  const pickMinute = (m: number) => {
+    if (draft.h === null) return;
+    set(draft.h, m);
+  };
   const nudge = (d: number) => {
-    const base = cur ? cur.h * 60 + cur.m : 0;
-    const t = (base + d + 1440) % 1440;
+    if (draft.h === null) return;
+    const base = draft.h * 60 + (draft.m ?? 0);
+    const t = (base + (draft.m === null ? 0 : d) + 1440) % 1440;
     set(Math.floor(t / 60), t % 60);
   };
+  const waitingMinute = draft.h !== null && draft.m === null;
 
   const cell = (active: boolean) =>
     `h-8 rounded-lg text-xs font-sans font-bold tabular-nums transition-ui border cursor-pointer ${
@@ -106,7 +123,7 @@ export const SweepTimePicker = React.memo(function SweepTimePicker({
           <button
             type="button"
             onClick={() => onChange("")}
-            aria-label="Sweep Time'ı temizle"
+            aria-label="POI Sweep Time'ı temizle"
             className="h-9 w-9 shrink-0 flex items-center justify-center rounded-xl border border-zinc-800 bg-zinc-950/80 text-zinc-500 hover:text-blue-300 hover:border-blue-500/40 transition-ui cursor-pointer"
           >
             <X size={13} />
@@ -125,21 +142,23 @@ export const SweepTimePicker = React.memo(function SweepTimePicker({
                 onClick={(e) => e.stopPropagation()}
                 onMouseDown={(e) => e.stopPropagation()}
                 role="dialog"
-                aria-label="Sweep Time seç"
+                aria-label="POI Sweep Time seç"
                 style={{ position: "fixed", top: pos.top, left: pos.left, width: Math.min(POPUP_W, window.innerWidth - 16), zIndex: 99999 }}
                 className="bg-zinc-900 border border-zinc-700/80 rounded-2xl p-3 shadow-2xl space-y-3"
               >
                 {/* Seçili değer + dakika ince ayarı */}
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-baseline gap-1.5">
-                    <span className="text-xl font-bold tabular-nums text-zinc-100">{cur ? value : "--:--"}</span>
-                    <span className="text-[10px] font-bold text-zinc-500">NY</span>
+                    <span className="text-xl font-bold tabular-nums text-zinc-100">
+                      {draft.h === null ? "--" : pad(draft.h)}:<span className={waitingMinute ? "text-blue-300 animate-pulse" : ""}>{draft.m === null ? "--" : pad(draft.m)}</span>
+                    </span>
+                    <span className="text-[10px] font-bold text-zinc-500">{waitingMinute ? "dakikayı seç" : "NY"}</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <button type="button" onClick={() => nudge(-1)} aria-label="1 dakika geri" className="h-7 w-7 flex items-center justify-center rounded-lg border border-zinc-700/70 bg-zinc-950 text-zinc-300 hover:text-white hover:border-zinc-500 cursor-pointer transition-ui">
+                    <button type="button" disabled={draft.h === null} onClick={() => nudge(-1)} aria-label="1 dakika geri" className="disabled:opacity-40 disabled:cursor-default h-7 w-7 flex items-center justify-center rounded-lg border border-zinc-700/70 bg-zinc-950 text-zinc-300 hover:text-white hover:border-zinc-500 cursor-pointer transition-ui">
                       <Minus size={12} />
                     </button>
-                    <button type="button" onClick={() => nudge(1)} aria-label="1 dakika ileri" className="h-7 w-7 flex items-center justify-center rounded-lg border border-zinc-700/70 bg-zinc-950 text-zinc-300 hover:text-white hover:border-zinc-500 cursor-pointer transition-ui">
+                    <button type="button" disabled={draft.h === null} onClick={() => nudge(1)} aria-label="1 dakika ileri" className="disabled:opacity-40 disabled:cursor-default h-7 w-7 flex items-center justify-center rounded-lg border border-zinc-700/70 bg-zinc-950 text-zinc-300 hover:text-white hover:border-zinc-500 cursor-pointer transition-ui">
                       <Plus size={12} />
                     </button>
                   </div>
@@ -149,7 +168,7 @@ export const SweepTimePicker = React.memo(function SweepTimePicker({
                   <div className="text-[10px] font-bold text-zinc-500 tracking-wide mb-1.5">SAAT</div>
                   <div className="grid grid-cols-6 gap-1">
                     {HOURS.map((h) => (
-                      <button key={h} type="button" data-selected={cur?.h === h} onClick={() => set(h, cur?.m ?? 0)} className={cell(cur?.h === h)}>
+                      <button key={h} type="button" data-selected={draft.h === h} onClick={() => pickHour(h)} className={cell(draft.h === h)}>
                         {pad(h)}
                       </button>
                     ))}
@@ -157,10 +176,10 @@ export const SweepTimePicker = React.memo(function SweepTimePicker({
                 </div>
 
                 <div>
-                  <div className="text-[10px] font-bold text-zinc-500 tracking-wide mb-1.5">DAKİKA</div>
-                  <div className="grid grid-cols-6 gap-1">
+                  <div className={`text-[10px] font-bold tracking-wide mb-1.5 transition-ui ${waitingMinute ? "text-blue-300" : "text-zinc-500"}`}>DAKİKA{draft.h === null ? " · önce saati seç" : ""}</div>
+                  <div className={`grid grid-cols-6 gap-1 transition-opacity duration-200 ${draft.h === null ? "opacity-40 pointer-events-none" : ""}`}>
                     {MINUTES.map((m) => (
-                      <button key={m} type="button" data-selected={cur?.m === m} onClick={() => set(cur?.h ?? 0, m)} className={cell(cur?.m === m)}>
+                      <button key={m} type="button" data-selected={draft.m === m} disabled={draft.h === null} onClick={() => pickMinute(m)} className={cell(draft.m === m)}>
                         {pad(m)}
                       </button>
                     ))}

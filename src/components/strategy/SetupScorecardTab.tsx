@@ -7,7 +7,7 @@ import {
   type SetupDimension, type SetupRow, type SetupVerdict,
 } from '../../lib/setupScorecard';
 import { useNewsDayLabels } from '../../hooks/useNewsDayLabels';
-import { fixed, formatR } from '../../lib/format';
+import { formatR, rnum } from '../../lib/format';
 import { formatPF } from '../../lib/statMath';
 
 const STORAGE_KEY = 'tj_setup_scorecard_dims';
@@ -184,7 +184,7 @@ export const SetupScorecardTab = React.memo(function SetupScorecardTab({ trades 
                   <span className="text-right text-zinc-300 tabular-nums">%{fmt(e.winRate, 0)}</span>
                   <span className={`md:text-right tabular-nums font-bold ${e.expectancy > 0 ? 'text-emerald-300' : e.expectancy < 0 ? 'text-rose-300' : 'text-zinc-400'}`}>
                     {sR(e.expectancy)}
-                    {e.n > 1 && <span className="text-[10px] font-normal text-zinc-500"> {fixed(e.expLo)} – {fixed(e.expHi)}</span>}
+                    {e.n > 1 && <span className="text-[10px] font-normal text-zinc-500"> {rnum(e.expLo)} – {rnum(e.expHi)}</span>}
                   </span>
                   <span className={`text-right tabular-nums ${e.netR >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>{sR(e.netR)}</span>
                   <span className="md:text-right text-zinc-400 tabular-nums"><span className="md:hidden text-zinc-500">PF </span>{formatPF(e.profitFactor)}</span>

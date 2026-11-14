@@ -1,24 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { calculateStrategyAnalytics } from '../src/lib/strategyAnalytics';
-import { bucketAsiaRanges } from '../src/lib/asiaAnalytics';
 import { trade } from './fixtures';
 
 const DAY = 86400000;
 const D0 = Date.UTC(2026, 5, 1, 7, 0);
-
-test('Asia Range büyüklüğü: yeni paritenin ilk işlemleri ortak medyana göre yanlış sınıflanmaz', () => {
-  const eu = [20, 22, 25, 24, 23, 21, 40].map((r, i) => trade({ id: 'e' + i, asset: 'EURUSD', status: 'WIN', rr: 1, asiaRangePips: r, createdAt: D0 + i * DAY }));
-  const xau = trade({ id: 'x', asset: 'XAUUSD', status: 'WIN', rr: 1, asiaRangePips: 300, createdAt: D0 + 10 * DAY });
-  const m = bucketAsiaRanges([...eu, xau]);
-  assert.equal(m.has('x'), false, 'yeni paritenin ilk işlemi sınıflanmaz');
-  // EURUSD: yalnızca önünde en az 5 range olan işlemler; 40 pip, önceki medyanın (22.5) 1.25 katından büyük → Geniş
-  assert.deepEqual([...m.keys()].sort(), ['e5', 'e6']);
-  assert.equal(m.get('e6'), 'WIDE');
-  // Sonraki işlemler eski etiketi değiştirmez (girişten önce bilinen)
-  const later = bucketAsiaRanges([...eu, trade({ id: 'e7', asset: 'EURUSD', status: 'WIN', rr: 1, asiaRangePips: 90, createdAt: D0 + 20 * DAY })]);
-  assert.equal(later.get('e5'), m.get('e5'));
-});
 
 test('tilt: "kayıp sonrası" yalnızca aynı NY günündeki sonraki işlem; ertesi günün işlemi sayılmaz', () => {
   // Her gün tek işlem: önceki gün kaybetmek tilt sayılmaz

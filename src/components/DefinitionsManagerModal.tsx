@@ -57,9 +57,6 @@ interface DefinitionsManagerModalProps {
   isOpen: boolean;
   onClose: () => void;
   trades?: Trade[];
-  timeframes: string[];
-  htfTimeframes: string[];
-  confirmations: string[];
   sessions: string[];
   assets: string[];
   planFidelities: string[];
@@ -71,9 +68,6 @@ interface DefinitionsManagerModalProps {
   asiaRangeFvgs?: string[];
   riskPresets?: string[];
   definitionTitles?: DefinitionTitles;
-  persistTimeframes: (list: string[]) => void;
-  persistHtfTimeframes: (list: string[]) => void;
-  persistConfirmations: (list: string[]) => void;
   persistSessions: (list: string[]) => void;
   persistAssets: (list: string[]) => void;
   persistPlanFidelities: (list: string[]) => void;
@@ -89,7 +83,7 @@ interface DefinitionsManagerModalProps {
   persistDefinitionTitles?: (updated: DefinitionTitles) => void;
 }
 
-type TabType = 'assets' | 'timeframes' | 'htfTimeframes' | 'confirmations' | 'sessions' | 'planFidelities' | 'trendTypes' | 'entryModels' | 'tpTargets' | 'premiumDiscounts' | 'newsDays' | 'asiaRangeFvgs' | 'riskPresets' | 'formLabels' | 'requiredFields';
+type TabType = 'assets' | 'sessions' | 'planFidelities' | 'trendTypes' | 'entryModels' | 'tpTargets' | 'premiumDiscounts' | 'newsDays' | 'asiaRangeFvgs' | 'riskPresets' | 'formLabels' | 'requiredFields';
 
 /** Sekme kimliği -> DefinitionTitles anahtarı (Form Başlıkları sekmesinin kendi başlığı yok) */
 const titleKeyFor = (tab: TabType): keyof DefinitionTitles =>
@@ -101,12 +95,10 @@ const FORM_LABEL_HINTS: Record<string, string> = {
   notesCard: 'Kart başlığı: Analiz & Notlar',
   direction: 'LONG / SHORT seçimi',
   tradeDate: 'Tarih seçici',
-  tradeStatus: 'WIN / LOSS / BREAKEVEN seçimi',
-  asiaRangePips: 'Asia Range büyüklüğü',
   rr: 'Sonuç R',
   chartLink: 'Grafik bağlantısı alanı',
   asiaRange: 'Range / Trend seçimi',
-  sweepTime: 'Sweep saati (NY)',
+  sweepTime: 'POI Sweep saati (NY)',
 };
 
 /** Zorunlu alanlar: tam kayıtta boş bırakılamayacak alanlar (Hızlı Kayıt muaf) */
@@ -217,9 +209,6 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
   isOpen,
   onClose,
   trades = [],
-  timeframes,
-  htfTimeframes,
-  confirmations,
   sessions,
   assets,
   planFidelities,
@@ -231,9 +220,6 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
   asiaRangeFvgs = DEFAULT_ASIA_RANGE_FVGS,
   riskPresets = DEFAULT_RISK_PRESETS,
   definitionTitles = DEFAULT_DEFINITION_TITLES,
-  persistTimeframes,
-  persistHtfTimeframes,
-  persistConfirmations,
   persistSessions,
   persistAssets,
   persistPlanFidelities,
@@ -267,8 +253,6 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
 
     trades.forEach(t => {
       if (t.asset) counts[`assets:${t.asset}`] = (counts[`assets:${t.asset}`] || 0) + 1;
-      if (t.timeframe) counts[`timeframes:${t.timeframe}`] = (counts[`timeframes:${t.timeframe}`] || 0) + 1;
-      if (t.htfTimeframe) counts[`htfTimeframes:${t.htfTimeframe}`] = (counts[`htfTimeframes:${t.htfTimeframe}`] || 0) + 1;
       if (t.session) counts[`sessions:${t.session}`] = (counts[`sessions:${t.session}`] || 0) + 1;
       if (t.planFidelity) counts[`planFidelities:${t.planFidelity}`] = (counts[`planFidelities:${t.planFidelity}`] || 0) + 1;
       if (t.entryModels && Array.isArray(t.entryModels)) {
@@ -288,11 +272,6 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
       if (Array.isArray(t.tpTargets)) {
         t.tpTargets.forEach(tp => {
           counts[`tpTargets:${tp}`] = (counts[`tpTargets:${tp}`] || 0) + 1;
-        });
-      }
-      if (t.confirmations && Array.isArray(t.confirmations)) {
-        t.confirmations.forEach(c => {
-          counts[`confirmations:${c}`] = (counts[`confirmations:${c}`] || 0) + 1;
         });
       }
     });
@@ -477,9 +456,6 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
   const handleExportJSON = () => {
     const data = {
       definitionTitles: definitionTitles || DEFAULT_DEFINITION_TITLES,
-      timeframes,
-      htfTimeframes,
-      confirmations,
       sessions,
       assets,
       planFidelities,
@@ -532,9 +508,6 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
           persistDefinitionTitles({ ...DEFAULT_DEFINITION_TITLES, ...data.definitionTitles });
           applied++;
         }
-        apply(data.timeframes, persistTimeframes);
-        apply(data.htfTimeframes, persistHtfTimeframes);
-        apply(data.confirmations, persistConfirmations);
         apply(data.sessions, persistSessions);
         apply(data.assets, persistAssets);
         apply(data.planFidelities, persistPlanFidelities);

@@ -1,19 +1,38 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { fixed, signed, formatR, formatRAbs, formatPct, formatMoney, trPossessive, formatDateKey } from '../src/lib/format';
+import { fixed, signed, formatR, rnum, rsigned, formatPct, formatMoney, trPossessive, formatDateKey } from '../src/lib/format';
+import { roundR, normalizeTrade } from '../src/lib/tradeModel';
 
-test('biçim: R değeri işaretli, sabit ondalık, eksi sıfır yok', () => {
+test('biçim: R değeri işaretli, gereksiz sıfırsız, eksi sıfır yok', () => {
   assert.equal(formatR(1.85), '+1.85R');
-  assert.equal(formatR(-0.5), '-0.50R');
-  assert.equal(formatR(0), '0.00R');
-  assert.equal(formatR(-0.004), '0.00R');
-  assert.equal(formatR(0.004), '0.00R');
-  assert.equal(formatR(0.8, 1), '+0.8R');
-  assert.equal(formatR(NaN), '0.00R');
-  assert.equal(formatR(Infinity), '0.00R');
+  assert.equal(formatR(2), '+2R');
+  assert.equal(formatR(2.1), '+2.1R');
+  assert.equal(formatR(-0.5), '-0.5R');
+  assert.equal(formatR(0), '0R');
+  assert.equal(formatR(-0.004), '0R');
+  assert.equal(formatR(0.004), '0R');
+  assert.equal(formatR(0.86, 1), '+0.9R');
+  assert.equal(formatR(NaN), '0R');
+  assert.equal(formatR(Infinity), '0R');
+  assert.equal(rnum(2.0), '2');
+  assert.equal(rsigned(-1e-12), '0');
   assert.equal(signed(-1e-12), '0.00');
   assert.equal(fixed(-0.001), '0.00');
-  assert.equal(formatRAbs(-5.5), '5.50R');
+});
+
+test('işlem R tek ondalığa yuvarlanır: 2.08 → 2.1, 2.04 → 2, yarımda sıfırdan uzağa', () => {
+  assert.equal(roundR(2.08), 2.1);
+  assert.equal(roundR(2.04), 2);
+  assert.equal(roundR(2.05), 2.1);
+  assert.equal(roundR(-1.25), -1.3);
+  assert.equal(roundR(-0.04), 0);
+  assert.ok(!Object.is(roundR(-0.04), -0));
+  assert.equal(roundR(NaN), 0);
+  // Eski kayıt: normalize sonrası hesap da görünüm de aynı sayıyı kullanır; 0'a yuvarlanan kazanç başabaş olur
+  assert.equal(normalizeTrade({ id: 'a', createdAt: 1, asset: 'X', type: 'LONG', status: 'WIN', rr: 2.08 } as any).rr, 2.1);
+  const be = normalizeTrade({ id: 'b', createdAt: 1, asset: 'X', type: 'LONG', status: 'WIN', rr: 0.04 } as any);
+  assert.equal(be.rr, 0);
+  assert.equal(be.status, 'BREAKEVEN');
 });
 
 test('biçim: yüzde ve dolar', () => {

@@ -894,4 +894,55 @@ Klasik tasarım korunarak, son eklenen alanlar (risk %, hesap bağı, strateji, 
   - Asia Range: formda yalnızca Range ve Trend. "Swept" eski kayıtlarda korunur, filtrede yalnızca öyle bir kayıt varsa görünür, eski kayıt düzenlenirken seçili gösterilir.
   - Saat × Parite ısı tablosu artık Sweep Saati × Parite (giriş saati tutulmadığı için).
   - Zorunlu alan listesinden kaldırılan alanlar çıktı. Eski işlemlerdeki değerler silinmedi; yalnızca formda ve analizlerde kullanılmıyor.
+- Form sadeleştirme 2 + ölü kod temizliği:
+  - Durum (Win / Loss / Breakeven) seçimi kalktı: Sonuç R'ye artı yazınca kazanç, eksi kayıp, 0 başabaş. Telefonda eksi tuşu olmayabileceği için alanın yanında tek dokunuşla işaret çeviren "±" düğmesi var. Sonuç R artık zorunlu (boş bırakılınca sessizce BE sayılmıyor). Kayıt 2 ondalıkla tutulur, durum yuvarlanmış değerden gelir.
+  - "BE sonrası TP'ye gitti mi?" sorusu ve buna bağlı her şey kalktı (Edge Özeti ve Asia Edge Lab'deki oran, işlem detayı satırı, Karne / filtre boyutu, Excel sütunu, veri eksiği panosu).
+  - Asia Range Pip kalktı: form, işlem detayı, zorunlu alan / eksik alan listeleri, filtre penceresindeki pip aralığı, Karne'deki Asia Range Büyüklüğü boyutu, Strateji Lab'deki "Asia Range" (genişlik) sekmesi ve Excel sütunu.
+  - Ölü kod: önceki turda kaldırılan Timeframe, Entry Timeframe ve PD Array'in tanım listeleri (durum, bulut senkronu, yedek, Tanımlamalar), filtre durumu ve filtre mantığı tamamen silindi (filtre deposu v8: eski seçimler temizlenir). Kullanılmayan sabitler ve yardımcılar (varsayılan timeframe / PD Array listeleri, süre biçimi, giriş saati dilimi, işaretsiz R biçimi, eski kurulum etiketi, İşlem Yönetimi seçenek listesi) kaldırıldı; tarama sonunda hiç kullanılmayan dışa aktarım ya da dosya kalmadı.
+  - Eski işlemlerdeki kaldırılmış alan değerleri silinmedi; yalnızca bozuk değer temizliği onları tanır (bulut kuralı uyumu için).
 
+
+- İşlem ekleme ve işlem detayı yeniden tasarlandı
+  - Form: Sonuç kartı Temel Bilgiler'in hemen altında; tek dokunuşla −1R / BE / +1R / +2R / +3R seçilebiliyor, hesaplı işlemde sonucun dolar karşılığı yanında görünüyor. Grafik linki ve notlar sağ sütunda birlikte. Alt çubukta kaydetmeden önce varlık · yön · R · dolar özeti.
+  - İşlem detayı: üstte büyük sonuç kartı (R, Kazanç/Kayıp/Başabaş, hesap ve aşama, risk %, dolar etkisi); alanlar "Kurulum" ve "Giriş" diye iki gruba ayrıldı.
+
+- R yuvarlama, Kurulum sütunu ve ölü kod
+  - İşlem R'si tek ondalığa yuvarlanır (2.08 → 2.1, 2.04 → 2). Formda alandan çıkınca yuvarlanır, kaydedilecek değer kartta yazar; eski kayıtlar da yüklenirken aynı kuralla yuvarlanır (0'a inen küçük sonuç başabaş sayılır).
+  - R her yerde gereksiz sıfırsız görünür: +2R, +2.1R, -1R, 0R (ortalamalar en çok iki ondalık).
+  - Form: Sonuç kartı sütunun boyunu doldurur, altında boşluk kalmaz.
+  - İşlem listesi ve işlem geçmişi: Sonuç (WIN/LOSS) sütunu R ile aynı bilgiyi verdiği için yerine Kurulum sütunu geldi (Setup Kalitesi rozeti + giriş modeli); başabaş R rozeti "BE".
+  - İşlem detayı: başlıktaki WIN/LOSS rozeti kalktı (sonuç kartında var).
+  - Performans Dağılımı: Session panelinin altına Entry Model ve Target sıralaması eklendi.
+  - Ölü kod: dağılım sayfasındaki R'nin kopyası olan pnl alanı, detaydaki kullanılmayan durum değişkenleri ve ikonlar kaldırıldı; tarama sonunda kullanılmayan dosya, dışa aktarım ya da yerel değişken kalmadı.
+
+- Sonuç girişi, Trend sütunu, geçişler ve POI Sweep Time
+  - Sonuç R: büyük ve ortalı sayı alanı; solda Kazanç (+) / Kayıp (−) anahtarı, üstte durum (Kazanç / Kayıp / Başabaş / Girilmedi), altta kısa açıklama ve hesaplı işlemde dolar etkisi. "-" ya da "+" yazarak da yön seçilebilir.
+  - İşlem listesi ve işlem geçmişi: Kurulum sütunu yerine Trend Yapısı (Continuation / Reversal).
+  - Hızlı Kayıt aç / kapa: içerik kısa solup yeni düzende belirir, pencere yeni boyutuna tek hareketle oturur (eski 300 ms genişlik animasyonu ve her karede yeniden dizilme kalktı).
+  - İşlem detayı: işlemler arası geçiş tek parça ve hızlı (~0.2 sn, kademesiz), renk geçişi kısaldı; dokunmatik ekranda yatay kaydırmayla önceki / sonraki işleme geçilir.
+  - Sweep Time girdisinin adı POI Sweep Time oldu (kayıtlı eski varsayılan ad da yenilenir; özel ad verdiysen korunur).
+
+- İşlem formu konfor turu
+  - Kurulum: Confirmations, Entry Model'in yanına geçti; Target en altta tam genişlikte, seçenekler yan yana uzanır.
+  - Sonuç R: giriş kutusu küçüldü (daha ince alan, daha küçük sayı); açıklama satırı yalnızca bilgi kattığında görünür. Renk geçişleri (kayıp ↔ kazanç ↔ breakeven) yumuşak ve yavaş. 0R "Breakeven" yazar (işlem detayında da).
+  - Hızlı Kayıt: Sonuç kartı Temel Bilgiler'in boyunu doldurur, altta boşluk kalmaz.
+  - Hesap seçimi: yatay kaydırmalı şerit yerine iki sütunlu, kendi içinde kayan ızgara (ad, bakiye, aşama); Hesapsız başlığın yanında. Kullanılmayan ScrollStrip bileşeni silindi.
+  - Parite önerileri: form açılırken alan kendiliğinden odaklandığında açılmaz (açılış animasyonuyla çakışıp takılıyordu); tıklayınca, yazınca ya da ok tuşuyla açılır.
+  - POI Sweep Time: saat seçmek dakikayı kendiliğinden seçmez; değer dakika da seçilince kaydedilir.
+  - İşlem geçmişi: Trend rozetleri ikisi de mavi; Continuation'ın da ikonu var.
+
+- Formda sabit pencere boyu ve Strateji Lab sekmeleri
+  - Hesap seçimi sabit yükseklikte (iki satırlık alan, fazlası içinde kayar; hesap yoksa aynı boyda bilgi kutusu): hesap sayısı ya da seçim pencere boyunu değiştirmez.
+  - Sonuç R: Girilmedi / Kazanç / Kayıp / Breakeven yazısı kaldırıldı; açıklama satırı hep yerinde ve tek satır, içerik değişince kart boyu oynamaz.
+  - Strateji Lab: beş sekme satırı tam dolduruyor (eskiden altı sütunluk ızgarada sağda boşluk kalıyordu); telefonda tek kalan son sekme iki sütuna yayılır.
+
+- Hesap alanı sadeleşti, Target altı boşluk
+  - "Hesap" başlığı kaldırıldı; Hesapsız, prop hesaplarıyla aynı ızgarada ilk seçenek (alan yüksekliği yine sabit).
+  - Kurulum kartı komşu sütunlardan kısa kaldığında boşluk bölümler arasına eşit dağılır; Target altında tek büyük boşluk kalmaz.
+
+- Son düzenlemeler ve POI Sweep bütünlüğü
+  - Hesap seçimi: Hesapsız prop hesaplarından sonra, en sonda.
+  - Sonuç R: boşken açıklama metni yok (satırın yeri korunur, pencere boyu oynamaz).
+  - Kurulum kartı: Setup Kalitesi / News Day / Asia Range bölümleri yeniden sıkı; artan boşluk yalnızca alttaki kurulum ızgarasının satırlarına dağılır.
+  - POI Sweep adı her yerde: Detaylı Analiz (Asia Edge Lab ısı tablosu ve başlıkları, Kurulum Karnesi ve Edge Özeti boyutu, filtre), işlem detayı, Tanımlamalar ve Excel sütunu ("POI Sweep Saati (30 dk)").
+  - Edge Özeti kural zamanları: eski "Sweep Saati" kayıtları yeni adla taşınır (ilk görülme zamanı korunur), kaldırılan girdilere (Entry TF, PD Array, Yönetim, Sweep→Giriş …) ait artık kayıtlar depodan silinir.

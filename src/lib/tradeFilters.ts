@@ -5,7 +5,7 @@ import { canonicalAsset } from './tradeModel';
 import { dimensionValue, type SetupDimension } from './setupScorecard';
 
 /** Global filtrede türetilmiş / yeni girdiler: değer, kurulum karnesindeki boyut değeriyle aynı (tek tanım) */
-export const FILTER_DIMENSIONS = ['sweepHour', 'rangeSize', 'tradeOfDay', 'prevTrade', 'weekday', 'afterExitTp'] as const;
+export const FILTER_DIMENSIONS = ['sweepHour', 'tradeOfDay', 'prevTrade', 'weekday'] as const;
 export type FilterDimension = (typeof FILTER_DIMENSIONS)[number] & SetupDimension;
 
 /** Varsayılan tarih aralığı: tüm zamanlar (sayılar üst menüdeki hesap sayılarıyla tutarlı kalsın) */
@@ -41,7 +41,7 @@ export interface ExtraTradeFilters {
   riskPcts: number[];
   /** Yalnızca hızlı kayıtla girilip ayrıntısı tamamlanmamış işlemler */
   onlyIncomplete: boolean;
-  /** Türetilmiş boyut filtreleri (Sweep Saati, Asia Range Büyüklüğü, Günün İşlemi …) */
+  /** Türetilmiş boyut filtreleri (POI Sweep Saati, Günün İşlemi, Gün İçi Önceki İşlem, Gün) */
   dims: Partial<Record<FilterDimension, string[]>>;
 }
 
@@ -97,19 +97,14 @@ export interface GlobalTradeFilters {
   activeAccount?: PropAccount | null;
   /** "Bağlı hesabı yok" seçiliyse tüm prop hesapları (bunlardan hiçbirine ait olmayanlar kalır) */
   activeUnlinkedOf?: PropAccount[] | null;
-  globalSelectedConfirmations: string[];
   globalSelectedPlanFidelity: string[];
   globalDateLimit: string;
   globalSelectedAssets: string[];
   globalSelectedSessions: string[];
-  globalSelectedTimeframes: string[];
-  globalSelectedHtfTimeframes: string[];
   globalSelectedStatuses: string[];
   globalSelectedTypes: string[];
   globalSelectedEntryModels: string[];
   globalSelectedTrendTypes: string[];
-  globalMinAsiaRangePips: number | undefined;
-  globalMaxAsiaRangePips: number | undefined;
   /** İsteğe bağlı: sonradan eklenen alanların filtreleri */
   globalExtra?: ExtraTradeFilters;
 }
@@ -123,54 +118,39 @@ export function applyGlobalFilters(trades: Trade[], filters: GlobalTradeFilters,
     activeAccountCategory,
     activeAccount = null,
     activeUnlinkedOf = null,
-    globalSelectedConfirmations,
     globalSelectedPlanFidelity,
     globalDateLimit,
     globalSelectedAssets,
     globalSelectedSessions,
-    globalSelectedTimeframes,
-    globalSelectedHtfTimeframes,
     globalSelectedStatuses,
     globalSelectedTypes,
     globalSelectedEntryModels,
     globalSelectedTrendTypes,
-    globalMinAsiaRangePips,
-    globalMaxAsiaRangePips,
     globalExtra,
   } = filters;
     const extra = globalExtra || EMPTY_EXTRA_FILTERS;
     const minTime = getMinTimestamp(globalDateLimit, now);
 
-    const hasConfirmations = globalSelectedConfirmations.length > 0;
     const hasPlanFidelity = globalSelectedPlanFidelity.length > 0;
     const hasAssets = globalSelectedAssets.length > 0;
     const hasSessions = globalSelectedSessions.length > 0;
-    const hasTimeframes = globalSelectedTimeframes.length > 0;
-    const hasHtfTimeframes = globalSelectedHtfTimeframes.length > 0;
     const hasStatuses = globalSelectedStatuses.length > 0;
     const hasTypes = globalSelectedTypes.length > 0;
     const hasEntryModels = globalSelectedEntryModels.length > 0;
     const hasTrendTypes = globalSelectedTrendTypes.length > 0;
-    const hasMinAsia = globalMinAsiaRangePips !== undefined;
-    const hasMaxAsia = globalMaxAsiaRangePips !== undefined;
     // Kapsam her zaman uygulanır: TÜMÜ de hesapsız işlemleri dışarıda bırakır
     const hasCategory = true;
     const hasMinTime = minTime > 0;
     const hasExtra = countExtraFilters(extra) > 0;
 
     const hasAnyFilter =
-      hasConfirmations ||
       hasPlanFidelity ||
       hasAssets ||
       hasSessions ||
-      hasTimeframes ||
-      hasHtfTimeframes ||
       hasStatuses ||
       hasTypes ||
       hasEntryModels ||
       hasTrendTypes ||
-      hasMinAsia ||
-      hasMaxAsia ||
       hasCategory ||
       hasMinTime ||
       hasExtra;
@@ -181,12 +161,9 @@ export function applyGlobalFilters(trades: Trade[], filters: GlobalTradeFilters,
       return timed;
     }
 
-    const confirmationSet = hasConfirmations ? new Set(globalSelectedConfirmations.map(normalizeSearchString)) : null;
     const planFidelitySet = hasPlanFidelity ? new Set(globalSelectedPlanFidelity.map(normalizeSearchString)) : null;
     const assetSet = hasAssets ? new Set(globalSelectedAssets.map(canonicalAsset)) : null;
     const sessionSet = hasSessions ? new Set(globalSelectedSessions.map(normalizeSearchString)) : null;
-    const timeframeSet = hasTimeframes ? new Set(globalSelectedTimeframes.map(normalizeSearchString)) : null;
-    const htfTimeframeSet = hasHtfTimeframes ? new Set(globalSelectedHtfTimeframes.map(normalizeSearchString)) : null;
     const statusSet = hasStatuses ? new Set(globalSelectedStatuses.map(normalizeSearchString)) : null;
     const typeSet = hasTypes ? new Set(globalSelectedTypes.map(normalizeSearchString)) : null;
     const entrySet = hasEntryModels ? new Set(globalSelectedEntryModels.map(normalizeSearchString)) : null;
@@ -205,16 +182,6 @@ export function applyGlobalFilters(trades: Trade[], filters: GlobalTradeFilters,
       if (hasMinTime && (!t.createdAt || t.createdAt < minTime)) {
         return false;
       }
-      if (hasMinAsia) {
-        if (t.asiaRangePips === undefined || t.asiaRangePips === null || t.asiaRangePips < globalMinAsiaRangePips!) {
-          return false;
-        }
-      }
-      if (hasMaxAsia) {
-        if (t.asiaRangePips === undefined || t.asiaRangePips === null || t.asiaRangePips > globalMaxAsiaRangePips!) {
-          return false;
-        }
-      }
       if (hasCategory && !inScope(t, activeAccountCategory, activeAccount, activeUnlinkedOf)) {
         return false;
       }
@@ -232,19 +199,10 @@ export function applyGlobalFilters(trades: Trade[], filters: GlobalTradeFilters,
       if (sessionSet && (!t.session || !sessionSet.has(normalizeSearchString(t.session)))) {
         return false;
       }
-      if (timeframeSet && (!t.timeframe || !timeframeSet.has(normalizeSearchString(t.timeframe)))) {
-        return false;
-      }
-      if (htfTimeframeSet && (!t.htfTimeframe || !htfTimeframeSet.has(normalizeSearchString(t.htfTimeframe)))) {
-        return false;
-      }
       if (planFidelitySet && (!t.planFidelity || !planFidelitySet.has(normalizeSearchString(t.planFidelity)))) {
         return false;
       }
       if (trendSet && (!t.trend || !trendSet.has(normalizeSearchString(t.trend)))) {
-        return false;
-      }
-      if (confirmationSet && (!t.confirmations || !t.confirmations.some(tc => confirmationSet.has(normalizeSearchString(tc))))) {
         return false;
       }
       if (entrySet) {

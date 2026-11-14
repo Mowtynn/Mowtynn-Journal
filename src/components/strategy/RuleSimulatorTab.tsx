@@ -8,7 +8,7 @@ import { ruleOptions, simulateRule, HALF_MIN, type RuleCondition, type HalfStatu
 import { EDGE_PROOF_MIN } from '../../lib/sampleSize';
 import type { EdgeStats } from '../../lib/asiaAnalytics';
 import { useNewsDayLabels } from '../../hooks/useNewsDayLabels';
-import { fixed, formatR, trPossessive } from '../../lib/format';
+import { fixed, formatR, trPossessive, rnum } from '../../lib/format';
 
 const STORAGE_KEY = 'tj_rule_sim';
 const MAX_CONDS = 6;
@@ -89,7 +89,7 @@ function Curve({ points }: { points: Array<{ all: number; rule: number }> }) {
   );
 }
 
-const ci = (e: EdgeStats) => (e.n > 1 ? `%95: ${fixed(e.expLo)} – ${fixed(e.expHi)}` : undefined);
+const ci = (e: EdgeStats) => (e.n > 1 ? `%95: ${rnum(e.expLo)} – ${rnum(e.expHi)}` : undefined);
 
 export const RuleSimulatorTab = React.memo(function RuleSimulatorTab({ trades }: { trades: Trade[] }) {
   const [conds, setConds] = useState<RuleCondition[]>(loadConds);

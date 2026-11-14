@@ -6,10 +6,9 @@ import type { Trade } from '../types';
  */
 export const REQUIRABLE_FIELDS = [
   { id: 'asiaRange', label: 'Asia Range', missing: (t: Partial<Trade>) => !t.asiaRange },
-  { id: 'sweepTime', label: 'Sweep Time', missing: (t: Partial<Trade>) => !t.sweepTime },
+  { id: 'sweepTime', label: 'POI Sweep Time', missing: (t: Partial<Trade>) => !t.sweepTime },
   { id: 'session', label: 'Session', missing: (t: Partial<Trade>) => !t.session },
   { id: 'entryModels', label: 'Entry Model', missing: (t: Partial<Trade>) => !t.entryModels?.length },
-  { id: 'asiaRangePips', label: 'Asia Range Pip', missing: (t: Partial<Trade>) => !(typeof t.asiaRangePips === 'number' && t.asiaRangePips > 0) },
   { id: 'planFidelity', label: 'Setup Kalitesi', missing: (t: Partial<Trade>) => !t.planFidelity },
   { id: 'trend', label: 'Trend Yapısı', missing: (t: Partial<Trade>) => !t.trend },
   { id: 'tpTargets', label: 'Target', missing: (t: Partial<Trade>) => !t.tpTargets?.length },
@@ -20,7 +19,7 @@ export const REQUIRABLE_FIELDS = [
 export type RequirableField = (typeof REQUIRABLE_FIELDS)[number]['id'];
 
 export const DEFAULT_REQUIRED_FIELDS: RequirableField[] = [
-  'asiaRange', 'sweepTime', 'session', 'entryModels', 'asiaRangePips', 'planFidelity',
+  'asiaRange', 'sweepTime', 'session', 'entryModels', 'planFidelity',
 ];
 
 const KEY = 'tj_required_fields';

@@ -7,28 +7,19 @@ export type AsiaRangeType = (typeof ASIA_RANGE_TYPES)[number];
 /** Formda seçilebilenler. "Swept" kaldırıldı: yalnızca eski kayıtlarda görünür. */
 export const ASIA_RANGE_FORM_TYPES: readonly AsiaRangeType[] = ['Range', 'Trend'];
 
-export const MANAGEMENT_TYPES = ['Plana Göre', "BE Çekildi", 'Kısmi Kâr', 'Erken Kapatıldı'] as const;
-export type ManagementType = (typeof MANAGEMENT_TYPES)[number];
-
 export interface Trade {
   id: string;
   asset: string;            // e.g., BTC/USDT, ETH/USDT, AAPL
   type: 'LONG' | 'SHORT';   // Trade direction
-  rr: number;               // Sonuç (R). BE her zaman 0.
-  status: 'WIN' | 'LOSS' | 'BREAKEVEN'; // Trade result code
-  stopPips?: number;        // Stop Loss in pips / ticks / points
-  tpPips?: number;          // Take Profit in pips / ticks / points
-  asiaRangePips?: number;   // Asia Range in pips (optional)
+  rr: number;               // Sonuç (R): artı kazanç, eksi kayıp, 0 başabaş
+  status: 'WIN' | 'LOSS' | 'BREAKEVEN'; // Formda seçilmez: kayıtta R'nin işaretinden yazılır
   notes: string;            // Analysis notes, setup descriptions
   screenshot: string | null; // Base64 data URI of compressed screenshot
   createdAt: number;        // Timestamp of entry
   platform?: string;        // Hesabın kayıt anındaki adı (görüntüleme ve filtre için); hesapsız işlemde boş
   accountCategory?: 'FUNDED' | 'CHALLENGE' | 'DEMO'; // Kayıt anındaki hesap tipi; DEMO = hesapsız
   accountStage?: number;    // Kayıt anındaki aşama: 1, 2, 3 = Phase, 0 = Funded; hesapsızda boş
-  timeframe?: string;       // Execution timeframe (e.g., 1m, 5m, 1h)
-  htfTimeframe?: string;    // Higher Timeframe (HTF)
   session?: string;         // Trading session (e.g., London, New York)
-  confirmations?: string[];      // Array of trading confirmations used (e.g., FVG, Orderblock)
   planFidelity?: string | null; // Setup Kalitesi (Plan fidelity)
   entryModels?: string[];   // Birden fazla Giriş Modeli (Multiple Entry Models)
   trend?: string;           // Trend Yapısı (Trend Type e.g. Continuation, Reversal)
@@ -36,17 +27,27 @@ export interface Trade {
   premiumDiscount?: string; // Premium / Discount zone (e.g. Premium, Discount, Equilibrium / OTE)
   /** Eski sürümün strateji alanı: artık formda, filtrelerde ve analizlerde yok; eski kayıtlarda saklı kalır. */
   strategy?: string;
-  asiaRange?: AsiaRangeType; // Asia Range davranışı: Range / Trend / Swept
-  management?: ManagementType[]; // İşlem Yönetimi: Plana Göre / BE Çekildi / Kısmi Kâr / Erken Kapatıldı
-  afterExitTp?: boolean;    // Çıkıştan sonra fiyat TP'ye ulaştı mı (BE / erken kapanan işlemlerde)
-  sweepTime?: string;       // Sweep saati, New York saatiyle "HH:mm" (Asia Range seçiminden tamamen bağımsız)
+  asiaRange?: AsiaRangeType; // Asia Range davranışı: Range / Trend (eski kayıtlarda Swept)
+  sweepTime?: string;       // POI Sweep saati, New York saatiyle "HH:mm" (Asia Range seçiminden tamamen bağımsız)
   asiaRangeFvg?: string;    // Asia Range FVG (1H) (Tanımlamalar'dan yönetilir)
   newsDay?: boolean;        // News Day / Bank Holiday: true = Var, false = Yok. Girilmemişse tanımsız (bilinmiyor)
   accountId?: string;       // Prop hesap kimliği (PropAccount.id)
   riskPct?: number;         // İşlem başı risk (%), hesabın başlangıç bakiyesine göre
   riskAmount?: number;      // riskPct'nin dolar karşılığı; hesap bakiyesi = R × riskAmount
   quickEntry?: boolean;     // Hızlı kayıtla girildi; ayrıntılar sonra tamamlanacak
-  exitAt?: number;          // Çıkış anı (ms). Formda NY saatiyle girilir; işlemde kalma süresi = exitAt − createdAt
+  /**
+   * Kaldırılmış girdiler: formda, filtrelerde ve analizlerde yok. Eski kayıtlarda saklı kalır (silinmez),
+   * yalnızca bozuk değer temizliği ve yedek kurtarma bunları tanır.
+   */
+  stopPips?: number;
+  tpPips?: number;
+  asiaRangePips?: number;
+  timeframe?: string;
+  htfTimeframe?: string;
+  confirmations?: string[];
+  management?: string[];
+  afterExitTp?: boolean;
+  exitAt?: number;
 }
 
 /**
@@ -175,9 +176,6 @@ export interface Note {
 export interface DefinitionTitles {
   platforms: string;
   assets: string;
-  confirmations: string;
-  timeframes: string;
-  htfTimeframes: string;
   sessions: string;
   planFidelities: string;
   entryModels?: string;
@@ -192,15 +190,10 @@ export interface DefinitionTitles {
   financialCard?: string;
   direction?: string;
   tradeDate?: string;
-  tradeStatus?: string;
-  stopPips?: string;
-  tpPips?: string;
-  asiaRangePips?: string;
   rr?: string;
   chartLink?: string;
   asiaRange?: string;
   sweepTime?: string;
-  management?: string;
   notesCard?: string;
 }
 

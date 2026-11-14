@@ -3,10 +3,8 @@ import { smartUpper } from '../constants/constants';
 import React, { useState, useMemo, useCallback } from 'react';
 import { motion } from 'motion/react';
 import {
-  Target,
   Compass,
   Sparkles,
-  Activity,
   Brain,
   ClipboardList,
   FlaskConical,
@@ -35,15 +33,13 @@ type LabTab =
   | 'rule_sim'
   | 'setup_scorecard'
   | 'asia_lab'
-  | 'psychology'
-  | 'stop_range';
+  | 'psychology';
 
 // İş akışı sırasıyla: önce ne çalıştığını gör, sonra ayrıntıya in, en son davranışı kontrol et
 const SUBTABS: Array<{ id: LabTab; label: string; desc: string; icon: React.ComponentType<{ size?: number; className?: string }> }> = [
   { id: 'edge_summary', label: 'Edge Özeti', desc: 'Ne çalışıyor, ne sızdırıyor', icon: Sparkles },
   { id: 'setup_scorecard', label: 'Kurulum Karnesi', desc: 'Kurulumları karşılaştır', icon: ClipboardList },
   { id: 'asia_lab', label: 'Asia Edge Lab', desc: "Asia Range'e özgü analiz", icon: Compass },
-  { id: 'stop_range', label: 'Asia Range', desc: 'Range genişliğine göre sonuç', icon: Target },
   { id: 'rule_sim', label: 'Kural Simülatörü', desc: 'Bir kuralı geçmişte dene', icon: FlaskConical },
   { id: 'psychology', label: 'Psikoloji & Tilt', desc: 'Seri ve kayıp sonrası', icon: Brain },
 ];
@@ -58,9 +54,6 @@ const loadTab = (): LabTab => {
   }
   return 'edge_summary';
 };
-
-/** R değeri: işaret + 2 basamak (projedeki diğer R gösterimleriyle aynı) */
-const fmtSignedR = (v: number) => formatR(v);
 
 export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
   trades,
@@ -91,14 +84,13 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
         <Compass className="w-10 h-10 text-zinc-600 mx-auto mb-3" />
         <h4 className="text-sm font-bold text-zinc-200 font-sans">Strateji Geliştirme İçin Yeterli Veri Yok</h4>
         <p className="text-xs text-zinc-500 mt-1 max-w-md mx-auto font-sans">
-          İşlem eklerken girdiğin Parite, Asia Range, Sweep Time, Target, Confirmations ve Entry Model burada otomatik strateji önerilerine ve edge matrislerine dönüştürülür.
+          İşlem eklerken girdiğin Parite, Asia Range, POI Sweep Time, Target, Confirmations ve Entry Model burada otomatik strateji önerilerine ve edge matrislerine dönüştürülür.
         </p>
       </div>
     
   );
 
   const { 
-    asiaRangeStats, 
     streakStats,
   } = stats;
 
@@ -112,7 +104,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
       <div
         role="tablist"
         aria-label="Laboratuvar sekmeleri"
-        className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-1 bg-zinc-950/60 border border-zinc-800/80 p-1 rounded-2xl"
+        className="grid grid-cols-2 sm:grid-cols-5 gap-1 bg-zinc-950/60 border border-zinc-800/80 p-1 rounded-2xl"
         onKeyDown={(e) => {
           if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft' && e.key !== 'Home' && e.key !== 'End') return;
           const els = Array.from(e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
@@ -124,7 +116,9 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
           els[next].click();
         }}
       >
-        {SUBTABS.map((tab) => {
+        {SUBTABS.map((tab, i) => {
+          // Sekmeler satırı tam doldurur (5 sütun); telefonda tek kalan son sekme iki sütuna yayılır
+          const lastOdd = i === SUBTABS.length - 1 && SUBTABS.length % 2 === 1;
           const Icon = tab.icon;
           const isActive = activeSubTab === tab.id;
           return (
@@ -136,7 +130,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
               tabIndex={isActive ? 0 : -1}
               title={tab.desc}
               onClick={() => setActiveSubTab(tab.id)}
-              className={`relative min-w-0 px-2 py-2 text-xs font-bold rounded-xl transition-ui duration-150 cursor-pointer select-none ${
+              className={`relative min-w-0 px-2 py-2.5 text-xs font-bold rounded-xl ${lastOdd ? 'col-span-2 sm:col-span-1' : ''} transition-ui duration-150 cursor-pointer select-none ${
                 isActive ? 'text-blue-400' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60'
               }`}
             >
@@ -244,48 +238,6 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
           </div>
         </div>
       )}
-
-
-
-      {/* ASIA RANGE: range genişliğine göre sonuç */}
-      {activeSubTab === 'stop_range' && (
-        <div className="space-y-4">
-          {/* Asia Range Volatility Analysis */}
-          <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 space-y-3">
-            <div className="border-b border-zinc-800 pb-2">
-              <span className="text-xs font-bold uppercase text-zinc-200 font-sans flex items-center gap-1.5">
-                <Activity size={14} className="text-blue-400 shrink-0" />
-                {smartUpper("Asia Range Genişliği")}
-              </span>
-            </div>
-            <p className="text-[10px] text-zinc-500 font-sans -mt-1">Asia Range pip'in, aynı paritenin ÖNCEKİ işlemlerindeki medyan range'e oranı (girişte bilinen; paritenin ilk 5 işlemi sınıflanmaz): dar / normal / geniş günlerde sonuçlar.</p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
-              {[asiaRangeStats.brackets.tight, asiaRangeStats.brackets.medium, asiaRangeStats.brackets.wide].map((b) => (
-                <div key={b.label} className="px-3 py-2.5 bg-zinc-900 border border-zinc-800/80 rounded-lg text-xs flex justify-between items-center gap-3">
-                  <div>
-                    <span className="font-bold text-zinc-200 block font-sans">{b.label}</span>
-                    <span className="text-[10px] text-zinc-500 font-sans">{b.count} işlem</span>
-                    {b.count < MIN_SAMPLE && <span className="ml-1.5 px-1 py-px rounded border border-zinc-700 bg-zinc-900 text-[8px] font-bold text-zinc-400 uppercase tracking-wide align-middle">Az Veri</span>}
-                  </div>
-                  <div className="text-right">
-                    <span className={`font-bold block font-sans tabular-nums ${b.netR > 0 ? 'text-emerald-400' : b.netR < 0 ? 'text-rose-400' : 'text-zinc-300'}`}>
-                      {fmtSignedR(b.netR)}
-                    </span>
-                    <span className="text-[10px] text-zinc-400 font-sans tabular-nums whitespace-nowrap">%{fixed(b.winRate, 1)} WR · ort. {fmtSignedR(b.avgR)}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-            {asiaRangeStats.insight && (
-              <p className="rounded-lg border border-blue-500/20 bg-blue-500/5 px-3 py-2 text-[11px] text-zinc-300 font-sans leading-relaxed">{asiaRangeStats.insight}</p>
-            )}
-          </div>
-        </div>
-      )}
-
-
-
-
 
       </SectionErrorBoundary>
         </div>

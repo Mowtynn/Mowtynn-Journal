@@ -17,13 +17,13 @@ test('dışa aktarım: formdaki her girdi bir sütunda, değerler eksiksiz', () 
   });
   const row = prepareTradeExportRows([t])[0] as Record<string, unknown>;
   const values = Object.values(row).map(String);
-  for (const expected of ['XAUUSD', 'SHORT', 'WIN', '2.5', 'FTMO 10K · Phase 1', 'acc1', '0.5', '50', '18',
+  for (const expected of ['XAUUSD', 'SHORT', 'WIN', '2.5', 'FTMO 10K · Phase 1', 'acc1', '0.5', '50',
     'Trend', '02:15', 'A+', 'Continuation', 'Var', 'London', 'Breaker', 'PDH / PDL', 'Discount',
     'satır 1\nsatır 2', 'https://www.tradingview.com/x/abc/', '19.10.2026']) {
     assert.ok(values.includes(expected), `eksik: ${expected}`);
   }
   // kaldırılan girdiler (saat, çıkış, süre, timeframe'ler, PD Array, stop / TP pip, işlem yönetimi) sütun değildir
-  for (const gone of ['Saat', 'Çıkış', 'Süre', 'Giriş Saati (saatlik)', 'Timeframe', 'Entry Timeframe', 'PD Array', 'Stop Pip', 'TP Pip', 'İşlem Yönetimi', 'Planlanan R:R', 'Kaçırılan R']) {
+  for (const gone of ['Saat', 'Çıkış', 'Süre', 'Giriş Saati (saatlik)', 'Timeframe', 'Entry Timeframe', 'PD Array', 'Stop Pip', 'TP Pip', 'İşlem Yönetimi', 'Planlanan R:R', 'Kaçırılan R', 'Asia Range Pip', "Çıkış Sonrası TP'ye Ulaştı", 'İşlem Durumu']) {
     assert.ok(!(gone in row), `sütun kaldırılmalıydı: ${gone}`);
   }
   assert.ok(!values.includes('09:30') && !values.includes('FVG, OB') && !values.includes('1H'));
@@ -76,16 +76,13 @@ test('günlük dışa aktarımı: kayıt saati yoksa 1970 saati yazılmaz', () =
 test('dışa aktarım: yeni girdiler ve türetilmiş analiz sütunları eksiksiz', async () => {
   const { prepareTradeExportRows } = await import('../src/utils/exportTrades');
   const { trade } = await import('./fixtures');
-  const t = trade({
-    status: 'BREAKEVEN', rr: 0, asiaRangePips: 40, asiaRange: 'Trend', sweepTime: '02:40',
-    afterExitTp: true, createdAt: Date.UTC(2026, 9, 20, 7, 10),
-  });
+  const t = trade({ status: 'BREAKEVEN', rr: 0, asiaRange: 'Trend', sweepTime: '02:40', createdAt: Date.UTC(2026, 9, 20, 7, 10) });
   const row = prepareTradeExportRows([t])[0] as Record<string, unknown>;
-  for (const k of ['Asia Range', 'Sweep Time', "Çıkış Sonrası TP'ye Ulaştı", 'Sweep Saati (30 dk)', 'Günün İşlemi', 'Asia Range Pip']) {
+  for (const k of ['Asia Range', 'POI Sweep Time', 'POI Sweep Saati (30 dk)', 'Günün İşlemi', 'Durum']) {
     assert.ok(k in row, `sütun yok: ${k}`);
   }
-  assert.equal(row['Sweep Saati (30 dk)'], '02:30–03:00');
-  assert.equal(row["Çıkış Sonrası TP'ye Ulaştı"], 'Evet');
+  assert.equal(row['POI Sweep Saati (30 dk)'], '02:30–03:00');
+  assert.equal(row['Durum'], 'BREAKEVEN');
 });
 
 test('dışa aktarım: süpürülen Asia tarafı yalnızca Reversal işlemlerde, yönden', () => {

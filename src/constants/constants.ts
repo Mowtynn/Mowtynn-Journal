@@ -34,9 +34,6 @@ export function getTradeStageLabel(trade: { accountId?: string; accountStage?: n
   if (!trade.accountId || typeof trade.accountStage !== 'number') return null;
   return trade.accountStage === 0 ? 'Funded' : `Phase ${trade.accountStage}`;
 }
-export const DEFAULT_TIMEFRAMES = ["3M", "5M", "15M"];
-export const DEFAULT_HTF_TIMEFRAMES = ["1H", "4H", "D", "W", "M"];
-export const DEFAULT_CONFIRMATIONS = ["FVG", "OB"];
 export const DEFAULT_SESSIONS = ["London", "NY AM"];
 export const DEFAULT_ASSETS = ["EURUSD", "GBPUSD", "XAUUSD", "NQ100", "BTCUSDT"];
 export const DEFAULT_PLAN_FIDELITIES = ["A+", "A", "B-C"];
@@ -96,8 +93,8 @@ export const normalizeRiskPresets = (list: unknown): string[] => {
 
 /** Listesi olmayan form alanlarının başlıkları: Tanımlamalar > Form Başlıkları'ndan değiştirilir. */
 export const FORM_LABEL_KEYS = [
-  "basicInfoCard", "financialCard", "notesCard", "direction", "tradeDate", "tradeStatus",
-  "asiaRangePips", "rr", "chartLink", "asiaRange", "sweepTime",
+  "basicInfoCard", "financialCard", "notesCard", "direction", "tradeDate",
+  "rr", "chartLink", "asiaRange", "sweepTime",
 ] as const;
 
 export const DEFAULT_NEWS_DAYS = ["Var", "Yok"];
@@ -141,9 +138,6 @@ export function getNewsDayLabels(): { yes: string; no: string } {
 export const DEFAULT_DEFINITION_TITLES: DefinitionTitles = {
   platforms: "Hesap",
   assets: "Parite",
-  confirmations: "PD ARRAY",
-  timeframes: "Entry Timeframe",
-  htfTimeframes: "Timeframe",
   sessions: "Session",
   planFidelities: "Setup Kalitesi",
   entryModels: "Entry Model",
@@ -158,15 +152,10 @@ export const DEFAULT_DEFINITION_TITLES: DefinitionTitles = {
   notesCard: "Analiz & Notlar",
   direction: "Yön",
   tradeDate: "Tarih",
-  tradeStatus: "İşlem Durumu",
-  stopPips: "Stop Pip",
-  tpPips: "TP Pip",
-  asiaRangePips: "Asia Range Pip",
   rr: "Sonuç R",
   chartLink: "Grafik Linki",
   asiaRange: "Asia Range",
-  sweepTime: "Sweep Time",
-  management: "İşlem Yönetimi",
+  sweepTime: "POI Sweep Time",
 };
 
 /**
@@ -349,6 +338,9 @@ export const sanitizeDefinitionTitles = (raw: Partial<DefinitionTitles> = {}): D
     result.assets = "Parite";
   }
 
+  // Sweep Time → POI Sweep Time: kayıtlı eski varsayılan yeni adı alır (kullanıcının kendi verdiği farklı ad korunur)
+  if (/^sweep time$/i.test(result.sweepTime || '')) result.sweepTime = DEFAULT_DEFINITION_TITLES.sweepTime;
+
   // Kaldırılan Liquidity Sweep başlıkları eski kayıtlardan düşer
   delete (result as any).liquiditySweeps;
   delete (result as any).concepts;
@@ -367,18 +359,6 @@ export const sanitizeDefinitionTitles = (raw: Partial<DefinitionTitles> = {}): D
 
   if (!result.sessions || /oturum|seans/i.test(result.sessions)) {
     result.sessions = "Session";
-  }
-
-  if (!result.htfTimeframes || result.htfTimeframes === "HTF" || /üst zaman/i.test(result.htfTimeframes)) {
-    result.htfTimeframes = "Timeframe";
-  }
-
-  if (!result.confirmations || result.confirmations === "Onaylar" || result.confirmations === "Onay" || /htf pd array/i.test(result.confirmations)) {
-    result.confirmations = "PD ARRAY";
-  }
-
-  if (!result.timeframes || result.timeframes === "ETF" || result.timeframes === "Entry Time" || /giriş zamanı/i.test(result.timeframes) || /işlem zaman dilimi/i.test(result.timeframes)) {
-    result.timeframes = "Entry Timeframe";
   }
 
   if (!result.entryModels || /giriş model/i.test(result.entryModels)) {

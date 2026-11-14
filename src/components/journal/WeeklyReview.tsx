@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { fixed, formatR, signed } from "../../lib/format";
+import { formatR, rnum, rsigned } from "../../lib/format";
 import { smartUpper } from '../../constants/constants';
 import { ChevronLeft, ChevronRight, X, CalendarRange, ShieldCheck, ShieldAlert, Trophy, TrendingDown, Target, Save, Check } from "lucide-react";
 import type { JournalEntry, Trade, WeeklyAnswers } from "../../types";
@@ -136,7 +136,7 @@ export const WeeklyReview = React.memo(function WeeklyReview({
                 <p className={`text-lg font-bold tabular-nums leading-tight ${tone(t.netR)}`}>{fmtR(t.netR)}</p>
                 {p.n > 0 && (
                   <span className={`text-[10px] font-bold tabular-nums whitespace-nowrap ${tone(delta)}`} title="Geçen haftaya göre fark">
-                    {delta > 0 ? "▲" : delta < 0 ? "▼" : "="} {fixed(Math.abs(delta))}R
+                    {delta > 0 ? "▲" : delta < 0 ? "▼" : "="} {rnum(Math.abs(delta))}R
                   </span>
                 )}
               </div>
@@ -171,7 +171,7 @@ export const WeeklyReview = React.memo(function WeeklyReview({
                 </div>
                 {/* Telefonda hücre ~34px: tek ondalık; geniş ekranda diğer ekranlarla aynı iki ondalık */}
                 <p className={`text-xs font-bold tabular-nums whitespace-nowrap ${d.n ? tone(d.netR) : "text-zinc-700"}`}>
-                  {d.n ? <><span className="sm:hidden">{signed(d.netR, 1)}</span><span className="hidden sm:inline">{fmtR(d.netR)}</span></> : "—"}
+                  {d.n ? <><span className="sm:hidden">{rsigned(d.netR, 1)}</span><span className="hidden sm:inline">{fmtR(d.netR)}</span></> : "—"}
                 </p>
                 <div className="h-1 mt-1 rounded-full bg-zinc-800/80 overflow-hidden" aria-hidden>
                   {d.n > 0 && (

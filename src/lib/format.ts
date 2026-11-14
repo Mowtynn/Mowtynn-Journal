@@ -1,6 +1,6 @@
 /**
  * Ortak sayı biçimleri — bütün ekranlarda aynı görünüm için tek kaynak.
- * R değeri: işaretli, sabit ondalık, birim bitişik → "+1.85R", "-0.50R", "0.00R".
+ * R değeri: işaretli, gereksiz sıfırsız, birim bitişik → "+2R", "+2.1R", "-0.5R", "0R".
  */
 
 /** Sabit ondalık; yuvarlanınca sıfır olan değer işaret taşımaz ("-0.00" yazılmaz). Geçersiz sayı 0 sayılır. */
@@ -15,11 +15,17 @@ export const signed = (v: number, d = 2): string => {
   return Number(s) > 0 ? `+${s}` : s;
 };
 
-/** İşaretli R: "+1.85R" */
-export const formatR = (v: number, d = 2): string => `${signed(v, d)}R`;
+/** R sayısı, gereksiz sıfırsız: 2 → "2", 2.10 → "2.1", 0.375 → "0.38" (işlem R'si tek ondalık, ortalamalar en çok iki) */
+export const rnum = (v: number, d = 2): string => String(Number(fixed(v, d)));
 
-/** İşaretsiz R (büyüklük; drawdown, kaçırılan R gibi): "5.50R" */
-export const formatRAbs = (v: number, d = 2): string => `${fixed(Math.abs(Number.isFinite(v) ? v : 0), d)}R`;
+/** İşaretli R sayısı: "+2", "+2.1", "-0.5", "0" */
+export const rsigned = (v: number, d = 2): string => {
+  const s = rnum(v, d);
+  return Number(s) > 0 ? `+${s}` : s;
+};
+
+/** İşaretli R: "+2R", "+2.1R", "-1R", "0R" */
+export const formatR = (v: number, d = 2): string => `${rsigned(v, d)}R`;
 
 /** Yüzde: "%55.4"; eksi değerde işaret başta ("-%12.5") */
 export const formatPct = (v: number, d = 1): string => {
@@ -37,12 +43,14 @@ export const formatDateKey = (key: string): string => {
 };
 
 /** Dolar: tam sayıysa kuruşsuz, değilse iki hane ("$55,517.50"); eksi işaret başta ("-$540") */
-export const formatMoney = (v: number): string => {
+export const formatMoney = (v: number, signed = false): string => {
   const x = Number.isFinite(v) ? v : 0;
   const cents = Math.round(Math.abs(x) * 100);
   const whole = cents % 100 === 0;
   const body = (cents / 100).toLocaleString('en-US', { minimumFractionDigits: whole ? 0 : 2, maximumFractionDigits: whole ? 0 : 2 });
-  return `${x < 0 && cents !== 0 ? '-' : ''}$${body}`;
+  // signed: kazançta da işaret yazılır (+$750), sıfırda işaret yok
+  const sign = cents === 0 ? '' : x < 0 ? '-' : signed ? '+' : '';
+  return `${sign}$${body}`;
 };
 
 /**

@@ -3,7 +3,7 @@ import { smartUpper } from '../constants/constants';
 import { FilterChip, FILTER_LABEL, FILTER_SELECT } from './filters/FilterControls';
 import { Trade } from '../types';
 import { MIN_SAMPLE } from '../lib/sampleSize';
-import { formatDateKey, formatPct, formatR, signed } from '../lib/format';
+import { formatDateKey, formatR, rsigned } from '../lib/format';
 import {
   analyzeAsia,
   AsiaLabResult,
@@ -115,27 +115,13 @@ export const AsiaEdgeLab = React.memo(function AsiaEdgeLab({ trades }: AsiaEdgeL
         <Empty text="Bu filtrelerle işlem yok." />
       ) : (
         <>
-          {/* Önce eğilim ve yönetim maliyeti yan yana, sonra ısı tablosu; veri eksiği panosu (bakım aracı) en sonda */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
-            <Card className={r.beAfterTp.answered > 0 ? '' : 'lg:col-span-2'} title="Kayan Beklenti (20 işlem)" hint="Edge zamanla sağlam mı, aşınıyor mu?">
-              <Sparkline points={r.rolling} />
-            </Card>
+          {/* Önce eğilim, sonra ısı tablosu; veri eksiği panosu (bakım aracı) en sonda */}
+          <Card title="Kayan Beklenti (20 işlem)" hint="Edge zamanla sağlam mı, aşınıyor mu?">
+            <Sparkline points={r.rolling} />
+          </Card>
 
-            {r.beAfterTp.answered > 0 && (
-              <Card title="BE Sonrası TP" hint="Başabaş kapattığın işlemlerde fiyat sonradan TP'ye gitti mi?">
-                <p className="flex items-baseline gap-2">
-                  <span className="text-2xl font-bold tabular-nums text-zinc-100">{formatPct((r.beAfterTp.wentTp / r.beAfterTp.answered) * 100, 0)}</span>
-                  <span className="text-[11px] text-zinc-500 font-sans">sonradan TP'ye gitti</span>
-                </p>
-                <p className="text-xs text-zinc-400 font-sans leading-relaxed">
-                  Yanıtlanan {r.beAfterTp.answered} BE işlemin {r.beAfterTp.wentTp} tanesi
-                  {r.beAfterTp.answered < r.beAfterTp.be && <> ({r.beAfterTp.be - r.beAfterTp.answered} BE işlemde soru boş)</>}
-                </p>
-              </Card>
-            )}
-          </div>
 
-          <Card title="Sweep Saati × Parite Isı Tablosu" hint="Satır: sweep saati (NY). Hücre: beklenti (R) ve işlem sayısı. Soluk hücreler minimum örneklemin altındadır; onlara göre karar verme. Sweep Time girilmemiş işlemler tabloda yer almaz.">
+          <Card title="POI Sweep Saati × Parite Isı Tablosu" hint="Satır: sweep saati (NY). Hücre: beklenti (R) ve işlem sayısı. Soluk hücreler minimum örneklemin altındadır; onlara göre karar verme. POI Sweep Time girilmemiş işlemler tabloda yer almaz.">
             {!sparseHourPair ? (
               <Empty text="Yeterli veri yok." />
             ) : (
@@ -143,7 +129,7 @@ export const AsiaEdgeLab = React.memo(function AsiaEdgeLab({ trades }: AsiaEdgeL
                 <table className="w-full text-xs font-sans">
                   <thead>
                     <tr className="text-[10px] uppercase text-zinc-500">
-                      <th className="text-left font-medium pb-1.5">Sweep Saati</th>
+                      <th className="text-left font-medium pb-1.5">POI Sweep Saati</th>
                       {r.hourPair.pairs.map((p) => (
                         <th key={p} className="font-medium pb-1.5 text-center">
                           {p}
@@ -160,7 +146,7 @@ export const AsiaEdgeLab = React.memo(function AsiaEdgeLab({ trades }: AsiaEdgeL
                           if (!c) return <td key={p} className="text-center text-zinc-700">·</td>;
                           return (
                             <td key={p} className={`text-center py-1.5 ${c.n < minSample ? 'opacity-40' : ''}`}>
-                              <span className={`font-bold ${tone(c.expectancy)}`}>{signed(c.expectancy)}</span>
+                              <span className={`font-bold ${tone(c.expectancy)}`}>{rsigned(c.expectancy)}</span>
                               <span className="text-[10px] text-zinc-500"> ({c.n})</span>
                             </td>
                           );

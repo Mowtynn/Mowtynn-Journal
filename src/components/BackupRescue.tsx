@@ -49,9 +49,6 @@ interface BackupRescueProps {
   notes?: Note[];
   journals?: any[];
   settings?: {
-    timeframes: string[];
-    htfTimeframes?: string[];
-    confirmations: string[];
     sessions: string[];
     assets: string[];
     planFidelities?: string[];

@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "motion/react";
 import { Trade, DefinitionTitles, PropAccount } from "../types";
 import { defaultRiskAmount } from "../lib/propAccounts";
+import { formatMoney, formatR } from "../lib/format";
 import {
   DEFAULT_PLAN_FIDELITIES,
   DEFAULT_ENTRY_MODELS,
@@ -19,7 +20,8 @@ import {
 import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
 import { missingRequired } from "../lib/requiredFields";
 import { Plus, X, Zap, Copy } from "lucide-react";
-import { NO_ACCOUNT, Num, Status, AccountOption, buildInitial, useTitles, afterExitTpAsked } from './tradeForm/shared';
+import { NO_ACCOUNT, Num, AccountOption, buildInitial, useTitles, statusOfR } from './tradeForm/shared';
+import { roundR } from '../lib/tradeModel';
 import { toNyInput, nyInputToTs } from '../lib/tradingTime';
 import { BasicInfoCard } from './tradeForm/BasicInfoCard';
 import { ResultCard } from './tradeForm/ResultCard';
@@ -124,12 +126,9 @@ const AddTradeForm = React.memo(function AddTradeForm({
   const [newsDayError, setNewsDayError] = useState(false);
   const [asiaRange, setAsiaRange] = useState(init.asiaRange);
   const [sweepTime, setSweepTime] = useState(init.sweepTime);
-  const [afterExitTp, setAfterExitTp] = useState<boolean | null>(init.afterExitTp);
   const [selectedAsiaFvg, setSelectedAsiaFvg] = useState(init.asiaFvg);
 
-  const [asiaRangePips, setAsiaRangePips] = useState<Num>(init.asiaRangePips);
   const [rrValue, setRrValue] = useState<Num>(init.rrValue);
-  const [tradeStatus, setTradeStatus] = useState<Status>(init.status);
 
   const [notes, setNotes] = useState(init.notes);
   const [screenshot, setScreenshot] = useState<string | null>(init.screenshot);
@@ -166,6 +165,19 @@ const AddTradeForm = React.memo(function AddTradeForm({
     selectedAccount && typeof selectedAccount.size === "number" && effectiveRiskPct
       ? defaultRiskAmount({ size: selectedAccount.size, riskPct: effectiveRiskPct })
       : null;
+
+  // Alt çubuk özeti: varlık yazılınca ya da R girilince görünür
+  const summary = useMemo(() => {
+    const r = rrValue === "" || !Number.isFinite(Number(rrValue)) ? null : roundR(Number(rrValue));
+    const a = asset.trim();
+    if (!a && r === null) return null;
+    return {
+      asset: a,
+      dir: a ? type : null,
+      r,
+      money: r !== null && riskDollar ? formatMoney(r * riskDollar, true) : null,
+    };
+  }, [asset, type, rrValue, riskDollar]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -207,26 +219,18 @@ const AddTradeForm = React.memo(function AddTradeForm({
     );
     const finalAsset = matchedAsset || safeAsset.toUpperCase();
 
-    const numericRR =
-      rrValue !== ""
-        ? Number(rrValue) *
-          (tradeStatus === "LOSS"
-            ? -1
-            : tradeStatus === "BREAKEVEN"
-              ? 0
-              : 1)
-        : 0;
+    // Sonuç boş bırakılırsa sessizce başabaş sayılmasın: R zorunlu, durum R'nin işaretinden gelir
+    if (rrValue === "" || !Number.isFinite(Number(rrValue))) {
+      document.getElementById("tf-result-r")?.focus();
+      toast.error("Sonuç R'yi gir (kazanç +, kayıp −, başabaş 0).");
+      return;
+    }
+    // Kayıt 2 ondalıkla tutulur; durum yuvarlanmış değerden gelir (0.004 → 0 → başabaş, "-0" yok)
+    const numericRR = roundR(Number(rrValue));
+    const tradeStatus = statusOfR(numericRR);
 
     if (numericRR > 100 || numericRR < -20) {
       toast.error("R değeri gerçekçi değil (-20 ile 100 R arası olmalıdır).");
-      return;
-    }
-    if (tradeStatus === "WIN" && numericRR <= 0) {
-      toast.error("WIN işlemde sonuç R pozitif olmalı.");
-      return;
-    }
-    if (tradeStatus === "LOSS" && numericRR >= 0) {
-      toast.error("LOSS işlemde R gir (eksi işareti koyma; işareti durum belirler).");
       return;
     }
 
@@ -240,8 +244,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
       asset: finalAsset,
       type,
       status: tradeStatus,
-      rr: Number(numericRR.toFixed(2)),
-      asiaRangePips: asiaRangePips !== "" && typeof asiaRangePips === 'number' ? asiaRangePips : undefined,
+      rr: numericRR,
       session: selectedSession || undefined,
       entryModels: selectedEntries.length > 0 ? selectedEntries : undefined,
       trend: selectedTrend || undefined,
@@ -253,8 +256,6 @@ const AddTradeForm = React.memo(function AddTradeForm({
       strategy: editingTrade?.strategy || undefined,
       asiaRange: (asiaRange || undefined) as Trade["asiaRange"],
       sweepTime: sweepTime || undefined,
-      // Çıkış Sonrası TP sorusu yalnızca başabaş (BE) işlemde anlamlı
-      afterExitTp: afterExitTpAsked(tradeStatus) ? afterExitTp ?? undefined : undefined,
       asiaRangeFvg: selectedAsiaFvg || undefined,
       notes: safeNotes || undefined,
       screenshot: screenshot || undefined,
@@ -293,10 +294,10 @@ const AddTradeForm = React.memo(function AddTradeForm({
 
   // Kaydedilmemiş değişiklik takibi: ilk çizimdeki durum temel alınır (ek çizim yok)
   const snapshot = JSON.stringify([
-    asset, type, accountChoice, riskChoice, customRiskPct, tradeDate, tradeStatus, asiaRangePips,
+    asset, type, accountChoice, riskChoice, customRiskPct, tradeDate,
     rrValue, notes, screenshot, selectedSession,
     selectedEntries, selectedTrend, planFidelity,
-    selectedTpTargets, premiumDiscount, newsDay, asiaRange, sweepTime, afterExitTp, selectedAsiaFvg,
+    selectedTpTargets, premiumDiscount, newsDay, asiaRange, sweepTime, selectedAsiaFvg,
   ]);
   const baselineRef = useRef(snapshot);
   // Hazır bekleyen form açılınca tarih "şimdi"ye çekilir; bu değişiklik kirli sayılmasın diye taban yenilenir
@@ -426,9 +427,9 @@ const AddTradeForm = React.memo(function AddTradeForm({
 
 
       <form ref={formRef} onSubmit={handleSubmit} noValidate className="flex flex-col flex-1 min-h-0">
-        <div className={`tf-body p-4 sm:p-5 flex flex-col ${isQuick ? "md:grid md:grid-cols-2 md:items-start" : "lg:grid lg:grid-cols-2 xl:grid-cols-[minmax(0,11fr)_minmax(0,14fr)_minmax(0,8fr)]"} gap-4 overflow-y-auto overscroll-contain flex-1 min-h-0`}>
+        <div className={`tf-body p-4 sm:p-5 flex flex-col ${isQuick ? "md:grid md:grid-cols-2 md:items-stretch" : "lg:grid lg:grid-cols-2 xl:grid-cols-[minmax(0,11fr)_minmax(0,14fr)_minmax(0,8fr)]"} gap-4 overflow-y-auto overscroll-contain flex-1 min-h-0`}>
 
-          {/* 1. SÜTUN: TEMEL BİLGİLER + NOTLAR. Hızlı kayıtta sarmalayıcı "contents" olur: Temel ve Sonuç yan yana iki sütun */}
+          {/* 1. SÜTUN: TEMEL BİLGİLER + SONUÇ — işlemin özü tek yerde. Hızlı kayıtta sarmalayıcı "contents" olur: Temel ve Sonuç yan yana iki sütun */}
           <div className={isQuick ? "contents" : "flex flex-col gap-4 min-w-0"}>
             <BasicInfoCard
               titles={titles}
@@ -459,19 +460,12 @@ const AddTradeForm = React.memo(function AddTradeForm({
               tradeDate={tradeDate}
               setTradeDate={setTradeDate}
             />
-            {!isQuick && <NotesCard titles={titles} notes={notes} setNotes={setNotes} />}
-            {isQuick && (
-              <ResultCard
-                titles={titles}
-                isQuick={isQuick}
-                tradeStatus={tradeStatus}
-                setTradeStatus={setTradeStatus}
-                rrValue={rrValue}
-                setRrValue={setRrValue}
-                asiaRangePips={asiaRangePips}
-                setAsiaRangePips={setAsiaRangePips}
-              />
-            )}
+            <ResultCard
+              titles={titles}
+              rrValue={rrValue}
+              setRrValue={setRrValue}
+              riskDollar={riskDollar}
+            />
           </div>
 
           {/* 2. SÜTUN: KURULUM ÇİPLERİ — 3. SÜTUN: NOTLAR (hızlı kayıtta yok) */}
@@ -494,9 +488,6 @@ const AddTradeForm = React.memo(function AddTradeForm({
                   setAsiaRange={setAsiaRange}
                   sweepTime={sweepTime}
                   setSweepTime={setSweepTime}
-                  afterExitTp={afterExitTp}
-                  setAfterExitTp={setAfterExitTp}
-                  tradeStatus={tradeStatus}
                   asiaRangeFvgs={asiaRangeFvgs}
                   selectedAsiaFvg={selectedAsiaFvg}
                   setSelectedAsiaFvg={setSelectedAsiaFvg}
@@ -517,19 +508,10 @@ const AddTradeForm = React.memo(function AddTradeForm({
           )}
           {!isQuick && (
             <div className="flex flex-col gap-4 min-w-0 lg:col-span-2 lg:grid lg:grid-cols-2 xl:col-span-1 xl:flex">
-              {/* 3. SÜTUN: SONUÇ + GRAFİK LİNKİ. Geniş ekranda (xl) üç sütun yan yana ve form kaydırmadan sığar;
-                  1024–1279px'de iki sütuna sığmayan bu ikili alta, yan yana iner (alanlar sıkışmaz) */}
-              <ResultCard
-                titles={titles}
-                isQuick={isQuick}
-                tradeStatus={tradeStatus}
-                setTradeStatus={setTradeStatus}
-                rrValue={rrValue}
-                setRrValue={setRrValue}
-                asiaRangePips={asiaRangePips}
-                setAsiaRangePips={setAsiaRangePips}
-              />
+              {/* 3. SÜTUN: GRAFİK + NOTLAR — sonradan dönülecek kayıtlar. Geniş ekranda (xl) üç sütun yan yana;
+                  1024–1279px'de bu ikili alta, yan yana iner (alanlar sıkışmaz) */}
               <ChartLinkCard titles={titles} screenshot={screenshot} setScreenshot={setScreenshot} />
+              <NotesCard titles={titles} notes={notes} setNotes={setNotes} />
             </div>
           )}
 
@@ -539,6 +521,20 @@ const AddTradeForm = React.memo(function AddTradeForm({
         <div className="tf-foot px-4 sm:px-5 py-3 sm:py-3.5 border-t border-zinc-800/80 bg-zinc-950/90 shrink-0 grid [&>*]:[grid-area:1/1]">
           <AnimatePresence initial={false}>
               <motion.div key="actions" {...PANE} className="flex items-center justify-between gap-3">
+                {/* Kaydetmeden önce tek bakışta ne kaydedileceği; boşken kısayol ipucu */}
+                {summary ? (
+                  <span className="hidden md:flex items-center gap-2 min-w-0 text-[11px] font-sans text-zinc-400 select-none tabular-nums" aria-live="polite">
+                    {summary.asset && <span className="font-bold text-zinc-200 truncate">{summary.asset}</span>}
+                    {summary.dir && <span className={summary.dir === "LONG" ? "text-emerald-400 font-bold" : "text-rose-400 font-bold"}>{summary.dir === "LONG" ? "Long" : "Short"}</span>}
+                    {summary.r !== null && (
+                      <>
+                        {summary.asset && <span className="text-zinc-700">·</span>}
+                        <span className={`font-bold ${summary.r > 0 ? "text-emerald-400" : summary.r < 0 ? "text-rose-400" : "text-blue-300"}`}>{formatR(summary.r)}</span>
+                        {summary.money && <span className="text-zinc-500">{summary.money}</span>}
+                      </>
+                    )}
+                  </span>
+                ) : (
                 <span className="hidden md:flex items-center gap-1.5 text-[10px] font-sans text-zinc-500 select-none">
                   <kbd className="px-1.5 py-0.5 rounded-md border border-zinc-700 bg-zinc-900 text-zinc-400 font-sans">Ctrl</kbd>
                   <span>+</span>
@@ -548,6 +544,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                   <kbd className="px-1.5 py-0.5 rounded-md border border-zinc-700 bg-zinc-900 text-zinc-400 font-sans">Esc</kbd>
                   <span>kapat</span>
                 </span>
+                )}
                 <div className="flex items-center gap-3 w-full md:w-auto justify-end">
                   <button
                     type="button"
