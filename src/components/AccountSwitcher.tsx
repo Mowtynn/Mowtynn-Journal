@@ -217,7 +217,7 @@ export const AccountSwitcher: React.FC<AccountSwitcherProps> = React.memo(({
         onClick={() => setIsOpen(!isOpen)}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
-        className={`flex items-center gap-1.5 h-7 px-2 rounded-lg border transition-ui duration-150 cursor-pointer shadow-xs max-w-[7.5rem] sm:max-w-[13rem] ${
+        className={`flex items-center gap-1.5 h-7 px-2 rounded-lg border transition-ui duration-150 cursor-pointer shadow-xs max-w-[8.75rem] sm:max-w-[13rem] ${
           isOpen ? 'bg-zinc-800 border-zinc-600 text-zinc-100 shadow-sm ring-1 ring-zinc-600/40' : current.triggerClass
         }`}
       >

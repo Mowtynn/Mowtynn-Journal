@@ -17,8 +17,8 @@ import { Deferred, PaneLoader } from './common/Deferred';
 type MetricsPart = 'all' | 'breakdowns' | 'lab';
 
 const StrategyOptimizerHub = lazyWithPreload(() => named(import('./StrategyOptimizerHub'), 'StrategyOptimizerHub'));
-/** Parite kartları sayfa başına: masaüstünde 4 sütun × 2 satır */
-const ASSETS_PER_PAGE = 8;
+/** Parite kartları sayfa başına: geniş masaüstünde 5 sütun × 2 satır */
+const ASSETS_PER_PAGE = 10;
 
 /** Laboratuvar parçasını önden indirir (sekme arka planda hazırlanırken) */
 export const preloadStrategyHub = () => StrategyOptimizerHub.preload();
@@ -567,7 +567,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0.8 }}
                 transition={{ duration: 0.1, ease: EASE }}
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 content-start"
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-2.5 content-start"
               >
                 {processedAssets.slice((assetPage - 1) * ASSETS_PER_PAGE, assetPage * ASSETS_PER_PAGE).map((ar) => {
                   const isSelected = selectedAsset === ar.asset;
@@ -599,23 +599,16 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
                           </span>
                         </div>
                         
-                        <div className="flex flex-col gap-1 z-10">
-                          <div className="flex justify-between items-center text-[9px] font-sans">
-                            <span className="text-zinc-500 font-bold tracking-widest uppercase font-sans">Net R</span>
-                            <span className={`font-bold tracking-wider text-xs ${ar.rr > 0 ? 'text-emerald-400' : ar.rr < 0 ? 'text-rose-400' : 'text-zinc-300'}`}>
-                              {formatR(ar.rr)}
-                            </span>
-                          </div>
- 
-                          {/* Divider */}
-                          <div className="h-px w-full bg-zinc-800/50 group-hover:bg-zinc-700/60 transition-colors duration-200 my-0.5" />
- 
-                          <div className="flex justify-between items-center text-[9px] font-sans">
-                            <span className="text-zinc-500 font-bold tracking-widest uppercase font-sans">WR</span>
-                            <span className="font-bold tracking-wider text-xs text-zinc-200">
-                              %{winRate.toFixed(1)}
-                            </span>
-                          </div>
+                        {/* Net R ve WR tek satırda: kart kısa kalır, masaüstünde parite satırı tek sıraya sığar */}
+                        <div className="flex justify-between items-baseline gap-2 z-10 mt-1.5 font-sans">
+                          <span className="flex items-baseline gap-1.5 min-w-0">
+                            <span className="text-[9px] text-zinc-500 font-bold tracking-widest uppercase">Net</span>
+                            <span className={`font-bold text-xs tabular-nums ${ar.rr > 0 ? 'text-emerald-400' : ar.rr < 0 ? 'text-rose-400' : 'text-zinc-300'}`}>{formatR(ar.rr)}</span>
+                          </span>
+                          <span className="flex items-baseline gap-1.5 shrink-0">
+                            <span className="text-[9px] text-zinc-500 font-bold tracking-widest uppercase">WR</span>
+                            <span className="font-bold text-xs tabular-nums text-zinc-200">%{winRate.toFixed(1)}</span>
+                          </span>
                         </div>
                       </div>
                     </button>

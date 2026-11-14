@@ -44,7 +44,7 @@ export const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
         </td>
       </tr>
       {/* Masaüstü: tablo satırı */}
-      <tr onClick={() => onViewDetails(trade)} className="group select-none hidden sm:table-row align-middle cursor-pointer hover:bg-zinc-800/50 transition-colors duration-100">
+      <tr onClick={() => onViewDetails(trade)} className="group select-none relative hidden sm:table-row bg-zinc-900 align-middle cursor-pointer hover:bg-zinc-800/50 transition-colors duration-100">
         <td className={`${CELL} px-3 text-zinc-400 rounded-l-xl border-l w-[16%] min-w-[130px] group-hover:text-zinc-100`}>
           <div>
             <span className="text-[10px] text-zinc-400 font-medium">{formattedDateOnly}</span>

@@ -1014,3 +1014,9 @@ Klasik tasarım korunarak, son eklenen alanlar (risk %, hesap bağı, strateji, 
   - Parite sayfası, filtre sonrası parite sayısı azalınca boş sayfada kalmaz (son sayfaya çekilir).
   - Gereksiz yerel araç ipuçları (title) kaldırıldı (10 yer); ısı haritasındaki hücre ayrıntısı kaldı (tek bilgi kaynağı). Kullanılmayan CSS kuralı silindi; ölü kod taraması temiz.
   - Stres testi: 1500 işlem (bir günde 408), 20 parite, çok uzun parite / hesap / session adları, ±999R, bozuk tarih / yön / saat, 18 KB not: masaüstü ve telefonda tüm sekmeler hatasız, taşmasız; sekme geçişleri ≤ 26 ms.
+
+- Son tur
+  - Masaüstü işlem geçmişi satırları koyu dolgusunu geri aldı (telefon kartı eklenirken kaybolmuştu).
+  - Takvim: indirme düğmesi Aylık R'ın solunda, rozetlerle aynı yükseklikte; telefonda "İşlem Günü" tek satır.
+  - Parite kartları tek satırlık Net R · WR ile kısaldı; geniş masaüstünde 5 sütun (sayfa başına 10): Performans Dağılımı 5 pariteyle de kaydırmasız.
+  - Telefonda üst bardaki kapsam seçicide "TÜMÜ" yazısı (3 haneli işlem sayısıyla) kesilmiyor.

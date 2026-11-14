@@ -87,7 +87,7 @@ export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], o
       aria-label="Takvimi indir"
       onClick={downloadImage}
       disabled={isSaving}
-      className={`no-export w-9 h-9 shrink-0 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 hover:border-zinc-600 text-zinc-400 hover:text-blue-400 items-center justify-center transition-colors duration-150 cursor-pointer disabled:opacity-60 ${extra}`}
+      className={`no-export w-8 h-8 shrink-0 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 hover:border-zinc-600 text-zinc-400 hover:text-blue-400 items-center justify-center transition-colors duration-150 cursor-pointer disabled:opacity-60 ${extra}`}
     >
       {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
     </button>
@@ -282,15 +282,15 @@ export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], o
                    <ChevronRight size={13} />
                  </button>
                </div>
-               {downloadButton('flex lg:hidden')}
              </div>
              
-             {/* Monthly Summary Badges (masaüstünde en sağda indirme düğmesi) */}
-             <div className="grid grid-cols-2 lg:flex lg:flex-wrap items-center gap-2 sm:gap-2.5 text-xs font-sans">
+             {/* Aylık özet: solda indirme düğmesi, ardından Aylık R ve İşlem Günü (telefonda rozetler eşit genişlikte) */}
+             <div className="flex items-center gap-2 sm:gap-2.5 text-xs font-sans [&>div]:flex-1 lg:[&>div]:flex-none">
+               {downloadButton('flex')}
                {/* Total PnL / RR */}
                <div className="flex items-center justify-center lg:justify-start gap-2 px-3 py-1.5 bg-zinc-900/80 border border-zinc-800/80 rounded-xl shadow-xs overflow-hidden">
                  <div className="flex items-center gap-2">
-                   <span className="text-zinc-500 font-bold uppercase text-[10px] tracking-wider">{smartUpper("Aylık R:")}</span>
+                   <span className="text-zinc-500 font-bold uppercase text-[10px] tracking-wider whitespace-nowrap">{smartUpper("Aylık R:")}</span>
                    <span className={`font-black font-sans text-xs tabular-nums ${monthlyStats.totalRr > 1e-9 ? 'text-emerald-400' : monthlyStats.totalRr < -1e-9 ? 'text-rose-400' : 'text-zinc-400'}`}>
                      {formatR(monthlyStats.totalRr)}
                    </span>
@@ -299,10 +299,9 @@ export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], o
 
                {/* Trading Days */}
                <div className="flex items-center justify-center lg:justify-start gap-2 px-3 py-1.5 bg-zinc-900/80 border border-zinc-800/80 rounded-xl shadow-xs">
-                 <span className="text-zinc-500 font-bold uppercase text-[10px] tracking-wider">İşlem Günü:</span>
-                 <span className="font-extrabold text-zinc-200 font-sans text-xs">{monthlyStats.tradingDays} Gün</span>
+                 <span className="text-zinc-500 font-bold uppercase text-[10px] tracking-wider whitespace-nowrap">İşlem Günü:</span>
+                 <span className="font-extrabold text-zinc-200 font-sans text-xs whitespace-nowrap">{monthlyStats.tradingDays}<span className="hidden sm:inline"> Gün</span></span>
                </div>
-               {downloadButton('hidden lg:flex')}
              </div>
           </div>
           
