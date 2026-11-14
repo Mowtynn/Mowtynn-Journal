@@ -18,7 +18,7 @@ const loadXlsx = () => {
   return xlsxPromise;
 };
 
-export interface ExportOptions {
+interface ExportOptions {
   title?: string;
   definitionTitles?: Record<string, string>;
 }
@@ -26,7 +26,7 @@ export interface ExportOptions {
 /**
  * Tarih/saat metni. Proje genelinde tek saat dilimi America/New_York: dışa aktarımda da NY duvar saati yazılır.
  */
-export const formatDateTime = (timestamp: number) => {
+const formatDateTime = (timestamp: number) => {
   const d = nyWallDate(timestamp);
   if (!Number.isFinite(timestamp) || isNaN(d.getTime())) {
     return { date: '-', time: '-' };
@@ -306,7 +306,7 @@ export const exportJournalsToCSV = (journals: JournalEntry[], filename: string) 
 // 📝 NOTES (NOTLAR) EXPORT UTILITIES
 // ==========================================
 
-export const prepareNoteExportRows = (notes: Note[]) => {
+const prepareNoteExportRows = (notes: Note[]) => {
   return notes.map((n, index) => {
     const created = formatDateTime(n.createdAt);
     const updated = formatDateTime(n.updatedAt || n.createdAt);

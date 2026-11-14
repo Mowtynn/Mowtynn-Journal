@@ -14,7 +14,7 @@ import { Deferred, PaneLoader } from './common/Deferred';
 
 // Strateji laboratuvarı ayrı parçada; ekrana yaklaşınca indirilip çizilir
 /** breakdowns: Session · Gün · Parite kırılımları · lab: Strateji Laboratuvarı · all: ikisi */
-export type MetricsPart = 'all' | 'breakdowns' | 'lab';
+type MetricsPart = 'all' | 'breakdowns' | 'lab';
 
 const StrategyOptimizerHub = lazyWithPreload(() => named(import('./StrategyOptimizerHub'), 'StrategyOptimizerHub'));
 /** Laboratuvar parçasını önden indirir (sekme arka planda hazırlanırken) */

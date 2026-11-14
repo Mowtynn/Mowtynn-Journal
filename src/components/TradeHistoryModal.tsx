@@ -14,7 +14,7 @@ import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
 import { exportTradesToExcel, exportTradesToCSV } from "../utils/exportTrades";
 import { localDateKey } from '../utils/math';
 
-export interface TradeHistoryModalProps {
+interface TradeHistoryModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
@@ -368,11 +368,11 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                       <th className="py-2 px-2 text-center font-sans select-none w-[10%] min-w-[65px]">Yön</th>
                       <th className="py-2 px-2 text-center font-sans select-none w-[10%] min-w-[65px]">R</th>
                       <th className="py-2 px-2 text-center font-sans select-none w-[13%] min-w-[75px]">Session</th>
-                      <th className="py-2 px-2 text-center font-sans select-none w-[11%] min-w-[75px]">Trend</th>
+                      <th className="py-2 px-2 text-center font-sans select-none w-[15%] min-w-[110px]">Trend</th>
                       <th className="py-2 px-3 text-center font-sans select-none w-[13%] min-w-[80px]">
                         <div className="flex items-center justify-center w-full">Risk</div>
                       </th>
-                      <th className="py-2 px-2 text-center font-sans select-none w-[26%] min-w-[80px]">Hesap</th>
+                      <th className="py-2 px-2 text-center font-sans select-none w-[22%] min-w-[80px]">Hesap</th>
                     </tr>
                   </thead>
                   <tbody className="block sm:table-row-group">
@@ -415,7 +415,7 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                               </span>
                             </div>
                           </td>
-                          <td className="w-1/2 sm:w-[11%] sm:min-w-[75px] flex justify-end sm:justify-center items-center sm:table-cell order-4 py-1 px-0 sm:px-2 text-center sm:bg-zinc-900 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 align-middle">
+                          <td className="w-1/2 sm:w-[15%] sm:min-w-[110px] flex justify-end sm:justify-center items-center sm:table-cell order-4 py-1 px-0 sm:px-2 text-center sm:bg-zinc-900 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 align-middle">
                             <span className="sm:hidden heading-3 mr-2">Trend</span>
                             <div className="flex items-center justify-end sm:justify-center w-full h-[20px] min-w-0">
                               <TrendBadge trend={t.trend} />
@@ -427,12 +427,12 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                               <span className="text-sm sm:text-xs font-bold font-sans inline-flex items-center justify-center h-[20px] leading-none tracking-tight">{pnlText}</span>
                             </div>
                           </td>
-                          <td className="w-full sm:w-[26%] sm:min-w-[80px] flex justify-between sm:justify-center items-center sm:table-cell order-6 py-1 px-0 sm:px-2 text-center sm:bg-zinc-900 group-hover:bg-blue-950/10 sm:rounded-r-xl sm:border-y sm:border-r sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 sm:pt-1.5 pt-0 align-middle">
+                          <td className="w-full sm:w-[22%] sm:min-w-[80px] flex justify-between sm:justify-center items-center sm:table-cell order-6 py-1 px-0 sm:px-2 text-center sm:bg-zinc-900 group-hover:bg-blue-950/10 sm:rounded-r-xl sm:border-y sm:border-r sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 sm:pt-1.5 pt-0 align-middle">
                             <div className="sm:hidden trade-mobile-only">
                               <span className="heading-3">Hesap</span>
                             </div>
                             <div className="flex items-center justify-center w-full">
-                              <span title={getTradeAccountName(t)} className={`inline-block min-w-[54px] max-w-full h-[20px] leading-[18px] px-2.5 py-0 text-center text-[10px] font-bold border rounded-full uppercase tracking-wider font-sans transition-colors whitespace-nowrap truncate ${ACCOUNT_CATEGORY_BADGE[getTradeAccountCategory(t)]}`}>
+                              <span className={`inline-block min-w-[54px] max-w-full h-[20px] leading-[18px] px-2.5 py-0 text-center text-[10px] font-bold border rounded-full uppercase tracking-wider font-sans transition-colors whitespace-nowrap truncate ${ACCOUNT_CATEGORY_BADGE[getTradeAccountCategory(t)]}`}>
                                 {getTradeAccountName(t)}
                               </span>
                             </div>

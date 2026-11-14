@@ -34,13 +34,13 @@ export interface DimensionSlice {
   overlap?: { label: string; pct: number };
 }
 
-export interface RiskSlice {
+interface RiskSlice {
   riskPct: number;
   edge: EdgeStats;
 }
 
 /** İki giriş alanının birleşimi (ör. Asia Range: Trend + POI Sweep Saati: 02:00–02:30) */
-export interface PairSlice {
+interface PairSlice {
   dims: [SetupDimension, SetupDimension];
   values: [string, string];
   title: string;
@@ -52,7 +52,7 @@ export interface PairSlice {
 export const PAIR_MIN_LIFT = 0.25; // R / işlem
 
 /** Kural kartı: kesinleşmiş bulgular "Al" / "Alma" kuralına dönüşür */
-export interface EdgeRule {
+interface EdgeRule {
   kind: 'TAKE' | 'AVOID';
   title: string;
   source: 'Kurulum' | 'Alan' | 'Kombinasyon';
@@ -66,7 +66,7 @@ export interface EdgeRule {
 }
 
 
-export interface EdgeSummary {
+interface EdgeSummary {
   total: number;
   overall: EdgeStats;
   bestSetups: SetupRow[];
@@ -549,9 +549,9 @@ export function edgeReportRows(trades: Trade[], minSample = SETUP_MIN_SAMPLE): R
 /* Tesadüf testi (out-of-sample)                                       */
 /* ------------------------------------------------------------------ */
 
-export const OOS_MIN_TOTAL = 40;
+const OOS_MIN_TOTAL = 40;
 export type OosStatus = 'HELD' | 'FAILED' | 'UNTESTED';
-export interface OosFinding {
+interface OosFinding {
   title: string;
   kind: 'TAKE' | 'AVOID';
   source: 'Kurulum' | 'Alan' | 'Kombinasyon';
@@ -562,7 +562,7 @@ export interface OosFinding {
   status: OosStatus;
   match: (t: Trade) => boolean;
 }
-export interface OosResult {
+interface OosResult {
   ready: boolean;
   need: number;
   /** İkinci yarının ilk işleminin zamanı */

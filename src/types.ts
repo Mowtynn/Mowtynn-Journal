@@ -3,7 +3,7 @@ export type PlatformCategory = 'FUNDED' | 'CHALLENGE' | 'DEMO';
 export type AccountCategory = 'ALL' | 'FUNDED' | 'CHALLENGE' | 'DEMO';
 
 export const ASIA_RANGE_TYPES = ['Range', 'Trend', 'Swept'] as const;
-export type AsiaRangeType = (typeof ASIA_RANGE_TYPES)[number];
+type AsiaRangeType = (typeof ASIA_RANGE_TYPES)[number];
 /** Formda seçilebilenler. "Swept" kaldırıldı: yalnızca eski kayıtlarda görünür. */
 export const ASIA_RANGE_FORM_TYPES: readonly AsiaRangeType[] = ['Range', 'Trend'];
 
@@ -54,7 +54,7 @@ export interface Trade {
  * Prop firm hesabı. Bir "zincir" aynı değerlendirmenin aşamalarıdır: Phase 1 → Phase 2 → … → Funded.
  * Her aşama ayrı bir hesap kaydıdır (kendi bakiyesi sıfırdan başlar) ve chainId ile bağlıdır.
  */
-export type PropAccountStatus = 'ACTIVE' | 'PASSED' | 'BLOWN' | 'ARCHIVED';
+type PropAccountStatus = 'ACTIVE' | 'PASSED' | 'BLOWN' | 'ARCHIVED';
 
 /** Bir aşamanın kuralı (yüzde, hesap boyutuna göre) */
 export interface PropStageRule {

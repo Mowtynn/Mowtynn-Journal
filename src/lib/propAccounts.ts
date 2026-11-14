@@ -133,7 +133,7 @@ export function tradeDollarImpact(t: Trade, a?: Pick<PropAccount, 'size' | 'risk
   return Number.isFinite(t.rr) ? t.rr * risk : 0;
 }
 
-export interface PropAccountMetrics {
+interface PropAccountMetrics {
   trades: Trade[];
   tradeCount: number;
   balance: number;
@@ -264,7 +264,7 @@ export function groupChains(accounts: PropAccount[]): PropChain[] {
   return chains.sort((x, y) => Number(y.isActive) - Number(x.isActive) || y.lastActivity - x.lastActivity);
 }
 
-export interface PropBalanceSheet {
+interface PropBalanceSheet {
   feeTotal: number;
   payoutTotal: number;
   net: number;

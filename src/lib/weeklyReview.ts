@@ -11,7 +11,7 @@ import { computeEdgeSummary } from './edgeSummary';
  * günlük kaydı olarak (sabit kimlik: weekly-<pazartesi>) tutulur.
  */
 
-export const WEEKLY_TAG = 'haftalik';
+const WEEKLY_TAG = 'haftalik';
 /**
  * Kayıt kimliği: weekly-<pazartesi>[--<kapsam>]. TÜMÜ kapsamı ekisizdir (eski kayıtlarla uyumlu);
  * Challenge / Funded / Hesapsız ve tek hesap kendi değerlendirmesini ayrı tutar.
@@ -62,7 +62,7 @@ export function weekLabel(weekStart: string): string {
 
 const rOf = (t: Trade) => (typeof t.rr === 'number' && Number.isFinite(t.rr) ? t.rr : 0);
 
-export interface WeekTotals {
+interface WeekTotals {
   n: number;
   netR: number;
   wins: number;
@@ -89,7 +89,7 @@ const totals = (list: Trade[]): WeekTotals => {
   };
 };
 
-export interface WeekDay {
+interface WeekDay {
   key: string;
   /** 0 = Pazartesi … 6 = Pazar */
   index: number;
@@ -97,13 +97,13 @@ export interface WeekDay {
   netR: number;
 }
 
-export interface WeekSetup {
+interface WeekSetup {
   label: string;
   n: number;
   netR: number;
 }
 
-export interface WeekViolation {
+interface WeekViolation {
   /** "edge:<başlık>" — Kurallarım'daki (verinden çıkan) ALMA kuralı */
   id: `edge:${string}`;
   title: string;
@@ -112,7 +112,7 @@ export interface WeekViolation {
   tradeIds: string[];
 }
 
-export interface WeekReview {
+interface WeekReview {
   weekStart: string;
   label: string;
   trades: Trade[];

@@ -9,7 +9,7 @@ import { tradeBelongsTo } from './propAccounts';
  * Hesapsız işlemler hiçbir prop kapsamına karışmaz; tek hesap seçiliyse yalnızca o hesabın işlemleri sayılır.
  */
 
-export interface AccountScope {
+interface AccountScope {
   category: AccountCategory;
   /** Yalnızca CHALLENGE / FUNDED altında: seçili prop hesabı (PropAccount.id) */
   accountId: string | null;
@@ -23,7 +23,7 @@ export interface AccountScope {
 export const UNLINKED = '__unlinked';
 
 /** Çözümlenmiş kapsam: tek hesap, ya da kategorinin bağsız işlemleri, ya da kategorinin tamamı */
-export interface ResolvedScope {
+interface ResolvedScope {
   scope: AccountScope;
   account: PropAccount | null;
   /** Bağsız işlemler seçiliyse kategorideki tüm hesaplar (bunlara ait olmayanlar kapsamdadır) */

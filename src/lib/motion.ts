@@ -21,7 +21,7 @@ export const SPRING = {
  * Açılış yavaşça yerine oturur (expo-out), kapanış biraz daha hızlı ve aynı yoldan geri döner.
  * Yalnızca opacity + transform canlandırılır (compositor'da çalışır, ana iş parçacığını yormaz).
  */
-export const EASE_IN: [number, number, number, number] = [0.4, 0, 1, 1];
+const EASE_IN: [number, number, number, number] = [0.4, 0, 1, 1];
 
 export const MODAL_BACKDROP = {
   initial: { opacity: 0 },

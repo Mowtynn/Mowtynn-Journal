@@ -6,7 +6,7 @@ import { getTradeAccountCategory, getTradeAccountName, ACCOUNT_CATEGORY_BADGE } 
 import { Edit3, Trash2 } from 'lucide-react';
 import { nyWallDate } from '../../lib/tradingTime';
 
-export const tradeRowDateFormatter = new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' });
+const tradeRowDateFormatter = new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' });
 export const TR_COLLATOR = new Intl.Collator('tr', { sensitivity: 'base' });
 
 export const MemoizedTradeRow = React.memo(function MemoizedTradeRow({ 
@@ -68,7 +68,7 @@ export const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
           </div>
         </div>
       </td>
-      <td className="w-1/2 min-w-[75px] flex justify-end sm:justify-center items-center sm:table-cell order-4 py-1 px-0 sm:px-2 text-center sm:bg-transparent sm:border-y sm:border-zinc-800/80 mt-1.5 sm:mt-0 align-middle sm:w-[11%]">
+      <td className="w-1/2 min-w-[75px] flex justify-end sm:justify-center items-center sm:table-cell order-4 py-1 px-0 sm:px-2 text-center sm:bg-transparent sm:border-y sm:border-zinc-800/80 mt-1.5 sm:mt-0 align-middle sm:w-[15%]">
         <span className="sm:hidden heading-3 mr-2">Trend</span>
         <div className="flex items-center justify-end sm:justify-center w-full h-[20px] min-w-0">
           <TrendBadge trend={trade.trend} />
@@ -81,10 +81,10 @@ export const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
         </div>
       </td>
       {(
-        <td className="hidden sm:table-cell sm:w-[22%] sm:min-w-[75px] py-1.5 px-2 text-center bg-transparent border-y border-zinc-800/80 align-middle">
+        <td className="hidden sm:table-cell sm:w-[18%] sm:min-w-[75px] py-1.5 px-2 text-center bg-transparent border-y border-zinc-800/80 align-middle">
           <div className="flex items-center justify-center w-full">
             {accountLabel ? (
-              <span title={accountLabel} className={`inline-block min-w-[54px] max-w-full h-[20px] leading-[18px] px-2 py-0 text-center text-[10px] font-bold rounded-full uppercase tracking-normal font-sans whitespace-nowrap truncate border transition-colors ${categoryBadgeClass}`}>
+              <span className={`inline-block min-w-[54px] max-w-full h-[20px] leading-[18px] px-2 py-0 text-center text-[10px] font-bold rounded-full uppercase tracking-normal font-sans whitespace-nowrap truncate border transition-colors ${categoryBadgeClass}`}>
                 {accountLabel}
               </span>
             ) : (
@@ -97,7 +97,7 @@ export const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
         {true && (
           <div className="sm:hidden trade-mobile-only">
             {accountLabel ? (
-              <span title={accountLabel} className={`inline-block min-w-[46px] max-w-[200px] h-[20px] leading-[18px] px-2.5 py-0 text-center text-[10px] font-bold rounded-full uppercase tracking-wider font-sans whitespace-nowrap truncate border ${categoryBadgeClass}`}>
+              <span className={`inline-block min-w-[46px] max-w-[200px] h-[20px] leading-[18px] px-2.5 py-0 text-center text-[10px] font-bold rounded-full uppercase tracking-wider font-sans whitespace-nowrap truncate border ${categoryBadgeClass}`}>
                 {accountLabel}
               </span>
             ) : null}

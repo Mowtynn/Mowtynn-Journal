@@ -188,7 +188,7 @@ export const RuleSimulatorTab = React.memo(function RuleSimulatorTab({ trades }:
               Temizle
             </button>
           )}
-          <span className="ml-auto text-[11px] font-medium text-zinc-500 truncate max-w-full" title={ruleText}>{ruleText}</span>
+          <span className="ml-auto text-[11px] font-medium text-zinc-500 truncate max-w-full">{ruleText}</span>
         </div>
       </div>
 

@@ -8,7 +8,7 @@ import { nyDateKey, nyWallDate } from './tradingTime';
  * Yalnızca ekranda gösterilen değerler hesaplanır.
  */
 
-export interface EquityPoint {
+interface EquityPoint {
   timestamp: number;
   label: string;
   cumulativePnl: number;
@@ -17,7 +17,7 @@ export interface EquityPoint {
   trade: Trade;
 }
 
-export interface SideStats {
+interface SideStats {
   count: number;
   wins: number;
   winRate: number;

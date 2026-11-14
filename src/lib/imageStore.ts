@@ -10,12 +10,12 @@ import { db } from './firebase';
  * çevrimdışıyken de fotoğraf eklenir ve hemen görünür.
  */
 
-export const IMAGE_REF_PREFIX = 'fsimg:';
+const IMAGE_REF_PREFIX = 'fsimg:';
 export const isImageRef = (v: unknown): v is string => typeof v === 'string' && v.startsWith(IMAGE_REF_PREFIX);
-export const isDataImage = (v: unknown): v is string => typeof v === 'string' && /^data:image\//i.test(v);
+const isDataImage = (v: unknown): v is string => typeof v === 'string' && /^data:image\//i.test(v);
 
 /** Belgeye yazılabilecek en uzun data URL (karakter). Firestore sınırı 1 MiB; alan adları ve kural payı için altında. */
-export const MAX_IMAGE_CHARS = 900_000;
+const MAX_IMAGE_CHARS = 900_000;
 
 const COLLECTION = 'images';
 const memory = new Map<string, Promise<string | null>>();

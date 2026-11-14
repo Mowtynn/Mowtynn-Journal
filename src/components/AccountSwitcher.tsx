@@ -181,7 +181,6 @@ export const AccountSwitcher: React.FC<AccountSwitcherProps> = React.memo(({
         type="button"
         role="option"
         aria-selected={sel}
-        title={account.name}
         onClick={() => select(opt.id, account.id)}
         className={`w-full h-7.5 shrink-0 pl-6 pr-2 text-left rounded-lg transition-ui flex items-center justify-between gap-2 cursor-pointer border ${
           sel ? `${opt.activeBgClass} ${opt.activeBorderClass}` : 'border-transparent hover:bg-zinc-800/80'

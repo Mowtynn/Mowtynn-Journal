@@ -128,7 +128,6 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
               role="tab"
               aria-selected={isActive}
               tabIndex={isActive ? 0 : -1}
-              title={tab.desc}
               onClick={() => setActiveSubTab(tab.id)}
               className={`relative min-w-0 px-2 py-2.5 text-xs font-bold rounded-xl ${lastOdd ? 'col-span-2 sm:col-span-1' : ''} transition-ui duration-150 cursor-pointer select-none ${
                 isActive ? 'text-blue-400' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60'

@@ -89,7 +89,7 @@ export const WeeklyReview = React.memo(function WeeklyReview({
           </div>
           <div className="min-w-0">
             <h2 className="text-sm font-bold uppercase tracking-wide text-zinc-100 leading-none">Haftalık değerlendirme</h2>
-            <p className="text-[11px] text-zinc-500 font-sans mt-1 sm:truncate" title={`${review.label} · ${scopeName}`}>
+            <p className="text-[11px] text-zinc-500 font-sans mt-1 sm:truncate">
               {review.label} · <span className="text-zinc-300 font-semibold">{scopeName}</span>
               {isAnswered(entry?.weekly) ? " · yazıldı" : ""}
             </p>
@@ -135,7 +135,7 @@ export const WeeklyReview = React.memo(function WeeklyReview({
               <div className="flex items-baseline justify-between gap-2">
                 <p className={`text-lg font-bold tabular-nums leading-tight ${tone(t.netR)}`}>{fmtR(t.netR)}</p>
                 {p.n > 0 && (
-                  <span className={`text-[10px] font-bold tabular-nums whitespace-nowrap ${tone(delta)}`} title="Geçen haftaya göre fark">
+                  <span className={`text-[10px] font-bold tabular-nums whitespace-nowrap ${tone(delta)}`}>
                     {delta > 0 ? "▲" : delta < 0 ? "▼" : "="} {rnum(Math.abs(delta))}R
                   </span>
                 )}
@@ -218,7 +218,7 @@ export const WeeklyReview = React.memo(function WeeklyReview({
                         <li key={v.id} className="flex items-center justify-between gap-2 rounded-xl border border-rose-500/25 bg-rose-500/5 px-3 py-1.5">
                           <span className="flex items-center gap-1.5 text-xs font-semibold text-rose-200 min-w-0">
                             <ShieldAlert size={13} className="text-rose-300 shrink-0" />
-                            <span className="truncate" title={v.title}>{v.title}</span>
+                            <span className="truncate">{v.title}</span>
                           </span>
                           <span className="text-[11px] font-bold tabular-nums text-zinc-400 shrink-0">
                             {v.count}× · <span className={tone(v.costR)}>{fmtR(v.costR)}</span>
@@ -263,7 +263,7 @@ export const WeeklyReview = React.memo(function WeeklyReview({
           {/* Sağ: üç soru — kutular kalan yüksekliği paylaşır */}
           <section className={`${card} flex flex-col gap-2.5 lg:min-h-0`}>
             {prevFocus && (
-              <div className="flex items-center gap-2 rounded-xl border border-blue-500/25 bg-blue-500/5 px-3 py-1.5 min-w-0 shrink-0" title={prevFocus}>
+              <div className="flex items-center gap-2 rounded-xl border border-blue-500/25 bg-blue-500/5 px-3 py-1.5 min-w-0 shrink-0">
                 <Target size={13} className="text-blue-300 shrink-0" />
                 <span className="text-[10px] font-bold uppercase tracking-wider text-blue-300 shrink-0">{smartUpper("Bu haftanın odağı")}</span>
                 <span className="text-xs text-zinc-200 truncate">{prevFocus}</span>

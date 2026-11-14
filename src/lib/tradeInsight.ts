@@ -7,11 +7,11 @@ import { dimensionValue, verdictFor, DEFAULT_SETUP_DIMENSIONS, SETUP_DIMENSIONS,
  * İşlem detayı için içgörü: gerçekleşen R ve kurulumun geçmiş karnesi. Saf fonksiyon, testli.
  */
 
-export interface PricePath {
+interface PricePath {
   realizedR: number;
 }
 
-export interface SetupHistory {
+interface SetupHistory {
   labels: { dimension: string; value: string }[];
   /** Bu işlem HARİÇ aynı kurulumdaki işlemler */
   others: EdgeStats;
@@ -29,7 +29,7 @@ export function computePricePath(t: Trade): PricePath {
 }
 
 /** Karşılaştırma havuzu: hesapsız (demo) işlem yalnızca hesapsızlarla, prop işlemi yalnızca prop işlemleriyle (Challenge + Funded) */
-export function insightPool(trade: Trade, allTrades: Trade[]): Trade[] {
+function insightPool(trade: Trade, allTrades: Trade[]): Trade[] {
   const isDemo = getTradeAccountCategory(trade) === 'DEMO';
   return allTrades.filter((t) => (getTradeAccountCategory(t) === 'DEMO') === isDemo);
 }

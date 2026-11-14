@@ -8,9 +8,9 @@ import { edgeFromR, type EdgeStats } from './asiaAnalytics';
  * Karşılaştırma ancak her iki tarafta da yeterli işlem varken yapılır (aksi halde "veri az").
  */
 export const DRIFT_RECENT = 20;
-export const DRIFT_MIN_TOTAL = 40;
+const DRIFT_MIN_TOTAL = 40;
 
-export type DriftDirection = 'WEAKENING' | 'IMPROVING' | 'STABLE';
+type DriftDirection = 'WEAKENING' | 'IMPROVING' | 'STABLE';
 export interface EdgeDrift {
   ready: boolean;
   /** Karşılaştırma için gereken toplam işlem */

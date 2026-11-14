@@ -41,7 +41,7 @@ function loadDims(): SetupDimension[] {
 function SetupHighlight({ row, tone }: { row: SetupRow; tone: 'good' | 'bad' }) {
   return (
     <div className="flex items-center justify-between gap-2 rounded-xl border border-zinc-800/80 bg-zinc-950/40 px-3 py-2">
-      <span className="text-xs font-bold text-zinc-200 truncate" title={row.labels.join(' · ')}>{row.labels.join(' · ')}</span>
+      <span className="text-xs font-bold text-zinc-200 truncate">{row.labels.join(' · ')}</span>
       <span className={`text-xs font-extrabold tabular-nums shrink-0 ${tone === 'good' ? 'text-emerald-300' : 'text-rose-300'}`}>
         {sR(row.edge.expectancy)} · {row.edge.n} işlem
       </span>

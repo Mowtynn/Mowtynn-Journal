@@ -27,7 +27,7 @@ const getNyFormatter = (): Intl.DateTimeFormat => {
 const WEEKDAY_INDEX: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
 export const WEEKDAY_NAMES_TR = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
 
-export interface NyParts {
+interface NyParts {
   date: string;     // YYYY-MM-DD (NY calendar date)
   hour: number;     // 0-23
   minute: number;   // 0-59
@@ -120,14 +120,14 @@ export function normalizePair(asset?: string | null): string {
   return canonicalAsset(asset) || 'BELİRSİZ';
 }
 
-export type SweepSide = 'HIGH' | 'LOW';
+type SweepSide = 'HIGH' | 'LOW';
 /** The Asia model fades the swept side: Asia high swept -> SHORT, Asia low swept -> LONG. */
 /**
  * Süpürülen Asia tarafı yalnızca REVERSAL işlemlerde anlamlıdır (Asia high/low alınıp ters yöne dönüş):
  * short → High, long → Low. Continuation işlemlerinde Asia high/low süpürmesi girişle ilgisiz olduğu için null.
  * (Asia Range "Swept" alanından türetilmez; Trend Yapısı alanına bakılır.)
  */
-export function isReversalTrend(trend?: string | null): boolean {
+function isReversalTrend(trend?: string | null): boolean {
   const v = (trend || '').toLocaleLowerCase('tr');
   return v.includes('reversal') || v.includes('dönüş') || v.includes('ters');
 }

@@ -5,7 +5,7 @@ import { createElement, lazy, useRef, type ComponentType } from 'react';
  * Parça önceden indirilmişse bileşen ASKIYA ALINMADAN, ilk karede doğrudan çizilir
  * (düz React.lazy, indirilmiş olsa bile ilk çizimde bir kez "yükleniyor"a düşer ve içerik geç gelir).
  */
-export type PreloadableComponent<T extends ComponentType<any>> = T & { preload: () => Promise<unknown> };
+type PreloadableComponent<T extends ComponentType<any>> = T & { preload: () => Promise<unknown> };
 
 export function lazyWithPreload<T extends ComponentType<any>>(factory: () => Promise<{ default: T }>): PreloadableComponent<T> {
   let pending: Promise<{ default: T }> | null = null;

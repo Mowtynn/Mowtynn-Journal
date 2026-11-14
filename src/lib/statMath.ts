@@ -1,5 +1,5 @@
 // RMultiple definition and Type Guard to strictly disallow PNL values in stats engine
-export type RMultiple = number & { readonly __brand: 'RR' };
+type RMultiple = number & { readonly __brand: 'RR' };
 
 // Use this to cast valid RR metrics to the strictly checked type
 export const toRR = (val: number | undefined | null): RMultiple => {

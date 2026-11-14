@@ -10,7 +10,7 @@ import { nyDateKey } from './tradingTime';
  * Saf fonksiyonlar: aynı girdi + aynı tohum → aynı sonuç.
  */
 
-export interface AccountRInsights {
+interface AccountRInsights {
   tradeCount: number;
   wins: number;
   losses: number;
@@ -50,7 +50,7 @@ export interface AccountRInsights {
 }
 
 /** Karşılaştırılan risk seviyeleri (hesap boyutunun %'si) */
-export const RISK_LEVELS = [0.25, 0.5, 0.75, 1, 1.5, 2];
+const RISK_LEVELS = [0.25, 0.5, 0.75, 1, 1.5, 2];
 /** Değerlendirmede kabul edilen en yüksek hesabı yakma olasılığı (%); bu sınırın altında, geçme olasılığı en yükseğe yakın olan en hızlı seviye önerilir */
 export const MAX_BUST_PCT = 15;
 /** Funded'da önerilecek seviyenin en az ayakta kalma olasılığı (%) */
@@ -81,7 +81,7 @@ function rng(seed: number) {
 /** Olasılık için en az R örneği: 10 işlemlik geçmişten çekilen simülasyon birkaç uç sonuca çok bağlı kalıyordu */
 export const MIN_SIMULATION_SAMPLE = 20;
 /** Hesabın kendi işlemleri bu sayıya ulaşınca örneklem hesabın kendisinden alınır */
-export const OWN_SAMPLE_THRESHOLD = 20;
+const OWN_SAMPLE_THRESHOLD = 20;
 
 export function computeAccountRInsights(
   account: PropAccount,

@@ -23,19 +23,19 @@ auth.languageCode = 'tr';
 // Ensure persistence is explicitly local
 setPersistence(auth, browserLocalPersistence).catch(console.error);
 
-export const googleProvider = new GoogleAuthProvider();
+const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({
   prompt: 'select_account'
 });
 
 // Mobile environment check
-export const isMobileDevice = () => {
+const isMobileDevice = () => {
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
     (window.innerWidth <= 768 && ('ontouchstart' in window || navigator.maxTouchPoints > 0));
 };
 
 // Check if running inside iframe
-export const isInIframe = () => {
+const isInIframe = () => {
   try {
     return window.self !== window.top;
   } catch (e) {

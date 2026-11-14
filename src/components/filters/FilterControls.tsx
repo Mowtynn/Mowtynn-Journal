@@ -19,7 +19,7 @@ export const FILTER_SELECT =
   'h-8 sm:h-7 bg-zinc-950 border border-zinc-800 hover:border-zinc-600 focus:border-blue-500 rounded-lg px-2 text-[11px] font-bold font-sans text-zinc-200 focus:outline-none transition-ui cursor-pointer';
 
 /** Seçili renk: "Tümü" nötr, genel seçim marka mavisi; sonuç / yön için kazanç yeşili, kayıp kırmızısı (projedeki WIN / LOSS / BE renkleriyle aynı) */
-export type FilterTone = 'brand' | 'win' | 'loss' | 'neutral';
+type FilterTone = 'brand' | 'win' | 'loss' | 'neutral';
 const TONE_ACTIVE: Record<FilterTone, string> = {
   brand: 'bg-blue-500/15 border-blue-500/40 text-blue-200',
   win: 'bg-emerald-500/15 border-emerald-500/40 text-emerald-200',
@@ -36,7 +36,6 @@ export const FilterChip = ({
   children,
   tone = 'brand',
   check = true,
-  title,
 }: {
   active: boolean;
   onClick: () => void;
@@ -44,13 +43,11 @@ export const FilterChip = ({
   tone?: FilterTone;
   /** Seçiliyken tik işareti (çoklu seçimde açık, "Tümü" gibi tekli seçimde kapalı) */
   check?: boolean;
-  title?: string;
 }) => (
   <button
     type="button"
     lang="en"
     aria-pressed={active}
-    title={title}
     onClick={onClick}
     className={`h-8 sm:h-7 px-2.5 inline-flex items-center gap-1 rounded-lg border text-[10px] font-bold font-sans uppercase tracking-wider whitespace-nowrap transition-ui cursor-pointer select-none ${
       active ? TONE_ACTIVE[tone] : CHIP_IDLE
@@ -127,7 +124,7 @@ export const TypeMultiSelect = ({ selectedValues, onChange }: { selectedValues: 
 );
 
 
-export interface FilterAccordionRowProps {
+interface FilterAccordionRowProps {
   icon: React.ReactNode;
   title: string;
   summaryText: string;

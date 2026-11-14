@@ -24,7 +24,7 @@ import { formatR, trPossessive, rnum } from '../../lib/format';
  * Her satır tıklanınca ilgili işlemler geçmiş penceresinde açılır.
  */
 
-export type ShowTrades = (title: string, trades: Trade[]) => void;
+type ShowTrades = (title: string, trades: Trade[]) => void;
 
 const fmt = (v: number, d = 2) => v.toLocaleString('en-US', { maximumFractionDigits: d });
 // R değerleri her yerde sabit ondalıkla: "+0.80R" ("+0.8R" değil), sütunlar hizalı okunur
@@ -63,7 +63,7 @@ const sectionTitle = 'text-[10px] font-bold uppercase tracking-wider flex items-
 
 /* ---------- bulgu güveni rozeti ---------- */
 /** relativeSure verilirse (Daha çok yap) "Kanıtlı", sıfıra göre değil geri kalandan iyi olmanın kesinliğine göre gösterilir */
-export function SignalBadge({ edge, relativeSure }: { edge: EdgeStats; relativeSure?: boolean }) {
+function SignalBadge({ edge, relativeSure }: { edge: EdgeStats; relativeSure?: boolean }) {
   const strong = signalStrength(edge) === 'CONFIRMED' && relativeSure !== false;
   const neg = edge.expectancy < 0;
   if (strong) {

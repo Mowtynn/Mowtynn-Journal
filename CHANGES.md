@@ -946,3 +946,9 @@ Klasik tasarım korunarak, son eklenen alanlar (risk %, hesap bağı, strateji, 
   - Kurulum kartı: Setup Kalitesi / News Day / Asia Range bölümleri yeniden sıkı; artan boşluk yalnızca alttaki kurulum ızgarasının satırlarına dağılır.
   - POI Sweep adı her yerde: Detaylı Analiz (Asia Edge Lab ısı tablosu ve başlıkları, Kurulum Karnesi ve Edge Özeti boyutu, filtre), işlem detayı, Tanımlamalar ve Excel sütunu ("POI Sweep Saati (30 dk)").
   - Edge Özeti kural zamanları: eski "Sweep Saati" kayıtları yeni adla taşınır (ilk görülme zamanı korunur), kaldırılan girdilere (Entry TF, PD Array, Yönetim, Sweep→Giriş …) ait artık kayıtlar depodan silinir.
+
+- Form sıkılaştırma, Trend sütunu, araç ipuçları ve ölü kod
+  - Sonuç R kartı daha sıkı (iç boşluklar ve hızlı seçim düğmeleri küçüldü); POI Sweep / Entry Model / Target satır aralıkları buna paralel kısaldı; sağdaki Grafik ve Notlar aynı boya uyar.
+  - İşlem listesi / geçmişi: Trend sütunu genişledi, rozet metni kesilmez (Continuation tam görünür).
+  - Araç ipuçları: yalnızca analiz metriklerini açıklayanlar kaldı (beklenti aralığı, başabaş kazanma oranı, eğilim, az veri uyarıları, panel açıklamaları). Hesap adı, sekme açıklaması, kesilen metin gibi gereksiz ipuçları kaldırıldı.
+  - Ölü kod: yalnızca kendi dosyasında kullanılan 71 dışa aktarım kapatıldı, kullanılmayan FilterChip başlık özelliği silindi; kullanılmayan dosya / bağımlılık yok.

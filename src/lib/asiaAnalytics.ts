@@ -78,7 +78,7 @@ export interface EdgeStats {
   tradesNeeded: number | null; // extra trades for the CI lower bound to clear 0 at the current mean/sd
 }
 
-export const EMPTY_EDGE: EdgeStats = {
+const EMPTY_EDGE: EdgeStats = {
   n: 0,
   wins: 0,
   losses: 0,
@@ -197,7 +197,7 @@ export function computeEdge(trades: Trade[]): EdgeStats {
 /* Grouping                                                            */
 /* ------------------------------------------------------------------ */
 
-export interface GroupRow {
+interface GroupRow {
   key: string;
   stats: EdgeStats;
 }
@@ -224,7 +224,7 @@ const hasNum = (v: unknown): v is number => typeof v === 'number' && Number.isFi
 /* Data completeness                                                   */
 /* ------------------------------------------------------------------ */
 
-export interface CoverageRow {
+interface CoverageRow {
   field: string;
   label: string;
   filled: number;
@@ -336,7 +336,7 @@ export function computeCoverage(trades: Trade[]): CoverageRow[] {
 /* Main analysis                                                       */
 /* ------------------------------------------------------------------ */
 
-export interface HourPairCell {
+interface HourPairCell {
   n: number;
   expectancy: number;
   netR: number;
@@ -350,7 +350,7 @@ export interface AsiaLabResult {
   coverage: CoverageRow[];
 }
 
-export interface AsiaLabOptions {
+interface AsiaLabOptions {
   dataset: DatasetKey;
   pair: string; // 'ALL' or normalized pair
   minSample: number;

@@ -8,7 +8,7 @@ export function isLowQualitySetup(planFidelity?: string | null): boolean {
   return pf === 'b-c' || pf === 'b' || pf === 'c' || pf === 'fomo' || pf.includes('ihlal') || pf.includes('disiplinsiz') || pf.includes('intikam') || pf.includes('düşük');
 }
 
-export type SetupQualityTier = 'high' | 'mid' | 'low';
+type SetupQualityTier = 'high' | 'mid' | 'low';
 export function setupQualityTier(planFidelity?: string | null): SetupQualityTier | null {
   const pf = (planFidelity || '').trim().toLocaleLowerCase('tr');
   if (!pf) return null;

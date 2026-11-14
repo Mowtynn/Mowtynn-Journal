@@ -22,7 +22,7 @@ const MULTI: Partial<Record<SetupDimension, (t: Trade) => string[] | undefined>>
   tpTargets: (t) => t.tpTargets,
 };
 
-export function ruleValues(t: Trade, dim: SetupDimension): string[] {
+function ruleValues(t: Trade, dim: SetupDimension): string[] {
   const get = MULTI[dim];
   if (get) {
     const list = (get(t) || []).map((x) => x.trim()).filter(Boolean);
@@ -46,7 +46,7 @@ export function ruleOptions(trades: Trade[], dim: SetupDimension): string[] {
   return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'tr')).map(([v]) => v);
 }
 
-export interface RuleSimResult {
+interface RuleSimResult {
   total: number;
   all: EdgeStats;
   taken: EdgeStats;

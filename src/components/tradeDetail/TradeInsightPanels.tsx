@@ -37,7 +37,7 @@ export function ResultPanel({ trade, realizedR }: { trade: Trade; realizedR: num
       </div>
       <div className="min-w-0 flex flex-col items-end gap-1.5 text-right">
         <span className="flex items-center justify-end gap-1.5 min-w-0 max-w-full text-xs font-bold text-zinc-200">
-          {accountName && <span className="truncate min-w-0" title={rawName}>{accountName}</span>}
+          {accountName && <span className="truncate min-w-0">{accountName}</span>}
           <span className={`shrink-0 text-[9px] px-1.5 py-0.5 rounded-md font-bold uppercase border ${ACCOUNT_CATEGORY_BADGE[cat]}`}>{stage}</span>
         </span>
         {(hasRisk || dollars !== null) && (

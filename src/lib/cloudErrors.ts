@@ -29,14 +29,14 @@ export function muteAuthErrors(ms = 5000): void {
 const DEDUPE_MS = 15_000;
 
 /** Hata kodunu (Firestore: "permission-denied", Storage: "storage/unauthorized") ayıklar */
-export function cloudErrorCode(err: unknown): string {
+function cloudErrorCode(err: unknown): string {
   const raw = (err as { code?: unknown })?.code;
   if (typeof raw !== 'string') return 'unknown';
   return raw.replace(/^firestore\//, '');
 }
 
 /** Kullanıcıya gösterilecek açıklama */
-export function describeCloudError(err: unknown, fallback = 'Bulut işlemi başarısız oldu.'): string {
+function describeCloudError(err: unknown, fallback = 'Bulut işlemi başarısız oldu.'): string {
   return MESSAGES[cloudErrorCode(err)] ?? fallback;
 }
 

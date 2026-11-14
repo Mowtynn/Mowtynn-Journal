@@ -254,7 +254,7 @@ export const SetupChips = React.memo(function SetupChips({
       </div>
 
       {/* KURULUM SIRASI: POI Sweep Time · Session · Entry Model · Confirmations · Target (tam genişlik) */}
-      <div className="flex-1 grid grid-cols-2 content-between gap-x-4 gap-y-4 pt-1 border-t border-zinc-800/60">
+      <div className="flex-1 grid grid-cols-2 content-between gap-x-4 gap-y-3 pt-1 border-t border-zinc-800/60">
         {/* SWEEP TIME (NY) */}
         <div className="flex flex-col">
           <span lang="en" className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
@@ -354,7 +354,7 @@ export const SetupChips = React.memo(function SetupChips({
 
 
         {/* TARGET — çıkış hedefi (çoklu). En altta tam genişlik: seçenekler yan yana uzar, sıkışmaz */}
-        <div className="col-span-2 flex flex-col pt-3 border-t border-zinc-800/60">
+        <div className="col-span-2 flex flex-col pt-2.5 border-t border-zinc-800/60">
           <span lang="en" className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
             <Flag size={12} className="text-blue-400 shrink-0" />
             {H("tpTargets", "TARGET")}

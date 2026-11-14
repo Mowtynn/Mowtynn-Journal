@@ -82,14 +82,14 @@ export const ResultCard = React.memo(function ResultCard({
   };
 
   return (
-    <div className="tf-card flex-1 bg-zinc-900/50 border border-zinc-800/80 rounded-2xl p-4 flex flex-col gap-3.5 shadow-sm">
+    <div className="tf-card flex-1 bg-zinc-900/50 border border-zinc-800/80 rounded-2xl p-4 flex flex-col gap-3 shadow-sm">
       <div className="flex items-center gap-2 pb-2.5 border-b border-zinc-800/60">
         <Activity size={14} className="text-blue-400" />
         <span className="text-xs font-bold text-zinc-200 uppercase tracking-wider font-sans">{L("financialCard")}</span>
       </div>
 
       {/* Kart sütun yüksekliğini doldurur (altta boşluk kalmaz); içerik ortada durur */}
-      <div className={`flex-1 rounded-xl border p-3 flex flex-col justify-center gap-2.5 transition-ui duration-500 ease-out ${tone.box}`}>
+      <div className={`flex-1 rounded-xl border px-3 py-2.5 flex flex-col justify-center gap-2 transition-ui duration-500 ease-out ${tone.box}`}>
         <div className="flex items-center gap-2">
           <label htmlFor="tf-result-r" className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-zinc-400 font-sans">
             {L("rr")}
@@ -102,7 +102,7 @@ export const ResultCard = React.memo(function ResultCard({
             <button
               type="button"
               aria-pressed={!neg}
-              title="Kazanç (+)"
+              aria-label="Kazanç (+)"
               onClick={() => setSign(false)}
               className={`flex-1 w-9 text-xs font-bold leading-none transition-ui duration-300 ease-out cursor-pointer ${!neg ? "bg-emerald-500/15 text-emerald-300" : "text-zinc-500 hover:text-zinc-200 hover:bg-zinc-900"}`}
             >
@@ -111,7 +111,7 @@ export const ResultCard = React.memo(function ResultCard({
             <button
               type="button"
               aria-pressed={neg}
-              title="Kayıp (−)"
+              aria-label="Kayıp (−)"
               onClick={() => setSign(true)}
               className={`flex-1 w-9 text-xs font-bold leading-none border-t border-zinc-800 transition-ui duration-300 ease-out cursor-pointer ${neg ? "bg-rose-500/15 text-rose-300" : "text-zinc-500 hover:text-zinc-200 hover:bg-zinc-900"}`}
             >
@@ -171,7 +171,7 @@ export const ResultCard = React.memo(function ResultCard({
                 type="button"
                 aria-pressed={on}
                 onClick={() => setRrValue(v)}
-                className={`h-8 rounded-lg border text-[11px] font-bold tabular-nums transition-ui duration-300 ease-out cursor-pointer ${
+                className={`h-7 rounded-lg border text-[11px] font-bold tabular-nums transition-ui duration-300 ease-out cursor-pointer ${
                   on ? `bg-zinc-800 border-zinc-500 ${cls}` : `bg-zinc-950/60 border-zinc-800 ${cls} opacity-75 hover:opacity-100 hover:border-zinc-600`
                 }`}
               >

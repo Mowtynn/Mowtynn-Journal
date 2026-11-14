@@ -10,7 +10,7 @@ export const NO_ACCOUNT = "__none__";
 
 export type Num = number | "";
 export type SetState<T> = React.Dispatch<React.SetStateAction<T>>;
-export type TitleFn = (key: keyof DefinitionTitles) => string;
+type TitleFn = (key: keyof DefinitionTitles) => string;
 /** name: işleme yazılan tam ad ("FTMO 100K · Phase 1"); label: çipte görünen zincir adı (aşama ayrıca rozetle gösterilir) */
 export type AccountOption = { id: string; name: string; label: string; stage: number; size?: number; status?: PropAccount["status"] };
 
@@ -86,7 +86,7 @@ export function useTitles(definitionTitles: DefinitionTitles) {
 }
 export type Titles = ReturnType<typeof useTitles>;
 
-export const SLIDE_SPRING = SPRING.indicator;
+const SLIDE_SPRING = SPRING.indicator;
 export function SlideBg({ id, className, rounded = "rounded-lg" }: { id: string; className: string; rounded?: string }) {
   return (
     <motion.span

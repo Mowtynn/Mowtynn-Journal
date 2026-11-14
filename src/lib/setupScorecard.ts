@@ -121,20 +121,20 @@ export function verdictFor(e: EdgeStats, minSample = SETUP_MIN_SAMPLE): SetupVer
  * EDGE_PROOF_MIN işlemle "kesin" sayılır; olumsuz bulgu (sızıntı) aralığın üst sınırı sıfırın altındaysa
  * örneklem büyüklüğünü beklemeden kesindir. Geri kalan her şey "erken sinyal"dir.
  */
-export type SignalStrength = 'CONFIRMED' | 'EARLY';
+type SignalStrength = 'CONFIRMED' | 'EARLY';
 export function signalStrength(e: Pick<EdgeStats, 'n' | 'expLo' | 'expHi' | 'expectancy'>): SignalStrength {
   if (e.expectancy > 0) return e.n >= EDGE_PROOF_MIN && e.expLo > 0 ? 'CONFIRMED' : 'EARLY';
   if (e.expectancy < 0) return e.n > 1 && e.expHi < 0 ? 'CONFIRMED' : 'EARLY';
   return 'EARLY';
 }
 
-export interface ScorecardOptions {
+interface ScorecardOptions {
   minSample?: number;
   /** Tüm boyutları "Belirtilmemiş" olan grubu dahil et (varsayılan: hayır) */
   includeUnspecified?: boolean;
 }
 
-export interface ScorecardResult {
+interface ScorecardResult {
   rows: SetupRow[];          // puana göre azalan
   total: number;             // gruplanan işlem sayısı
   unspecifiedCount: number;  // hiçbir boyutu girilmemiş işlem sayısı

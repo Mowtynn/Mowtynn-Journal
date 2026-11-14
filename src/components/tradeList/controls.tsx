@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronDown, ChevronUp, ArrowUp, ArrowDown } from 'lucide-react';
 
-export function TableSortBadge({ sortState }: { sortState: 'asc' | 'des' | null }) {
+function TableSortBadge({ sortState }: { sortState: 'asc' | 'des' | null }) {
   if (!sortState) {
     return (
       <span className="inline-flex flex-col items-center justify-center w-3 h-3 opacity-0 group-hover/th:opacity-50 transition-opacity text-zinc-500 shrink-0">
@@ -38,12 +38,12 @@ export function HeaderLabel({ children, sortState }: { children: React.ReactNode
   );
 }
 
-export interface CustomSelectOption {
+interface CustomSelectOption {
   value: string;
   label: string;
 }
 
-export interface CustomSelectProps {
+interface CustomSelectProps {
   value: string;
   onChange: (value: string) => void;
   options: CustomSelectOption[];

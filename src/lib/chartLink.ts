@@ -15,7 +15,7 @@ export function normalizeChartLink(raw: string): string {
   return v;
 }
 
-export const isTradingViewShare = (url: string) => /tradingview\.com\/x\//i.test(url);
+const isTradingViewShare = (url: string) => /tradingview\.com\/x\//i.test(url);
 
 export const isHttpLink = (url: string) => /^https?:\/\/[^\s]+\.[^\s]+/i.test(url);
 

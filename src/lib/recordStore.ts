@@ -41,7 +41,7 @@ export function restoreDeleted<T extends WithId>(list: T[], item: T | undefined,
 }
 
 /** Tanımsız değerli alanlar düşer (Firestore ve JSON'da "alan yok" ile "undefined" aynı olsun) */
-export const dropUndefined = <T extends object>(o: T): T =>
+const dropUndefined = <T extends object>(o: T): T =>
   Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined)) as T;
 
 /**

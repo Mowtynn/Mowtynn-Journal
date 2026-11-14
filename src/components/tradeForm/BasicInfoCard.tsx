@@ -242,7 +242,6 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
                 role="radio"
                 aria-checked={sel}
                 data-selected={sel}
-                title={a.label}
                 onClick={() => {
                   setAccountChoice(a.id);
                   setAccountError(false);
