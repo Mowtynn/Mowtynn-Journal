@@ -2309,7 +2309,8 @@ export default function App() {
     <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans antialiased selection:bg-blue-400/30 selection:text-white">
       <Toaster 
         position="bottom-right" 
-        containerStyle={{ zIndex: 999999 }}
+        // Telefonda / PWA'da bildirimler ana ekran çubuğunun ve yan çentiğin altında kalmasın
+        containerStyle={{ zIndex: 999999, bottom: 'max(16px, env(safe-area-inset-bottom))', right: 'max(16px, env(safe-area-inset-right))' }}
         toastOptions={{ 
           style: {
             background: '#131720',
