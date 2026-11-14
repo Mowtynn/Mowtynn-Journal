@@ -540,7 +540,7 @@ function ChainCard({
         <div className="ml-auto text-right">
           <div className="text-base font-extrabold text-zinc-100 tabular-nums">{money(m.balance)}</div>
           <div className={`text-[11px] font-bold tabular-nums ${m.netPnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-            {signedMoney(m.netPnl)} · <span title="Bakiye değişimi ÷ 1R (düzeltmeler dahil). İşlemlerin R toplamı aşağıdaki Canlı R özetinde.">≈ {R(m.netPnl)}</span> · {m.tradeCount} işlem
+            {signedMoney(m.netPnl)} · <span>≈ {R(m.netPnl)}</span> · {m.tradeCount} işlem
           </div>
         </div>
       </div>
@@ -994,7 +994,7 @@ export function PropView({ accounts, trades, onChange, uploadImage }: PropViewPr
           ];
         })().map((x) => (
           /* Ana paneldeki kartlarla birebir aynı yapı: başlık · değer · alt satır (rozet + ikinci bilgi) */
-          <div key={x.label} className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-4 flex flex-col justify-between shadow-xs min-h-[8.5rem]">
+          <div key={x.label} className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-4 flex flex-col justify-between shadow-xs min-h-[8.5rem] lg:min-h-[7.5rem]">
             <div className="flex items-center justify-between mb-2">
               <p className="heading-3 text-zinc-400 tracking-wider font-sans flex items-center gap-1.5">
                 <span className={`p-1.5 rounded-lg border ${x.chip}`}>{x.icon}</span>
@@ -1013,25 +1013,26 @@ export function PropView({ accounts, trades, onChange, uploadImage }: PropViewPr
         ))}
       </section>
 
-      {/* Yeni hesap */}
-      {showForm ? (
-        <NewChainForm draft={draft} setDraft={setDraft} onCreate={handleCreate} onCancel={() => setShowForm(false)} />
-      ) : (
-        <button
-          type="button"
-          onClick={() => {
-            setDraft(emptyDraft());
-            setShowForm(true);
-          }}
-          className="rounded-2xl border border-dashed border-zinc-700 hover:border-blue-500/50 bg-zinc-900/30 hover:bg-zinc-900/60 p-3.5 flex items-center justify-center gap-2 text-xs font-bold text-zinc-300 hover:text-blue-300 cursor-pointer transition-ui"
-        >
-          <Plus size={15} /> Yeni Hesap Ekle
-        </button>
-      )}
+      {/* Yeni hesap formu (açıkken aktif hesapların üstünde) */}
+      {showForm && <NewChainForm draft={draft} setDraft={setDraft} onCreate={handleCreate} onCancel={() => setShowForm(false)} />}
 
-      {/* Aktif zincirler */}
+      {/* Aktif zincirler: "Yeni Hesap Ekle" başlık satırında (ayrı satır kaplamaz) */}
       <section className="flex flex-col gap-2.5">
-        <h3 className="text-xs font-bold text-zinc-300 uppercase tracking-wider">Aktif hesaplar ({activeChains.length})</h3>
+        <div className="flex items-center justify-between gap-2 min-h-8">
+          <h3 className="text-xs font-bold text-zinc-300 uppercase tracking-wider">Aktif hesaplar ({activeChains.length})</h3>
+          {!showForm && (
+            <button
+              type="button"
+              onClick={() => {
+                setDraft(emptyDraft());
+                setShowForm(true);
+              }}
+              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-xl border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 text-xs font-bold text-blue-300 cursor-pointer transition-ui whitespace-nowrap"
+            >
+              <Plus size={14} /> Yeni Hesap Ekle
+            </button>
+          )}
+        </div>
         {activeChains.length === 0 && (
           <p className="text-xs text-zinc-500 bg-zinc-900/40 border border-zinc-800/80 rounded-xl p-3">
             Aktif hesap yok. Challenge'ını bir kez tanımla; aşamaları geçtikçe kart üzerinden bir sonraki aşamayı başlatırsın.

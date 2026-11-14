@@ -1,10 +1,13 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import toast from 'react-hot-toast';
 import { smartUpper } from '../constants/constants';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Download, Loader2 } from 'lucide-react';
 import { Trade } from '../types';
 import { TradeHistoryModal } from './TradeHistoryModal';
 import { nyWallDate, nyNow } from '../lib/tradingTime';
 import { formatR, rsigned } from '../lib/format';
+import { saveBlob, dataUrlToBlob, waitForPaint, withExportSafeText } from '../lib/download';
+import { fileSlug } from '../utils/exportTrades';
 
 const DAYS_OF_WEEK = ['PZT', 'SAL', 'ÇAR', 'PER', 'CUM', 'CMT', 'PAZ'];
 
@@ -47,6 +50,48 @@ export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], o
   const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
   const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
   const goToToday = () => setCurrentDate(nyNow());
+
+  // Takvimi görsel (PNG) olarak indir: başlık, aylık özet ve gün ızgarası; indirme düğmesi görsele girmez
+  const captureRef = useRef<HTMLDivElement>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const downloadImage = async () => {
+    const node = captureRef.current;
+    if (!node || isSaving) return;
+    setIsSaving(true);
+    try {
+      await waitForPaint();
+      const htmlToImage = await import('html-to-image');
+      const pad = 16;
+      const { width, height } = node.getBoundingClientRect();
+      const dataUrl = await withExportSafeText(node, () =>
+        htmlToImage.toPng(node, {
+          backgroundColor: '#0a0a0c',
+          pixelRatio: 2,
+          width: Math.ceil(width) + pad * 2,
+          height: Math.ceil(height) + pad * 2,
+          style: { margin: `${pad}px` },
+          filter: (el: HTMLElement) => !(el.classList && el.classList.contains('no-export')),
+        }),
+      );
+      await saveBlob(dataUrlToBlob(dataUrl), `${fileSlug(`Takvim_${monthNames[month]}_${year}`)}.png`);
+    } catch (err) {
+      console.error('Takvim görseli oluşturulamadı:', err);
+      toast.error('Takvim görseli oluşturulamadı. Tekrar dene.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+  const downloadButton = (extra: string) => (
+    <button
+      type="button"
+      aria-label="Takvimi indir"
+      onClick={downloadImage}
+      disabled={isSaving}
+      className={`no-export w-9 h-9 shrink-0 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 hover:border-zinc-600 text-zinc-400 hover:text-blue-400 items-center justify-center transition-colors duration-150 cursor-pointer disabled:opacity-60 ${extra}`}
+    >
+      {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+    </button>
+  );
 
   const daysInMonth = getDaysInMonth(year, month);
   const firstDay = getFirstDayOfMonth(year, month);
@@ -108,7 +153,7 @@ export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], o
        cells.push(
          <div 
            key={`empty-${i}`} 
-           className="rounded-[10px] sm:rounded-xl min-h-[62px] sm:min-h-[88px] sm:bg-zinc-900 sm:border sm:border-zinc-900/60 sm:opacity-40 pointer-events-none"
+           className="rounded-[10px] sm:rounded-xl min-h-[62px] sm:min-h-[88px] lg:min-h-[clamp(56px,calc((100dvh_-_372px)/6),88px)] sm:bg-zinc-900 sm:border sm:border-zinc-900/60 sm:opacity-40 pointer-events-none"
          />
        );
     }
@@ -144,7 +189,7 @@ export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], o
         <div 
            key={`day-${day}`} 
            onClick={() => stat ? setSelectedDateStr(dateStr) : null}
-           className={`min-w-0 border rounded-[10px] sm:rounded-xl px-1 py-1.5 sm:p-2.5 min-h-[62px] sm:min-h-[88px] flex flex-col justify-between transition-ui duration-200 ease-out group relative ${cardStyle}`}
+           className={`min-w-0 border rounded-[10px] sm:rounded-xl px-1 py-1.5 sm:p-2.5 min-h-[62px] sm:min-h-[88px] lg:min-h-[clamp(56px,calc((100dvh_-_372px)/6),88px)] flex flex-col justify-between transition-ui duration-200 ease-out group relative ${cardStyle}`}
         >
           {/* Top Row: Day Number & Trade Count */}
           <div className="flex items-start justify-between gap-0.5 min-w-0">
@@ -193,7 +238,7 @@ export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], o
          cells.push(
            <div 
              key={`empty-end-${i}`} 
-             className="rounded-[10px] sm:rounded-xl min-h-[62px] sm:min-h-[88px] sm:bg-zinc-900 sm:border sm:border-zinc-900/60 sm:opacity-40 pointer-events-none"
+             className="rounded-[10px] sm:rounded-xl min-h-[62px] sm:min-h-[88px] lg:min-h-[clamp(56px,calc((100dvh_-_372px)/6),88px)] sm:bg-zinc-900 sm:border sm:border-zinc-900/60 sm:opacity-40 pointer-events-none"
            />
          );
        }
@@ -206,7 +251,7 @@ export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], o
 
   return (
     <div className="w-full flex flex-col gap-3">
-       <div className="flex-1 flex flex-col">
+       <div ref={captureRef} className="flex-1 flex flex-col">
           {/* Header Controls & Summary Stats */}
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 sm:gap-3 mb-3 sm:mb-4">
              {/* Navigation */}
@@ -237,9 +282,10 @@ export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], o
                    <ChevronRight size={13} />
                  </button>
                </div>
+               {downloadButton('flex lg:hidden')}
              </div>
              
-             {/* Monthly Summary Badges */}
+             {/* Monthly Summary Badges (masaüstünde en sağda indirme düğmesi) */}
              <div className="grid grid-cols-2 lg:flex lg:flex-wrap items-center gap-2 sm:gap-2.5 text-xs font-sans">
                {/* Total PnL / RR */}
                <div className="flex items-center justify-center lg:justify-start gap-2 px-3 py-1.5 bg-zinc-900/80 border border-zinc-800/80 rounded-xl shadow-xs overflow-hidden">
@@ -256,6 +302,7 @@ export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], o
                  <span className="text-zinc-500 font-bold uppercase text-[10px] tracking-wider">İşlem Günü:</span>
                  <span className="font-extrabold text-zinc-200 font-sans text-xs">{monthlyStats.tradingDays} Gün</span>
                </div>
+               {downloadButton('hidden lg:flex')}
              </div>
           </div>
           

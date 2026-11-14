@@ -2235,8 +2235,8 @@ export default function App() {
                           <CalendarRange size={14} />
                         </span>
                         <span className="flex-1 min-w-0">
-                          <span className="block text-xs font-bold text-blue-100 truncate">Bu haftanın değerlendirmesi bekliyor{activeScopeKey ? ` · ${activeScopeName}` : ""}</span>
-                          <span className="block text-[11px] text-blue-200/70 truncate">Haftanın istatistikleri hazır; üç kısa soruyu yanıtla, gelecek haftanın odağını belirle.</span>
+                          <span className="block text-xs font-bold text-blue-100 sm:truncate">Bu haftanın değerlendirmesi bekliyor{activeScopeKey ? ` · ${activeScopeName}` : ""}</span>
+                          <span className="block text-[11px] text-blue-200/70 sm:truncate leading-snug">Haftanın istatistikleri hazır; üç kısa soruyu yanıtla, gelecek haftanın odağını belirle.</span>
                         </span>
                         <span className="text-[11px] font-bold text-blue-200 shrink-0">Değerlendir →</span>
                       </button>

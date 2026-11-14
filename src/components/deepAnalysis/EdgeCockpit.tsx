@@ -244,7 +244,6 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
                   key={r.riskPct}
                   type="button"
                   onClick={() => onShowTrades(`Risk %${fmt(r.riskPct, 3)}`, trades.filter((t) => typeof t.riskPct === 'number' && Math.round(t.riskPct * 1000) / 1000 === r.riskPct))}
-                  title={r.edge.n < SETUP_MIN_SAMPLE ? `Az veri: en az ${SETUP_MIN_SAMPLE} işlem olmadan kıyaslama yapma` : undefined}
                   className={`px-2.5 py-1.5 rounded-lg border border-zinc-800 bg-zinc-950/40 hover:border-zinc-600 text-[11px] tabular-nums transition-ui cursor-pointer ${r.edge.n < SETUP_MIN_SAMPLE ? 'opacity-50' : ''}`}
                 >
                   <span className="text-zinc-400 font-semibold">%{fmt(r.riskPct, 3)}</span>{' '}
@@ -270,7 +269,6 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
                   type="button"
                   disabled={!e.n}
                   onClick={() => onShowTrades(`News Day: ${label}`, trades.filter((t) => t.newsDay === flag))}
-                  title={e.n > 0 && e.n < SETUP_MIN_SAMPLE ? `Az veri: en az ${SETUP_MIN_SAMPLE} işlem olmadan kıyaslama yapma` : undefined}
                   className={`px-2.5 py-1.5 rounded-lg border border-zinc-800 bg-zinc-950/40 hover:border-zinc-600 disabled:opacity-50 disabled:cursor-default text-[11px] tabular-nums transition-ui cursor-pointer ${e.n > 0 && e.n < SETUP_MIN_SAMPLE ? 'opacity-50' : ''}`}
                 >
                   <span className="text-zinc-400 font-semibold">{label}</span>{' '}

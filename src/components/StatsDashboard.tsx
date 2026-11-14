@@ -128,7 +128,6 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, edge, drift }
             {beWinRate !== null && (
               <span
                 className={`ml-auto text-[10px] font-sans tabular-nums ${stats.winRate >= beWinRate ? 'text-emerald-400/80' : 'text-rose-400/80'}`}
-                title="Başabaş kazanma oranı: mevcut ortalama kazanç, ortalama kayıp ve BE oranıyla net R'nin tam sıfır olduğu kazanma oranı. Kazanma oranın bunun üstündeyse sistem kazandırıyor."
               >
                 başabaş %{beWinRate.toFixed(0)}
               </span>
@@ -331,7 +330,7 @@ function EdgePanel({ edge, expectancy, drift }: { edge?: EdgeStats; expectancy: 
       <div className="flex flex-col justify-between gap-2 min-w-0 sm:border-l sm:border-zinc-800/80 sm:pl-5">
         <div className="flex flex-col gap-1">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-[10px] font-bold uppercase tracking-wide text-zinc-500 truncate" title="Gerçek işlem başı R'nin %95 olasılıkla bulunduğu aralık. Aralığın tamamı sıfırın üstündeyse edge pozitif; sıfırı kapsıyorsa henüz kesin değil.">%95 Beklenti Aralığı</span>
+            <span className="text-[10px] font-bold uppercase tracking-wide text-zinc-500 truncate">%95 Beklenti Aralığı</span>
             {hasCI && <span className="text-[11px] text-zinc-300 tabular-nums whitespace-nowrap shrink-0">{f(lo)} – {f(hi)}R</span>}
           </div>
           {hasCI ? (
@@ -359,7 +358,6 @@ function DriftBlock({ drift }: { drift: EdgeDrift }) {
   const head = (
     <span
       className="text-[10px] font-bold uppercase tracking-wide text-zinc-500 whitespace-nowrap"
-      title={`Son ${DRIFT_RECENT} işlemin işlem başı R'si, öncekilerle karşılaştırılır. Fark istatistiksel olarak anlamlıysa zayıflama / güçlenme gösterilir.`}
     >
       Son {DRIFT_RECENT} İşlem
     </span>

@@ -508,7 +508,8 @@ function IntegrityPanel({ trades, onEditTrade }: { trades: Trade[]; onEditTrade?
   const problemCount = rows.filter((r) => r.problem).length;
   const incompleteCount = rows.length - problemCount;
   const ok = rows.length === 0;
-  const visible = expanded ? rows : rows.slice(0, 6);
+  // Varsayılan 4 satır (pencere masaüstünde kaydırmasız sığar); tümü açılınca liste kendi içinde kayar
+  const visible = expanded ? rows : rows.slice(0, 4);
 
   return (
     <div className={`mt-5 rounded-2xl p-4 border shadow-sm ${ok ? 'bg-emerald-500/5 border-emerald-500/20' : problemCount > 0 ? 'bg-rose-500/5 border-rose-500/20' : 'bg-amber-500/5 border-amber-500/20'}`}>
@@ -532,7 +533,7 @@ function IntegrityPanel({ trades, onEditTrade }: { trades: Trade[]; onEditTrade?
                 Tamamla ile işlemi açıp boş alanları doldurabilirsin.
                 <span className="block text-[10px] text-zinc-500 mt-0.5">Bu kontrol hesap seçiminden bağımsızdır: tüm hesaplar ve hesapsız işlemler dahil.</span>
               </p>
-              <ul className="rounded-xl border border-zinc-800/80 bg-zinc-950/40 divide-y divide-zinc-800/80 overflow-hidden">
+              <ul className={`rounded-xl border border-zinc-800/80 bg-zinc-950/40 divide-y divide-zinc-800/80 ${expanded ? 'max-h-[45vh] overflow-y-auto custom-scrollbar' : 'overflow-hidden'}`}>
                 {visible.map(({ t, problem, missing }) => (
                   <li key={t.id} className="p-2 sm:p-2.5 flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3">
                     <div className="flex items-center gap-2 min-w-0 sm:w-48 shrink-0">
@@ -559,7 +560,7 @@ function IntegrityPanel({ trades, onEditTrade }: { trades: Trade[]; onEditTrade?
                   </li>
                 ))}
               </ul>
-              {rows.length > 6 && (
+              {rows.length > 4 && (
                 <button type="button" onClick={() => setExpanded((v) => !v)} className="mt-2 text-[11px] font-bold text-zinc-400 hover:text-zinc-200 flex items-center gap-1 cursor-pointer">
                   <ChevronDown size={13} className={`transition-transform ${expanded ? 'rotate-180' : ''}`} />
                   {expanded ? 'Daha Az Göster' : `Tümünü Göster (${rows.length})`}

@@ -1004,3 +1004,13 @@ Klasik tasarım korunarak, son eklenen alanlar (risk %, hesap bağı, strateji, 
   - Takvim (telefon / PWA): iç çerçeve telefonda kalktı, hücreler genişledi (≈40 → 44 px); gün 11 px, R 13 px, işlem sayısı 10 px (önce 10 / 11 / 9.5 px). Gün başlıkları hücrelerle aynı aralıkta, tam hizalı. |R| ≥ 10 olan günler tam sayı yazılır (+12.5 → +13) ki dar hücreden taşmasın; 320 px genişlikte "bugün" rozeti ile sayaç çakışmaz.
   - Görsel çıktı (PNG): tek satır kalması gereken rozet ve etiketler ("AZ ÖRNEKLEM" gibi) bazı tarayıcılarda görsele kopyalanırken satır kaydırma kuralını kaybediyordu; yakalama süresince kural satır içi stile yazılıyor, sonra geri alınıyor. İşlem detayı ve rapor görselinde geçerli.
   - Doğrulama: Excel / CSV özet metrikleri (WR, net R, beklenti, PF, ort. kazanç / kayıp, başabaş WR, maks. düşüş) 300 rastgele veri setinde bağımsız hesapla birebir aynı; CSV hücre biçimi (virgüllü ondalık, formül koruması, tırnak kaçışı) kontrol edildi.
+
+- Telefon / PWA düzeni, takvim görseli, kaydırmasız masaüstü
+  - İşlem listesi ve İşlem Geçmişi penceresi telefonda tablo yerine kart: parite + yön, altında tarih · session · işlem tipi ve hesap; sağda büyük R ve risk; listede düzenle / sil kartın kenarında. Masaüstü tablosu sadeleşti (yalnızca masaüstü sınıfları).
+  - İşlem Geçmişi penceresi telefonda neredeyse tam ekran; başlık iki satır (dönem adı kesilmez); özet rozetleri tek satırda yana kayar. Pencere artık yalnızca ilk 100 işlemi göstermiyor: "N işlem daha göster" ile hepsi açılır.
+  - Telefonda küçük etiketler bir kademe büyük (9 → 10 px, 10 → 11 px, başlık etiketleri 10.5 px). Tüm sekmeler ve pencereler 375 / 320 px'te taşma için tarandı.
+  - Takvim: sağ üstte etiketsiz indirme düğmesi; ay başlığı, aylık özet ve gün ızgarası PNG olarak iner (düğme görsele girmez).
+  - Masaüstü (1366×768): Genel Bakış, Takvim, Performans Dağılımı, Notlar, Günlük ve Prop kaydırmasız sığar. Gün Performansı dağılımlar satırına taşındı; takvim satır yüksekliği ekran yüksekliğine uyar (56–88 px); parite kartları 4 sütun, sayfalama yalnızca 8'den fazla paritede; Prop'ta "Yeni Hesap Ekle" başlık satırında. Filtre Menüsü masaüstünde iki sütun; Veri & Yedekleme'de eksik kayıt listesi 4 satır, tümü açılınca kendi içinde kayar.
+  - Parite sayfası, filtre sonrası parite sayısı azalınca boş sayfada kalmaz (son sayfaya çekilir).
+  - Gereksiz yerel araç ipuçları (title) kaldırıldı (10 yer); ısı haritasındaki hücre ayrıntısı kaldı (tek bilgi kaynağı). Kullanılmayan CSS kuralı silindi; ölü kod taraması temiz.
+  - Stres testi: 1500 işlem (bir günde 408), 20 parite, çok uzun parite / hesap / session adları, ±999R, bozuk tarih / yön / saat, 18 KB not: masaüstü ve telefonda tüm sekmeler hatasız, taşmasız; sekme geçişleri ≤ 26 ms.

@@ -17,6 +17,9 @@ import { Deferred, PaneLoader } from './common/Deferred';
 type MetricsPart = 'all' | 'breakdowns' | 'lab';
 
 const StrategyOptimizerHub = lazyWithPreload(() => named(import('./StrategyOptimizerHub'), 'StrategyOptimizerHub'));
+/** Parite kartları sayfa başına: masaüstünde 4 sütun × 2 satır */
+const ASSETS_PER_PAGE = 8;
+
 /** Laboratuvar parçasını önden indirir (sekme arka planda hazırlanırken) */
 export const preloadStrategyHub = () => StrategyOptimizerHub.preload();
 import { nyWallDate } from '../lib/tradingTime';
@@ -197,6 +200,9 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
       return 0;
     });
   }, [customMetrics, assetSort, assetFilter, assetSearch]);
+  // Filtre / veri değişip parite sayısı azalınca geçerli sayfa son sayfaya çekilir (boş sayfada kalınmaz)
+  const assetPageCount = Math.max(1, Math.ceil(processedAssets.length / ASSETS_PER_PAGE));
+  const assetPage = Math.min(assetsPage, assetPageCount);
 
 
   const selectedAssetTrades = useMemo(() => {
@@ -280,7 +286,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
               <div className="flex justify-between items-center h-6 mb-2.5">
                 <div className="flex items-center gap-1.5">
                   <span className="p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center"><Clock size={12} /></span>
-                  <h3 className="heading-3 text-zinc-400 tracking-wider font-sans" title={`Her seansın toplam R'si (çubuk) ve kazanma oranı. ${MIN_SAMPLE} işlemden azı "Az Veri".`}>
+                  <h3 className="heading-3 text-zinc-400 tracking-wider font-sans">
                     {smartUpper('Session Performansı')}
                   </h3>
                   <button aria-label="Filtrele"
@@ -405,7 +411,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
               <div className="flex justify-between items-center h-6 mb-2.5">
                 <div className="flex items-center gap-1.5">
                   <span className="p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center"><Percent size={12} /></span>
-                  <h3 className="heading-3 text-zinc-400 tracking-wider font-sans" title={`Haftanın her gününün (NY) toplam R'si; parantezde işlem sayısı ve kazanma oranı. ${MIN_SAMPLE} işlemden azı "Az Veri".`}>
+                  <h3 className="heading-3 text-zinc-400 tracking-wider font-sans">
                     {smartUpper('Net Kazanç Gün Dağılımı')}
                   </h3>
                 </div>
@@ -484,7 +490,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 relative z-20 w-full border-b border-zinc-800 pb-3">
           <div className="flex items-center gap-2">
             <span className="p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center"><Layers size={12} /></span>
-            <h3 className="heading-3 text-zinc-400 tracking-wider font-sans" title={`Her paritenin net R'si, kazanma oranı ve işlem başı R'si. ${MIN_SAMPLE} işlemden azı "Az Veri".`}>
+            <h3 className="heading-3 text-zinc-400 tracking-wider font-sans">
               {smartUpper('Parite İstatistikleri')}
             </h3>
           </div>
@@ -556,14 +562,14 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
             {/* Parite Kart Grubu Grid */}
             <AnimatePresence initial={false}>
               <motion.div
-                key={assetsPage}
+                key={assetPage}
                 initial={{ opacity: 0.8 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0.8 }}
                 transition={{ duration: 0.1, ease: EASE }}
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 content-start"
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 content-start"
               >
-                {processedAssets.slice((assetsPage - 1) * 9, assetsPage * 9).map((ar) => {
+                {processedAssets.slice((assetPage - 1) * ASSETS_PER_PAGE, assetPage * ASSETS_PER_PAGE).map((ar) => {
                   const isSelected = selectedAsset === ar.asset;
                   const winRate = ar.total > 0 ? (ar.wins / ar.total) * 100 : 0;
                   const isProfit = ar.rr >= 0;
@@ -618,8 +624,8 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
               </motion.div>
             </AnimatePresence>
 
-            {/* Pagination Controls */}
-            {processedAssets.length > 0 && (
+            {/* Sayfalama: yalnızca birden fazla sayfa varsa (tek sayfada boş yer kaplamasın) */}
+            {processedAssets.length > ASSETS_PER_PAGE && (
               <div className="flex items-center justify-between border-t border-zinc-800/80 pt-3.5 mt-auto">
                 <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-medium">
                   <span>Toplam</span>
@@ -628,13 +634,13 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
                 </div>
                 <div className="flex items-center gap-1">
                   <span className="text-xs font-medium text-zinc-400 tabular-nums flex items-center leading-none">
-                    Sayfa: {assetsPage}/{Math.max(1, Math.ceil(processedAssets.length / 9))}
+                    Sayfa: {assetPage}/{assetPageCount}
                   </span>
                   <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-700/50 rounded-xl p-1 shadow-xs">
                     <button aria-label="Önceki"
                       type="button"
-                      onClick={() => setAssetsPage(prev => Math.max(1, prev - 1))}
-                      disabled={assetsPage <= 1}
+                      onClick={() => setAssetsPage(Math.max(1, assetPage - 1))}
+                      disabled={assetPage <= 1}
                       className="w-7 h-7 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-400 transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed"
                     >
                       <ChevronLeft size={13} />
@@ -642,8 +648,8 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
                     <div className="w-px h-3.5 bg-zinc-800" />
                     <button aria-label="Sonraki"
                       type="button"
-                      onClick={() => setAssetsPage(prev => Math.min(Math.ceil(processedAssets.length / 9), prev + 1))}
-                      disabled={assetsPage >= Math.ceil(processedAssets.length / 9)}
+                      onClick={() => setAssetsPage(Math.min(assetPageCount, assetPage + 1))}
+                      disabled={assetPage >= assetPageCount}
                       className="w-7 h-7 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-400 transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed"
                     >
                       <ChevronRight size={13} />

@@ -1,7 +1,7 @@
 import { RBadge, TrendBadge } from "./tradeList/TradeBadges";
 import { MODAL_BACKDROP, MODAL_PANEL, POPOVER } from '../lib/motion';
 import { formatR } from '../lib/format';
-import { smartUpper, getTradeAccountCategory, getTradeAccountName, ACCOUNT_CATEGORY_BADGE } from '../constants/constants';
+import { getTradeAccountCategory, getTradeAccountName, ACCOUNT_CATEGORY_BADGE } from '../constants/constants';
 import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
@@ -9,6 +9,7 @@ import { Calendar as CalendarIcon, Download, X, FileSpreadsheet, FileText } from
 import toast from "react-hot-toast";
 import { Trade, DefinitionTitles } from "../types";
 import { PrintReportModal } from "./PrintReportModal";
+import { TradeMobileCard } from "./tradeList/TradeMobileCard";
 import TradeDetailModal from "./TradeDetailModal";
 import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
 import { exportTradesToExcel, exportTradesToCSV } from "../utils/exportTrades";
@@ -25,6 +26,8 @@ interface TradeHistoryModalProps {
   definitionTitles?: DefinitionTitles;
 }
 
+const PAGE = 100;
+
 export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
   isOpen,
   onClose,
@@ -36,6 +39,8 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
   definitionTitles
 }) => {
   const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
+  // Uzun dönemlerde liste parça parça açılır (ilk 100); tüm işlemler "daha göster" ile görülebilir
+  const [visibleCount, setVisibleCount] = useState(PAGE);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [exportFormatTab, setExportFormatTab] = useState<'excel' | 'csv' | 'pdf'>('excel');
@@ -65,6 +70,7 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
       setDisplayedTrades(trades);
       setDisplayedTitle(title);
       setDisplayedIcon(icon);
+      setVisibleCount(PAGE);
     }
   }, [isOpen, trades, title, icon]);
 
@@ -137,13 +143,13 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
           <motion.div
             key="trade-history-modal-backdrop"
             {...MODAL_BACKDROP}
-            className="fixed inset-0 modal-layer modal-dim z-[1500] flex items-center justify-center p-4 "
+            className="fixed inset-0 modal-layer modal-dim z-[1500] flex items-center justify-center p-2 sm:p-4"
             onClick={onClose}
           >
             <motion.div
               key="trade-history-modal-content"
               {...MODAL_PANEL}
-              className="w-full max-w-4xl h-[80vh] sm:h-[620px] max-h-[85vh] min-h-0 sm:min-h-[420px] flex flex-col bg-zinc-900 border border-zinc-700/50 rounded-2xl shadow-2xl relative overflow-hidden"
+              className="w-full max-w-4xl h-[calc(100dvh-1rem)] sm:h-[620px] max-h-[calc(100dvh-1rem)] sm:max-h-[85vh] min-h-0 sm:min-h-[420px] flex flex-col bg-zinc-900 border border-zinc-700/50 rounded-2xl shadow-2xl relative overflow-hidden"
               onClick={e => e.stopPropagation()}
             >
               {/* Header — diğer pencerelerle aynı: simge kutusu + başlık, sağda eylemler */}
@@ -152,9 +158,15 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                   <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
                     {activeIcon || <CalendarIcon size={16} />}
                   </div>
-                  <span className="min-w-0 truncate">
-                    İşlem Geçmişi
-                    {activeTitle && <span className="text-zinc-500 font-semibold"> · {activeTitle}</span>}
+                  {/* Telefonda başlık iki satır: dönem adı kesilmeden altta okunur */}
+                  <span className="min-w-0 flex flex-col sm:flex-row sm:items-baseline sm:gap-1.5 leading-tight">
+                    <span className="truncate">İşlem Geçmişi</span>
+                    {activeTitle && (
+                      <span className="text-zinc-500 font-semibold truncate text-[11px] sm:text-[length:inherit] mt-0.5 sm:mt-0">
+                        <span className="hidden sm:inline">· </span>
+                        {activeTitle}
+                      </span>
+                    )}
                   </span>
                 </h2>
                 <div className="flex items-center gap-2 relative" ref={exportRef}>
@@ -316,8 +328,8 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
               </div>
 
               {/* Sub-Header Stats Bar */}
-              <div className="flex flex-wrap items-center justify-between gap-1.5 px-3 py-2 sm:px-4 bg-zinc-950/60 border-b border-zinc-800/80 shrink-0 select-none w-full relative z-0">
-                <div className="flex flex-wrap items-center gap-1.5">
+              <div className="flex flex-nowrap sm:flex-wrap items-center justify-between gap-1.5 px-3 py-2 sm:px-4 bg-zinc-950/60 border-b border-zinc-800/80 shrink-0 select-none w-full relative z-0 overflow-x-auto no-scrollbar">
+                <div className="flex flex-nowrap sm:flex-wrap items-center gap-1.5 shrink-0">
                   <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800/80 rounded-lg px-2 py-1 shrink-0">
                     <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest font-sans leading-none">Toplam:</span>
                     <span className="text-[10px] font-black text-zinc-100 font-sans leading-none">{totalCount}</span>
@@ -340,7 +352,7 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                     <span className="text-[10px] font-black text-zinc-100 font-sans leading-none">{shortTrades.length ? `%${shortWinRate.toFixed(1)}` : "—"}</span>
                   </div>
                 </div>
-                <div className="flex flex-wrap items-center justify-end gap-1.5 ml-auto">
+                <div className="flex flex-nowrap sm:flex-wrap items-center justify-end gap-1.5 ml-auto shrink-0">
                   {Object.entries(sessionBreakdown).map(([session, vals]) => {
                     const val = vals.rr;
                     if (Math.abs(val) < 1e-9) return null;
@@ -376,70 +388,77 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                     </tr>
                   </thead>
                   <tbody className="block sm:table-row-group">
-                    {sortedTrades.slice(0, 100).map((t, idx) => {
-                      const pnlText = typeof t.riskPct === "number" ? `%${t.riskPct.toLocaleString("en-US", { maximumFractionDigits: 2 })}` : "—";
-                      const pnlColor = "text-zinc-300 font-bold";
-
+                    {sortedTrades.slice(0, visibleCount).map((t, idx) => {
+                      const riskText = typeof t.riskPct === "number" ? `%${t.riskPct.toLocaleString("en-US", { maximumFractionDigits: 2 })}` : "—";
+                      const key = t.id ? `${t.id}-${idx}` : `trade-${idx}`;
                       return (
-                        <tr
-                          key={t.id ? `${t.id}-${idx}` : `trade-${idx}`}
-                          onClick={() => setSelectedTrade(t)}
-                          className="group cursor-pointer select-none relative flex flex-wrap sm:table-row bg-zinc-800 sm:bg-transparent mb-2 sm:mb-0 rounded-xl sm:rounded-none border border-zinc-800/80 hover:border-blue-500/40 sm:border-none p-2 sm:p-0 align-middle"
-                        >
-                          <td className="w-1/2 sm:w-[17%] sm:min-w-[120px] flex justify-start items-center sm:table-cell order-1 py-1 px-0 sm:px-3 text-zinc-400 group-hover:text-zinc-100 font-sans sm:bg-zinc-900 group-hover:bg-blue-950/10 sm:rounded-l-xl sm:border-y sm:border-l sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 align-middle">
-                            <div className="flex items-center sm:justify-center sm:w-full">
-                              <span className="text-white font-black text-sm sm:text-[13px] tracking-wide leading-none">{t.asset}</span>
-                            </div>
-                          </td>
-                          <td className="w-1/2 sm:w-[10%] sm:min-w-[65px] flex justify-end sm:justify-center items-center sm:table-cell order-2 py-1 px-0 sm:px-2 text-center sm:bg-zinc-900 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 align-middle">
-                            <div className="flex items-center justify-center w-full">
-                              {t.type === "LONG" ? (
-                                <span className="whitespace-nowrap inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded-full uppercase tracking-wider font-sans transition-colors">LONG</span>
-                              ) : (
-                                <span className="whitespace-nowrap inline-flex items-center justify-center w-[46px] sm:w-[54px] h-[20px] px-1.5 py-0 text-center text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 group-hover:border-rose-500/50 rounded-full uppercase tracking-wider font-sans transition-colors">SHORT</span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="w-1/2 sm:w-[10%] sm:min-w-[65px] flex justify-start sm:justify-center items-center sm:table-cell order-3 py-1 px-0 sm:px-2 text-center sm:bg-zinc-900 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 align-middle">
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-1.5 w-full justify-start sm:justify-center">
-                              <span className="sm:hidden heading-3 h-[10px]">R</span>
-                              <div className="flex items-center justify-center w-full h-[18px]">
+                        <React.Fragment key={key}>
+                          <tr className="block sm:hidden">
+                            <td className="block pb-2" colSpan={7}>
+                              <TradeMobileCard trade={t} onOpen={setSelectedTrade} />
+                            </td>
+                          </tr>
+                          <tr onClick={() => setSelectedTrade(t)} className="group cursor-pointer select-none hidden sm:table-row align-middle">
+                            <td className="sm:bg-zinc-900 group-hover:bg-blue-950/10 border-y border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 py-1 px-2 align-middle px-3 rounded-l-xl border-l w-[17%] min-w-[120px] text-zinc-400 group-hover:text-zinc-100">
+                              <div>
+                                <span className="text-white font-black text-[13px] tracking-wide leading-none">{t.asset}</span>
+                              </div>
+                            </td>
+                            <td className="sm:bg-zinc-900 group-hover:bg-blue-950/10 border-y border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 py-1 px-2 align-middle w-[10%] min-w-[65px]">
+                              <div>
+                                {t.type === "LONG" ? (
+                                  <span className="whitespace-nowrap inline-flex items-center justify-center w-[54px] h-[20px] px-1.5 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded-full uppercase tracking-wider transition-colors">LONG</span>
+                                ) : (
+                                  <span className="whitespace-nowrap inline-flex items-center justify-center w-[54px] h-[20px] px-1.5 text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 group-hover:border-rose-500/50 rounded-full uppercase tracking-wider transition-colors">SHORT</span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="sm:bg-zinc-900 group-hover:bg-blue-950/10 border-y border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 py-1 px-2 align-middle w-[10%] min-w-[65px]">
+                              <div>
                                 <RBadge rr={t.rr} />
                               </div>
-                            </div>
-                          </td>
-                          <td className="hidden sm:table-cell py-1 px-2 text-center text-zinc-400 font-medium sm:bg-zinc-900 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 w-[13%] min-w-[75px] align-middle">
-                            <div className="flex items-center justify-center w-full">
-                              <span className="inline-flex items-center justify-center min-w-[54px] max-w-[130px] h-[20px] px-2.5 py-0 text-center text-[10px] font-bold text-zinc-300 bg-zinc-800/80 border border-zinc-700/80 group-hover:border-zinc-500 rounded-full uppercase tracking-wider font-sans transition-colors whitespace-nowrap truncate">
-                                {t.session ? t.session : "—"}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="w-1/2 sm:w-[15%] sm:min-w-[110px] flex justify-end sm:justify-center items-center sm:table-cell order-4 py-1 px-0 sm:px-2 text-center sm:bg-zinc-900 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 align-middle">
-                            <span className="sm:hidden heading-3 mr-2">İşlem Tipi</span>
-                            <div className="flex items-center justify-end sm:justify-center w-full h-[20px] min-w-0">
-                              <TrendBadge trend={t.trend} />
-                            </div>
-                          </td>
-                          <td className={`w-full sm:w-[13%] sm:min-w-[80px] flex justify-between sm:justify-center items-center sm:table-cell order-5 py-1 px-0 sm:px-3 text-right sm:text-center ${pnlColor} sm:bg-zinc-900 group-hover:bg-blue-950/10 sm:border-y sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 max-sm:pt-3 max-sm:border-t max-sm:border-zinc-800/50 sm:py-1 align-middle`}>
-                            <span className="sm:hidden text-[10px] font-bold text-zinc-500 uppercase tracking-widest text-left font-sans">{smartUpper("Risk")}</span>
-                            <div className="flex flex-col sm:flex-row items-end sm:items-center gap-0.5 sm:gap-1.5 sm:w-full sm:justify-center sm:h-[20px]">
-                              <span className="text-sm sm:text-xs font-bold font-sans inline-flex items-center justify-center h-[20px] leading-none tracking-tight">{pnlText}</span>
-                            </div>
-                          </td>
-                          <td className="w-full sm:w-[22%] sm:min-w-[80px] flex justify-between sm:justify-center items-center sm:table-cell order-6 py-1 px-0 sm:px-2 text-center sm:bg-zinc-900 group-hover:bg-blue-950/10 sm:rounded-r-xl sm:border-y sm:border-r sm:border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 mt-1.5 sm:mt-0 sm:pt-1.5 pt-0 align-middle">
-                            <div className="sm:hidden trade-mobile-only">
-                              <span className="heading-3">Hesap</span>
-                            </div>
-                            <div className="flex items-center justify-center w-full">
-                              <span className={`inline-block min-w-[54px] max-w-full h-[20px] leading-[18px] px-2.5 py-0 text-center text-[10px] font-bold border rounded-full uppercase tracking-wider font-sans transition-colors whitespace-nowrap truncate ${ACCOUNT_CATEGORY_BADGE[getTradeAccountCategory(t)]}`}>
-                                {getTradeAccountName(t)}
-                              </span>
-                            </div>
-                          </td>
-                        </tr>
+                            </td>
+                            <td className="sm:bg-zinc-900 group-hover:bg-blue-950/10 border-y border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 py-1 px-2 align-middle w-[13%] min-w-[75px] text-zinc-400 font-medium">
+                              <div>
+                                <span className="inline-flex items-center justify-center min-w-[54px] max-w-[130px] h-[20px] px-2.5 text-[10px] font-bold text-zinc-300 bg-zinc-800/80 border border-zinc-700/80 group-hover:border-zinc-500 rounded-full uppercase tracking-wider transition-colors whitespace-nowrap truncate">
+                                  {t.session ? t.session : "—"}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="sm:bg-zinc-900 group-hover:bg-blue-950/10 border-y border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 py-1 px-2 align-middle w-[15%] min-w-[110px]">
+                              <div>
+                                <TrendBadge trend={t.trend} />
+                              </div>
+                            </td>
+                            <td className="sm:bg-zinc-900 group-hover:bg-blue-950/10 border-y border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 py-1 px-2 align-middle px-3 w-[13%] min-w-[80px] text-zinc-300 font-bold">
+                              <div>
+                                <span className="text-xs font-bold tracking-tight">{riskText}</span>
+                              </div>
+                            </td>
+                            <td className="sm:bg-zinc-900 group-hover:bg-blue-950/10 border-y border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 py-1 px-2 align-middle rounded-r-xl border-r w-[22%] min-w-[80px]">
+                              <div>
+                                <span className={`inline-block min-w-[54px] max-w-full h-[20px] leading-[18px] px-2.5 text-center text-[10px] font-bold border rounded-full uppercase tracking-wider transition-colors whitespace-nowrap truncate ${ACCOUNT_CATEGORY_BADGE[getTradeAccountCategory(t)]}`}>
+                                  {getTradeAccountName(t)}
+                                </span>
+                              </div>
+                            </td>
+                          </tr>
+                        </React.Fragment>
                       );
                     })}
+                    {sortedTrades.length > visibleCount && (
+                      <tr className="block sm:table-row">
+                        <td colSpan={7} className="block sm:table-cell pt-2 text-center">
+                          <button
+                            type="button"
+                            onClick={() => setVisibleCount((c) => c + PAGE)}
+                            className="px-4 h-9 rounded-xl text-xs font-semibold text-zinc-300 bg-zinc-900 border border-zinc-800 hover:border-zinc-600 hover:text-white transition-colors"
+                          >
+                            {Math.min(PAGE, sortedTrades.length - visibleCount)} işlem daha göster ({visibleCount} / {sortedTrades.length})
+                          </button>
+                        </td>
+                      </tr>
+                    )}
                     {sortedTrades.length === 0 && (
                       <tr>
                         <td colSpan={7} className="py-8 text-center text-zinc-500 font-medium">

@@ -386,8 +386,8 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
         </div>
       </div>
 
-      {/* 3. Dağılımlar: sonuç · yön · setup kalitesi */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-0 divide-y md:divide-y-0 md:divide-x divide-zinc-800/80 w-full">
+      {/* 3. Dağılımlar: sonuç · yön · setup kalitesi · gün performansı (masaüstünde tek satır: sayfa kaydırmasız sığar) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-0 w-full [&>*]:border-zinc-800/80 [&>*+*]:border-t md:[&>*:nth-child(2)]:border-t-0 md:[&>*:nth-child(even)]:border-l xl:[&>*]:border-t-0 xl:[&>*+*]:border-l">
         {/* İŞLEM SONUÇ DAĞILIMI */}
         <motion.div 
           variants={itemVariants} 
@@ -556,10 +556,6 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
             })}
           </div>
         </motion.div>
-      </div>
-
-      {/* Gün İstatistikleri & Ekstrem Değerler */}
-      <div className="w-full">
         {/* Kârlı / Zararlı Gün */}
         <motion.div variants={itemVariants} className="bg-transparent p-3.5 sm:px-5 sm:py-4 transition-colors duration-200 ease-out flex flex-col justify-center">
           <div className="flex items-center justify-between mb-2.5">
@@ -577,24 +573,24 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
           ) : (
             <div className="grid grid-cols-2 gap-3">
               <div 
-                className="bg-zinc-950/60 border border-emerald-500/20 hover:border-emerald-500/40 px-3.5 py-2.5 rounded-2xl cursor-pointer hover:bg-emerald-950/10 transition-ui duration-200"
+                className="bg-zinc-950/60 border border-emerald-500/20 hover:border-emerald-500/40 px-3 py-2.5 rounded-2xl min-w-0 cursor-pointer hover:bg-emerald-950/10 transition-ui duration-200"
                 onClick={(e) => { e.stopPropagation(); handleMetricClick("profitableDays", metrics.greenDays + " Gün"); }}
               >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[10px] block uppercase font-bold text-emerald-400 font-sans">Kârlı Gün</span>
-                  <CheckCircle2 size={13} className="text-emerald-400/80" />
+                <div className="flex items-center justify-between gap-1 mb-1">
+                  <span className="text-[10px] block uppercase font-bold text-emerald-400 font-sans whitespace-nowrap">Kârlı Gün</span>
+                  <CheckCircle2 size={13} className="text-emerald-400/80 shrink-0" />
                 </div>
                 <span className="text-lg sm:text-xl font-bold text-emerald-400 block font-sans mt-0.5">
                   {metrics.greenDays} <span className="text-xs text-emerald-400/70 font-normal">Gün</span>
                 </span>
               </div>
               <div 
-                className="bg-zinc-950/60 border border-rose-500/20 hover:border-rose-500/40 px-3.5 py-2.5 rounded-2xl cursor-pointer hover:bg-rose-950/10 transition-ui duration-200"
+                className="bg-zinc-950/60 border border-rose-500/20 hover:border-rose-500/40 px-3 py-2.5 rounded-2xl min-w-0 cursor-pointer hover:bg-rose-950/10 transition-ui duration-200"
                 onClick={(e) => { e.stopPropagation(); handleMetricClick("profitableDays", metrics.redDays + " Gün"); }}
               >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[10px] block uppercase font-bold text-rose-400 font-sans">Zararlı Gün</span>
-                  <XCircle size={13} className="text-rose-400/80" />
+                <div className="flex items-center justify-between gap-1 mb-1">
+                  <span className="text-[10px] block uppercase font-bold text-rose-400 font-sans whitespace-nowrap">Zararlı Gün</span>
+                  <XCircle size={13} className="text-rose-400/80 shrink-0" />
                 </div>
                 <span className="text-lg sm:text-xl font-bold text-rose-400 block font-sans mt-0.5">
                   {metrics.redDays} <span className="text-xs text-rose-400/70 font-normal">Gün</span>

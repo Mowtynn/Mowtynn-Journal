@@ -315,7 +315,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
             {...MODAL_PANEL}
             onClick={(e) => e.stopPropagation()}
             id="global-filter-popup"
-            className="bg-zinc-900 border border-zinc-700/50 rounded-2xl w-full max-w-2xl h-[680px] max-h-[88vh] min-h-[480px] overflow-hidden flex flex-col relative shadow-2xl my-auto"
+            className="bg-zinc-900 border border-zinc-700/50 rounded-2xl w-full max-w-2xl lg:max-w-4xl h-[680px] lg:h-auto max-h-[88vh] min-h-[480px] lg:min-h-0 overflow-hidden flex flex-col relative shadow-2xl my-auto"
           >
             
           {/* Header */}
@@ -355,8 +355,8 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
           </div>
 
 
-            {/* Content Body - Menu / Accordion list */}
-            <div className="p-3 sm:p-4 flex-1 overflow-y-auto custom-scrollbar space-y-2 bg-zinc-950/30 min-h-0">
+            {/* Filtre listesi: masaüstünde iki sütun (pencere kaydırmasız sığar), telefonda tek sütun */}
+            <div className="p-3 sm:p-4 flex-1 overflow-y-auto custom-scrollbar bg-zinc-950/30 min-h-0 [&>*]:mb-2 lg:columns-2 lg:gap-2 [&>*]:break-inside-avoid">
               
               {/* 1. ZAMAN ARALIĞI */}
               <FilterAccordionRow title="Zaman Aralığı" 
