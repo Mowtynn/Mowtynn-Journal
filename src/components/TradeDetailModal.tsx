@@ -5,7 +5,7 @@ import { MODAL_BACKDROP, MODAL_PANEL } from '../lib/motion';
 
 /** İşlemler arası geçiş eğrisi: expo'dan daha yumuşak başlayan, uzun süzülen bir yavaşlama */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, animate } from "motion/react";
 import toast from "react-hot-toast";
@@ -39,6 +39,9 @@ interface TradeDetailModalProps {
   onNavigate?: (trade: Trade) => void;
 }
 
+/** Notlar kutusunun en küçük yüksekliği: 2-3 cümle (kısa ekranda biraz daha az); pencere ölçümünde bu değer sayılır */
+const notesBoxMinH = (vh: number) => (vh < 820 ? 96 : 112);
+
 const TradeDetailModal = React.memo(function TradeDetailModal({ 
   trade, 
   onClose, 
@@ -54,6 +57,8 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
   const [isDownloading, setIsDownloading] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [resolvedImageUrl, setResolvedImageUrl] = useState<string | null>(null);
+  // Grafiğin gerçek en / boy oranı (yüklenince): masaüstünde pencere bu orana göre boyutlanır, grafik boşluksuz oturur
+  const [imgAspect, setImgAspect] = useState<number | null>(null);
 
   // Preserve displayedTrade so that content remains intact during exit animation when trade prop is cleared
   const [displayedTrade, setDisplayedTrade] = useState<Trade | null>(trade);
@@ -82,6 +87,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
 
   React.useEffect(() => {
     setImageError(false);
+    setImgAspect(null);
     const screenshot = trade?.screenshot || (!trade ? displayedTrade?.screenshot : undefined);
     if (!screenshot) {
       setResolvedImageUrl(null);
@@ -108,6 +114,106 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
   }, [trade?.screenshot, displayedTrade?.screenshot]);
 
   const contentRef = React.useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
+  const leftColRef = useRef<HTMLDivElement>(null);
+
+  /**
+   * Masaüstü (≥1024px) boyutlandırma: pencere içeriğe göre ölçülür.
+   * - Grafik varsa: grafik kutusu tam olarak görselin oranında (üst / alt / yan boşluk yok); en büyük boyut
+   *   ekranın izin verdiği alan, pencere genişliği ve yüksekliği buna göre hesaplanır.
+   * - Grafik yoksa: pencere yüksekliği sol sütunun içeriği kadar.
+   * Sol sütunun doğal yüksekliği çocukların toplamıdır (notlar en küçük boyutuyla sayılır).
+   */
+  const [viewport, setViewport] = useState(() => ({ w: typeof window !== 'undefined' ? window.innerWidth : 0, h: typeof window !== 'undefined' ? window.innerHeight : 0 }));
+  useEffect(() => {
+    let raf = 0;
+    const onResize = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => setViewport({ w: window.innerWidth, h: window.innerHeight }));
+    };
+    window.addEventListener('resize', onResize);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', onResize);
+    };
+  }, []);
+  // İçerik boyutu değişince (yazı tipi yüklenmesi, işlem değişimi, düzen) ölçüm yenilenir; notlar izlenmez (esneyen alan)
+  const [measureTick, setMeasureTick] = useState(0);
+  useEffect(() => {
+    const left = leftColRef.current;
+    const header = headerRef.current;
+    if (!left || !header || typeof ResizeObserver === 'undefined') return;
+    let raf = 0;
+    const ro = new ResizeObserver(() => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => setMeasureTick((t) => t + 1));
+    });
+    ro.observe(header);
+    Array.from(left.children).forEach((k) => {
+      if (!(k as HTMLElement).dataset.notes) ro.observe(k);
+    });
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+    };
+  }, [currentTrade?.id, isExporting]);
+  const [fit, setFit] = useState<{ w?: number; h: number; leftW?: number; cw?: number; ch?: number } | null>(null);
+  const hasChart = !!(currentTrade?.screenshot && resolvedImageUrl && !imageError && imgAspect);
+  // Telefon / tablet: görsel kutunun tam genişliğinde, kutu görselin yüksekliği kadar (üst / alt boşluk yok)
+  const phoneChart = hasChart && !isExporting && viewport.w < 1024;
+  useLayoutEffect(() => {
+    const left = leftColRef.current;
+    const header = headerRef.current;
+    if (!currentTrade || isExporting || !left || !header || viewport.w < 1024) {
+      setFit(null);
+      return;
+    }
+    // Kullanılabilir alan: pencereyi taşıyan katmanın iç boyutu (kaydırma çubuğu, iç boşluk ve üst çubuk düşülmüş)
+    const overlay = contentRef.current?.parentElement;
+    const navH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-h')) || 0;
+    let maxW = Math.min(viewport.w - 32, 1800);
+    let maxH = viewport.h - navH - 32;
+    if (overlay) {
+      const os = getComputedStyle(overlay);
+      maxW = Math.min(1800, overlay.clientWidth - parseFloat(os.paddingLeft) - parseFloat(os.paddingRight));
+      maxH = Math.min(maxH, overlay.clientHeight - parseFloat(os.paddingTop) - parseFloat(os.paddingBottom));
+    }
+    const headerH = header.offsetHeight;
+    const leftW = Math.round(Math.min(500, Math.max(430, viewport.w * 0.33)));
+    // Sol sütunun doğal yüksekliği (notlar en küçük yüksekliğiyle)
+    const kids = Array.from(left.children) as HTMLElement[];
+    const cs = getComputedStyle(left);
+    let leftNeed = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+    kids.forEach((k) => {
+      const ks = getComputedStyle(k);
+      const m = (parseFloat(ks.marginTop) || 0) + (parseFloat(ks.marginBottom) || 0);
+      // Notlar: başlık + en küçük kutu (bölüm esnediği için kendi yüksekliği ölçülmez)
+      const notesHead = k.dataset.notes ? (k.firstElementChild as HTMLElement | null)?.offsetHeight || 0 : 0;
+      leftNeed += m + (k.dataset.notes ? notesHead + 8 + notesBoxMinH(viewport.h) : k.offsetHeight);
+    });
+    const BORDER = 2;
+    if (hasChart && imgAspect) {
+      const padX = 40;
+      const padY = 40;
+      const headingH = 34;
+      const chartWMax = maxW - leftW - padX - BORDER * 2;
+      const chartHMax = maxH - headerH - padY - headingH - BORDER * 2;
+      let cw = Math.min(chartWMax, chartHMax * imgAspect);
+      let ch = cw / imgAspect;
+      if (cw < 200 || ch < 120) {
+        setFit({ h: Math.min(maxH, headerH + leftNeed + BORDER) });
+        return;
+      }
+      cw = Math.floor(cw);
+      ch = Math.floor(ch);
+      const rightH = ch + BORDER + headingH + padY;
+      const h = Math.min(maxH, headerH + Math.max(leftNeed, rightH) + BORDER);
+      setFit({ w: leftW + cw + BORDER + padX + BORDER, h, leftW, cw, ch });
+    } else {
+      setFit({ h: Math.min(maxH, Math.max(headerH + leftNeed + BORDER, 480)) });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentTrade?.id, hasChart, imgAspect, viewport.w, viewport.h, isExporting, measureTick]);
 
   const handleDownload = async () => {
     if (!contentRef.current) return;
@@ -250,7 +356,8 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
               {...MODAL_PANEL}
               style={{ 
                 willChange: "transform, opacity", 
-                ...(isExporting ? { margin: 0, padding: 0, boxShadow: 'none', borderRadius: 0, border: 'none', transform: 'none' } : {}) 
+                ...(isExporting ? { margin: 0, padding: 0, boxShadow: 'none', borderRadius: 0, border: 'none', transform: 'none' } : {}),
+                ...(fit && !isExporting ? { height: fit.h, ...(fit.w ? { width: fit.w, maxWidth: 'none' } : {}) } : {}),
               }}
               onClick={(e) => e.stopPropagation()}
               // İşlem ekleme penceresiyle aynı boyut: aynı genişlik basamakları ve ekranın %96'sına kadar yükseklik
@@ -263,7 +370,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
               }`}
             >
               {/* Header */}
-              <div className="modal-header gap-3 relative">
+              <div ref={headerRef} className="modal-header gap-3 relative">
                 {canNav && !isExporting && (
                   <span aria-hidden className="no-export absolute left-0 right-0 bottom-0 h-px bg-zinc-800/60 pointer-events-none">
                     <span
@@ -350,7 +457,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
               <div ref={bodyRef} onTouchStart={onSwipeStart} onTouchEnd={onSwipeEnd} className={`flex flex-col lg:flex-row flex-1 min-h-0 ${isExporting ? 'overflow-hidden' : 'overflow-y-auto lg:overflow-hidden custom-scrollbar'}`}>
                 
                 {/* Left Sidebar - Meta & Context (approx 35%) */}
-                <div className={`w-full lg:w-[40%] bg-zinc-950/30 border-r border-zinc-800/60 p-5 space-y-4 lg:[@media(max-height:820px)]:p-4 lg:[@media(max-height:820px)]:space-y-3 shrink-0 flex flex-col ${isExporting ? 'overflow-visible' : 'lg:overflow-y-auto custom-scrollbar'}`}>
+                <div ref={leftColRef} style={fit?.leftW ? { width: fit.leftW } : undefined} className={`w-full lg:w-[40%] bg-zinc-950/30 border-r border-zinc-800/60 p-5 space-y-4 lg:[@media(max-height:820px)]:space-y-3 shrink-0 flex flex-col ${isExporting ? 'overflow-visible' : 'lg:overflow-y-auto custom-scrollbar'}`}>
                   
                   {/* Hızlı kayıt: ayrıntılar eksik */}
                   {currentTrade.quickEntry === true && !isExporting && (() => {
@@ -479,14 +586,14 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                   })()}
 
 
-                  {/* Notlar: sol sütunun kalan yüksekliğini doldurur; 5-10 cümle rahat sığar, daha uzun not kendi içinde kayar */}
-                  <section className={`flex flex-col ${isExporting ? '' : 'lg:flex-1 lg:min-h-[150px]'}`}>
+                  {/* Notlar: en az 2-3 cümlelik alan; sol sütunda yer kalırsa onu doldurur, daha uzun not kendi içinde kayar */}
+                  <section data-notes="1" className={`flex flex-col ${isExporting ? '' : 'lg:flex-1 lg:min-h-0'}`}>
                     <h4 className="heading-2 mb-2 shrink-0">
                       <FileText size={12}/> GİRİŞ VE ANALİZ NOTLARI
                     </h4>
-                    <div className={`bg-zinc-900/40 border border-zinc-800/60 rounded-xl px-4 py-3 overflow-x-hidden ${isExporting ? '' : 'min-h-[150px] max-h-[260px] lg:max-h-none lg:flex-1 lg:min-h-0 overflow-y-auto custom-scrollbar'}`}>
+                    <div style={isExporting ? undefined : { minHeight: notesBoxMinH(viewport.h) }} className={`bg-zinc-900/40 border border-zinc-800/60 rounded-xl px-4 py-3 overflow-x-hidden ${isExporting ? '' : 'max-h-[200px] lg:max-h-none lg:flex-1 lg:min-h-0 overflow-y-auto custom-scrollbar'}`}>
                       {currentTrade.notes ? (
-                        <p className="text-zinc-200 text-sm lg:text-[13px] leading-relaxed whitespace-pre-wrap break-words font-sans">
+                        <p className="text-zinc-200 text-sm leading-relaxed whitespace-pre-wrap break-words font-sans">
                           {currentTrade.notes}
                         </p>
                       ) : (
@@ -499,7 +606,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                 </div>
 
                 {/* Sağ panel: teknik analiz görseli (masaüstünde tüm yükseklik) */}
-                <div className={`w-full lg:w-[60%] min-w-0 bg-[#0a0a0c] flex flex-col p-5 space-y-4 lg:min-h-0 ${isExporting ? 'overflow-visible' : 'lg:overflow-y-auto custom-scrollbar'}`}>
+                <div style={fit?.leftW ? { width: 'auto', flex: '1 1 0%' } : undefined} className={`w-full lg:w-[60%] min-w-0 bg-[#0a0a0c] flex flex-col p-5 space-y-4 lg:min-h-0 ${isExporting ? 'overflow-visible' : 'lg:overflow-y-auto custom-scrollbar'}`}>
                   
                   {/* Technical Chart — masaüstünde sağ sütunun tüm yüksekliğini kaplar */}
                   <section className={`flex flex-col ${isExporting ? 'flex-shrink-0' : 'flex-shrink-0 lg:flex-1 lg:min-h-0'}`}>
@@ -514,7 +621,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                       )}
                     </div>
                     
-                    <div className={`bg-zinc-900/40 border border-zinc-800/60 rounded-xl overflow-hidden relative group w-full flex items-center justify-center p-2 ${
+                    <div style={fit?.cw && fit.ch ? { width: fit.cw + 2, height: fit.ch + 2, flex: 'none', minHeight: 0, padding: 0 } : phoneChart ? { minHeight: 0, padding: 0 } : undefined} className={`bg-zinc-900/40 border border-zinc-800/60 rounded-xl overflow-hidden relative group w-full flex items-center justify-center p-2 ${
                       isExporting 
                         ? 'h-auto max-h-none' 
                         : currentTrade.screenshot 
@@ -547,10 +654,13 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                           <img decoding="async" 
                             src={resolvedImageUrl} 
                             alt="Trading chart" 
+                            style={fit?.cw ? { padding: 0 } : phoneChart ? { width: '100%', height: 'auto', maxHeight: '70vh', borderRadius: 0 } : undefined}
                             className={`object-contain rounded-lg transition-opacity duration-200 ${isExporting ? 'w-auto h-auto max-w-full' : 'w-auto h-auto max-w-full max-h-[min(420px,43vh)] lg:absolute lg:inset-0 lg:m-auto lg:w-full lg:h-full lg:max-h-none lg:p-2'} ${isImageLoading ? 'opacity-0' : 'opacity-100'}`}
                             crossOrigin="anonymous"
                             referrerPolicy="no-referrer"
-                            onLoad={() => {
+                            onLoad={(e) => {
+                              const im = e.currentTarget;
+                              if (im.naturalWidth > 0 && im.naturalHeight > 0) setImgAspect(im.naturalWidth / im.naturalHeight);
                               setIsImageLoading(false);
                               setImageError(false);
                             }}
@@ -684,12 +794,12 @@ function ContextRow({
   const text = typeof displayValue === 'string' ? smartUpper(displayValue) : displayValue;
   // Başlık ve değer kesilmez, gerekirse alt satıra kayar (dar ekranda "News Day/Bank Holiday", çoklu Target)
   return (
-    <div className={`flex flex-col gap-1 px-3.5 py-2 lg:[@media(max-height:820px)]:py-1.5 bg-zinc-950/70 min-w-0 ${wide ? 'col-span-2' : ''}`}>
+    <div className={`flex flex-col gap-1 px-3.5 py-2.5 lg:[@media(max-height:820px)]:py-2 lg:[@media(max-height:820px)]:gap-0.5 bg-zinc-950/70 min-w-0 ${wide ? 'col-span-2' : ''}`}>
       <div className="flex items-center gap-1.5 text-zinc-500 min-w-0 [&>svg]:w-3 [&>svg]:h-3 [&>svg]:shrink-0">
         {icon}
-        <span className="text-[9px] font-bold uppercase tracking-wider font-sans leading-tight break-words min-w-0">{smartUpper(label)}</span>
+        <span className="text-[10px] font-bold uppercase tracking-wider font-sans leading-tight break-words min-w-0">{smartUpper(label)}</span>
       </div>
-      <div className={`text-[11px] font-bold font-sans uppercase leading-snug break-words ${valueColor || 'text-zinc-300'}`}>
+      <div className={`text-xs font-bold font-sans uppercase leading-snug break-words ${valueColor || 'text-zinc-300'}`}>
         {text}
       </div>
     </div>
