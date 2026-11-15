@@ -1020,3 +1020,6 @@ Klasik tasarım korunarak, son eklenen alanlar (risk %, hesap bağı, strateji, 
   - Takvim: indirme düğmesi Aylık R'ın solunda, rozetlerle aynı yükseklikte; telefonda "İşlem Günü" tek satır.
   - Parite kartları tek satırlık Net R · WR ile kısaldı; geniş masaüstünde 5 sütun (sayfa başına 10): Performans Dağılımı 5 pariteyle de kaydırmasız.
   - Telefonda üst bardaki kapsam seçicide "TÜMÜ" yazısı (3 haneli işlem sayısıyla) kesilmiyor.
+  - Parite İstatistikleri kartları eski görünümüne döndü (Net R ve WR ayrı satırlarda, 4 sütun).
+  - İşlem detayı: "Giriş ve Analiz Notları" sol sütunun altına taşındı ve kalan yüksekliği doldurur (sol sütunda boşluk kalmaz, uzun not kendi içinde kayar); teknik analiz görseli sağda tüm yüksekliği kullanır. Kısa ekranlarda (yükseklik < 820 px) sol sütun hafifçe sıkışır, 1366×768'de kaydırmasız sığar.
+  - İşlem detayı: Kurulum Geçmişi kaldırıldı (bileşeni, içgörü modülü, tüm işlemler bağlamı ve testleri birlikte silindi). Notlar onun yerinde, sol sütunun kalan yüksekliğini dolduruyor: 1366×768'de ~5, 1600×900'de ~10 cümle görünür, daha uzun not kendi içinde kayar. Sonuç kartı küçüldü: R 2xl, sonuç sözcüğü R'nin yanında.

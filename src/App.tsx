@@ -41,7 +41,6 @@ import { useLocalStorageState } from "./hooks/useLocalStorageState";
 import { normalizeTrade, normalizeTrades, isValidTrade, canonicalAsset, canonicalAssetList } from "./lib/tradeModel";
 import { useExitMount } from "./hooks/useExitMount";
 import { useAppStore } from "./store/useAppStore";
-import { AllTradesContext } from "./lib/allTradesContext";
 import { Toaster, toast } from "react-hot-toast";
 
 
@@ -2333,7 +2332,6 @@ export default function App() {
   ), [ warmLevel, globalDateLimit, setGlobalDateLimit, weeklyDue, weeklyRequest, openWeeklyReview, scopedTrades, activeScopeKey, activeScopeName, calculatedStats, overallEdge, edgeDrift, currentTab, definitionTitles, entryModels, filteredGlobalTrades, handleDeleteJournal, handleDeleteNote, handleDeleteTrade, handleSaveJournal, handleSaveNote, handleStartEdit, journals, notes, planFidelities, propAccounts, handlePropAccountsChange, uploadPropImage, sessions, setDetailedTrade, setEditingTrade, setIsFormOpen, trades, trendTypes ]);
 
   return (
-    <AllTradesContext.Provider value={trades}>
     <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans antialiased selection:bg-blue-400/30 selection:text-white">
       <Toaster 
         position="bottom-right" 
@@ -3004,6 +3002,5 @@ export default function App() {
         )}
 
     </div>
-    </AllTradesContext.Provider>
   );
 }

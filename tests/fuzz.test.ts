@@ -12,7 +12,6 @@ import { computeEdgeDrift } from '../src/lib/edgeDrift';
 import { computeAccountMetrics } from '../src/lib/propAccounts';
 import { computeAccountRInsights } from '../src/lib/propInsights';
 import { computeWeekReview, weekStartOf } from '../src/lib/weeklyReview';
-import { computeTradeInsight } from '../src/lib/tradeInsight';
 import { nyDateKey } from '../src/lib/tradingTime';
 import { account, NOW, DAY } from './fixtures';
 import type { Trade } from '../src/types';
@@ -140,7 +139,6 @@ for (const weird of [false, true]) {
       assertFinite(am, 'prop', /profitFactor|pf|Infinity/i);
       assertFinite(computeAccountRInsights(acc, trades, { runs: 200 }), 'propR');
       assertFinite(computeWeekReview(trades, weekStartOf(nyDateKey(NOW))), 'week');
-      if (trades.length) assertFinite(computeTradeInsight(trades[0], trades), 'insight');
     });
   }
 }

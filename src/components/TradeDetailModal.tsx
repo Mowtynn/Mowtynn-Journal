@@ -25,10 +25,8 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { setupQualityTier } from "../lib/setupQuality";
-import { useAllTrades } from "../lib/allTradesContext";
 import { nyWallDate, nyDateKey } from "../lib/tradingTime";
-import { computeTradeInsight } from "../lib/tradeInsight";
-import { ResultPanel, SetupHistoryPanel } from "./tradeDetail/TradeInsightPanels";
+import { ResultPanel } from "./tradeDetail/TradeInsightPanels";
 
 interface TradeDetailModalProps {
   trade: Trade | null;
@@ -69,13 +67,6 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
   }, [trade]);
 
   const currentTrade = trade || displayedTrade;
-  // Tam geçmiş (App'ten): kurulum geçmişi için. Yoksa yalnızca bu işlemin verisi kullanılır.
-  const allTrades = useAllTrades();
-  const insight = React.useMemo(
-    () => (currentTrade && allTrades ? computeTradeInsight(currentTrade, allTrades) : null),
-    [currentTrade, allTrades],
-  );
-
   // İşlemler arası geçiş: liste ekrandaki sırayı izler (← önceki, → sonraki)
   const navIndex = React.useMemo(
     () => (navList && currentTrade ? navList.findIndex((t) => t.id === currentTrade.id) : -1),
@@ -359,7 +350,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
               <div ref={bodyRef} onTouchStart={onSwipeStart} onTouchEnd={onSwipeEnd} className={`flex flex-col lg:flex-row flex-1 min-h-0 ${isExporting ? 'overflow-hidden' : 'overflow-y-auto lg:overflow-hidden custom-scrollbar'}`}>
                 
                 {/* Left Sidebar - Meta & Context (approx 35%) */}
-                <div className={`w-full lg:w-[40%] bg-zinc-950/30 border-r border-zinc-800/60 p-5 space-y-4 shrink-0 ${isExporting ? 'overflow-visible' : 'lg:overflow-y-auto custom-scrollbar'}`}>
+                <div className={`w-full lg:w-[40%] bg-zinc-950/30 border-r border-zinc-800/60 p-5 space-y-4 lg:[@media(max-height:820px)]:p-4 lg:[@media(max-height:820px)]:space-y-3 shrink-0 flex flex-col ${isExporting ? 'overflow-visible' : 'lg:overflow-y-auto custom-scrollbar'}`}>
                   
                   {/* Hızlı kayıt: ayrıntılar eksik */}
                   {currentTrade.quickEntry === true && !isExporting && (() => {
@@ -391,7 +382,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                   })()}
 
                   {/* Sonuç kartı: R, durum, hesap, risk ve hesaba dolar etkisi */}
-                  <ResultPanel trade={currentTrade} realizedR={insight ? insight.path.realizedR : (Number(currentTrade.rr) || 0)} />
+                  <ResultPanel trade={currentTrade} realizedR={typeof currentTrade.rr === "number" && Number.isFinite(currentTrade.rr) ? currentTrade.rr : 0} />
 
                   {/* Execution Context */}
                   {(() => {
@@ -488,14 +479,29 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                   })()}
 
 
-                  {/* Kurulum geçmişi (sol sütunun altında, kompakt) */}
-                  {insight?.setup && <SetupHistoryPanel insight={insight} />}
+                  {/* Notlar: sol sütunun kalan yüksekliğini doldurur; 5-10 cümle rahat sığar, daha uzun not kendi içinde kayar */}
+                  <section className={`flex flex-col ${isExporting ? '' : 'lg:flex-1 lg:min-h-[150px]'}`}>
+                    <h4 className="heading-2 mb-2 shrink-0">
+                      <FileText size={12}/> GİRİŞ VE ANALİZ NOTLARI
+                    </h4>
+                    <div className={`bg-zinc-900/40 border border-zinc-800/60 rounded-xl px-4 py-3 overflow-x-hidden ${isExporting ? '' : 'min-h-[150px] max-h-[260px] lg:max-h-none lg:flex-1 lg:min-h-0 overflow-y-auto custom-scrollbar'}`}>
+                      {currentTrade.notes ? (
+                        <p className="text-zinc-200 text-sm lg:text-[13px] leading-relaxed whitespace-pre-wrap break-words font-sans">
+                          {currentTrade.notes}
+                        </p>
+                      ) : (
+                        <div className="h-full min-h-[40px] flex items-center justify-center py-2 text-zinc-600 text-xs italic">
+                          Bu işlem için herhangi bir not girilmemiş.
+                        </div>
+                      )}
+                    </div>
+                  </section>
                 </div>
 
-                {/* Sağ panel: görsel (kalan alanın tamamı) → kısa notlar */}
+                {/* Sağ panel: teknik analiz görseli (masaüstünde tüm yükseklik) */}
                 <div className={`w-full lg:w-[60%] min-w-0 bg-[#0a0a0c] flex flex-col p-5 space-y-4 lg:min-h-0 ${isExporting ? 'overflow-visible' : 'lg:overflow-y-auto custom-scrollbar'}`}>
                   
-                  {/* Technical Chart — masaüstünde notlardan kalan tüm yüksekliği kaplar */}
+                  {/* Technical Chart — masaüstünde sağ sütunun tüm yüksekliğini kaplar */}
                   <section className={`flex flex-col ${isExporting ? 'flex-shrink-0' : 'flex-shrink-0 lg:flex-1 lg:min-h-0'}`}>
                     <div className="flex justify-between items-center mb-2">
                       <h4 className="heading-2">
@@ -568,23 +574,6 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                     </div>
                   </section>
 
-                  {/* Trading Journal / Notes */}
-                  <section className="flex flex-col shrink-0">
-                    <h4 className="heading-2 mb-2 shrink-0">
-                      <FileText size={12}/> GİRİŞ VE ANALİZ NOTLARI
-                    </h4>
-                    <div className={`bg-zinc-900/40 border border-zinc-800/60 rounded-xl px-4 py-3 overflow-x-hidden ${isExporting ? '' : 'max-h-[132px] overflow-y-auto custom-scrollbar'}`}>
-                      {currentTrade.notes ? (
-                        <p className="text-zinc-200 text-sm sm:text-[14px] leading-relaxed whitespace-pre-wrap break-words font-sans">
-                          {currentTrade.notes}
-                        </p>
-                      ) : (
-                        <div className="flex items-center justify-center py-2 text-zinc-600 text-xs italic">
-                          Bu işlem için herhangi bir not girilmemiş.
-                        </div>
-                      )}
-                    </div>
-                  </section>
 
                 </div>
               </div>
@@ -695,7 +684,7 @@ function ContextRow({
   const text = typeof displayValue === 'string' ? smartUpper(displayValue) : displayValue;
   // Başlık ve değer kesilmez, gerekirse alt satıra kayar (dar ekranda "News Day/Bank Holiday", çoklu Target)
   return (
-    <div className={`flex flex-col gap-1 px-3.5 py-2 bg-zinc-950/70 min-w-0 ${wide ? 'col-span-2' : ''}`}>
+    <div className={`flex flex-col gap-1 px-3.5 py-2 lg:[@media(max-height:820px)]:py-1.5 bg-zinc-950/70 min-w-0 ${wide ? 'col-span-2' : ''}`}>
       <div className="flex items-center gap-1.5 text-zinc-500 min-w-0 [&>svg]:w-3 [&>svg]:h-3 [&>svg]:shrink-0">
         {icon}
         <span className="text-[9px] font-bold uppercase tracking-wider font-sans leading-tight break-words min-w-0">{smartUpper(label)}</span>
