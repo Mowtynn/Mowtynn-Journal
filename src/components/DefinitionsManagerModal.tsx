@@ -1,5 +1,5 @@
 import { saveBlob } from '../lib/download';
-import { EASE, SPRING, MODAL_BACKDROP, MODAL_PANEL } from '../lib/motion';
+import { SPRING, MODAL_BACKDROP, MODAL_PANEL } from '../lib/motion';
 import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -897,31 +897,28 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
               {deleteConfirmItem && (
                 <motion.div
                   key="delete-confirm-backdrop"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.15, ease: EASE }}
+                  {...MODAL_BACKDROP}
                   className="will-change-[opacity] absolute inset-0 z-[10000] bg-zinc-950/85 flex items-center justify-center p-4"
                   onClick={() => setDeleteConfirmItem(null)}
                 >
                   <motion.div
                     key="delete-confirm-content"
                     {...MODAL_PANEL}
-                    className="bg-zinc-900 border border-zinc-700/60 rounded-2xl p-5 max-w-sm w-full shadow-2xl space-y-4"
+                    className="confirm-panel"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center mx-auto">
-                      <Trash2 size={18} />
+                    <div className="confirm-icon">
+                      <Trash2 size={20} />
                     </div>
-                    <div className="text-center space-y-2">
-                      <h4 className="text-xs font-bold font-sans tracking-wide text-zinc-100 uppercase">
-                        Tanımı Sil
+                    <div>
+                      <h4 className="confirm-title">
+                        {smartUpper("Tanımı Sil")}
                       </h4>
-                      <p className="text-xs text-zinc-400 font-sans leading-relaxed">
+                      <p className="confirm-text">
                         <span className="font-sans font-bold text-zinc-200">"{deleteConfirmItem.item}"</span> tanımını silmek istediğine emin misin?
                       </p>
                       {deleteConfirmItem.count > 0 && (
-                        <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-300 text-[11px] font-sans leading-relaxed text-left flex items-start gap-2">
+                        <div className="-mt-2 mb-5 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-300 text-[11px] font-sans leading-relaxed text-left flex items-start gap-2">
                           <AlertCircle size={15} className="text-amber-400 shrink-0 mt-0.5" />
                             <div>
                               Bu tanım <strong className="text-amber-200 underline">{deleteConfirmItem.count} işlemde</strong> kullanılıyor. Silerseniz yalnızca seçim listesinden kalkar; işlemlerdeki kayıtlı değer ve istatistikler korunur.
@@ -931,11 +928,11 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                     </div>
 
                     {(
-                      <div className="flex gap-2">
+                      <div className="confirm-actions">
                         <button
                           type="button"
                           onClick={() => setDeleteConfirmItem(null)}
-                          className="flex-1 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-sans text-xs font-bold transition-colors cursor-pointer border border-zinc-700/60"
+                          className="btn-cancel"
                         >
                           Vazgeç
                         </button>
@@ -947,7 +944,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                             toast.success(`"${deleteConfirmItem.item}" silindi.`);
                             setDeleteConfirmItem(null);
                           }}
-                          className="flex-1 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 border border-rose-500/30 font-sans text-xs font-bold transition-colors cursor-pointer"
+                          className="btn-danger"
                         >
                           Evet, Sil
                         </button>
@@ -963,40 +960,37 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
               {showResetConfirm && (
                 <motion.div
                   key="reset-confirm-backdrop"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.15, ease: EASE }}
+                  {...MODAL_BACKDROP}
                   className="will-change-[opacity] absolute inset-0 z-[10000] bg-zinc-950/85 flex items-center justify-center p-4"
                   onClick={() => setShowResetConfirm(false)}
                 >
                   <motion.div
                     key="reset-confirm-content"
                     {...MODAL_PANEL}
-                    className="bg-zinc-900 border border-zinc-700/60 rounded-2xl p-5 max-w-sm w-full shadow-2xl space-y-4"
+                    className="confirm-panel"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center mx-auto">
-                      <AlertCircle size={18} />
+                    <div className="confirm-icon-warn">
+                      <AlertCircle size={20} />
                     </div>
-                    <div className="text-center space-y-2">
-                      <h4 className="text-xs font-bold font-sans tracking-wide text-zinc-100 uppercase">Varsayılanlara Sıfırla</h4>
-                      <p className="text-xs text-zinc-400 font-sans leading-relaxed">
+                    <div>
+                      <h4 className="confirm-title">{smartUpper("Varsayılanlara Sıfırla")}</h4>
+                      <p className="confirm-text">
                         <span className="font-sans font-bold text-zinc-200">"{currentTabObj.label}"</span> kategorisindeki tüm özel tanımlar silinip varsayılan listeye dönecek. Emin misin?
                       </p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="confirm-actions">
                       <button
                         type="button"
                         onClick={() => setShowResetConfirm(false)}
-                        className="flex-1 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-sans text-xs font-bold transition-colors cursor-pointer border border-zinc-700/60"
+                        className="btn-cancel"
                       >
                         Vazgeç
                       </button>
                       <button
                         type="button"
                         onClick={handleResetDefaults}
-                        className="flex-1 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 border border-rose-500/30 font-sans text-xs font-bold transition-colors cursor-pointer"
+                        className="btn-danger"
                       >
                         Evet, Sıfırla
                       </button>

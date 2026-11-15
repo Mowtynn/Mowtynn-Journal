@@ -864,25 +864,25 @@ const TradeList = React.memo(function TradeList({
                 key="trade-delete-modal-content"
                 {...MODAL_PANEL}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-zinc-900 border border-zinc-700/50 rounded-2xl p-5 max-w-md w-full shadow-2xl overflow-hidden relative"
+                className="confirm-panel"
               >
-                <div className="w-12 h-12 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center mx-auto mb-4">
-                  <Trash2 size={24} />
+                <div className="confirm-icon">
+                  <Trash2 size={20} />
                 </div>
                 
-                <h3 className="text-base font-bold tracking-wide text-zinc-100 uppercase text-center mb-2">
-                  {"İşlemi Sil"}
+                <h3 className="confirm-title">
+                  {smartUpper("İşlemi Sil")}
                 </h3>
                 
-                <p className="text-zinc-400 text-xs text-center mb-6 leading-relaxed font-sans">
+                <p className="confirm-text">
                   <span className="font-semibold text-zinc-200">{tradeToDelete.asset}</span> ({tradeToDelete.type === 'LONG' ? 'Long' : 'Short'} - {getTradeAccountName(tradeToDelete)}) {"pozisyonunu silmek istediğine emin misin? Bu işlem geri alınamaz."}
                 </p>
                 
-                <div className="flex items-center gap-3">
+                <div className="confirm-actions">
                   <button
                     type="button"
                     onClick={() => setTradeToDelete(null)}
-                    className="flex-1 py-2.5 px-4 bg-zinc-800/30 hover:bg-zinc-800/60 text-zinc-300 font-sans text-xs font-bold uppercase tracking-widest rounded-xl border border-zinc-700/50 transition-colors duration-200 cursor-pointer"
+                    className="btn-cancel"
                   >
                     {"Vazgeç"}
                   </button>
@@ -894,7 +894,7 @@ const TradeList = React.memo(function TradeList({
                         setTradeToDelete(null);
                       }
                     }}
-                    className="flex-1 py-2.5 px-4 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 hover:border-rose-500/40 font-sans text-xs font-bold uppercase tracking-widest rounded-xl transition-colors duration-200 cursor-pointer flex items-center justify-center gap-2"
+                    className="btn-danger"
                   >
                     <Trash2 size={13} />
                     <span>{"Evet, Sil"}</span>

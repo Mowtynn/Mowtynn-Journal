@@ -1,4 +1,4 @@
-import { EASE, POPOVER } from '../lib/motion';
+import { EASE, POPOVER, PANE } from '../lib/motion';
 import { smartUpper } from '../constants/constants';
 import { FilterChip, FILTER_INPUT, FILTER_LABEL } from './filters/FilterControls';
 import React, { Suspense, useMemo, useEffect } from 'react';
@@ -686,8 +686,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
       {/* Sistem Bütünlüğü ve Veri Analizi */}
       {integrityAnalysis.hasIntegrityIssue && (
         <motion.div 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
+          {...PANE}
           className="mt-1 mb-2 px-3 py-2 bg-rose-500/10 border border-rose-500/20 rounded-xl flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 max-w-4xl mx-auto w-full"
         >
           <div className="flex items-center gap-1.5 shrink-0 text-rose-400">

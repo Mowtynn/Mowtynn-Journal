@@ -1,4 +1,5 @@
-import { EASE, SPRING, POPOVER, MODAL_BACKDROP, MODAL_PANEL } from './lib/motion';
+import { SPRING, POPOVER, MODAL_BACKDROP, MODAL_PANEL } from './lib/motion';
+import { AllTradesContext } from "./lib/allTradesContext";
 import { useState, useEffect, useMemo, useCallback, useRef, Suspense, startTransition, type ReactNode, type Dispatch, type SetStateAction } from "react";
 import { createPortal, flushSync } from "react-dom";
 import { Trade, Note, JournalEntry, DefinitionTitles, AccountCategory, PropAccount } from "./types";
@@ -2332,6 +2333,7 @@ export default function App() {
   ), [ warmLevel, globalDateLimit, setGlobalDateLimit, weeklyDue, weeklyRequest, openWeeklyReview, scopedTrades, activeScopeKey, activeScopeName, calculatedStats, overallEdge, edgeDrift, currentTab, definitionTitles, entryModels, filteredGlobalTrades, handleDeleteJournal, handleDeleteNote, handleDeleteTrade, handleSaveJournal, handleSaveNote, handleStartEdit, journals, notes, planFidelities, propAccounts, handlePropAccountsChange, uploadPropImage, sessions, setDetailedTrade, setEditingTrade, setIsFormOpen, trades, trendTypes ]);
 
   return (
+    <AllTradesContext.Provider value={trades}>
     <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans antialiased selection:bg-blue-400/30 selection:text-white">
       <Toaster 
         position="bottom-right" 
@@ -2556,12 +2558,8 @@ export default function App() {
                 {isProfileOpen && (
                   <motion.div 
                     key="profile-dropdown-panel"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.15, ease: EASE }}
-                    style={{ willChange: "opacity" }}
-                    className="absolute right-0 top-full mt-2 w-72 max-w-[calc(100vw-24px)] bg-zinc-900 border border-zinc-700/60 rounded-2xl shadow-2xl p-2.5 z-50 flex flex-col gap-1.5 text-xs"
+                    {...POPOVER}
+                    className="origin-top-right absolute right-0 top-full mt-2 w-72 max-w-[calc(100vw-24px)] bg-zinc-900 border border-zinc-700/60 rounded-2xl shadow-2xl p-2.5 z-50 flex flex-col gap-1.5 text-xs"
                   >
                     {/* Bulut Veritabanı ve Hesap Durumu */}
                     {user ? (
@@ -3002,5 +3000,6 @@ export default function App() {
         )}
 
     </div>
+    </AllTradesContext.Provider>
   );
 }

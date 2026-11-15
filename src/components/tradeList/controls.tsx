@@ -1,4 +1,4 @@
-import { EASE } from '../../lib/motion';
+import { POPOVER } from '../../lib/motion';
 import { smartUpper } from '../../constants/constants';
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -93,11 +93,8 @@ export const CustomSelect = React.memo(function CustomSelect({ value, onChange, 
         {isOpen && (
           <motion.div
             key="custom-select-dropdown"
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 4 }}
-            transition={{ duration: 0.15, ease: EASE }}
-            className="absolute z-50 mt-1 w-full max-h-56 overflow-y-auto bg-zinc-950 border border-zinc-800 rounded-xl shadow-md py-1 custom-scrollbar"
+            {...POPOVER}
+            className="origin-top absolute z-50 mt-1 w-full max-h-56 overflow-y-auto bg-zinc-950 border border-zinc-800 rounded-xl shadow-md py-1 custom-scrollbar"
           >
             {options.map((option) => (
               <button

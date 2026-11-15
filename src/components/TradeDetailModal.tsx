@@ -10,7 +10,7 @@ import { createPortal } from "react-dom";
 import { motion, AnimatePresence, animate } from "motion/react";
 import toast from "react-hot-toast";
 import { Trade, DefinitionTitles } from "../types";
-import { DEFAULT_DEFINITION_TITLES, cleanDefinitionTitleString, getNewsDayLabels, smartUpper } from "../constants/constants";
+import { DEFAULT_DEFINITION_TITLES, cleanDefinitionTitleString, getNewsDayLabels, smartUpper, getTradeAccountName } from "../constants/constants";
 import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
 import { resolveChartImage } from "../lib/chartLink";
 import { 
@@ -26,7 +26,9 @@ import {
 } from "lucide-react";
 import { setupQualityTier } from "../lib/setupQuality";
 import { nyWallDate, nyDateKey } from "../lib/tradingTime";
-import { ResultPanel } from "./tradeDetail/TradeInsightPanels";
+import { ResultPanel, SetupHistoryPanel } from "./tradeDetail/TradeInsightPanels";
+import { computeTradeInsight } from "../lib/tradeInsight";
+import { useAllTrades } from "../lib/allTradesContext";
 
 interface TradeDetailModalProps {
   trade: Trade | null;
@@ -41,6 +43,37 @@ interface TradeDetailModalProps {
 
 /** Notlar kutusunun en küçük yüksekliği: 2-3 cümle (kısa ekranda biraz daha az); pencere ölçümünde bu değer sayılır */
 const notesBoxMinH = (vh: number) => (vh < 820 ? 96 : 112);
+
+/**
+ * Grafik oranı önbelleği: pencere görsel yüklenmeden önce de doğru boyutta açılır (yüklenince yeniden boyutlanmaz).
+ * Daha önce açılmış grafiğin gerçek oranı hatırlanır; ilk açılışta TradingView görüntülerinin tipik oranı kullanılır.
+ */
+const DEFAULT_CHART_ASPECT = 1.73;
+const ASPECT_KEY = 'tj_chart_aspects';
+let aspectCache: Record<string, number> | null = null;
+const readAspect = (key: string): number | null => {
+  if (!aspectCache) {
+    try {
+      const raw = JSON.parse(localStorage.getItem(ASPECT_KEY) || '{}');
+      aspectCache = raw && typeof raw === 'object' ? raw : {};
+    } catch {
+      aspectCache = {};
+    }
+  }
+  const v = aspectCache![key];
+  return typeof v === 'number' && Number.isFinite(v) && v > 0.2 && v < 6 ? v : null;
+};
+const writeAspect = (key: string, v: number) => {
+  if (!aspectCache) readAspect(key);
+  aspectCache![key] = Math.round(v * 1000) / 1000;
+  const keys = Object.keys(aspectCache!);
+  if (keys.length > 300) delete aspectCache![keys[0]]; // sınırsız büyümesin
+  try {
+    localStorage.setItem(ASPECT_KEY, JSON.stringify(aspectCache));
+  } catch {
+    /* depolama dolu / kapalı: yalnızca bu oturumda hatırlanır */
+  }
+};
 
 const TradeDetailModal = React.memo(function TradeDetailModal({ 
   trade, 
@@ -72,6 +105,12 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
   }, [trade]);
 
   const currentTrade = trade || displayedTrade;
+  // Kurulum geçmişi için tüm işlemler (App'ten)
+  const allTrades = useAllTrades();
+  const insight = React.useMemo(
+    () => (currentTrade && allTrades ? computeTradeInsight(currentTrade, allTrades) : null),
+    [currentTrade, allTrades],
+  );
   // İşlemler arası geçiş: liste ekrandaki sırayı izler (← önceki, → sonraki)
   const navIndex = React.useMemo(
     () => (navList && currentTrade ? navList.findIndex((t) => t.id === currentTrade.id) : -1),
@@ -149,6 +188,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
       raf = requestAnimationFrame(() => setMeasureTick((t) => t + 1));
     });
     ro.observe(header);
+    if (setupRef.current) ro.observe(setupRef.current);
     Array.from(left.children).forEach((k) => {
       if (!(k as HTMLElement).dataset.notes) ro.observe(k);
     });
@@ -158,9 +198,13 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
     };
   }, [currentTrade?.id, isExporting]);
   const [fit, setFit] = useState<{ w?: number; h: number; leftW?: number; cw?: number; ch?: number } | null>(null);
-  const hasChart = !!(currentTrade?.screenshot && resolvedImageUrl && !imageError && imgAspect);
+  // Görsel yüklenirken de grafik alanı ayrılır (oran: gerçek → önbellek → tipik); yalnızca hata olursa grafik yok sayılır
+  const shotKey = currentTrade?.screenshot || '';
+  const chartAspect = imgAspect ?? (shotKey ? readAspect(shotKey) : null) ?? DEFAULT_CHART_ASPECT;
+  const hasChart = !!(shotKey && !imageError);
   // Telefon / tablet: görsel kutunun tam genişliğinde, kutu görselin yüksekliği kadar (üst / alt boşluk yok)
   const phoneChart = hasChart && !isExporting && viewport.w < 1024;
+  const setupRef = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const left = leftColRef.current;
     const header = headerRef.current;
@@ -192,28 +236,32 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
       leftNeed += m + (k.dataset.notes ? notesHead + 8 + notesBoxMinH(viewport.h) : k.offsetHeight);
     });
     const BORDER = 2;
-    if (hasChart && imgAspect) {
+    if (hasChart) {
+      const a = chartAspect;
+      // Grafiğin altındaki kurulum geçmişi kartı (varsa) ve aradaki boşluk
+      const setupEl = setupRef.current;
+      const setupH = setupEl ? setupEl.offsetHeight + 16 : 0;
       const padX = 40;
       const padY = 40;
       const headingH = 34;
       const chartWMax = maxW - leftW - padX - BORDER * 2;
-      const chartHMax = maxH - headerH - padY - headingH - BORDER * 2;
-      let cw = Math.min(chartWMax, chartHMax * imgAspect);
-      let ch = cw / imgAspect;
+      const chartHMax = maxH - headerH - padY - headingH - setupH - BORDER * 2;
+      let cw = Math.min(chartWMax, chartHMax * a);
+      let ch = cw / a;
       if (cw < 200 || ch < 120) {
         setFit({ h: Math.min(maxH, headerH + leftNeed + BORDER) });
         return;
       }
       cw = Math.floor(cw);
       ch = Math.floor(ch);
-      const rightH = ch + BORDER + headingH + padY;
+      const rightH = ch + BORDER + headingH + setupH + padY;
       const h = Math.min(maxH, headerH + Math.max(leftNeed, rightH) + BORDER);
       setFit({ w: leftW + cw + BORDER + padX + BORDER, h, leftW, cw, ch });
     } else {
       setFit({ h: Math.min(maxH, Math.max(headerH + leftNeed + BORDER, 480)) });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentTrade?.id, hasChart, imgAspect, viewport.w, viewport.h, isExporting, measureTick]);
+  }, [currentTrade?.id, hasChart, chartAspect, viewport.w, viewport.h, isExporting, measureTick, !!insight?.setup]);
 
   const handleDownload = async () => {
     if (!contentRef.current) return;
@@ -371,14 +419,6 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
             >
               {/* Header */}
               <div ref={headerRef} className="modal-header gap-3 relative">
-                {canNav && !isExporting && (
-                  <span aria-hidden className="no-export absolute left-0 right-0 bottom-0 h-px bg-zinc-800/60 pointer-events-none">
-                    <span
-                      className="block h-full bg-blue-400/50 transition-[width] duration-500 ease-[cubic-bezier(0.25,0.8,0.3,1)]"
-                      style={{ width: `${((navIndex + 1) / navList!.length) * 100}%` }}
-                    />
-                  </span>
-                )}
                 <div ref={headInfoRef} className="flex flex-col xl:flex-row xl:items-center gap-1.5 xl:gap-5 min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 min-w-0">
                     <h2 className="heading-1 flex items-center gap-3 min-w-0">
@@ -621,7 +661,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                       )}
                     </div>
                     
-                    <div style={fit?.cw && fit.ch ? { width: fit.cw + 2, height: fit.ch + 2, flex: 'none', minHeight: 0, padding: 0 } : phoneChart ? { minHeight: 0, padding: 0 } : undefined} className={`bg-zinc-900/40 border border-zinc-800/60 rounded-xl overflow-hidden relative group w-full flex items-center justify-center p-2 ${
+                    <div style={fit?.cw && fit.ch ? { width: fit.cw + 2, height: fit.ch + 2, flex: 'none', minHeight: 0, padding: 0 } : phoneChart ? { minHeight: 0, padding: 0, aspectRatio: String(chartAspect) } : undefined} className={`bg-zinc-900/40 border border-zinc-800/60 rounded-xl overflow-hidden relative group w-full flex items-center justify-center p-2 ${
                       isExporting 
                         ? 'h-auto max-h-none' 
                         : currentTrade.screenshot 
@@ -660,7 +700,11 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                             referrerPolicy="no-referrer"
                             onLoad={(e) => {
                               const im = e.currentTarget;
-                              if (im.naturalWidth > 0 && im.naturalHeight > 0) setImgAspect(im.naturalWidth / im.naturalHeight);
+                              if (im.naturalWidth > 0 && im.naturalHeight > 0) {
+                                const a = im.naturalWidth / im.naturalHeight;
+                                setImgAspect(a);
+                                if (shotKey) writeAspect(shotKey, a);
+                              }
                               setIsImageLoading(false);
                               setImageError(false);
                             }}
@@ -684,7 +728,12 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                     </div>
                   </section>
 
-
+                  {/* Kurulum geçmişi: grafiğin altındaki alanda (pencere ölçüsü bu kartı da hesaba katar) */}
+                  {insight?.setup && (
+                    <div ref={setupRef} className="shrink-0">
+                      <SetupHistoryPanel insight={insight} />
+                    </div>
+                  )}
                 </div>
               </div>
               
@@ -731,22 +780,22 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
               key="trade-delete-confirm-content"
               {...MODAL_PANEL}
               onClick={(e) => e.stopPropagation()}
-              className="bg-zinc-900 border border-zinc-700/80 rounded-2xl p-5 max-w-sm w-full shadow-2xl relative"
+              className="confirm-panel"
             >
-              <div className="w-12 h-12 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center mx-auto mb-4">
-                <Trash2 size={24} />
+              <div className="confirm-icon">
+                <Trash2 size={20} />
               </div>
-              <h3 className="text-base font-bold text-white uppercase text-center mb-2 font-sans">
+              <h3 className="confirm-title">
                 {smartUpper("İşlemi Sil")}
               </h3>
-              <p className="text-zinc-400 text-xs text-center mb-6 leading-relaxed font-sans">
-                <span className="font-semibold text-zinc-200">{currentTrade.asset}</span> <span className="text-zinc-300 font-bold">{currentTrade.type}</span> pozisyonunu kalıcı olarak silmek istediğine emin misin?
+              <p className="confirm-text">
+                <span className="font-semibold text-zinc-200">{currentTrade.asset}</span> ({currentTrade.type === 'LONG' ? 'Long' : 'Short'} - {getTradeAccountName(currentTrade)}) pozisyonunu silmek istediğine emin misin? Bu işlem geri alınamaz.
               </p>
-              <div className="flex gap-3">
+              <div className="confirm-actions">
                 <button
                   type="button"
                   onClick={() => setShowDeleteConfirm(false)}
-                  className="flex-1 py-2.5 bg-zinc-800 text-white text-xs font-bold uppercase rounded-xl transition-colors hover:bg-zinc-700 cursor-pointer"
+                  className="btn-cancel"
                 >
                   Vazgeç
                 </button>
@@ -759,9 +808,10 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                       onClose();
                     }
                   }}
-                  className="flex-1 py-2.5 bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-bold uppercase rounded-xl transition-colors hover:bg-rose-500/30 cursor-pointer"
+                  className="btn-danger"
                 >
-                  Evet, Sil
+                  <Trash2 size={13} />
+                  <span>Evet, Sil</span>
                 </button>
               </div>
             </motion.div>

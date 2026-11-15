@@ -10,6 +10,7 @@ import { computeEdgeDrift } from '../src/lib/edgeDrift';
 import { simulateRule } from '../src/lib/ruleSimulator';
 import { analyzeAsia, computeEdge } from '../src/lib/asiaAnalytics';
 import { calculateStrategyAnalytics } from '../src/lib/strategyAnalytics';
+import { computeTradeInsight } from '../src/lib/tradeInsight';
 import { computeWeekReview, currentWeekStart } from '../src/lib/weeklyReview';
 import { trade, account, NOW, DAY } from './fixtures';
 import type { Trade } from '../src/types';
@@ -82,6 +83,7 @@ for (const size of [0, 1, 2, 7, 60, 400]) {
     finiteDeep(computeEdge(trades), 'edge');
     finiteDeep(calculateStrategyAnalytics(trades), 'strategy');
     finiteDeep(computeWeekReview(trades, currentWeekStart(NOW)), 'week');
+    if (trades.length) finiteDeep(computeTradeInsight(trades[0], trades), 'insight');
     const acc = account({ id: 'acc1', size: 10000, riskPct: 1, dailyLossPct: 5 });
     const accTrades = trades.map((t) => ({ ...t, accountId: 'acc1' }));
     finiteDeep(computeAccountMetrics(acc, accTrades), 'propMetrics');

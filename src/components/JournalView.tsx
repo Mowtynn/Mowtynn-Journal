@@ -1,4 +1,4 @@
-import { EASE, MODAL_BACKDROP, MODAL_PANEL, POPOVER, PANE } from '../lib/motion';
+import { MODAL_BACKDROP, MODAL_PANEL, POPOVER, PANE } from '../lib/motion';
 import { smartUpper } from '../constants/constants';
 import React, { useState, memo, useMemo } from 'react';
 import { createPortal } from 'react-dom';
@@ -376,10 +376,7 @@ const JournalView = memo(function JournalView({ entries: allEntries, trades = []
 
   return (
     <motion.div 
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.15, ease: EASE }}
+      {...PANE}
       className="flex flex-col md:flex-row h-[calc(100dvh-170px)] min-h-[560px] bg-zinc-950/60 border border-zinc-800/80  rounded-2xl overflow-hidden text-zinc-200 shadow-sm relative"
     >
       {/* LEFT SIDEBAR: Entry List */}
@@ -1097,25 +1094,25 @@ const JournalView = memo(function JournalView({ entries: allEntries, trades = []
                 key="journal-delete-modal-content"
                 {...MODAL_PANEL}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 max-w-sm w-full shadow-2xl overflow-hidden relative select-none"
+                className="confirm-panel"
               >
-                <div className="w-11 h-11 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center mx-auto mb-4">
+                <div className="confirm-icon">
                   <Trash2 size={20} />
                 </div>
                 
-                <h3 className="text-sm font-bold tracking-wide text-zinc-100 uppercase text-center mb-1 font-sans">
+                <h3 className="confirm-title">
                   {smartUpper("Günlüğü Sil")}
                 </h3>
                 
-                <p className="text-zinc-400 text-xs text-center mb-6 leading-relaxed">
-                  <strong className="text-zinc-200">"{entryToDelete.title}"</strong> başlıklı günlüğü silmek istediğine emin misin?
+                <p className="confirm-text">
+                  <strong className="text-zinc-200">"{entryToDelete.title}"</strong> başlıklı günlüğü silmek istediğine emin misin? Bu işlem geri alınamaz.
                 </p>
                 
-                <div className="flex items-center gap-2.5">
+                <div className="confirm-actions">
                   <button
                     type="button"
                     onClick={() => setEntryToDelete(null)}
-                    className="flex-1 py-2 px-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-sans text-xs font-bold uppercase rounded-xl transition-ui cursor-pointer"
+                    className="btn-cancel"
                   >
                     Vazgeç
                   </button>
@@ -1131,10 +1128,10 @@ const JournalView = memo(function JournalView({ entries: allEntries, trades = []
                         setEntryToDelete(null);
                       }
                     }}
-                    className="flex-1 py-2 px-3 bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 border border-rose-500/30 font-sans text-xs font-bold uppercase rounded-xl transition-ui cursor-pointer flex items-center justify-center gap-1.5"
+                    className="btn-danger"
                   >
                     <Trash2 size={13} />
-                    <span>Sil</span>
+                    <span>Evet, Sil</span>
                   </button>
                 </div>
               </motion.div>
