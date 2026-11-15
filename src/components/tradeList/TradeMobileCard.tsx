@@ -46,7 +46,7 @@ export const TradeMobileCard = React.memo(function TradeMobileCard({
     >
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5 min-w-0">
-          <span className="text-[15px] font-bold text-zinc-100 tracking-wide truncate">{trade.asset || '—'}</span>
+          <span className="text-base font-bold text-zinc-100 tracking-wide truncate">{trade.asset || '—'}</span>
           <span
             className={`shrink-0 inline-flex items-center h-[18px] px-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider border ${
               long ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/25' : 'text-rose-400 bg-rose-500/10 border-rose-500/25'

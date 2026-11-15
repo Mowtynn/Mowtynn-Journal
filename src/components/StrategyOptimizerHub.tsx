@@ -197,21 +197,21 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-center">
                 <span className="text-[9px] uppercase tracking-wider text-zinc-500 block font-sans">{smartUpper("Mevcut Seri")}</span>
-                <span className={`text-base font-bold font-sans ${streakStats.currentStreak.type === 'WIN' ? 'text-emerald-400' : streakStats.currentStreak.type === 'LOSS' ? 'text-rose-400' : 'text-zinc-300'}`}>
+                <span className={`text-lg font-bold font-sans ${streakStats.currentStreak.type === 'WIN' ? 'text-emerald-400' : streakStats.currentStreak.type === 'LOSS' ? 'text-rose-400' : 'text-zinc-300'}`}>
                   {streakStats.currentStreak.type === 'WIN' ? `${streakStats.currentStreak.count} Kazanç` : streakStats.currentStreak.type === 'LOSS' ? `${streakStats.currentStreak.count} Kayıp` : '—'}
                 </span>
               </div>
 
               <div className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-center">
                 <span className="text-[9px] uppercase tracking-wider text-zinc-500 block font-sans">Maks. Kayıp Serisi</span>
-                <span className="text-base font-bold text-rose-400 font-sans">
+                <span className="text-lg font-bold text-rose-400 font-sans">
                   {streakStats.maxLossStreak} İşlem
                 </span>
               </div>
 
               <div className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-center">
                 <span className="text-[9px] uppercase tracking-wider text-zinc-500 block font-sans">Aynı Gün Kazanç Sonrası</span>
-                <span className="text-base font-bold text-zinc-200 font-sans tabular-nums">
+                <span className="text-lg font-bold text-zinc-200 font-sans tabular-nums">
                   {streakStats.postWinTotal > 0 ? `%${fixed(streakStats.postWinWinRate, 1)}` : '—'}
                 </span>
                 <span className="text-[9px] text-zinc-500 block mt-0.5">
@@ -222,7 +222,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
 
               <div className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-center">
                 <span className="text-[9px] uppercase tracking-wider text-zinc-500 block font-sans">Aynı Gün Kayıp Sonrası</span>
-                <span className={`text-base font-bold font-sans tabular-nums ${streakStats.postLossTiltRisk !== 'DÜŞÜK' ? 'text-rose-400' : 'text-zinc-200'}`}>
+                <span className={`text-lg font-bold font-sans tabular-nums ${streakStats.postLossTiltRisk !== 'DÜŞÜK' ? 'text-rose-400' : 'text-zinc-200'}`}>
                   {streakStats.postLossTotal > 0 ? `%${fixed(streakStats.postLossWinRate, 1)}` : '—'}
                 </span>
                 <span className="text-[9px] text-zinc-500 block mt-0.5">

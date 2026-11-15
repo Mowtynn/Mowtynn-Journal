@@ -401,7 +401,7 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                           <tr onClick={() => setSelectedTrade(t)} className="group cursor-pointer select-none hidden sm:table-row align-middle">
                             <td className="sm:bg-zinc-900 group-hover:bg-blue-950/10 border-y border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 py-1 px-2 align-middle px-3 rounded-l-xl border-l w-[17%] min-w-[120px] text-zinc-400 group-hover:text-zinc-100">
                               <div>
-                                <span className="text-white font-black text-[13px] tracking-wide leading-none">{t.asset}</span>
+                                <span className="text-white font-black text-sm tracking-wide leading-none">{t.asset}</span>
                               </div>
                             </td>
                             <td className="sm:bg-zinc-900 group-hover:bg-blue-950/10 border-y border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 py-1 px-2 align-middle w-[10%] min-w-[65px]">

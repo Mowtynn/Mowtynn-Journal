@@ -213,7 +213,7 @@ export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], o
           {stat ? (
             <div className="mt-auto flex flex-col items-center sm:items-end text-center sm:text-right min-w-0">
                {/* Telefonda hücre dar: tek ondalık; masaüstünde büyük ve okunur, "R" aynı taban çizgisinde */}
-               <div className={`max-w-full flex items-baseline justify-center sm:justify-end gap-0.5 font-sans font-extrabold text-[13px] sm:text-base lg:text-lg leading-none ${primaryColor} tracking-tight tabular-nums whitespace-nowrap`}>
+               <div className={`max-w-full flex items-baseline justify-center sm:justify-end gap-0.5 font-sans font-extrabold text-sm sm:text-base lg:text-lg leading-none ${primaryColor} tracking-tight tabular-nums whitespace-nowrap`}>
                  {/* Dar hücrede taşmasın: |R| ≥ 10 ise tam sayı (+12.5 → +13) */}
                  <span className="sm:hidden">{rsigned(stat.rr, Math.abs(stat.rr) >= 10 ? 0 : 1)}</span>
                  <span className="hidden sm:inline">{rsigned(stat.rr)}</span>

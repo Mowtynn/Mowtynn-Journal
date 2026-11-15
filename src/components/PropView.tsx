@@ -538,7 +538,7 @@ function ChainCard({
         </div>
         {/* Telefonda alt satıra indiğinde de sağ kenara yaslı kalır (ortada asılı durmaz) */}
         <div className="ml-auto text-right">
-          <div className="text-base font-extrabold text-zinc-100 tabular-nums">{money(m.balance)}</div>
+          <div className="text-lg font-extrabold text-zinc-100 tabular-nums">{money(m.balance)}</div>
           <div className={`text-[11px] font-bold tabular-nums ${m.netPnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
             {signedMoney(m.netPnl)} · <span>≈ {R(m.netPnl)}</span> · {m.tradeCount} işlem
           </div>

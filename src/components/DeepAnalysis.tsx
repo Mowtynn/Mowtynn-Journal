@@ -271,7 +271,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
                 />
               )}
               <span className="relative z-10 flex items-center justify-center gap-1.5 min-w-0">
-                <Icon size={14} className={`shrink-0 ${active ? 'text-blue-400' : 'text-zinc-500'}`} />
+                <Icon size={14} className={`shrink-0 max-[359px]:hidden ${active ? 'text-blue-400' : 'text-zinc-500'}`} />
                 <span className="truncate">{v.label}</span>
               </span>
             </button>
@@ -290,7 +290,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
     >
       {/* 1. Performans özeti: Kümülatif R · Profit Factor · Ort. Kazanç · Ort. Kayıp */}
       <div className="p-3.5 sm:px-5 sm:py-4">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 min-[360px]:grid-cols-2 lg:grid-cols-4 gap-3">
           <NewDeepAnalysisMetrics variant="kpi" metrics={metrics} onMetricClick={handleMetricClick} />
         </div>
       </div>

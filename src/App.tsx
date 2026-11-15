@@ -2261,7 +2261,7 @@ export default function App() {
                         <span className="h-9 w-9 rounded-xl bg-blue-500/10 border border-blue-500/20 group-hover:bg-blue-500/20 group-hover:border-blue-500/40 flex items-center justify-center text-blue-400 transition-colors duration-200 ease-out shrink-0">
                           <Plus size={18} />
                         </span>
-                        <span className="text-sm font-bold text-zinc-100 tracking-tight group-hover:text-blue-300 transition-colors font-sans truncate">
+                        <span className="text-sm font-bold text-zinc-100 tracking-tight group-hover:text-blue-300 transition-colors font-sans truncate max-[359px]:whitespace-normal max-[359px]:leading-tight">
                           Yeni Pozisyon Girişi Yap
                         </span>
                       </span>
