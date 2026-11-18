@@ -81,13 +81,44 @@ const safeFetch = async (raw: string, init: RequestInit, maxRedirects = 3): Prom
   throw new Error("Çok fazla yönlendirme");
 };
 
-const isTradingViewShareUrl = (raw: string): boolean => {
+// Sayfa olarak paylaşılan grafik linkleri: TradingView (tradingview.com/x/…) ve OpenMarket (k6a.ai/<kimlik>)
+const isChartShareUrl = (raw: string): boolean => {
   try {
     const u = new URL(raw);
-    return (u.hostname === "tradingview.com" || u.hostname.endsWith(".tradingview.com")) && u.pathname.startsWith("/x/");
+    const host = u.hostname.toLowerCase();
+    if (host === "tradingview.com" || host.endsWith(".tradingview.com")) return u.pathname.startsWith("/x/");
+    if (host === "k6a.ai" || host === "www.k6a.ai") return u.pathname.length > 1;
+    return false;
   } catch {
     return false;
   }
+};
+
+const decodeHtmlAttr = (s: string): string =>
+  s.replace(/&amp;/g, "&").replace(/&#0*38;/g, "&").replace(/&quot;/g, '"').replace(/&#0*39;/g, "'").replace(/&#x2F;/gi, "/");
+
+// Sayfadaki <meta> etiketlerinden önizleme görselini bulur. Öznitelik sırası ve tırnak biçimi fark etmez;
+// property ya da name olabilir; og:image yoksa twitter:image kullanılır.
+const extractMetaImage = (html: string): string | null => {
+  const wanted = ["og:image", "og:image:secure_url", "og:image:url", "twitter:image", "twitter:image:src"];
+  const found = new Map<string, string>();
+  const tagRe = /<meta\s[^>]*>/gi;
+  let m: RegExpExecArray | null;
+  while ((m = tagRe.exec(html))) {
+    const tag = m[0];
+    const attr = (name: string): string => {
+      const r = new RegExp(`(?:^|\\s)${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s"'>]+))`, "i").exec(tag);
+      return r ? (r[1] ?? r[2] ?? r[3] ?? "") : "";
+    };
+    const key = (attr("property") || attr("name")).trim().toLowerCase();
+    const content = attr("content").trim();
+    if (key && content && wanted.includes(key) && !found.has(key)) found.set(key, decodeHtmlAttr(content));
+  }
+  for (const k of wanted) {
+    const v = found.get(k);
+    if (v) return v;
+  }
+  return null;
 };
 
 const safeEqual = (a: string, b: string): boolean => {
@@ -225,28 +256,56 @@ async function startServer() {
     }
   });
 
-  // Helper route to resolve TradingView share links to direct image URLs
+  // Helper route to resolve chart share links (TradingView, OpenMarket) to direct image URLs
   app.get("/api/resolve-tv", requireSiteAuth, async (req, res) => {
     const urlParam = typeof req.query.url === 'string' ? req.query.url : '';
     try {
-      if (!urlParam || !isTradingViewShareUrl(urlParam)) {
+      if (!urlParam || !isChartShareUrl(urlParam)) {
         return res.json({ url: urlParam });
       }
       
       const htmlRes = await safeFetch(urlParam, {
-        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', 'Accept': 'text/html,application/xhtml+xml' }
       });
       if (htmlRes.ok) {
         const htmlText = await htmlRes.text();
-        const match = htmlText.match(/<meta property="og:image" content="([^"]+)"/);
+        const image = extractMetaImage(htmlText);
         // Yalnızca https görsel adresi döner (sayfadan gelen değer doğrulanmadan istemciye verilmez)
-        if (match && match[1] && /^https:\/\/[^\s"'<>]+$/i.test(match[1])) {
-          return res.json({ url: match[1] });
+        if (image && /^https:\/\/[^\s"'<>]+$/i.test(image)) {
+          return res.json({ url: image });
         }
       }
       res.json({ url: urlParam });
     } catch {
       res.json({ url: urlParam });
+    }
+  });
+
+  // CORS başlığı göndermeyen sitelerin (OpenMarket) grafik görselini kendi sunucumuzdan geçirir: görsel aynı kökenden gelince
+  // tarayıcı onu okuyabilir ve işlem detayındaki "PNG indir" çıktısında grafik boş kalmaz.
+  // Yalnızca paylaşım linki izin listesindeki sitelerden olabilir; görsel adresi sayfadan çıkarılır, yalnızca resim türleri geçer.
+  const CHART_IMAGE_MAX_BYTES = 12 * 1024 * 1024;
+  app.get("/api/chart-image", requireSiteAuth, async (req, res) => {
+    const urlParam = typeof req.query.url === 'string' ? req.query.url : '';
+    try {
+      if (!urlParam || !isChartShareUrl(urlParam)) return res.status(400).json({ error: "Desteklenmeyen link" });
+      const pageRes = await safeFetch(urlParam, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', 'Accept': 'text/html,application/xhtml+xml' }
+      });
+      if (!pageRes.ok) return res.status(502).json({ error: "Sayfa açılamadı" });
+      const image = extractMetaImage(await pageRes.text());
+      if (!image || !/^https:\/\/[^\s"'<>]+$/i.test(image)) return res.status(404).json({ error: "Görsel bulunamadı" });
+      const imgRes = await safeFetch(image, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' } });
+      const type = (imgRes.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
+      if (!imgRes.ok || !/^image\/(png|jpeg|jpg|webp|gif)$/.test(type)) return res.status(502).json({ error: "Görsel alınamadı" });
+      if (Number(imgRes.headers.get("content-length") || 0) > CHART_IMAGE_MAX_BYTES) return res.status(413).json({ error: "Görsel çok büyük" });
+      const buf = Buffer.from(await imgRes.arrayBuffer());
+      if (buf.length > CHART_IMAGE_MAX_BYTES) return res.status(413).json({ error: "Görsel çok büyük" });
+      res.setHeader("Content-Type", type);
+      res.setHeader("Cache-Control", "private, max-age=86400");
+      res.send(buf);
+    } catch {
+      res.status(502).json({ error: "Görsel alınamadı" });
     }
   });
 

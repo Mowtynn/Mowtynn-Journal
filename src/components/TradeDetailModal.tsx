@@ -12,7 +12,7 @@ import toast from "react-hot-toast";
 import { Trade, DefinitionTitles } from "../types";
 import { DEFAULT_DEFINITION_TITLES, cleanDefinitionTitleString, getNewsDayLabels, smartUpper, getTradeAccountName } from "../constants/constants";
 import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
-import { resolveChartImage } from "../lib/chartLink";
+import { isChartShareLink, resolveChartImage } from "../lib/chartLink";
 import { 
 
 
@@ -90,6 +90,8 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
   const [isDownloading, setIsDownloading] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [resolvedImageUrl, setResolvedImageUrl] = useState<string | null>(null);
+  // Görsel sunucusu CORS başlığı göndermiyorsa (ör. OpenMarket) crossOrigin olmadan yeniden denenir; görsel görünür, indirilen PNG'de boş kalabilir
+  const [noCors, setNoCors] = useState(false);
   // Grafiğin gerçek en / boy oranı (yüklenince): masaüstünde pencere bu orana göre boyutlanır, grafik boşluksuz oturur
   const [imgAspect, setImgAspect] = useState<number | null>(null);
 
@@ -126,6 +128,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
 
   React.useEffect(() => {
     setImageError(false);
+    setNoCors(false);
     setImgAspect(null);
     const screenshot = trade?.screenshot || (!trade ? displayedTrade?.screenshot : undefined);
     if (!screenshot) {
@@ -675,7 +678,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                           <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center text-zinc-400 bg-zinc-950/60 backdrop-blur-sm z-10">
                             <div className="w-8 h-8 border-2 border-zinc-700 border-t-blue-400 rounded-full animate-spin mb-3"></div>
                             <p className="text-xs text-zinc-400 font-sans">
-                              {currentTrade.screenshot.includes('tradingview.com/x/') && !resolvedImageUrl
+                              {isChartShareLink(currentTrade.screenshot) && !resolvedImageUrl
                                 ? 'Görsel çözümleniyor...'
                                 : 'Görsel yükleniyor...'}
                             </p>
@@ -692,11 +695,12 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                           </div>
                         ) : resolvedImageUrl ? (
                           <img decoding="async" 
+                            key={noCors ? 'plain' : 'cors'}
                             src={resolvedImageUrl} 
                             alt="Trading chart" 
                             style={fit?.cw ? { padding: 0 } : phoneChart ? { width: '100%', height: 'auto', maxHeight: '70vh', borderRadius: 0 } : undefined}
                             className={`object-contain rounded-lg transition-opacity duration-200 ${isExporting ? 'w-auto h-auto max-w-full' : 'w-auto h-auto max-w-full max-h-[min(420px,43vh)] lg:absolute lg:inset-0 lg:m-auto lg:w-full lg:h-full lg:max-h-none lg:p-2'} ${isImageLoading ? 'opacity-0' : 'opacity-100'}`}
-                            crossOrigin="anonymous"
+                            crossOrigin={noCors ? undefined : "anonymous"}
                             referrerPolicy="no-referrer"
                             onLoad={(e) => {
                               const im = e.currentTarget;
@@ -709,6 +713,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                               setImageError(false);
                             }}
                             onError={() => {
+                              if (!noCors) { setNoCors(true); return; }
                               setImageError(true);
                               setIsImageLoading(false);
                             }}
