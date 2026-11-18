@@ -1,12 +1,12 @@
 import { formatR } from "../../lib/format";
 import { Repeat2, TrendingUp } from "lucide-react";
 
-const PILL = "inline-flex items-center justify-center h-[20px] px-1.5 py-0 text-center text-[10px] font-bold rounded-full uppercase font-sans tabular-nums border transition-colors";
+const PILL = "inline-flex items-center justify-center h-[20px] px-1.5 py-0 text-center text-label font-bold rounded-full uppercase font-sans tabular-nums border transition-colors";
 
 /** İşlem R'si: işarete göre renk, başabaş "BE" (mavi). Durum R'den geldiği için ayrı bir Sonuç rozeti gerekmez. */
 export function RBadge({ rr }: { rr: unknown }) {
   if (typeof rr !== "number" || !Number.isFinite(rr)) {
-    return <span className="inline-flex items-center justify-center w-[38px] sm:w-[44px] h-[18px] text-[10px] font-medium text-zinc-500">—</span>;
+    return <span className="inline-flex items-center justify-center w-[38px] sm:w-[44px] h-[18px] text-label font-medium text-zinc-500">—</span>;
   }
   const tone =
     rr > 0

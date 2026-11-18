@@ -326,7 +326,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
                   )}
                 </AnimatePresence>
               </div>
-              <p className="text-[10px] text-zinc-500 -mt-1 mb-2">Seans başına toplam R ve kazanma oranı.</p>
+              <p className="text-label text-zinc-500 -mt-1 mb-2">Seans başına toplam R ve kazanma oranı.</p>
 
             <div className="flex-1 flex flex-col py-0.5">
               <div className="flex flex-col gap-2 w-full">
@@ -355,20 +355,20 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
 
                     return (
                       <div key={idx} className="bg-zinc-800 px-2 py-1.5 flex flex-col justify-center rounded-lg border border-zinc-700/50">
-                        <div className="flex items-center justify-between text-[9px] font-sans mb-1">
+                        <div className="flex items-center justify-between text-label font-sans mb-1">
                           <div className="flex items-center gap-1.5">
                             <Clock size={9} className={`${sessionColors}`} />
                             <span className={`font-black tracking-wide uppercase ${sessionColors}`}>
                               {readableSession}
                             </span>
-                            <span className="text-zinc-500 font-normal text-[9px]">
+                            <span className="text-zinc-500 font-normal text-label">
                               ({sr.total} işlem · %{winRate.toFixed(0)} WR)
                             </span>
-                            {sr.total < MIN_SAMPLE && <span className="px-1 py-px rounded border border-zinc-700 bg-zinc-900 text-[8px] font-bold text-zinc-400 uppercase tracking-wide" >Az Veri</span>}
+                            {sr.total < MIN_SAMPLE && <span className="px-1 py-px rounded border border-zinc-700 bg-zinc-900 text-label font-bold text-zinc-400 uppercase tracking-wide" >Az Veri</span>}
                           </div>
                           <div className="text-right">
                             <span className={`font-black ${pnlTone}`}>
-                              {rsigned(sr.rr)} <span className="text-[9px] text-zinc-500">R</span>
+                              {rsigned(sr.rr)} <span className="text-label text-zinc-500">R</span>
                             </span>
                           </div>
                         </div>
@@ -389,7 +389,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
                   });
                 })()}
                 {customMetrics.sessionRanking.length === 0 && (
-                  <div className="text-center py-6 text-[9px] text-zinc-600 font-sans uppercase tracking-widest flex-1 flex items-center justify-center">
+                  <div className="text-center py-6 text-label text-zinc-600 font-sans uppercase tracking-widest flex-1 flex items-center justify-center">
                     {smartUpper("Veri Yok")}
                   </div>
                 )}
@@ -416,7 +416,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
                   </h3>
                 </div>
               </div>
-              <p className="text-[10px] text-zinc-500 -mt-1 mb-2">Haftanın günlerine (NY) göre toplam R; parantezde işlem sayısı ve kazanma oranı.</p>
+              <p className="text-label text-zinc-500 -mt-1 mb-2">Haftanın günlerine (NY) göre toplam R; parantezde işlem sayısı ve kazanma oranı.</p>
 
               <div className="flex-1 flex flex-col justify-between py-0.5 space-y-1.5">
               {['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'].map(dayKey => {
@@ -433,15 +433,15 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
                     <div className="flex justify-between items-baseline mb-0.5">
                       <span className="text-xs font-bold text-zinc-200 tracking-tight font-sans flex items-center gap-1.5">
                         {fullDayName}
-                        {stats.total > 0 && <span className="text-[9px] font-normal text-zinc-500 tabular-nums">({stats.total} işlem · %{((stats.wins / stats.total) * 100).toFixed(0)} WR)</span>}
-                        {stats.total > 0 && stats.total < MIN_SAMPLE && <span className="px-1 py-px rounded border border-zinc-700 bg-zinc-900 text-[8px] font-bold text-zinc-400 uppercase tracking-wide" >Az Veri</span>}
+                        {stats.total > 0 && <span className="text-label font-normal text-zinc-500 tabular-nums">({stats.total} işlem · %{((stats.wins / stats.total) * 100).toFixed(0)} WR)</span>}
+                        {stats.total > 0 && stats.total < MIN_SAMPLE && <span className="px-1 py-px rounded border border-zinc-700 bg-zinc-900 text-label font-bold text-zinc-400 uppercase tracking-wide" >Az Veri</span>}
                       </span>
-                      <span className={`text-[10px] font-bold font-sans flex items-center gap-1.5 ${val > 1e-9 ? 'text-emerald-400' : val < -1e-9 ? 'text-rose-400' : 'text-zinc-500'}`}>
+                      <span className={`text-label font-bold font-sans flex items-center gap-1.5 ${val > 1e-9 ? 'text-emerald-400' : val < -1e-9 ? 'text-rose-400' : 'text-zinc-500'}`}>
                         {(
                           <>
                             <span>
                               {rsigned(val)}{' '}
-                              <span className="text-[9px] text-zinc-500">R</span>
+                              <span className="text-label text-zinc-500">R</span>
                             </span>
                           </>
                         )}
@@ -555,7 +555,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
         {processedAssets.length === 0 ? (
           <div className="text-center py-8 rounded-lg border border-dashed border-zinc-800 bg-zinc-950 flex-1 min-h-[160px] flex flex-col items-center justify-center">
             <AlertTriangle className="mx-auto text-amber-500/60 mb-2" size={24} />
-            <p className="text-[10px] font-sans text-zinc-500 uppercase tracking-wider">{smartUpper("Seçilen kriterlere uygun parite bulunamadı.")}</p>
+            <p className="text-label font-sans text-zinc-500 uppercase tracking-wider">{smartUpper("Seçilen kriterlere uygun parite bulunamadı.")}</p>
           </div>
         ) : (
           <div className="space-y-4 flex-1 flex flex-col">
@@ -592,15 +592,15 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
                         <div className="flex justify-between items-center z-10 mb-1">
                           <span className="font-extrabold text-xs text-white uppercase tracking-wider font-sans flex items-center gap-1.5">
                             {ar.asset}
-                            {ar.total < MIN_SAMPLE && <span className="px-1 py-px rounded border border-zinc-700 bg-zinc-900 text-[8px] font-bold text-zinc-400 uppercase tracking-wide" >Az Veri</span>}
+                            {ar.total < MIN_SAMPLE && <span className="px-1 py-px rounded border border-zinc-700 bg-zinc-900 text-label font-bold text-zinc-400 uppercase tracking-wide" >Az Veri</span>}
                           </span>
-                          <span className={`whitespace-nowrap text-[10px] font-black px-2 py-0.5 rounded-lg border uppercase tracking-widest ${isProfit ? 'toggle-item-win' : 'toggle-item-loss'}`}>
+                          <span className={`whitespace-nowrap text-label font-black px-2 py-0.5 rounded-lg border uppercase tracking-widest ${isProfit ? 'toggle-item-win' : 'toggle-item-loss'}`}>
                             {ar.total} İŞLEM
                           </span>
                         </div>
                         
                         <div className="flex flex-col gap-1 z-10">
-                          <div className="flex justify-between items-center text-[9px] font-sans">
+                          <div className="flex justify-between items-center text-label font-sans">
                             <span className="text-zinc-500 font-bold tracking-widest uppercase font-sans">Net R</span>
                             <span className={`font-bold tracking-wider text-xs ${ar.rr > 0 ? 'text-emerald-400' : ar.rr < 0 ? 'text-rose-400' : 'text-zinc-300'}`}>
                               {formatR(ar.rr)}
@@ -610,7 +610,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
                           {/* Divider */}
                           <div className="h-px w-full bg-zinc-800/50 group-hover:bg-zinc-700/60 transition-colors duration-200 my-0.5" />
  
-                          <div className="flex justify-between items-center text-[9px] font-sans">
+                          <div className="flex justify-between items-center text-label font-sans">
                             <span className="text-zinc-500 font-bold tracking-widest uppercase font-sans">WR</span>
                             <span className="font-bold tracking-wider text-xs text-zinc-200">
                               %{winRate.toFixed(1)}
@@ -695,7 +695,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
           </div>
           <ul className="flex flex-col sm:flex-row flex-wrap gap-x-4 gap-y-1">
             {integrityAnalysis.warnings.map((w, idx) => (
-              <li key={idx} className="text-zinc-400 text-[9px] flex items-center gap-1">
+              <li key={idx} className="text-zinc-400 text-label flex items-center gap-1">
                 <span className="h-0.5 w-0.5 rounded-full bg-rose-500/50 shrink-0" />
                 <span className="leading-none">{w}</span>
               </li>
@@ -727,12 +727,12 @@ function MiniRanking({ title, rows }: { title: string; rows: { label: string; to
     <div className="min-w-0">
       <div className="heading-3 text-zinc-500 mb-1.5">{smartUpper(title)}</div>
       {rows.length === 0 ? (
-        <div className="text-[10px] text-zinc-600">Veri yok</div>
+        <div className="text-label text-zinc-600">Veri yok</div>
       ) : (
         <ul className="flex flex-col gap-1.5">
           {rows.slice(0, 5).map((r) => (
             <li key={r.label} className="min-w-0">
-              <div className="flex items-baseline justify-between gap-2 text-[10px]">
+              <div className="flex items-baseline justify-between gap-2 text-label">
                 <span className="font-bold text-zinc-200 uppercase tracking-wide truncate">{r.label}</span>
                 <span className={`font-bold tabular-nums shrink-0 ${r.rr > 1e-9 ? 'text-emerald-400' : r.rr < -1e-9 ? 'text-rose-400' : 'text-zinc-400'}`}>{formatR(r.rr)}</span>
               </div>
@@ -740,7 +740,7 @@ function MiniRanking({ title, rows }: { title: string; rows: { label: string; to
                 <div className="flex-1 h-1 bg-zinc-950 rounded-full overflow-hidden">
                   <div className={`h-full rounded-full ${r.rr >= 0 ? 'bg-emerald-500/70' : 'bg-rose-500/70'}`} style={{ width: `${Math.min(100, (Math.abs(r.rr) / max) * 100)}%` }} />
                 </div>
-                <span className="text-[9px] text-zinc-500 tabular-nums shrink-0">{r.total} · %{r.total ? Math.round((r.wins / r.total) * 100) : 0}</span>
+                <span className="text-label text-zinc-500 tabular-nums shrink-0">{r.total} · %{r.total ? Math.round((r.wins / r.total) * 100) : 0}</span>
               </div>
             </li>
           ))}

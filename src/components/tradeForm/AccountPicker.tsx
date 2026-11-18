@@ -17,7 +17,7 @@ function StageBadge({ stage, active }: { stage: number; active?: boolean }) {
   const funded = stage === 0;
   return (
     <span
-      className={`shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-md leading-none ${
+      className={`shrink-0 text-label font-bold px-1.5 py-0.5 rounded-md leading-none ${
         funded ? "bg-emerald-500/15 text-emerald-300" : active ? "bg-blue-500/25 text-blue-200" : "bg-zinc-800 text-zinc-400"
       }`}
     >
@@ -116,7 +116,7 @@ export function AccountPicker({
           <>
             <span aria-hidden className={`w-1.5 h-1.5 rounded-full shrink-0 ${selected.stage === 0 ? "bg-emerald-400" : "bg-blue-400"}`} />
             <span className="truncate flex-1 text-xs font-semibold text-zinc-100">{selected.label}</span>
-            {sizeLabel(selected.size) && <span className="shrink-0 text-[11px] font-semibold text-zinc-500 tabular-nums">{sizeLabel(selected.size)}</span>}
+            {sizeLabel(selected.size) && <span className="shrink-0 text-label font-semibold text-zinc-500 tabular-nums">{sizeLabel(selected.size)}</span>}
             <StageBadge stage={selected.stage} active />
           </>
         ) : isNoAccount ? (
@@ -173,7 +173,7 @@ export function AccountPicker({
                         <>
                           <span aria-hidden className={`w-1.5 h-1.5 rounded-full shrink-0 ${it.acc.stage === 0 ? "bg-emerald-400" : "bg-blue-400"}`} />
                           <span className="truncate flex-1">{it.acc.label}</span>
-                          {sizeLabel(it.acc.size) && <span className="shrink-0 text-[11px] text-zinc-500 tabular-nums">{sizeLabel(it.acc.size)}</span>}
+                          {sizeLabel(it.acc.size) && <span className="shrink-0 text-label text-zinc-500 tabular-nums">{sizeLabel(it.acc.size)}</span>}
                           <StageBadge stage={it.acc.stage} active={sel} />
                         </>
                       ) : (
@@ -188,10 +188,10 @@ export function AccountPicker({
                   </React.Fragment>
                 );
               })}
-              {items.length === 0 && <li className="px-2.5 py-2 text-[11px] text-zinc-500">Eşleşen hesap yok</li>}
+              {items.length === 0 && <li className="px-2.5 py-2 text-label text-zinc-500">Eşleşen hesap yok</li>}
             </ul>
             {options.length === 0 && (
-              <p className="px-2.5 pt-1.5 text-[10px] text-zinc-500">Aktif prop hesabı yok · Prop sekmesinden ekleyebilirsin.</p>
+              <p className="px-2.5 pt-1.5 text-label text-zinc-500">Aktif prop hesabı yok · Prop sekmesinden ekleyebilirsin.</p>
             )}
           </motion.div>
         )}

@@ -178,7 +178,7 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
                   <button
                     key={f.id}
                     onClick={() => setTimeFilter(f.id as typeof timeFilter)}
-                    className={`px-2.5 py-1 rounded-lg text-[10px] font-sans font-bold transition-ui duration-150 ${
+                    className={`px-2.5 py-1 rounded-lg text-label font-sans font-bold transition-ui duration-150 ${
                       timeFilter === f.id 
                         ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' 
                         : 'text-zinc-400 hover:text-zinc-200 border border-transparent'
@@ -270,7 +270,7 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
                                   <div>Net R: <span className={`font-bold tabular-nums ${(cell?.r || 0) > 1e-9 ? 'text-emerald-400' : (cell?.r || 0) < -1e-9 ? 'text-rose-400' : 'text-zinc-300'}`}>{formatR(cell?.r || 0)}</span></div>
                                   <div>Kazanma Oranı: <span className="text-zinc-100 font-bold">%{winRatePercent}</span></div>
                                   {cell?.planFidelityCounts && Object.keys(cell.planFidelityCounts).length > 0 && (
-                                    <div className="pt-0.5 text-[11px] text-blue-300 border-t border-zinc-800/80 mt-1 uppercase font-bold">
+                                    <div className="pt-0.5 text-label text-blue-300 border-t border-zinc-800/80 mt-1 uppercase font-bold">
                                       Setup: <span className="font-bold">{Object.entries(cell.planFidelityCounts).sort((a, b) => b[1] - a[1])[0][0]}</span>
                                     </div>
                                   )}
@@ -305,7 +305,7 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
               <Info size={13} className="text-blue-400 shrink-0" />
               <span>Renk yoğunluğu net R büyüklüğünü, kutu içi değerler kazanma oranını belirtir. {MIN_SAMPLE} işlemden az hücreler soluktur ve en iyi / en kötü seçimine girmez.</span>
             </div>
-            <div className="flex items-center gap-2 font-sans text-[10px] shrink-0">
+            <div className="flex items-center gap-2 font-sans text-label shrink-0">
               <span className="text-rose-400 font-bold">Zarar</span>
               <div className="flex gap-1">
                 <div className="w-3.5 h-3.5 rounded-md bg-rose-500/80 border border-rose-500"></div>

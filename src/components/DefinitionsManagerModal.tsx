@@ -111,7 +111,7 @@ const RequiredFieldsPanel: React.FC = () => {
   };
   return (
     <div className="flex flex-col gap-3 min-h-0">
-      <p className="text-[11px] text-zinc-400 leading-snug">
+      <p className="text-label text-zinc-400 leading-snug">
         Seçili alanlar boşken tam kayıt yapılamaz; Hızlı Kayıt muaftır, ayrıntıları sonra "Tamamla" ile girersin. Parite, yön, sonuç, hesap ve News Day her zaman zorunludur. Girişliyken ayar buluta da kaydedilir.
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 overflow-y-auto custom-scrollbar">
@@ -126,7 +126,7 @@ const RequiredFieldsPanel: React.FC = () => {
               className={`flex items-center justify-between gap-2 px-3 py-2 rounded-xl border text-xs font-bold transition-ui cursor-pointer ${on ? 'bg-blue-500/15 text-blue-200 border-blue-500/40' : 'bg-zinc-950/60 text-zinc-400 border-zinc-800 hover:text-zinc-200 hover:border-zinc-700'}`}
             >
               <span className="truncate">{f.label}</span>
-              <span className="text-[10px] font-semibold shrink-0">{on ? 'Zorunlu' : 'İsteğe Bağlı'}</span>
+              <span className="text-label font-semibold shrink-0">{on ? 'Zorunlu' : 'İsteğe Bağlı'}</span>
             </button>
           );
         })}
@@ -134,7 +134,7 @@ const RequiredFieldsPanel: React.FC = () => {
       <button
         type="button"
         onClick={() => update(DEFAULT_REQUIRED_FIELDS)}
-        className="self-start px-3 py-1.5 rounded-xl border border-zinc-700/70 bg-zinc-900 text-[11px] font-bold text-zinc-300 hover:text-white hover:border-zinc-500 cursor-pointer transition-ui"
+        className="self-start px-3 py-1.5 rounded-xl border border-zinc-700/70 bg-zinc-900 text-label font-bold text-zinc-300 hover:text-white hover:border-zinc-500 cursor-pointer transition-ui"
       >
         Önerilen Ayara Dön
       </button>
@@ -177,16 +177,16 @@ const FormLabelsPanel: React.FC<{
       <div className="flex items-center justify-between gap-2 bg-zinc-950/60 border border-zinc-800/80 rounded-xl px-3.5 py-2.5 mb-3.5">
         <div className="min-w-0">
           <span className="text-xs font-bold text-zinc-100 font-sans">Form Başlıkları</span>
-          <p className="text-[11px] text-zinc-500 font-sans mt-0.5">Listesi olmayan alanların işlem ekleme ekranındaki adları. Enter veya alandan çıkınca kaydedilir.</p>
+          <p className="text-label text-zinc-500 font-sans mt-0.5">Listesi olmayan alanların işlem ekleme ekranındaki adları. Enter veya alandan çıkınca kaydedilir.</p>
         </div>
-        <button type="button" onClick={resetAll} className="text-[10px] font-sans text-zinc-400 hover:text-rose-400 flex items-center gap-1 transition-colors cursor-pointer shrink-0">
+        <button type="button" onClick={resetAll} className="text-label font-sans text-zinc-400 hover:text-rose-400 flex items-center gap-1 transition-colors cursor-pointer shrink-0">
           <RotateCcw size={11} /> Varsayılanlara Sıfırla
         </button>
       </div>
       <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar min-h-0">
         {FORM_LABEL_KEYS.map((key) => (
           <div key={key} className="flex items-center justify-between gap-3 px-3.5 py-2 rounded-xl border bg-zinc-950/40 border-zinc-800/80">
-            <span className="text-[11px] text-zinc-500 font-sans truncate">{FORM_LABEL_HINTS[key]}</span>
+            <span className="text-label text-zinc-500 font-sans truncate">{FORM_LABEL_HINTS[key]}</span>
             <input
               type="text"
               value={drafts[key] ?? current(key)}
@@ -593,7 +593,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
               
               {/* Sidebar Tabs */}
               <div className="flex md:flex-col gap-1.5 overflow-x-auto md:overflow-y-auto md:w-56 shrink-0 pb-2 md:pb-0 custom-scrollbar bg-zinc-900/90 border border-zinc-700/50 p-2 rounded-2xl shadow-xs md:self-stretch">
-                <div className="px-2 py-1 text-[10px] font-bold text-zinc-500 uppercase tracking-wider font-sans hidden md:block">
+                <div className="px-2 py-1 text-label font-bold text-zinc-500 uppercase tracking-wider font-sans hidden md:block">
                   Kategoriler
                 </div>
 
@@ -629,7 +629,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                         <span>{tab.label}</span>
                       </span>
 
-                      <span className={`whitespace-nowrap relative z-10 text-[10px] font-sans px-2 py-0.5 rounded-md border ${
+                      <span className={`whitespace-nowrap relative z-10 text-label font-sans px-2 py-0.5 rounded-md border ${
                         isActive
                           ? 'bg-blue-500/20 text-blue-300 border-blue-500/30 font-bold'
                           : 'bg-zinc-800 text-zinc-500 border-zinc-700/60'
@@ -699,7 +699,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                             setCustomTitleInput(currentTabObj.label);
                             setIsEditingTitle(true);
                           }}
-                          className="px-2 py-0.5 text-zinc-400 hover:text-blue-300 bg-zinc-800/80 hover:bg-blue-500/10 border border-zinc-700/60 hover:border-blue-500/30 rounded-lg transition-ui flex items-center gap-1 text-[11px] font-sans cursor-pointer"
+                          className="px-2 py-0.5 text-zinc-400 hover:text-blue-300 bg-zinc-800/80 hover:bg-blue-500/10 border border-zinc-700/60 hover:border-blue-500/30 rounded-lg transition-ui flex items-center gap-1 text-label font-sans cursor-pointer"
                         >
                           <Edit2 size={10} className="text-blue-400" />
                           <span>Başlığı Değiştir</span>
@@ -712,7 +712,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                     <button
                       type="button"
                       onClick={() => setShowResetConfirm(true)}
-                      className="text-[10px] font-sans text-zinc-400 hover:text-rose-400 flex items-center gap-1 transition-colors cursor-pointer"
+                      className="text-label font-sans text-zinc-400 hover:text-rose-400 flex items-center gap-1 transition-colors cursor-pointer"
                     >
                       <RotateCcw size={11} /> {isFixedTab ? 'Etiketleri Sıfırla' : 'Varsayılanlara Sıfırla'}
                     </button>
@@ -721,7 +721,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
 
                 {/* Search & Add Bar */}
                 {isFixedTab ? (
-                  <div className="mb-4 px-3.5 py-2.5 rounded-xl bg-zinc-950/60 border border-zinc-800/80 text-[11px] font-sans text-zinc-400 leading-relaxed">
+                  <div className="mb-4 px-3.5 py-2.5 rounded-xl bg-zinc-950/60 border border-zinc-800/80 text-label font-sans text-zinc-400 leading-relaxed">
                     Bu alan sabit iki durumludur: <strong className="text-zinc-200">ilk satır</strong> “evet” anlamına, <strong className="text-zinc-200">ikinci satır</strong> “hayır” (varsayılan seçili) anlamına gelir. Yalnızca butonlarda görünen etiketleri değiştirebilirsin; geçmiş işlemler etiketten bağımsız saklandığı için bozulmaz.
                   </div>
                 ) : (
@@ -836,7 +836,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                               <div className="flex items-center gap-2.5 min-w-0">
                                 {!isFixedTab && <GripVertical size={13} className="text-zinc-600 group-hover:text-zinc-400 transition-colors cursor-grab" />}
                                 {isFixedTab && (
-                                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md border shrink-0 ${originalIndex === 0 ? 'bg-zinc-800 text-zinc-300 border-zinc-700' : 'bg-blue-500/15 text-blue-300 border-blue-500/30'}`}>
+                                  <span className={`text-label font-bold px-1.5 py-0.5 rounded-md border shrink-0 ${originalIndex === 0 ? 'bg-zinc-800 text-zinc-300 border-zinc-700' : 'bg-blue-500/15 text-blue-300 border-blue-500/30'}`}>
                                     {originalIndex === 0 ? 'EVET' : 'HAYIR · VARSAYILAN'}
                                   </span>
                                 )}
@@ -847,7 +847,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
 
                               <div className="flex items-center gap-2 shrink-0">
                                 {/* Usage Badge */}
-                                <span className={`px-2 py-0.5 rounded-md text-[10px] font-sans font-medium border ${
+                                <span className={`px-2 py-0.5 rounded-md text-label font-sans font-medium border ${
                                   count > 0 
                                     ? 'toggle-item-brand' 
                                     : 'bg-zinc-800/60 text-zinc-500 border-zinc-800'
@@ -918,7 +918,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                         <span className="font-sans font-bold text-zinc-200">"{deleteConfirmItem.item}"</span> tanımını silmek istediğine emin misin?
                       </p>
                       {deleteConfirmItem.count > 0 && (
-                        <div className="-mt-2 mb-5 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-300 text-[11px] font-sans leading-relaxed text-left flex items-start gap-2">
+                        <div className="-mt-2 mb-5 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-300 text-label font-sans leading-relaxed text-left flex items-start gap-2">
                           <AlertCircle size={15} className="text-amber-400 shrink-0 mt-0.5" />
                             <div>
                               Bu tanım <strong className="text-amber-200 underline">{deleteConfirmItem.count} işlemde</strong> kullanılıyor. Silerseniz yalnızca seçim listesinden kalkar; işlemlerdeki kayıtlı değer ve istatistikler korunur.

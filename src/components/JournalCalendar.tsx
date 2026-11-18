@@ -145,7 +145,7 @@ export function JournalCalendar({ entries, selectedDate, onSelectDate }: Journal
         <button
           type="button"
           onClick={handleClear}
-          className={`flex-1 py-1 px-1.5 rounded-lg text-[10px] font-medium border transition-ui cursor-pointer text-center ${
+          className={`flex-1 py-1 px-1.5 rounded-lg text-label font-medium border transition-ui cursor-pointer text-center ${
             !selectedDate
               ? 'bg-blue-500/20 text-blue-300 border-blue-500/40 font-bold'
               : 'bg-zinc-950/80 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border-zinc-700/40 hover:border-zinc-600'
@@ -156,14 +156,14 @@ export function JournalCalendar({ entries, selectedDate, onSelectDate }: Journal
         <button
           type="button"
           onClick={handleSetToday}
-          className="flex-1 py-1 px-1.5 rounded-lg bg-zinc-950/80 hover:bg-zinc-800 text-[10px] font-medium text-zinc-300 hover:text-zinc-100 border border-zinc-700/40 hover:border-zinc-600 transition-ui cursor-pointer text-center"
+          className="flex-1 py-1 px-1.5 rounded-lg bg-zinc-950/80 hover:bg-zinc-800 text-label font-medium text-zinc-300 hover:text-zinc-100 border border-zinc-700/40 hover:border-zinc-600 transition-ui cursor-pointer text-center"
         >
           Bugün
         </button>
         <button
           type="button"
           onClick={handleSetYesterday}
-          className="flex-1 py-1 px-1.5 rounded-lg bg-zinc-950/80 hover:bg-zinc-800 text-[10px] font-medium text-zinc-300 hover:text-zinc-100 border border-zinc-700/40 hover:border-zinc-600 transition-ui cursor-pointer text-center"
+          className="flex-1 py-1 px-1.5 rounded-lg bg-zinc-950/80 hover:bg-zinc-800 text-label font-medium text-zinc-300 hover:text-zinc-100 border border-zinc-700/40 hover:border-zinc-600 transition-ui cursor-pointer text-center"
         >
           Dün
         </button>
@@ -196,7 +196,7 @@ export function JournalCalendar({ entries, selectedDate, onSelectDate }: Journal
       {/* Weekday Headers */}
       <div className="grid grid-cols-7 gap-1 text-center mb-1">
         {TURKISH_DAYS_SHORT.map((day) => (
-          <span key={day} className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">
+          <span key={day} className="text-label font-semibold text-zinc-500 uppercase tracking-wider">
             {day}
           </span>
         ))}
@@ -229,7 +229,7 @@ export function JournalCalendar({ entries, selectedDate, onSelectDate }: Journal
                   handleSelectDay(item.dateStr);
                 }
               }}
-              className={`h-7 text-[10px] font-sans rounded-lg transition-ui flex flex-col items-center justify-center relative cursor-pointer ${
+              className={`h-7 text-label font-sans rounded-lg transition-ui flex flex-col items-center justify-center relative cursor-pointer ${
                 isSelected
                   ? 'bg-blue-500/25 text-blue-300 border border-blue-500/40 font-bold shadow-xs'
                   : entry
@@ -257,14 +257,14 @@ export function JournalCalendar({ entries, selectedDate, onSelectDate }: Journal
 
       {/* Footer info & Clear Filter action */}
       {selectedDate && (
-        <div className="pt-2 border-t border-zinc-800/80 flex items-center justify-between text-[10px] font-sans text-zinc-400">
+        <div className="pt-2 border-t border-zinc-800/80 flex items-center justify-between text-label font-sans text-zinc-400">
           <span className="text-zinc-300">
             Filtre: <strong className="text-blue-400 font-bold">{selectedDate}</strong>
           </span>
           <button
             type="button"
             onClick={handleClear}
-            className="text-[10px] font-bold text-zinc-400 hover:text-rose-400 flex items-center gap-1 transition-colors cursor-pointer"
+            className="text-label font-bold text-zinc-400 hover:text-rose-400 flex items-center gap-1 transition-colors cursor-pointer"
           >
             <X size={11} /> Kaldır
           </button>

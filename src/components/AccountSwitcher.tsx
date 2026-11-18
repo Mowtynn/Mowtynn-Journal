@@ -145,7 +145,7 @@ export const AccountSwitcher: React.FC<AccountSwitcherProps> = React.memo(({
   };
 
   const badge = (n: number, cls: string) => (
-    <span className={`inline-flex items-center justify-center h-[18px] min-w-[18px] px-1 text-[10px] font-bold font-sans tabular-nums leading-none rounded-md border ${cls}`}>{n}</span>
+    <span className={`inline-flex items-center justify-center h-[18px] min-w-[18px] px-1 text-label font-bold font-sans tabular-nums leading-none rounded-md border ${cls}`}>{n}</span>
   );
 
   // Hesap sayısı artınca: arama kutusu (çok hesapta ad/firma ile süzme)
@@ -192,9 +192,9 @@ export const AccountSwitcher: React.FC<AccountSwitcherProps> = React.memo(({
             {accountShortName(account)}
           </span>
           {stageTag(account) && (
-            <span className="text-[9px] font-bold font-sans px-1 rounded border border-zinc-700 text-zinc-400 shrink-0">{stageTag(account)}</span>
+            <span className="text-label font-bold font-sans px-1 rounded border border-zinc-700 text-zinc-400 shrink-0">{stageTag(account)}</span>
           )}
-          {!active && <span className="text-[10px] text-zinc-600 shrink-0">{ACCOUNT_STATUS_LABEL[account.status]}</span>}
+          {!active && <span className="text-label text-zinc-600 shrink-0">{ACCOUNT_STATUS_LABEL[account.status]}</span>}
         </span>
         <span className="flex items-center gap-1 shrink-0">
           {badge(count, sel ? opt.badgeBgClass : 'bg-zinc-800/90 text-zinc-400 border-zinc-700/60')}
@@ -222,9 +222,9 @@ export const AccountSwitcher: React.FC<AccountSwitcherProps> = React.memo(({
         }`}
       >
         {current.icon}
-        <span className={`text-[11px] font-black font-sans tracking-wide uppercase truncate min-w-0 ${current.colorClass}`}>{triggerLabel}</span>
+        <span className={`text-label font-black font-sans tracking-wide uppercase truncate min-w-0 ${current.colorClass}`}>{triggerLabel}</span>
         {activeAccount && stageTag(activeAccount) && (
-          <span className="text-[9px] font-bold font-sans px-1 rounded border border-blue-500/30 text-blue-300 shrink-0">{stageTag(activeAccount)}</span>
+          <span className="text-label font-bold font-sans px-1 rounded border border-blue-500/30 text-blue-300 shrink-0">{stageTag(activeAccount)}</span>
         )}
         <span className="shrink-0 flex items-center">{badge(triggerCount, current.badgeBgClass)}</span>
         <ChevronDown size={11} className={`shrink-0 text-zinc-400 transition-transform duration-150 ${isOpen ? 'rotate-180 text-zinc-200' : ''}`} />
@@ -286,14 +286,14 @@ export const AccountSwitcher: React.FC<AccountSwitcherProps> = React.memo(({
                     >
                       <span className="flex items-center gap-2 min-w-0">
                         {opt.icon}
-                        <span className={`text-[11px] font-black font-sans tracking-wider uppercase truncate ${isSelected ? opt.colorClass : 'text-zinc-200'}`}>
+                        <span className={`text-label font-black font-sans tracking-wider uppercase truncate ${isSelected ? opt.colorClass : 'text-zinc-200'}`}>
                           {opt.label}
                         </span>
                         {group && (group.rows.length > 0 || group.unlinked > 0) && (
-                          <span className="text-[10px] font-semibold text-zinc-500 normal-case shrink-0">tümü</span>
+                          <span className="text-label font-semibold text-zinc-500 normal-case shrink-0">tümü</span>
                         )}
-                        {opt.id === 'ALL' && <span className="text-[10px] font-semibold text-zinc-500 normal-case truncate">Challenge + Funded</span>}
-                        {opt.id === 'DEMO' && <span className="text-[10px] font-semibold text-zinc-500 normal-case truncate">ayrı tutulur</span>}
+                        {opt.id === 'ALL' && <span className="text-label font-semibold text-zinc-500 normal-case truncate">Challenge + Funded</span>}
+                        {opt.id === 'DEMO' && <span className="text-label font-semibold text-zinc-500 normal-case truncate">ayrı tutulur</span>}
                       </span>
                       <span className="flex items-center gap-1 shrink-0">
                         {badge(opt.count, isSelected ? opt.badgeBgClass : 'bg-zinc-800/90 text-zinc-400 border-zinc-700/60')}
@@ -311,11 +311,11 @@ export const AccountSwitcher: React.FC<AccountSwitcherProps> = React.memo(({
                         onClick={() => setOpenClosed((m) => ({ ...m, [opt.id]: !m[opt.id] }))}
                         className="w-full h-7 shrink-0 pl-6 pr-2 text-left rounded-lg flex items-center justify-between gap-2 cursor-pointer text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/60 disabled:cursor-default disabled:hover:bg-transparent transition-ui"
                       >
-                        <span className="flex items-center gap-1.5 text-[11px] font-semibold">
+                        <span className="flex items-center gap-1.5 text-label font-semibold">
                           <ChevronRight size={12} className={`transition-transform duration-150 ${closedOpen ? 'rotate-90' : ''}`} />
                           Kapanmış Hesaplar
                         </span>
-                        <span className="text-[10px] font-bold font-sans tabular-nums">{closed.length}</span>
+                        <span className="text-label font-bold font-sans tabular-nums">{closed.length}</span>
                       </button>
                     )}
                     {closedOpen && closed.map((r) => renderAccount(opt, r))}
@@ -346,7 +346,7 @@ export const AccountSwitcher: React.FC<AccountSwitcherProps> = React.memo(({
                   </React.Fragment>
                 );
               })}
-              {noMatch && <p className="px-2 py-3 text-center text-[11px] text-zinc-500">"{query}" ile eşleşen hesap yok</p>}
+              {noMatch && <p className="px-2 py-3 text-center text-label text-zinc-500">"{query}" ile eşleşen hesap yok</p>}
             </div>
           </motion.div>
         )}

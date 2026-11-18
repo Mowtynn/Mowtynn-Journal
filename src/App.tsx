@@ -123,7 +123,7 @@ const DATE_LIMIT_LABELS: Record<string, string> = { "1w": "Son 1 hafta", "1m": "
 /** Tarih aralığı daraltılmışsa görünür not: üst menüdeki hesap sayıları tüm zamanları sayar, panel daha az gösterebilir */
 const DateLimitNote = ({ limit, shown, onReset }: { limit: string; shown: number; onReset: () => void }) =>
   limit === DEFAULT_DATE_LIMIT ? null : (
-    <div className="flex items-center justify-between gap-2 rounded-xl border border-amber-500/25 bg-amber-500/5 px-3 py-2 text-[11px] text-amber-200/90">
+    <div className="flex items-center justify-between gap-2 rounded-xl border border-amber-500/25 bg-amber-500/5 px-3 py-2 text-label text-amber-200/90">
       <span className="flex items-center gap-1.5 min-w-0">
         <CalendarRange size={13} className="text-amber-300 shrink-0" />
         <span className="truncate">
@@ -2236,9 +2236,9 @@ export default function App() {
                         </span>
                         <span className="flex-1 min-w-0">
                           <span className="block text-xs font-bold text-blue-100 sm:truncate">Bu haftanın değerlendirmesi bekliyor{activeScopeKey ? ` · ${activeScopeName}` : ""}</span>
-                          <span className="block text-[11px] text-blue-200/70 sm:truncate leading-snug">Haftanın istatistikleri hazır; üç kısa soruyu yanıtla, gelecek haftanın odağını belirle.</span>
+                          <span className="block text-label text-blue-200/70 sm:truncate leading-snug">Haftanın istatistikleri hazır; üç kısa soruyu yanıtla, gelecek haftanın odağını belirle.</span>
                         </span>
-                        <span className="text-[11px] font-bold text-blue-200 shrink-0">Değerlendir →</span>
+                        <span className="text-label font-bold text-blue-200 shrink-0">Değerlendir →</span>
                       </button>
                     )}
                     <DateLimitNote limit={globalDateLimit} shown={filteredGlobalTrades.length} onReset={() => setGlobalDateLimit(DEFAULT_DATE_LIMIT)} />
@@ -2407,7 +2407,7 @@ export default function App() {
                 <h1 className="page-title !text-sm !tracking-wide !whitespace-nowrap">
                   TRADING JOURNAL
                 </h1>
-                <span className="hidden sm:inline text-[11px] font-medium tracking-normal text-zinc-400 italic whitespace-nowrap">
+                <span className="hidden sm:inline text-label font-medium tracking-normal text-zinc-400 italic whitespace-nowrap">
                   by Mowtynn
                 </span>
               </div>
@@ -2444,7 +2444,7 @@ export default function App() {
               >
                 <Settings size={13} className={`transition-transform duration-200 ${isSettingsOpen ? 'rotate-45 text-blue-400' : ''}`} />
                 {activeFilterCount > 0 && (
-                  <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] px-1 rounded-full text-[8px] font-sans font-black bg-blue-500 text-black shadow-xs flex items-center justify-center leading-none">
+                  <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] px-1 rounded-full text-label font-sans font-black bg-blue-500 text-black shadow-xs flex items-center justify-center leading-none">
                     {activeFilterCount}
                   </span>
                 )}
@@ -2474,11 +2474,11 @@ export default function App() {
                           <span className="font-medium text-xs">Filtreleme Menüsü</span>
                         </div>
                         {activeFilterCount > 0 ? (
-                          <span className="px-1.5 py-0.5 rounded-full text-[9px] font-sans font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                          <span className="px-1.5 py-0.5 rounded-full text-label font-sans font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">
                             {activeFilterCount} aktif
                           </span>
                         ) : (
-                          <span className="text-[10px] text-zinc-500 font-sans">Tümü</span>
+                          <span className="text-label text-zinc-500 font-sans">Tümü</span>
                         )}
                       </button>
 
@@ -2544,7 +2544,7 @@ export default function App() {
                       className="w-full h-full object-cover select-none"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-zinc-800 text-zinc-300 font-bold text-[10px] select-none uppercase">
+                    <div className="w-full h-full flex items-center justify-center bg-zinc-800 text-zinc-300 font-bold text-label select-none uppercase">
                       {displayName ? displayName.slice(0, 2) : (user.email ? user.email.slice(0, 2) : "U")}
                     </div>
                   )
@@ -2611,7 +2611,7 @@ export default function App() {
                               <span className="font-semibold text-xs text-zinc-200">Bulut Veritabanı</span>
                               <div className="flex items-center gap-1.5 min-w-0">
                                 <span 
-                                  className="text-[10px] text-zinc-400 font-sans truncate max-w-[110px]" 
+                                  className="text-label text-zinc-400 font-sans truncate max-w-[110px]" 
                                 >
                                   {displayName || user.email || "Bağlı Hesap"}
                                 </span>
@@ -2628,7 +2628,7 @@ export default function App() {
                               </div>
                             </div>
                           </div>
-                          <span className="flex items-center gap-1 text-[9px] font-sans font-bold px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
+                          <span className="flex items-center gap-1 text-label font-sans font-bold px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                             Aktif
                           </span>
@@ -2649,12 +2649,12 @@ export default function App() {
                           </div>
                           <div className="flex flex-col min-w-0">
                             <span className="font-medium text-xs text-zinc-200">Bulut Veritabanı</span>
-                            <span className="text-[10px] text-zinc-400 font-sans truncate">
+                            <span className="text-label text-zinc-400 font-sans truncate">
                               Çevrimdışı (Yerel Mod)
                             </span>
                           </div>
                         </div>
-                        <span className="text-[9px] font-sans font-medium px-2 py-0.5 rounded-lg bg-zinc-800 text-zinc-400 border border-zinc-700/50 shrink-0 group-hover:border-zinc-600 transition-colors">
+                        <span className="text-label font-sans font-medium px-2 py-0.5 rounded-lg bg-zinc-800 text-zinc-400 border border-zinc-700/50 shrink-0 group-hover:border-zinc-600 transition-colors">
                           Giriş Yap
                         </span>
                       </button>
@@ -2715,7 +2715,7 @@ export default function App() {
                 target="_blank"
                 rel="noopener noreferrer"
                 referrerPolicy="no-referrer"
-                className="bg-amber-500 hover:bg-amber-400 text-zinc-900 font-bold px-3 py-1.5 rounded-xl text-[10px] transition-colors duration-200 ease-out whitespace-nowrap"
+                className="bg-amber-500 hover:bg-amber-400 text-zinc-900 font-bold px-3 py-1.5 rounded-xl text-label transition-colors duration-200 ease-out whitespace-nowrap"
               >
                 Endeks Oluştur (Tek Tık)
               </a>

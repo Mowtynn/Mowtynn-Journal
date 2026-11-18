@@ -92,7 +92,7 @@ export const SetupChips = React.memo(function SetupChips({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-4">
         {/* 1. SETUP KALİTESİ */}
         <div>
-          <label lang="en" className="text-[10px] sm:text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-2 flex items-center gap-1.5 font-sans">
+          <label lang="en" className="text-label sm:text-label font-bold text-zinc-300 uppercase tracking-wide mb-2 flex items-center gap-1.5 font-sans">
             <ShieldCheck size={13} className="text-blue-400" />
             {H("planFidelities", "SETUP KALİTESİ")}
           </label>
@@ -119,7 +119,7 @@ export const SetupChips = React.memo(function SetupChips({
 
         {/* 2. İŞLEM TİPİ */}
         <div>
-          <label lang="en" className="text-[10px] sm:text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-2 flex items-center gap-1.5 font-sans">
+          <label lang="en" className="text-label sm:text-label font-bold text-zinc-300 uppercase tracking-wide mb-2 flex items-center gap-1.5 font-sans">
             <TrendingUp size={13} className="text-blue-400" />
             {H("trendTypes", "TREND")}
           </label>
@@ -134,7 +134,7 @@ export const SetupChips = React.memo(function SetupChips({
                   data-selected={isSelected}
                   onClick={() => setSelectedTrend(isSelected ? "" : tr)}
                   aria-label={tr}
-                  className={`relative min-w-0 h-full flex items-center justify-center px-1 rounded-lg text-[11px] font-sans font-bold tracking-normal uppercase transition-ui duration-150 select-none border border-transparent cursor-pointer ${
+                  className={`relative min-w-0 h-full flex items-center justify-center px-1 rounded-lg text-label font-sans font-bold tracking-normal uppercase transition-ui duration-150 select-none border border-transparent cursor-pointer ${
                     isSelected ? "text-blue-300" : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
                   }`}
                 >
@@ -150,7 +150,7 @@ export const SetupChips = React.memo(function SetupChips({
       {/* 2b. NEWS DAY / BANK HOLIDAY (zorunlu) + sağında ASIA RANGE FVG — ikisi de butonlu seçim */}
       <div className="grid grid-cols-2 gap-x-4 gap-y-4">
         <div id="news-day-field">
-          <label lang="en" className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-wide mb-2 flex items-center gap-1.5 font-sans ${newsDayError ? "text-rose-400" : "text-zinc-300"}`}>
+          <label lang="en" className={`text-label sm:text-label font-bold uppercase tracking-wide mb-2 flex items-center gap-1.5 font-sans ${newsDayError ? "text-rose-400" : "text-zinc-300"}`}>
             <Newspaper size={13} className="text-blue-400" />
             {H("newsDays", "NEWS DAY/BANK HOLIDAY")}
           </label>
@@ -181,7 +181,7 @@ export const SetupChips = React.memo(function SetupChips({
           </div>
         </div>
         <div>
-          <label lang="en" className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wide mb-2 flex items-center gap-1.5 font-sans text-zinc-300">
+          <label lang="en" className="text-label sm:text-label font-bold uppercase tracking-wide mb-2 flex items-center gap-1.5 font-sans text-zinc-300">
             <Layers size={13} className="text-blue-400" />
             {L("asiaRangeFvgs")}
           </label>
@@ -209,7 +209,7 @@ export const SetupChips = React.memo(function SetupChips({
 
       {/* ASIA RANGE: Range · Trend (geniş, rahat butonlar) */}
       <div>
-        <label lang="en" className="text-[10px] sm:text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-2 flex items-center gap-1.5 font-sans">
+        <label lang="en" className="text-label sm:text-label font-bold text-zinc-300 uppercase tracking-wide mb-2 flex items-center gap-1.5 font-sans">
           <Compass size={13} className="text-blue-400" />
           {L("asiaRange")}
         </label>
@@ -244,7 +244,7 @@ export const SetupChips = React.memo(function SetupChips({
       <div className="grid grid-cols-2 content-start gap-x-4 gap-y-3 pt-1 border-t border-zinc-800/60">
         {/* SWEEP TIME (NY) */}
         <div className="flex flex-col">
-          <span lang="en" className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
+          <span lang="en" className="text-label font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
             <Timer size={12} className="text-blue-400 shrink-0" />
             {L("sweepTime")}
           </span>
@@ -253,7 +253,7 @@ export const SetupChips = React.memo(function SetupChips({
 
         {/* SESSION */}
         <div className="flex flex-col">
-          <span lang="en" className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
+          <span lang="en" className="text-label font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
             <Clock size={12} className="text-blue-400 shrink-0" />
             {H("sessions", "SESSION")}
           </span>
@@ -279,7 +279,7 @@ export const SetupChips = React.memo(function SetupChips({
 
         {/* ENTRY MODEL (çoklu) */}
         <div className="flex flex-col">
-          <span lang="en" className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
+          <span lang="en" className="text-label font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
             <Zap size={12} className="text-blue-400 shrink-0" />
             {H("entryModels", "ENTRY MODEL")}
           </span>
@@ -298,7 +298,7 @@ export const SetupChips = React.memo(function SetupChips({
                         : [...selectedEntries, em]
                     )
                   }
-                  className={`px-3 py-1.5 text-[11px] rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
+                  className={`px-3 py-1.5 text-label rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
                     isActive
                       ? "bg-blue-500/20 text-blue-300 border-blue-500/60 shadow-xs"
                       : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
@@ -313,7 +313,7 @@ export const SetupChips = React.memo(function SetupChips({
 
         {/* CONFIRMATIONS (eski adı Premium / Discount) */}
         <div className="flex flex-col">
-          <span lang="en" className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
+          <span lang="en" className="text-label font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
             <ShieldCheck size={12} className="text-blue-400 shrink-0" />
             {H("premiumDiscounts", "CONFIRMATIONS")}
           </span>
@@ -342,7 +342,7 @@ export const SetupChips = React.memo(function SetupChips({
 
         {/* TARGET — çıkış hedefi (çoklu). En altta tam genişlik: seçenekler yan yana uzar, sıkışmaz */}
         <div className="col-span-2 flex flex-col pt-2.5 border-t border-zinc-800/60">
-          <span lang="en" className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
+          <span lang="en" className="text-label font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
             <Flag size={12} className="text-blue-400 shrink-0" />
             {H("tpTargets", "TARGET")}
           </span>
@@ -361,7 +361,7 @@ export const SetupChips = React.memo(function SetupChips({
                         : [...selectedTpTargets, tp]
                     )
                   }
-                  className={`px-3 py-1.5 text-[11px] rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
+                  className={`px-3 py-1.5 text-label rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
                     isActive
                       ? "bg-blue-500/20 text-blue-300 border-blue-500/60 shadow-xs"
                       : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"

@@ -280,7 +280,7 @@ export function PasswordGate({ children }: PasswordGateProps) {
                       initial={{ opacity: 0, height: 0, marginTop: 0 }}
                       animate={{ opacity: 1, height: 'auto', marginTop: 8, transition: { duration: 0.2, ease: EASE } }}
                       exit={{ opacity: 0, height: 0, marginTop: 0, transition: { duration: 0.15, ease: EASE } }}
-                      className="overflow-hidden px-1 text-[11px] leading-snug text-rose-400 font-medium font-sans"
+                      className="overflow-hidden px-1 text-label leading-snug text-rose-400 font-medium font-sans"
                     >
                       {errorMessage || `Hatalı şifre. Kalan hak: ${Math.max(0, MAX_ATTEMPTS - attempts)}`}
                     </motion.p>
@@ -330,7 +330,7 @@ export function PasswordGate({ children }: PasswordGateProps) {
           </div>
         </div>
         
-        <p className="text-center text-zinc-600 text-[10px] mt-6 font-sans tracking-wide">
+        <p className="text-center text-zinc-600 text-label mt-6 font-sans tracking-wide">
           <ShieldCheck className="w-3 h-3 inline-block mr-1 -mt-0.5 opacity-50" />
           SECURE ENCRYPTED SESSION
         </p>

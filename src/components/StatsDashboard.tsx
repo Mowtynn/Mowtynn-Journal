@@ -94,12 +94,12 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, edge, drift }
             <span className={`text-lg sm:text-xl font-bold tabular-nums ${rColorClass}`}>
               {rsigned(stats.netR)}
             </span>
-            <span className={`text-[10px] font-bold ml-0.5 ${isPositive ? 'text-emerald-400/70' : isNegative ? 'text-rose-400/70' : 'text-zinc-400'}`}>R</span>
+            <span className={`text-label font-bold ml-0.5 ${isPositive ? 'text-emerald-400/70' : isNegative ? 'text-rose-400/70' : 'text-zinc-400'}`}>R</span>
           </div>
 
           <div className="flex items-center justify-between gap-1">
-            <span className="text-[10px] text-zinc-500 font-sans truncate">Toplam sonuç</span>
-            <span className="text-[10px] text-zinc-400 font-sans flex items-center gap-1">
+            <span className="text-label text-zinc-500 font-sans truncate">Toplam sonuç</span>
+            <span className="text-label text-zinc-400 font-sans flex items-center gap-1">
               <span className="text-zinc-300 font-bold bg-zinc-800 px-1.5 py-0.5 rounded-lg border border-zinc-700">{stats.totalTrades}</span>
               {"İşlem"}
             </span>
@@ -127,7 +127,7 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, edge, drift }
             </span>
             {beWinRate !== null && (
               <span
-                className={`ml-auto text-[10px] font-sans tabular-nums ${stats.winRate >= beWinRate ? 'text-emerald-400/80' : 'text-rose-400/80'}`}
+                className={`ml-auto text-label font-sans tabular-nums ${stats.winRate >= beWinRate ? 'text-emerald-400/80' : 'text-rose-400/80'}`}
               >
                 başabaş %{beWinRate.toFixed(0)}
               </span>
@@ -136,14 +136,14 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, edge, drift }
 
           <div className="flex items-center justify-between gap-1">
             <div className="flex items-center gap-1.5">
-              <span className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold font-sans py-0.5 px-2 rounded-lg">
+              <span className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-label font-bold font-sans py-0.5 px-2 rounded-lg">
                 {stats.winningTrades} {"WIN"}
               </span>
-              <span className="bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[10px] font-bold font-sans py-0.5 px-2 rounded-lg">
+              <span className="bg-rose-500/10 border border-rose-500/20 text-rose-400 text-label font-bold font-sans py-0.5 px-2 rounded-lg">
                 {stats.losingTrades} {"LOSS"}
               </span>
               {stats.breakevenTrades > 0 && (
-                <span className="bg-zinc-800/80 border border-zinc-700/60 text-zinc-300 text-[10px] font-bold font-sans py-0.5 px-2 rounded-lg">
+                <span className="bg-zinc-800/80 border border-zinc-700/60 text-zinc-300 text-label font-bold font-sans py-0.5 px-2 rounded-lg">
                   {stats.breakevenTrades} {"BE"}
                 </span>
               )}
@@ -203,20 +203,20 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, edge, drift }
             </span>
             {"Parite Başarı Analizi"}
           </p>
-          <span className="text-[9px] text-zinc-500 font-sans">en az {MIN_SAMPLE} işlemli · net R</span>
+          <span className="text-label text-zinc-500 font-sans">en az {MIN_SAMPLE} işlemli · net R</span>
         </div>
         <div className="grid grid-cols-2 gap-4 mt-auto">
           <div className="flex flex-col justify-between transition-colors">
-            <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold font-sans">{"En Verimli Parite"}</p>
+            <p className="text-label text-zinc-500 uppercase tracking-wider font-bold font-sans">{"En Verimli Parite"}</p>
             <p className="text-xs sm:text-sm font-bold text-emerald-400 mt-1 font-sans truncate">{stats.bestAsset || '—'}</p>
-            <p className="text-[10px] text-zinc-500 font-sans tabular-nums mt-0.5 truncate">
+            <p className="text-label text-zinc-500 font-sans tabular-nums mt-0.5 truncate">
               {stats.bestAsset ? `${fmtR(stats.bestAssetR)} · ${stats.bestAssetCount} işlem` : 'Pozitif parite yok'}
             </p>
           </div>
           <div className="flex flex-col justify-between transition-colors border-l border-zinc-800/80 pl-4">
-            <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold font-sans">{"En Verimsiz Parite"}</p>
+            <p className="text-label text-zinc-500 uppercase tracking-wider font-bold font-sans">{"En Verimsiz Parite"}</p>
             <p className="text-xs sm:text-sm font-bold text-rose-400 mt-1 font-sans truncate">{stats.worstAsset || '—'}</p>
-            <p className="text-[10px] text-zinc-500 font-sans tabular-nums mt-0.5 truncate">
+            <p className="text-label text-zinc-500 font-sans tabular-nums mt-0.5 truncate">
               {stats.worstAsset ? `${fmtR(stats.worstAssetR)} · ${stats.worstAssetCount} işlem` : 'Negatif parite yok'}
             </p>
           </div>
@@ -238,26 +238,26 @@ const StatsDashboard = React.memo(function StatsDashboard({ stats, edge, drift }
         <div className="grid grid-cols-2 gap-4 mt-auto">
           {/* Haftalık Kâr */}
           <div className="font-sans transition-colors">
-            <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold">{"Son 7 gün"}</p>
+            <p className="text-label text-zinc-500 uppercase tracking-wider font-bold">{"Son 7 gün"}</p>
             <p className={`text-xs sm:text-sm font-bold mt-1 truncate ${
               stats.weeklyR > 0 ? 'text-emerald-400' : stats.weeklyR < 0 ? 'text-rose-400' : 'text-zinc-400'
             }`}>
               {fmtR(stats.weeklyR)}
             </p>
-            <p className="text-[10px] text-zinc-500 font-sans tabular-nums mt-0.5 truncate">
+            <p className="text-label text-zinc-500 font-sans tabular-nums mt-0.5 truncate">
               {stats.weeklyCount > 0 ? `${stats.weeklyCount} işlem · %${((stats.weeklyWins / stats.weeklyCount) * 100).toFixed(0)} WR` : 'İşlem yok'}
             </p>
           </div>
 
           {/* Aylık Kâr */}
           <div className="font-sans transition-colors border-l border-zinc-800/80 pl-4">
-            <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold">{"Son 30 gün"}</p>
+            <p className="text-label text-zinc-500 uppercase tracking-wider font-bold">{"Son 30 gün"}</p>
             <p className={`text-xs sm:text-sm font-bold mt-1 truncate ${
               stats.monthlyR > 0 ? 'text-emerald-400' : stats.monthlyR < 0 ? 'text-rose-400' : 'text-zinc-400'
             }`}>
               {fmtR(stats.monthlyR)}
             </p>
-            <p className="text-[10px] text-zinc-500 font-sans tabular-nums mt-0.5 truncate">
+            <p className="text-label text-zinc-500 font-sans tabular-nums mt-0.5 truncate">
               {stats.monthlyCount > 0 ? `${stats.monthlyCount} işlem · %${((stats.monthlyWins / stats.monthlyCount) * 100).toFixed(0)} WR` : 'İşlem yok'}
             </p>
           </div>
@@ -312,26 +312,26 @@ function EdgePanel({ edge, expectancy, drift }: { edge?: EdgeStats; expectancy: 
         <div className="flex items-center gap-x-2 gap-y-1 flex-wrap min-w-0">
           <span className="flex items-baseline gap-1 shrink-0">
             <span className={`text-lg sm:text-xl font-bold tabular-nums ${expectancy > 0 ? 'text-emerald-400' : expectancy < 0 ? 'text-rose-400' : 'text-zinc-300'}`}>{rsigned(expectancy)}</span>
-            <span className="text-[10px] text-zinc-500">R/işlem</span>
+            <span className="text-label text-zinc-500">R/işlem</span>
           </span>
-          <span className={`whitespace-nowrap px-2 py-0.5 rounded-lg border text-[10px] font-bold uppercase shrink-0 ${v.tone}`}>{v.label}</span>
+          <span className={`whitespace-nowrap px-2 py-0.5 rounded-lg border text-label font-bold uppercase shrink-0 ${v.tone}`}>{v.label}</span>
         </div>
         {/* Kanıt sayacı çubuğun yanında: üst satır hiçbir genişlikte ikinci satıra taşıp kartı uzatmaz */}
         <div className="flex items-center gap-2">
           <div className="flex-1 h-1 rounded-full bg-zinc-800 overflow-hidden" aria-hidden="true">
             <div className={`h-full rounded-full ${v.bar}`} style={{ width: `${Math.max(n > 0 ? 4 : 0, Math.min(100, v.pct))}%` }} />
           </div>
-          <span className="text-[10px] text-zinc-400 tabular-nums whitespace-nowrap shrink-0">{Math.min(n, EDGE_PROOF_MIN)}/{EDGE_PROOF_MIN} işlem</span>
+          <span className="text-label text-zinc-400 tabular-nums whitespace-nowrap shrink-0">{Math.min(n, EDGE_PROOF_MIN)}/{EDGE_PROOF_MIN} işlem</span>
         </div>
-        <p className="text-[10px] text-zinc-500 leading-snug">{v.hint}</p>
+        <p className="text-label text-zinc-500 leading-snug">{v.hint}</p>
       </div>
 
       {/* Sağ: güven aralığı + zamanla değişim */}
       <div className="flex flex-col justify-between gap-2 min-w-0 sm:border-l sm:border-zinc-800/80 sm:pl-5">
         <div className="flex flex-col gap-1">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-[10px] font-bold uppercase tracking-wide text-zinc-500 truncate">%95 Beklenti Aralığı</span>
-            {hasCI && <span className="text-[11px] text-zinc-300 tabular-nums whitespace-nowrap shrink-0">{f(lo)} – {f(hi)}R</span>}
+            <span className="text-label font-bold uppercase tracking-wide text-zinc-500 truncate">%95 Beklenti Aralığı</span>
+            {hasCI && <span className="text-label text-zinc-300 tabular-nums whitespace-nowrap shrink-0">{f(lo)} – {f(hi)}R</span>}
           </div>
           {hasCI ? (
             <div className="relative h-2.5 rounded-full bg-zinc-800/80">
@@ -340,7 +340,7 @@ function EdgePanel({ edge, expectancy, drift }: { edge?: EdgeStats; expectancy: 
               <div className="absolute top-0.5 h-1.5 w-1.5 -ml-[3px] rounded-full bg-white" style={{ left: pos(expectancy) }} />
             </div>
           ) : (
-            <p className="text-[10px] text-zinc-600">{MIN_SAMPLE} işlemden sonra görünür.</p>
+            <p className="text-label text-zinc-600">{MIN_SAMPLE} işlemden sonra görünür.</p>
           )}
         </div>
 
@@ -357,7 +357,7 @@ function EdgePanel({ edge, expectancy, drift }: { edge?: EdgeStats; expectancy: 
 function DriftBlock({ drift }: { drift: EdgeDrift }) {
   const head = (
     <span
-      className="text-[10px] font-bold uppercase tracking-wide text-zinc-500 whitespace-nowrap"
+      className="text-label font-bold uppercase tracking-wide text-zinc-500 whitespace-nowrap"
     >
       Son {DRIFT_RECENT} İşlem
     </span>
@@ -368,7 +368,7 @@ function DriftBlock({ drift }: { drift: EdgeDrift }) {
     return (
       <div className="flex items-baseline justify-between gap-x-2 gap-y-0.5 flex-wrap min-w-0">
         {head}
-        <span className="text-[10px] text-zinc-600 tabular-nums whitespace-nowrap">{drift.need} işlemde açılır ({drift.n}/{drift.need})</span>
+        <span className="text-label text-zinc-600 tabular-nums whitespace-nowrap">{drift.need} işlemde açılır ({drift.n}/{drift.need})</span>
       </div>
     );
   }
@@ -386,9 +386,9 @@ function DriftBlock({ drift }: { drift: EdgeDrift }) {
     <div className="flex flex-col gap-0.5 min-w-0">
       <div className="flex items-baseline justify-between gap-x-2 gap-y-0.5 flex-wrap">
         {head}
-        <b className={`text-[10px] whitespace-nowrap ${tone}`}>{arrow} {label}</b>
+        <b className={`text-label whitespace-nowrap ${tone}`}>{arrow} {label}</b>
       </div>
-      <p className="text-[10px] tabular-nums leading-snug text-zinc-500">
+      <p className="text-label tabular-nums leading-snug text-zinc-500">
         <b className={rTone}>{fmtR(r.expectancy)}</b> · önceki {b.n} işlemde {fmtR(b.expectancy)}
       </p>
     </div>

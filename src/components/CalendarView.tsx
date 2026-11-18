@@ -193,7 +193,7 @@ export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], o
         >
           {/* Top Row: Day Number & Trade Count */}
           <div className="flex items-start justify-between gap-0.5 min-w-0">
-            <span className={`whitespace-nowrap font-sans text-[11px] sm:text-xs leading-none transition-ui ${
+            <span className={`whitespace-nowrap font-sans text-label sm:text-xs leading-none transition-ui ${
               isToday 
                 ? 'toggle-item-brand border border-blue-500/40 font-black px-1 sm:px-1.5 py-0.5 rounded-md sm:rounded-lg shadow-xs' 
                 : stat ? 'text-zinc-300 font-bold' : 'text-zinc-600 font-medium'
@@ -202,8 +202,8 @@ export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], o
             </span>
 
             {stat && (
-              <span className="hidden sm:inline-flex items-baseline gap-1 px-2 py-1 rounded-lg bg-zinc-950/50 border border-zinc-800/80 text-[10px] font-sans font-semibold text-zinc-400 group-hover:text-zinc-200 transition-colors leading-none tabular-nums whitespace-nowrap">
-                <span className="text-[11px] font-bold text-zinc-200">{stat.count}</span>
+              <span className="hidden sm:inline-flex items-baseline gap-1 px-2 py-1 rounded-lg bg-zinc-950/50 border border-zinc-800/80 text-label font-sans font-semibold text-zinc-400 group-hover:text-zinc-200 transition-colors leading-none tabular-nums whitespace-nowrap">
+                <span className="text-label font-bold text-zinc-200">{stat.count}</span>
                 işlem
               </span>
             )}
@@ -217,15 +217,15 @@ export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], o
                  {/* Dar hücrede taşmasın: |R| ≥ 10 ise tam sayı (+12.5 → +13) */}
                  <span className="sm:hidden">{rsigned(stat.rr, Math.abs(stat.rr) >= 10 ? 0 : 1)}</span>
                  <span className="hidden sm:inline">{rsigned(stat.rr)}</span>
-                 <span className="hidden sm:inline text-[11px] font-bold opacity-70">R</span>
+                 <span className="hidden sm:inline text-label font-bold opacity-70">R</span>
                </div>
                {/* Telefonda işlem sayısı R'nin altında, kısa biçimde (bugün rozetiyle üst satırda çakışmaz) */}
-               <div className={`sm:hidden font-sans text-[10px] font-semibold mt-1 leading-none tabular-nums whitespace-nowrap ${secondaryColor}`}>
+               <div className={`sm:hidden font-sans text-label font-semibold mt-1 leading-none tabular-nums whitespace-nowrap ${secondaryColor}`}>
                  {stat.count}×
                </div>
             </div>
           ) : (
-            <div className="hidden sm:block mt-auto text-right text-[10px] text-zinc-800/80 font-sans select-none pointer-events-none leading-none">—</div>
+            <div className="hidden sm:block mt-auto text-right text-label text-zinc-800/80 font-sans select-none pointer-events-none leading-none">—</div>
           )}
         </div>
       );
@@ -290,7 +290,7 @@ export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], o
                {/* Total PnL / RR */}
                <div className="flex items-center justify-center lg:justify-start gap-2 px-3 py-1.5 bg-zinc-900/80 border border-zinc-800/80 rounded-xl shadow-xs overflow-hidden">
                  <div className="flex items-center gap-2">
-                   <span className="text-zinc-500 font-bold uppercase text-[10px] tracking-wider whitespace-nowrap">{smartUpper("Aylık R:")}</span>
+                   <span className="text-zinc-500 font-bold uppercase text-label tracking-wider whitespace-nowrap">{smartUpper("Aylık R:")}</span>
                    <span className={`font-black font-sans text-xs tabular-nums ${monthlyStats.totalRr > 1e-9 ? 'text-emerald-400' : monthlyStats.totalRr < -1e-9 ? 'text-rose-400' : 'text-zinc-400'}`}>
                      {formatR(monthlyStats.totalRr)}
                    </span>
@@ -299,7 +299,7 @@ export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], o
 
                {/* Trading Days */}
                <div className="flex items-center justify-center lg:justify-start gap-2 px-3 py-1.5 bg-zinc-900/80 border border-zinc-800/80 rounded-xl shadow-xs">
-                 <span className="text-zinc-500 font-bold uppercase text-[10px] tracking-wider whitespace-nowrap">İşlem Günü:</span>
+                 <span className="text-zinc-500 font-bold uppercase text-label tracking-wider whitespace-nowrap">İşlem Günü:</span>
                  <span className="font-extrabold text-zinc-200 font-sans text-xs whitespace-nowrap">{monthlyStats.tradingDays}<span className="hidden sm:inline"> Gün</span></span>
                </div>
              </div>

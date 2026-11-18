@@ -149,6 +149,10 @@ html {
 
 /* transition-all'ın yerine: yalnızca compositor/boyama özellikleri geçiş yapar.
    width/height/margin gibi layout özellikleri canlandırılmaz (akıcılık + düşük CPU). */
+@utility text-label {
+  font-size: var(--fs-label);
+}
+
 @utility transition-ui {
   transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, box-shadow, opacity, transform, translate, scale, rotate, filter;
   /* --tw-ease / --tw-duration: ease-* ve duration-* sınıfları sıralamadan bağımsız olarak bunu ezebilsin */
@@ -170,12 +174,12 @@ html {
   
   /* Level 3: Form Labels / Subtext / Counters */
   .heading-3 { 
-    @apply text-[10px] font-bold text-text-muted uppercase tracking-widest font-sans block; 
+    @apply text-label font-bold text-text-muted uppercase tracking-widest font-sans block; 
   }
 
   /* Standard Body Text */
   .body-text {
-    @apply text-[13px] text-text-primary font-medium leading-relaxed font-sans;
+    @apply text-sm text-text-primary font-medium leading-relaxed font-sans;
   }
   
   /* Legacy/Utility Typography Mappings */
@@ -662,7 +666,6 @@ input:focus-visible, textarea:focus-visible { outline: none; }
   .tf-card .mb-2 { margin-bottom: 0.3125rem; }
   .tf-card .py-1\.5 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
   .tf-card .pt-3 { padding-top: 0.5rem; }
-  .tf-card button.text-\[11px\] { font-size: 10.5px; }
   .tf-card button.px-3 { padding-left: 0.625rem; padding-right: 0.625rem; }
   .tf-card .flex-wrap.gap-1\.5 { gap: 0.3125rem; }
   .tf-head, .tf-foot { padding-top: 0.5rem; padding-bottom: 0.5rem; }
@@ -697,23 +700,13 @@ input:focus-visible, textarea:focus-visible { outline: none; }
 
 /* ==========================================================================
    YAZI ÖLÇEĞİ — proje genelinde tek ölçek (her rol tek boyut, her ekranda aynı):
-     etiket / rozet / küçük bilgi  11px  (eski text-[8px] … text-[11px], heading-3)
-     ikincil metin                 12px  (text-xs, heading-2)
-     gövde metni                   14px  (text-sm)
-     değerler / başlıklar          16–24px (text-base … text-2xl)
-   Arada kalan 9.5 / 10 / 10.5 / 11.5px gibi birbirine çok yakın boyutlar kaldırıldı: göz "neredeyse aynı" iki
-   boyutu tutarsızlık olarak algılar. Duyarlı boyutu olan öğeler (sm:/md:/lg:/xl:text-…) masaüstünde kendi
-   boyutunu korur; telefonda onların küçük hâli de etiket boyutuna çıkar.
+     text-label    11px  etiket / rozet / küçük bilgi (heading-3 de bunu kullanır)
+     text-xs       12px  ikincil metin (heading-2)
+     text-sm       14px  gövde metni
+     text-lg / xl  18 / 20px  ikincil değer / kart değeri
+   Elle piksel boyutu (text-[10px] gibi) kullanılmaz: yeni küçük yazılar text-label ile yazılır.
    ========================================================================== */
 :root { --fs-label: 11px; --fs-secondary: 12px; --fs-body: 14px; }
-:is(.text-\[8px\], .text-\[8\.5px\], .text-\[9px\], .text-\[9\.5px\], .text-\[10px\], .text-\[10\.5px\], .text-\[11px\]):not([class*="sm:text-"], [class*="md:text-"], [class*="lg:text-"], [class*="xl:text-"]) { font-size: var(--fs-label); }
-.heading-3 { font-size: var(--fs-label); }
-@media (max-width: 639px) {
-  :is(.text-\[8px\], .text-\[8\.5px\], .text-\[9px\], .text-\[9\.5px\], .text-\[10px\], .text-\[10\.5px\], .text-\[11px\]) { font-size: var(--fs-label); }
-}
-@media (min-width: 640px) {
-  :is(.sm\:text-\[9px\], .sm\:text-\[10px\], .sm\:text-\[11px\]) { font-size: var(--fs-label); }
-}
 .text-xs { line-height: 1.45; }
 /* Tek satırlık sıkı etiketler: harfler üst üste binmesin */
 .leading-none { line-height: 1.1; }

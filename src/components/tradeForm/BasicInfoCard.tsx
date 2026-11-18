@@ -102,7 +102,7 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
       <div className="grid grid-cols-2 gap-2">
         {/* PARİTE */}
         <div className="relative" ref={assetDropdownRef}>
-          <label className="text-[10px] sm:text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-2 block font-sans">
+          <label className="text-label sm:text-label font-bold text-zinc-300 uppercase tracking-wide mb-2 block font-sans">
             {H("assets", "PARİTE")}
           </label>
           <div className="relative group">
@@ -195,7 +195,7 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
 
         {/* YÖN (LONG/SHORT) */}
         <div>
-          <label className="text-[10px] sm:text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-2 block font-sans">{L("direction")}</label>
+          <label className="text-label sm:text-label font-bold text-zinc-300 uppercase tracking-wide mb-2 block font-sans">{L("direction")}</label>
           <div className="grid grid-cols-2 gap-1 h-9 sm:h-9 bg-zinc-950/80 border border-zinc-700/70 rounded-lg sm:rounded-xl p-0.5 shadow-inner">
             <button lang="en"
               type="button"
@@ -243,7 +243,7 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
           Prop hesabı seçili değilse çipler görünür ama seçilemez. % başlangıç bakiyesi üzerinden; $ karşılığı salt okunur */}
       {(() => {
         const riskDisabled = !selectedAccount;
-        const chipBase = "h-9 rounded-lg border text-[11px] font-bold font-sans transition-ui";
+        const chipBase = "h-9 rounded-lg border text-label font-bold font-sans transition-ui";
         const chipIdle = riskDisabled
           ? "bg-zinc-950/40 border-zinc-800/70 text-zinc-600 cursor-not-allowed"
           : "bg-zinc-950/80 border-zinc-700/70 text-zinc-300 hover:border-zinc-500 hover:text-white cursor-pointer";
@@ -251,7 +251,7 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
         const showCustom = !riskDisabled && riskChoice === "CUSTOM";
         return (
           <div id="risk-field" aria-disabled={riskDisabled || undefined}>
-            <label className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-wide mb-2 block font-sans transition-colors ${riskDisabled ? "text-zinc-500" : "text-zinc-300"}`}>
+            <label className={`text-label sm:text-label font-bold uppercase tracking-wide mb-2 block font-sans transition-colors ${riskDisabled ? "text-zinc-500" : "text-zinc-300"}`}>
               {titles.T("riskPresets") || "Risk"} (başlangıç bakiyesinin %'si)
             </label>
             {/* Tek satır, sarmaz: [$ karşılığı] [0.50] [0.75] [1.00] [% / elle giriş] — chipler kalan genişliği paylaşır */}
@@ -261,7 +261,7 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
               className={`flex flex-nowrap items-center gap-1.5 rounded-xl transition-ui ${riskError && !riskDisabled ? "ring-1 ring-rose-500/60 ring-offset-2 ring-offset-zinc-900" : ""}`}
             >
               <span
-                className={`h-9 flex-[1.35] min-w-0 px-2 rounded-lg border border-dashed text-[11px] font-bold font-sans tabular-nums flex items-center justify-center gap-1 truncate ${riskDisabled ? "border-zinc-800 bg-zinc-950/30 text-zinc-600" : riskDollar !== null ? "border-blue-500/30 bg-blue-500/5 text-blue-200" : "border-zinc-700/70 bg-zinc-900/60 text-zinc-400"}`}
+                className={`h-9 flex-[1.35] min-w-0 px-2 rounded-lg border border-dashed text-label font-bold font-sans tabular-nums flex items-center justify-center gap-1 truncate ${riskDisabled ? "border-zinc-800 bg-zinc-950/30 text-zinc-600" : riskDollar !== null ? "border-blue-500/30 bg-blue-500/5 text-blue-200" : "border-zinc-700/70 bg-zinc-900/60 text-zinc-400"}`}
                 aria-live="polite"
               >
                 {riskDollar !== null ? `$${riskDollar.toLocaleString("en-US", { maximumFractionDigits: 2 })}` : "$ —"}
@@ -306,7 +306,7 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
                     }}
                     className="h-9 w-full bg-blue-500/10 border border-blue-500/45 focus:border-blue-400 focus:ring-1 focus:ring-blue-500/30 rounded-lg pl-2 pr-5 text-xs text-blue-100 focus:outline-none placeholder-blue-300/40 font-sans font-bold tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
-                  <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[11px] font-bold text-blue-300/70">%</span>
+                  <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-label font-bold text-blue-300/70">%</span>
                 </div>
               ) : (
                 <button
@@ -333,7 +333,7 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
 
       {/* Satır 3: Tarih (Türkiye takvim günü; işlem bu güne kaydedilir). Saat sorulmaz: kaydın günün içindeki sırası, girildiği andan gelir. */}
       <div className="min-w-0">
-        <label className="text-[10px] sm:text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-2 flex items-center gap-1.5 font-sans">
+        <label className="text-label sm:text-label font-bold text-zinc-300 uppercase tracking-wide mb-2 flex items-center gap-1.5 font-sans">
           {smartUpper("Tarih")}
         </label>
         <div className="h-9 flex items-center">

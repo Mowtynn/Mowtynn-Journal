@@ -23,14 +23,14 @@ const Card: React.FC<{ title: string; hint?: string; className?: string; childre
   <div className={`bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 space-y-3 ${className}`}>
     <div className="border-b border-zinc-800 pb-2">
       <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-100 font-sans">{smartUpper(title)}</h4>
-      {hint && <p className="text-[10px] text-zinc-500 font-sans mt-0.5 leading-relaxed">{hint}</p>}
+      {hint && <p className="text-label text-zinc-500 font-sans mt-0.5 leading-relaxed">{hint}</p>}
     </div>
     {children}
   </div>
 );
 
 const Empty: React.FC<{ text: string }> = ({ text }) => (
-  <p className="text-[11px] text-zinc-500 font-sans py-2">{text}</p>
+  <p className="text-label text-zinc-500 font-sans py-2">{text}</p>
 );
 
 const Sparkline: React.FC<{ points: AsiaLabResult['rolling'] }> = ({ points }) => {
@@ -51,7 +51,7 @@ const Sparkline: React.FC<{ points: AsiaLabResult['rolling'] }> = ({ points }) =
         <line x1="0" x2={w} y1={y(0)} y2={y(0)} stroke="#3f3f46" strokeDasharray="4 4" strokeWidth="1" />
         <path d={path} fill="none" stroke="#a1a1aa" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
       </svg>
-      <p className="text-[10px] text-zinc-500 font-sans">
+      <p className="text-label text-zinc-500 font-sans">
         Son 20 işlemlik ortalama R: <span className={`font-bold tabular-nums ${tone(last.expectancy)}`}>{formatR(last.expectancy)}</span> ({formatDateKey(last.date)}). Çizgi sıfırın altında kalıcı olarak kalıyorsa edge aşınıyor olabilir.
       </p>
     </div>
@@ -128,7 +128,7 @@ export const AsiaEdgeLab = React.memo(function AsiaEdgeLab({ trades }: AsiaEdgeL
               <div className="overflow-x-auto">
                 <table className="w-full text-xs font-sans">
                   <thead>
-                    <tr className="text-[10px] uppercase text-zinc-500">
+                    <tr className="text-label uppercase text-zinc-500">
                       <th className="text-left font-medium pb-1.5">POI Sweep Saati</th>
                       {r.hourPair.pairs.map((p) => (
                         <th key={p} className="font-medium pb-1.5 text-center">
@@ -140,14 +140,14 @@ export const AsiaEdgeLab = React.memo(function AsiaEdgeLab({ trades }: AsiaEdgeL
                   <tbody>
                     {r.hourPair.hours.map((h) => (
                       <tr key={h} className="border-t border-zinc-800/70">
-                        <td className="py-1.5 pr-2 text-zinc-300 font-mono text-[11px]">{h}</td>
+                        <td className="py-1.5 pr-2 text-zinc-300 font-mono text-label">{h}</td>
                         {r.hourPair.pairs.map((p) => {
                           const c = r.hourPair.cells[`${h}|${p}`];
                           if (!c) return <td key={p} className="text-center text-zinc-700">·</td>;
                           return (
                             <td key={p} className={`text-center py-1.5 ${c.n < minSample ? 'opacity-40' : ''}`}>
                               <span className={`font-bold ${tone(c.expectancy)}`}>{rsigned(c.expectancy)}</span>
-                              <span className="text-[10px] text-zinc-500"> ({c.n})</span>
+                              <span className="text-label text-zinc-500"> ({c.n})</span>
                             </td>
                           );
                         })}
@@ -172,7 +172,7 @@ export const AsiaEdgeLab = React.memo(function AsiaEdgeLab({ trades }: AsiaEdgeL
                   <div className="h-1 bg-zinc-800 rounded mt-1.5">
                     <div className="h-1 bg-zinc-500 rounded" style={{ width: `${c.pct}%` }} />
                   </div>
-                  <span className="text-[10px] text-zinc-500 block mt-1">{c.unlocks}</span>
+                  <span className="text-label text-zinc-500 block mt-1">{c.unlocks}</span>
                 </div>
               ))}
             </div>

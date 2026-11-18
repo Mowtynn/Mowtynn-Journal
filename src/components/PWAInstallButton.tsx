@@ -30,7 +30,7 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
       <button
         type="button"
         onClick={install}
-        className={`flex items-center gap-1.5 h-6 px-2.5 rounded-lg bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 text-blue-400 hover:text-blue-300 text-[10px] font-bold font-sans uppercase tracking-wider transition-ui duration-150 cursor-pointer shadow-xs ${className}`}
+        className={`flex items-center gap-1.5 h-6 px-2.5 rounded-lg bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 text-blue-400 hover:text-blue-300 text-label font-bold font-sans uppercase tracking-wider transition-ui duration-150 cursor-pointer shadow-xs ${className}`}
       >
         <Download size={11} className="text-blue-400" />
         <span>{variant === 'full' ? 'Uygulamayı Yükle' : 'Yükle'}</span>
@@ -45,7 +45,7 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
         <button
           type="button"
           onClick={() => setShowIOSGuide(true)}
-          className={`flex items-center gap-1.5 h-6 px-2.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-400 hover:text-blue-300 text-[10px] font-bold font-sans uppercase tracking-wider transition-ui duration-150 cursor-pointer shadow-xs ${className}`}
+          className={`flex items-center gap-1.5 h-6 px-2.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-400 hover:text-blue-300 text-label font-bold font-sans uppercase tracking-wider transition-ui duration-150 cursor-pointer shadow-xs ${className}`}
         >
           <Smartphone size={11} className="text-blue-400" />
           <span>{variant === 'full' ? 'iOS Uygulama Yükle' : 'iOS Yükle'}</span>
@@ -74,7 +74,7 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
                       <h3 className="text-xs font-bold text-zinc-100 uppercase tracking-wide font-sans">
                         {smartUpper("iPhone / iPad Kurulumu")}
                       </h3>
-                      <p className="text-[10px] text-zinc-400 font-sans">
+                      <p className="text-label text-zinc-400 font-sans">
                         Tam Ekran PWA Deneyimi
                       </p>
                     </div>
@@ -93,7 +93,7 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
                     <div className="w-6 h-6 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 mt-0.5">
                       <Share size={12} />
                     </div>
-                    <p className="text-[11px] leading-relaxed">
+                    <p className="text-label leading-relaxed">
                       1. Safari tarayıcısının altındaki <strong className="text-blue-400">Paylaş</strong> butonuna dokun.
                     </p>
                   </div>
@@ -102,7 +102,7 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
                     <div className="w-6 h-6 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
                       <PlusSquare size={12} />
                     </div>
-                    <p className="text-[11px] leading-relaxed">
+                    <p className="text-label leading-relaxed">
                       2. Açılan menüyü aşağı kaydırıp <strong className="text-blue-400">"Ana Ekrana Ekle"</strong> seçeneğini seç.
                     </p>
                   </div>
@@ -111,7 +111,7 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
                     <div className="w-6 h-6 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 mt-0.5">
                       <CheckCircle2 size={12} />
                     </div>
-                    <p className="text-[11px] leading-relaxed">
+                    <p className="text-label leading-relaxed">
                       3. Sağ üstteki <strong className="text-blue-400">"Ekle"</strong> butonuna dokun. Artık ana ekranında uygulama gibi çalışır.
                     </p>
                   </div>

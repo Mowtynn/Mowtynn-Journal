@@ -416,7 +416,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
               type="button"
               onClick={() => onQuickModeChange(!quickMode)}
               aria-pressed={quickMode}
-              className={`flex items-center gap-1.5 h-8 px-3 rounded-xl border text-[11px] font-bold transition-ui cursor-pointer ${
+              className={`flex items-center gap-1.5 h-8 px-3 rounded-xl border text-label font-bold transition-ui cursor-pointer ${
                 quickMode
                   ? "border-blue-500/40 bg-blue-500/15 text-blue-200 hover:bg-blue-500/25"
                   : "border-zinc-700/70 bg-zinc-900/80 text-zinc-300 hover:text-white hover:border-zinc-500 hover:bg-zinc-800"
@@ -430,7 +430,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
             <button
               type="button"
               onClick={applyLastSetup}
-              className="hidden sm:flex items-center gap-1.5 h-8 px-3 rounded-xl border border-zinc-700/70 bg-zinc-900/80 text-[11px] font-bold text-zinc-300 hover:text-white hover:border-zinc-500 hover:bg-zinc-800 transition-ui cursor-pointer"
+              className="hidden sm:flex items-center gap-1.5 h-8 px-3 rounded-xl border border-zinc-700/70 bg-zinc-900/80 text-label font-bold text-zinc-300 hover:text-white hover:border-zinc-500 hover:bg-zinc-800 transition-ui cursor-pointer"
             >
               <Copy size={13} className="text-blue-400" />
               Son Kurulumu Kopyala
@@ -548,7 +548,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
               <motion.div key="actions" {...PANE} className="flex items-center justify-between gap-3">
                 {/* Kaydetmeden önce tek bakışta ne kaydedileceği; boşken kısayol ipucu */}
                 {summary ? (
-                  <span className="hidden md:flex items-center gap-2 min-w-0 text-[11px] font-sans text-zinc-400 select-none tabular-nums" aria-live="polite">
+                  <span className="hidden md:flex items-center gap-2 min-w-0 text-label font-sans text-zinc-400 select-none tabular-nums" aria-live="polite">
                     {summary.asset && <span className="font-bold text-zinc-200 truncate">{summary.asset}</span>}
                     {summary.dir && <span className={summary.dir === "LONG" ? "text-emerald-400 font-bold" : "text-rose-400 font-bold"}>{summary.dir === "LONG" ? "Long" : "Short"}</span>}
                     {summary.r !== null && (
@@ -560,7 +560,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                     )}
                   </span>
                 ) : (
-                <span className="hidden md:flex items-center gap-1.5 text-[10px] font-sans text-zinc-500 select-none">
+                <span className="hidden md:flex items-center gap-1.5 text-label font-sans text-zinc-500 select-none">
                   <kbd className="px-1.5 py-0.5 rounded-md border border-zinc-700 bg-zinc-900 text-zinc-400 font-sans">Ctrl</kbd>
                   <span>+</span>
                   <kbd className="px-1.5 py-0.5 rounded-md border border-zinc-700 bg-zinc-900 text-zinc-400 font-sans">Enter</kbd>

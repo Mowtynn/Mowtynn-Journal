@@ -48,22 +48,22 @@ export const TradeMobileCard = React.memo(function TradeMobileCard({
         <div className="flex items-center gap-1.5 min-w-0">
           <span className="text-base font-bold text-zinc-100 tracking-wide truncate">{trade.asset || '—'}</span>
           <span
-            className={`shrink-0 inline-flex items-center h-[18px] px-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider border ${
+            className={`shrink-0 inline-flex items-center h-[18px] px-1.5 rounded-md text-label font-bold uppercase tracking-wider border ${
               long ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/25' : 'text-rose-400 bg-rose-500/10 border-rose-500/25'
             }`}
           >
             {long ? 'Long' : 'Short'}
           </span>
           {trade.quickEntry === true && (
-            <span className="shrink-0 inline-flex items-center h-[18px] px-1.5 rounded-md text-[9px] font-bold uppercase border border-amber-500/30 bg-amber-500/10 text-amber-300">
+            <span className="shrink-0 inline-flex items-center h-[18px] px-1.5 rounded-md text-label font-bold uppercase border border-amber-500/30 bg-amber-500/10 text-amber-300">
               {smartUpper('Hızlı')}
             </span>
           )}
         </div>
-        <div className="mt-1 text-[11px] leading-snug text-zinc-500 whitespace-normal">{meta}</div>
+        <div className="mt-1 text-label leading-snug text-zinc-500 whitespace-normal">{meta}</div>
         {account && (
           <span
-            className={`mt-1.5 inline-block max-w-full truncate align-top h-[18px] leading-[16px] px-2 rounded-full text-[10px] font-bold uppercase border ${ACCOUNT_CATEGORY_BADGE[getTradeAccountCategory(trade)]}`}
+            className={`mt-1.5 inline-block max-w-full truncate align-top h-[18px] leading-[16px] px-2 rounded-full text-label font-bold uppercase border ${ACCOUNT_CATEGORY_BADGE[getTradeAccountCategory(trade)]}`}
           >
             {account}
           </span>
@@ -72,7 +72,7 @@ export const TradeMobileCard = React.memo(function TradeMobileCard({
 
       <div className="shrink-0 text-right">
         <div className={`text-lg font-extrabold leading-none tabular-nums ${rTone}`}>{rr === null ? '—' : rr === 0 ? 'BE' : formatR(rr)}</div>
-        {risk && <div className="mt-1 text-[10px] text-zinc-500 tabular-nums">{risk}</div>}
+        {risk && <div className="mt-1 text-label text-zinc-500 tabular-nums">{risk}</div>}
       </div>
 
       {(onEdit || onDelete) && (

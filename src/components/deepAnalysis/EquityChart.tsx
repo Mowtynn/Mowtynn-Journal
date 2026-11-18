@@ -213,7 +213,7 @@ export const MemoizedEquityChart = React.memo(function MemoizedEquityChart({
                   <span className="text-xs text-zinc-200 font-bold font-sans truncate max-w-[140px]">
                     {hoveredItem.fullTitle || hoveredItem.label}
                   </span>
-                  <span className="text-[9px] uppercase font-bold tracking-widest px-2 py-0.5 rounded-lg toggle-item-brand border border-blue-500/20 shrink-0 font-sans shadow-xs">
+                  <span className="text-label uppercase font-bold tracking-widest px-2 py-0.5 rounded-lg toggle-item-brand border border-blue-500/20 shrink-0 font-sans shadow-xs">
                     {equityFilter === 'trade' ? 'İşlem' : equityFilter === 'daily' ? 'Gün' : equityFilter === 'weekly' ? 'Hafta' : 'Ay'}
                   </span>
                 </div>
@@ -268,7 +268,7 @@ export const MemoizedEquityChart = React.memo(function MemoizedEquityChart({
                 )}
 
                 {equityFilter === 'trade' && hoveredItem.trades && hoveredItem.trades.length === 1 && (
-                  <div className="flex justify-between items-center text-[10px] border-t border-zinc-900/60 pt-1.5 mt-0.5">
+                  <div className="flex justify-between items-center text-label border-t border-zinc-900/60 pt-1.5 mt-0.5">
                     <span className="text-zinc-500 font-medium font-sans">Parite</span>
                     <span className="text-zinc-400 font-bold font-sans">
                       {hoveredItem.trades[0].asset} <span className={hoveredItem.trades[0].type === 'LONG' ? 'text-emerald-400' : 'text-rose-400'}>({hoveredItem.trades[0].type})</span>

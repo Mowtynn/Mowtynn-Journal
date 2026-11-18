@@ -151,7 +151,7 @@ export const SweepTimePicker = React.memo(function SweepTimePicker({
                     <span className="text-xl font-bold tabular-nums text-zinc-100">
                       {draft.h === null ? "--" : pad(draft.h)}:<span className={waitingMinute ? "text-blue-300 animate-pulse" : ""}>{draft.m === null ? "--" : pad(draft.m)}</span>
                     </span>
-                    {waitingMinute && <span className="text-[10px] font-bold text-zinc-500">dakikayı seç</span>}
+                    {waitingMinute && <span className="text-label font-bold text-zinc-500">dakikayı seç</span>}
                   </div>
                   <div className="flex items-center gap-1">
                     <button type="button" disabled={draft.h === null} onClick={() => nudge(-1)} aria-label="1 dakika geri" className="disabled:opacity-40 disabled:cursor-default h-7 w-7 flex items-center justify-center rounded-lg border border-zinc-700/70 bg-zinc-950 text-zinc-300 hover:text-white hover:border-zinc-500 cursor-pointer transition-ui">
@@ -164,7 +164,7 @@ export const SweepTimePicker = React.memo(function SweepTimePicker({
                 </div>
 
                 <div>
-                  <div className="text-[10px] font-bold text-zinc-500 tracking-wide mb-1.5">SAAT</div>
+                  <div className="text-label font-bold text-zinc-500 tracking-wide mb-1.5">SAAT</div>
                   <div className="grid grid-cols-6 gap-1">
                     {HOURS.map((h) => (
                       <button key={h} type="button" data-selected={draft.h === h} onClick={() => pickHour(h)} className={cell(draft.h === h)}>
@@ -175,7 +175,7 @@ export const SweepTimePicker = React.memo(function SweepTimePicker({
                 </div>
 
                 <div>
-                  <div className={`text-[10px] font-bold tracking-wide mb-1.5 transition-ui ${waitingMinute ? "text-blue-300" : "text-zinc-500"}`}>DAKİKA{draft.h === null ? " · önce saati seç" : ""}</div>
+                  <div className={`text-label font-bold tracking-wide mb-1.5 transition-ui ${waitingMinute ? "text-blue-300" : "text-zinc-500"}`}>DAKİKA{draft.h === null ? " · önce saati seç" : ""}</div>
                   <div className={`grid grid-cols-6 gap-1 transition-opacity duration-200 ${draft.h === null ? "opacity-40 pointer-events-none" : ""}`}>
                     {MINUTES.map((m) => (
                       <button key={m} type="button" data-selected={draft.m === m} disabled={draft.h === null} onClick={() => pickMinute(m)} className={cell(draft.m === m)}>

@@ -250,7 +250,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                 value={editContent}
                 onChange={(e) => setEditContent(e.target.value)}
               />
-              <div className="p-3 px-5 text-[10px] text-zinc-500 font-sans font-bold tracking-wider uppercase bg-zinc-900/50 border-t border-zinc-800/80 flex items-center justify-between">
+              <div className="p-3 px-5 text-label text-zinc-500 font-sans font-bold tracking-wider uppercase bg-zinc-900/50 border-t border-zinc-800/80 flex items-center justify-between">
                 <span>{editContent.length} karakter • {editContent.trim() ? editContent.trim().split(/\s+/).length : 0} kelime</span>
                 <span>{activeNote ? `Son Güncelleme: ${formatDateStr(activeNote.updatedAt)}` : 'Yeni Not'}</span>
               </div>
@@ -281,13 +281,13 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                         {activeNote.title}
                       </h2>
                       {activeNote.isPinned && (
-                        <span className="whitespace-nowrap px-2 py-0.5 rounded-full text-[9px] font-sans font-bold toggle-item-brand border border-blue-500/30 flex items-center gap-1 shrink-0">
+                        <span className="whitespace-nowrap px-2 py-0.5 rounded-full text-label font-sans font-bold toggle-item-brand border border-blue-500/30 flex items-center gap-1 shrink-0">
                           <Pin size={10} className="fill-current" />
                           SABİTLENDİ
                         </span>
                       )}
                     </div>
-                    <p className="text-[11px] text-zinc-400 font-sans mt-0.5 flex items-center gap-1.5">
+                    <p className="text-label text-zinc-400 font-sans mt-0.5 flex items-center gap-1.5">
                       <Calendar size={11} className="text-zinc-500" />
                       Son Güncelleme: {formatDateStr(activeNote.updatedAt)}
                     </p>
@@ -352,11 +352,11 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                       <h2 className="text-sm font-bold uppercase tracking-wide text-zinc-100">
                         Konsept & Notlar
                       </h2>
-                      <span className="whitespace-nowrap px-2 py-0.5 rounded-md text-[9px] font-sans font-bold toggle-item-brand border border-blue-500/20">
+                      <span className="whitespace-nowrap px-2 py-0.5 rounded-md text-label font-sans font-bold toggle-item-brand border border-blue-500/20">
                         {notes.length} NOT
                       </span>
                     </div>
-                    <p className="text-[10px] text-zinc-400 mt-0.5 font-sans">
+                    <p className="text-label text-zinc-400 mt-0.5 font-sans">
                       Kişisel analizler, işlem konseptleri ve strateji kayıtları.
                     </p>
                   </div>
@@ -381,7 +381,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                       ref={allBtnRef}
                       type="button"
                       onClick={() => setActiveFilter('ALL')}
-                      className={`relative px-3 py-1 text-[10px] font-sans font-bold uppercase rounded-lg transition-colors cursor-pointer select-none ${
+                      className={`relative px-3 py-1 text-label font-sans font-bold uppercase rounded-lg transition-colors cursor-pointer select-none ${
                         activeFilter === 'ALL'
                           ? 'text-zinc-100'
                           : 'text-zinc-400 hover:text-zinc-200'
@@ -393,7 +393,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                       ref={pinnedBtnRef}
                       type="button"
                       onClick={() => setActiveFilter('PINNED')}
-                      className={`relative px-3 py-1 text-[10px] font-sans font-bold uppercase rounded-lg transition-colors cursor-pointer flex items-center gap-1 select-none ${
+                      className={`relative px-3 py-1 text-label font-sans font-bold uppercase rounded-lg transition-colors cursor-pointer flex items-center gap-1 select-none ${
                         activeFilter === 'PINNED'
                           ? 'text-blue-300'
                           : 'text-zinc-400 hover:text-zinc-200'
@@ -453,7 +453,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                             <button
                               type="button"
                               onClick={() => setExportFormatTab('excel')}
-                              className={`flex-1 py-1 text-[10px] font-bold rounded-lg transition-ui flex items-center justify-center gap-1.5 cursor-pointer border ${
+                              className={`flex-1 py-1 text-label font-bold rounded-lg transition-ui flex items-center justify-center gap-1.5 cursor-pointer border ${
                                 exportFormatTab === 'excel'
                                   ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-xs'
                                   : 'text-zinc-400 hover:text-zinc-200 border-transparent hover:bg-zinc-800/40'
@@ -465,7 +465,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                             <button
                               type="button"
                               onClick={() => setExportFormatTab('csv')}
-                              className={`flex-1 py-1 text-[10px] font-bold rounded-lg transition-ui flex items-center justify-center gap-1.5 cursor-pointer border ${
+                              className={`flex-1 py-1 text-label font-bold rounded-lg transition-ui flex items-center justify-center gap-1.5 cursor-pointer border ${
                                 exportFormatTab === 'csv'
                                   ? 'bg-blue-500/20 text-blue-300 border-blue-500/40 shadow-xs'
                                   : 'text-zinc-400 hover:text-zinc-200 border-transparent hover:bg-zinc-800/40'
@@ -476,9 +476,9 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                             </button>
                           </div>
 
-                          <div className="px-2 py-1 text-[9px] font-black tracking-widest text-zinc-500 uppercase border-b border-zinc-800/60 mb-1 flex items-center justify-between">
+                          <div className="px-2 py-1 text-label font-black tracking-widest text-zinc-500 uppercase border-b border-zinc-800/60 mb-1 flex items-center justify-between">
                             <span>{exportFormatTab === 'excel' ? 'EXCEL (.XLSX) DIŞA AKTAR' : 'CSV (.CSV) İNDİR'}</span>
-                            <span className="text-zinc-500 font-sans text-[9px] font-normal">
+                            <span className="text-zinc-500 font-sans text-label font-normal">
                               {exportFormatTab === 'excel' ? 'Tüm Detaylar' : 'UTF-8 BOM'}
                             </span>
                           </div>
@@ -515,7 +515,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                                 <FileSpreadsheet size={12} className={exportFormatTab === 'excel' ? 'text-emerald-400' : 'text-blue-400'} />
                                 <span>Filtrelenmiş Notlar</span>
                               </div>
-                              <span className="text-[10px] font-bold font-sans px-2 py-0.5 rounded-lg bg-zinc-800 text-zinc-300 border border-zinc-700">
+                              <span className="text-label font-bold font-sans px-2 py-0.5 rounded-lg bg-zinc-800 text-zinc-300 border border-zinc-700">
                                 {filteredNotes.length} Not
                               </span>
                             </button>
@@ -551,7 +551,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                                 <Layers size={12} className="text-zinc-400 group-hover:text-emerald-400 transition-colors" />
                                 <span>Tüm Notlarım</span>
                               </div>
-                              <span className="text-[10px] font-bold font-sans px-2 py-0.5 rounded-lg bg-zinc-800 text-zinc-300 border border-zinc-700">
+                              <span className="text-label font-bold font-sans px-2 py-0.5 rounded-lg bg-zinc-800 text-zinc-300 border border-zinc-700">
                                 {notes.length} Not
                               </span>
                             </button>
@@ -588,7 +588,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                                   <Pin size={12} className="text-blue-400 fill-current" />
                                   <span>Sadece Sabitlenenler</span>
                                 </div>
-                                <span className="text-[10px] font-bold font-sans px-2 py-0.5 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                                <span className="text-label font-bold font-sans px-2 py-0.5 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">
                                   {pinnedCount} Not
                                 </span>
                               </button>
@@ -679,7 +679,7 @@ const NotesView = memo(function NotesView({ notes, onSaveNote, onDeleteNote }: N
                       {note.content || <span className="italic text-zinc-600">Boş içerik...</span>}
                     </p>
 
-                    <div className="mt-auto pt-2.5 border-t border-zinc-800/80 flex items-center justify-between text-[10px] font-sans text-zinc-500">
+                    <div className="mt-auto pt-2.5 border-t border-zinc-800/80 flex items-center justify-between text-label font-sans text-zinc-500">
                       <span className="flex items-center gap-1 text-zinc-400">
                         <Calendar size={10} className="text-zinc-500" />
                         {formatDateStr(note.updatedAt)}

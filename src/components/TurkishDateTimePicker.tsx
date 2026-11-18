@@ -375,21 +375,21 @@ export const TurkishDateTimePicker = React.memo(function TurkishDateTimePicker({
             <button
               type="button"
               onClick={handleSetNow}
-              className="flex-1 py-1 px-1.5 rounded-lg bg-zinc-950/80 hover:bg-zinc-800 text-[10px] font-medium text-blue-400 hover:text-blue-300 border border-zinc-700/40 hover:border-blue-500/30 transition-ui cursor-pointer text-center"
+              className="flex-1 py-1 px-1.5 rounded-lg bg-zinc-950/80 hover:bg-zinc-800 text-label font-medium text-blue-400 hover:text-blue-300 border border-zinc-700/40 hover:border-blue-500/30 transition-ui cursor-pointer text-center"
             >
               Şimdi
             </button>
             <button
               type="button"
               onClick={handleSetToday}
-              className="flex-1 py-1 px-1.5 rounded-lg bg-zinc-950/80 hover:bg-zinc-800 text-[10px] font-medium text-zinc-300 hover:text-zinc-100 border border-zinc-700/40 hover:border-zinc-600 transition-ui cursor-pointer text-center"
+              className="flex-1 py-1 px-1.5 rounded-lg bg-zinc-950/80 hover:bg-zinc-800 text-label font-medium text-zinc-300 hover:text-zinc-100 border border-zinc-700/40 hover:border-zinc-600 transition-ui cursor-pointer text-center"
             >
               Bugün
             </button>
             <button
               type="button"
               onClick={handleSetYesterday}
-              className="flex-1 py-1 px-1.5 rounded-lg bg-zinc-950/80 hover:bg-zinc-800 text-[10px] font-medium text-zinc-300 hover:text-zinc-100 border border-zinc-700/40 hover:border-zinc-600 transition-ui cursor-pointer text-center"
+              className="flex-1 py-1 px-1.5 rounded-lg bg-zinc-950/80 hover:bg-zinc-800 text-label font-medium text-zinc-300 hover:text-zinc-100 border border-zinc-700/40 hover:border-zinc-600 transition-ui cursor-pointer text-center"
             >
               Dün
             </button>
@@ -422,7 +422,7 @@ export const TurkishDateTimePicker = React.memo(function TurkishDateTimePicker({
           {/* Weekday Headers */}
           <div className="grid grid-cols-7 gap-1 text-center mb-1">
             {TURKISH_DAYS_SHORT.map((day) => (
-              <span key={day} className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">
+              <span key={day} className="text-label font-semibold text-zinc-500 uppercase tracking-wider">
                 {day}
               </span>
             ))}
@@ -451,7 +451,7 @@ export const TurkishDateTimePicker = React.memo(function TurkishDateTimePicker({
                       updateDateTime(newDate);
                     }
                   }}
-                  className={`h-6.5 text-[10px] font-sans rounded-lg transition-ui flex items-center justify-center relative cursor-pointer ${
+                  className={`h-6.5 text-label font-sans rounded-lg transition-ui flex items-center justify-center relative cursor-pointer ${
                     selected
                       ? 'bg-blue-500/25 text-blue-300 border border-blue-500/40 font-bold shadow-xs'
                       : !item.isCurrentMonth
@@ -472,7 +472,7 @@ export const TurkishDateTimePicker = React.memo(function TurkishDateTimePicker({
           <div className="pt-2.5 border-t border-zinc-800/80 flex items-center justify-between gap-2 relative">
             <div className="flex items-center gap-1.5 text-zinc-300">
               <Clock size={12} className="text-zinc-400" />
-              <span className="text-[11px] font-medium text-zinc-300">Saat</span>
+              <span className="text-label font-medium text-zinc-300">Saat</span>
             </div>
 
             <div className="flex items-center gap-1.5">
@@ -878,7 +878,7 @@ export const TurkishDatePicker = React.memo(function TurkishDatePicker({
       <button
         type="button"
         onClick={handleToggle}
-        className={`w-full h-9 bg-zinc-950 hover:bg-zinc-900 border border-zinc-700/50 hover:border-zinc-600 rounded-xl px-3 text-[11px] text-zinc-200 focus:outline-none focus:border-zinc-500 transition-colors font-sans flex items-center justify-between gap-3 cursor-pointer shadow-xs group ${buttonClassName}`}
+        className={`w-full h-9 bg-zinc-950 hover:bg-zinc-900 border border-zinc-700/50 hover:border-zinc-600 rounded-xl px-3 text-label text-zinc-200 focus:outline-none focus:border-zinc-500 transition-colors font-sans flex items-center justify-between gap-3 cursor-pointer shadow-xs group ${buttonClassName}`}
       >
         <span className={`tracking-wide font-medium ${!value ? 'text-zinc-500' : 'text-zinc-200'}`}>
           {displayFormatted}
@@ -915,14 +915,14 @@ export const TurkishDatePicker = React.memo(function TurkishDatePicker({
               <button
                 type="button"
                 onClick={handleSetToday}
-                className="flex-1 py-1 px-1.5 rounded-lg bg-zinc-950/80 hover:bg-zinc-800 text-[10px] font-medium text-zinc-300 hover:text-zinc-100 border border-zinc-700/40 hover:border-zinc-600 transition-ui cursor-pointer text-center"
+                className="flex-1 py-1 px-1.5 rounded-lg bg-zinc-950/80 hover:bg-zinc-800 text-label font-medium text-zinc-300 hover:text-zinc-100 border border-zinc-700/40 hover:border-zinc-600 transition-ui cursor-pointer text-center"
               >
                 Bugün
               </button>
               <button
                 type="button"
                 onClick={handleSetYesterday}
-                className="flex-1 py-1 px-1.5 rounded-lg bg-zinc-950/80 hover:bg-zinc-800 text-[10px] font-medium text-zinc-300 hover:text-zinc-100 border border-zinc-700/40 hover:border-zinc-600 transition-ui cursor-pointer text-center"
+                className="flex-1 py-1 px-1.5 rounded-lg bg-zinc-950/80 hover:bg-zinc-800 text-label font-medium text-zinc-300 hover:text-zinc-100 border border-zinc-700/40 hover:border-zinc-600 transition-ui cursor-pointer text-center"
               >
                 Dün
               </button>
@@ -956,7 +956,7 @@ export const TurkishDatePicker = React.memo(function TurkishDatePicker({
           {/* Weekday Headers */}
           <div className="grid grid-cols-7 gap-1 text-center mb-1">
             {TURKISH_DAYS_SHORT.map((day) => (
-              <span key={day} className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">
+              <span key={day} className="text-label font-semibold text-zinc-500 uppercase tracking-wider">
                 {day}
               </span>
             ))}
@@ -984,7 +984,7 @@ export const TurkishDatePicker = React.memo(function TurkishDatePicker({
                       setIsOpen(false);
                     }
                   }}
-                  className={`h-6.5 text-[10px] font-sans rounded-lg transition-ui flex items-center justify-center relative cursor-pointer ${
+                  className={`h-6.5 text-label font-sans rounded-lg transition-ui flex items-center justify-center relative cursor-pointer ${
                     selected
                       ? 'bg-blue-500/25 text-blue-300 border border-blue-500/40 font-bold shadow-xs'
                       : !item.isCurrentMonth

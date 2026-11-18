@@ -47,21 +47,21 @@ export const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
       <tr onClick={() => onViewDetails(trade)} className="group select-none relative hidden sm:table-row bg-zinc-900 align-middle cursor-pointer hover:bg-zinc-800/50 transition-colors duration-100">
         <td className={`${CELL} px-3 text-zinc-400 rounded-l-xl border-l w-[16%] min-w-[130px] group-hover:text-zinc-100`}>
           <div>
-            <span className="text-[10px] text-zinc-400 font-medium">{formattedDateOnly}</span>
+            <span className="text-label text-zinc-400 font-medium">{formattedDateOnly}</span>
           </div>
         </td>
         <td className={`${CELL} px-3 w-[12%] min-w-[90px]`}>
           <div className="flex flex-col items-center gap-0.5">
-            <span className="text-white font-bold text-[10px] uppercase">{trade.asset}</span>
-            {trade.quickEntry === true && <span className="px-1 py-px rounded text-[8px] font-bold uppercase border border-amber-500/30 bg-amber-500/10 text-amber-300 leading-none">{smartUpper("Hızlı")}</span>}
+            <span className="text-white font-bold text-label uppercase">{trade.asset}</span>
+            {trade.quickEntry === true && <span className="px-1 py-px rounded text-label font-bold uppercase border border-amber-500/30 bg-amber-500/10 text-amber-300 leading-none">{smartUpper("Hızlı")}</span>}
           </div>
         </td>
         <td className={`${CELL} w-[10%] min-w-[65px]`}>
           <div>
             {trade.type === 'LONG' ? (
-              <span className="whitespace-nowrap inline-flex items-center justify-center h-[20px] px-2 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded-full uppercase tracking-wider w-[54px]">LONG</span>
+              <span className="whitespace-nowrap inline-flex items-center justify-center h-[20px] px-2 text-label font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded-full uppercase tracking-wider w-[54px]">LONG</span>
             ) : (
-              <span className="whitespace-nowrap inline-flex items-center justify-center h-[20px] px-2 text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 group-hover:border-rose-500/50 rounded-full uppercase tracking-wider w-[54px]">SHORT</span>
+              <span className="whitespace-nowrap inline-flex items-center justify-center h-[20px] px-2 text-label font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 group-hover:border-rose-500/50 rounded-full uppercase tracking-wider w-[54px]">SHORT</span>
             )}
           </div>
         </td>
@@ -83,7 +83,7 @@ export const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
         <td className={`${CELL} w-[18%] min-w-[75px]`}>
           <div>
             {accountLabel ? (
-              <span className={`inline-block min-w-[54px] max-w-full h-[20px] leading-[18px] px-2 text-center text-[10px] font-bold rounded-full uppercase whitespace-nowrap truncate border transition-colors ${categoryBadgeClass}`}>
+              <span className={`inline-block min-w-[54px] max-w-full h-[20px] leading-[18px] px-2 text-center text-label font-bold rounded-full uppercase whitespace-nowrap truncate border transition-colors ${categoryBadgeClass}`}>
                 {accountLabel}
               </span>
             ) : (

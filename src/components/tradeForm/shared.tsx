@@ -21,7 +21,7 @@ export const withSelected = (list: string[], selected: string[]) => {
 };
 
 /** Kurulum çiplerinin ortak ölçüsü (Sweep Time, Session, Entry, Target, Confirmations hepsi aynı) */
-export const CHIP_BASE = "relative px-3 py-1.5 text-[11px] rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase";
+export const CHIP_BASE = "relative px-3 py-1.5 text-label rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase";
 
 export const numOr = (v: unknown): Num => (typeof v === "number" && Number.isFinite(v) ? v : "");
 export { statusOfR } from '../../lib/tradeModel';

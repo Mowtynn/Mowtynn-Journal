@@ -344,7 +344,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
                           key={opt.id}
                           type="button"
                           onClick={(e) => { e.stopPropagation(); setEquityFilter(opt.id as typeof equityFilter); }}
-                          className={`px-2 py-0.5 text-[9px] font-bold font-sans tracking-wider uppercase rounded-lg transition-ui duration-150 ${
+                          className={`px-2 py-0.5 text-label font-bold font-sans tracking-wider uppercase rounded-lg transition-ui duration-150 ${
                             equityFilter === opt.id 
                               ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' 
                               : 'text-zinc-400 hover:text-zinc-200 border border-transparent'
@@ -395,19 +395,19 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
           onClick={() => handleMetricClick("winRate", `%${(metrics.statusAnalysis.total ? (metrics.statusAnalysis.win / metrics.statusAnalysis.total) * 100 : 0).toFixed(1)}`)}
         >
           <div className="flex items-center justify-between mb-2">
-            <p className="text-[10px] font-bold uppercase text-zinc-400 tracking-wider font-sans flex items-center gap-1.5">
+            <p className="text-label font-bold uppercase text-zinc-400 tracking-wider font-sans flex items-center gap-1.5">
               <span className="p-1 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-400">
                 <Target size={10} />
               </span>
               Sonuç Dağılımı
             </p>
-            <span className="text-[9px] font-sans font-bold text-zinc-400 bg-zinc-800/90 px-1.5 py-0.5 rounded-md border border-zinc-700/50">
+            <span className="text-label font-sans font-bold text-zinc-400 bg-zinc-800/90 px-1.5 py-0.5 rounded-md border border-zinc-700/50">
               %{metrics.statusAnalysis.total ? ((metrics.statusAnalysis.win / metrics.statusAnalysis.total) * 100).toFixed(1) : 0} WR
             </span>
           </div>
-          <div className="flex items-center gap-2 font-sans text-[10px] w-full">
+          <div className="flex items-center gap-2 font-sans text-label w-full">
             <div className="flex-1 bg-zinc-900/70 border border-zinc-700/50 rounded-xl p-2">
-              <div className="flex justify-between items-center text-[9px] mb-1">
+              <div className="flex justify-between items-center text-label mb-1">
                 <span className="text-emerald-400 font-bold">WIN</span>
                 <span className="text-emerald-400 font-bold">{metrics.statusAnalysis.win}</span>
               </div>
@@ -421,7 +421,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
               </div>
             </div>
             <div className="flex-1 bg-zinc-900/70 border border-zinc-700/50 rounded-xl p-2">
-              <div className="flex justify-between items-center text-[9px] mb-1">
+              <div className="flex justify-between items-center text-label mb-1">
                 <span className="text-rose-400 font-bold">LOSS</span>
                 <span className="text-rose-400 font-bold">{metrics.statusAnalysis.loss}</span>
               </div>
@@ -435,7 +435,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
               </div>
             </div>
             <div className="flex-1 bg-zinc-900/70 border border-zinc-700/50 rounded-xl p-2">
-              <div className="flex justify-between items-center text-[9px] mb-1">
+              <div className="flex justify-between items-center text-label mb-1">
                 <span className="text-zinc-300 font-bold">BE</span>
                 <span className="text-zinc-300 font-bold">{metrics.statusAnalysis.breakeven}</span>
               </div>
@@ -453,57 +453,57 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
         {/* LONG VS SHORT PERFORMANSI */}
         <motion.div variants={itemVariants} className="bg-transparent p-3.5 sm:p-4 transition-ui duration-200 ease-out flex flex-col justify-center">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-[10px] font-bold uppercase text-zinc-400 tracking-wider font-sans flex items-center gap-1.5">
+            <p className="text-label font-bold uppercase text-zinc-400 tracking-wider font-sans flex items-center gap-1.5">
               <span className="p-1 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-400">
                 <Layers size={10} />
               </span>
               Long / Short Dağılımı
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-2 font-sans text-[10px]">
+          <div className="grid grid-cols-2 gap-2 font-sans text-label">
             <div 
               className="bg-zinc-950/60 border border-emerald-500/20 hover:border-emerald-500/40 p-2 rounded-xl cursor-pointer hover:bg-emerald-950/10 transition-ui"
               onClick={() => handleMetricClick("longPerformance", (metrics.longStats.count ? `%${metrics.longStats.winRate.toFixed(1)} WR` : "İşlem yok"))}
             >
               <div className="flex items-center justify-between mb-0.5">
-                <span className="text-emerald-400 font-bold uppercase tracking-wider text-[9px]">LONG</span>
-                <span className="text-zinc-500 text-[8.5px]">{metrics.longStats.count} işlem</span>
+                <span className="text-emerald-400 font-bold uppercase tracking-wider text-label">LONG</span>
+                <span className="text-zinc-500 text-label">{metrics.longStats.count} işlem</span>
               </div>
               <span className="text-xs font-bold text-emerald-400 block font-sans">{metrics.longStats.count ? `%${metrics.longStats.winRate.toFixed(1)} WR` : "—"}</span>
-              <span className={`block text-[10px] font-bold tabular-nums ${metrics.longStats.pnl > 0 ? 'text-emerald-300' : metrics.longStats.pnl < 0 ? 'text-rose-300' : 'text-zinc-400'}`}>
+              <span className={`block text-label font-bold tabular-nums ${metrics.longStats.pnl > 0 ? 'text-emerald-300' : metrics.longStats.pnl < 0 ? 'text-rose-300' : 'text-zinc-400'}`}>
                 {formatR(metrics.longStats.pnl)}
                 {metrics.longStats.count > 0 && <span className="text-zinc-500 font-normal"> · {formatR(metrics.longStats.pnl / metrics.longStats.count)}/işlem</span>}
               </span>
-              {metrics.longStats.count > 0 && metrics.longStats.count < MIN_SAMPLE && <span className="mt-0.5 inline-block px-1 py-px rounded border border-zinc-700 bg-zinc-900 text-[8px] font-bold text-zinc-400 uppercase tracking-wide">Az Veri</span>}
+              {metrics.longStats.count > 0 && metrics.longStats.count < MIN_SAMPLE && <span className="mt-0.5 inline-block px-1 py-px rounded border border-zinc-700 bg-zinc-900 text-label font-bold text-zinc-400 uppercase tracking-wide">Az Veri</span>}
             </div>
             <div 
               className="bg-zinc-950/60 border border-rose-500/20 hover:border-rose-500/40 p-2 rounded-xl cursor-pointer hover:bg-rose-950/10 transition-ui"
               onClick={() => handleMetricClick("shortPerformance", (metrics.shortStats.count ? `%${metrics.shortStats.winRate.toFixed(1)} WR` : "İşlem yok"))}
             >
               <div className="flex items-center justify-between mb-0.5">
-                <span className="text-rose-400 font-bold uppercase tracking-wider text-[9px]">SHORT</span>
-                <span className="text-zinc-500 text-[8.5px]">{metrics.shortStats.count} işlem</span>
+                <span className="text-rose-400 font-bold uppercase tracking-wider text-label">SHORT</span>
+                <span className="text-zinc-500 text-label">{metrics.shortStats.count} işlem</span>
               </div>
               <span className="text-xs font-bold text-rose-400 block font-sans">{metrics.shortStats.count ? `%${metrics.shortStats.winRate.toFixed(1)} WR` : "—"}</span>
-              <span className={`block text-[10px] font-bold tabular-nums ${metrics.shortStats.pnl > 0 ? 'text-emerald-300' : metrics.shortStats.pnl < 0 ? 'text-rose-300' : 'text-zinc-400'}`}>
+              <span className={`block text-label font-bold tabular-nums ${metrics.shortStats.pnl > 0 ? 'text-emerald-300' : metrics.shortStats.pnl < 0 ? 'text-rose-300' : 'text-zinc-400'}`}>
                 {formatR(metrics.shortStats.pnl)}
                 {metrics.shortStats.count > 0 && <span className="text-zinc-500 font-normal"> · {formatR(metrics.shortStats.pnl / metrics.shortStats.count)}/işlem</span>}
               </span>
-              {metrics.shortStats.count > 0 && metrics.shortStats.count < MIN_SAMPLE && <span className="mt-0.5 inline-block px-1 py-px rounded border border-zinc-700 bg-zinc-900 text-[8px] font-bold text-zinc-400 uppercase tracking-wide">Az Veri</span>}
+              {metrics.shortStats.count > 0 && metrics.shortStats.count < MIN_SAMPLE && <span className="mt-0.5 inline-block px-1 py-px rounded border border-zinc-700 bg-zinc-900 text-label font-bold text-zinc-400 uppercase tracking-wide">Az Veri</span>}
             </div>
           </div>
         </motion.div>
         {/* SETUP KALİTESİ İSTATİSTİKLERİ */}
         <motion.div variants={itemVariants} className="bg-transparent p-3.5 sm:p-4 flex flex-col relative min-w-0">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-[10px] font-bold uppercase text-zinc-400 tracking-wider font-sans flex items-center gap-1.5">
+            <p className="text-label font-bold uppercase text-zinc-400 tracking-wider font-sans flex items-center gap-1.5">
               <span className="p-1 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-400">
                 <Crosshair size={10} />
               </span>
               {definitionTitles.planFidelities || "Setup Kalitesi"}
             </p>
             {metrics.planFidelityStats.totalWithFidelity > 0 && (
-              <span className="text-[9px] font-sans text-zinc-500">WR · R/işlem · adet</span>
+              <span className="text-label font-sans text-zinc-500">WR · R/işlem · adet</span>
             )}
           </div>
           
@@ -539,18 +539,18 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
                     );
                   }}
                 >
-                  <span className={`text-[11px] font-bold uppercase truncate ${opt.theme.text}`}>{opt.name}</span>
+                  <span className={`text-label font-bold uppercase truncate ${opt.theme.text}`}>{opt.name}</span>
                   <span className="h-1.5 bg-zinc-800/80 rounded-full overflow-hidden">
                     <span
                       className={`block ${opt.theme.bar} h-full rounded-full transition-[width] duration-300`}
                       style={{ width: `${hasTrades ? Math.min(100, Math.max(0, opt.winRate)) : 0}%` }}
                     />
                   </span>
-                  <span className="text-[11px] font-bold text-zinc-100 tabular-nums text-right w-9">{hasTrades ? `%${opt.winRate.toFixed(0)}` : '–'}</span>
-                  <span className={`text-[10px] font-bold tabular-nums text-right w-12 ${!hasTrades ? 'text-zinc-600' : opt.totalR > 0 ? 'text-emerald-300' : opt.totalR < 0 ? 'text-rose-300' : 'text-zinc-400'}`}>
+                  <span className="text-label font-bold text-zinc-100 tabular-nums text-right w-9">{hasTrades ? `%${opt.winRate.toFixed(0)}` : '–'}</span>
+                  <span className={`text-label font-bold tabular-nums text-right w-12 ${!hasTrades ? 'text-zinc-600' : opt.totalR > 0 ? 'text-emerald-300' : opt.totalR < 0 ? 'text-rose-300' : 'text-zinc-400'}`}>
                     {hasTrades ? formatR(opt.totalR / opt.count) : '–'}
                   </span>
-                  <span className="text-[10px] text-zinc-500 tabular-nums text-right w-6">{opt.count}</span>
+                  <span className="text-label text-zinc-500 tabular-nums text-right w-6">{opt.count}</span>
                 </button>
               );
             })}
@@ -559,7 +559,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
         {/* Kârlı / Zararlı Gün */}
         <motion.div variants={itemVariants} className="bg-transparent p-3.5 sm:px-5 sm:py-4 transition-colors duration-200 ease-out flex flex-col justify-center">
           <div className="flex items-center justify-between mb-2.5">
-            <p className="text-[10px] font-bold uppercase text-zinc-400 tracking-wider font-sans flex items-center gap-1.5">
+            <p className="text-label font-bold uppercase text-zinc-400 tracking-wider font-sans flex items-center gap-1.5">
               <span className="p-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
                 <CalendarIcon size={11} />
               </span>
@@ -577,7 +577,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
                 onClick={(e) => { e.stopPropagation(); handleMetricClick("profitableDays", metrics.greenDays + " Gün"); }}
               >
                 <div className="flex items-center justify-between gap-1 mb-1">
-                  <span className="text-[10px] block uppercase font-bold text-emerald-400 font-sans whitespace-nowrap">Kârlı Gün</span>
+                  <span className="text-label block uppercase font-bold text-emerald-400 font-sans whitespace-nowrap">Kârlı Gün</span>
                   <CheckCircle2 size={13} className="text-emerald-400/80 shrink-0" />
                 </div>
                 <span className="text-lg sm:text-xl font-bold text-emerald-400 block font-sans mt-0.5">
@@ -589,7 +589,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
                 onClick={(e) => { e.stopPropagation(); handleMetricClick("profitableDays", metrics.redDays + " Gün"); }}
               >
                 <div className="flex items-center justify-between gap-1 mb-1">
-                  <span className="text-[10px] block uppercase font-bold text-rose-400 font-sans whitespace-nowrap">Zararlı Gün</span>
+                  <span className="text-label block uppercase font-bold text-rose-400 font-sans whitespace-nowrap">Zararlı Gün</span>
                   <XCircle size={13} className="text-rose-400/80 shrink-0" />
                 </div>
                 <span className="text-lg sm:text-xl font-bold text-rose-400 block font-sans mt-0.5">

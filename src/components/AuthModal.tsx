@@ -126,7 +126,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               <span>{loading ? 'Yönlendiriliyor...' : 'Google ile Giriş Yap'}</span>
             </button>
 
-            <p className="text-[10px] text-zinc-500 font-sans mt-4">
+            <p className="text-label text-zinc-500 font-sans mt-4">
               Tek tıkla güvenli ve hızlı Google doğrulama
             </p>
           </motion.div>

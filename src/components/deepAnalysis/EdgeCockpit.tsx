@@ -59,7 +59,7 @@ const VERDICT_PILL: Record<string, { label: string; cls: string }> = {
 };
 
 const card = 'bg-zinc-900/70 border border-zinc-700/50 rounded-2xl shadow-sm p-4 sm:p-5 flex flex-col gap-4 min-w-0';
-const sectionTitle = 'text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5';
+const sectionTitle = 'text-label font-bold uppercase tracking-wider flex items-center gap-1.5';
 
 /* ---------- bulgu güveni rozeti ---------- */
 /** relativeSure verilirse (Daha çok yap) "Kanıtlı", sıfıra göre değil geri kalandan iyi olmanın kesinliğine göre gösterilir */
@@ -68,14 +68,14 @@ function SignalBadge({ edge, relativeSure }: { edge: EdgeStats; relativeSure?: b
   const neg = edge.expectancy < 0;
   if (strong) {
     return (
-      <span className={`whitespace-nowrap shrink-0 px-1.5 py-px rounded-md border text-[9px] font-bold uppercase ${neg ? 'text-rose-300 border-rose-500/30 bg-rose-500/10' : 'text-emerald-300 border-emerald-500/30 bg-emerald-500/10'}`}>
+      <span className={`whitespace-nowrap shrink-0 px-1.5 py-px rounded-md border text-label font-bold uppercase ${neg ? 'text-rose-300 border-rose-500/30 bg-rose-500/10' : 'text-emerald-300 border-emerald-500/30 bg-emerald-500/10'}`}>
         {neg ? 'Kesin' : 'Kanıtlı'}
       </span>
     );
   }
   return (
     <span
-      className="shrink-0 px-1.5 py-px rounded-md border border-zinc-700 bg-zinc-800/60 text-[9px] font-bold uppercase text-zinc-400 tabular-nums"
+      className="shrink-0 px-1.5 py-px rounded-md border border-zinc-700 bg-zinc-800/60 text-label font-bold uppercase text-zinc-400 tabular-nums"
     >
       Erken{edge.n < EDGE_PROOF_MIN ? ` · ${edge.n}/${EDGE_PROOF_MIN}` : ''}
     </span>
@@ -95,14 +95,14 @@ function InsightRow({ title, sub, edge, onClick, relativeSure }: { title: string
           <span className="text-xs font-semibold text-zinc-200 break-words min-w-0">{title}</span>
           <SignalBadge edge={edge} relativeSure={relativeSure} />
         </div>
-        <div className="text-[10px] text-zinc-500 mt-0.5 tabular-nums">
+        <div className="text-label text-zinc-500 mt-0.5 tabular-nums">
           {e2s(edge)}
           {sub ? ` · ${sub}` : ''}
         </div>
       </div>
       <div className="text-right shrink-0">
         <div className={`text-sm font-bold tabular-nums ${tone(edge.expectancy)}`}>{sR(edge.expectancy)}</div>
-        <div className="text-[10px] text-zinc-500 tabular-nums">net {sR(edge.netR)}</div>
+        <div className="text-label text-zinc-500 tabular-nums">net {sR(edge.netR)}</div>
       </div>
       <ChevronRight size={14} className="text-zinc-600 group-hover:text-zinc-300 shrink-0 transition-colors" />
     </button>
@@ -178,17 +178,17 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
           </span>
           <div className="min-w-0">
             <h3 className="text-sm font-bold text-zinc-100">Edge Özeti</h3>
-            <p className="text-[11px] text-zinc-500">Neyi daha çok yapmalı, neyi bırakmalı · {s.total} işlem</p>
+            <p className="text-label text-zinc-500">Neyi daha çok yapmalı, neyi bırakmalı · {s.total} işlem</p>
           </div>
         </div>
         <div className="flex items-center gap-2 min-w-0 ml-auto">
           <div className="text-right min-w-0">
             <div className={`text-lg font-bold tabular-nums leading-tight ${tone(s.overall.expectancy)}`}>{sR(s.overall.expectancy)}</div>
-            <div className="text-[10px] text-zinc-500 tabular-nums">
+            <div className="text-label text-zinc-500 tabular-nums">
               işlem başı · %95 GA {rnum(s.overall.expLo)} – {rnum(s.overall.expHi)}
             </div>
           </div>
-          <span className={`whitespace-nowrap px-2 py-1 rounded-lg border text-[10px] font-bold uppercase ${pill.cls}`}>{pill.label}</span>
+          <span className={`whitespace-nowrap px-2 py-1 rounded-lg border text-label font-bold uppercase ${pill.cls}`}>{pill.label}</span>
         </div>
       </header>
 
@@ -197,11 +197,11 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
           <span className={`${sectionTitle} text-emerald-400`}>
             <TrendingUp size={12} /> Daha çok yap
           </span>
-          <p className="text-[10px] text-zinc-500 -mt-1">Kârlı ve geri kalan işlemlerinden daha iyi sonuç veren kurulum / alanlar.</p>
+          <p className="text-label text-zinc-500 -mt-1">Kârlı ve geri kalan işlemlerinden daha iyi sonuç veren kurulum / alanlar.</p>
           {goods.length ? (
             goods.map((g) => <InsightRow key={g.key} title={g.title} sub={g.sub} edge={g.edge} onClick={g.open} relativeSure={g.sure} />)
           ) : (
-            <p className="text-[11px] text-zinc-500 rounded-xl border border-dashed border-zinc-800 px-3 py-3">
+            <p className="text-label text-zinc-500 rounded-xl border border-dashed border-zinc-800 px-3 py-3">
               Henüz hem kârlı hem de geri kalan işlemlerinden daha iyi, en az {SETUP_MIN_SAMPLE * 2} işlemli (ya da kanıtlı) bir alan yok.
             </p>
           )}
@@ -210,11 +210,11 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
           <span className={`${sectionTitle} text-rose-400`}>
             <TrendingDown size={12} /> Azalt ya da bırak
           </span>
-          <p className="text-[10px] text-zinc-500 -mt-1">İşlem başına R'si negatif (kaybettiren) kurulum / alanlar.</p>
+          <p className="text-label text-zinc-500 -mt-1">İşlem başına R'si negatif (kaybettiren) kurulum / alanlar.</p>
           {bads.length ? (
             bads.map((g) => <InsightRow key={g.key} title={g.title} sub={g.sub} edge={g.edge} onClick={g.open} />)
           ) : (
-            <p className="text-[11px] text-zinc-500 rounded-xl border border-dashed border-zinc-800 px-3 py-3">
+            <p className="text-label text-zinc-500 rounded-xl border border-dashed border-zinc-800 px-3 py-3">
               En az {SETUP_MIN_SAMPLE} işlemli negatif bir alan yok — sızıntı görünmüyor.
             </p>
           )}
@@ -222,7 +222,7 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
       </div>
 
       {[...goods, ...bads].some((g) => signalStrength(g.edge) === 'EARLY') && (
-        <p className="text-[10px] text-zinc-500 -mt-1 flex items-start gap-1.5">
+        <p className="text-label text-zinc-500 -mt-1 flex items-start gap-1.5">
           <Info size={11} className="shrink-0 mt-px" />
           <span>
             Altındaki “%80'i …” notu, bulgunun büyük ölçüde başka bir alanla örtüştüğünü gösterir: ikisi aynı etki olabilir, Kurulum Karnesi'nde birlikte seçip ayır. Bu özet {s.testedSlices} farklı alan değerini karşılaştırıyor; bu kadar karşılaştırmada bazı sonuçlar yalnızca şans eseri iyi ya da kötü görünür. <b className="text-zinc-400">Erken</b> rozetli bulgular henüz istatistiksel olarak kesin değil (az işlem ya da güven aralığı sıfırı kapsıyor). Kural yapmadan önce yeni işlemlerle doğrula. Olumlu bulgu {EDGE_PROOF_MIN} işlemden sonra “Kanıtlı” olabilir; sızıntı uyarısı aralık tamamen negatife geçince “Kesin” olur.
@@ -236,7 +236,7 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
           <span className={`${sectionTitle} text-blue-300`}>
             <Percent size={12} /> Risk %'sine göre
           </span>
-          <p className="text-[10px] text-zinc-500 -mt-1">Her risk seviyesinde işlem başı R (parantezde işlem sayısı). R zaten riske göre ölçülür; fark, yüksek riskte kararların bozulup bozulmadığını gösterir.</p>
+          <p className="text-label text-zinc-500 -mt-1">Her risk seviyesinde işlem başı R (parantezde işlem sayısı). R zaten riske göre ölçülür; fark, yüksek riskte kararların bozulup bozulmadığını gösterir.</p>
           {s.riskSlices.length ? (
             <div className="flex flex-wrap gap-1.5">
               {s.riskSlices.map((r) => (
@@ -244,7 +244,7 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
                   key={r.riskPct}
                   type="button"
                   onClick={() => onShowTrades(`Risk %${fmt(r.riskPct, 3)}`, trades.filter((t) => typeof t.riskPct === 'number' && Math.round(t.riskPct * 1000) / 1000 === r.riskPct))}
-                  className={`px-2.5 py-1.5 rounded-lg border border-zinc-800 bg-zinc-950/40 hover:border-zinc-600 text-[11px] tabular-nums transition-ui cursor-pointer ${r.edge.n < SETUP_MIN_SAMPLE ? 'opacity-50' : ''}`}
+                  className={`px-2.5 py-1.5 rounded-lg border border-zinc-800 bg-zinc-950/40 hover:border-zinc-600 text-label tabular-nums transition-ui cursor-pointer ${r.edge.n < SETUP_MIN_SAMPLE ? 'opacity-50' : ''}`}
                 >
                   <span className="text-zinc-400 font-semibold">%{fmt(r.riskPct, 3)}</span>{' '}
                   <span className={`font-bold ${tone(r.edge.expectancy)}`}>{sR(r.edge.expectancy)}</span>{' '}
@@ -253,14 +253,14 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
               ))}
             </div>
           ) : (
-            <p className="text-[11px] text-zinc-500">Risk % girilmiş işlem yok (prop hesabına bağlı işlemlerde formdan seçilir).</p>
+            <p className="text-label text-zinc-500">Risk % girilmiş işlem yok (prop hesabına bağlı işlemlerde formdan seçilir).</p>
           )}
         </div>
         <div className="flex flex-col gap-2 min-w-0">
           <span className={`${sectionTitle} text-blue-300`}>
             <Newspaper size={12} /> News Day etkisi
           </span>
-          <p className="text-[10px] text-zinc-500 -mt-1">Haber / tatil günü işaretli ve işaretsiz günlerde işlem başı R.</p>
+          <p className="text-label text-zinc-500 -mt-1">Haber / tatil günü işaretli ve işaretsiz günlerde işlem başı R.</p>
           {s.news.yes.n + s.news.no.n > 0 ? (
             <div className="flex flex-wrap gap-1.5">
               {([['YES', news.yes, s.news.yes, true], ['NO', news.no, s.news.no, false]] as const).map(([k, label, e, flag]) => (
@@ -269,17 +269,17 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
                   type="button"
                   disabled={!e.n}
                   onClick={() => onShowTrades(`News Day: ${label}`, trades.filter((t) => t.newsDay === flag))}
-                  className={`px-2.5 py-1.5 rounded-lg border border-zinc-800 bg-zinc-950/40 hover:border-zinc-600 disabled:opacity-50 disabled:cursor-default text-[11px] tabular-nums transition-ui cursor-pointer ${e.n > 0 && e.n < SETUP_MIN_SAMPLE ? 'opacity-50' : ''}`}
+                  className={`px-2.5 py-1.5 rounded-lg border border-zinc-800 bg-zinc-950/40 hover:border-zinc-600 disabled:opacity-50 disabled:cursor-default text-label tabular-nums transition-ui cursor-pointer ${e.n > 0 && e.n < SETUP_MIN_SAMPLE ? 'opacity-50' : ''}`}
                 >
                   <span className="text-zinc-400 font-semibold">{label}</span>{' '}
                   <span className={`font-bold ${tone(e.expectancy)}`}>{e.n ? sR(e.expectancy) : '—'}</span>{' '}
                   <span className="text-zinc-600">({e.n})</span>
                 </button>
               ))}
-              {s.news.unknown > 0 && <span className="px-2 py-1.5 text-[11px] text-zinc-600">{s.news.unknown} işlemde girilmemiş</span>}
+              {s.news.unknown > 0 && <span className="px-2 py-1.5 text-label text-zinc-600">{s.news.unknown} işlemde girilmemiş</span>}
             </div>
           ) : (
-            <p className="text-[11px] text-zinc-500">News Day girilmiş işlem yok.</p>
+            <p className="text-label text-zinc-500">News Day girilmiş işlem yok.</p>
           )}
         </div>
       </div>
@@ -291,7 +291,7 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
           <span className={`${sectionTitle} text-blue-300`}>
             <ShieldCheck size={12} /> Kurallarım
           </span>
-          <p className="text-[10px] text-zinc-500 -mt-1">Verinden otomatik çıkan sonuçlar: kanıtlı kârlı ve geri kalan işlemlerinden %95 güvenle daha iyi olan "AL", kesin kaybettiren "ALMA" olur. Sabit kural değildir; yeni işlemlerle değişir.</p>
+          <p className="text-label text-zinc-500 -mt-1">Verinden otomatik çıkan sonuçlar: kanıtlı kârlı ve geri kalan işlemlerinden %95 güvenle daha iyi olan "AL", kesin kaybettiren "ALMA" olur. Sabit kural değildir; yeni işlemlerle değişir.</p>
           {s.rules.length ? (
             <div className="flex flex-col gap-1.5">
               {s.rules.slice(0, 10).map((r) => (
@@ -302,19 +302,19 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
                   className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-xl border border-zinc-800 bg-zinc-950/40 px-3 py-2 text-left hover:border-zinc-700 cursor-pointer transition-ui min-w-0"
                 >
                   <span className="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0">
-                    <span className={`whitespace-nowrap shrink-0 px-1.5 py-0.5 rounded-md border text-[10px] font-bold ${r.kind === 'TAKE' ? 'text-emerald-300 border-emerald-500/30 bg-emerald-500/10' : 'text-rose-300 border-rose-500/30 bg-rose-500/10'}`}>
+                    <span className={`whitespace-nowrap shrink-0 px-1.5 py-0.5 rounded-md border text-label font-bold ${r.kind === 'TAKE' ? 'text-emerald-300 border-emerald-500/30 bg-emerald-500/10' : 'text-rose-300 border-rose-500/30 bg-rose-500/10'}`}>
                       {r.kind === 'TAKE' ? 'AL' : 'ALMA'}
                     </span>
                     <span className="text-xs font-bold text-zinc-200 break-words min-w-0">{r.title}</span>
                     {r.halves && r.halves.status !== 'THIN' && (
                       <span
-                        className={`shrink-0 px-1.5 py-0.5 rounded-md border text-[10px] font-bold ${r.halves.status === 'CONSISTENT' ? 'text-emerald-300 border-emerald-500/30' : 'text-amber-300 border-amber-500/30'}`}
+                        className={`shrink-0 px-1.5 py-0.5 rounded-md border text-label font-bold ${r.halves.status === 'CONSISTENT' ? 'text-emerald-300 border-emerald-500/30' : 'text-amber-300 border-amber-500/30'}`}
                       >
                         {r.halves.status === 'CONSISTENT' ? 'İki Yarıda Tutarlı' : 'Şans Olabilir'}
                       </span>
                     )}
                   </span>
-                  <span className="ml-auto text-right text-[10px] tabular-nums text-zinc-400">
+                  <span className="ml-auto text-right text-label tabular-nums text-zinc-400">
                     {(() => {
                       const since = ruleSince[ruleKey(r.kind, r.title)];
                       const after = since !== undefined ? trades.filter((t) => t.createdAt > since && r.match(t)) : [];
@@ -335,7 +335,7 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
               ))}
             </div>
           ) : (
-            <p className="text-[11px] text-zinc-500">
+            <p className="text-label text-zinc-500">
               Henüz kesinleşmiş bulgu yok. Bir kurulum ya da alan "Kanıtlı Edge" (en az {EDGE_PROOF_MIN} işlem) veya kesin sızıntı olunca burada kurala dönüşür.
             </p>
           )}
@@ -346,13 +346,13 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
           <span className={`${sectionTitle} text-blue-300`}>
             <Shuffle size={12} /> Tesadüf Testi
           </span>
-          <p className="text-[10px] text-zinc-500 -mt-1">
+          <p className="text-label text-zinc-500 -mt-1">
             Bulgular işlemlerinin yalnızca ilk yarısında aranır, sonra hiç görülmemiş ikinci yarıda sınanır. AL bulgusu ikinci yarıda da kârlı ve geri kalandan iyi, ALMA bulgusu yine kaybettiriyor ve geri kalandan kötüyse "Tuttu" sayılır; tutmayan şans eseri çıkmış olabilir.
           </p>
           {oos.ready ? (
             oos.findings.length ? (
               <>
-                <p className="text-[11px] text-zinc-300">
+                <p className="text-label text-zinc-300">
                   İlk yarıda bulunan <b>{oos.findings.length}</b> bulgudan <b className="text-emerald-300">{oos.held}</b> tanesi ikinci yarıda tuttu,{' '}
                   <b className="text-rose-300">{oos.failed}</b> tanesi tutmadı
                   {oos.untested > 0 && <>, {oos.untested} tanesi için ikinci yarıda yeterli işlem yok (en az {HALF_MIN})</>}.
@@ -368,10 +368,10 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
                       className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-xl border border-zinc-800 bg-zinc-950/40 px-3 py-2 text-left hover:border-zinc-700 cursor-pointer transition-ui min-w-0"
                     >
                       <span className="flex items-center gap-2 min-w-0">
-                        <span className={`whitespace-nowrap shrink-0 w-[58px] text-center px-1.5 py-0.5 rounded-md border text-[10px] font-bold ${OOS_PILL[f.status].cls}`}>{OOS_PILL[f.status].label}</span>
+                        <span className={`whitespace-nowrap shrink-0 w-[58px] text-center px-1.5 py-0.5 rounded-md border text-label font-bold ${OOS_PILL[f.status].cls}`}>{OOS_PILL[f.status].label}</span>
                         <span className="text-xs font-bold text-zinc-200 break-words min-w-0">{f.title}</span>
                       </span>
-                      <span className="ml-auto text-right text-[10px] tabular-nums text-zinc-400 whitespace-nowrap">
+                      <span className="ml-auto text-right text-label tabular-nums text-zinc-400 whitespace-nowrap">
                         {sR(f.discovery.expectancy)} → <b className={tone(f.test.expectancy)}>{f.test.n ? sR(f.test.expectancy) : '-'}</b>
                         <span className="text-zinc-600"> · {f.test.n} işlem</span>
                       </span>
@@ -380,10 +380,10 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
                 </div>
               </>
             ) : (
-              <p className="text-[11px] text-zinc-500">İlk yarıda yeterli örneklemli bulgu çıkmadı.</p>
+              <p className="text-label text-zinc-500">İlk yarıda yeterli örneklemli bulgu çıkmadı.</p>
             )
           ) : (
-            <p className="text-[11px] text-zinc-500">En az {oos.need} işlem gerekli (şu an {trades.length}).</p>
+            <p className="text-label text-zinc-500">En az {oos.need} işlem gerekli (şu an {trades.length}).</p>
           )}
         </div>
 
@@ -392,7 +392,7 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
           <span className={`${sectionTitle} text-blue-300`}>
             <Compass size={12} /> Kombinasyonlar
           </span>
-          <p className="text-[10px] text-zinc-500 -mt-1">
+          <p className="text-label text-zinc-500 -mt-1">
             İki giriş alanı birlikteyken, tek başlarına olduğundan en az {PAIR_MIN_LIFT}R/işlem daha iyi ya da kötü olan birleşimler (en az {SETUP_MIN_SAMPLE * 2} işlem).
           </p>
           {s.bestPairs.length || s.worstPairs.length ? (
@@ -408,7 +408,7 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
               ))}
             </div>
           ) : (
-            <p className="text-[11px] text-zinc-500">Henüz en az {SETUP_MIN_SAMPLE * 2} işlemli, belirgin fark yaratan bir birleşim yok.</p>
+            <p className="text-label text-zinc-500">Henüz en az {SETUP_MIN_SAMPLE * 2} işlemli, belirgin fark yaratan bir birleşim yok.</p>
           )}
         </div>
       </div>

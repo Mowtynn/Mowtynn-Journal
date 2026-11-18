@@ -315,14 +315,14 @@ const TradeList = React.memo(function TradeList({
       {/* HEADER WITH SEARCH BAR */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
         <div>
-          <h2 className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-2 font-sans">
+          <h2 className="text-label font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-2 font-sans">
             <span className="p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400">
               <Clock size={11} />
             </span>
             <div className="flex items-center gap-1.5 mt-[1px]">
               <span className="leading-none flex items-center">{"İşlem Geçmişi"}</span>
             </div>
-            <span className="text-[9px] font-sans bg-zinc-900 px-2 py-0.5 rounded-lg border border-zinc-800 text-zinc-300 flex items-center justify-center leading-none mt-[1px]">
+            <span className="text-label font-sans bg-zinc-900 px-2 py-0.5 rounded-lg border border-zinc-800 text-zinc-300 flex items-center justify-center leading-none mt-[1px]">
               {filteredTrades.length} / {trades.length} {"işlem"}
             </span>
           </h2>
@@ -380,7 +380,7 @@ const TradeList = React.memo(function TradeList({
                     <button
                       type="button"
                       onClick={() => setExportFormatTab('excel')}
-                      className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-ui flex items-center justify-center gap-1.5 cursor-pointer border ${
+                      className={`flex-1 py-1.5 text-label font-bold rounded-lg transition-ui flex items-center justify-center gap-1.5 cursor-pointer border ${
                         exportFormatTab === 'excel'
                           ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-xs'
                           : 'text-zinc-400 hover:text-zinc-200 border-transparent hover:bg-zinc-800/40'
@@ -392,7 +392,7 @@ const TradeList = React.memo(function TradeList({
                     <button
                       type="button"
                       onClick={() => setExportFormatTab('csv')}
-                      className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-ui flex items-center justify-center gap-1.5 cursor-pointer border ${
+                      className={`flex-1 py-1.5 text-label font-bold rounded-lg transition-ui flex items-center justify-center gap-1.5 cursor-pointer border ${
                         exportFormatTab === 'csv'
                           ? 'bg-blue-500/20 text-blue-300 border-blue-500/40 shadow-xs'
                           : 'text-zinc-400 hover:text-zinc-200 border-transparent hover:bg-zinc-800/40'
@@ -404,7 +404,7 @@ const TradeList = React.memo(function TradeList({
                     <button
                       type="button"
                       onClick={() => setExportFormatTab('pdf')}
-                      className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-ui flex items-center justify-center gap-1.5 cursor-pointer border ${
+                      className={`flex-1 py-1.5 text-label font-bold rounded-lg transition-ui flex items-center justify-center gap-1.5 cursor-pointer border ${
                         exportFormatTab === 'pdf'
                           ? 'bg-blue-500/20 text-blue-300 border-blue-500/40 shadow-xs'
                           : 'text-zinc-400 hover:text-zinc-200 border-transparent hover:bg-zinc-800/40'
@@ -415,11 +415,11 @@ const TradeList = React.memo(function TradeList({
                     </button>
                   </div>
 
-                  <div className="px-2 py-1 text-[9px] font-black tracking-widest text-zinc-500 uppercase border-b border-zinc-800/60 mb-1 flex items-center justify-between">
+                  <div className="px-2 py-1 text-label font-black tracking-widest text-zinc-500 uppercase border-b border-zinc-800/60 mb-1 flex items-center justify-between">
                     <span>
                       {exportFormatTab === 'excel' ? 'EXCEL (.XLSX) DIŞA AKTAR' : exportFormatTab === 'csv' ? 'CSV (EXCEL UYUMLU) İNDİR' : 'PDF ANALİZ RAPORU'}
                     </span>
-                    <span className="text-zinc-500 font-sans text-[9px] font-normal">
+                    <span className="text-zinc-500 font-sans text-label font-normal">
                       {exportFormatTab === 'excel' ? 'Tüm Sütunlar + Özet' : exportFormatTab === 'csv' ? 'UTF-8 BOM Semicolon' : 'Görsel Rapor'}
                     </span>
                   </div>
@@ -435,7 +435,7 @@ const TradeList = React.memo(function TradeList({
                           <FileSpreadsheet size={13} className="text-emerald-400" />
                           <span>Filtrelenmiş İşlemler</span>
                         </div>
-                        <span className="text-[10px] font-bold font-sans px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        <span className="text-label font-bold font-sans px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                           {filteredTrades.length} İşlem
                         </span>
                       </button>
@@ -449,7 +449,7 @@ const TradeList = React.memo(function TradeList({
                           <Layers size={13} className="text-zinc-400 group-hover:text-emerald-400 transition-colors" />
                           <span>Tüm İşlem Geçmişi</span>
                         </div>
-                        <span className="text-[10px] font-bold font-sans px-2 py-0.5 rounded-lg bg-zinc-800 text-zinc-300 border border-zinc-700">
+                        <span className="text-label font-bold font-sans px-2 py-0.5 rounded-lg bg-zinc-800 text-zinc-300 border border-zinc-700">
                           {trades.length} İşlem
                         </span>
                       </button>
@@ -476,7 +476,7 @@ const TradeList = React.memo(function TradeList({
 
                       <div className="p-1">
                         <div className="flex items-center gap-1.5 bg-zinc-950 border border-zinc-800 rounded-xl px-2 py-1 text-xs text-zinc-200">
-                          <span className="text-zinc-400 text-[10px] font-medium whitespace-nowrap">Son</span>
+                          <span className="text-zinc-400 text-label font-medium whitespace-nowrap">Son</span>
                           <input
                             type="number"
                             min="1"
@@ -486,14 +486,14 @@ const TradeList = React.memo(function TradeList({
                             onClick={(e) => e.stopPropagation()}
                             className="w-10 bg-zinc-900 border border-zinc-700 text-center text-emerald-400 font-bold rounded-lg py-0.5 text-xs focus:outline-none focus:border-emerald-500"
                           />
-                          <span className="text-zinc-400 text-[10px] font-medium whitespace-nowrap">işlem (.xlsx)</span>
+                          <span className="text-zinc-400 text-label font-medium whitespace-nowrap">işlem (.xlsx)</span>
                           <button
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleExport('excel', 'custom');
                             }}
-                            className="ml-auto shrink-0 whitespace-nowrap px-3 py-1 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 rounded-xl text-[10px] font-sans font-bold uppercase tracking-wider transition-colors duration-200 cursor-pointer"
+                            className="ml-auto shrink-0 whitespace-nowrap px-3 py-1 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 rounded-xl text-label font-sans font-bold uppercase tracking-wider transition-colors duration-200 cursor-pointer"
                           >
                             İndir
                           </button>
@@ -513,7 +513,7 @@ const TradeList = React.memo(function TradeList({
                           <FileText size={13} className="text-blue-400" />
                           <span>Filtrelenmiş İşlemler</span>
                         </div>
-                        <span className="text-[10px] font-bold font-sans px-2 py-0.5 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                        <span className="text-label font-bold font-sans px-2 py-0.5 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">
                           {filteredTrades.length} İşlem
                         </span>
                       </button>
@@ -527,7 +527,7 @@ const TradeList = React.memo(function TradeList({
                           <Layers size={13} className="text-zinc-400 group-hover:text-blue-400 transition-colors" />
                           <span>Tüm İşlem Geçmişi</span>
                         </div>
-                        <span className="text-[10px] font-bold font-sans px-2 py-0.5 rounded-lg bg-zinc-800 text-zinc-300 border border-zinc-700">
+                        <span className="text-label font-bold font-sans px-2 py-0.5 rounded-lg bg-zinc-800 text-zinc-300 border border-zinc-700">
                           {trades.length} İşlem
                         </span>
                       </button>
@@ -554,7 +554,7 @@ const TradeList = React.memo(function TradeList({
 
                       <div className="p-1">
                         <div className="flex items-center gap-1.5 bg-zinc-950 border border-zinc-800 rounded-xl px-2 py-1 text-xs text-zinc-200">
-                          <span className="text-zinc-400 text-[10px] font-medium whitespace-nowrap">Son</span>
+                          <span className="text-zinc-400 text-label font-medium whitespace-nowrap">Son</span>
                           <input
                             type="number"
                             min="1"
@@ -564,14 +564,14 @@ const TradeList = React.memo(function TradeList({
                             onClick={(e) => e.stopPropagation()}
                             className="w-10 bg-zinc-900 border border-zinc-700 text-center text-blue-400 font-bold rounded-lg py-0.5 text-xs focus:outline-none focus:border-blue-500"
                           />
-                          <span className="text-zinc-400 text-[10px] font-medium whitespace-nowrap">işlem (.csv)</span>
+                          <span className="text-zinc-400 text-label font-medium whitespace-nowrap">işlem (.csv)</span>
                           <button
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleExport('csv', 'custom');
                             }}
-                            className="ml-auto shrink-0 whitespace-nowrap px-3 py-1 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 border border-blue-500/30 rounded-xl text-[10px] font-sans font-bold uppercase tracking-wider transition-colors duration-200 cursor-pointer"
+                            className="ml-auto shrink-0 whitespace-nowrap px-3 py-1 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 border border-blue-500/30 rounded-xl text-label font-sans font-bold uppercase tracking-wider transition-colors duration-200 cursor-pointer"
                           >
                             İndir
                           </button>
@@ -591,7 +591,7 @@ const TradeList = React.memo(function TradeList({
                           <FileText size={13} className="text-blue-400" />
                           <span>Filtrelenmiş Rapor</span>
                         </div>
-                        <span className="text-[10px] font-bold font-sans px-2 py-0.5 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                        <span className="text-label font-bold font-sans px-2 py-0.5 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">
                           {filteredTrades.length} İşlem
                         </span>
                       </button>
@@ -618,7 +618,7 @@ const TradeList = React.memo(function TradeList({
 
                       <div className="p-1">
                         <div className="flex items-center gap-1.5 bg-zinc-950 border border-zinc-800 rounded-xl px-2 py-1 text-xs text-zinc-200">
-                          <span className="text-zinc-400 text-[10px] font-medium whitespace-nowrap">Son</span>
+                          <span className="text-zinc-400 text-label font-medium whitespace-nowrap">Son</span>
                           <input
                             type="number"
                             min="1"
@@ -628,7 +628,7 @@ const TradeList = React.memo(function TradeList({
                             onClick={(e) => e.stopPropagation()}
                             className="w-10 bg-zinc-900 border border-zinc-700 text-center text-blue-400 font-bold rounded-lg py-0.5 text-xs focus:outline-none focus:border-blue-500"
                           />
-                          <span className="text-zinc-400 text-[10px] font-medium whitespace-nowrap">işlem raporu</span>
+                          <span className="text-zinc-400 text-label font-medium whitespace-nowrap">işlem raporu</span>
                           <button
                             type="button"
                             onClick={(e) => {
@@ -644,7 +644,7 @@ const TradeList = React.memo(function TradeList({
                               });
                               setIsExportOpen(false);
                             }}
-                            className="ml-auto shrink-0 whitespace-nowrap px-3 py-1 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 border border-blue-500/30 rounded-xl text-[10px] font-sans font-bold uppercase tracking-wider transition-colors duration-200 cursor-pointer"
+                            className="ml-auto shrink-0 whitespace-nowrap px-3 py-1 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 border border-blue-500/30 rounded-xl text-label font-sans font-bold uppercase tracking-wider transition-colors duration-200 cursor-pointer"
                           >
                             İndir
                           </button>
@@ -670,14 +670,14 @@ const TradeList = React.memo(function TradeList({
         <div className={`min-h-0 ${isFilterOpen ? 'overflow-visible' : 'overflow-hidden'}`}>
           <div className="bg-zinc-900/80 border border-zinc-700/50 rounded-2xl p-4 sm:p-5 shadow-sm">
             <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5 mb-3.5">
-              <span className="text-[10px] uppercase tracking-wider text-zinc-400 font-bold flex items-center gap-1.5">
+              <span className="text-label uppercase tracking-wider text-zinc-400 font-bold flex items-center gap-1.5">
                 <Filter size={11} className="text-blue-400" /> Filtreler & Sıralama
               </span>
               {isFilteringActive && (
                 <button
                   type="button"
                   onClick={handleResetFilters}
-                  className="text-[10px] font-bold text-zinc-400 hover:text-rose-400 flex items-center gap-1 transition-colors cursor-pointer"
+                  className="text-label font-bold text-zinc-400 hover:text-rose-400 flex items-center gap-1 transition-colors cursor-pointer"
                 >
                   <RotateCcw size={10} /> Filtreleri Temizle
                 </button>
@@ -715,7 +715,7 @@ const TradeList = React.memo(function TradeList({
                 </div>
               </div>
             </div>
-            <p className="mt-3 text-[11px] text-zinc-500">
+            <p className="mt-3 text-label text-zinc-500">
               Sonuç, yön, parite, seans ve diğer kurulum filtreleri üstteki <span className="font-semibold text-zinc-400">Filtreleme Menüsü</span>'nde; tüm sayfalara birlikte uygulanır.
             </p>
           </div>
@@ -740,9 +740,9 @@ const TradeList = React.memo(function TradeList({
           <div 
             className="relative z-0 overflow-x-auto w-full rounded-xl"
           >
-            <table className="trade-table w-full text-left border-separate sm:border-spacing-x-0 sm:border-spacing-y-1 text-[10px] sm:text-xs font-sans whitespace-nowrap sm:table-fixed sm:min-w-[750px] block sm:table">
+            <table className="trade-table w-full text-left border-separate sm:border-spacing-x-0 sm:border-spacing-y-1 text-label sm:text-xs font-sans whitespace-nowrap sm:table-fixed sm:min-w-[750px] block sm:table">
               <thead className="sticky top-0 z-20 hidden sm:table-header-group">
-                <tr className="text-[9px] text-zinc-400 uppercase tracking-widest border-b border-zinc-800/80">
+                <tr className="text-label text-zinc-400 uppercase tracking-widest border-b border-zinc-800/80">
                   <th 
                     className={`py-2 px-3 font-sans select-none min-w-[130px] cursor-pointer group/th transition-colors hover:text-zinc-200 text-center ${
                       filter.sortBy === 'dateAsc' || filter.sortBy === 'dateDes' ? 'text-blue-400 font-bold' : 'text-zinc-400'
@@ -816,7 +816,7 @@ const TradeList = React.memo(function TradeList({
                       <div className="flex flex-col items-center gap-2">
                         <Search size={32} className="opacity-20" />
                         <p className="uppercase tracking-wider">Sonuç bulunamadı</p>
-                        <p className="text-[10px] opacity-60">Kriterlerinize uygun işlem yok.</p>
+                        <p className="text-label opacity-60">Kriterlerinize uygun işlem yok.</p>
                       </div>
                     </td>
                   </tr>
@@ -826,21 +826,21 @@ const TradeList = React.memo(function TradeList({
           </div>
           {filteredTrades.length > itemsPerPage && (
             <div className="flex items-center justify-between border-t border-zinc-800/80 pt-4 mt-2">
-              <span className="text-[10px] text-zinc-500 font-sans">
+              <span className="text-label text-zinc-500 font-sans">
                 {((effectivePage - 1) * itemsPerPage) + 1}-{Math.min(effectivePage * itemsPerPage, filteredTrades.length)} / {filteredTrades.length} gösteriliyor
               </span>
               <div className="flex gap-2">
                 <button
                   disabled={effectivePage === 1}
                   onClick={() => setCurrentPage(Math.max(1, effectivePage - 1))}
-                  className="px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-[10px] font-bold text-zinc-400 hover:text-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-label font-bold text-zinc-400 hover:text-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Önceki
                 </button>
                 <button
                   disabled={effectivePage * itemsPerPage >= filteredTrades.length}
                   onClick={() => setCurrentPage(effectivePage + 1)}
-                  className="px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-[10px] font-bold text-zinc-400 hover:text-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-label font-bold text-zinc-400 hover:text-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Sonraki
                 </button>

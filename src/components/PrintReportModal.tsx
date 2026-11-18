@@ -241,7 +241,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                 onClick={() => void handlePrintPdf()}
                 aria-label="PDF olarak kaydet / yazdır"
                 disabled={isGenerating || isPrinting || activeTrades.length === 0}
-                className="flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl border transition-colors cursor-pointer shrink-0 text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 border-blue-500/20 disabled:opacity-50 text-[11px] font-bold uppercase tracking-wide"
+                className="flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl border transition-colors cursor-pointer shrink-0 text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 border-blue-500/20 disabled:opacity-50 text-label font-bold uppercase tracking-wide"
               >
                 {isPrinting ? <Loader2 size={15} className="animate-spin" /> : <Printer size={15} />} PDF
               </button>
@@ -274,13 +274,13 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                 {/* Header Branding Section */}
                 <div className="flex flex-col md:flex-row justify-between items-start border-b border-white/10 pb-6 mb-6">
                   <div>
-                    <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 font-sans">Kurumsal Performans Raporu</h3>
+                    <h3 className="text-label font-bold text-zinc-500 uppercase tracking-widest mb-1 font-sans">Kurumsal Performans Raporu</h3>
                     <h1 className="text-3xl font-black text-white tracking-tight">{activeTitle}</h1>
                     <div className="flex items-center gap-4 mt-2">
-                      <p className="text-[10px] text-zinc-400 font-medium">
+                      <p className="text-label text-zinc-400 font-medium">
                         <span className="text-zinc-500">İşlem Tarihleri:</span> <span className="text-zinc-300 font-semibold">{activeDateRangeText}{span && activeDateRangeText !== span ? ` · ${span}` : ''}</span>
                       </p>
-                      <p className="text-[10px] text-zinc-400 font-medium">
+                      <p className="text-label text-zinc-400 font-medium">
                         <span className="text-zinc-500">Oluşturulma Tarihi:</span> <span className="text-zinc-300 font-semibold">{nyNow().toLocaleDateString('tr-TR')}</span>
                       </p>
                     </div>
@@ -289,7 +289,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                     <div className="text-lg font-black tracking-tight text-white flex items-center justify-end">
                       Trading Journal <span className="text-blue-500 ml-1">by Mowtynn</span>
                     </div>
-                    <p className="text-[10px] text-zinc-500 font-medium mt-1 uppercase tracking-widest">
+                    <p className="text-label text-zinc-500 font-medium mt-1 uppercase tracking-widest">
                       {smartUpper("Gelişmiş İşlem Takip ve Analiz Sistemi")}
                     </p>
                   </div>
@@ -299,34 +299,34 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
                   {/* Total Trades Card */}
                   <div className="border border-zinc-800 bg-zinc-900/60 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-1.5 shadow-lg relative overflow-hidden">
-                    <span className="text-[10px] font-bold tracking-wider text-zinc-400 font-sans uppercase">TOPLAM İŞLEM</span>
+                    <span className="text-label font-bold tracking-wider text-zinc-400 font-sans uppercase">TOPLAM İŞLEM</span>
                     <span className="text-3xl font-black drop-shadow-sm text-zinc-100 font-sans tracking-tight">{totalTrades}</span>
-                    <div className="text-[11px] text-zinc-400 font-medium mt-1">
+                    <div className="text-label text-zinc-400 font-medium mt-1">
                       <span className="text-emerald-400 font-bold">{longs} L</span> <span className="text-zinc-600 mx-1">/</span> <span className="text-rose-400 font-bold">{shorts} S</span>
                     </div>
                   </div>
                   {/* Win Rate Card */}
                   <div className="border border-zinc-800 bg-zinc-900/60 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-1.5 shadow-lg relative overflow-hidden">
-                    <span className="text-[10px] font-bold tracking-wider text-zinc-400 font-sans uppercase">KAZANMA ORANI</span>
+                    <span className="text-label font-bold tracking-wider text-zinc-400 font-sans uppercase">KAZANMA ORANI</span>
                     <span className={`text-3xl font-black drop-shadow-sm font-sans tracking-tight ${(beWinRate === null ? totalR >= 0 : winRate >= beWinRate) ? 'text-emerald-400' : 'text-rose-400'}`}>%{winRate.toFixed(1)}</span>
-                    {beWinRate !== null && <span className="text-[10px] text-zinc-500">başabaş %{beWinRate.toFixed(0)}</span>}
-                    <div className="text-[11px] text-zinc-400 font-medium mt-1">
+                    {beWinRate !== null && <span className="text-label text-zinc-500">başabaş %{beWinRate.toFixed(0)}</span>}
+                    <div className="text-label text-zinc-400 font-medium mt-1">
                       <span className="text-emerald-400 font-bold">{wins} W</span> <span className="text-zinc-600 mx-1">/</span> <span className="text-rose-400 font-bold">{losses} L</span> <span className="text-zinc-600 mx-1">/</span> <span className="text-zinc-400 font-bold">{breakevens} BE</span>
                     </div>
                   </div>
                   {/* Net Profit Card */}
                   <div className="border border-zinc-800 bg-zinc-900/60 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-1.5 shadow-lg relative overflow-hidden">
-                    <span className="text-[10px] font-bold tracking-wider text-zinc-400 font-sans uppercase">BEKLENTİ</span>
+                    <span className="text-label font-bold tracking-wider text-zinc-400 font-sans uppercase">BEKLENTİ</span>
                     <span className={`text-3xl font-black drop-shadow-sm font-sans tracking-tight ${totalR > 0 ? 'text-emerald-400' : totalR < 0 ? 'text-rose-400' : 'text-zinc-300'}`}>{formatR(totalTrades > 0 ? totalR / totalTrades : 0)}</span>
-                    <span className="text-[11px] text-zinc-400 font-medium mt-1">İşlem başına</span>
+                    <span className="text-label text-zinc-400 font-medium mt-1">İşlem başına</span>
                   </div>
                   {/* Net R multiple Card */}
                   <div className="border border-zinc-800 bg-zinc-900/60 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-1.5 shadow-lg relative overflow-hidden">
-                    <span className="text-[10px] font-bold tracking-wider text-zinc-400 font-sans uppercase">NET R</span>
+                    <span className="text-label font-bold tracking-wider text-zinc-400 font-sans uppercase">NET R</span>
                     <span className={`text-3xl font-black drop-shadow-sm font-sans tracking-tight ${totalR > 0 ? 'text-emerald-400' : totalR < 0 ? 'text-rose-400' : 'text-zinc-300'}`}>
                       {formatR(totalR)}
                     </span>
-                    <span className="text-[11px] text-zinc-400 font-medium mt-1">Toplam R</span>
+                    <span className="text-label text-zinc-400 font-medium mt-1">Toplam R</span>
                   </div>
                 </div>
 
@@ -336,15 +336,15 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                   <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-widest font-sans flex items-center gap-1.5">
                     {smartUpper("İŞLEM GEÇMİŞİ")}
                   </h4>
-                  <div className="text-[10px] font-medium text-zinc-500 font-sans tracking-wider">
+                  <div className="text-label font-medium text-zinc-500 font-sans tracking-wider">
                     Toplam <strong className="text-zinc-300">{activeTrades.length}</strong> işlem
                   </div>
                 </div>
                 
                 <div className={`bg-zinc-900/60 border border-white/10 rounded-2xl p-2 sm:p-3 shadow-inner ${isGenerating ? 'overflow-visible' : 'overflow-hidden'} [scrollbar-width:none] [&::-webkit-scrollbar]:hidden`}>
-                  <table className="w-full text-left border-collapse text-[10px] font-sans">
+                  <table className="w-full text-left border-collapse text-label font-sans">
                     <thead>
-                      <tr className="border-b border-zinc-800 text-[9px] text-zinc-400 uppercase tracking-widest font-sans select-none">
+                      <tr className="border-b border-zinc-800 text-label text-zinc-400 uppercase tracking-widest font-sans select-none">
                         <th className="py-2.5 px-3 text-left font-bold font-sans">TARİH</th>
                         <th className="py-2.5 px-2 text-left font-bold font-sans">PARİTE</th>
                         <th className="py-2.5 px-2 text-center font-bold font-sans">YÖN</th>
@@ -389,22 +389,22 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                               {/* Direction (Yön) */}
                               <td className="py-2.5 px-2 text-center whitespace-nowrap">
                                 {trade.type === 'LONG' ? (
-                                  <span className="whitespace-nowrap inline-flex items-center justify-center min-w-[50px] px-2.5 py-0.5 rounded-md border border-emerald-500/20 bg-emerald-500/10 text-[10px] font-black text-emerald-400 uppercase tracking-wider font-sans">LONG</span>
+                                  <span className="whitespace-nowrap inline-flex items-center justify-center min-w-[50px] px-2.5 py-0.5 rounded-md border border-emerald-500/20 bg-emerald-500/10 text-label font-black text-emerald-400 uppercase tracking-wider font-sans">LONG</span>
                                 ) : (
-                                  <span className="whitespace-nowrap inline-flex items-center justify-center min-w-[50px] px-2.5 py-0.5 rounded-md border border-rose-500/20 bg-rose-500/10 text-[10px] font-black text-rose-400 uppercase tracking-wider font-sans">SHORT</span>
+                                  <span className="whitespace-nowrap inline-flex items-center justify-center min-w-[50px] px-2.5 py-0.5 rounded-md border border-rose-500/20 bg-rose-500/10 text-label font-black text-rose-400 uppercase tracking-wider font-sans">SHORT</span>
                                 )}
                               </td>
 
                               {/* Result Status */}
                               <td className="py-2.5 px-2 text-center whitespace-nowrap">
                                 {isWin ? (
-                                  <span className="whitespace-nowrap inline-flex items-center justify-center min-w-[45px] px-2 py-0.5 rounded-md border border-emerald-500/20 bg-emerald-500/10 text-[10px] font-black text-emerald-400 uppercase tracking-wider font-sans">{smartUpper("WIN")}</span>
+                                  <span className="whitespace-nowrap inline-flex items-center justify-center min-w-[45px] px-2 py-0.5 rounded-md border border-emerald-500/20 bg-emerald-500/10 text-label font-black text-emerald-400 uppercase tracking-wider font-sans">{smartUpper("WIN")}</span>
                                 ) : isLoss ? (
-                                  <span className="whitespace-nowrap inline-flex items-center justify-center min-w-[45px] px-2 py-0.5 rounded-md border border-rose-500/20 bg-rose-500/10 text-[10px] font-black text-rose-400 uppercase tracking-wider font-sans">LOSS</span>
+                                  <span className="whitespace-nowrap inline-flex items-center justify-center min-w-[45px] px-2 py-0.5 rounded-md border border-rose-500/20 bg-rose-500/10 text-label font-black text-rose-400 uppercase tracking-wider font-sans">LOSS</span>
                                 ) : isBe ? (
-                                  <span className="whitespace-nowrap inline-flex items-center justify-center min-w-[45px] px-2 py-0.5 rounded-md border border-zinc-500/20 bg-zinc-500/10 text-[10px] font-black text-zinc-400 uppercase tracking-wider font-sans">BE</span>
+                                  <span className="whitespace-nowrap inline-flex items-center justify-center min-w-[45px] px-2 py-0.5 rounded-md border border-zinc-500/20 bg-zinc-500/10 text-label font-black text-zinc-400 uppercase tracking-wider font-sans">BE</span>
                                 ) : (
-                                  <span className="whitespace-nowrap inline-flex items-center justify-center min-w-[45px] px-2 py-0.5 rounded-md border border-blue-500/20 bg-blue-500/10 text-[10px] font-black text-blue-400 uppercase tracking-wider font-sans">{smartUpper("AÇIK")}</span>
+                                  <span className="whitespace-nowrap inline-flex items-center justify-center min-w-[45px] px-2 py-0.5 rounded-md border border-blue-500/20 bg-blue-500/10 text-label font-black text-blue-400 uppercase tracking-wider font-sans">{smartUpper("AÇIK")}</span>
                                 )}
                               </td>
 
@@ -414,7 +414,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                                   const r = typeof trade.rr === 'number' && Number.isFinite(trade.rr) ? trade.rr : 0;
                                   const txt = formatR(r);
                                   const tone = r > 0 ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400' : r < 0 ? 'border-rose-500/20 bg-rose-500/10 text-rose-400' : 'border-zinc-500/20 bg-zinc-500/10 text-zinc-400';
-                                  return <span className={`whitespace-nowrap inline-flex items-center justify-center min-w-[48px] px-2 py-0.5 rounded-md border text-[10px] font-black tracking-wider font-sans ${tone}`}>{txt}</span>;
+                                  return <span className={`whitespace-nowrap inline-flex items-center justify-center min-w-[48px] px-2 py-0.5 rounded-md border text-label font-black tracking-wider font-sans ${tone}`}>{txt}</span>;
                                 })()}
                               </td>
 
@@ -426,11 +426,11 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                               {/* Platform */}
                               <td className="py-2.5 px-3 text-right text-zinc-400 font-medium uppercase font-sans tracking-wider">
                                 {trade.platform ? (
-                                  <span className="whitespace-nowrap inline-flex items-center justify-center px-2 py-0.5 rounded-md bg-zinc-800/80 border border-zinc-700/60 text-zinc-300 text-[9px] font-bold uppercase font-sans">
+                                  <span className="whitespace-nowrap inline-flex items-center justify-center px-2 py-0.5 rounded-md bg-zinc-800/80 border border-zinc-700/60 text-zinc-300 text-label font-bold uppercase font-sans">
                                     {trade.platform}
                                   </span>
                                 ) : (
-                                  <span className="text-zinc-500 text-[9px] font-bold">HESAPSIZ</span>
+                                  <span className="text-zinc-500 text-label font-bold">HESAPSIZ</span>
                                 )}
                               </td>
                             </tr>
@@ -443,7 +443,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
               </div>
 
               {/* Quality Guarantee/Report Footer Info */}
-              <div className="border-t border-white/10 pt-3 mt-6 flex flex-col sm:flex-row justify-between items-center text-[9px] text-zinc-500 font-medium">
+              <div className="border-t border-white/10 pt-3 mt-6 flex flex-col sm:flex-row justify-between items-center text-label text-zinc-500 font-medium">
                 <div>
                   © {nyNow().getFullYear()} Trading Journal by Mowtynn. Bu rapor otomatik oluşturulmuştur.
                 </div>

@@ -71,8 +71,8 @@ function MetricCard({
       </span>
       <div className="flex items-baseline gap-1 min-w-0">
         <span className={`text-lg sm:text-xl font-bold font-sans tracking-tight tabular-nums ${t.value}`}>{value}</span>
-        {unit && <span className={`text-[10px] font-bold font-sans ${t.unit}`}>{unit}</span>}
-        {sub && <span className="ml-auto text-[10px] text-zinc-500 font-sans truncate">{sub}</span>}
+        {unit && <span className={`text-label font-bold font-sans ${t.unit}`}>{unit}</span>}
+        {sub && <span className="ml-auto text-label text-zinc-500 font-sans truncate">{sub}</span>}
       </div>
     </motion.div>
   );

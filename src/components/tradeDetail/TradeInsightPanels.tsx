@@ -34,16 +34,16 @@ export function ResultPanel({ trade, realizedR }: { trade: Trade; realizedR: num
         {/* R ve sonuç sözcüğü aynı satırda: kart kısa kalır, notlara yer açılır */}
         <div className="mt-1.5 flex items-baseline gap-2">
           <span className={`text-2xl font-bold tabular-nums leading-none ${tone(realizedR)}`}>{formatR(realizedR)}</span>
-          <span className={`text-[11px] font-bold ${tone(realizedR)}`}>{RESULT_WORD(realizedR)}</span>
+          <span className={`text-label font-bold ${tone(realizedR)}`}>{RESULT_WORD(realizedR)}</span>
         </div>
       </div>
       <div className="min-w-0 flex flex-col items-end gap-1.5 text-right">
         <span className="flex items-center justify-end gap-1.5 min-w-0 max-w-full text-xs font-bold text-zinc-200">
           {accountName && <span className="truncate min-w-0">{accountName}</span>}
-          <span className={`whitespace-nowrap shrink-0 text-[9px] px-1.5 py-0.5 rounded-md font-bold uppercase border ${ACCOUNT_CATEGORY_BADGE[cat]}`}>{stage}</span>
+          <span className={`whitespace-nowrap shrink-0 text-label px-1.5 py-0.5 rounded-md font-bold uppercase border ${ACCOUNT_CATEGORY_BADGE[cat]}`}>{stage}</span>
         </span>
         {(hasRisk || dollars !== null) && (
-          <span className="text-[11px] text-zinc-400 tabular-nums">
+          <span className="text-label text-zinc-400 tabular-nums">
             {hasRisk && <>%{fmt(trade.riskPct as number)} risk</>}
             {hasRisk && dollars !== null && <span className="text-zinc-600"> · </span>}
             {dollars !== null && <span className={`font-bold ${tone(dollars)}`}>{formatMoney(dollars, true)}</span>}
@@ -79,7 +79,7 @@ export function SetupHistoryPanel({ insight }: { insight: TradeInsight }) {
         <div className="flex items-center gap-1.5 min-w-0">
           <History size={12} className="text-zinc-500 shrink-0" />
           <span className="heading-3 text-zinc-400 shrink-0">Kurulum geçmişi</span>
-          <span className="text-[11px] font-semibold text-zinc-500 truncate min-w-0">· {setupName}</span>
+          <span className="text-label font-semibold text-zinc-500 truncate min-w-0">· {setupName}</span>
         </div>
         {e.n === 0 ? (
           <p className="mt-1 text-xs text-zinc-500">Bu kurulumla başka işlem yok, bu ilk örnek.</p>
@@ -87,7 +87,7 @@ export function SetupHistoryPanel({ insight }: { insight: TradeInsight }) {
           <div className="mt-1 flex items-baseline flex-wrap gap-x-3 gap-y-0.5">
             <span className={`text-lg font-bold tabular-nums leading-tight ${tone(e.expectancy)}`}>
               {formatR(e.expectancy)}
-              <span className="text-[11px] font-medium text-zinc-500"> /işlem</span>
+              <span className="text-label font-medium text-zinc-500"> /işlem</span>
             </span>
             <span className="text-xs text-zinc-400 tabular-nums">
               diğer {e.n} işlem · %{fmt(e.winRate, 0)} kazanma · net {formatR(e.netR)}
@@ -96,7 +96,7 @@ export function SetupHistoryPanel({ insight }: { insight: TradeInsight }) {
           </div>
         )}
       </div>
-      <span className={`whitespace-nowrap shrink-0 px-2.5 py-1 rounded-lg border text-[10px] font-bold uppercase ${v.cls}`}>{v.label}</span>
+      <span className={`whitespace-nowrap shrink-0 px-2.5 py-1 rounded-lg border text-label font-bold uppercase ${v.cls}`}>{v.label}</span>
     </section>
   );
 }

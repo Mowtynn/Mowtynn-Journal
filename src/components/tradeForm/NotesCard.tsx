@@ -83,7 +83,7 @@ export const ChartLinkCard = React.memo(function ChartLinkCard({
           <span className="text-xs font-bold text-zinc-200 uppercase tracking-wider font-sans">{L("chartLink")}</span>
         </div>
         {valid && (
-          <span className="text-[11px] text-blue-400 font-sans flex items-center gap-1 font-bold">
+          <span className="text-label text-blue-400 font-sans flex items-center gap-1 font-bold">
             <Check size={11} /> Eklendi
           </span>
         )}
@@ -141,11 +141,11 @@ export const ChartLinkCard = React.memo(function ChartLinkCard({
       */}
       <div className="relative flex-1 min-h-[64px] rounded-xl overflow-hidden border border-zinc-800 bg-zinc-950">
         {!link ? (
-          <p className="absolute inset-0 flex items-center justify-center text-[11px] text-zinc-600 font-sans text-center px-3 border border-dashed border-zinc-800 rounded-xl">
+          <p className="absolute inset-0 flex items-center justify-center text-label text-zinc-600 font-sans text-center px-3 border border-dashed border-zinc-800 rounded-xl">
             Link eklenince grafik önizlemesi burada görünür
           </p>
         ) : !valid ? (
-          <p className="absolute inset-0 flex items-center justify-center text-[11px] text-blue-400/90 font-sans text-center px-3">
+          <p className="absolute inset-0 flex items-center justify-center text-label text-blue-400/90 font-sans text-center px-3">
             Geçerli bir bağlantı değil (https://… ile başlamalı)
           </p>
         ) : (
@@ -164,7 +164,7 @@ export const ChartLinkCard = React.memo(function ChartLinkCard({
               </a>
             )}
             {preview?.state !== "ok" && (
-              <p className="absolute inset-0 flex items-center justify-center text-[11px] font-sans text-center px-3 pointer-events-none text-zinc-500">
+              <p className="absolute inset-0 flex items-center justify-center text-label font-sans text-center px-3 pointer-events-none text-zinc-500">
                 {preview?.state === "error" ? "Önizleme yok; link yine de kaydedilir" : "Önizleme yükleniyor…"}
               </p>
             )}

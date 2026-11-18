@@ -449,7 +449,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                           className="btn-icon disabled:opacity-30 disabled:cursor-not-allowed">
                           <ChevronLeft size={16} />
                         </button>
-                        <span className="min-w-[3.25rem] text-center overflow-hidden"><span ref={counterRef} className="inline-block text-[11px] font-semibold tabular-nums text-zinc-500">{navIndex + 1} / {navList!.length}</span></span>
+                        <span className="min-w-[3.25rem] text-center overflow-hidden"><span ref={counterRef} className="inline-block text-label font-semibold tabular-nums text-zinc-500">{navIndex + 1} / {navList!.length}</span></span>
                         <button type="button" aria-label="Sonraki işlem" onClick={goNext} disabled={!nextTrade}
                           className="btn-icon disabled:opacity-30 disabled:cursor-not-allowed">
                           <ChevronRight size={16} />
@@ -512,15 +512,15 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                       <div className="flex items-start gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3">
                         <PenLine size={14} className="text-amber-300 shrink-0 mt-0.5" />
                         <div className="flex-1 min-w-0">
-                          <p className="text-[11px] font-bold text-amber-200">Hızlı kayıt · ayrıntılar tamamlanmadı</p>
+                          <p className="text-label font-bold text-amber-200">Hızlı kayıt · ayrıntılar tamamlanmadı</p>
                           {missing.length > 0 && (
-                            <p className="text-[10px] text-amber-200/70 mt-0.5">Eksik: {missing.join(", ")}</p>
+                            <p className="text-label text-amber-200/70 mt-0.5">Eksik: {missing.join(", ")}</p>
                           )}
                         </div>
                         <button
                           type="button"
                           onClick={() => { onEdit(currentTrade); onClose(); }}
-                          className="shrink-0 px-2.5 py-1 rounded-lg border border-amber-500/40 bg-amber-500/15 hover:bg-amber-500/25 text-[10px] font-bold uppercase text-amber-200 cursor-pointer transition-colors"
+                          className="shrink-0 px-2.5 py-1 rounded-lg border border-amber-500/40 bg-amber-500/15 hover:bg-amber-500/25 text-label font-bold uppercase text-amber-200 cursor-pointer transition-colors"
                         >
                           Tamamla
                         </button>
@@ -655,7 +655,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                         <ImageIcon size={12}/> TEKNİK ANALİZ GÖRSELİ
                       </h4>
                       {currentTrade.screenshot && !imageError && (
-                        <a href={/^https?:\/\//i.test(currentTrade.screenshot || "") ? currentTrade.screenshot! : undefined} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-400 hover:text-blue-300 flex items-center gap-1 font-sans uppercase font-bold bg-blue-500/10 px-2.5 py-1 rounded-md transition-colors">
+                        <a href={/^https?:\/\//i.test(currentTrade.screenshot || "") ? currentTrade.screenshot! : undefined} target="_blank" rel="noopener noreferrer" className="text-label text-blue-400 hover:text-blue-300 flex items-center gap-1 font-sans uppercase font-bold bg-blue-500/10 px-2.5 py-1 rounded-md transition-colors">
                           Tam Boyut <ExternalLink size={10}/>
                         </a>
                       )}
@@ -847,7 +847,7 @@ function ContextRow({
     <div className={`flex flex-col gap-1 px-3.5 py-2.5 lg:[@media(max-height:820px)]:py-2 lg:[@media(max-height:820px)]:gap-0.5 bg-zinc-950/70 min-w-0 ${wide ? 'col-span-2' : ''}`}>
       <div className="flex items-center gap-1.5 text-zinc-500 min-w-0 [&>svg]:w-3 [&>svg]:h-3 [&>svg]:shrink-0">
         {icon}
-        <span className="text-[10px] font-bold uppercase tracking-wider font-sans leading-tight break-words min-w-0">{smartUpper(label)}</span>
+        <span className="text-label font-bold uppercase tracking-wider font-sans leading-tight break-words min-w-0">{smartUpper(label)}</span>
       </div>
       <div className={`text-xs font-bold font-sans uppercase leading-snug break-words ${valueColor || 'text-zinc-300'}`}>
         {text}

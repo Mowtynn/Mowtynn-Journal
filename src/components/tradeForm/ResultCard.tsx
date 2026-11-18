@@ -145,7 +145,7 @@ export const ResultCard = React.memo(function ResultCard({
           </div>
           {/* Sağ köşe: yuvarlanacaksa kaydedilecek değer, hesaplıysa dolar etkisi (yer kaplamaz, satır eklemez) */}
           {rounded !== null && (rounded !== Number(rrValue) || riskDollar) ? (
-            <span className="shrink-0 text-[10px] font-semibold tabular-nums text-zinc-500">
+            <span className="shrink-0 text-label font-semibold tabular-nums text-zinc-500">
               {rounded !== Number(rrValue) ? `→ ${rounded}R` : formatMoney(rounded * (riskDollar || 0), true)}
             </span>
           ) : null}

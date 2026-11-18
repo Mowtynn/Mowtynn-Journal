@@ -447,7 +447,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                             setGlobalSelectedPlanFidelity([...globalSelectedPlanFidelity, item]);
                           }
                         }}
-                        className={`flex-1 min-w-0 text-[10px] py-1.5 font-bold uppercase transition-colors duration-200 rounded-lg border text-center truncate cursor-pointer ${
+                        className={`flex-1 min-w-0 text-label py-1.5 font-bold uppercase transition-colors duration-200 rounded-lg border text-center truncate cursor-pointer ${
                           isSelected ? activeClasses : 'border-transparent toggle-item-inactive'
                         }`}
                       >
@@ -517,7 +517,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                     {dimOptions[d].length ? (
                       <PillMultiSelect options={dimOptions[d]} selectedValues={sel} onChange={(vals) => patchDim(d, vals)} />
                     ) : (
-                      <p className="text-[11px] text-zinc-500 px-1">Bu alanın girildiği işlem yok.</p>
+                      <p className="text-label text-zinc-500 px-1">Bu alanın girildiği işlem yok.</p>
                     )}
                   </FilterAccordionRow>
                 );
@@ -600,7 +600,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                     onChange={(vals) => patchExtra({ riskPcts: extraOptions.riskPcts.filter((n) => vals.includes(riskLabel(n))) })}
                   />
                 ) : (
-                  <p className="text-[11px] text-zinc-500 p-1">Risk % girilmiş işlem yok. Prop hesabına bağlı işlemlerde risk % formda kaydedilir.</p>
+                  <p className="text-label text-zinc-500 p-1">Risk % girilmiş işlem yok. Prop hesabına bağlı işlemlerde risk % formda kaydedilir.</p>
                 )}
               </FilterAccordionRow>
 
@@ -612,7 +612,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                 isOpen={!!openSections.quickEntry}
                 onToggle={() => toggleSection('quickEntry')}
               >
-                <label className="flex items-center gap-2 p-1 text-[11px] font-bold text-zinc-300 cursor-pointer select-none">
+                <label className="flex items-center gap-2 p-1 text-label font-bold text-zinc-300 cursor-pointer select-none">
                   <input
                     type="checkbox"
                     className="accent-blue-500"
@@ -641,7 +641,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
 
             {/* Footer */}
             <div className="px-5 py-3 border-t border-zinc-700/40 bg-zinc-900/60 flex items-center justify-between">
-              <div className="text-[10px] text-zinc-400 font-sans hidden sm:block">
+              <div className="text-label text-zinc-400 font-sans hidden sm:block">
                 {activeFilterCount > 0 ? (
                   <span className="text-blue-400 font-semibold">{activeFilterCount} kriter aktif</span>
                 ) : (

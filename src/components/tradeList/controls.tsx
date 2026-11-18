@@ -83,7 +83,7 @@ export const CustomSelect = React.memo(function CustomSelect({ value, onChange, 
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full h-9 sm:h-8 bg-zinc-950 hover:bg-zinc-900/70 border border-zinc-700/50  hover:border-zinc-700/80 rounded-xl px-2.5 text-[10px] text-zinc-300 font-bold flex items-center justify-between transition-colors duration-200 ease-out cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500/20"
+        className="w-full h-9 sm:h-8 bg-zinc-950 hover:bg-zinc-900/70 border border-zinc-700/50  hover:border-zinc-700/80 rounded-xl px-2.5 text-label text-zinc-300 font-bold flex items-center justify-between transition-colors duration-200 ease-out cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500/20"
       >
         <span className="truncate uppercase">{selectedOption ? selectedOption.label : placeholder}</span>
         <ChevronDown size={11} className={`text-zinc-500 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180 text-blue-400' : ''}`} />
@@ -105,7 +105,7 @@ export const CustomSelect = React.memo(function CustomSelect({ value, onChange, 
                   onChange(option.value);
                   setIsOpen(false);
                 }}
-                className={`w-full px-2.5 py-1.5 text-left text-[10px] font-bold transition-colors duration-200 ease-out flex items-center justify-between cursor-pointer ${
+                className={`w-full px-2.5 py-1.5 text-left text-label font-bold transition-colors duration-200 ease-out flex items-center justify-between cursor-pointer ${
                   option.value === value
                     ? 'toggle-item-brand'
                     : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'

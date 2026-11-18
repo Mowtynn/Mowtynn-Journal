@@ -386,7 +386,7 @@ const BackupRescue = React.memo(function BackupRescue({
             </div>
           </div>
 
-          <p className="text-[9px] text-zinc-500 mt-3 leading-relaxed">
+          <p className="text-label text-zinc-500 mt-3 leading-relaxed">
             * Giriş yapınca tüm verilerin (fotoğraflar dahil) Firebase bulutunda saklanır; ücretsiz kota bu günlük için fazlasıyla yeterli.
           </p>
         </div>
@@ -395,7 +395,7 @@ const BackupRescue = React.memo(function BackupRescue({
           <div className="bg-zinc-950/80 border border-zinc-800/80 rounded-2xl p-4 flex flex-col justify-between shadow-md">
             <div>
               <span className="heading-3 mb-2">Günlüğü Yedekle</span>
-              <p className="text-[10px] text-zinc-400 leading-relaxed">
+              <p className="text-label text-zinc-400 leading-relaxed">
                 Kayıtlı kullanıcılar için veriler Google Cloud altyapısında (Firebase) gerçek zamanlı yedeklenir ve korunur. Alternatif olarak çevrimdışı arşivleme ve taşıma için aşağıdaki butonu kullanarak tüm işlem, not, günlük, sertifika ve ayarlarını indirebilirsin.
               </p>
             </div>
@@ -404,14 +404,14 @@ const BackupRescue = React.memo(function BackupRescue({
               <button
                 type="button"
                 onClick={handleExport}
-                className="h-8 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800/80 text-zinc-100 text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors duration-200 ease-out disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-xs"
+                className="h-8 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800/80 text-zinc-100 text-label font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors duration-200 ease-out disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-xs"
               >
                 <Download size={12} className="text-blue-400" /> Yedek İndir (JSON)
               </button>
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="h-8 rounded-xl bg-zinc-800 hover:bg-zinc-800 border border-zinc-800/60 text-zinc-400 hover:text-zinc-200 text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors duration-200 ease-out cursor-pointer shadow-xs"
+                className="h-8 rounded-xl bg-zinc-800 hover:bg-zinc-800 border border-zinc-800/60 text-zinc-400 hover:text-zinc-200 text-label font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors duration-200 ease-out cursor-pointer shadow-xs"
               >
                 <Upload size={12} /> Yedekten Veri Yükle
               </button>
@@ -429,8 +429,8 @@ const BackupRescue = React.memo(function BackupRescue({
         <div className="bg-zinc-950/80 border border-zinc-800/80 rounded-2xl p-4 flex flex-col justify-between shadow-md">
             <>
               <div>
-                <span className="text-[9px] font-bold text-rose-400 uppercase tracking-widest block mb-2">{smartUpper("Tehlikeli Bölge")}</span>
-                <p className="text-[10px] text-zinc-400 leading-relaxed">
+                <span className="text-label font-bold text-rose-400 uppercase tracking-widest block mb-2">{smartUpper("Tehlikeli Bölge")}</span>
+                <p className="text-label text-zinc-400 leading-relaxed">
                   Bu cihazdaki ve buluttaki (Firebase) tüm işlemleri, notları, günlükleri, prop hesaplarını, görselleri ve tanımlamaları kalıcı olarak siler; tanımlamalar varsayılana döner. Giriş ve site şifresi korunur. Bu işlem geri alınamaz.
                 </p>
               </div>
@@ -441,14 +441,14 @@ const BackupRescue = React.memo(function BackupRescue({
                 <button
                   type="button"
                   onClick={() => setShowClearConfirm(true)}
-                  className="h-8 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[10px] font-bold uppercase tracking-wider transition-colors duration-200 ease-out mt-3 cursor-pointer"
+                  className="h-8 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-label font-bold uppercase tracking-wider transition-colors duration-200 ease-out mt-3 cursor-pointer"
                 >
                   Verileri Sıfırla
                 </button>
                 </motion.div>
               ) : (
                 <motion.div key="wipe-confirm" {...PANE} className="bg-rose-950/40 border border-rose-500/30 p-3 rounded-xl mt-2 space-y-1.5">
-                  <span className="text-[9px] text-zinc-300 font-bold block font-sans">Onay için &apos;SIFIRLA&apos; yazın:</span>
+                  <span className="text-label text-zinc-300 font-bold block font-sans">Onay için &apos;SIFIRLA&apos; yazın:</span>
                   <div className="flex gap-1.5">
                     <input
                       type="text"
@@ -456,13 +456,13 @@ const BackupRescue = React.memo(function BackupRescue({
                       value={confirmInput}
                       disabled={isWiping}
                       onChange={(e) => setConfirmInput(e.target.value)}
-                      className="bg-zinc-900 border border-rose-500/40 rounded-lg px-2.5 text-[10px] font-sans font-bold text-white w-full h-8 focus:outline-none"
+                      className="bg-zinc-900 border border-rose-500/40 rounded-lg px-2.5 text-label font-sans font-bold text-white w-full h-8 focus:outline-none"
                     />
                     <button
                       type="button"
                       disabled={isWiping}
                       onClick={executeWipe}
-                      className="bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 border border-rose-500/30 font-bold text-[9px] px-3 py-1 rounded-lg transition-colors uppercase cursor-pointer disabled:opacity-50 flex items-center justify-center min-w-[50px]"
+                      className="bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 border border-rose-500/30 font-bold text-label px-3 py-1 rounded-lg transition-colors uppercase cursor-pointer disabled:opacity-50 flex items-center justify-center min-w-[50px]"
                     >
                       {isWiping ? 'Siliniyor...' : 'Sil'}
                     </button>
@@ -516,7 +516,7 @@ function IntegrityPanel({ trades, onEditTrade }: { trades: Trade[]; onEditTrade?
       <div className="flex gap-3 items-start w-full">
         <div className="mt-0.5">{ok ? <CheckCircle2 size={16} className="text-emerald-500" /> : <AlertTriangle size={16} className={problemCount > 0 ? 'text-rose-400' : 'text-amber-500'} />}</div>
         <div className="w-full min-w-0">
-          <span className={`text-[10px] font-bold uppercase tracking-widest block mb-1 ${ok ? 'text-emerald-500' : problemCount > 0 ? 'text-rose-400' : 'text-amber-500'}`}>
+          <span className={`text-label font-bold uppercase tracking-widest block mb-1 ${ok ? 'text-emerald-500' : problemCount > 0 ? 'text-rose-400' : 'text-amber-500'}`}>
             Sistem Bütünlüğü ve Veri Analizi
           </span>
           {ok ? (
@@ -531,28 +531,28 @@ function IntegrityPanel({ trades, onEditTrade }: { trades: Trade[]; onEditTrade?
                 {problemCount > 0 && <><b className="text-rose-300">{problemCount} hatalı</b> (istatistiği bozar){incompleteCount > 0 ? ', ' : ' '}</>}
                 {incompleteCount > 0 && <><b className="text-amber-300">{incompleteCount} eksik</b> kayıt var (bu işlemler ilgili analizlerin dışında kalır). </>}
                 Tamamla ile işlemi açıp boş alanları doldurabilirsin.
-                <span className="block text-[10px] text-zinc-500 mt-0.5">Bu kontrol hesap seçiminden bağımsızdır: tüm hesaplar ve hesapsız işlemler dahil.</span>
+                <span className="block text-label text-zinc-500 mt-0.5">Bu kontrol hesap seçiminden bağımsızdır: tüm hesaplar ve hesapsız işlemler dahil.</span>
               </p>
               <ul className={`rounded-xl border border-zinc-800/80 bg-zinc-950/40 divide-y divide-zinc-800/80 ${expanded ? 'max-h-[45vh] overflow-y-auto custom-scrollbar' : 'overflow-hidden'}`}>
                 {visible.map(({ t, problem, missing }) => (
                   <li key={t.id} className="p-2 sm:p-2.5 flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3">
                     <div className="flex items-center gap-2 min-w-0 sm:w-48 shrink-0">
                       <span className="text-xs font-bold text-zinc-200 truncate">{t.asset || 'Bilinmiyor'}</span>
-                      <span className="text-[10px] text-zinc-500 tabular-nums">{nyWallDate(t.createdAt).toLocaleDateString('tr-TR')}</span>
-                      <span className="text-[9px] font-bold uppercase text-zinc-500 truncate">{t.platform || ACCOUNT_CATEGORY_LABELS[getTradeAccountCategory(t)]}</span>
-                      {t.quickEntry && <span className="whitespace-nowrap px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase border border-amber-500/30 bg-amber-500/10 text-amber-300">{smartUpper("Hızlı")}</span>}
+                      <span className="text-label text-zinc-500 tabular-nums">{nyWallDate(t.createdAt).toLocaleDateString('tr-TR')}</span>
+                      <span className="text-label font-bold uppercase text-zinc-500 truncate">{t.platform || ACCOUNT_CATEGORY_LABELS[getTradeAccountCategory(t)]}</span>
+                      {t.quickEntry && <span className="whitespace-nowrap px-1.5 py-0.5 rounded-md text-label font-bold uppercase border border-amber-500/30 bg-amber-500/10 text-amber-300">{smartUpper("Hızlı")}</span>}
                     </div>
                     <div className="flex-1 min-w-0 flex flex-wrap gap-1">
-                      {problem && <span className="whitespace-nowrap px-1.5 py-0.5 rounded-md text-[10px] font-bold border border-rose-500/30 bg-rose-500/10 text-rose-300">{problem}</span>}
+                      {problem && <span className="whitespace-nowrap px-1.5 py-0.5 rounded-md text-label font-bold border border-rose-500/30 bg-rose-500/10 text-rose-300">{problem}</span>}
                       {missing.map((m) => (
-                        <span key={m} className="px-1.5 py-0.5 rounded-md text-[10px] font-bold border border-zinc-700 bg-zinc-900 text-zinc-400">{m}</span>
+                        <span key={m} className="px-1.5 py-0.5 rounded-md text-label font-bold border border-zinc-700 bg-zinc-900 text-zinc-400">{m}</span>
                       ))}
                     </div>
                     {onEditTrade && (
                       <button
                         type="button"
                         onClick={() => onEditTrade(t)}
-                        className="h-7 px-2.5 rounded-lg border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 text-[11px] font-bold flex items-center gap-1.5 cursor-pointer shrink-0 self-start sm:self-auto"
+                        className="h-7 px-2.5 rounded-lg border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 text-label font-bold flex items-center gap-1.5 cursor-pointer shrink-0 self-start sm:self-auto"
                       >
                         <Pencil size={12} /> Tamamla
                       </button>
@@ -561,7 +561,7 @@ function IntegrityPanel({ trades, onEditTrade }: { trades: Trade[]; onEditTrade?
                 ))}
               </ul>
               {rows.length > 4 && (
-                <button type="button" onClick={() => setExpanded((v) => !v)} className="mt-2 text-[11px] font-bold text-zinc-400 hover:text-zinc-200 flex items-center gap-1 cursor-pointer">
+                <button type="button" onClick={() => setExpanded((v) => !v)} className="mt-2 text-label font-bold text-zinc-400 hover:text-zinc-200 flex items-center gap-1 cursor-pointer">
                   <ChevronDown size={13} className={`transition-transform ${expanded ? 'rotate-180' : ''}`} />
                   {expanded ? 'Daha Az Göster' : `Tümünü Göster (${rows.length})`}
                 </button>

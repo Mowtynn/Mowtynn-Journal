@@ -178,7 +178,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
                   Psikoloji, Tilt Göstergesi & Ardışık Momentum
                 </h4>
               </div>
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase ${
+              <span className={`text-label font-bold px-2 py-0.5 rounded border uppercase ${
                 streakStats.postLossTiltRisk === 'YÜKSEK' ? 'bg-rose-500/20 text-rose-300 border-rose-500/40' :
                 streakStats.postLossTiltRisk === 'ORTA' ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' :
                 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
@@ -190,48 +190,48 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
             <p className="text-xs text-blue-300 bg-blue-500/10 border border-blue-500/20 p-2.5 rounded-lg font-sans">
               {streakStats.insight}
             </p>
-            <p className="text-[10px] text-zinc-500 font-sans -mt-2">
+            <p className="text-label text-zinc-500 font-sans -mt-2">
               Seriler tüm geçmişten sayılır; başabaş (BE) işlemler seriyi bozmaz, seriye de sayılmaz. "Aynı gün" kartları yalnızca aynı NY gününde bir kazanç / kayıptan sonra açılan işlemlere bakar; karşılaştırma tabanı günün ilk işlemidir.
             </p>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-center">
-                <span className="text-[9px] uppercase tracking-wider text-zinc-500 block font-sans">{smartUpper("Mevcut Seri")}</span>
+                <span className="text-label uppercase tracking-wider text-zinc-500 block font-sans">{smartUpper("Mevcut Seri")}</span>
                 <span className={`text-lg font-bold font-sans ${streakStats.currentStreak.type === 'WIN' ? 'text-emerald-400' : streakStats.currentStreak.type === 'LOSS' ? 'text-rose-400' : 'text-zinc-300'}`}>
                   {streakStats.currentStreak.type === 'WIN' ? `${streakStats.currentStreak.count} Kazanç` : streakStats.currentStreak.type === 'LOSS' ? `${streakStats.currentStreak.count} Kayıp` : '—'}
                 </span>
               </div>
 
               <div className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-center">
-                <span className="text-[9px] uppercase tracking-wider text-zinc-500 block font-sans">Maks. Kayıp Serisi</span>
+                <span className="text-label uppercase tracking-wider text-zinc-500 block font-sans">Maks. Kayıp Serisi</span>
                 <span className="text-lg font-bold text-rose-400 font-sans">
                   {streakStats.maxLossStreak} İşlem
                 </span>
               </div>
 
               <div className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-center">
-                <span className="text-[9px] uppercase tracking-wider text-zinc-500 block font-sans">Aynı Gün Kazanç Sonrası</span>
+                <span className="text-label uppercase tracking-wider text-zinc-500 block font-sans">Aynı Gün Kazanç Sonrası</span>
                 <span className="text-lg font-bold text-zinc-200 font-sans tabular-nums">
                   {streakStats.postWinTotal > 0 ? `%${fixed(streakStats.postWinWinRate, 1)}` : '—'}
                 </span>
-                <span className="text-[9px] text-zinc-500 block mt-0.5">
+                <span className="text-label text-zinc-500 block mt-0.5">
                   {streakStats.postWinTotal > 0 ? `${streakStats.postWinTotal} işlem · ${formatR(streakStats.postWinAvgR)} ort.` : 'İşlem yok'}
                 </span>
-                {streakStats.postWinTotal > 0 && streakStats.postWinTotal < MIN_SAMPLE && <span className="mt-1 inline-block px-1 py-px rounded border border-zinc-700 bg-zinc-900 text-[8px] font-bold text-zinc-400 uppercase tracking-wide">Az Veri</span>}
+                {streakStats.postWinTotal > 0 && streakStats.postWinTotal < MIN_SAMPLE && <span className="mt-1 inline-block px-1 py-px rounded border border-zinc-700 bg-zinc-900 text-label font-bold text-zinc-400 uppercase tracking-wide">Az Veri</span>}
               </div>
 
               <div className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-center">
-                <span className="text-[9px] uppercase tracking-wider text-zinc-500 block font-sans">Aynı Gün Kayıp Sonrası</span>
+                <span className="text-label uppercase tracking-wider text-zinc-500 block font-sans">Aynı Gün Kayıp Sonrası</span>
                 <span className={`text-lg font-bold font-sans tabular-nums ${streakStats.postLossTiltRisk !== 'DÜŞÜK' ? 'text-rose-400' : 'text-zinc-200'}`}>
                   {streakStats.postLossTotal > 0 ? `%${fixed(streakStats.postLossWinRate, 1)}` : '—'}
                 </span>
-                <span className="text-[9px] text-zinc-500 block mt-0.5">
+                <span className="text-label text-zinc-500 block mt-0.5">
                   {streakStats.postLossTotal > 0 ? `${streakStats.postLossTotal} işlem · ${formatR(streakStats.postLossAvgR)} ort.` : 'İşlem yok'}
                 </span>
-                <span className="text-[9px] text-zinc-600 block">
+                <span className="text-label text-zinc-600 block">
                   Günün ilk işlemi: {formatR(streakStats.firstTradeAvgR)} ort.
                 </span>
-                {streakStats.postLossTotal > 0 && streakStats.postLossTotal < MIN_SAMPLE && <span className="mt-1 inline-block px-1 py-px rounded border border-zinc-700 bg-zinc-900 text-[8px] font-bold text-zinc-400 uppercase tracking-wide">Az Veri</span>}
+                {streakStats.postLossTotal > 0 && streakStats.postLossTotal < MIN_SAMPLE && <span className="mt-1 inline-block px-1 py-px rounded border border-zinc-700 bg-zinc-900 text-label font-bold text-zinc-400 uppercase tracking-wide">Az Veri</span>}
               </div>
             </div>
           </div>

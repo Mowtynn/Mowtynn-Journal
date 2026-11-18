@@ -8,7 +8,7 @@ import { caseInsensitiveEquals, smartUpper } from '../../constants/constants';
 /* ------------------------------------------------------------------ */
 
 /** Filtre alanı başlığı */
-export const FILTER_LABEL = 'text-[10px] uppercase font-bold tracking-wider text-zinc-400';
+export const FILTER_LABEL = 'text-label uppercase font-bold tracking-wider text-zinc-400';
 
 /** Filtrelerdeki sayı / metin kutusu */
 export const FILTER_INPUT =
@@ -16,7 +16,7 @@ export const FILTER_INPUT =
 
 /** Filtrelerdeki açılır seçim kutusu (native select) */
 export const FILTER_SELECT =
-  'h-8 sm:h-7 bg-zinc-950 border border-zinc-800 hover:border-zinc-600 focus:border-blue-500 rounded-lg px-2 text-[11px] font-bold font-sans text-zinc-200 focus:outline-none transition-ui cursor-pointer';
+  'h-8 sm:h-7 bg-zinc-950 border border-zinc-800 hover:border-zinc-600 focus:border-blue-500 rounded-lg px-2 text-label font-bold font-sans text-zinc-200 focus:outline-none transition-ui cursor-pointer';
 
 /** Seçili renk: "Tümü" nötr, genel seçim marka mavisi; sonuç / yön için kazanç yeşili, kayıp kırmızısı (projedeki WIN / LOSS / BE renkleriyle aynı) */
 type FilterTone = 'brand' | 'win' | 'loss' | 'neutral';
@@ -49,7 +49,7 @@ export const FilterChip = ({
     lang="en"
     aria-pressed={active}
     onClick={onClick}
-    className={`h-8 sm:h-7 px-2.5 inline-flex items-center gap-1 rounded-lg border text-[10px] font-bold font-sans uppercase tracking-wider whitespace-nowrap transition-ui cursor-pointer select-none ${
+    className={`h-8 sm:h-7 px-2.5 inline-flex items-center gap-1 rounded-lg border text-label font-bold font-sans uppercase tracking-wider whitespace-nowrap transition-ui cursor-pointer select-none ${
       active ? TONE_ACTIVE[tone] : CHIP_IDLE
     }`}
   >
@@ -162,11 +162,11 @@ export const FilterAccordionRow: React.FC<FilterAccordionRowProps> = ({
 
         <div className="flex items-center gap-2 shrink-0 ml-2">
           {badgeCount > 0 ? (
-            <span className="whitespace-nowrap px-2 py-0.5 rounded-full text-[9px] font-sans font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">
+            <span className="whitespace-nowrap px-2 py-0.5 rounded-full text-label font-sans font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">
               {badgeCount} seçili
             </span>
           ) : (
-            <span className="text-[10px] font-sans text-zinc-400 hidden xs:inline">Tümü</span>
+            <span className="text-label font-sans text-zinc-400 hidden xs:inline">Tümü</span>
           )}
           <div className="text-zinc-400">
             {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}

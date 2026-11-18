@@ -13,9 +13,9 @@ const sR = (v: number) => formatR(v);
 function Stat({ label, value, tone = 'text-zinc-100', hint }: { label: string; value: string; tone?: string; hint?: string }) {
   return (
     <div className="flex flex-col gap-0.5 min-w-0 rounded-xl border border-zinc-800/80 bg-zinc-950/40 px-2.5 py-2">
-      <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wide text-zinc-500 truncate">{smartUpper(label)}</span>
+      <span className="text-label sm:text-label font-bold uppercase tracking-wide text-zinc-500 truncate">{smartUpper(label)}</span>
       <span className={`text-xs sm:text-sm font-extrabold tabular-nums truncate ${tone}`}>{value}</span>
-      {hint && <span className="text-[9px] text-zinc-500 leading-snug line-clamp-3 sm:line-clamp-2">{hint}</span>}
+      {hint && <span className="text-label text-zinc-500 leading-snug line-clamp-3 sm:line-clamp-2">{hint}</span>}
     </div>
   );
 }
@@ -33,10 +33,10 @@ export const PropRSummary = memo(function PropRSummary({ account, trades }: { ac
   return (
     <div className="flex flex-col gap-2 rounded-xl border border-zinc-800/80 bg-zinc-900/40 p-2.5">
       <div className="flex items-center justify-between gap-2">
-        <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-zinc-400">
+        <span className="flex items-center gap-1.5 text-label font-bold uppercase tracking-wide text-zinc-400">
           <Activity size={12} className="text-blue-400" /> Canlı R özeti
         </span>
-        <span className="text-[10px] text-zinc-500 tabular-nums">1R ≈ {formatMoney(ins.riskPerTrade)}</span>
+        <span className="text-label text-zinc-500 tabular-nums">1R ≈ {formatMoney(ins.riskPerTrade)}</span>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
@@ -71,27 +71,27 @@ export const PropRSummary = memo(function PropRSummary({ account, trades }: { ac
 
       {sim ? (
         <div className="flex flex-col gap-1">
-          <div className="flex items-center justify-between gap-2 text-[10px] font-bold uppercase tracking-wide text-zinc-400">
+          <div className="flex items-center justify-between gap-2 text-label font-bold uppercase tracking-wide text-zinc-400">
             <span>{sim.kind === 'PASS' ? 'Geçme olasılığı' : `Sonraki ${sim.horizon} işlemde ayakta kalma`}</span>
             <span className={`tabular-nums ${probTone}`}>%{Math.round(sim.probability)}</span>
           </div>
           <div className="h-1.5 rounded-full bg-zinc-800 overflow-hidden">
             <div className={`h-full rounded-full ${probBar}`} style={{ width: `${Math.max(2, Math.min(100, sim.probability))}%` }} />
           </div>
-          <span className="text-[10px] text-zinc-500">
+          <span className="text-label text-zinc-500">
             {sim.sampleSource === 'ACCOUNT' ? `Bu hesabın ${sim.sampleSize} işleminin` : `Tüm prop geçmişindeki (Challenge + Funded) ${sim.sampleSize} işlemin`} R dağılımıyla 2000 simülasyon
             {sim.kind === 'PASS' && sim.medianTrades ? ` · geçenlerde medyan ${Math.round(sim.medianTrades)} işlem` : ''}
             {sim.sampleSize < EDGE_PROOF_MIN ? ` · ${EDGE_PROOF_MIN} işlemden az geçmiş: olasılık kaba bir tahmindir` : ''}
           </span>
         </div>
       ) : ins.ddRemainingR <= 0 || ins.targetRemainingR === 0 ? null : (
-        <span className="text-[10px] text-zinc-500">Olasılık için en az {MIN_SIMULATION_SAMPLE} işlemlik prop R geçmişi gerekiyor.</span>
+        <span className="text-label text-zinc-500">Olasılık için en az {MIN_SIMULATION_SAMPLE} işlemlik prop R geçmişi gerekiyor.</span>
       )}
 
       {/* Risk önerisi: aynı simülasyon farklı risk seviyeleriyle; drawdown ve hedef bu hesabın kurallarından */}
       {sim && ins.riskAdvice && (
         <div className="flex flex-col gap-1.5 pt-1.5 border-t border-zinc-800/70">
-          <div className="flex items-center justify-between gap-2 text-[10px] font-bold uppercase tracking-wide text-zinc-400">
+          <div className="flex items-center justify-between gap-2 text-label font-bold uppercase tracking-wide text-zinc-400">
             <span>Önerilen risk</span>
             <span className={`tabular-nums ${ins.riskAdvice.recommendedPct !== undefined ? 'text-blue-300' : 'text-rose-300'}`}>
               {ins.riskAdvice.recommendedPct !== undefined ? `%${ins.riskAdvice.recommendedPct}` : 'Uygun seviye yok'}
@@ -106,14 +106,14 @@ export const PropRSummary = memo(function PropRSummary({ account, trades }: { ac
                   key={l.pct}
                   className={`rounded-lg border px-1.5 py-1 text-center tabular-nums ${rec ? 'border-blue-500/50 bg-blue-500/10' : 'border-zinc-800 bg-zinc-950/40'}`}
                 >
-                  <div className={`text-[10px] font-bold ${rec ? 'text-blue-300' : 'text-zinc-300'}`}>%{l.pct}{cur ? ' ·' : ''}</div>
-                  <div className="text-[10px] text-zinc-400">{sim.kind === 'PASS' ? `%${Math.round(l.probability)}` : `%${Math.round(l.probability)}`}</div>
-                  {sim.kind === 'PASS' && <div className={`text-[9px] ${l.bustProbability > MAX_BUST_PCT ? 'text-rose-400' : 'text-zinc-500'}`}>yakma %{Math.round(l.bustProbability)}</div>}
+                  <div className={`text-label font-bold ${rec ? 'text-blue-300' : 'text-zinc-300'}`}>%{l.pct}{cur ? ' ·' : ''}</div>
+                  <div className="text-label text-zinc-400">{sim.kind === 'PASS' ? `%${Math.round(l.probability)}` : `%${Math.round(l.probability)}`}</div>
+                  {sim.kind === 'PASS' && <div className={`text-label ${l.bustProbability > MAX_BUST_PCT ? 'text-rose-400' : 'text-zinc-500'}`}>yakma %{Math.round(l.bustProbability)}</div>}
                 </div>
               );
             })}
           </div>
-          <span className="text-[10px] text-zinc-500">
+          <span className="text-label text-zinc-500">
             {sim.kind === 'PASS'
               ? `Hesabı yakma olasılığı %${MAX_BUST_PCT} altında ve geçme olasılığı en yükseğe yakın seviyeler içinde hedefe en hızlı ulaşan. Drawdown (${account.drawdownMode === 'TRAILING' ? 'trailing' : 'statik'})${ins.dailyLimitApplied ? `, günlük kayıp %${ins.dailyLimitApplied.pct} (günde ~${ins.dailyLimitApplied.tradesPerDay} işlem varsayımıyla)` : ' ve hedef'} bu hesabın kurallarından${ins.dailyLimitApplied ? '' : '; günlük kayıp limiti girilmemiş'}; "·" şu anki riskin.`
               : `Sonraki ${sim.horizon} işlemde ayakta kalma olasılığı en az %${MIN_SURVIVE_PCT} olan en yüksek seviye; "·" şu anki riskin.`}

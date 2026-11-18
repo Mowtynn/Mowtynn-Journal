@@ -46,8 +46,8 @@ const fmtDate = (ymd: string) => {
 
 const inputCls =
   'w-full h-9 bg-zinc-950/80 border border-zinc-700/70 hover:border-zinc-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 rounded-xl px-2.5 text-xs text-zinc-100 focus:outline-none placeholder-zinc-500 font-sans font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none';
-const labelCls = 'text-[10px] sm:text-[11px] font-bold text-zinc-300 uppercase tracking-wide mb-1 block font-sans';
-const btn = 'h-8 px-2.5 rounded-xl border text-[11px] font-bold flex items-center gap-1.5 transition-ui cursor-pointer';
+const labelCls = 'text-label sm:text-label font-bold text-zinc-300 uppercase tracking-wide mb-1 block font-sans';
+const btn = 'h-8 px-2.5 rounded-xl border text-label font-bold flex items-center gap-1.5 transition-ui cursor-pointer';
 const btnGhost = `${btn} border-zinc-700 text-zinc-300 bg-zinc-900 hover:bg-zinc-800`;
 const btnBlue = `${btn} border-blue-500/30 text-blue-300 bg-blue-500/10 hover:bg-blue-500/20`;
 const btnGreen = `${btn} border-emerald-500/30 text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20`;
@@ -62,7 +62,7 @@ function Segmented<T extends string | number>({ value, options, onChange }: { va
           key={String(o.v)}
           type="button"
           onClick={() => onChange(o.v)}
-          className={`rounded-lg text-[11px] font-bold uppercase tracking-wide transition-ui cursor-pointer border ${
+          className={`rounded-lg text-label font-bold uppercase tracking-wide transition-ui cursor-pointer border ${
             value === o.v ? 'bg-blue-500/15 text-blue-300 border-blue-500/30' : 'border-transparent text-zinc-400 hover:text-zinc-200'
           }`}
         >
@@ -295,34 +295,34 @@ function NewChainForm({ draft, setDraft, onCreate, onCancel }: { draft: Draft; s
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
           {draft.phases.slice(0, draft.phaseCount).map((p, i) => (
             <div key={i} className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-2 flex flex-col gap-1.5">
-              <span className="text-[10px] font-bold uppercase tracking-wide text-blue-300">Phase {i + 1}</span>
+              <span className="text-label font-bold uppercase tracking-wide text-blue-300">Phase {i + 1}</span>
               <div className="grid grid-cols-2 gap-1.5">
                 <div>
-                  <label className="text-[9px] font-bold uppercase text-zinc-500 block mb-0.5">Hedef %</label>
+                  <label className="text-label font-bold uppercase text-zinc-500 block mb-0.5">Hedef %</label>
                   <input className={inputCls} type="number" min="0" step="any" value={p.targetPct} onChange={(e) => setPhase(i, 'targetPct', e.target.value)} />
                 </div>
                 <div>
-                  <label className="text-[9px] font-bold uppercase text-zinc-500 block mb-0.5">Max DD %</label>
+                  <label className="text-label font-bold uppercase text-zinc-500 block mb-0.5">Max DD %</label>
                   <input className={inputCls} type="number" min="0" step="any" value={p.maxDdPct} onChange={(e) => setPhase(i, 'maxDdPct', e.target.value)} />
                 </div>
               </div>
             </div>
           ))}
           <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/5 p-2 flex flex-col gap-1.5">
-            <span className="text-[10px] font-bold uppercase tracking-wide text-emerald-300">Funded</span>
+            <span className="text-label font-bold uppercase tracking-wide text-emerald-300">Funded</span>
             <div>
-              <label className="text-[9px] font-bold uppercase text-zinc-500 block mb-0.5">Max DD %</label>
+              <label className="text-label font-bold uppercase text-zinc-500 block mb-0.5">Max DD %</label>
               <input className={inputCls} type="number" min="0" step="any" value={draft.fundedMaxDdPct} onChange={(e) => set('fundedMaxDdPct', e.target.value)} />
             </div>
             <div>
-              <label className="text-[9px] font-bold uppercase text-zinc-500 block mb-0.5">Günlük Kayıp %</label>
+              <label className="text-label font-bold uppercase text-zinc-500 block mb-0.5">Günlük Kayıp %</label>
               <input className={inputCls} type="number" min="0" step="any" placeholder="Yok" value={draft.dailyLossPct} onChange={(e) => set('dailyLossPct', e.target.value)} />
             </div>
           </div>
         </div>
       </div>
 
-      <p className="text-[11px] text-zinc-500 leading-relaxed">
+      <p className="text-label text-zinc-500 leading-relaxed">
         Hesap, işlem formunda aşamasıyla birlikte seçenek olarak görünür (ör. "{draft.chainName.trim() || 'FTMO 100K'} · Phase 1"); her işlemin riski formda ayrıca seçilir. Bu karttaki R gösterimi için 1R ={' '}
         {size > 0 && risk > 0 ? <b className="text-zinc-300">{money((size * risk) / 100)}</b> : 'boyut × risk %'}. Ücret yalnızca bu ilk hesapta girilir; sonraki aşamalara ücret sorulmaz.
       </p>
@@ -530,23 +530,23 @@ function ChainCard({
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-bold text-zinc-100 truncate">{chain.chainName}</span>
-            {a.firm && <span className="text-[10px] text-zinc-500 font-bold uppercase">{smartUpper(a.firm)}</span>}
+            {a.firm && <span className="text-label text-zinc-500 font-bold uppercase">{smartUpper(a.firm)}</span>}
           </div>
-          <div className="text-[11px] text-zinc-500 mt-0.5">
+          <div className="text-label text-zinc-500 mt-0.5">
             {money(a.size)} · Max DD {a.drawdownMode === 'TRAILING' ? 'trailing' : 'statik'} · 1R = {money(m.rUnit)}
           </div>
         </div>
         {/* Telefonda alt satıra indiğinde de sağ kenara yaslı kalır (ortada asılı durmaz) */}
         <div className="ml-auto text-right">
           <div className="text-lg font-extrabold text-zinc-100 tabular-nums">{money(m.balance)}</div>
-          <div className={`text-[11px] font-bold tabular-nums ${m.netPnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+          <div className={`text-label font-bold tabular-nums ${m.netPnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
             {signedMoney(m.netPnl)} · <span>≈ {R(m.netPnl)}</span> · {m.tradeCount} işlem
           </div>
         </div>
       </div>
 
       {/* Yolculuk */}
-      <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-bold uppercase">
+      <div className="flex flex-wrap items-center gap-1.5 text-label font-bold uppercase">
         {chain.fee > 0 && (
           <>
             <span className="px-2 py-1 rounded-lg border border-zinc-700 bg-zinc-900 text-zinc-300">Ücret {money(chain.fee)}</span>
@@ -575,33 +575,33 @@ function ChainCard({
       {!archived && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="flex flex-col gap-1">
-            <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wide text-zinc-400">
+            <div className="flex items-center justify-between text-label font-bold uppercase tracking-wide text-zinc-400">
               <span>Max drawdown'a kalan (%{rule.maxDdPct})</span>
               <span className="text-zinc-100 tabular-nums">
                 {money(Math.max(0, m.maxLossRemaining))} · {R(Math.max(0, m.maxLossRemaining))}
               </span>
             </div>
             <Bar pct={ddUsedPct} tone="risk" />
-            <span className="text-[10px] text-zinc-500">Taban {money(m.maxLossFloor)}</span>
+            <span className="text-label text-zinc-500">Taban {money(m.maxLossFloor)}</span>
           </div>
           {m.target !== undefined ? (
             <div className="flex flex-col gap-1">
-              <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wide text-zinc-400">
+              <div className="flex items-center justify-between text-label font-bold uppercase tracking-wide text-zinc-400">
                 <span>Hedefe kalan (%{rule.targetPct})</span>
                 <span className="text-zinc-100 tabular-nums">
                   {money(m.targetRemaining || 0)} · {R(m.targetRemaining || 0)}
                 </span>
               </div>
               <Bar pct={targetPct} tone="blue" />
-              <span className="text-[10px] text-zinc-500">Hedef {money(m.target)}</span>
+              <span className="text-label text-zinc-500">Hedef {money(m.target)}</span>
             </div>
           ) : (
             <div className="flex flex-col gap-1">
-              <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wide text-zinc-400">
+              <div className="flex items-center justify-between text-label font-bold uppercase tracking-wide text-zinc-400">
                 <span>Bu hesaptan payout</span>
                 <span className="text-emerald-300 tabular-nums">{money(m.payoutTotal)}</span>
               </div>
-              <span className="text-[10px] text-zinc-500">{m.payoutCount} payout</span>
+              <span className="text-label text-zinc-500">{m.payoutCount} payout</span>
             </div>
           )}
         </div>
@@ -611,7 +611,7 @@ function ChainCard({
       {active && !archived && <PropRSummary account={a} trades={trades} />}
 
       {payoutUnsynced && !showBalance && (
-        <div className="flex items-start gap-2 text-[11px] rounded-xl border p-2.5 text-amber-200 border-amber-500/30 bg-amber-500/10">
+        <div className="flex items-start gap-2 text-label rounded-xl border p-2.5 text-amber-200 border-amber-500/30 bg-amber-500/10">
           <AlertTriangle size={14} className="shrink-0 mt-0.5" />
           <span className="flex-1">
             Payout'tan sonra bakiye güncellenmedi: çekilen tutar hesaplanan bakiyeden düşmediği için bakiye ve max drawdown'a kalan olduğundan yüksek görünebilir.
@@ -623,7 +623,7 @@ function ChainCard({
       )}
 
       {active && (m.maxBreached || m.dailyBreached || m.targetReached) && (
-        <div className={`flex items-start gap-2 text-[11px] rounded-xl border p-2.5 ${m.maxBreached || m.dailyBreached ? 'text-rose-200 border-rose-500/30 bg-rose-500/10' : 'text-emerald-200 border-emerald-500/30 bg-emerald-500/10'}`}>
+        <div className={`flex items-start gap-2 text-label rounded-xl border p-2.5 ${m.maxBreached || m.dailyBreached ? 'text-rose-200 border-rose-500/30 bg-rose-500/10' : 'text-emerald-200 border-emerald-500/30 bg-emerald-500/10'}`}>
           <AlertTriangle size={14} className="shrink-0 mt-0.5" />
           <span>
             {m.maxBreached
@@ -683,7 +683,7 @@ function ChainCard({
       {/* Bakiye düzeltmesi */}
       {showBalance && active && (
         <div className="rounded-xl border border-blue-500/25 bg-blue-500/5 p-2.5 flex flex-col gap-2">
-          <p className="text-[11px] text-zinc-400 leading-relaxed">
+          <p className="text-label text-zinc-400 leading-relaxed">
             Platformdaki güncel bakiyeyi yaz. Hesaplanan bakiye {money(m.balance)}; fark tek bir düzeltme kaydı olarak eklenir. Düzeltme R istatistiğine girmez, yalnızca bakiye ve
             drawdown takibini düzeltir.
           </p>
@@ -707,10 +707,10 @@ function ChainCard({
       )}
       {shownAdjustments.length > 0 && !archived && (
         <div className="flex flex-col gap-1">
-          <span className="text-[10px] font-bold uppercase tracking-wide text-zinc-500">Bakiye düzeltmeleri · toplam {signedMoney(m.adjustmentsTotal)}</span>
+          <span className="text-label font-bold uppercase tracking-wide text-zinc-500">Bakiye düzeltmeleri · toplam {signedMoney(m.adjustmentsTotal)}</span>
           <div className="flex flex-wrap gap-1.5">
             {shownAdjustments.map((x) => (
-              <span key={x.id} className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border border-zinc-800 bg-zinc-950/60 text-[10px] text-zinc-300 tabular-nums">
+              <span key={x.id} className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border border-zinc-800 bg-zinc-950/60 text-label text-zinc-300 tabular-nums">
                 {nyWallDate(x.at).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })} · {signedMoney(x.amount)}
                 {active && (
                   <button
@@ -759,7 +759,7 @@ function ChainCard({
               type="button"
               onClick={() => fileRef.current?.click()}
               disabled={busy}
-              className="w-20 h-20 rounded-xl border border-dashed border-zinc-700 hover:border-blue-500/50 text-zinc-500 hover:text-blue-300 flex flex-col items-center justify-center gap-1 text-[10px] font-bold cursor-pointer transition-ui"
+              className="w-20 h-20 rounded-xl border border-dashed border-zinc-700 hover:border-blue-500/50 text-zinc-500 hover:text-blue-300 flex flex-col items-center justify-center gap-1 text-label font-bold cursor-pointer transition-ui"
             >
               <ImageIcon size={16} />
               {busy ? '…' : 'Ekle'}
@@ -773,7 +773,7 @@ function ChainCard({
         <div className="flex flex-col gap-2">
           {fundedCerts.length > 0 && (
             <div className="flex flex-col gap-1.5">
-              <span className="text-[10px] font-bold uppercase tracking-wide text-emerald-300">Funded Sertifikası</span>
+              <span className="text-label font-bold uppercase tracking-wide text-emerald-300">Funded Sertifikası</span>
               {fundedCerts.map(({ c, acc }) => (
                 <CertRow key={c.id} c={c} onOpen={openImage} canDelete={!archived} onDelete={() => onUpdateAccount({ ...acc, certificates: (acc.certificates || []).filter((x) => x.id !== c.id) })} />
               ))}
@@ -781,7 +781,7 @@ function ChainCard({
           )}
           {payouts.length > 0 && (
             <div className="flex flex-col gap-1.5">
-              <span className="text-[10px] font-bold uppercase tracking-wide text-emerald-300">
+              <span className="text-label font-bold uppercase tracking-wide text-emerald-300">
                 Payout'lar · {payouts.length} · {money(chain.payoutTotal)}
               </span>
               {payouts.map(({ c, acc }) => (
@@ -825,7 +825,7 @@ function CertRow({ c, onOpen, onDelete, canDelete }: { c: PropCertificate; onOpe
           <span>{fmtDate(c.date)}</span>
           {c.kind === 'PAYOUT' && <span className="text-emerald-300 tabular-nums">{money(c.amount || 0)}</span>}
         </div>
-        {c.note && <p className="text-[11px] text-zinc-400 truncate">{c.note}</p>}
+        {c.note && <p className="text-label text-zinc-400 truncate">{c.note}</p>}
       </div>
       {canDelete && <ConfirmButton label="Sil" icon={<Trash2 size={12} />} className={btnGhost} onConfirm={onDelete} />}
     </div>
@@ -1005,8 +1005,8 @@ export function PropView({ accounts, trades, onChange, uploadImage }: PropViewPr
               <span className={`text-lg sm:text-xl font-bold tabular-nums ${x.tone}`}>{x.value}</span>
               {/* Dar kartta (telefon) etiket kesilmez: sığmayınca yan bilgi alt satıra iner */}
               <div className="flex flex-wrap items-center justify-between gap-x-1 gap-y-1 mt-1 min-w-0 min-h-6">
-                <span className="bg-zinc-800/80 border border-zinc-700/60 py-0.5 px-2 rounded-lg text-[10px] font-bold text-zinc-300 whitespace-nowrap">{x.sub}</span>
-                {x.side && <span className="text-[10px] font-bold text-zinc-500 tabular-nums whitespace-nowrap">{x.side}</span>}
+                <span className="bg-zinc-800/80 border border-zinc-700/60 py-0.5 px-2 rounded-lg text-label font-bold text-zinc-300 whitespace-nowrap">{x.sub}</span>
+                {x.side && <span className="text-label font-bold text-zinc-500 tabular-nums whitespace-nowrap">{x.side}</span>}
               </div>
             </div>
           </div>
