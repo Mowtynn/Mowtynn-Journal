@@ -45,35 +45,14 @@ interface TradeDetailModalProps {
 const notesBoxMinH = (vh: number) => (vh < 820 ? 96 : 112);
 
 /**
- * Grafik oranı önbelleği: pencere görsel yüklenmeden önce de doğru boyutta açılır (yüklenince yeniden boyutlanmaz).
- * Daha önce açılmış grafiğin gerçek oranı hatırlanır; ilk açılışta TradingView görüntülerinin tipik oranı kullanılır.
+ * Grafik kutusunun sabit oranı. Pencere ve grafik kutusu görselin kendi oranına / çözünürlüğüne göre değil yalnızca ekran
+ * boyutuna göre ölçülür: TradingView, OpenMarket ya da başka bir görsel açılsa da pencere birebir aynı boyutta açılır.
+ * Oran, kullanılan görsellerin ikisine de eşit uzaklıkta seçildi (TradingView ≈ 1.73, OpenMarket ≈ 1.98): ikisinde de
+ * kenarlarda yalnızca ince, eşit bir boşluk kalır. Görsel kutuya orantısı bozulmadan (object-contain) sığdırılır, kırpılmaz.
  */
-const DEFAULT_CHART_ASPECT = 1.73;
-const ASPECT_KEY = 'tj_chart_aspects';
-let aspectCache: Record<string, number> | null = null;
-const readAspect = (key: string): number | null => {
-  if (!aspectCache) {
-    try {
-      const raw = JSON.parse(localStorage.getItem(ASPECT_KEY) || '{}');
-      aspectCache = raw && typeof raw === 'object' ? raw : {};
-    } catch {
-      aspectCache = {};
-    }
-  }
-  const v = aspectCache![key];
-  return typeof v === 'number' && Number.isFinite(v) && v > 0.2 && v < 6 ? v : null;
-};
-const writeAspect = (key: string, v: number) => {
-  if (!aspectCache) readAspect(key);
-  aspectCache![key] = Math.round(v * 1000) / 1000;
-  const keys = Object.keys(aspectCache!);
-  if (keys.length > 300) delete aspectCache![keys[0]]; // sınırsız büyümesin
-  try {
-    localStorage.setItem(ASPECT_KEY, JSON.stringify(aspectCache));
-  } catch {
-    /* depolama dolu / kapalı: yalnızca bu oturumda hatırlanır */
-  }
-};
+const CHART_ASPECT = 1.85;
+/** Grafiğin altındaki "Kurulum geçmişi" kartının sabit yüksekliği: kartın içeriği işleme göre değişse de pencere / grafik boyutu değişmez */
+const SETUP_SLOT_H = 72;
 
 const TradeDetailModal = React.memo(function TradeDetailModal({ 
   trade, 
@@ -92,8 +71,6 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
   const [resolvedImageUrl, setResolvedImageUrl] = useState<string | null>(null);
   // Görsel sunucusu CORS başlığı göndermiyorsa (ör. OpenMarket) crossOrigin olmadan yeniden denenir; görsel görünür, indirilen PNG'de boş kalabilir
   const [noCors, setNoCors] = useState(false);
-  // Grafiğin gerçek en / boy oranı (yüklenince): masaüstünde pencere bu orana göre boyutlanır, grafik boşluksuz oturur
-  const [imgAspect, setImgAspect] = useState<number | null>(null);
 
   // Preserve displayedTrade so that content remains intact during exit animation when trade prop is cleared
   const [displayedTrade, setDisplayedTrade] = useState<Trade | null>(trade);
@@ -129,7 +106,6 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
   React.useEffect(() => {
     setImageError(false);
     setNoCors(false);
-    setImgAspect(null);
     const screenshot = trade?.screenshot || (!trade ? displayedTrade?.screenshot : undefined);
     if (!screenshot) {
       setResolvedImageUrl(null);
@@ -191,7 +167,6 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
       raf = requestAnimationFrame(() => setMeasureTick((t) => t + 1));
     });
     ro.observe(header);
-    if (setupRef.current) ro.observe(setupRef.current);
     Array.from(left.children).forEach((k) => {
       if (!(k as HTMLElement).dataset.notes) ro.observe(k);
     });
@@ -201,13 +176,11 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
     };
   }, [currentTrade?.id, isExporting]);
   const [fit, setFit] = useState<{ w?: number; h: number; leftW?: number; cw?: number; ch?: number } | null>(null);
-  // Görsel yüklenirken de grafik alanı ayrılır (oran: gerçek → önbellek → tipik); yalnızca hata olursa grafik yok sayılır
+  // Görsel yüklenirken de grafik alanı ayrılır; oran sabit olduğu için görsel gelince pencere yeniden boyutlanmaz. Yalnızca hata olursa grafik yok sayılır
   const shotKey = currentTrade?.screenshot || '';
-  const chartAspect = imgAspect ?? (shotKey ? readAspect(shotKey) : null) ?? DEFAULT_CHART_ASPECT;
   const hasChart = !!(shotKey && !imageError);
   // Telefon / tablet: görsel kutunun tam genişliğinde, kutu görselin yüksekliği kadar (üst / alt boşluk yok)
   const phoneChart = hasChart && !isExporting && viewport.w < 1024;
-  const setupRef = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const left = leftColRef.current;
     const header = headerRef.current;
@@ -240,10 +213,9 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
     });
     const BORDER = 2;
     if (hasChart) {
-      const a = chartAspect;
-      // Grafiğin altındaki kurulum geçmişi kartı (varsa) ve aradaki boşluk
-      const setupEl = setupRef.current;
-      const setupH = setupEl ? setupEl.offsetHeight + 16 : 0;
+      const a = CHART_ASPECT;
+      // Grafiğin altındaki kurulum geçmişi alanı (kart olsun olmasın aynı yer ayrılır) ve aradaki boşluk
+      const setupH = SETUP_SLOT_H + 16;
       const padX = 40;
       const padY = 40;
       const headingH = 34;
@@ -264,7 +236,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
       setFit({ h: Math.min(maxH, Math.max(headerH + leftNeed + BORDER, 480)) });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentTrade?.id, hasChart, chartAspect, viewport.w, viewport.h, isExporting, measureTick, !!insight?.setup]);
+  }, [currentTrade?.id, hasChart, viewport.w, viewport.h, isExporting, measureTick]);
 
   const handleDownload = async () => {
     if (!contentRef.current) return;
@@ -664,7 +636,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                       )}
                     </div>
                     
-                    <div style={fit?.cw && fit.ch ? { width: fit.cw + 2, height: fit.ch + 2, flex: 'none', minHeight: 0, padding: 0 } : phoneChart ? { minHeight: 0, padding: 0, aspectRatio: String(chartAspect) } : undefined} className={`bg-zinc-900/40 border border-zinc-800/60 rounded-xl overflow-hidden relative group w-full flex items-center justify-center p-2 ${
+                    <div style={fit?.cw && fit.ch ? { width: fit.cw + 2, height: fit.ch + 2, flex: 'none', minHeight: 0, padding: 0 } : phoneChart ? { minHeight: 0, maxHeight: 'none', padding: 0, aspectRatio: String(CHART_ASPECT) } : undefined} className={`bg-zinc-900/40 border border-zinc-800/60 rounded-xl overflow-hidden relative group w-full flex items-center justify-center p-2 ${
                       isExporting 
                         ? 'h-auto max-h-none' 
                         : currentTrade.screenshot 
@@ -698,17 +670,11 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                             key={noCors ? 'plain' : 'cors'}
                             src={resolvedImageUrl} 
                             alt="Trading chart" 
-                            style={fit?.cw ? { padding: 0 } : phoneChart ? { width: '100%', height: 'auto', maxHeight: '70vh', borderRadius: 0 } : undefined}
+                            style={fit?.cw ? { padding: 0 } : phoneChart ? { position: 'absolute', inset: 0, width: '100%', height: '100%', maxHeight: 'none', borderRadius: 0 } : undefined}
                             className={`object-contain rounded-lg transition-opacity duration-200 ${isExporting ? 'w-auto h-auto max-w-full' : 'w-auto h-auto max-w-full max-h-[min(420px,43vh)] lg:absolute lg:inset-0 lg:m-auto lg:w-full lg:h-full lg:max-h-none lg:p-2'} ${isImageLoading ? 'opacity-0' : 'opacity-100'}`}
                             crossOrigin={noCors ? undefined : "anonymous"}
                             referrerPolicy="no-referrer"
-                            onLoad={(e) => {
-                              const im = e.currentTarget;
-                              if (im.naturalWidth > 0 && im.naturalHeight > 0) {
-                                const a = im.naturalWidth / im.naturalHeight;
-                                setImgAspect(a);
-                                if (shotKey) writeAspect(shotKey, a);
-                              }
+                            onLoad={() => {
                               setIsImageLoading(false);
                               setImageError(false);
                             }}
@@ -724,7 +690,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                       <div className="flex flex-col items-center justify-center p-6 text-center text-zinc-600">
                         <Monitor size={32} className="mb-3 opacity-20" />
                         <p className="text-sm font-bold font-sans text-zinc-400">Grafik Linki Yok</p>
-                        <p className="text-xs text-zinc-500 mt-2 font-sans max-w-xs">Bu işleme TradingView ya da başka bir grafik linki eklenmemiş.</p>
+                        <p className="text-xs text-zinc-500 mt-2 font-sans max-w-xs">Bu işleme henüz bir grafik linki eklenmemiş.</p>
                         <button onClick={() => { onEdit(currentTrade); onClose(); }} className="mt-4 text-xs font-sans font-bold text-blue-400 bg-blue-500/10 px-4 py-2 rounded-lg hover:bg-blue-500/20 transition-colors uppercase cursor-pointer">
                           Grafik Linki Ekle
                         </button>
@@ -733,10 +699,10 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                     </div>
                   </section>
 
-                  {/* Kurulum geçmişi: grafiğin altındaki alanda (pencere ölçüsü bu kartı da hesaba katar) */}
-                  {insight?.setup && (
-                    <div ref={setupRef} className="shrink-0">
-                      <SetupHistoryPanel insight={insight} />
+                  {/* Kurulum geçmişi: grafiğin altında sabit yükseklikli alan (masaüstünde kart olmasa da yer ayrılır; pencere her işlemde aynı boyutta kalır) */}
+                  {(insight?.setup || fit?.cw) && (
+                    <div className="shrink-0" style={fit?.cw ? { height: SETUP_SLOT_H } : undefined}>
+                      {insight?.setup && <SetupHistoryPanel insight={insight} fixedHeight={!!fit?.cw} />}
                     </div>
                   )}
                 </div>

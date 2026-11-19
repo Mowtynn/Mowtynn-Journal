@@ -1034,3 +1034,11 @@ Klasik tasarım korunarak, son eklenen alanlar (risk %, hesap bağı, strateji, 
   - 320 px telefonda Detaylı Analiz alt sekmelerinde ikon gizlenir (etiket kesilmez), Genel Bakış kartları tek sütun, "Yeni Pozisyon Girişi Yap" alt satıra kayabilir.
   - Doğrulama: 1366×768'de kaydırmasız sayfalar ve işlem formu / detayı hâlâ sığar; 375 ve 320 px'te taşma yok; masaüstünde görünen boyutlar 11 / 12 / 14 / 16 / 18 / 20 px.
   - Yazı ölçeği koda işlendi: 528 elle verilmiş piksel boyutu (text-[8px] … text-[11px]) tek `text-label` sınıfına çevrildi; üstteki geçici CSS ezme kuralları kaldırıldı. Kodda elle piksel boyutu kalmadı (.body-text 13 → 14 px). Doğrulama: telefonda 817 yazının, masaüstünde 1344 yazının boyutu önceki ölçümle aynı; tek bilinçli fark işlem formundaki çiplerin kısa ekranda 10.5 → 11 px olması (form yine kaydırmasız sığar).
+
+- İşlem detayı: sabit pencere ve grafik kutusu
+  - Pencere ve grafik kutusu artık görselin en-boy oranına / çözünürlüğüne göre değil yalnızca ekran boyutuna göre ölçülür (kutu oranı sabit 1.85, `CHART_ASPECT`; kullanılan görsellerin ikisine de eşit uzaklıkta: TradingView ≈ 1.73, OpenMarket ≈ 1.98). TradingView, OpenMarket ya da başka bir görsel açılsa da pencere birebir aynı boyutta açılır; görsel yüklenince ya da başka işleme geçilince yeniden boyutlanmaz.
+  - Görsel kutuya orantısı bozulmadan sığar; oranı farklıysa kenarlarda ince koyu boşluk kalır (kırpma yok).
+  - Grafiğin altındaki Kurulum geçmişi alanı sabit yükseklikte (72 px, masaüstünde kart olmasa da yer ayrılır): kartın içeriği işleme göre değişse de pencere ve grafik boyutu değişmez. Kart bu alanda tek satırda kalır, uzun metin kesilir.
+  - Telefon / tablet: kutu aynı sabit orandadır, görsel kutunun içine oturur (önceden kutu görselin oranına uyuyordu).
+  - Kaldırıldı: görsel oranı önbelleği (`tj_chart_aspects`, localStorage) ve onLoad'daki oran ölçümü; artık gerekmiyor.
+  - İşlem formundaki grafik linki kutusunun açıklaması "https://... grafik paylaşım linki" oldu (artık yalnızca TradingView'i anmıyor; OpenMarket de aynı şekilde yapıştırılıyor). İşlem detayında link olmayan işlemin boş durum yazısı da "Bu işleme henüz bir grafik linki eklenmemiş." oldu.

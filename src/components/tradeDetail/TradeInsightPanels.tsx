@@ -66,15 +66,16 @@ const VERDICT: Record<string, { label: string; cls: string }> = {
 /**
  * Aynı kurulumun (Asia Range · İşlem Tipi · Entry Model) bu işlem hariç geçmişi.
  * Grafiğin altındaki alana sığan tek kart: solda kurulum adı ve işlem başı R, sağda hüküm.
+ * fixedHeight: kart bulunduğu sabit yükseklikli alanı doldurur ve içerik tek satırda kalır (uzun metin kesilir), böylece yüksekliği içeriğe göre değişmez.
  */
-export function SetupHistoryPanel({ insight }: { insight: TradeInsight }) {
+export function SetupHistoryPanel({ insight, fixedHeight = false }: { insight: TradeInsight; fixedHeight?: boolean }) {
   const s = insight.setup;
   if (!s) return null;
   const e = s.others;
   const v = VERDICT[s.verdict];
   const setupName = s.labels.map((l) => l.value).join(' · ');
   return (
-    <section className="rounded-xl border border-zinc-800/60 bg-zinc-900/40 px-4 py-3 flex items-center gap-4">
+    <section className={`rounded-xl border border-zinc-800/60 bg-zinc-900/40 px-4 py-3 flex items-center gap-4 ${fixedHeight ? 'h-full overflow-hidden' : ''}`}>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5 min-w-0">
           <History size={12} className="text-zinc-500 shrink-0" />
@@ -84,12 +85,12 @@ export function SetupHistoryPanel({ insight }: { insight: TradeInsight }) {
         {e.n === 0 ? (
           <p className="mt-1 text-xs text-zinc-500">Bu kurulumla başka işlem yok, bu ilk örnek.</p>
         ) : (
-          <div className="mt-1 flex items-baseline flex-wrap gap-x-3 gap-y-0.5">
+          <div className={`mt-1 flex items-baseline gap-x-3 gap-y-0.5 ${fixedHeight ? 'flex-nowrap overflow-hidden' : 'flex-wrap'}`}>
             <span className={`text-lg font-bold tabular-nums leading-tight ${tone(e.expectancy)}`}>
               {formatR(e.expectancy)}
               <span className="text-label font-medium text-zinc-500"> /işlem</span>
             </span>
-            <span className="text-xs text-zinc-400 tabular-nums">
+            <span className={`text-xs text-zinc-400 tabular-nums ${fixedHeight ? 'truncate min-w-0' : ''}`}>
               diğer {e.n} işlem · %{fmt(e.winRate, 0)} kazanma · net {formatR(e.netR)}
               {e.n > 1 ? ` · %95 aralık ${rnum(e.expLo)} – ${rnum(e.expHi)}R` : ''}
             </span>

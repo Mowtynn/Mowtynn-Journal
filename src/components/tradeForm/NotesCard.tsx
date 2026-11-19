@@ -52,7 +52,7 @@ export const ChartLinkCard = React.memo(function ChartLinkCard({
   // Eski kayıtlardaki gömülü / kayıtlı görsel: kutuda ham veri yerine açıklama gösterilir; link yapıştırınca yerini alır
   const embedded = link.startsWith("data:image") || isImageRef(link);
   const valid = isHttpLink(link) || embedded;
-  // Önizleme: TradingView paylaşım linki görsele çözülür; yazarken her tuşta istek atılmasın diye kısa gecikme
+  // Önizleme: grafik paylaşım linki (TradingView, OpenMarket) görsele çözülür; yazarken her tuşta istek atılmasın diye kısa gecikme
   const [preview, setPreview] = useState<{ src: string; state: "loading" | "ok" | "error" } | null>(null);
   useEffect(() => {
     if (!valid) {
@@ -106,7 +106,7 @@ export const ChartLinkCard = React.memo(function ChartLinkCard({
             if (embedded && !e.target.value.trim()) return;
             commit(e.target.value);
           }}
-          placeholder={embedded ? "Kayıtlı görsel var · yerine link yapıştırabilirsin" : "https://... TradingView veya grafik linki"}
+          placeholder={embedded ? "Kayıtlı görsel var · yerine link yapıştırabilirsin" : "https://... grafik paylaşım linki"}
           aria-invalid={!!link && !valid}
           className={`flex-1 min-w-0 h-9 bg-zinc-950/80 border hover:border-zinc-500 focus:ring-1 rounded-lg sm:rounded-xl px-2.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none transition-ui font-sans font-medium shadow-inner truncate ${
             link && !valid ? "border-blue-500/60 focus:border-blue-500 focus:ring-blue-500/30" : "border-zinc-700/70 focus:border-blue-500 focus:ring-blue-500/30"
