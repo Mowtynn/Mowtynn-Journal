@@ -12,7 +12,7 @@ test('dışa aktarım: formdaki her girdi bir sütunda, değerler eksiksiz', () 
     riskPct: 0.5, riskAmount: 50, stopPips: 10, tpPips: 30, asiaRangePips: 18,
     asiaRange: 'Trend', sweepTime: '02:15', planFidelity: 'A+', trend: 'Continuation', newsDay: false, asiaRangeFvg: 'Var',
     session: 'London', htfTimeframe: '1H', timeframe: '5M', confirmations: ['FVG', 'OB'], entryModels: ['Breaker'],
-    tpTargets: ['PDH / PDL'], premiumDiscount: 'Discount', quickEntry: true,
+    tpTargets: ['PDH / PDL'], confirmationTags: ['Discount'], quickEntry: true,
     notes: 'satır 1\nsatır 2', screenshot: 'https://www.tradingview.com/x/abc/',
   });
   const row = prepareTradeExportRows([t])[0] as Record<string, unknown>;

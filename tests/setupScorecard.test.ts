@@ -13,6 +13,10 @@ test('boyut değerleri: çoklu alanlar sıralı birleşir, boşlar Belirtilmemi�
   assert.equal(dimensionValue(x, 'session'), 'London');
   assert.equal(dimensionValue(x, 'asiaRange'), UNSPECIFIED);
   assert.equal(dimensionValue(x, 'tpTargets'), UNSPECIFIED);
+  // Confirmations çoklu: birlikte seçilenler tek kurulum olur (Entry Model ile aynı kural); eski tek değer de okunur
+  assert.equal(dimensionValue(t(1, { confirmationTags: ['4H POI', '1H POI'] }), 'premiumDiscount'), '1H POI + 4H POI');
+  assert.equal(dimensionValue(t(1, { premiumDiscount: 'Discount' } as any), 'premiumDiscount'), 'Discount');
+  assert.equal(dimensionValue(t(1, {}), 'premiumDiscount'), UNSPECIFIED);
   assert.equal(dimensionValue(t(1, { type: 'SHORT' }), 'type'), 'Short');
 });
 

@@ -38,6 +38,7 @@ import { DEFAULT_DATE_LIMIT, EMPTY_EXTRA_FILTERS, countExtraFilters, FILTER_DIME
 import { dimensionValue, SETUP_DIMENSIONS, UNSPECIFIED } from '../lib/setupScorecard';
 import { PREV_TRADE_BUCKETS, sweepBucketOrder } from '../lib/asiaAnalytics';
 import { WEEKDAY_NAMES_TR } from '../lib/tradingTime';
+import { tradeConfirmations } from '../lib/tradeModel';
 
 /** Gün filtresi seçenekleri Pazartesi'den başlar */
 const WEEKDAY_ORDER = [...WEEKDAY_NAMES_TR.slice(1), WEEKDAY_NAMES_TR[0]];
@@ -187,7 +188,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
     let incomplete = 0;
     if (ready) {
       trades.forEach((t) => {
-        if (t.premiumDiscount) pd.add(t.premiumDiscount);
+        tradeConfirmations(t).forEach((x) => pd.add(x));
         if (Array.isArray(t.tpTargets)) t.tpTargets.forEach((x: string) => x && tp.add(x));
         if (t.asiaRangeFvg) fvg.add(t.asiaRangeFvg);
         if (typeof t.riskPct === 'number' && t.riskPct > 0) risk.add(Math.round(t.riskPct * 1000) / 1000);

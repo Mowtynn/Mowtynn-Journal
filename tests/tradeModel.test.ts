@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeTrade, normalizeTrades, isValidTrade, canonicalAssetList } from '../src/lib/tradeModel';
+import { normalizeTrade, normalizeTrades, isValidTrade, canonicalAssetList, tradeConfirmations } from '../src/lib/tradeModel';
 import { trade } from './fixtures';
 
 test('dolar sonucu (pnl) kayıttan düşer', () => {
@@ -90,4 +90,27 @@ test('0R kaydedilmiş WIN / LOSS başabaş sayılır (ortalama kazanç / kaybı 
   assert.equal(w.status, 'BREAKEVEN');
   assert.equal(l.status, 'BREAKEVEN');
   assert.ok(Object.is(l.rr, 0));
+});
+
+test('Confirmations çoklu: eski tek değerli premiumDiscount listeye taşınır ve alan silinir', () => {
+  const t = normalizeTrade({ ...trade({ status: 'WIN', rr: 1 }), premiumDiscount: 'Discount' } as any) as any;
+  assert.deepEqual(t.confirmationTags, ['Discount']);
+  assert.equal('premiumDiscount' in t, false);
+  assert.equal(isValidTrade(t), true, 'taşınan kayıt buluta yazılabilir kalır');
+});
+
+test('Confirmations: yeni liste önceliklidir, temizlenir (kırpma, harf tekrarı, boş değer), boşsa alan düşer', () => {
+  const t = normalizeTrade({ id: '1', status: 'WIN', rr: 1, confirmationTags: [' 1H POI', '1h poi', '4H POI', 3, ''], premiumDiscount: 'Premium' } as any) as any;
+  assert.deepEqual(t.confirmationTags, ['1H POI', '4H POI'], 'eski tek değer yeni listeyi ezmez, karışmaz');
+  assert.equal('premiumDiscount' in t, false);
+  const e = normalizeTrade({ id: '2', status: 'WIN', rr: 1, confirmationTags: [], premiumDiscount: '  ' } as any) as any;
+  assert.equal('confirmationTags' in e, false);
+  assert.equal('premiumDiscount' in e, false);
+});
+
+test('tradeConfirmations: iki biçimi de okur', () => {
+  assert.deepEqual(tradeConfirmations({ confirmationTags: ['1H POI', ' ', '4H POI'] }), ['1H POI', '4H POI']);
+  assert.deepEqual(tradeConfirmations({ premiumDiscount: ' Premium ' }), ['Premium']);
+  assert.deepEqual(tradeConfirmations({}), []);
+  assert.deepEqual(tradeConfirmations({ confirmationTags: [], premiumDiscount: 'Premium' }), [], 'boş yeni liste: eski değer geri gelmez');
 });

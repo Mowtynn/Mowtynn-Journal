@@ -28,6 +28,7 @@ import { setupQualityTier } from "../lib/setupQuality";
 import { nyWallDate, nyDateKey } from "../lib/tradingTime";
 import { ResultPanel, SetupHistoryPanel } from "./tradeDetail/TradeInsightPanels";
 import { computeTradeInsight } from "../lib/tradeInsight";
+import { tradeConfirmations } from "../lib/tradeModel";
 import { useAllTrades } from "../lib/allTradesContext";
 
 interface TradeDetailModalProps {
@@ -487,7 +488,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                       !currentTrade.asiaRange && (cleanDefinitionTitleString(definitionTitles.asiaRange) || "Asia Range"),
                       !(currentTrade.entryModels && currentTrade.entryModels.length) && (cleanDefinitionTitleString(definitionTitles.entryModels) || "Entry Model"),
                       !currentTrade.planFidelity && (cleanDefinitionTitleString(definitionTitles.planFidelities) || "Setup Kalitesi"),
-                      !currentTrade.premiumDiscount && (cleanDefinitionTitleString(definitionTitles.premiumDiscounts) || "Confirmations"),
+                      tradeConfirmations(currentTrade).length === 0 && (cleanDefinitionTitleString(definitionTitles.premiumDiscounts) || "Confirmations"),
                     ].filter(Boolean) as string[];
                     return (
                       <div className="flex items-start gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3">
@@ -587,10 +588,10 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                               : undefined}
                             icon={<Flag size={14} className="text-blue-400"/>}
                           />
-                          {/* PREMIUM / DISCOUNT */}
+                          {/* CONFIRMATIONS (çoklu) */}
                           <ContextRow
                             label={smartUpper(cleanDefinitionTitleString(definitionTitles.premiumDiscounts) || "CONFIRMATIONS")}
-                            value={currentTrade.premiumDiscount ? smartUpper(currentTrade.premiumDiscount) : undefined}
+                            value={(() => { const c = tradeConfirmations(currentTrade); return c.length > 0 ? c.map((e) => smartUpper(e)).join(", ") : undefined; })()}
                             icon={<Scale size={14} className="text-blue-400"/>}
                           />
                           {/* 9. SETUP KALİTESİ */}

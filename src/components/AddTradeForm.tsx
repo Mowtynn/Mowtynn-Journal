@@ -21,7 +21,7 @@ import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
 import { missingRequired } from "../lib/requiredFields";
 import { Plus, X, Zap, Copy } from "lucide-react";
 import { NO_ACCOUNT, Num, AccountOption, buildInitial, useTitles, statusOfR } from './tradeForm/shared';
-import { roundR } from '../lib/tradeModel';
+import { roundR, tradeConfirmations } from '../lib/tradeModel';
 import { sessionForNyTime } from '../lib/sessions';
 import { nyInputToTs, newTradeDateInput } from '../lib/tradingTime';
 import { BasicInfoCard } from './tradeForm/BasicInfoCard';
@@ -123,7 +123,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
   const [selectedTrend, setSelectedTrend] = useState(init.trend);
   const [planFidelity, setPlanFidelity] = useState<string | null>(init.planFidelity);
   const [selectedTpTargets, setSelectedTpTargets] = useState<string[]>(init.tpTargets);
-  const [premiumDiscount, setPremiumDiscount] = useState(init.premiumDiscount);
+  const [selectedConfirmations, setSelectedConfirmations] = useState<string[]>(init.confirmations);
   // News Day / Bank Holiday: varsayılan yok; tam kayıtta seçilmesi zorunlu (yanlışlıkla "Yok" kalıp istatistiği kaydırmasın)
   const [newsDay, setNewsDay] = useState<boolean | null>(init.newsDay);
   const [newsDayError, setNewsDayError] = useState(false);
@@ -259,7 +259,9 @@ const AddTradeForm = React.memo(function AddTradeForm({
       trend: selectedTrend || undefined,
       planFidelity: planFidelity || undefined,
       tpTargets: selectedTpTargets.length > 0 ? selectedTpTargets : undefined,
-      premiumDiscount: premiumDiscount || undefined,
+      confirmationTags: selectedConfirmations.length > 0 ? selectedConfirmations : undefined,
+      // Eski tek değerli alan bilinçli boşaltılır: düzenlemede birleştirme eski değeri geri getirmesin
+      premiumDiscount: undefined,
       newsDay: newsDay ?? undefined,
       // Eski sürümün strateji alanı formda yok; düzenlemede eski değer silinmeden korunur
       strategy: editingTrade?.strategy || undefined,
@@ -311,7 +313,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
     asset, type, accountChoice, riskChoice, customRiskPct, tradeDate,
     rrValue, notes, screenshot, selectedSession,
     selectedEntries, selectedTrend, planFidelity,
-    selectedTpTargets, premiumDiscount, newsDay, asiaRange, sweepTime, selectedAsiaFvg,
+    selectedTpTargets, selectedConfirmations, newsDay, asiaRange, sweepTime, selectedAsiaFvg,
   ]);
   const baselineRef = useRef(snapshot);
   // Hazır bekleyen form açılınca tarih "şimdi"ye çekilir; bu değişiklik kirli sayılmasın diye taban yenilenir
@@ -384,7 +386,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
     setSelectedEntries(Array.isArray(t.entryModels) ? t.entryModels : []);
     setSelectedTrend(t.trend || "");
     setSelectedTpTargets(Array.isArray(t.tpTargets) ? t.tpTargets : []);
-    setPremiumDiscount(t.premiumDiscount || "");
+    setSelectedConfirmations(tradeConfirmations(t));
     setSelectedAsiaFvg(t.asiaRangeFvg || "");
     toast.success("Son işlemin kurulumu uygulandı. Riski ve sonucu gir.");
   };
@@ -526,8 +528,8 @@ const AddTradeForm = React.memo(function AddTradeForm({
                   selectedTpTargets={selectedTpTargets}
                   setSelectedTpTargets={setSelectedTpTargets}
                   premiumDiscounts={premiumDiscounts}
-                  premiumDiscount={premiumDiscount}
-                  setPremiumDiscount={setPremiumDiscount}
+                  selectedConfirmations={selectedConfirmations}
+                  setSelectedConfirmations={setSelectedConfirmations}
                 />
             </div>
           )}

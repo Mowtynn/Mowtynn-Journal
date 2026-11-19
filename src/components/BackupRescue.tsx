@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { PANE } from '../lib/motion';
 import { Trade, Note, DefinitionTitles, PropAccount } from '../types';
 import { missingFields, logicProblem } from '../lib/integrity';
+import { tradeConfirmations } from '../lib/tradeModel';
 import { localDateKey } from '../utils/math';
 import { mapAccountImages } from '../lib/propAccounts';
 import { ACCOUNT_CATEGORY_LABELS, getTradeAccountCategory } from '../constants/constants';
@@ -240,6 +241,8 @@ const BackupRescue = React.memo(function BackupRescue({
 
           const created = num(item.createdAt);
           const fromDate = item.date ? new Date(item.date).getTime() : NaN;
+          // Yedek eski (tek değerli premiumDiscount) ya da yeni (confirmationTags) biçimde olabilir
+          const confTags = tradeConfirmations({ confirmationTags: item.confirmationTags, premiumDiscount: item.premiumDiscount });
           const entryArr = strArr(item.entryModels) ?? (typeof item.entry === 'string' && item.entry
             ? item.entry.split(',').map((x: string) => x.trim()).filter(Boolean)
             : undefined);
@@ -266,7 +269,7 @@ const BackupRescue = React.memo(function BackupRescue({
             asiaRangePips: num(item.asiaRangePips),
             trend: typeof item.trend === 'string' ? item.trend : undefined,
             tpTargets: strArr(item.tpTargets),
-            premiumDiscount: typeof item.premiumDiscount === 'string' && item.premiumDiscount.trim() ? item.premiumDiscount.trim() : undefined,
+            confirmationTags: confTags.length > 0 ? confTags : undefined,
             newsDay: typeof item.newsDay === 'boolean' ? item.newsDay : undefined,
             strategy: typeof item.strategy === 'string' && item.strategy.trim() ? item.strategy.trim() : undefined,
             asiaRange: typeof item.asiaRange === 'string' ? item.asiaRange : undefined,

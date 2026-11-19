@@ -1,4 +1,5 @@
 import type { Trade } from '../types';
+import { tradeConfirmations } from './tradeModel';
 
 /**
  * Zorunlu alan ayarı: tam kayıtta (Hızlı Kayıt hariç) boş bırakılamayacak alanlar.
@@ -12,7 +13,7 @@ export const REQUIRABLE_FIELDS = [
   { id: 'planFidelity', label: 'Setup Kalitesi', missing: (t: Partial<Trade>) => !t.planFidelity },
   { id: 'trend', label: 'İşlem Tipi', missing: (t: Partial<Trade>) => !t.trend },
   { id: 'tpTargets', label: 'Target', missing: (t: Partial<Trade>) => !t.tpTargets?.length },
-  { id: 'premiumDiscount', label: 'Confirmations', missing: (t: Partial<Trade>) => !t.premiumDiscount },
+  { id: 'premiumDiscount', label: 'Confirmations', missing: (t: Partial<Trade>) => tradeConfirmations(t).length === 0 },
   { id: 'asiaRangeFvg', label: 'Asia Range FVG (1H)', missing: (t: Partial<Trade>) => !t.asiaRangeFvg },
 ] as const;
 

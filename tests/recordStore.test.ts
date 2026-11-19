@@ -107,3 +107,11 @@ test('not / günlük okuma onarımı: bozuk kayıt atılır, eksik alan tamamlan
   assert.deepEqual(js[0].tags, ['a']);
   assert.deepEqual(js[0].weekly, { good: 'x', avoid: '', focus: '' });
 });
+
+test('düzenlemede Confirmations tamamen boşaltılınca eski tek değer geri gelmez', () => {
+  const old = trade({ status: 'WIN', rr: 1, premiumDiscount: 'Premium' } as any);
+  // Form her kayıtta eski alanı bilinçli olarak undefined gönderir (AddTradeForm)
+  const { trade: saved } = prepareTradeSave([old], { id: old.id, confirmationTags: undefined, premiumDiscount: undefined } as any, 1, () => 'x');
+  assert.equal('premiumDiscount' in saved, false);
+  assert.equal('confirmationTags' in saved, false);
+});

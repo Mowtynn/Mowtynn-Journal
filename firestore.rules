@@ -53,7 +53,7 @@ service cloud.firestore {
         && optNum(d, 'stopPips') && optNum(d, 'tpPips') && optNum(d, 'asiaRangePips')
         && optBool(d, 'newsDay') && optBool(d, 'quickEntry') && optBool(d, 'afterExitTp')
         && optList(d, 'management', 4)
-        && optList(d, 'confirmations', 50) && optList(d, 'entryModels', 50) && optList(d, 'tpTargets', 50)
+        && optList(d, 'confirmations', 50) && optList(d, 'confirmationTags', 50) && optList(d, 'entryModels', 50) && optList(d, 'tpTargets', 50)
         && optStr(d, 'notes', 50000)
         && optStr(d, 'screenshot', 1000000)
         && optStr(d, 'platform', 200) && optStr(d, 'accountId', 128)

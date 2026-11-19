@@ -45,8 +45,8 @@ export const SetupChips = React.memo(function SetupChips({
   selectedTpTargets,
   setSelectedTpTargets,
   premiumDiscounts,
-  premiumDiscount,
-  setPremiumDiscount,
+  selectedConfirmations,
+  setSelectedConfirmations,
 }: {
   titles: Titles;
   newsDays: string[];
@@ -77,8 +77,8 @@ export const SetupChips = React.memo(function SetupChips({
   selectedTpTargets: string[];
   setSelectedTpTargets: SetState<string[]>;
   premiumDiscounts: string[];
-  premiumDiscount: string;
-  setPremiumDiscount: SetState<string>;
+  selectedConfirmations: string[];
+  setSelectedConfirmations: SetState<string[]>;
 }) {
   const { L, H } = titles;
   const [newsYesLabel, newsNoLabel] = useMemo(() => normalizeNewsDays(newsDays), [newsDays]);
@@ -311,21 +311,21 @@ export const SetupChips = React.memo(function SetupChips({
           </div>
         </div>
 
-        {/* CONFIRMATIONS (eski adı Premium / Discount) */}
+        {/* CONFIRMATIONS (çoklu; eski adı Premium / Discount, eskiden tek seçimliydi) */}
         <div className="flex flex-col">
           <span lang="en" className="text-label font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
             <ShieldCheck size={12} className="text-blue-400 shrink-0" />
             {H("premiumDiscounts", "CONFIRMATIONS")}
           </span>
           <div className="flex flex-wrap gap-1.5">
-            {withSelected(premiumDiscounts, premiumDiscount ? [premiumDiscount] : []).map((zone) => {
-              const isSelected = premiumDiscount === zone;
+            {withSelected(premiumDiscounts, selectedConfirmations).map((zone) => {
+              const isSelected = selectedConfirmations.includes(zone);
               return (
                 <button lang="en"
                   key={zone}
                   type="button"
                   data-selected={isSelected}
-                  onClick={() => setPremiumDiscount(isSelected ? "" : zone)}
+                  onClick={() => setSelectedConfirmations(isSelected ? selectedConfirmations.filter((x) => x !== zone) : [...selectedConfirmations, zone])}
                   className={`${CHIP_BASE} ${
                     isSelected
                       ? "bg-blue-500/20 text-blue-300 border-blue-500/60 shadow-xs"

@@ -1,7 +1,7 @@
 import { Trade, AccountCategory, PropAccount } from '../types';
 import { inScope } from './accountScope';
 import { normalizeSearchString } from '../constants/constants';
-import { canonicalAsset } from './tradeModel';
+import { canonicalAsset, tradeConfirmations } from './tradeModel';
 import { dimensionValue, type SetupDimension } from './setupScorecard';
 
 /** Global filtrede türetilmiş / yeni girdiler: değer, kurulum karnesindeki boyut değeriyle aynı (tek tanım) */
@@ -218,7 +218,7 @@ export function applyGlobalFilters(trades: Trade[], filters: GlobalTradeFilters,
       if (extra.onlyIncomplete && t.quickEntry !== true) return false;
       if (extra.newsDay !== 'ALL' && t.newsDay !== (extra.newsDay === 'YES')) return false;
       if (asiaRangeSet && (!t.asiaRange || !asiaRangeSet.has(normalizeSearchString(t.asiaRange)))) return false;
-      if (pdSet && (!t.premiumDiscount || !pdSet.has(normalizeSearchString(t.premiumDiscount)))) return false;
+      if (pdSet && !tradeConfirmations(t).some((x) => pdSet.has(normalizeSearchString(x)))) return false;
       if (fvgSet && (!t.asiaRangeFvg || !fvgSet.has(normalizeSearchString(t.asiaRangeFvg)))) return false;
       if (tpSet && (!t.tpTargets || !t.tpTargets.some((x) => tpSet.has(normalizeSearchString(x))))) return false;
       if (riskSet && (typeof t.riskPct !== 'number' || !riskSet.has(riskKey(t.riskPct)))) return false;

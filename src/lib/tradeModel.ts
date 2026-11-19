@@ -49,6 +49,15 @@ const cleanList = (v: unknown): string[] | undefined => {
   return out.length > 0 ? out : undefined;
 };
 
+/**
+ * İşlemin Confirmations değerleri (çoklu). Normalize edilmemiş eski kayıtta tek değerli `premiumDiscount` da okunur,
+ * böylece okuyan her yer iki biçimi ayrı ayrı bilmek zorunda kalmaz.
+ */
+export function tradeConfirmations(t: { confirmationTags?: unknown; premiumDiscount?: unknown }): string[] {
+  if (Array.isArray(t.confirmationTags)) return t.confirmationTags.filter((x): x is string => typeof x === 'string' && x.trim() !== '');
+  return typeof t.premiumDiscount === 'string' && t.premiumDiscount.trim() ? [t.premiumDiscount.trim()] : [];
+}
+
 // Paritenin tek biçimi tradingTime.canonicalAsset'te (Asia analizleriyle aynı kural)
 export { canonicalAsset };
 
@@ -84,6 +93,12 @@ export function normalizeTrade<T extends Partial<Trade> & Record<string, any>>(r
     if (l) t[k] = l;
     else delete t[k];
   }
+  // Confirmations çoklu seçim: eski tek değerli `premiumDiscount` listeye taşınır ve alan silinir (bulutta bir sonraki
+  // kayıtta eski anahtar da kalkar; rules'taki `premiumDiscount` string denetimi böylece hiç tetiklenmez).
+  const tags = cleanList(t.confirmationTags) ?? cleanList(typeof t.premiumDiscount === 'string' ? [t.premiumDiscount] : undefined);
+  if (tags) t.confirmationTags = tags;
+  else delete t.confirmationTags;
+  delete t.premiumDiscount;
   LEGACY_KEYS.forEach((k) => delete t[k]);
   // Biçim onarımı (yedek/eski kayıt): "long" → LONG, "win" → WIN, metin tarih/sayı → ms, boşluklu parite → kırpılmış
   if (typeof t.type === 'string') t.type = t.type.trim().toUpperCase();

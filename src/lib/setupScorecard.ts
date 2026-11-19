@@ -1,5 +1,5 @@
 import { Trade } from '../types';
-import { byEntryTime } from './tradeModel';
+import { byEntryTime, tradeConfirmations } from './tradeModel';
 import { edgeFromR, EdgeStats, sweepHourBucket, stageBucket, tradeOfDayBucket, indexTradeOrder, prevTradeBucket } from './asiaAnalytics';
 import { getTradeNyWeekday, WEEKDAY_NAMES_TR } from './tradingTime';
 import { getNewsDayLabels } from '../constants/constants';
@@ -83,6 +83,8 @@ export function dimensionValue(t: Trade, d: SetupDimension): string {
       return joinList(t.entryModels);
     case 'tpTargets':
       return joinList(t.tpTargets);
+    case 'premiumDiscount':
+      return joinList(tradeConfirmations(t));
     case 'sweepHour':
       return sweepHourBucket(t.sweepTime) ?? UNSPECIFIED;
     case 'tradeOfDay':

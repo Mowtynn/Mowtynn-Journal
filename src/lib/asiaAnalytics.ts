@@ -1,4 +1,4 @@
-import { byEntryTime } from './tradeModel';
+import { byEntryTime, tradeConfirmations } from './tradeModel';
 import { Trade } from '../types';
 import { getTradeAccountCategory, getTradeStageLabel } from '../constants/constants';
 import { calculateProfitFactor, toRR } from './statMath';
@@ -329,7 +329,7 @@ export function computeCoverage(trades: Trade[]): CoverageRow[] {
     { field: 'session', label: 'Session', unlocks: 'Session ve Session × Yön kıyası', ok: (t) => !!t.session },
     { field: 'entryModels', label: 'Entry Model', unlocks: 'Entry Model kıyası', ok: (t) => list(t.entryModels) },
     { field: 'tpTargets', label: 'Target', unlocks: 'Çıkış hedefi kıyası', ok: (t) => list(t.tpTargets) },
-    { field: 'premiumDiscount', label: 'Confirmations', unlocks: 'Confirmations × Yön kıyası', ok: (t) => !!t.premiumDiscount },
+    { field: 'premiumDiscount', label: 'Confirmations', unlocks: 'Confirmations × Yön kıyası', ok: (t) => tradeConfirmations(t).length > 0 },
     { field: 'riskPct', label: 'Risk %', unlocks: 'Risk seviyesine göre edge, aşırı risk uyarısı (hesaplı işlemlerde)', ok: (t) => hasNum(t.riskPct) && t.riskPct > 0, asked: (t) => !!t.accountId },
   ];
   return defs.map((d) => {

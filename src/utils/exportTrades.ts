@@ -1,5 +1,5 @@
 import { Trade, JournalEntry, Note } from '../types';
-import { byEntryTime } from '../lib/tradeModel';
+import { byEntryTime, tradeConfirmations } from '../lib/tradeModel';
 import { getNyParts, getSweepSide, WEEKDAY_NAMES_TR, nyWallDate } from '../lib/tradingTime';
 import { getNewsDayLabels, getTradeAccountCategory, getTradeStageLabel, ACCOUNT_CATEGORY_LABELS } from '../constants/constants';
 import { DATASET_LABELS, getTradeDataset, sweepHourBucket, tradeOfDayBucket } from '../lib/asiaAnalytics';
@@ -203,7 +203,7 @@ export const prepareTradeExportRows = (trades: Trade[], titles: Record<string, s
       [T('sessions', 'Session')]: t.session || '-',
       [T('entryModels', 'Entry Model')]: listText(t.entryModels),
       [T('tpTargets', 'Target')]: listText(t.tpTargets),
-      [T('premiumDiscounts', 'Confirmations')]: t.premiumDiscount || '-',
+      [T('premiumDiscounts', 'Confirmations')]: listText(tradeConfirmations(t)),
       // Analizlerde kullanılan türetilmiş değerler (Excel'de ayrıca süzülüp pivotlanabilsin)
       'POI Sweep Saati (30 dk)': sweepHourBucket(t.sweepTime) || '-',
       'Günün İşlemi': tradeOfDayBucket(t) || '-',

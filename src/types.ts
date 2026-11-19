@@ -24,7 +24,13 @@ export interface Trade {
   entryModels?: string[];   // Birden fazla Giriş Modeli (Multiple Entry Models)
   trend?: string;           // İşlem Tipi (eski adı Trend Yapısı): Continuation / Reversal
   tpTargets?: string[];     // Target — çıkış hedefi / seviye (e.g. PDH / PDL, Asia High / Low)
-  premiumDiscount?: string; // Premium / Discount zone (e.g. Premium, Discount, Equilibrium / OTE)
+  /** Confirmations (çoklu seçim): ör. 1H POI, 4H POI, Discount. Tek kaynak bu dizi; `tradeConfirmations()` ile okunur. */
+  confirmationTags?: string[];
+  /**
+   * Eski tek seçimli Confirmations (Premium / Discount...). Okunurken `confirmationTags`'e taşınır ve silinir
+   * (normalizeTrade); yalnızca henüz normalize edilmemiş eski kayıtlarda görünür.
+   */
+  premiumDiscount?: string;
   /** Eski sürümün strateji alanı: artık formda, filtrelerde ve analizlerde yok; eski kayıtlarda saklı kalır. */
   strategy?: string;
   asiaRange?: AsiaRangeType; // Asia Range davranışı: Range / Trend (eski kayıtlarda Swept)

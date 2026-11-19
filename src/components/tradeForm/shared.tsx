@@ -4,6 +4,7 @@ import { motion } from "motion/react";
 import { Trade, DefinitionTitles, PropAccount } from "../../types";
 import { DEFAULT_DEFINITION_TITLES, cleanDefinitionTitleString, smartUpper } from "../../constants/constants";
 import { toNyInput, newTradeDateInput } from '../../lib/tradingTime';
+import { tradeConfirmations } from '../../lib/tradeModel';
 
 /** İşlem formu: bölümlerin ortak sabitleri, türleri ve yardımcıları */
 export const NO_ACCOUNT = "__none__";
@@ -45,7 +46,7 @@ export function buildInitial(t: Trade | null, riskPresets: number[]) {
     trend: t?.trend || "",
     planFidelity: t?.planFidelity || null,
     tpTargets: Array.isArray(t?.tpTargets) ? (t!.tpTargets as string[]) : [],
-    premiumDiscount: t?.premiumDiscount || "",
+    confirmations: t ? tradeConfirmations(t) : [],
     newsDay: (typeof t?.newsDay === "boolean" ? t.newsDay : null) as boolean | null,
     asiaRange: (t?.asiaRange || "") as string,
     sweepTime: t?.sweepTime || "",

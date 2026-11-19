@@ -39,7 +39,7 @@ import { SectionErrorBoundary } from "./components/SectionErrorBoundary";
 import { AccountSwitcher } from "./components/AccountSwitcher";
 import { PWAInstallButton } from "./components/PWAInstallButton";
 import { useLocalStorageState } from "./hooks/useLocalStorageState";
-import { normalizeTrade, normalizeTrades, isValidTrade, canonicalAsset, canonicalAssetList } from "./lib/tradeModel";
+import { normalizeTrade, normalizeTrades, isValidTrade, canonicalAsset, canonicalAssetList, tradeConfirmations } from "./lib/tradeModel";
 import { useExitMount } from "./hooks/useExitMount";
 import { useAppStore } from "./store/useAppStore";
 import { Toaster, toast } from "react-hot-toast";
@@ -1649,7 +1649,7 @@ export default function App() {
           case "sessions": return same(t.session) ? { session: to } : null;
           case "planFidelities": return same(t.planFidelity) ? { planFidelity: to } : null;
           case "trendTypes": return same(t.trend) ? { trend: to } : null;
-          case "premiumDiscounts": return same(t.premiumDiscount) ? { premiumDiscount: to } : null;
+          case "premiumDiscounts": return hasInArr(tradeConfirmations(t)) ? { confirmationTags: mapArr(tradeConfirmations(t)), premiumDiscount: undefined } : null;
           case "asiaRangeFvgs": return same(t.asiaRangeFvg) ? { asiaRangeFvg: to } : null;
           case "tpTargets": return hasInArr(t.tpTargets) ? { tpTargets: mapArr(t.tpTargets) } : null;
           case "entryModels": return hasInArr(t.entryModels) ? { entryModels: mapArr(t.entryModels) } : null;

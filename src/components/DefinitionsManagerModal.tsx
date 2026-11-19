@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { Trade, DefinitionTitles } from '../types';
 import { REQUIRABLE_FIELDS, DEFAULT_REQUIRED_FIELDS, loadRequiredFields, saveRequiredFields, type RequirableField } from '../lib/requiredFields';
+import { tradeConfirmations } from '../lib/tradeModel';
 import {
   DEFAULT_SESSIONS,
   DEFAULT_ASSETS,
@@ -262,7 +263,9 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
         });
       }
       if (t.trend) counts[`trendTypes:${t.trend}`] = (counts[`trendTypes:${t.trend}`] || 0) + 1;
-      if (t.premiumDiscount) counts[`premiumDiscounts:${t.premiumDiscount}`] = (counts[`premiumDiscounts:${t.premiumDiscount}`] || 0) + 1;
+      tradeConfirmations(t).forEach((c) => {
+        counts[`premiumDiscounts:${c}`] = (counts[`premiumDiscounts:${c}`] || 0) + 1;
+      });
       if (t.asiaRangeFvg) counts[`asiaRangeFvgs:${t.asiaRangeFvg}`] = (counts[`asiaRangeFvgs:${t.asiaRangeFvg}`] || 0) + 1;
       const rp = parseRiskPreset(t.riskPct);
       if (rp !== null) counts[`riskPresets:${rp}`] = (counts[`riskPresets:${rp}`] || 0) + 1;
