@@ -58,6 +58,13 @@ const round = (v: number, digits = 2): number => {
   return Math.round(v * m) / m;
 };
 
+/**
+ * EdgeStats değerleri 6 basamakla saklanır (yalnızca kayan nokta gürültüsü temizlenir); ekranlar kendi basamağına tek
+ * seferde yuvarlar. Eskiden değerler 1–3 basamağa yuvarlanıp ekranda daha az basamakla gösteriliyordu: çifte yuvarlama
+ * (örn. 11/31 = %35.48 → 35.5 → "%36", 0.6249R → 0.625 → "0.63R") bazı değerleri bir birim yukarı gösteriyordu.
+ */
+const KEEP = 6;
+
 export interface EdgeStats {
   n: number;
   wins: number;
@@ -167,18 +174,18 @@ export function edgeFromR(rs: number[], statuses?: Array<Trade['status']>): Edge
     wins,
     losses,
     breakevens,
-    winRate: round(p * 100, 1),
-    wrLo: round(Math.max(0, center - half) * 100, 1),
-    wrHi: round(Math.min(1, center + half) * 100, 1),
-    netR: round(netR, 2),
-    expectancy: round(mean, 3),
-    sd: round(sd, 3),
-    expLo: round(expLo, 3),
-    expHi: round(expHi, 3),
-    profitFactor: round(calculateProfitFactor(toRR(posR), toRR(negR)), 2),
-    avgWin: winners.length ? round(winners.reduce((s, r) => s + r, 0) / winners.length, 2) : 0,
-    avgLoss: losers.length ? round(losers.reduce((s, r) => s + r, 0) / losers.length, 2) : 0,
-    maxDrawdownR: round(maxDD, 2),
+    winRate: round(p * 100, KEEP),
+    wrLo: round(Math.max(0, center - half) * 100, KEEP),
+    wrHi: round(Math.min(1, center + half) * 100, KEEP),
+    netR: round(netR, KEEP),
+    expectancy: round(mean, KEEP),
+    sd: round(sd, KEEP),
+    expLo: round(expLo, KEEP),
+    expHi: round(expHi, KEEP),
+    profitFactor: round(calculateProfitFactor(toRR(posR), toRR(negR)), KEEP),
+    avgWin: winners.length ? round(winners.reduce((s, r) => s + r, 0) / winners.length, KEEP) : 0,
+    avgLoss: losers.length ? round(losers.reduce((s, r) => s + r, 0) / losers.length, KEEP) : 0,
+    maxDrawdownR: round(maxDD, KEEP),
     tradesNeeded,
   };
 }
@@ -412,7 +419,7 @@ export function analyzeAsia(allTrades: Trade[], opts: AsiaLabOptions): AsiaLabRe
     const slice = sorted.slice(i - WINDOW, i);
     const exp = slice.reduce((s, t) => s + (t.rr || 0), 0) / WINDOW;
     const last = slice[slice.length - 1];
-    rolling.push({ index: i, date: nyDateKey(last.createdAt), expectancy: round(exp, 3) });
+    rolling.push({ index: i, date: nyDateKey(last.createdAt), expectancy: round(exp, KEEP) });
   }
 
   return {

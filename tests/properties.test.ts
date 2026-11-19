@@ -240,7 +240,8 @@ test('edge istatistiği: ortalama, örnek sapma, t-aralığı ve Wilson aralığ
   // Wilson %95: bilinen referans değerler (x / n)
   const w = (x: number, n: number) => {
     const e = edgeFromR(Array.from({ length: n }, (_, i) => (i < x ? 1 : -1)));
-    return [e.wrLo, e.wrHi];
+    // EdgeStats ham değere yakın saklanır; referans değerler tek ondalıkla yazıldığı için burada tek seferde yuvarlanır
+    return [Number(e.wrLo.toFixed(1)), Number(e.wrHi.toFixed(1))];
   };
   assert.deepEqual(w(5, 10), [23.7, 76.3]);
   assert.deepEqual(w(0, 10), [0, 27.8]);

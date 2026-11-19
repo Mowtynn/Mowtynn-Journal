@@ -165,7 +165,7 @@ export function computeEdgeSummary(trades: Trade[], minSample = SETUP_MIN_SAMPLE
     const v2 = Math.max(0, (totSq - sq - m * restMean * restMean) / (m - 1));
     const se = Math.sqrt(v1 / n + v2 / m);
     const diff = mean - restMean;
-    return { vsRest: Math.round(diff * 1000) / 1000, vsRestZ: se > 0 ? diff / se : 0 };
+    return { vsRest: Math.round(diff * 1e6) / 1e6, vsRestZ: se > 0 ? diff / se : 0 };
   };
 
   // Kârlı bir sistemde neredeyse her kurulum pozitiftir: "daha çok yap" yalnızca geri kalandan daha iyi olanlar.

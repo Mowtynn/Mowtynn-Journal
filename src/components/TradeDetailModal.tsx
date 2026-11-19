@@ -307,7 +307,6 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
 
   const bodyRef = React.useRef<HTMLDivElement>(null);
   const headInfoRef = React.useRef<HTMLDivElement>(null);
-  const counterRef = React.useRef<HTMLSpanElement>(null);
   // Yeni işleme geçince paneller en üstten başlasın; gezinmeyle gelindiyse hafif yönlü geçiş
   // (yalnızca opacity + transform; içerik yeniden bağlanmaz, görseller yeniden yüklenmez)
   React.useEffect(() => {
@@ -317,11 +316,10 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
     if (!dir || typeof window === 'undefined' || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
     // Geçiş: pencere ve zemin sabit kalır. İçerik tek parça halinde, geldiği yönden kısa bir kaymayla ve
     // hızlı bir solmayla yerine oturur (kademesiz, ~0.2 sn): art arda ok tuşuyla gezerken bile takılmaz,
-    // her basış önceki animasyonu keser. Sayaç yeni numarayı yönüyle getirir.
+    // her basış önceki animasyonu keser. Sayaç (n / toplam) hareket etmez: oklarla aynı hizada sabit durur.
     const controls = [
       bodyRef.current && animate(bodyRef.current, { opacity: [0.35, 1], x: [dir * 18, 0] }, { duration: 0.22, ease: EASE }),
       headInfoRef.current && animate(headInfoRef.current, { opacity: [0.35, 1], x: [dir * 10, 0] }, { duration: 0.2, ease: EASE }),
-      counterRef.current && animate(counterRef.current, { opacity: [0, 1], y: [dir * 6, 0] }, { duration: 0.18, ease: EASE }),
     ];
     return () => controls.forEach((c) => c && c.stop());
   }, [currentTrade?.id]);
@@ -424,7 +422,15 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                           className="btn-icon disabled:opacity-30 disabled:cursor-not-allowed">
                           <ChevronLeft size={16} />
                         </button>
-                        <span className="min-w-[3.25rem] text-center overflow-hidden"><span ref={counterRef} className="inline-block text-label font-semibold tabular-nums text-zinc-500">{navIndex + 1} / {navList!.length}</span></span>
+                        {/* Sayaç oklarla aynı yükseklikte ortalı ve hareketsiz: genişlik toplam sayının hane sayısından kurulur
+                            (rakamlar eşit genişlikli), böylece 9 → 10 → 100'e geçerken oklar yerinden oynamaz */}
+                        <span
+                          aria-live="polite"
+                          className="flex h-9 items-center justify-center whitespace-nowrap text-label font-semibold leading-none tabular-nums text-zinc-500"
+                          style={{ minWidth: `${String(navList!.length).length * 2 + 3}ch` }}
+                        >
+                          {navIndex + 1} / {navList!.length}
+                        </span>
                         <button type="button" aria-label="Sonraki işlem" onClick={goNext} disabled={!nextTrade}
                           className="btn-icon disabled:opacity-30 disabled:cursor-not-allowed">
                           <ChevronRight size={16} />
