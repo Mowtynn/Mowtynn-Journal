@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { computeEdgeSummary } from '../src/lib/edgeSummary';
+import { computeEdgeSummary, cachedEdgeAnalysis } from '../src/lib/edgeSummary';
 import { NOW, DAY, trade } from './fixtures';
 import type { Trade } from '../src/types';
 
@@ -58,4 +58,18 @@ test('kural zamanları: kaldırılan girdiler temizlenir, Sweep Saati → POI Sw
     'TAKE|Session: London': 2,
   });
   assert.deepEqual(migrateRuleSince(null), {});
+});
+
+test('cachedEdgeAnalysis: aynı liste ve gün için sonuç yeniden kullanılır, değişince yeniden hesaplanır', () => {
+  const list = Array.from({ length: 24 }, (_, i) => t(i % 3 === 0 ? -1 : 2, { session: i % 2 ? 'London' : 'NY AM' }, i));
+  const a = cachedEdgeAnalysis(list, NOW);
+  assert.equal(cachedEdgeAnalysis(list, NOW), a, 'aynı liste + aynı gün: aynı nesne');
+  assert.equal(cachedEdgeAnalysis(list, NOW + 3600_000), a, 'aynı gün içinde saat farkı önbelleği bozmaz');
+  assert.notEqual(cachedEdgeAnalysis(list, NOW + 2 * DAY), a, 'takvim günü değişince "son 7 gün" yeniden sayılır');
+  const copy = [...list];
+  const b = cachedEdgeAnalysis(copy, NOW);
+  assert.notEqual(b, a, 'yeni liste nesnesi: yeniden hesaplanır');
+  assert.deepEqual(b.summary.total, computeEdgeSummary(copy, undefined, NOW).total);
+  assert.equal(b.summary.total, 24);
+  assert.equal(typeof b.oos.ready, 'boolean');
 });

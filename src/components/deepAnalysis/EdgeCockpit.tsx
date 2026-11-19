@@ -11,7 +11,7 @@ import {
   Shuffle,
 } from 'lucide-react';
 import { Trade } from '../../types';
-import { computeEdgeSummary, validateOutOfSample, PAIR_MIN_LIFT, type DimensionSlice, type OosStatus } from '../../lib/edgeSummary';
+import { cachedEdgeAnalysis, PAIR_MIN_LIFT, type DimensionSlice, type OosStatus } from '../../lib/edgeSummary';
 import { HALF_MIN } from '../../lib/ruleSimulator';
 import { dimensionValue, verdictFor, signalStrength, DEFAULT_SETUP_DIMENSIONS, SETUP_MIN_SAMPLE, type SetupRow } from '../../lib/setupScorecard';
 import { EDGE_PROOF_MIN } from '../../lib/sampleSize';
@@ -118,10 +118,9 @@ const e2s = (e: EdgeStats) => `${e.n} işlem · %${fmt(e.winRate, 0)} kazanma`;
 /* ---------- Edge Özeti ---------- */
 export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onShowTrades }: { trades: Trade[]; onShowTrades: ShowTrades }) {
   const { labels: news, version } = useNewsDayLabels();
+  // Ağır hesap liste başına saklanır: alt sekme her açılışta yeniden kurulsa da sonuç anında gelir
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const s = useMemo(() => computeEdgeSummary(trades), [trades, version]);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const oos = useMemo(() => validateOutOfSample(trades), [trades, version]);
+  const { summary: s, oos } = useMemo(() => cachedEdgeAnalysis(trades), [trades, version]);
   // Kuralın oluştuğu an: ilk görüldüğü son işlem zamanı (sonraki işlemler kural sonrası performans)
   const ruleSince = useMemo(() => {
     const map = loadRuleSince();

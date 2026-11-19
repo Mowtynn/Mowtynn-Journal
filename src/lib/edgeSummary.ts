@@ -1,4 +1,5 @@
 import { Trade } from '../types';
+import { getNewsDayLabels } from '../constants/constants';
 import { byEntryTime } from './tradeModel';
 import { edgeFromR, EdgeStats, indexTradeOrder } from './asiaAnalytics';
 import { computeEdgeDrift, DRIFT_RECENT } from './edgeDrift';
@@ -66,7 +67,7 @@ interface EdgeRule {
 }
 
 
-interface EdgeSummary {
+export interface EdgeSummary {
   total: number;
   overall: EdgeStats;
   bestSetups: SetupRow[];
@@ -551,7 +552,7 @@ export function edgeReportRows(trades: Trade[], minSample = SETUP_MIN_SAMPLE): R
 
 const OOS_MIN_TOTAL = 40;
 export type OosStatus = 'HELD' | 'FAILED' | 'UNTESTED';
-interface OosFinding {
+export interface OosFinding {
   title: string;
   kind: 'TAKE' | 'AVOID';
   source: 'Kurulum' | 'Alan' | 'Kombinasyon';
@@ -562,7 +563,7 @@ interface OosFinding {
   status: OosStatus;
   match: (t: Trade) => boolean;
 }
-interface OosResult {
+export interface OosResult {
   ready: boolean;
   need: number;
   /** İkinci yarının ilk işleminin zamanı */
@@ -622,4 +623,27 @@ export function validateOutOfSample(trades: Trade[], minSample = SETUP_MIN_SAMPL
     failed: findings.filter((f) => f.status === 'FAILED').length,
     untested: findings.filter((f) => f.status === 'UNTESTED').length,
   };
+}
+
+export interface EdgeAnalysis {
+  summary: EdgeSummary;
+  oos: OosResult;
+}
+const analysisCache = new WeakMap<Trade[], { key: string; value: EdgeAnalysis }>();
+
+/**
+ * Edge Özeti ekranının ağır hesabı (özet + tesadüf testi), girdi listesine bağlı saklanır. Alt sekme her açılışta yeniden
+ * kurulduğu için eskiden her dönüşte baştan hesaplanıyordu (800 işlemde yarım saniye); şimdi aynı liste, aynı Var/Yok
+ * etiketleri ve aynı takvim gününde sonuç anında gelir. Liste değişince (işlem / filtre) yeniden hesaplanır; WeakMap
+ * olduğu için eski listeler bellekte tutulmaz. Dönen nesne salt okunurdur.
+ */
+export function cachedEdgeAnalysis(trades: Trade[], now: number = Date.now()): EdgeAnalysis {
+  const nl = getNewsDayLabels();
+  // "Son 7 gün" ihlalleri bugüne göre sayıldığı için anahtara takvim günü de girer
+  const key = `${nl.yes}\u0000${nl.no}\u0000${Math.floor(now / DAY_MS)}`;
+  const hit = analysisCache.get(trades);
+  if (hit && hit.key === key) return hit.value;
+  const value: EdgeAnalysis = { summary: computeEdgeSummary(trades, SETUP_MIN_SAMPLE, now), oos: validateOutOfSample(trades) };
+  analysisCache.set(trades, { key, value });
+  return value;
 }

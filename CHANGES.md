@@ -1042,3 +1042,9 @@ Klasik tasarım korunarak, son eklenen alanlar (risk %, hesap bağı, strateji, 
   - Telefon / tablet: kutu aynı sabit orandadır, görsel kutunun içine oturur (önceden kutu görselin oranına uyuyordu).
   - Kaldırıldı: görsel oranı önbelleği (`tj_chart_aspects`, localStorage) ve onLoad'daki oran ölçümü; artık gerekmiyor.
   - İşlem formundaki grafik linki kutusunun açıklaması "https://... grafik paylaşım linki" oldu (artık yalnızca TradingView'i anmıyor; OpenMarket de aynı şekilde yapıştırılıyor). İşlem detayında link olmayan işlemin boş durum yazısı da "Bu işleme henüz bir grafik linki eklenmemiş." oldu.
+
+- Genel denetim (senkron · stabil · akıcı)
+  - Taban: tip denetimi + 212 test + derleme yeşil; 5 sekmede konsol temiz. 800 işlemli stres testi (HESAPSIZ kapsamı, DEMO verisi): Ana Panel / Detaylı Analiz alt sekmeleri / Notlar / Günlük / Prop / filtre / ayarlar / tanımlamalar / veri yedekleme pencereleri hatasız, "NaN / undefined" yok; 48 sekme geçişi sonunda JS belleği 34 → 35 MB, hata yok (sızıntı bulunmadı). Sekme geçişleri 40–300 ms (geliştirme modunda).
+  - Düzeltildi: Detaylı Analiz → Edge Özeti her açılışta (alt sekme yeniden kurulduğu için) özet + tesadüf testini baştan hesaplıyordu (800 işlemde ~0,5 sn). Sonuç artık liste başına saklanır (`cachedEdgeAnalysis`, WeakMap; anahtar: Var/Yok etiketleri + takvim günü): aynı listeyle sekmeye dönüş anında açılır, işlem eklenince / filtre değişince yeniden hesaplanır. Test eklendi (213 test).
+  - İncelendi, değişiklik gerekmedi: Firestore ↔ yerel senkron (yankı karşılaştırması, sahip denetimi, bulut hatası bildirimi), işlem detayında ←/→ gezinti (~75 ms / geçiş, App yeniden çizimi sekme içeriğini etkilemiyor), tüm kalıcı yazmalar try/catch içinde.
+  - Stres testi verisi test kopyasında geri alındı (4 işlem).
