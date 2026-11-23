@@ -17,19 +17,14 @@ import { SlidersHorizontal,
   EyeOff,
   X,
   Target,
-  Zap,
   TrendingUp,
-  Layers,
   BookOpen,
-  Newspaper,
   Percent,
-  Crosshair,
   Scale,
   PenLine,
 } from 'lucide-react';
 import {
   DEFAULT_PLAN_FIDELITIES,
-  DEFAULT_ENTRY_MODELS,
   DEFAULT_TREND_TYPES,
   DEFAULT_DEFINITION_TITLES,
 } from '../constants/constants';
@@ -43,7 +38,6 @@ import { tradeConfirmations } from '../lib/tradeModel';
 /** Gün filtresi seçenekleri Pazartesi'den başlar */
 const WEEKDAY_ORDER = [...WEEKDAY_NAMES_TR.slice(1), WEEKDAY_NAMES_TR[0]];
 import { setupQualityTier } from '../lib/setupQuality';
-import { useNewsDayLabels } from '../hooks/useNewsDayLabels';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { PillMultiSelect, StatusMultiSelect, TypeMultiSelect, FilterAccordionRow, FilterChip, FilterChipRow } from './filters/FilterControls';
 
@@ -55,7 +49,6 @@ interface GlobalFilterModalProps {
   sessions: string[];
   assets: string[];
   planFidelities?: string[];
-  entryModels?: string[];
   trendTypes?: string[];
   definitionTitles?: DefinitionTitles;
   // Selected
@@ -69,16 +62,12 @@ interface GlobalFilterModalProps {
   setGlobalSelectedStatuses: (v: string[]) => void;
   globalSelectedTypes: string[];
   setGlobalSelectedTypes: (v: string[]) => void;
-  globalSelectedEntryModels?: string[];
-  setGlobalSelectedEntryModels?: (v: string[]) => void;
   globalSelectedTrendTypes?: string[];
   setGlobalSelectedTrendTypes?: (v: string[]) => void;
   globalDateLimit: string;
   setGlobalDateLimit: (v: string) => void;
   // Sonradan eklenen alanlar
   premiumDiscounts?: string[];
-  tpTargets?: string[];
-  asiaRangeFvgs?: string[];
   globalExtra?: ExtraTradeFilters;
   setGlobalExtra?: (v: ExtraTradeFilters) => void;
 }
@@ -91,7 +80,6 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
   sessions,
   assets,
   planFidelities = DEFAULT_PLAN_FIDELITIES,
-  entryModels = DEFAULT_ENTRY_MODELS,
   trendTypes = DEFAULT_TREND_TYPES,
   definitionTitles = DEFAULT_DEFINITION_TITLES,
   globalSelectedPlanFidelity, setGlobalSelectedPlanFidelity,
@@ -99,16 +87,12 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
   globalSelectedSessions, setGlobalSelectedSessions,
   globalSelectedStatuses, setGlobalSelectedStatuses,
   globalSelectedTypes, setGlobalSelectedTypes,
-  globalSelectedEntryModels = [], setGlobalSelectedEntryModels,
   globalSelectedTrendTypes = [], setGlobalSelectedTrendTypes,
   globalDateLimit, setGlobalDateLimit,
   premiumDiscounts = [],
-  tpTargets = [],
-  asiaRangeFvgs = [],
   globalExtra = EMPTY_EXTRA_FILTERS,
   setGlobalExtra,
 }) => {
-  const { labels: newsLabels } = useNewsDayLabels();
   const patchExtra = (p: Partial<ExtraTradeFilters>) => setGlobalExtra?.({ ...globalExtra, ...p });
   useBodyScrollLock(isOpen);
   // Seçenek listeleri (tüm işlemleri tarar) açılış animasyonu çizildikten sonra hesaplanır
@@ -136,17 +120,6 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
     trades.forEach(t => { if (t.planFidelity) set.add(t.planFidelity); });
     return Array.from(set);
   }, [ready, planFidelities, trades]);
-
-  const dynamicEntryModels = React.useMemo(() => {
-    if (!ready) return entryModels || [];
-    const set = new Set(entryModels || []);
-    trades.forEach(t => {
-      if (t.entryModels && Array.isArray(t.entryModels)) {
-        t.entryModels.forEach(em => set.add(em));
-      }
-    });
-    return Array.from(set);
-  }, [ready, entryModels, trades]);
 
   const dynamicTrendTypes = React.useMemo(() => {
     if (!ready) return trendTypes || [];
@@ -182,15 +155,11 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
   // Ek alanların seçenekleri: Tanımlamalar + işlemlerde görülen değerler
   const extraOptions = React.useMemo(() => {
     const pd = new Set(premiumDiscounts);
-    const tp = new Set(tpTargets);
-    const fvg = new Set(asiaRangeFvgs);
     const risk = new Set<number>();
     let incomplete = 0;
     if (ready) {
       trades.forEach((t) => {
         tradeConfirmations(t).forEach((x) => pd.add(x));
-        if (Array.isArray(t.tpTargets)) t.tpTargets.forEach((x: string) => x && tp.add(x));
-        if (t.asiaRangeFvg) fvg.add(t.asiaRangeFvg);
         if (typeof t.riskPct === 'number' && t.riskPct > 0) risk.add(Math.round(t.riskPct * 1000) / 1000);
         if (t.quickEntry === true) incomplete++;
       });
@@ -199,14 +168,11 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
       // "Swept" formdan kaldırıldı: yalnızca eski kayıtlarda varsa seçenek olarak görünür
       asiaRanges: [...ASIA_RANGE_FORM_TYPES, ...(ready && trades.some((t) => t.asiaRange === 'Swept') ? ['Swept'] : [])] as string[],
       premiumDiscounts: Array.from(pd),
-      tpTargets: Array.from(tp),
-      asiaRangeFvgs: Array.from(fvg),
       riskPcts: Array.from(risk).sort((a, b) => a - b),
       incomplete,
     };
-  }, [ready, trades, premiumDiscounts, tpTargets, asiaRangeFvgs]);
+  }, [ready, trades, premiumDiscounts]);
   const riskLabel = (n: number) => `%${n.toLocaleString('en-US', { maximumFractionDigits: 3 })}`;
-  const newsSummary = globalExtra.newsDay === 'YES' ? newsLabels.yes : globalExtra.newsDay === 'NO' ? newsLabels.no : 'Tümü';
 
   // Keep track of which accordion categories are expanded
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
@@ -221,7 +187,6 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
   const expandAll = () => {
     setOpenSections({
       trend: true,
-      entry: true,
       planFidelity: true,
       confirmation: true,
       platform: true,
@@ -237,9 +202,6 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
       asiaRangeType: true,
       ...Object.fromEntries(FILTER_DIMENSIONS.map((d) => [`dim:${d}`, true])),
       pd: true,
-      tpTarget: true,
-      asiaFvg: true,
-      newsDay: true,
       riskPct: true,
       quickEntry: true,
     });
@@ -255,7 +217,6 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
     setGlobalSelectedSessions([]);
     setGlobalSelectedStatuses([]);
     setGlobalSelectedTypes([]);
-    setGlobalSelectedEntryModels?.([]);
     setGlobalSelectedTrendTypes?.([]);
     setGlobalDateLimit(DEFAULT_DATE_LIMIT);
     setGlobalExtra?.(EMPTY_EXTRA_FILTERS);
@@ -281,7 +242,6 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
     globalSelectedSessions.length + 
     globalSelectedStatuses.length + 
     globalSelectedTypes.length + 
-    (globalSelectedEntryModels?.length || 0) + 
     (globalSelectedTrendTypes?.length || 0) + 
     (globalDateLimit !== DEFAULT_DATE_LIMIT ? 1 : 0) +
     countExtraFilters(globalExtra);
@@ -474,21 +434,6 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                 />
               </FilterAccordionRow>
 
-              {/* 10. ENTRY MODEL */}
-              <FilterAccordionRow title={definitionTitles.entryModels || "Entry Model"} 
-                icon={<Zap size={14} className="text-blue-400" />}
-                summaryText={globalSelectedEntryModels.length > 0 ? globalSelectedEntryModels.join(', ') : 'Tümü'}
-                badgeCount={globalSelectedEntryModels.length}
-                isOpen={!!openSections.entry}
-                onToggle={() => toggleSection('entry')}
-              >
-                <PillMultiSelect
-                  options={dynamicEntryModels}
-                  selectedValues={globalSelectedEntryModels}
-                  onChange={(vals) => setGlobalSelectedEntryModels?.(vals)}
-                />
-              </FilterAccordionRow>
-
               {/* 11. ASIA RANGE (Range / Trend / Swept) */}
               <FilterAccordionRow title={definitionTitles.asiaRange || "Asia Range"}
                 icon={<BookOpen size={14} className="text-blue-400" />}
@@ -537,53 +482,6 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                   selectedValues={globalExtra.premiumDiscounts}
                   onChange={(vals) => patchExtra({ premiumDiscounts: vals })}
                 />
-              </FilterAccordionRow>
-
-              {/* 13. TP TARGET */}
-              <FilterAccordionRow title={definitionTitles.tpTargets || "Target"}
-                icon={<Crosshair size={14} className="text-blue-400" />}
-                summaryText={globalExtra.tpTargets.length > 0 ? globalExtra.tpTargets.join(', ') : 'Tümü'}
-                badgeCount={globalExtra.tpTargets.length}
-                isOpen={!!openSections.tpTarget}
-                onToggle={() => toggleSection('tpTarget')}
-              >
-                <PillMultiSelect
-                  options={extraOptions.tpTargets}
-                  selectedValues={globalExtra.tpTargets}
-                  onChange={(vals) => patchExtra({ tpTargets: vals })}
-                />
-              </FilterAccordionRow>
-
-              {/* 14. ASIA RANGE FVG */}
-              <FilterAccordionRow title={definitionTitles.asiaRangeFvgs || "Asia Range FVG (1H)"}
-                icon={<Layers size={14} className="text-blue-400" />}
-                summaryText={globalExtra.asiaRangeFvgs.length > 0 ? globalExtra.asiaRangeFvgs.join(', ') : 'Tümü'}
-                badgeCount={globalExtra.asiaRangeFvgs.length}
-                isOpen={!!openSections.asiaFvg}
-                onToggle={() => toggleSection('asiaFvg')}
-              >
-                <PillMultiSelect
-                  options={extraOptions.asiaRangeFvgs}
-                  selectedValues={globalExtra.asiaRangeFvgs}
-                  onChange={(vals) => patchExtra({ asiaRangeFvgs: vals })}
-                />
-              </FilterAccordionRow>
-
-              {/* 15. NEWS DAY */}
-              <FilterAccordionRow title={definitionTitles.newsDays || "News Day"}
-                icon={<Newspaper size={14} className="text-blue-400" />}
-                summaryText={newsSummary}
-                badgeCount={globalExtra.newsDay !== 'ALL' ? 1 : 0}
-                isOpen={!!openSections.newsDay}
-                onToggle={() => toggleSection('newsDay')}
-              >
-                <FilterChipRow>
-                  {([['ALL', 'Tümü'], ['YES', newsLabels.yes], ['NO', newsLabels.no]] as const).map(([v, label]) => (
-                    <FilterChip key={v} check={v !== 'ALL'} tone={v === 'ALL' ? 'neutral' : 'brand'} active={globalExtra.newsDay === v} onClick={() => patchExtra({ newsDay: v })}>
-                      {label}
-                    </FilterChip>
-                  ))}
-                </FilterChipRow>
               </FilterAccordionRow>
 
               {/* 16. RİSK % */}

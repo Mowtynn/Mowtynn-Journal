@@ -21,7 +21,7 @@ export const withSelected = (list: string[], selected: string[]) => {
   return extra.length > 0 ? [...list, ...extra] : list;
 };
 
-/** Kurulum çiplerinin ortak ölçüsü (Sweep Time, Session, Entry, Target, Confirmations hepsi aynı) */
+/** Kurulum çiplerinin ortak ölçüsü (Confirmations) */
 export const CHIP_BASE = "relative px-3 py-1.5 text-label rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase";
 
 export const numOr = (v: unknown): Num => (typeof v === "number" && Number.isFinite(v) ? v : "");
@@ -41,16 +41,11 @@ export function buildInitial(t: Trade | null, riskPresets: number[]) {
     accountChoice: (t ? (t.accountId ? t.accountId : t.accountCategory === "DEMO" ? NO_ACCOUNT : null) : null) as string | null,
     riskChoice: (hasRisk ? (riskPresets.includes(rp as number) ? rp : "CUSTOM") : null) as number | "CUSTOM" | null,
     customRiskPct: (hasRisk && !riskPresets.includes(rp as number) ? rp : "") as Num,
-    session: t?.session || "",
-    entries: Array.isArray(t?.entryModels) ? (t!.entryModels as string[]) : [],
     trend: t?.trend || "",
     planFidelity: t?.planFidelity || null,
-    tpTargets: Array.isArray(t?.tpTargets) ? (t!.tpTargets as string[]) : [],
     confirmations: t ? tradeConfirmations(t) : [],
-    newsDay: (typeof t?.newsDay === "boolean" ? t.newsDay : null) as boolean | null,
     asiaRange: (t?.asiaRange || "") as string,
     sweepTime: t?.sweepTime || "",
-    asiaFvg: t?.asiaRangeFvg || "",
     rrValue: numOr(t?.rr),
     notes: t?.notes || "",
     screenshot: t?.screenshot || null,

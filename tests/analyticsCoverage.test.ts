@@ -22,10 +22,10 @@ test('veri eksiği panosu: kalan girdiler var, kaldırılanlar yok; Risk % yaln�
     t(-1, {}, 4),
   ];
   const cov = Object.fromEntries(computeCoverage(trades).map((c) => [c.field, c]));
-  for (const f of ['planFidelity', 'trend', 'newsDay', 'asiaRangeFvg', 'asiaRange', 'sweepTime', 'session', 'entryModels', 'tpTargets', 'premiumDiscount', 'riskPct']) {
+  for (const f of ['planFidelity', 'trend', 'asiaRange', 'sweepTime', 'session', 'premiumDiscount', 'riskPct']) {
     assert.ok(cov[f], `${f} panoda yok`);
   }
-  for (const f of ['htfTimeframe', 'confirmations', 'timeframe', 'management', 'exitAt', 'stopPips', 'tpPips', 'afterExitTp', 'asiaRangePips']) {
+  for (const f of ['htfTimeframe', 'confirmations', 'timeframe', 'management', 'exitAt', 'stopPips', 'tpPips', 'afterExitTp', 'asiaRangePips', 'newsDay', 'asiaRangeFvg', 'entryModels', 'tpTargets']) {
     assert.ok(!cov[f], `${f} kaldırıldı ama panoda`);
   }
   assert.equal(cov.riskPct.base, 2);

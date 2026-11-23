@@ -6,7 +6,6 @@ import {
   buildSetupScorecard, DEFAULT_SETUP_DIMENSIONS, SETUP_DIMENSIONS, SETUP_MIN_SAMPLE,
   type SetupDimension, type SetupRow, type SetupVerdict,
 } from '../../lib/setupScorecard';
-import { useNewsDayLabels } from '../../hooks/useNewsDayLabels';
 import { formatR, rnum } from '../../lib/format';
 import { formatPF } from '../../lib/statMath';
 
@@ -54,7 +53,6 @@ export const SetupScorecardTab = React.memo(function SetupScorecardTab({ trades 
   const [hideLowSample, setHideLowSample] = useState(false);
   // İşlem öncesi kontrol: aklındaki kurulumu yaz, karnesini gör (eski Pre-Trade sekmesinin yerini alır)
   const [query, setQuery] = useState('');
-  const { version } = useNewsDayLabels();
 
   const toggleDim = (d: SetupDimension) => {
     setDims((prev) => {
@@ -70,7 +68,7 @@ export const SetupScorecardTab = React.memo(function SetupScorecardTab({ trades 
   };
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const result = useMemo(() => buildSetupScorecard(trades, dims), [trades, dims, version]);
+  const result = useMemo(() => buildSetupScorecard(trades, dims), [trades, dims]);
   const judged = result.rows.filter((r) => r.verdict !== 'LOW_SAMPLE');
   // "Önceliklendir": Edge Özeti ile aynı tanım — kârlı VE geri kalan işlemlerden daha iyi (kârlı sistemde her kurulum pozitif çıkar)
   const totalR = useMemo(() => trades.reduce((a, t) => a + (t.rr || 0), 0), [trades]);

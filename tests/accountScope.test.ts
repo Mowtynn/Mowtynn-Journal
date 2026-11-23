@@ -48,7 +48,6 @@ test('üst filtre: hesap seçimi diğer filtrelerle birlikte uygulanır', () => 
     globalSelectedSessions: [],
     globalSelectedStatuses: [],
     globalSelectedTypes: [],
-    globalSelectedEntryModels: [],
     globalSelectedTrendTypes: [],
   };
   assert.equal(ids(applyGlobalFilters(trades, base, NOW)), 'a');

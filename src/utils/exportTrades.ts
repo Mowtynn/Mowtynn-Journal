@@ -1,7 +1,7 @@
 import { Trade, JournalEntry, Note } from '../types';
 import { byEntryTime, tradeConfirmations } from '../lib/tradeModel';
 import { getNyParts, getSweepSide, WEEKDAY_NAMES_TR, nyWallDate } from '../lib/tradingTime';
-import { getNewsDayLabels, getTradeAccountCategory, getTradeStageLabel, ACCOUNT_CATEGORY_LABELS } from '../constants/constants';
+import { getTradeAccountCategory, getTradeStageLabel, ACCOUNT_CATEGORY_LABELS } from '../constants/constants';
 import { DATASET_LABELS, getTradeDataset, sweepHourBucket, tradeOfDayBucket } from '../lib/asiaAnalytics';
 import { edgeReportRows } from '../lib/edgeSummary';
 import { breakevenWinRateOf } from '../lib/stats';
@@ -174,7 +174,6 @@ export const prepareTradeExportRows = (trades: Trade[], titles: Record<string, s
     usedLabels.clear();
     const { date } = formatDateTime(t.createdAt);
     const ny = getNyParts(t.createdAt);
-    const news = getNewsDayLabels();
     const shot = t.screenshot || '';
 
     return {
@@ -196,13 +195,9 @@ export const prepareTradeExportRows = (trades: Trade[], titles: Record<string, s
       // Kurulum: formdaki sırayla
       [T('planFidelities', 'Setup Kalitesi')]: t.planFidelity || '-',
       [T('trendTypes', 'İşlem Tipi')]: t.trend || '-',
-      [T('newsDays', 'News Day/Bank Holiday')]: typeof t.newsDay === 'boolean' ? (t.newsDay ? news.yes : news.no) : '-',
-      [T('asiaRangeFvgs', 'Asia Range FVG (1H)')]: t.asiaRangeFvg || '-',
       [T('asiaRange', 'Asia Range')]: t.asiaRange || '-',
       [T('sweepTime', 'POI Sweep Time')]: t.sweepTime || '-',
       [T('sessions', 'Session')]: t.session || '-',
-      [T('entryModels', 'Entry Model')]: listText(t.entryModels),
-      [T('tpTargets', 'Target')]: listText(t.tpTargets),
       [T('premiumDiscounts', 'Confirmations')]: listText(tradeConfirmations(t)),
       // Analizlerde kullanılan türetilmiş değerler (Excel'de ayrıca süzülüp pivotlanabilsin)
       'POI Sweep Saati (30 dk)': sweepHourBucket(t.sweepTime) || '-',

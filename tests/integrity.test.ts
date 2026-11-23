@@ -25,7 +25,8 @@ test('prop hesabındaki işlemde risk yüzdesi zorunlu; hesapsızda aranmaz', ()
 
 test('analiz alanları eksikse listelenir', () => {
   const m = missingFields(trade({ status: 'WIN', rr: 2, accountCategory: 'DEMO' }));
-  for (const k of ['Asia Range', 'İşlem Tipi', 'News Day', 'Entry Model']) assert.ok(m.includes(k), k);
+  for (const k of ['Asia Range', 'İşlem Tipi']) assert.ok(m.includes(k), k);
+  for (const k of ['News Day', 'Entry Model', 'Target', 'Session']) assert.ok(!m.includes(k), `${k} formdan kaldırıldı / otomatik`);
   for (const k of ['Stop Pip', 'TP Pip', 'Asia Range Pip']) assert.ok(!m.includes(k), `${k} artık istenmez`);
 });
 

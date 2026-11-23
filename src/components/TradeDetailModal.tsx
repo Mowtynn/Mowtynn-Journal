@@ -10,7 +10,7 @@ import { createPortal } from "react-dom";
 import { motion, AnimatePresence, animate } from "motion/react";
 import toast from "react-hot-toast";
 import { Trade, DefinitionTitles } from "../types";
-import { DEFAULT_DEFINITION_TITLES, cleanDefinitionTitleString, getNewsDayLabels, smartUpper, getTradeAccountName } from "../constants/constants";
+import { DEFAULT_DEFINITION_TITLES, cleanDefinitionTitleString, smartUpper, getTradeAccountName } from "../constants/constants";
 import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
 import { isChartShareLink, resolveChartImage } from "../lib/chartLink";
 import { 
@@ -20,7 +20,7 @@ import {
   ExternalLink, Image as ImageIcon, FileText, 
   Activity, Layers, Monitor, ShieldCheck, AlertCircle,
   Download, Loader2, Zap, TrendingUp,
-  Flag, Scale, PenLine,
+  Scale, PenLine,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -484,9 +484,9 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                   {/* Hızlı kayıt: ayrıntılar eksik */}
                   {currentTrade.quickEntry === true && !isExporting && (() => {
                     const missing = [
-                      !currentTrade.session && (cleanDefinitionTitleString(definitionTitles.sessions) || "Seans"),
                       !currentTrade.asiaRange && (cleanDefinitionTitleString(definitionTitles.asiaRange) || "Asia Range"),
-                      !(currentTrade.entryModels && currentTrade.entryModels.length) && (cleanDefinitionTitleString(definitionTitles.entryModels) || "Entry Model"),
+                      !currentTrade.sweepTime && (cleanDefinitionTitleString(definitionTitles.sweepTime) || "POI Sweep Time"),
+                      !currentTrade.trend && (cleanDefinitionTitleString(definitionTitles.trendTypes) || "İşlem Tipi"),
                       !currentTrade.planFidelity && (cleanDefinitionTitleString(definitionTitles.planFidelities) || "Setup Kalitesi"),
                       tradeConfirmations(currentTrade).length === 0 && (cleanDefinitionTitleString(definitionTitles.premiumDiscounts) || "Confirmations"),
                     ].filter(Boolean) as string[];
@@ -523,7 +523,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
 
                     return (
                       <>
-                      {/* KURULUM: girişten önce piyasanın durumu (Asia Range, sweep, seans, trend, FVG, haber) */}
+                      {/* KURULUM: girişten önce piyasanın durumu (Asia Range, sweep, seans, işlem tipi) */}
                       <section>
                         <h4 className="heading-2 mb-2">
                           <Layers size={12}/> KURULUM
@@ -552,17 +552,6 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                             icon={<TrendingUp size={14} className="text-blue-400"/>} 
                             valueColor={trendColor}
                           />
-                          <ContextRow
-                            label={smartUpper(cleanDefinitionTitleString(definitionTitles.asiaRangeFvgs) || "ASIA RANGE FVG")}
-                            value={currentTrade.asiaRangeFvg ? smartUpper(currentTrade.asiaRangeFvg) : undefined}
-                            icon={<Flag size={14} className="text-blue-400"/>}
-                          />
-                          {/* NEWS DAY / BANK HOLIDAY */}
-                          <ContextRow
-                            label={smartUpper(cleanDefinitionTitleString(definitionTitles.newsDays) || "NEWS DAY/BANK HOLIDAY")}
-                            value={typeof currentTrade.newsDay === "boolean" ? smartUpper(currentTrade.newsDay ? getNewsDayLabels().yes : getNewsDayLabels().no) : undefined}
-                            icon={<Clock size={14} className="text-blue-400"/>}
-                          />
                         </div>
                       </section>
 
@@ -572,22 +561,6 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                           <Zap size={12}/> GİRİŞ
                         </h4>
                         <div className={CONTEXT_GRID}>
-                          {/* 7. ENTRY MODEL */}
-                          <ContextRow 
-                            label={smartUpper(cleanDefinitionTitleString(definitionTitles.entryModels) || "ENTRY MODEL")} 
-                            value={Array.isArray(currentTrade.entryModels) && currentTrade.entryModels.length > 0 
-                              ? currentTrade.entryModels.map(e => smartUpper(e)).join(", ") 
-                              : undefined} 
-                            icon={<Zap size={14} className="text-blue-400"/>} 
-                          />
-                          {/* TARGET (çıkış hedefi) */}
-                          <ContextRow
-                            label={smartUpper(cleanDefinitionTitleString(definitionTitles.tpTargets) || "TARGET")}
-                            value={Array.isArray(currentTrade.tpTargets) && currentTrade.tpTargets.length > 0
-                              ? currentTrade.tpTargets.map(e => smartUpper(e)).join(", ")
-                              : undefined}
-                            icon={<Flag size={14} className="text-blue-400"/>}
-                          />
                           {/* CONFIRMATIONS (çoklu) */}
                           <ContextRow
                             label={smartUpper(cleanDefinitionTitleString(definitionTitles.premiumDiscounts) || "CONFIRMATIONS")}

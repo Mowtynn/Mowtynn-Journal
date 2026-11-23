@@ -69,3 +69,18 @@ test('session önerisi: NY saati bilinen session aralığına düşerse o ad dö
   assert.equal(sessionForNyTime('bozuk', list), null);
   assert.equal(sessionForNyTime('03:00', ['Kendi Seansım']), null);
 });
+
+test('otomatik session: kill zone dışındaki saatler session bloğuna düşer', async () => {
+  const { autoSessionForNyTime } = await import('../src/lib/sessions');
+  const list = ['London', 'NY AM'];
+  assert.equal(autoSessionForNyTime('03:15', list), 'London');
+  assert.equal(autoSessionForNyTime('05:30', list), 'London');
+  assert.equal(autoSessionForNyTime('00:00', list), 'London');
+  assert.equal(autoSessionForNyTime('07:00', list), 'NY AM');
+  assert.equal(autoSessionForNyTime('10:45', list), 'NY AM');
+  assert.equal(autoSessionForNyTime('12:10', list), null); // Lunch tanımlı değil
+  assert.equal(autoSessionForNyTime('12:10', ['London', 'Lunch', 'NY AM']), 'Lunch');
+  assert.equal(autoSessionForNyTime('19:00', list), null);
+  assert.equal(autoSessionForNyTime('', list), null);
+  assert.equal(autoSessionForNyTime('03:00', ['Kendi Seansım']), null);
+});

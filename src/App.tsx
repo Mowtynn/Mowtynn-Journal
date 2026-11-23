@@ -11,16 +11,10 @@ import {
   DEFAULT_SESSIONS,
   DEFAULT_ASSETS,
   DEFAULT_PLAN_FIDELITIES,
-  DEFAULT_ENTRY_MODELS,
   DEFAULT_TREND_TYPES,
-  DEFAULT_TP_TARGETS,
   DEFAULT_PREMIUM_DISCOUNTS,
-  DEFAULT_NEWS_DAYS,
-  DEFAULT_ASIA_RANGE_FVGS,
   DEFAULT_RISK_PRESETS,
   normalizeRiskPresets,
-  NEWS_DAYS_EVENT,
-  normalizeNewsDays,
   DEFAULT_DEFINITION_TITLES,
   sanitizeDefinitionTitles,
   getTradeAccountCategory,
@@ -197,12 +191,8 @@ const SETTINGS_LIST_KEYS: [string, string][] = [
   ["sessions", "trading_sessions_list"],
   ["assets", "trading_assets_list"],
   ["planFidelities", "trading_plan_fidelities_list"],
-  ["entryModels", "trading_entry_models_list"],
   ["trendTypes", "trading_trend_types_list"],
-  ["tpTargets", "trading_tp_targets_list"],
   ["premiumDiscounts", "trading_premium_discounts_list"],
-  ["newsDays", "trading_news_days_list"],
-  ["asiaRangeFvgs", "trading_asia_range_fvgs_list"],
   ["riskPresets", "trading_risk_presets_list"],
   ["requiredFields", "tj_required_fields"],
 ];
@@ -252,13 +242,12 @@ const sanitizeImportedSettings = (raw: any) => {
   const out: Record<string, any> = {};
   const listKeys = [
     "sessions", "assets",
-    "planFidelities", "entryModels", "trendTypes", "tpTargets", "premiumDiscounts", "asiaRangeFvgs",
+    "planFidelities", "trendTypes", "premiumDiscounts",
   ];
   listKeys.forEach((k) => {
     const v = strList(raw[k]);
     if (v) out[k] = v;
   });
-  if (Array.isArray(raw.newsDays)) out.newsDays = normalizeNewsDays(raw.newsDays);
   if (Array.isArray(raw.riskPresets)) out.riskPresets = normalizeRiskPresets(raw.riskPresets);
   if (raw.definitionTitles && typeof raw.definitionTitles === "object") {
     out.definitionTitles = sanitizeDefinitionTitles(raw.definitionTitles);
@@ -364,8 +353,6 @@ export default function App() {
     setGlobalSelectedStatuses,
     globalSelectedTypes,
     setGlobalSelectedTypes,
-    globalSelectedEntryModels,
-    setGlobalSelectedEntryModels,
     globalSelectedTrendTypes,
     setGlobalSelectedTrendTypes,
     globalDateLimit,
@@ -524,31 +511,6 @@ export default function App() {
     }
   }, [user]);
 
-  const [entryModels, setEntryModels] = useState<string[]>(() => {
-    try {
-      const stored = localStorage.getItem("trading_entry_models_list");
-      if (stored) { const v = JSON.parse(stored); if (Array.isArray(v)) return titleCaseList(v); }
-    } catch (e) {
-      console.error(e);
-    }
-    return DEFAULT_ENTRY_MODELS;
-  });
-
-  const persistEntryModels = useCallback((incoming: string[], syncCloud = true) => {
-    // Her kelimenin ilk harfi büyük (Asia Range, Entry Model); harf farkıyla tekrar edenler tek kalır
-    const updated = titleCaseList(incoming);
-    setEntryModels(updated);
-    try {
-      localStorage.setItem("trading_entry_models_list", JSON.stringify(updated));
-      if (syncCloud && user) {
-        setDoc(doc(db, "settings", user.uid), cleanForFirestore({ entryModels: updated, userId: user.uid }), { merge: true })
-          .catch(err => reportCloudError("ayar kaydı", err, "Tanımlamalar buluta kaydedilemedi; cihazda tutuluyor."));
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  }, [user]);
-
   const [trendTypes, setTrendTypes] = useState<string[]>(() => {
     try {
       const stored = localStorage.getItem("trading_trend_types_list");
@@ -567,31 +529,6 @@ export default function App() {
       localStorage.setItem("trading_trend_types_list", JSON.stringify(updated));
       if (syncCloud && user) {
         setDoc(doc(db, "settings", user.uid), cleanForFirestore({ trendTypes: updated, userId: user.uid }), { merge: true })
-          .catch(err => reportCloudError("ayar kaydı", err, "Tanımlamalar buluta kaydedilemedi; cihazda tutuluyor."));
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  }, [user]);
-
-  const [tpTargets, setTpTargets] = useState<string[]>(() => {
-    try {
-      const stored = localStorage.getItem("trading_tp_targets_list");
-      if (stored) { const v = JSON.parse(stored); if (Array.isArray(v)) return titleCaseList(v); }
-    } catch (e) {
-      console.error(e);
-    }
-    return DEFAULT_TP_TARGETS;
-  });
-
-  const persistTpTargets = useCallback((incoming: string[], syncCloud = true) => {
-    // Her kelimenin ilk harfi büyük (Asia Range, Entry Model); harf farkıyla tekrar edenler tek kalır
-    const updated = titleCaseList(incoming);
-    setTpTargets(updated);
-    try {
-      localStorage.setItem("trading_tp_targets_list", JSON.stringify(updated));
-      if (syncCloud && user) {
-        setDoc(doc(db, "settings", user.uid), cleanForFirestore({ tpTargets: updated, userId: user.uid }), { merge: true })
           .catch(err => reportCloudError("ayar kaydı", err, "Tanımlamalar buluta kaydedilemedi; cihazda tutuluyor."));
       }
     } catch (e) {
@@ -624,24 +561,6 @@ export default function App() {
     }
   }, [user]);
 
-  const [asiaRangeFvgs, setAsiaRangeFvgs] = useState<string[]>(() => {
-    try {
-      const stored = localStorage.getItem("trading_asia_range_fvgs_list");
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        // Eski varsayılan (Bullish/Bearish FVG) kullanıcı değiştirmediyse yeni varsayılana (Var / Yok) taşınır
-        if (Array.isArray(parsed) && parsed.length === 2 && parsed[0] === "Bullish FVG" && parsed[1] === "Bearish FVG") {
-          localStorage.setItem("trading_asia_range_fvgs_list", JSON.stringify(DEFAULT_ASIA_RANGE_FVGS));
-          return DEFAULT_ASIA_RANGE_FVGS;
-        }
-        if (Array.isArray(parsed)) return titleCaseList(parsed);
-      }
-    } catch (e) {
-      console.error(e);
-    }
-    return DEFAULT_ASIA_RANGE_FVGS;
-  });
-
   // Zorunlu alan ayarı değişince buluta yazılır (Tanımlamalar > Zorunlu Alanlar)
   useEffect(() => {
     if (!user) return;
@@ -651,23 +570,6 @@ export default function App() {
     };
     window.addEventListener(REQUIRED_FIELDS_EVENT, onChange);
     return () => window.removeEventListener(REQUIRED_FIELDS_EVENT, onChange);
-  }, [user]);
-
-  const persistAsiaRangeFvgs = useCallback((incoming: string[], syncCloud = true) => {
-    // Eski varsayılan (Bullish/Bearish FVG) yeni varsayılana (Var / Yok) taşınır; bulutta kalan eski kopya geri yazmaz
-    const isOldDefault = incoming.length === 2 && incoming[0] === "Bullish FVG" && incoming[1] === "Bearish FVG";
-    const updated = isOldDefault ? DEFAULT_ASIA_RANGE_FVGS : titleCaseList(incoming);
-    if (isOldDefault) syncCloud = true;
-    setAsiaRangeFvgs(updated);
-    try {
-      localStorage.setItem("trading_asia_range_fvgs_list", JSON.stringify(updated));
-      if (syncCloud && user) {
-        setDoc(doc(db, "settings", user.uid), cleanForFirestore({ asiaRangeFvgs: updated, userId: user.uid }), { merge: true })
-          .catch(err => reportCloudError("ayar kaydı", err, "Tanımlamalar buluta kaydedilemedi; cihazda tutuluyor."));
-      }
-    } catch (e) {
-      console.error(e);
-    }
   }, [user]);
 
   // İşlem formundaki hazır risk yüzdeleri (Tanımlamalar > Risk)
@@ -688,31 +590,6 @@ export default function App() {
       localStorage.setItem("trading_risk_presets_list", JSON.stringify(updated));
       if (syncCloud && user) {
         setDoc(doc(db, "settings", user.uid), cleanForFirestore({ riskPresets: updated, userId: user.uid }), { merge: true })
-          .catch(err => reportCloudError("ayar kaydı", err, "Tanımlamalar buluta kaydedilemedi; cihazda tutuluyor."));
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  }, [user]);
-
-  const [newsDays, setNewsDays] = useState<string[]>(() => {
-    try {
-      const stored = localStorage.getItem("trading_news_days_list");
-      if (stored) return normalizeNewsDays(JSON.parse(stored));
-    } catch (e) {
-      console.error(e);
-    }
-    return DEFAULT_NEWS_DAYS;
-  });
-
-  const persistNewsDays = useCallback((updated: string[], syncCloud = true) => {
-    const normalized = normalizeNewsDays(updated);
-    setNewsDays(normalized);
-    try {
-      localStorage.setItem("trading_news_days_list", JSON.stringify(normalized));
-      window.dispatchEvent(new CustomEvent(NEWS_DAYS_EVENT));
-      if (syncCloud && user) {
-        setDoc(doc(db, "settings", user.uid), cleanForFirestore({ newsDays: normalized, userId: user.uid }), { merge: true })
           .catch(err => reportCloudError("ayar kaydı", err, "Tanımlamalar buluta kaydedilemedi; cihazda tutuluyor."));
       }
     } catch (e) {
@@ -1076,7 +953,7 @@ export default function App() {
               SETTINGS_LIST_KEYS.forEach(([field, key]) => {
                 if (Array.isArray(cloudData[field])) return;
                 const local = readStoredArray(key);
-                if (local && local.length) missing[field] = onlyStrings(local).slice(0, field === "newsDays" ? 50 : 500); // bulut kuralı sınırları
+                if (local && local.length) missing[field] = onlyStrings(local).slice(0, 500); // bulut kuralı sınırı
               });
               if (!Array.isArray(cloudData.propAccounts)) {
                 const localAccounts = loadPropAccounts();
@@ -1112,12 +989,8 @@ export default function App() {
                 }
               });
               applyList(data.planFidelities, "trading_plan_fidelities_list", persistPlanFidelities);
-              applyList(data.entryModels, "trading_entry_models_list", persistEntryModels);
               applyList(data.trendTypes, "trading_trend_types_list", persistTrendTypes);
-              applyList(data.tpTargets, "trading_tp_targets_list", persistTpTargets);
               applyList(data.premiumDiscounts, "trading_premium_discounts_list", persistPremiumDiscounts);
-              applyList(data.newsDays, "trading_news_days_list", persistNewsDays);
-              applyList(data.asiaRangeFvgs, "trading_asia_range_fvgs_list", persistAsiaRangeFvgs);
               applyList(data.riskPresets, "trading_risk_presets_list", persistRiskPresets);
               // Zorunlu alanlar: buluttaki ayar cihaza yazılır (olay tetiklenmez; döngü olmasın)
               if (Array.isArray(data.requiredFields)) applyRequiredFieldsFromCloud(data.requiredFields);
@@ -1288,13 +1161,9 @@ export default function App() {
       // (aksi halde bu sekme eski listeyle üzerine yazabilir). Her anahtar ayrı korunur.
       const lists: [string, (v: string[]) => void][] = [
         ["trading_plan_fidelities_list", setPlanFidelities],
-        ["trading_entry_models_list", setEntryModels],
         ["trading_trend_types_list", setTrendTypes],
-        ["trading_tp_targets_list", setTpTargets],
         ["trading_premium_discounts_list", setPremiumDiscounts],
-        ["trading_asia_range_fvgs_list", setAsiaRangeFvgs],
         ["trading_risk_presets_list", (v) => setRiskPresets(normalizeRiskPresets(v))],
-        ["trading_news_days_list", (v) => setNewsDays(normalizeNewsDays(v))],
       ];
       lists.forEach(([key, set]) => {
         try {
@@ -1437,14 +1306,6 @@ export default function App() {
         persistPlanFidelities(newFidelities, false);
         settingsUpdates = { ...settingsUpdates, planFidelities: titleCaseList(newFidelities) };
       }
-      if (tradeData.entryModels && Array.isArray(tradeData.entryModels) && tradeData.entryModels.length > 0) {
-        const newEntries = tradeData.entryModels.filter((em: string) => !entryModels.includes(em));
-        if (newEntries.length > 0) {
-          const mergedEntries = [...entryModels, ...newEntries];
-          persistEntryModels(mergedEntries, false);
-          settingsUpdates = { ...settingsUpdates, entryModels: titleCaseList(mergedEntries) };
-        }
-      }
       if (tradeData.trend && !trendTypes.includes(tradeData.trend)) {
         const newTrends = [...trendTypes, tradeData.trend];
         persistTrendTypes(newTrends, false);
@@ -1472,12 +1333,10 @@ export default function App() {
       assets,
       sessions,
       planFidelities,
-      entryModels,
       trendTypes,
       persistAssets,
       persistSessions,
       persistPlanFidelities,
-      persistEntryModels,
       persistTrendTypes,
     ],
   );
@@ -1650,9 +1509,6 @@ export default function App() {
           case "planFidelities": return same(t.planFidelity) ? { planFidelity: to } : null;
           case "trendTypes": return same(t.trend) ? { trend: to } : null;
           case "premiumDiscounts": return hasInArr(tradeConfirmations(t)) ? { confirmationTags: mapArr(tradeConfirmations(t)), premiumDiscount: undefined } : null;
-          case "asiaRangeFvgs": return same(t.asiaRangeFvg) ? { asiaRangeFvg: to } : null;
-          case "tpTargets": return hasInArr(t.tpTargets) ? { tpTargets: mapArr(t.tpTargets) } : null;
-          case "entryModels": return hasInArr(t.entryModels) ? { entryModels: mapArr(t.entryModels) } : null;
           default: return null;
         }
       };
@@ -1900,12 +1756,8 @@ export default function App() {
           if (importedSettings.sessions) persistSessions(importedSettings.sessions, sync);
           if (importedSettings.assets) persistAssets(importedSettings.assets, sync);
           if (importedSettings.planFidelities) persistPlanFidelities(importedSettings.planFidelities, sync);
-          if (importedSettings.entryModels) persistEntryModels(importedSettings.entryModels, sync);
           if (importedSettings.trendTypes) persistTrendTypes(importedSettings.trendTypes, sync);
-          if (importedSettings.tpTargets) persistTpTargets(importedSettings.tpTargets, sync);
           if (importedSettings.premiumDiscounts) persistPremiumDiscounts(importedSettings.premiumDiscounts, sync);
-          if (importedSettings.newsDays) persistNewsDays(importedSettings.newsDays, sync);
-          if (importedSettings.asiaRangeFvgs) persistAsiaRangeFvgs(importedSettings.asiaRangeFvgs, sync);
           if (importedSettings.riskPresets) persistRiskPresets(importedSettings.riskPresets, sync);
           if (importedSettings.definitionTitles) persistDefinitionTitles(importedSettings.definitionTitles, sync);
           if (importedSettings.propAccounts) {
@@ -1931,12 +1783,8 @@ export default function App() {
       persistSessions,
       persistAssets,
       persistPlanFidelities,
-      persistEntryModels,
       persistTrendTypes,
-      persistTpTargets,
       persistPremiumDiscounts,
-      persistNewsDays,
-      persistAsiaRangeFvgs,
       persistRiskPresets,
       persistDefinitionTitles,
       persistPropAccounts,
@@ -2042,12 +1890,8 @@ export default function App() {
       persistSessions(DEFAULT_SESSIONS, !!user);
       persistAssets(DEFAULT_ASSETS, !!user);
       persistPlanFidelities(DEFAULT_PLAN_FIDELITIES, !!user);
-      persistEntryModels(DEFAULT_ENTRY_MODELS, !!user);
       persistTrendTypes(DEFAULT_TREND_TYPES, !!user);
-      persistTpTargets(DEFAULT_TP_TARGETS, !!user);
       persistPremiumDiscounts(DEFAULT_PREMIUM_DISCOUNTS, !!user);
-      persistNewsDays(DEFAULT_NEWS_DAYS, !!user);
-      persistAsiaRangeFvgs(DEFAULT_ASIA_RANGE_FVGS, !!user);
       persistRiskPresets(DEFAULT_RISK_PRESETS, !!user);
       persistDefinitionTitles(DEFAULT_DEFINITION_TITLES, !!user);
 
@@ -2056,7 +1900,6 @@ export default function App() {
       setGlobalSelectedSessions([]);
       setGlobalSelectedStatuses([]);
       setGlobalSelectedTypes([]);
-      setGlobalSelectedEntryModels([]);
       setGlobalSelectedTrendTypes([]);
       setGlobalDateLimit(DEFAULT_DATE_LIMIT);
       setGlobalExtra(EMPTY_EXTRA_FILTERS);
@@ -2085,7 +1928,6 @@ export default function App() {
     setGlobalSelectedSessions,
     setGlobalSelectedStatuses,
     setGlobalSelectedTypes,
-    setGlobalSelectedEntryModels,
     setGlobalSelectedTrendTypes,
     setGlobalDateLimit,
     setGlobalExtra,
@@ -2096,12 +1938,8 @@ export default function App() {
     persistSessions,
     persistAssets,
     persistPlanFidelities,
-    persistEntryModels,
     persistTrendTypes,
-    persistTpTargets,
     persistPremiumDiscounts,
-    persistNewsDays,
-    persistAsiaRangeFvgs,
     persistRiskPresets,
     persistDefinitionTitles,
     setGlobalSelectedPlanFidelity,
@@ -2130,12 +1968,11 @@ export default function App() {
         globalSelectedSessions,
         globalSelectedStatuses,
         globalSelectedTypes,
-        globalSelectedEntryModels,
         globalSelectedTrendTypes,
         globalExtra,
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [trades, dateWindowTick, globalExtra, activeAccountCategory, activeAccount, activeUnlinkedOf, globalSelectedPlanFidelity, globalDateLimit, globalSelectedAssets, globalSelectedSessions, globalSelectedStatuses, globalSelectedTypes, globalSelectedEntryModels, globalSelectedTrendTypes],
+    [trades, dateWindowTick, globalExtra, activeAccountCategory, activeAccount, activeUnlinkedOf, globalSelectedPlanFidelity, globalDateLimit, globalSelectedAssets, globalSelectedSessions, globalSelectedStatuses, globalSelectedTypes, globalSelectedTrendTypes],
   );
 
   // Calculate comprehensive statistics (moved outside)
@@ -2159,7 +1996,6 @@ export default function App() {
       globalSelectedSessions.length +
       globalSelectedStatuses.length +
       globalSelectedTypes.length +
-      globalSelectedEntryModels.length +
       globalSelectedTrendTypes.length +
       (globalDateLimit !== DEFAULT_DATE_LIMIT ? 1 : 0) +
       countExtraFilters(globalExtra),
@@ -2170,7 +2006,6 @@ export default function App() {
       globalSelectedSessions,
       globalSelectedStatuses,
       globalSelectedTypes,
-      globalSelectedEntryModels,
       globalSelectedTrendTypes,
       globalDateLimit,
     ],
@@ -2180,12 +2015,8 @@ export default function App() {
     sessions,
     assets,
     planFidelities,
-    entryModels,
     trendTypes,
-    tpTargets,
     premiumDiscounts,
-    newsDays,
-    asiaRangeFvgs,
     riskPresets,
     definitionTitles,
     propAccounts,
@@ -2193,12 +2024,8 @@ export default function App() {
     sessions,
     assets,
     planFidelities,
-    entryModels,
     trendTypes,
-    tpTargets,
     premiumDiscounts,
-    newsDays,
-    asiaRangeFvgs,
     riskPresets,
     definitionTitles,
     propAccounts,
@@ -2297,7 +2124,6 @@ export default function App() {
                         onDelete={handleDeleteTrade}
                         definitionTitles={definitionTitles}
                         planFidelities={planFidelities}
-                        entryModels={entryModels}
                         trendTypes={trendTypes}
                       />
                     </SectionErrorBoundary>
@@ -2330,7 +2156,7 @@ export default function App() {
                     </SectionErrorBoundary>
                   </TabPane>
             </div>
-  ), [ warmLevel, globalDateLimit, setGlobalDateLimit, weeklyDue, weeklyRequest, openWeeklyReview, scopedTrades, activeScopeKey, activeScopeName, calculatedStats, overallEdge, edgeDrift, currentTab, definitionTitles, entryModels, filteredGlobalTrades, handleDeleteJournal, handleDeleteNote, handleDeleteTrade, handleSaveJournal, handleSaveNote, handleStartEdit, journals, notes, planFidelities, propAccounts, handlePropAccountsChange, uploadPropImage, sessions, setDetailedTrade, setEditingTrade, setIsFormOpen, trades, trendTypes ]);
+  ), [ warmLevel, globalDateLimit, setGlobalDateLimit, weeklyDue, weeklyRequest, openWeeklyReview, scopedTrades, activeScopeKey, activeScopeName, calculatedStats, overallEdge, edgeDrift, currentTab, definitionTitles, filteredGlobalTrades, handleDeleteJournal, handleDeleteNote, handleDeleteTrade, handleSaveJournal, handleSaveNote, handleStartEdit, journals, notes, planFidelities, propAccounts, handlePropAccountsChange, uploadPropImage, sessions, setDetailedTrade, setEditingTrade, setIsFormOpen, trades, trendTypes ]);
 
   return (
     <AllTradesContext.Provider value={trades}>
@@ -2809,7 +2635,6 @@ export default function App() {
               sessions={sessions}
               assets={assets}
               planFidelities={planFidelities}
-              entryModels={entryModels}
               trendTypes={trendTypes}
               definitionTitles={definitionTitles}
               globalSelectedPlanFidelity={globalSelectedPlanFidelity}
@@ -2822,16 +2647,12 @@ export default function App() {
               setGlobalSelectedStatuses={setGlobalSelectedStatuses}
               globalSelectedTypes={globalSelectedTypes}
               setGlobalSelectedTypes={setGlobalSelectedTypes}
-              globalSelectedEntryModels={globalSelectedEntryModels}
-              setGlobalSelectedEntryModels={setGlobalSelectedEntryModels}
               globalSelectedTrendTypes={globalSelectedTrendTypes}
               setGlobalSelectedTrendTypes={setGlobalSelectedTrendTypes}
               globalDateLimit={globalDateLimit}
               setGlobalDateLimit={setGlobalDateLimit}
               trades={scopedTrades}
               premiumDiscounts={premiumDiscounts}
-              tpTargets={tpTargets}
-              asiaRangeFvgs={asiaRangeFvgs}
               globalExtra={globalExtra}
               setGlobalExtra={setGlobalExtra}
             />
@@ -2894,23 +2715,15 @@ export default function App() {
           sessions={sessions}
           assets={assets}
           planFidelities={planFidelities}
-          entryModels={entryModels}
           trendTypes={trendTypes}
-          tpTargets={tpTargets}
           premiumDiscounts={premiumDiscounts}
-          newsDays={newsDays}
-          asiaRangeFvgs={asiaRangeFvgs}
           riskPresets={riskPresets}
           definitionTitles={definitionTitles}
           persistSessions={persistSessions}
           persistAssets={persistAssets}
           persistPlanFidelities={persistPlanFidelities}
-          persistEntryModels={persistEntryModels}
           persistTrendTypes={persistTrendTypes}
-          persistTpTargets={persistTpTargets}
           persistPremiumDiscounts={persistPremiumDiscounts}
-          persistNewsDays={persistNewsDays}
-          persistAsiaRangeFvgs={persistAsiaRangeFvgs}
           persistRiskPresets={persistRiskPresets}
           onRenameDefinition={handleRenameDefinition}
           persistDefinitionTitles={persistDefinitionTitles}
@@ -2945,12 +2758,8 @@ export default function App() {
                     sessions={sessions}
                     assets={assets}
                     planFidelities={planFidelities}
-                    entryModels={entryModels}
                     trendTypes={trendTypes}
-                    tpTargets={tpTargets}
                     premiumDiscounts={premiumDiscounts}
-                    newsDays={newsDays}
-                    asiaRangeFvgs={asiaRangeFvgs}
                     riskPresets={riskPresets}
                     definitionTitles={definitionTitles}
                     lastTrade={latestTrade}

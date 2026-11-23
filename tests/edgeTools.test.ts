@@ -24,11 +24,11 @@ test('gün içi önceki işlem: aynı NY gününde bir önceki işlemin sonucu',
 
 test('kural simülatörü: yalnızca / hariç, çoklu alan, vazgeçilen işlemler ve iki yarı', () => {
   const trades = Array.from({ length: 20 }, (_, i) =>
-    t(i % 2 ? 2 : -1, { session: i % 2 ? 'London' : 'NY AM', entryModels: i % 4 === 1 ? ['FVG', 'MSS'] : ['FVG'] }, i),
+    t(i % 2 ? 2 : -1, { session: i % 2 ? 'London' : 'NY AM', confirmationTags: i % 4 === 1 ? ['1H POI', '4H POI'] : ['1H POI'] }, i),
   );
-  assert.ok(matchesRule(trades[1], [{ dim: 'entryModels', values: ['MSS'] }]));
+  assert.ok(matchesRule(trades[1], [{ dim: 'premiumDiscount', values: ['4H POI'] }]));
   assert.ok(!matchesRule(trades[1], [{ dim: 'session', values: ['London'], exclude: true }]));
-  assert.deepEqual(ruleOptions(trades, 'entryModels'), ['FVG', 'MSS']);
+  assert.deepEqual(ruleOptions(trades, 'premiumDiscount'), ['1H POI', '4H POI']);
 
   const r = simulateRule(trades, [{ dim: 'session', values: ['London'] }]);
   assert.equal(r.taken.n, 10);

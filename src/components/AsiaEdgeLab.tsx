@@ -11,7 +11,6 @@ import {
   DATASET_LABELS,
   listPairs,
 } from '../lib/asiaAnalytics';
-import { useNewsDayLabels } from '../hooks/useNewsDayLabels';
 
 interface AsiaEdgeLabProps {
   trades: Trade[];
@@ -65,9 +64,8 @@ export const AsiaEdgeLab = React.memo(function AsiaEdgeLab({ trades }: AsiaEdgeL
   const [minSample, setMinSample] = useState<number>(MIN_SAMPLE);
 
   const pairs = useMemo(() => listPairs(trades), [trades]);
-  const { version: newsVersion } = useNewsDayLabels();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const r = useMemo(() => analyzeAsia(trades, { dataset, pair, minSample }), [trades, dataset, pair, minSample, newsVersion]);
+  const r = useMemo(() => analyzeAsia(trades, { dataset, pair, minSample }), [trades, dataset, pair, minSample]);
 
   const sparseHourPair = r.hourPair.hours.length > 0 && r.hourPair.pairs.length > 0;
 

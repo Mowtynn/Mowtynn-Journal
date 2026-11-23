@@ -27,6 +27,7 @@ import { TR_COLLATOR, MemoizedTradeRow } from './tradeList/TradeRow';
 import { HeaderLabel, CustomSelect } from './tradeList/controls';
 import { FILTER_LABEL } from './filters/FilterControls';
 import { nyWallDate, nyInputToTs, nyDateKey } from '../lib/tradingTime';
+import { tradeConfirmations } from '../lib/tradeModel';
 
 /** "Son N işlem": geçersiz / negatif / aşırı değer güvenli aralığa çekilir (boş → 7) */
 const lastCount = (v: string): number => {
@@ -253,7 +254,7 @@ const TradeList = React.memo(function TradeList({
           caseInsensitiveMatch(trade.platform, deferredFilter.search) ||
           caseInsensitiveMatch(trade.planFidelity, deferredFilter.search) ||
           caseInsensitiveMatch(trade.trend, deferredFilter.search) ||
-          (trade.entryModels && trade.entryModels.some(em => caseInsensitiveMatch(em, deferredFilter.search)));
+          tradeConfirmations(trade).some((c) => caseInsensitiveMatch(c, deferredFilter.search));
         
         if (!matchesSearch) return false;
 

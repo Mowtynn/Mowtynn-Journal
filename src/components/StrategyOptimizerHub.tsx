@@ -10,7 +10,6 @@ import {
   FlaskConical,
 } from 'lucide-react';
 import { Trade } from '../types';
-import { useNewsDayLabels } from '../hooks/useNewsDayLabels';
 import { calculateStrategyAnalytics, StrategyAnalyticsResult, MIN_SAMPLE } from '../lib/strategyAnalytics';
 import { AsiaEdgeLab } from './AsiaEdgeLab';
 import { SetupScorecardTab } from './strategy/SetupScorecardTab';
@@ -72,9 +71,8 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
     }
   }, []);
 
-  const { version: newsLabelsVersion } = useNewsDayLabels();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const stats: StrategyAnalyticsResult = useMemo(() => calculateStrategyAnalytics(trades), [trades, newsLabelsVersion]);
+  const stats: StrategyAnalyticsResult = useMemo(() => calculateStrategyAnalytics(trades), [trades]);
 
   const isEmpty = !trades || trades.length === 0;
   // Not: boş durum hook'lardan SONRA döndürülür. Eskiden hook'lardan önce erken dönüş vardı;

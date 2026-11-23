@@ -39,14 +39,6 @@ test('kullanıcının kendi başlıkları korunur', () => {
   assert.equal(t.rr, 'Getiri'); // parantezli ekler temizlenir
 });
 
-test('TP Target başlığı Target olur (çıkış hedefi); özel başlık korunur', async () => {
-  const { sanitizeDefinitionTitles } = await import('../src/constants/constants');
-  assert.equal(sanitizeDefinitionTitles({ tpTargets: 'TP Target' }).tpTargets, 'Target');
-  assert.equal(sanitizeDefinitionTitles({ tpTargets: 'tp target' }).tpTargets, 'Target');
-  assert.equal(sanitizeDefinitionTitles({}).tpTargets, 'Target');
-  assert.equal(sanitizeDefinitionTitles({ tpTargets: 'Likidite Hedefi' }).tpTargets, 'Likidite Hedefi');
-});
-
 test('Premium / Discount başlığı Confirmations olur; özel başlık korunur', () => {
   assert.equal(sanitizeDefinitionTitles({ premiumDiscounts: 'Premium / Discount' }).premiumDiscounts, 'Confirmations');
   assert.equal(sanitizeDefinitionTitles({}).premiumDiscounts, 'Confirmations');
@@ -104,12 +96,15 @@ test('Asia Range ve Sweep Time: yalnızca geçerli değerler kalır', async () =
   assert.equal(normalizeClock('24:00'), undefined);
 });
 
-test('Asia Range FVG başlığı: eski varsayılan "Asia Range FVG (1H)" olur, zaman dilimi eki silinmez, özel başlık korunur', async () => {
+test('kaldırılan alanların başlıkları düşer, zaman dilimi eki silinmez', async () => {
   const { sanitizeDefinitionTitles, cleanDefinitionTitleString } = await import('../src/constants/constants');
-  assert.equal(sanitizeDefinitionTitles({}).asiaRangeFvgs, 'Asia Range FVG (1H)');
-  assert.equal(sanitizeDefinitionTitles({ asiaRangeFvgs: 'Asia Range FVG' }).asiaRangeFvgs, 'Asia Range FVG (1H)');
-  assert.equal(sanitizeDefinitionTitles({ asiaRangeFvgs: 'Asia Range FVG (1H)' }).asiaRangeFvgs, 'Asia Range FVG (1H)');
+  const t = sanitizeDefinitionTitles({ asiaRangeFvgs: 'Asia Range FVG', entryModels: 'Entry', tpTargets: 'TP', newsDays: 'News' } as any) as any;
+  assert.equal(t.asiaRangeFvgs, undefined);
+  assert.equal(t.entryModels, undefined);
+  assert.equal(t.tpTargets, undefined);
+  assert.equal(t.newsDays, undefined);
   assert.equal(cleanDefinitionTitleString('Parite (Varlık)'), 'Parite');
+  assert.equal(cleanDefinitionTitleString('Asia Range FVG (1H)'), 'Asia Range FVG (1H)');
 });
 
 test('başlık: eski "Sweep Time" adı POI Sweep Time olur, kullanıcının özel adı korunur', async () => {

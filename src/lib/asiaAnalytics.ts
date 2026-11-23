@@ -318,17 +318,12 @@ export function prevTradeBucket(t: Pick<Trade, 'id'>): string | null {
  * Yalnızca belirli işlemlerde sorulan alanlar kendi paydasıyla ölçülür (Risk % yalnızca hesaplı işlemlerde).
  */
 export function computeCoverage(trades: Trade[]): CoverageRow[] {
-  const list = (v?: string[]) => Array.isArray(v) && v.length > 0;
   const defs: Array<{ field: string; label: string; unlocks: string; ok: (t: Trade) => boolean; asked?: (t: Trade) => boolean }> = [
     { field: 'planFidelity', label: 'Setup Kalitesi', unlocks: 'A+ / A / B-C kıyası, düşük kalitenin maliyeti', ok: (t) => !!t.planFidelity },
     { field: 'trend', label: 'İşlem Tipi', unlocks: 'Continuation / Reversal kıyası, reversal maliyeti', ok: (t) => !!t.trend },
-    { field: 'newsDay', label: 'News Day', unlocks: 'Haber günü – normal gün kıyası', ok: (t) => typeof t.newsDay === 'boolean' },
-    { field: 'asiaRangeFvg', label: 'Asia Range FVG (1H)', unlocks: 'Asia Range FVG (1H) kıyası', ok: (t) => !!t.asiaRangeFvg },
     { field: 'asiaRange', label: 'Asia Range', unlocks: 'Range / Trend kıyası', ok: (t) => !!t.asiaRange },
     { field: 'sweepTime', label: 'POI Sweep Time', unlocks: 'POI Sweep saati (30 dk), POI Sweep saati × parite tablosu', ok: (t) => !!t.sweepTime },
-    { field: 'session', label: 'Session', unlocks: 'Session ve Session × Yön kıyası', ok: (t) => !!t.session },
-    { field: 'entryModels', label: 'Entry Model', unlocks: 'Entry Model kıyası', ok: (t) => list(t.entryModels) },
-    { field: 'tpTargets', label: 'Target', unlocks: 'Çıkış hedefi kıyası', ok: (t) => list(t.tpTargets) },
+    { field: 'session', label: 'Session (otomatik)', unlocks: 'Session ve Session × Yön kıyası; POI Sweep saatinden belirlenir', ok: (t) => !!t.session },
     { field: 'premiumDiscount', label: 'Confirmations', unlocks: 'Confirmations × Yön kıyası', ok: (t) => tradeConfirmations(t).length > 0 },
     { field: 'riskPct', label: 'Risk %', unlocks: 'Risk seviyesine göre edge, aşırı risk uyarısı (hesaplı işlemlerde)', ok: (t) => hasNum(t.riskPct) && t.riskPct > 0, asked: (t) => !!t.accountId },
   ];

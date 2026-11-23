@@ -3,24 +3,21 @@ import { tradeConfirmations } from './tradeModel';
 
 /**
  * Zorunlu alan ayarı: tam kayıtta (Hızlı Kayıt hariç) boş bırakılamayacak alanlar.
- * Parite, yön, sonuç / R, hesap ve News Day her zaman zorunludur; burada analizleri besleyen ek alanlar seçilir.
+ * Parite, yön, sonuç / R ve hesap her zaman zorunludur; burada analizleri besleyen ek alanlar seçilir.
+ * Session seçilmez: POI Sweep saatinden otomatik belirlenir.
  */
 export const REQUIRABLE_FIELDS = [
   { id: 'asiaRange', label: 'Asia Range', missing: (t: Partial<Trade>) => !t.asiaRange },
   { id: 'sweepTime', label: 'POI Sweep Time', missing: (t: Partial<Trade>) => !t.sweepTime },
-  { id: 'session', label: 'Session', missing: (t: Partial<Trade>) => !t.session },
-  { id: 'entryModels', label: 'Entry Model', missing: (t: Partial<Trade>) => !t.entryModels?.length },
   { id: 'planFidelity', label: 'Setup Kalitesi', missing: (t: Partial<Trade>) => !t.planFidelity },
   { id: 'trend', label: 'İşlem Tipi', missing: (t: Partial<Trade>) => !t.trend },
-  { id: 'tpTargets', label: 'Target', missing: (t: Partial<Trade>) => !t.tpTargets?.length },
   { id: 'premiumDiscount', label: 'Confirmations', missing: (t: Partial<Trade>) => tradeConfirmations(t).length === 0 },
-  { id: 'asiaRangeFvg', label: 'Asia Range FVG (1H)', missing: (t: Partial<Trade>) => !t.asiaRangeFvg },
 ] as const;
 
 export type RequirableField = (typeof REQUIRABLE_FIELDS)[number]['id'];
 
 export const DEFAULT_REQUIRED_FIELDS: RequirableField[] = [
-  'asiaRange', 'sweepTime', 'session', 'entryModels', 'planFidelity',
+  'asiaRange', 'sweepTime', 'planFidelity',
 ];
 
 const KEY = 'tj_required_fields';

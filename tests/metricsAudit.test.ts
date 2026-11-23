@@ -66,7 +66,7 @@ test('zamanı bozuk kayıt: çıkış zamanı varsa onarılır, yoksa geçersiz 
   const base: any = {
     activeAccountCategory: 'ALL', activeAccount: null, globalSelectedPlanFidelity: [], globalDateLimit: 'all',
     globalSelectedAssets: [], globalSelectedSessions: [], globalSelectedStatuses: [],
-    globalSelectedTypes: [], globalSelectedEntryModels: [], globalSelectedTrendTypes: [],
+    globalSelectedTypes: [], globalSelectedTrendTypes: [],
   };
   const out = applyGlobalFilters([ok, broken], base, NOW);
   assert.deepEqual(out.map((x) => x.id), ['z']);

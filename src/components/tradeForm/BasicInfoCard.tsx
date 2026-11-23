@@ -51,7 +51,7 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
   setType: SetState<"LONG" | "SHORT">;
   accountOptions: AccountOption[];
   accountChoice: string | null;
-  setAccountChoice: SetState<string | null>;
+  setAccountChoice: (id: string | null) => void;
   accountError: boolean;
   setAccountError: SetState<boolean>;
   selectedAccount: AccountOption | undefined;

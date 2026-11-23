@@ -20,12 +20,9 @@ import {
   Upload,
   AlertCircle,
   Crosshair,
-  Zap,
   TrendingUp,
-  Flag,
   Layers,
   Percent,
-  Newspaper,
   Type,
 } from 'lucide-react';
 import { Trade, DefinitionTitles } from '../types';
@@ -35,12 +32,8 @@ import {
   DEFAULT_SESSIONS,
   DEFAULT_ASSETS,
   DEFAULT_PLAN_FIDELITIES,
-  DEFAULT_ENTRY_MODELS,
   DEFAULT_TREND_TYPES,
-  DEFAULT_TP_TARGETS,
   DEFAULT_PREMIUM_DISCOUNTS,
-  DEFAULT_NEWS_DAYS,
-  DEFAULT_ASIA_RANGE_FVGS,
   DEFAULT_RISK_PRESETS,
   MAX_RISK_PRESETS,
   parseRiskPreset,
@@ -48,7 +41,6 @@ import {
   DEFAULT_DEFINITION_TITLES,
   caseInsensitiveMatch,
   caseInsensitiveEquals,
-  normalizeNewsDays,
   smartUpper,
 } from '../constants/constants';
 import { useAfterPaint } from '../hooks/useAfterPaint';
@@ -62,30 +54,22 @@ interface DefinitionsManagerModalProps {
   sessions: string[];
   assets: string[];
   planFidelities: string[];
-  entryModels?: string[];
   trendTypes?: string[];
-  tpTargets?: string[];
   premiumDiscounts?: string[];
-  newsDays?: string[];
-  asiaRangeFvgs?: string[];
   riskPresets?: string[];
   definitionTitles?: DefinitionTitles;
   persistSessions: (list: string[]) => void;
   persistAssets: (list: string[]) => void;
   persistPlanFidelities: (list: string[]) => void;
-  persistEntryModels?: (list: string[]) => void;
   persistTrendTypes?: (list: string[]) => void;
-  persistTpTargets?: (list: string[]) => void;
   persistPremiumDiscounts?: (list: string[]) => void;
-  persistNewsDays?: (list: string[]) => void;
-  persistAsiaRangeFvgs?: (list: string[]) => void;
   persistRiskPresets?: (list: string[]) => void;
   /** Bir öğe yeniden adlandırılınca işlemlerdeki değeri de günceller; güncellenen işlem sayısını döndürür. */
   onRenameDefinition?: (category: string, from: string, to: string) => number;
   persistDefinitionTitles?: (updated: DefinitionTitles) => void;
 }
 
-type TabType = 'assets' | 'sessions' | 'planFidelities' | 'trendTypes' | 'entryModels' | 'tpTargets' | 'premiumDiscounts' | 'newsDays' | 'asiaRangeFvgs' | 'riskPresets' | 'formLabels' | 'requiredFields';
+type TabType = 'assets' | 'sessions' | 'planFidelities' | 'trendTypes' | 'premiumDiscounts' | 'riskPresets' | 'formLabels' | 'requiredFields';
 
 /** Sekme kimliği -> DefinitionTitles anahtarı (Form Başlıkları sekmesinin kendi başlığı yok) */
 const titleKeyFor = (tab: TabType): keyof DefinitionTitles =>
@@ -214,23 +198,15 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
   sessions,
   assets,
   planFidelities,
-  entryModels = DEFAULT_ENTRY_MODELS,
   trendTypes = DEFAULT_TREND_TYPES,
-  tpTargets = DEFAULT_TP_TARGETS,
   premiumDiscounts = DEFAULT_PREMIUM_DISCOUNTS,
-  newsDays = DEFAULT_NEWS_DAYS,
-  asiaRangeFvgs = DEFAULT_ASIA_RANGE_FVGS,
   riskPresets = DEFAULT_RISK_PRESETS,
   definitionTitles = DEFAULT_DEFINITION_TITLES,
   persistSessions,
   persistAssets,
   persistPlanFidelities,
-  persistEntryModels = () => {},
   persistTrendTypes = () => {},
-  persistTpTargets = () => {},
   persistPremiumDiscounts = () => {},
-  persistNewsDays = (_list: string[]) => {},
-  persistAsiaRangeFvgs = () => {},
   persistRiskPresets = (_list: string[]) => {},
   onRenameDefinition,
   persistDefinitionTitles,
@@ -250,51 +226,30 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
   // Compute trade usage counts per active category
   const usageCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    const [newsYes, newsNo] = normalizeNewsDays(newsDays);
     if (!ready || !trades || trades.length === 0) return counts;
 
     trades.forEach(t => {
       if (t.asset) counts[`assets:${t.asset}`] = (counts[`assets:${t.asset}`] || 0) + 1;
       if (t.session) counts[`sessions:${t.session}`] = (counts[`sessions:${t.session}`] || 0) + 1;
       if (t.planFidelity) counts[`planFidelities:${t.planFidelity}`] = (counts[`planFidelities:${t.planFidelity}`] || 0) + 1;
-      if (t.entryModels && Array.isArray(t.entryModels)) {
-        t.entryModels.forEach(em => {
-          counts[`entryModels:${em}`] = (counts[`entryModels:${em}`] || 0) + 1;
-        });
-      }
       if (t.trend) counts[`trendTypes:${t.trend}`] = (counts[`trendTypes:${t.trend}`] || 0) + 1;
       tradeConfirmations(t).forEach((c) => {
         counts[`premiumDiscounts:${c}`] = (counts[`premiumDiscounts:${c}`] || 0) + 1;
       });
-      if (t.asiaRangeFvg) counts[`asiaRangeFvgs:${t.asiaRangeFvg}`] = (counts[`asiaRangeFvgs:${t.asiaRangeFvg}`] || 0) + 1;
       const rp = parseRiskPreset(t.riskPct);
       if (rp !== null) counts[`riskPresets:${rp}`] = (counts[`riskPresets:${rp}`] || 0) + 1;
-      if (typeof t.newsDay === 'boolean') {
-        const nk = `newsDays:${t.newsDay ? newsYes : newsNo}`;
-        counts[nk] = (counts[nk] || 0) + 1;
-      }
-      if (Array.isArray(t.tpTargets)) {
-        t.tpTargets.forEach(tp => {
-          counts[`tpTargets:${tp}`] = (counts[`tpTargets:${tp}`] || 0) + 1;
-        });
-      }
     });
     return counts;
-  }, [trades, ready, newsDays]);
+  }, [trades, ready]);
 
   const tabs: { id: TabType; label: string; icon: React.ComponentType<{ size?: number; className?: string }>; list: string[]; persist: (list: string[]) => void; defaultList: string[]; fixed?: boolean; special?: boolean }[] = [
     { id: 'assets', label: definitionTitles.assets || DEFAULT_DEFINITION_TITLES.assets, icon: LineChart, list: assets, persist: persistAssets, defaultList: DEFAULT_ASSETS },
     // İşlem formundaki hazır risk yüzdeleri (en fazla 5; formda tek satıra sığar)
     { id: 'riskPresets', label: definitionTitles.riskPresets || DEFAULT_DEFINITION_TITLES.riskPresets || "Risk", icon: Percent, list: riskPresets, persist: persistRiskPresets, defaultList: DEFAULT_RISK_PRESETS },
     { id: 'trendTypes', label: definitionTitles.trendTypes || DEFAULT_DEFINITION_TITLES.trendTypes || "İşlem Tipi", icon: TrendingUp, list: trendTypes, persist: persistTrendTypes, defaultList: DEFAULT_TREND_TYPES },
-    { id: 'entryModels', label: definitionTitles.entryModels || DEFAULT_DEFINITION_TITLES.entryModels || "Entry Model", icon: Zap, list: entryModels, persist: persistEntryModels, defaultList: DEFAULT_ENTRY_MODELS },
     { id: 'sessions', label: definitionTitles.sessions || DEFAULT_DEFINITION_TITLES.sessions, icon: Sun, list: sessions, persist: persistSessions, defaultList: DEFAULT_SESSIONS },
     { id: 'planFidelities', label: definitionTitles.planFidelities || DEFAULT_DEFINITION_TITLES.planFidelities, icon: Crosshair, list: planFidelities, persist: persistPlanFidelities, defaultList: DEFAULT_PLAN_FIDELITIES },
-    { id: 'tpTargets', label: definitionTitles.tpTargets || DEFAULT_DEFINITION_TITLES.tpTargets || "Target", icon: Flag, list: tpTargets, persist: persistTpTargets, defaultList: DEFAULT_TP_TARGETS },
     { id: 'premiumDiscounts', label: definitionTitles.premiumDiscounts || DEFAULT_DEFINITION_TITLES.premiumDiscounts || "Confirmations", icon: Layers, list: premiumDiscounts, persist: persistPremiumDiscounts, defaultList: DEFAULT_PREMIUM_DISCOUNTS },
-    { id: 'asiaRangeFvgs', label: definitionTitles.asiaRangeFvgs || DEFAULT_DEFINITION_TITLES.asiaRangeFvgs || "Asia Range FVG (1H)", icon: Layers, list: asiaRangeFvgs, persist: persistAsiaRangeFvgs, defaultList: DEFAULT_ASIA_RANGE_FVGS },
-    // Sabit iki durumlu alan: yalnızca etiketler (Var / Yok) yeniden adlandırılır, ekleme/silme/sıralama yok
-    { id: 'newsDays', label: definitionTitles.newsDays || DEFAULT_DEFINITION_TITLES.newsDays || "News Day/Bank Holiday", icon: Newspaper, list: normalizeNewsDays(newsDays), persist: persistNewsDays, defaultList: DEFAULT_NEWS_DAYS, fixed: true },
     // Listesi olmayan form alanlarının (Yön, Stop, R:R, Notlar...) başlıkları
     { id: 'formLabels', label: 'Form Başlıkları', icon: Type, list: [...FORM_LABEL_KEYS], persist: () => {}, defaultList: [], special: true },
     { id: 'requiredFields', label: 'Zorunlu Alanlar', icon: Type, list: [], persist: () => {}, defaultList: [], special: true },
@@ -463,12 +418,8 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
       sessions,
       assets,
       planFidelities,
-      entryModels,
       trendTypes,
-      tpTargets,
       premiumDiscounts,
-      newsDays: normalizeNewsDays(newsDays),
-      asiaRangeFvgs,
       riskPresets,
       exportedAt: new Date().toISOString(),
     };
@@ -508,17 +459,10 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
         apply(data.sessions, persistSessions);
         apply(data.assets, persistAssets);
         apply(data.planFidelities, persistPlanFidelities);
-        apply(data.entryModels, persistEntryModels);
         apply(data.trendTypes, persistTrendTypes);
-        apply(data.tpTargets, persistTpTargets);
         apply(data.premiumDiscounts, persistPremiumDiscounts);
-        apply(data.asiaRangeFvgs, persistAsiaRangeFvgs);
         if (Array.isArray(data.riskPresets)) {
           persistRiskPresets(data.riskPresets.map((x: unknown) => String(x)));
-          applied++;
-        }
-        if (Array.isArray(data.newsDays)) {
-          persistNewsDays(normalizeNewsDays(data.newsDays));
           applied++;
         }
         if (applied === 0) {

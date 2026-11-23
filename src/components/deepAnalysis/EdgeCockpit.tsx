@@ -4,7 +4,6 @@ import {
   TrendingUp,
   TrendingDown,
   ShieldCheck,
-  Newspaper,
   Percent,
   ChevronRight,
   Info,
@@ -16,7 +15,6 @@ import { HALF_MIN } from '../../lib/ruleSimulator';
 import { dimensionValue, verdictFor, signalStrength, DEFAULT_SETUP_DIMENSIONS, SETUP_MIN_SAMPLE, type SetupRow } from '../../lib/setupScorecard';
 import { EDGE_PROOF_MIN } from '../../lib/sampleSize';
 import { EdgeStats } from '../../lib/asiaAnalytics';
-import { useNewsDayLabels } from '../../hooks/useNewsDayLabels';
 import { formatR, trPossessive, rnum } from '../../lib/format';
 
 /**
@@ -117,10 +115,8 @@ const e2s = (e: EdgeStats) => `${e.n} işlem · %${fmt(e.winRate, 0)} kazanma`;
 
 /* ---------- Edge Özeti ---------- */
 export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onShowTrades }: { trades: Trade[]; onShowTrades: ShowTrades }) {
-  const { labels: news, version } = useNewsDayLabels();
   // Ağır hesap liste başına saklanır: alt sekme her açılışta yeniden kurulsa da sonuç anında gelir
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const { summary: s, oos } = useMemo(() => cachedEdgeAnalysis(trades), [trades, version]);
+  const { summary: s, oos } = useMemo(() => cachedEdgeAnalysis(trades), [trades]);
   // Kuralın oluştuğu an: ilk görüldüğü son işlem zamanı (sonraki işlemler kural sonrası performans)
   const ruleSince = useMemo(() => {
     const map = loadRuleSince();
@@ -229,8 +225,8 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
         </p>
       )}
 
-      {/* Risk % ve News Day etkisi */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-zinc-800/70">
+      {/* Risk % etkisi */}
+      <div className="grid grid-cols-1 gap-4 pt-3 border-t border-zinc-800/70">
         <div className="flex flex-col gap-2 min-w-0">
           <span className={`${sectionTitle} text-blue-300`}>
             <Percent size={12} /> Risk %'sine göre
@@ -253,32 +249,6 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
             </div>
           ) : (
             <p className="text-label text-zinc-500">Risk % girilmiş işlem yok (prop hesabına bağlı işlemlerde formdan seçilir).</p>
-          )}
-        </div>
-        <div className="flex flex-col gap-2 min-w-0">
-          <span className={`${sectionTitle} text-blue-300`}>
-            <Newspaper size={12} /> News Day etkisi
-          </span>
-          <p className="text-label text-zinc-500 -mt-1">Haber / tatil günü işaretli ve işaretsiz günlerde işlem başı R.</p>
-          {s.news.yes.n + s.news.no.n > 0 ? (
-            <div className="flex flex-wrap gap-1.5">
-              {([['YES', news.yes, s.news.yes, true], ['NO', news.no, s.news.no, false]] as const).map(([k, label, e, flag]) => (
-                <button
-                  key={k}
-                  type="button"
-                  disabled={!e.n}
-                  onClick={() => onShowTrades(`News Day: ${label}`, trades.filter((t) => t.newsDay === flag))}
-                  className={`px-2.5 py-1.5 rounded-lg border border-zinc-800 bg-zinc-950/40 hover:border-zinc-600 disabled:opacity-50 disabled:cursor-default text-label tabular-nums transition-ui cursor-pointer ${e.n > 0 && e.n < SETUP_MIN_SAMPLE ? 'opacity-50' : ''}`}
-                >
-                  <span className="text-zinc-400 font-semibold">{label}</span>{' '}
-                  <span className={`font-bold ${tone(e.expectancy)}`}>{e.n ? sR(e.expectancy) : '—'}</span>{' '}
-                  <span className="text-zinc-600">({e.n})</span>
-                </button>
-              ))}
-              {s.news.unknown > 0 && <span className="px-2 py-1.5 text-label text-zinc-600">{s.news.unknown} işlemde girilmemiş</span>}
-            </div>
-          ) : (
-            <p className="text-label text-zinc-500">News Day girilmiş işlem yok.</p>
           )}
         </div>
       </div>

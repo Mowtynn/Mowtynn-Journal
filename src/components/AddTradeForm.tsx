@@ -7,13 +7,9 @@ import { defaultRiskAmount } from "../lib/propAccounts";
 import { formatMoney, formatR } from "../lib/format";
 import {
   DEFAULT_PLAN_FIDELITIES,
-  DEFAULT_ENTRY_MODELS,
   DEFAULT_TREND_TYPES,
   DEFAULT_DEFINITION_TITLES,
-  DEFAULT_TP_TARGETS,
   DEFAULT_PREMIUM_DISCOUNTS,
-  DEFAULT_NEWS_DAYS,
-  DEFAULT_ASIA_RANGE_FVGS,
   DEFAULT_RISK_PRESETS,
   parseRiskPreset,
 } from "../constants/constants";
@@ -22,7 +18,7 @@ import { missingRequired } from "../lib/requiredFields";
 import { Plus, X, Zap, Copy } from "lucide-react";
 import { NO_ACCOUNT, Num, AccountOption, buildInitial, useTitles, statusOfR } from './tradeForm/shared';
 import { roundR, tradeConfirmations } from '../lib/tradeModel';
-import { sessionForNyTime } from '../lib/sessions';
+import { autoSessionForNyTime } from '../lib/sessions';
 import { nyInputToTs, newTradeDateInput } from '../lib/tradingTime';
 import { BasicInfoCard } from './tradeForm/BasicInfoCard';
 import { ResultCard } from './tradeForm/ResultCard';
@@ -41,12 +37,8 @@ interface AddTradeFormProps {
   sessions: string[];
   assets: string[];
   planFidelities?: string[];
-  entryModels?: string[];
   trendTypes?: string[];
-  tpTargets?: string[];
   premiumDiscounts?: string[];
-  newsDays?: string[];
-  asiaRangeFvgs?: string[];
   /** Hazır risk yüzdeleri (Tanımlamalar > Risk) */
   riskPresets?: string[];
   definitionTitles?: DefinitionTitles;
@@ -76,12 +68,8 @@ const AddTradeForm = React.memo(function AddTradeForm({
   sessions,
   assets,
   planFidelities = DEFAULT_PLAN_FIDELITIES,
-  entryModels = DEFAULT_ENTRY_MODELS,
   trendTypes = DEFAULT_TREND_TYPES,
-  tpTargets = DEFAULT_TP_TARGETS,
   premiumDiscounts = DEFAULT_PREMIUM_DISCOUNTS,
-  newsDays = DEFAULT_NEWS_DAYS,
-  asiaRangeFvgs = DEFAULT_ASIA_RANGE_FVGS,
   riskPresets = DEFAULT_RISK_PRESETS,
   definitionTitles = DEFAULT_DEFINITION_TITLES,
   lastTrade = null,
@@ -102,9 +90,19 @@ const AddTradeForm = React.memo(function AddTradeForm({
     () => riskPresets.map(parseRiskPreset).filter((n): n is number => n !== null),
     [riskPresets],
   );
+  // Hesabın tanımlı risk yüzdesi formun risk seçimine çevrilir: hazır yüzdelerden biriyse çip, değilse elle giriş
+  const riskFromAccount = (accountId: string | null): { riskChoice: number | "CUSTOM" | null; customRiskPct: Num } | null => {
+    if (!accountId || accountId === NO_ACCOUNT) return null;
+    const pct = propAccounts.find((a) => a.id === accountId)?.riskPct;
+    if (typeof pct !== "number" || !Number.isFinite(pct) || pct <= 0) return null;
+    return riskPresetValues.includes(pct) ? { riskChoice: pct, customRiskPct: "" } : { riskChoice: "CUSTOM", customRiskPct: pct };
+  };
   const [init] = useState(() => {
     const base = buildInitial(editingTrade, riskPresetValues);
-    return !editingTrade && defaultAccountChoice ? { ...base, accountChoice: defaultAccountChoice } : base;
+    if (editingTrade) return base;
+    // Yeni işlem: son işlemin paritesi ve hesabı (üst çubukta tek hesap seçiliyse o), risk o hesabın risk %'si
+    const accountChoice = defaultAccountChoice ?? base.accountChoice;
+    return { ...base, asset: lastTrade?.asset || base.asset, accountChoice, ...(riskFromAccount(accountChoice) || {}) };
   });
   const [asset, setAsset] = useState(init.asset);
   const [type, setType] = useState<"LONG" | "SHORT">(init.type);
@@ -116,22 +114,16 @@ const AddTradeForm = React.memo(function AddTradeForm({
   const [customRiskPct, setCustomRiskPct] = useState<Num>(init.customRiskPct);
   const [riskError, setRiskError] = useState(false);
 
-  const [selectedSession, setSelectedSession] = useState(init.session);
-  const selectedSessionRef = useRef(selectedSession);
-  selectedSessionRef.current = selectedSession;
-  const [selectedEntries, setSelectedEntries] = useState<string[]>(init.entries);
   const [selectedTrend, setSelectedTrend] = useState(init.trend);
   const [planFidelity, setPlanFidelity] = useState<string | null>(init.planFidelity);
-  const [selectedTpTargets, setSelectedTpTargets] = useState<string[]>(init.tpTargets);
   const [selectedConfirmations, setSelectedConfirmations] = useState<string[]>(init.confirmations);
-  // News Day / Bank Holiday: varsayılan yok; tam kayıtta seçilmesi zorunlu (yanlışlıkla "Yok" kalıp istatistiği kaydırmasın)
-  const [newsDay, setNewsDay] = useState<boolean | null>(init.newsDay);
-  const [newsDayError, setNewsDayError] = useState(false);
   const [asiaRange, setAsiaRange] = useState(init.asiaRange);
   const [sweepTime, setSweepTime] = useState(init.sweepTime);
-  const sweepTimeRef = useRef(sweepTime);
-  sweepTimeRef.current = sweepTime;
-  const [selectedAsiaFvg, setSelectedAsiaFvg] = useState(init.asiaFvg);
+  // Session girilmez: POI Sweep saatinden gelir. Eski bir işlem düzenlenirken saat değişmediyse kayıttaki session korunur.
+  const session =
+    editingTrade?.session && sweepTime === (editingTrade.sweepTime || "")
+      ? editingTrade.session
+      : (sweepTime && autoSessionForNyTime(sweepTime, sessions)) || "";
 
   const [rrValue, setRrValue] = useState<Num>(init.rrValue);
 
@@ -216,12 +208,6 @@ const AddTradeForm = React.memo(function AddTradeForm({
       toast.error("Risk % gerçekçi değil (en fazla %10).");
       return;
     }
-    if (!isQuick && newsDay === null) {
-      setNewsDayError(true);
-      document.getElementById("news-day-field")?.scrollIntoView({ behavior: "smooth", block: "center" });
-      toast.error("News Day / Bank Holiday seçimini yap (Var / Yok).");
-      return;
-    }
     const matchedAsset = assets.find(
       (a) => a.toLowerCase() === safeAsset.toLowerCase(),
     );
@@ -254,20 +240,20 @@ const AddTradeForm = React.memo(function AddTradeForm({
       type,
       status: tradeStatus,
       rr: numericRR,
-      session: selectedSession || undefined,
-      entryModels: selectedEntries.length > 0 ? selectedEntries : undefined,
+      session: session || undefined,
       trend: selectedTrend || undefined,
       planFidelity: planFidelity || undefined,
-      tpTargets: selectedTpTargets.length > 0 ? selectedTpTargets : undefined,
       confirmationTags: selectedConfirmations.length > 0 ? selectedConfirmations : undefined,
       // Eski tek değerli alan bilinçli boşaltılır: düzenlemede birleştirme eski değeri geri getirmesin
       premiumDiscount: undefined,
-      newsDay: newsDay ?? undefined,
-      // Eski sürümün strateji alanı formda yok; düzenlemede eski değer silinmeden korunur
+      // Formdan kaldırılan alanlar (strateji, Entry Model, Target, News Day, Asia Range FVG): düzenlemede eski değer korunur
       strategy: editingTrade?.strategy || undefined,
+      entryModels: editingTrade?.entryModels?.length ? editingTrade.entryModels : undefined,
+      tpTargets: editingTrade?.tpTargets?.length ? editingTrade.tpTargets : undefined,
+      newsDay: typeof editingTrade?.newsDay === "boolean" ? editingTrade.newsDay : undefined,
+      asiaRangeFvg: editingTrade?.asiaRangeFvg || undefined,
       asiaRange: (asiaRange || undefined) as Trade["asiaRange"],
       sweepTime: sweepTime || undefined,
-      asiaRangeFvg: selectedAsiaFvg || undefined,
       notes: safeNotes || undefined,
       screenshot: screenshot || undefined,
       // Hesap anlık görüntüsü: filtreler hesap aramadan çalışsın (aşama, tip, ad)
@@ -311,9 +297,8 @@ const AddTradeForm = React.memo(function AddTradeForm({
   // Kaydedilmemiş değişiklik takibi: ilk çizimdeki durum temel alınır (ek çizim yok)
   const snapshot = JSON.stringify([
     asset, type, accountChoice, riskChoice, customRiskPct, tradeDate,
-    rrValue, notes, screenshot, selectedSession,
-    selectedEntries, selectedTrend, planFidelity,
-    selectedTpTargets, selectedConfirmations, newsDay, asiaRange, sweepTime, selectedAsiaFvg,
+    rrValue, notes, screenshot, selectedTrend, planFidelity,
+    selectedConfirmations, asiaRange, sweepTime,
   ]);
   const baselineRef = useRef(snapshot);
   // Hazır bekleyen form açılınca tarih "şimdi"ye çekilir; bu değişiklik kirli sayılmasın diye taban yenilenir
@@ -352,16 +337,25 @@ const AddTradeForm = React.memo(function AddTradeForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active]);
 
-  // POI Sweep Time seçilince Session boşsa, saatin düştüğü NY session'ı önerilir (London 02–05, NY AM 07–10 …).
-  // Seçili bir Session varsa değiştirilmez; öneri yalnızca bilinen adlı session'larda yapılır.
-  const setSweepTimeAndSuggest = useCallback<React.Dispatch<React.SetStateAction<string>>>((next) => {
-    const value = typeof next === "function" ? next(sweepTimeRef.current) : next;
-    setSweepTime(value);
-    if (value && !selectedSessionRef.current) {
-      const s = sessionForNyTime(value, sessions);
-      if (s) setSelectedSession(s);
+  // Hesap seçilince risk o hesabın tanımlı risk %'sine gelir (elle değiştirilebilir)
+  const chooseAccount = useCallback((id: string | null) => {
+    setAccountChoice(id);
+    const r = riskFromAccount(id);
+    if (r) {
+      setRiskChoice(r.riskChoice);
+      setCustomRiskPct(r.customRiskPct);
+      setRiskError(false);
     }
-  }, [sessions]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [propAccounts, riskPresetValues]);
+
+  // Form işlemler yüklenmeden hazırlandıysa: dokunulmamış yeni formda parite son işlemden gelir
+  useEffect(() => {
+    if (editingTrade || !lastTrade?.asset || guardStateRef.current.isDirty || asset) return;
+    rebaseRef.current = true;
+    setAsset(lastTrade.asset);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lastTrade?.asset]);
 
   const requestClose = () => onCancelEdit();
 
@@ -373,21 +367,17 @@ const AddTradeForm = React.memo(function AddTradeForm({
     return () => window.clearTimeout(t);
   }, [editingTrade, active]);
 
-  // Son işlemin kurulumunu kopyala (sayısal sonuçlar, notlar ve News Day kopyalanmaz: bunlar işleme özgü)
+  // Son işlemin kurulumunu kopyala (sayısal sonuçlar, notlar ve sweep saati kopyalanmaz: bunlar işleme özgü)
   const applyLastSetup = () => {
     const t = lastTrade;
     if (!t) return;
     if (t.asset) setAsset(t.asset);
     if (t.type) setType(t.type);
-    // Hesap yalnızca hâlâ aktifse kopyalanır; risk her işlemde bilinçli seçilir (kopyalanmaz)
-    if (t.accountId && accountOptions.some((o) => o.id === t.accountId)) setAccountChoice(t.accountId);
-    else if (!t.accountId && t.accountCategory === "DEMO") setAccountChoice(NO_ACCOUNT);
-    setSelectedSession(t.session || "");
-    setSelectedEntries(Array.isArray(t.entryModels) ? t.entryModels : []);
+    // Hesap yalnızca hâlâ aktifse kopyalanır; risk hesabın tanımlı risk %'sinden gelir
+    if (t.accountId && accountOptions.some((o) => o.id === t.accountId)) chooseAccount(t.accountId);
+    else if (!t.accountId && t.accountCategory === "DEMO") chooseAccount(NO_ACCOUNT);
     setSelectedTrend(t.trend || "");
-    setSelectedTpTargets(Array.isArray(t.tpTargets) ? t.tpTargets : []);
     setSelectedConfirmations(tradeConfirmations(t));
-    setSelectedAsiaFvg(t.asiaRangeFvg || "");
     toast.success("Son işlemin kurulumu uygulandı. Riski ve sonucu gir.");
   };
 
@@ -472,7 +462,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
               setType={setType}
               accountOptions={accountOptions}
               accountChoice={accountChoice}
-              setAccountChoice={setAccountChoice}
+              setAccountChoice={chooseAccount}
               accountError={accountError}
               setAccountError={setAccountError}
               selectedAccount={selectedAccount}
@@ -500,33 +490,17 @@ const AddTradeForm = React.memo(function AddTradeForm({
             <div className="flex flex-col min-w-0">
               <SetupChips
                   titles={titles}
-                  newsDays={newsDays}
                   planFidelities={planFidelities}
                   planFidelity={planFidelity}
                   setPlanFidelity={setPlanFidelity}
                   trendTypes={trendTypes}
                   selectedTrend={selectedTrend}
                   setSelectedTrend={setSelectedTrend}
-                  newsDay={newsDay}
-                  setNewsDay={setNewsDay}
-                  newsDayError={newsDayError}
-                  setNewsDayError={setNewsDayError}
                   asiaRange={asiaRange}
                   setAsiaRange={setAsiaRange}
                   sweepTime={sweepTime}
-                  setSweepTime={setSweepTimeAndSuggest}
-                  asiaRangeFvgs={asiaRangeFvgs}
-                  selectedAsiaFvg={selectedAsiaFvg}
-                  setSelectedAsiaFvg={setSelectedAsiaFvg}
-                  sessions={sessions}
-                  selectedSession={selectedSession}
-                  setSelectedSession={setSelectedSession}
-                  entryModels={entryModels}
-                  selectedEntries={selectedEntries}
-                  setSelectedEntries={setSelectedEntries}
-                  tpTargets={tpTargets}
-                  selectedTpTargets={selectedTpTargets}
-                  setSelectedTpTargets={setSelectedTpTargets}
+                  setSweepTime={setSweepTime}
+                  session={session}
                   premiumDiscounts={premiumDiscounts}
                   selectedConfirmations={selectedConfirmations}
                   setSelectedConfirmations={setSelectedConfirmations}

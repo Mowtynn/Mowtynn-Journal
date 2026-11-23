@@ -24,6 +24,7 @@ const ASSETS_PER_PAGE = 8;
 export const preloadStrategyHub = () => StrategyOptimizerHub.preload();
 import { nyWallDate } from '../lib/tradingTime';
 import { formatR, rsigned } from '../lib/format';
+import { tradeConfirmations } from '../lib/tradeModel';
 
 
 const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all' }: { trades: Trade[], onMetricClick?: (id: string, val: string | number) => void, onEdit?: (trade: Trade) => void, part?: MetricsPart }) => {
@@ -134,7 +135,7 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
     });
     const sessionRanking = Object.values(sessionStatsMap).sort((a, b) => b.rr - a.rr);
 
-    // 5. Giriş modeli ve hedef: çoklu seçimde işlem her etikete bir kez sayılır (formdaki son girdiler)
+    // 5. Confirmations ve İşlem Tipi: çoklu seçimde işlem her etikete bir kez sayılır
     const rankBy = (labelsOf: (t: Trade) => string[] | undefined) => {
       const m = new Map<string, { label: string; total: number; wins: number; rr: number }>();
       closedTrades.forEach((t) => {
@@ -149,16 +150,16 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
       });
       return [...m.values()].sort((x, y) => y.rr - x.rr);
     };
-    const entryRanking = rankBy((t) => t.entryModels);
-    const targetRanking = rankBy((t) => t.tpTargets);
+    const confirmationRanking = rankBy((t) => tradeConfirmations(t));
+    const trendRanking = rankBy((t) => (t.trend ? [t.trend] : []));
 
     return {
       dayStats,
       TurkishDayFullNames,
       assetRanking,
       sessionRanking,
-      entryRanking,
-      targetRanking,
+      confirmationRanking,
+      trendRanking,
     };
   }, [trades]);
 
@@ -395,11 +396,11 @@ const AdvancedMetricsDashboardInner = React.memo(({ trades, onEdit, part = 'all'
                 )}
               </div>
             </div>
-            {/* Giriş modeli ve hedef: formdaki kurulum girdilerinin sonuca katkısı (seans listesinin altındaki boşluğu da doldurur) */}
-            {(customMetrics.entryRanking.length > 0 || customMetrics.targetRanking.length > 0) && (
+            {/* Confirmations ve İşlem Tipi: formdaki kurulum girdilerinin sonuca katkısı (seans listesinin altındaki boşluğu da doldurur) */}
+            {(customMetrics.confirmationRanking.length > 0 || customMetrics.trendRanking.length > 0) && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3 pt-3 border-t border-zinc-800/70">
-                <MiniRanking title="Entry Model" rows={customMetrics.entryRanking} />
-                <MiniRanking title="Target" rows={customMetrics.targetRanking} />
+                <MiniRanking title="Confirmations" rows={customMetrics.confirmationRanking} />
+                <MiniRanking title="İşlem Tipi" rows={customMetrics.trendRanking} />
               </div>
             )}
             </div>

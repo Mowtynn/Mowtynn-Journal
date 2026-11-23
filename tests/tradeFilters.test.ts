@@ -11,7 +11,6 @@ const none: GlobalTradeFilters = {
   globalSelectedSessions: [],
   globalSelectedStatuses: [],
   globalSelectedTypes: [],
-  globalSelectedEntryModels: [],
   globalSelectedTrendTypes: [],
 };
 const f = (p: Partial<GlobalTradeFilters>) => ({ ...none, ...p });
@@ -53,7 +52,7 @@ test('seans filtresi metin normalizasyonuyla eşleşir', () => {
   assert.deepEqual(ids(applyGlobalFilters(all, f({ activeAccountCategory: 'DEMO', globalSelectedSessions: ['LONDON KZ'] }), NOW)), ids([demo]));
 });
 
-test('ek alan filtreleri: strateji, News day, P/D, TP target, Asia FVG, risk %, hızlı kayıt', async () => {
+test('ek alan filtreleri: Asia Range, Confirmations, risk %, hızlı kayıt; kaldırılan alanların eski filtreleri yok sayılır', async () => {
   const { EMPTY_EXTRA_FILTERS, countExtraFilters, sanitizeExtraFilters } = await import('../src/lib/tradeFilters');
   const a = trade({ status: 'WIN', rr: 2, asiaRange: 'Swept', newsDay: true, confirmationTags: ['Discount', '1H POI'], tpTargets: ['PDH / PDL'], asiaRangeFvg: 'Var', riskPct: 0.5 });
   const b = trade({ status: 'LOSS', rr: -1, asiaRange: 'Range', newsDay: false, confirmationTags: ['Premium'], tpTargets: ['Asia High / Low'], riskPct: 1, quickEntry: true });
@@ -64,8 +63,6 @@ test('ek alan filtreleri: strateji, News day, P/D, TP target, Asia FVG, risk %, 
 
   assert.deepEqual(ids(applyGlobalFilters(list, x({}), NOW)), ids(list), 'boş ek filtre listeyi değiştirmez');
   assert.deepEqual(ids(applyGlobalFilters(list, x({ asiaRanges: ['swept'] }), NOW)), [a.id]);
-  assert.deepEqual(ids(applyGlobalFilters(list, x({ newsDay: 'YES' }), NOW)), [a.id]);
-  assert.deepEqual(ids(applyGlobalFilters(list, x({ newsDay: 'NO' }), NOW)), [b.id]);
   assert.deepEqual(ids(applyGlobalFilters(list, x({ premiumDiscounts: ['Premium'] }), NOW)), [b.id]);
   // Çoklu Confirmations: işlemdeki herhangi bir değer seçili olanlardan biriyle eşleşirse geçer
   assert.deepEqual(ids(applyGlobalFilters(list, x({ premiumDiscounts: ['1H POI'] }), NOW)), [a.id]);
@@ -73,11 +70,11 @@ test('ek alan filtreleri: strateji, News day, P/D, TP target, Asia FVG, risk %, 
   // Normalize edilmemiş eski kayıt (tek değerli premiumDiscount) de süzülür
   const old = trade({ status: 'WIN', rr: 1, premiumDiscount: 'Premium' } as any);
   assert.deepEqual(ids(applyGlobalFilters([old], x({ premiumDiscounts: ['Premium'] }), NOW)), [old.id]);
-  assert.deepEqual(ids(applyGlobalFilters(list, x({ tpTargets: ['PDH / PDL'] }), NOW)), [a.id]);
-  assert.deepEqual(ids(applyGlobalFilters(list, x({ asiaRangeFvgs: ['Var'] }), NOW)), [a.id]);
+  // Eski kayıtlı (kaldırılmış) News Day / Target / Asia FVG filtreleri temizlenir, listeyi daraltmaz
+  assert.deepEqual(ids(applyGlobalFilters(list, f({ activeAccountCategory: 'DEMO', globalExtra: sanitizeExtraFilters({ newsDay: 'YES', tpTargets: ['PDH / PDL'], asiaRangeFvgs: ['Var'] }) }), NOW)), ids(list));
   assert.deepEqual(ids(applyGlobalFilters(list, x({ riskPcts: [0.50] }), NOW)), [a.id]);
   assert.deepEqual(ids(applyGlobalFilters(list, x({ onlyIncomplete: true }), NOW)), [b.id]);
-  assert.equal(countExtraFilters({ ...EMPTY_EXTRA_FILTERS, newsDay: 'NO', riskPcts: [1], onlyIncomplete: true }), 3);
+  assert.equal(countExtraFilters({ ...EMPTY_EXTRA_FILTERS, riskPcts: [1], onlyIncomplete: true }), 2);
   assert.deepEqual(sanitizeExtraFilters({ newsDay: 'X', riskPcts: [1, 'a', -2], asiaRanges: ['A', 3] }), { ...EMPTY_EXTRA_FILTERS, riskPcts: [1], asiaRanges: ['A'] });
 });
 

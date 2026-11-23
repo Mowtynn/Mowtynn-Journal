@@ -1,5 +1,5 @@
 import type { Trade } from '../types';
-import { byEntryTime } from './tradeModel';
+import { byEntryTime, tradeConfirmations } from './tradeModel';
 import { edgeFromR, indexTradeOrder, type EdgeStats } from './asiaAnalytics';
 import { dimensionValue, UNSPECIFIED, type SetupDimension } from './setupScorecard';
 
@@ -16,10 +16,9 @@ export interface RuleCondition {
   exclude?: boolean;
 }
 
-/** Çoklu seçimli alanlar tek tek değerlere ayrılır (Entry Model: FVG seçilince FVG içeren her işlem) */
+/** Çoklu seçimli alanlar tek tek değerlere ayrılır (Confirmations: 1H POI seçilince 1H POI içeren her işlem) */
 const MULTI: Partial<Record<SetupDimension, (t: Trade) => string[] | undefined>> = {
-  entryModels: (t) => t.entryModels,
-  tpTargets: (t) => t.tpTargets,
+  premiumDiscount: (t) => tradeConfirmations(t),
 };
 
 function ruleValues(t: Trade, dim: SetupDimension): string[] {

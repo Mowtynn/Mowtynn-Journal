@@ -8,11 +8,10 @@ const t = (rr: number, p: Partial<Trade> = {}, i = 0) =>
   trade({ status: rr > 0 ? 'WIN' : rr < 0 ? 'LOSS' : 'BREAKEVEN', rr, createdAt: NOW - (100 - i) * DAY, ...p });
 
 test('boyut değerleri: çoklu alanlar sıralı birleşir, boşlar Belirtilmemiş', () => {
-  const x = t(1, { entryModels: ['OB', 'FVG', 'FVG'], session: '  London ' });
-  assert.equal(dimensionValue(x, 'entryModels'), 'FVG + OB');
+  const x = t(1, { confirmationTags: ['OB', 'FVG', 'FVG'], session: '  London ' });
+  assert.equal(dimensionValue(x, 'premiumDiscount'), 'FVG + OB');
   assert.equal(dimensionValue(x, 'session'), 'London');
   assert.equal(dimensionValue(x, 'asiaRange'), UNSPECIFIED);
-  assert.equal(dimensionValue(x, 'tpTargets'), UNSPECIFIED);
   // Confirmations çoklu: birlikte seçilenler tek kurulum olur (Entry Model ile aynı kural); eski tek değer de okunur
   assert.equal(dimensionValue(t(1, { confirmationTags: ['4H POI', '1H POI'] }), 'premiumDiscount'), '1H POI + 4H POI');
   assert.equal(dimensionValue(t(1, { premiumDiscount: 'Discount' } as any), 'premiumDiscount'), 'Discount');

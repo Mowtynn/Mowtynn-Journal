@@ -2,7 +2,6 @@ import { Trade } from '../types';
 import { byEntryTime, tradeConfirmations } from './tradeModel';
 import { edgeFromR, EdgeStats, sweepHourBucket, stageBucket, tradeOfDayBucket, indexTradeOrder, prevTradeBucket } from './asiaAnalytics';
 import { getTradeNyWeekday, WEEKDAY_NAMES_TR } from './tradingTime';
-import { getNewsDayLabels } from '../constants/constants';
 import { EDGE_PROOF_MIN, MIN_SAMPLE } from './sampleSize';
 import { driftFromR, type EdgeDrift } from './edgeDrift';
 
@@ -19,12 +18,8 @@ export type SetupDimension =
   | 'prevTrade'
   | 'accountStage'
   | 'session'
-  | 'entryModels'
   | 'premiumDiscount'
   | 'trend'
-  | 'tpTargets'
-  | 'asiaRangeFvg'
-  | 'newsDay'
   | 'weekday'
   | 'type'
   | 'asset';
@@ -37,23 +32,19 @@ export const SETUP_DIMENSIONS: { id: SetupDimension; label: string }[] = [
   { id: 'prevTrade', label: 'Gün İçi Önceki İşlem' },
   { id: 'accountStage', label: 'Hesap Aşaması' },
   { id: 'session', label: 'Session' },
-  { id: 'entryModels', label: 'Entry Model' },
   { id: 'premiumDiscount', label: 'Confirmations' },
   { id: 'trend', label: 'İşlem Tipi' },
-  { id: 'tpTargets', label: 'Target' },
-  { id: 'asiaRangeFvg', label: 'Asia Range FVG (1H)' },
-  { id: 'newsDay', label: 'News Day' },
   { id: 'weekday', label: 'Gün' },
   { id: 'type', label: 'Yön' },
   { id: 'asset', label: 'Parite' },
 ];
 
 /**
- * Varsayılan "kurulum" tanımı: Asia Range (Range / Trend) · Trend Yapısı (Continuation / Reversal) · Entry Model.
+ * Varsayılan "kurulum" tanımı: Asia Range (Range / Trend) · İşlem Tipi (Continuation / Reversal).
  * Strateji iki moda dayanır (reversal Asia high/low süpürmesi ister, continuation istemez); işlemler tek seansta
  * (London) alındığı için Session kurulumu ayırt etmiyordu. Kurulum Karnesi'nde boyutlar yine elle değiştirilebilir.
  */
-export const DEFAULT_SETUP_DIMENSIONS: SetupDimension[] = ['asiaRange', 'trend', 'entryModels'];
+export const DEFAULT_SETUP_DIMENSIONS: SetupDimension[] = ['asiaRange', 'trend'];
 /** Bu sayıdan az işlemli kurulumlara hüküm verilmez */
 export const SETUP_MIN_SAMPLE = MIN_SAMPLE;
 export const UNSPECIFIED = 'Belirtilmemiş';
@@ -79,10 +70,6 @@ const joinList = (xs?: string[]) => {
 
 export function dimensionValue(t: Trade, d: SetupDimension): string {
   switch (d) {
-    case 'entryModels':
-      return joinList(t.entryModels);
-    case 'tpTargets':
-      return joinList(t.tpTargets);
     case 'premiumDiscount':
       return joinList(tradeConfirmations(t));
     case 'sweepHour':
@@ -96,11 +83,6 @@ export function dimensionValue(t: Trade, d: SetupDimension): string {
     case 'weekday': {
       const d = getTradeNyWeekday(t);
       return Number.isInteger(d) ? WEEKDAY_NAMES_TR[d] : UNSPECIFIED;
-    }
-    case 'newsDay': {
-      if (typeof t.newsDay !== 'boolean') return UNSPECIFIED;
-      const nl = getNewsDayLabels();
-      return t.newsDay ? nl.yes : nl.no;
     }
     case 'type':
       return t.type === 'SHORT' ? 'Short' : 'Long';

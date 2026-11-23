@@ -8,7 +8,6 @@ interface AppState {
   globalSelectedSessions: string[];
   globalSelectedStatuses: string[];
   globalSelectedTypes: string[];
-  globalSelectedEntryModels: string[];
   globalSelectedTrendTypes: string[];
   globalDateLimit: string;
   /** Asia Range, News Day, P/D, TP target, Asia FVG, risk %, hızlı kayıt filtreleri */
@@ -19,7 +18,6 @@ interface AppState {
   setGlobalSelectedSessions: (val: string[]) => void;
   setGlobalSelectedStatuses: (val: string[]) => void;
   setGlobalSelectedTypes: (val: string[]) => void;
-  setGlobalSelectedEntryModels: (val: string[]) => void;
   setGlobalSelectedTrendTypes: (val: string[]) => void;
   setGlobalDateLimit: (val: string) => void;
   setGlobalExtra: (val: ExtraTradeFilters) => void;
@@ -34,7 +32,6 @@ export const useAppStore = create<AppState>()(
       globalSelectedSessions: [],
       globalSelectedStatuses: [],
       globalSelectedTypes: [],
-      globalSelectedEntryModels: [],
       globalSelectedTrendTypes: [],
       globalDateLimit: DEFAULT_DATE_LIMIT,
       globalExtra: EMPTY_EXTRA_FILTERS,
@@ -45,7 +42,6 @@ export const useAppStore = create<AppState>()(
       setGlobalSelectedSessions: (val) => set({ globalSelectedSessions: val }),
       setGlobalSelectedStatuses: (val) => set({ globalSelectedStatuses: val }),
       setGlobalSelectedTypes: (val) => set({ globalSelectedTypes: val }),
-      setGlobalSelectedEntryModels: (val) => set({ globalSelectedEntryModels: val }),
       setGlobalSelectedTrendTypes: (val) => set({ globalSelectedTrendTypes: val }),
       setGlobalDateLimit: (val) => set({ globalDateLimit: val }),
       setGlobalExtra: (val) => set({ globalExtra: val }),
@@ -53,7 +49,7 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: 'trading_journal_filters',
-      version: 8,
+      version: 9,
       // Zaman aralığı kalıcı değildir: uygulama her açılışta "Tüm zamanlar" ile başlar (üst çubuktaki TÜMÜ gibi)
       partialize: ({ globalDateLimit: _omit, ...rest }) => rest,
       // Ek filtreler her açılışta onarılır (eksik alan / eski biçim ekranı çökertmesin)
@@ -68,6 +64,7 @@ export const useAppStore = create<AppState>()(
       //     varsayılan tarih aralığı "6 ay"dan "tüm zamanlar"a geçti (dokunulmamış eski varsayılan da taşınır)
       // v7: Strateji filtresi kaldırıldı, yerine Asia Range (Range / Trend / Swept)
       // v8: PD Array, Timeframe, Entry Timeframe ve Asia Range Pip filtreleri kaldırıldı (eski seçim gizli filtre olarak kalmasın)
+      // v9: Entry Model, Target, Asia Range FVG ve News Day filtreleri kaldırıldı
       migrate: (persisted: any, version: number) => {
         if (persisted && typeof persisted === 'object') {
           delete persisted.globalSelectedConcepts;
@@ -78,6 +75,7 @@ export const useAppStore = create<AppState>()(
           delete persisted.globalSelectedHtfTimeframes;
           delete persisted.globalMinAsiaRangePips;
           delete persisted.globalMaxAsiaRangePips;
+          delete persisted.globalSelectedEntryModels;
           if (version < 5 && persisted.globalDateLimit === '6m') persisted.globalDateLimit = DEFAULT_DATE_LIMIT;
           persisted.globalExtra = sanitizeExtraFilters(persisted.globalExtra);
         }

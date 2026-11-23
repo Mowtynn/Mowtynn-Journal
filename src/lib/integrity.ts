@@ -2,7 +2,7 @@ import { Trade } from '../types';
 
 const hasNum = (v: unknown) => typeof v === 'number' && Number.isFinite(v);
 
-/** Analizlerin (Asia Edge, Asia Range, News Day) dayandığı alanlar. Boş kalanlar örneklemi sessizce küçültür. */
+/** Analizlerin (Asia Edge, Asia Range, İşlem Tipi) dayandığı alanlar. Boş kalanlar örneklemi sessizce küçültür. */
 export function missingFields(t: Trade): string[] {
   const out: string[] = [];
   // Hesap seçimi zorunlu: prop hesabı (accountId) ya da açıkça "Hesapsız" (DEMO)
@@ -10,8 +10,6 @@ export function missingFields(t: Trade): string[] {
   if (t.accountId && !hasNum(t.riskPct)) out.push('Risk %');
   if (!t.asiaRange) out.push('Asia Range');
   if (!t.trend) out.push('İşlem Tipi');
-  if (typeof t.newsDay !== 'boolean') out.push('News Day');
-  if (!Array.isArray(t.entryModels) || t.entryModels.length === 0) out.push('Entry Model');
   return out;
 }
 

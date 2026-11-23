@@ -1,6 +1,5 @@
-import React, { useMemo } from "react";
-import { normalizeNewsDays } from "../../constants/constants";
-import { Layers, ShieldCheck, Zap, TrendingUp, Clock, Flag, Newspaper, Compass, MoveHorizontal, Waves, Timer } from "lucide-react";
+import React from "react";
+import { ShieldCheck, TrendingUp, Clock, Compass, MoveHorizontal, Waves, Timer } from "lucide-react";
 import { ASIA_RANGE_TYPES, ASIA_RANGE_FORM_TYPES } from "../../types";
 import { SweepTimePicker } from "./SweepTimePicker";
 import { CHIP_BASE, SetState, withSelected, Titles, SlideBg } from './shared';
@@ -17,71 +16,39 @@ const ASIA_RANGE_META: Record<(typeof ASIA_RANGE_TYPES)[number], { icon: typeof 
 
 export const SetupChips = React.memo(function SetupChips({
   titles,
-  newsDays,
   planFidelities,
   planFidelity,
   setPlanFidelity,
   trendTypes,
   selectedTrend,
   setSelectedTrend,
-  newsDay,
-  setNewsDay,
-  newsDayError,
-  setNewsDayError,
   asiaRange,
   setAsiaRange,
   sweepTime,
   setSweepTime,
-  asiaRangeFvgs,
-  selectedAsiaFvg,
-  setSelectedAsiaFvg,
-  sessions,
-  selectedSession,
-  setSelectedSession,
-  entryModels,
-  selectedEntries,
-  setSelectedEntries,
-  tpTargets,
-  selectedTpTargets,
-  setSelectedTpTargets,
+  session,
   premiumDiscounts,
   selectedConfirmations,
   setSelectedConfirmations,
 }: {
   titles: Titles;
-  newsDays: string[];
   planFidelities: string[];
   planFidelity: string | null;
   setPlanFidelity: SetState<string | null>;
   trendTypes: string[];
   selectedTrend: string;
   setSelectedTrend: SetState<string>;
-  newsDay: boolean | null;
-  setNewsDay: SetState<boolean | null>;
-  newsDayError: boolean;
-  setNewsDayError: SetState<boolean>;
   asiaRange: string;
   setAsiaRange: SetState<string>;
   sweepTime: string;
   setSweepTime: SetState<string>;
-  asiaRangeFvgs: string[];
-  selectedAsiaFvg: string;
-  setSelectedAsiaFvg: SetState<string>;
-  sessions: string[];
-  selectedSession: string;
-  setSelectedSession: SetState<string>;
-  entryModels: string[];
-  selectedEntries: string[];
-  setSelectedEntries: SetState<string[]>;
-  tpTargets: string[];
-  selectedTpTargets: string[];
-  setSelectedTpTargets: SetState<string[]>;
+  /** POI Sweep saatinden otomatik çıkan session (salt okunur) */
+  session: string;
   premiumDiscounts: string[];
   selectedConfirmations: string[];
   setSelectedConfirmations: SetState<string[]>;
 }) {
   const { L, H } = titles;
-  const [newsYesLabel, newsNoLabel] = useMemo(() => normalizeNewsDays(newsDays), [newsDays]);
 
   // Bölümler doğal aralıklarıyla sıkı durur (boşluk dağıtılmaz); form boyunu bu kart belirleyecek şekilde
   // sol sütun (Temel Bilgiler + Sonuç) kısa tutulur, yan kartlar bu boya uyar
@@ -147,66 +114,6 @@ export const SetupChips = React.memo(function SetupChips({
         </div>
       </div>
 
-      {/* 2b. NEWS DAY / BANK HOLIDAY (zorunlu) + sağında ASIA RANGE FVG — ikisi de butonlu seçim */}
-      <div className="grid grid-cols-2 gap-x-4 gap-y-4">
-        <div id="news-day-field">
-          <label lang="en" className={`text-label sm:text-label font-bold uppercase tracking-wide mb-2 flex items-center gap-1.5 font-sans ${newsDayError ? "text-rose-400" : "text-zinc-300"}`}>
-            <Newspaper size={13} className="text-blue-400" />
-            {H("newsDays", "NEWS DAY/BANK HOLIDAY")}
-          </label>
-          <div className={`w-full grid grid-flow-col auto-cols-fr bg-zinc-950/80 border rounded-xl p-1 gap-1.5 h-9 sm:h-10 shadow-inner ${newsDayError ? "border-rose-500/60" : "border-zinc-800/90"}`}>
-            {([
-              { value: true, label: newsYesLabel },
-              { value: false, label: newsNoLabel },
-            ] as const).map((opt) => {
-              const isSelected = newsDay === opt.value;
-              return (
-                <button lang="en"
-                  key={String(opt.value)}
-                  type="button"
-                  data-selected={isSelected}
-                  onClick={() => {
-                    setNewsDay(opt.value);
-                    setNewsDayError(false);
-                  }}
-                  className={`relative min-w-0 h-full flex items-center justify-center px-2 rounded-lg text-xs font-sans font-bold tracking-wide uppercase transition-ui duration-150 select-none border border-transparent cursor-pointer ${
-                    isSelected ? "text-blue-300" : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
-                  }`}
-                >
-                  {isSelected && <SlideBg id="newsDaySlide" className="bg-blue-500/20 border-blue-500/40 shadow-xs" />}
-                  <span className="relative z-10 truncate">{opt.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-        <div>
-          <label lang="en" className="text-label sm:text-label font-bold uppercase tracking-wide mb-2 flex items-center gap-1.5 font-sans text-zinc-300">
-            <Layers size={13} className="text-blue-400" />
-            {L("asiaRangeFvgs")}
-          </label>
-          <div className="w-full grid grid-flow-col auto-cols-fr bg-zinc-950/80 border border-zinc-800/90 rounded-xl p-1 gap-1.5 h-9 sm:h-10 shadow-inner">
-            {withSelected(asiaRangeFvgs, selectedAsiaFvg ? [selectedAsiaFvg] : []).map((fv) => {
-              const isSelected = fv === selectedAsiaFvg;
-              return (
-                <button lang="en"
-                  key={fv}
-                  type="button"
-                  data-selected={isSelected}
-                  onClick={() => setSelectedAsiaFvg(isSelected ? "" : fv)}
-                  className={`relative min-w-0 h-full flex items-center justify-center px-2 rounded-lg text-xs font-sans font-bold tracking-wide uppercase transition-ui duration-150 select-none border border-transparent cursor-pointer ${
-                    isSelected ? "text-blue-300" : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
-                  }`}
-                >
-                  {isSelected && <SlideBg id="asiaFvgSlide" className="bg-blue-500/20 border-blue-500/40 shadow-xs" />}
-                  <span className="relative z-10 truncate">{fv}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
       {/* ASIA RANGE: Range · Trend (geniş, rahat butonlar) */}
       <div>
         <label lang="en" className="text-label sm:text-label font-bold text-zinc-300 uppercase tracking-wide mb-2 flex items-center gap-1.5 font-sans">
@@ -240,7 +147,7 @@ export const SetupChips = React.memo(function SetupChips({
         </div>
       </div>
 
-      {/* KURULUM SIRASI: POI Sweep Time · Session · Entry Model · Confirmations · Target (tam genişlik) */}
+      {/* KURULUM SIRASI: POI Sweep Time · Session (otomatik) · Confirmations (tam genişlik) */}
       <div className="grid grid-cols-2 content-start gap-x-4 gap-y-3 pt-1 border-t border-zinc-800/60">
         {/* SWEEP TIME (NY) */}
         <div className="flex flex-col">
@@ -251,68 +158,26 @@ export const SetupChips = React.memo(function SetupChips({
           <SweepTimePicker value={sweepTime} onChange={setSweepTime} />
         </div>
 
-        {/* SESSION */}
+        {/* SESSION: girilmez, POI Sweep saatinden gelir */}
         <div className="flex flex-col">
           <span lang="en" className="text-label font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
             <Clock size={12} className="text-blue-400 shrink-0" />
             {H("sessions", "SESSION")}
+            <span className="normal-case font-medium tracking-normal text-zinc-500">· otomatik</span>
           </span>
-          <div className="flex flex-wrap gap-1.5">
-            {sessions.map((sess, idx) => (
-              <button lang="en"
-                key={idx}
-                type="button"
-                data-selected={sess === selectedSession}
-                onClick={() => setSelectedSession(sess === selectedSession ? "" : sess)}
-                className={`${CHIP_BASE} ${
-                  sess === selectedSession
-                    ? "text-blue-300 border-transparent"
-                    : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
-                }`}
-              >
-                {sess === selectedSession && <SlideBg id="sessionSlide" rounded="rounded-xl" className="bg-blue-500/20 border-blue-500/60 shadow-xs" />}
-                <span className="relative z-10">{sess}</span>
-              </button>
-            ))}
+          <div
+            aria-live="polite"
+            title="POI Sweep saatinden otomatik belirlenir"
+            className={`h-9 flex items-center px-3 rounded-xl border text-xs font-sans font-bold tracking-wide uppercase select-none ${
+              session ? "bg-blue-500/10 border-blue-500/30 text-blue-300" : "bg-zinc-950/80 border-zinc-800 text-zinc-500"
+            }`}
+          >
+            <span className="truncate">{session || (sweepTime ? "Session dışı" : "Sweep saatini seç")}</span>
           </div>
         </div>
 
-        {/* ENTRY MODEL (çoklu) */}
-        <div className="flex flex-col">
-          <span lang="en" className="text-label font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
-            <Zap size={12} className="text-blue-400 shrink-0" />
-            {H("entryModels", "ENTRY MODEL")}
-          </span>
-          <div className="flex flex-wrap gap-1.5">
-            {entryModels.map((em, idx) => {
-              const isActive = selectedEntries.includes(em);
-              return (
-                <button lang="en"
-                  key={idx}
-                  type="button"
-                  data-selected={isActive}
-                  onClick={() =>
-                    setSelectedEntries(
-                      isActive
-                        ? selectedEntries.filter((x) => x !== em)
-                        : [...selectedEntries, em]
-                    )
-                  }
-                  className={`px-3 py-1.5 text-label rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
-                    isActive
-                      ? "bg-blue-500/20 text-blue-300 border-blue-500/60 shadow-xs"
-                      : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
-                  }`}
-                >
-                  {em}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* CONFIRMATIONS (çoklu; eski adı Premium / Discount, eskiden tek seçimliydi) */}
-        <div className="flex flex-col">
+        {/* CONFIRMATIONS (çoklu) — tam genişlik */}
+        <div className="col-span-2 flex flex-col">
           <span lang="en" className="text-label font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
             <ShieldCheck size={12} className="text-blue-400 shrink-0" />
             {H("premiumDiscounts", "CONFIRMATIONS")}
@@ -338,42 +203,6 @@ export const SetupChips = React.memo(function SetupChips({
             })}
           </div>
         </div>
-
-
-        {/* TARGET — çıkış hedefi (çoklu). En altta tam genişlik: seçenekler yan yana uzar, sıkışmaz */}
-        <div className="col-span-2 flex flex-col pt-2.5 border-t border-zinc-800/60">
-          <span lang="en" className="text-label font-bold text-zinc-300 uppercase tracking-wide mb-1 flex items-center gap-1.5 font-sans">
-            <Flag size={12} className="text-blue-400 shrink-0" />
-            {H("tpTargets", "TARGET")}
-          </span>
-          <div className="flex flex-wrap gap-1.5">
-            {withSelected(tpTargets, selectedTpTargets).map((tp) => {
-              const isActive = selectedTpTargets.includes(tp);
-              return (
-                <button lang="en"
-                  key={tp}
-                  type="button"
-                  data-selected={isActive}
-                  onClick={() =>
-                    setSelectedTpTargets(
-                      isActive
-                        ? selectedTpTargets.filter((x) => x !== tp)
-                        : [...selectedTpTargets, tp]
-                    )
-                  }
-                  className={`px-3 py-1.5 text-label rounded-xl transition-ui font-sans font-bold tracking-wide cursor-pointer border uppercase ${
-                    isActive
-                      ? "bg-blue-500/20 text-blue-300 border-blue-500/60 shadow-xs"
-                      : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:text-white hover:border-zinc-700 hover:bg-zinc-800/60"
-                  }`}
-                >
-                  {tp}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
       </div>
 
     </div>

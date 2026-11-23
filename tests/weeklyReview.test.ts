@@ -49,7 +49,7 @@ test('haftalık özet: toplamlar, gün şeridi, önceki hafta, en iyi / en köt�
   assert.equal(r.days[0].netR, 2);
   assert.equal(r.days[1].n, 2);
   assert.equal(r.days[6].n, 1); // Pazar
-  assert.equal(r.best?.label, 'Asia Range · Reversal · Breaker');
+  assert.equal(r.best?.label, 'Asia Range · Reversal');
   assert.equal(r.best?.netR, 3);
   assert.equal(r.worst?.netR, -1);
 });

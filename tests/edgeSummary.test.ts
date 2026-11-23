@@ -25,14 +25,6 @@ test('sızıntı ve güç: yeterli örneklemli tekil alan değerleri', () => {
   assert.deepEqual(s.riskSlices.map((r) => [r.riskPct, r.edge.n]), [[0.5, 10], [1, 8]]);
 });
 
-test('News day etkisi ve bilinmeyenler', () => {
-  const list = [t(2, { newsDay: false }, 1), t(-1, { newsDay: true }, 2), t(1, {}, 3)];
-  const s = computeEdgeSummary(list);
-  assert.equal(s.news.yes.netR, -1);
-  assert.equal(s.news.no.netR, 2);
-  assert.equal(s.news.unknown, 1);
-});
-
 test('boş liste güvenli', () => {
   const s = computeEdgeSummary([]);
   assert.equal(s.total, 0);

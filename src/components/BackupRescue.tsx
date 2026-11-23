@@ -54,12 +54,8 @@ interface BackupRescueProps {
     sessions: string[];
     assets: string[];
     planFidelities?: string[];
-    entryModels?: string[];
     trendTypes?: string[];
-    tpTargets?: string[];
     premiumDiscounts?: string[];
-    newsDays?: string[];
-    asiaRangeFvgs?: string[];
     definitionTitles?: DefinitionTitles;
     propAccounts?: PropAccount[];
   };

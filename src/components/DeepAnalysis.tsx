@@ -70,7 +70,6 @@ interface DeepAnalysisProps {
   onDelete?: (id: string) => void;
   definitionTitles?: DefinitionTitles;
   planFidelities?: string[];
-  entryModels?: string[];
   trendTypes?: string[];
 }
 

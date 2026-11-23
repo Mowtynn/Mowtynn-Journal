@@ -19,11 +19,9 @@ export interface Trade {
   platform?: string;        // Hesabın kayıt anındaki adı (görüntüleme ve filtre için); hesapsız işlemde boş
   accountCategory?: 'FUNDED' | 'CHALLENGE' | 'DEMO'; // Kayıt anındaki hesap tipi; DEMO = hesapsız
   accountStage?: number;    // Kayıt anındaki aşama: 1, 2, 3 = Phase, 0 = Funded; hesapsızda boş
-  session?: string;         // Trading session (e.g., London, New York)
+  session?: string;         // Session: formda girilmez, POI Sweep saatinden otomatik (London, NY AM …)
   planFidelity?: string | null; // Setup Kalitesi (Plan fidelity)
-  entryModels?: string[];   // Birden fazla Giriş Modeli (Multiple Entry Models)
   trend?: string;           // İşlem Tipi (eski adı Trend Yapısı): Continuation / Reversal
-  tpTargets?: string[];     // Target — çıkış hedefi / seviye (e.g. PDH / PDL, Asia High / Low)
   /** Confirmations (çoklu seçim): ör. 1H POI, 4H POI, Discount. Tek kaynak bu dizi; `tradeConfirmations()` ile okunur. */
   confirmationTags?: string[];
   /**
@@ -35,8 +33,6 @@ export interface Trade {
   strategy?: string;
   asiaRange?: AsiaRangeType; // Asia Range davranışı: Range / Trend (eski kayıtlarda Swept)
   sweepTime?: string;       // POI Sweep saati, New York saatiyle "HH:mm" (Asia Range seçiminden tamamen bağımsız)
-  asiaRangeFvg?: string;    // Asia Range FVG (1H) (Tanımlamalar'dan yönetilir)
-  newsDay?: boolean;        // News Day / Bank Holiday: true = Var, false = Yok. Girilmemişse tanımsız (bilinmiyor)
   accountId?: string;       // Prop hesap kimliği (PropAccount.id)
   riskPct?: number;         // İşlem başı risk (%), hesabın başlangıç bakiyesine göre
   riskAmount?: number;      // riskPct'nin dolar karşılığı; hesap bakiyesi = R × riskAmount
@@ -54,6 +50,10 @@ export interface Trade {
   management?: string[];
   afterExitTp?: boolean;
   exitAt?: number;
+  entryModels?: string[];   // Entry Model
+  tpTargets?: string[];     // Target
+  asiaRangeFvg?: string;    // Asia Range FVG (1H)
+  newsDay?: boolean;        // News Day / Bank Holiday: true = Var, false = Yok
 }
 
 /**
@@ -184,12 +184,8 @@ export interface DefinitionTitles {
   assets: string;
   sessions: string;
   planFidelities: string;
-  entryModels?: string;
   trendTypes?: string;
-  tpTargets?: string;
   premiumDiscounts?: string;
-  newsDays?: string;
-  asiaRangeFvgs?: string;
   riskPresets?: string;
   // Listesi olmayan form alanlarının başlıkları (Tanımlamalar > Form Başlıkları)
   basicInfoCard?: string;

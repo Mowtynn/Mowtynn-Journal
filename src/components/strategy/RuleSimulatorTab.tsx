@@ -7,7 +7,6 @@ import { SCAN_DIMENSIONS } from '../../lib/edgeSummary';
 import { ruleOptions, simulateRule, HALF_MIN, type RuleCondition, type HalfStatus } from '../../lib/ruleSimulator';
 import { EDGE_PROOF_MIN } from '../../lib/sampleSize';
 import type { EdgeStats } from '../../lib/asiaAnalytics';
-import { useNewsDayLabels } from '../../hooks/useNewsDayLabels';
 import { fixed, formatR, trPossessive, rnum } from '../../lib/format';
 
 const STORAGE_KEY = 'tj_rule_sim';
@@ -93,16 +92,15 @@ const ci = (e: EdgeStats) => (e.n > 1 ? `%95: ${rnum(e.expLo)} – ${rnum(e.expH
 
 export const RuleSimulatorTab = React.memo(function RuleSimulatorTab({ trades }: { trades: Trade[] }) {
   const [conds, setConds] = useState<RuleCondition[]>(loadConds);
-  const { version } = useNewsDayLabels();
   const update = (next: RuleCondition[]) => {
     setConds(next);
     saveConds(next);
   };
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const options = useMemo(() => Object.fromEntries(SCAN_DIMENSIONS.map((d) => [d, ruleOptions(trades, d)])) as Record<SetupDimension, string[]>, [trades, version]);
+  const options = useMemo(() => Object.fromEntries(SCAN_DIMENSIONS.map((d) => [d, ruleOptions(trades, d)])) as Record<SetupDimension, string[]>, [trades]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const res = useMemo(() => simulateRule(trades, conds), [trades, conds, version]);
+  const res = useMemo(() => simulateRule(trades, conds), [trades, conds]);
 
   const used = new Set(conds.map((c) => c.dim));
   const free = SCAN_DIMENSIONS.filter((d) => !used.has(d) && options[d]?.length);

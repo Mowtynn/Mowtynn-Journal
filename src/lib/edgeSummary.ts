@@ -1,5 +1,4 @@
 import { Trade } from '../types';
-import { getNewsDayLabels } from '../constants/constants';
 import { byEntryTime } from './tradeModel';
 import { edgeFromR, EdgeStats, indexTradeOrder } from './asiaAnalytics';
 import { computeEdgeDrift, DRIFT_RECENT } from './edgeDrift';
@@ -85,7 +84,6 @@ export interface EdgeSummary {
   rules: EdgeRule[];
   /** Taramada karşılaştırılan alan değeri sayısı (çoklu karşılaştırma uyarısı için) */
   testedSlices: number;
-  news: { yes: EdgeStats; no: EdgeStats; unknown: number };
 }
 
 /** Sızıntı / güç taramasında bakılan tekil alanlar (yalnızca işleme girmeden önce bilinenler) */
@@ -97,12 +95,8 @@ export const SCAN_DIMENSIONS: SetupDimension[] = [
   'prevTrade',
   'accountStage',
   'session',
-  'entryModels',
   'premiumDiscount',
   'trend',
-  'tpTargets',
-  'asiaRangeFvg',
-  'newsDay',
   'weekday',
   'type',
   'asset',
@@ -266,9 +260,6 @@ export function computeEdgeSummary(trades: Trade[], minSample = SETUP_MIN_SAMPLE
   }
   const riskSlices = [...byRisk.entries()].sort((a, b) => a[0] - b[0]).map(([riskPct, list]) => ({ riskPct, edge: edgeOf(list) }));
 
-  const yes = sorted.filter((t) => t.newsDay === true);
-  const no = sorted.filter((t) => t.newsDay === false);
-
   return {
     total: sorted.length,
     overall: edgeOf(sorted),
@@ -282,7 +273,6 @@ export function computeEdgeSummary(trades: Trade[], minSample = SETUP_MIN_SAMPLE
     bestPairs,
     worstPairs,
     testedSlices: slices.length + pairs.tested,
-    news: { yes: edgeOf(yes), no: edgeOf(no), unknown: sorted.length - yes.length - no.length },
   };
 }
 
@@ -633,14 +623,13 @@ const analysisCache = new WeakMap<Trade[], { key: string; value: EdgeAnalysis }>
 
 /**
  * Edge Özeti ekranının ağır hesabı (özet + tesadüf testi), girdi listesine bağlı saklanır. Alt sekme her açılışta yeniden
- * kurulduğu için eskiden her dönüşte baştan hesaplanıyordu (800 işlemde yarım saniye); şimdi aynı liste, aynı Var/Yok
- * etiketleri ve aynı takvim gününde sonuç anında gelir. Liste değişince (işlem / filtre) yeniden hesaplanır; WeakMap
+ * kurulduğu için eskiden her dönüşte baştan hesaplanıyordu (800 işlemde yarım saniye); şimdi aynı liste ve aynı takvim
+ * gününde sonuç anında gelir. Liste değişince (işlem / filtre) yeniden hesaplanır; WeakMap
  * olduğu için eski listeler bellekte tutulmaz. Dönen nesne salt okunurdur.
  */
 export function cachedEdgeAnalysis(trades: Trade[], now: number = Date.now()): EdgeAnalysis {
-  const nl = getNewsDayLabels();
-  // "Son 7 gün" ihlalleri bugüne göre sayıldığı için anahtara takvim günü de girer
-  const key = `${nl.yes}\u0000${nl.no}\u0000${Math.floor(now / DAY_MS)}`;
+  // "Son 7 gün" ihlalleri bugüne göre sayıldığı için anahtar takvim günüdür
+  const key = String(Math.floor(now / DAY_MS));
   const hit = analysisCache.get(trades);
   if (hit && hit.key === key) return hit.value;
   const value: EdgeAnalysis = { summary: computeEdgeSummary(trades, SETUP_MIN_SAMPLE, now), oos: validateOutOfSample(trades) };

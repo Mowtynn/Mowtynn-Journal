@@ -37,36 +37,15 @@ export function getTradeStageLabel(trade: { accountId?: string; accountStage?: n
 export const DEFAULT_SESSIONS = ["London", "NY AM"];
 export const DEFAULT_ASSETS = ["EURUSD", "GBPUSD", "XAUUSD", "NQ100", "BTCUSDT"];
 export const DEFAULT_PLAN_FIDELITIES = ["A+", "A", "B-C"];
-export const DEFAULT_ENTRY_MODELS = [
-  "Breaker",
-  "Mitigation",
-  "FVG",
-  "IFVG"
-];
 export const DEFAULT_TREND_TYPES = [
   "Continuation",
   "Reversal"
-];
-export const DEFAULT_TP_TARGETS = [
-  "PDH / PDL",
-  "PWH / PWL",
-  "Asia High / Low",
-  "Session High / Low",
-  "EQH / EQL",
-  "HTF PD Array"
 ];
 export const DEFAULT_PREMIUM_DISCOUNTS = [
   "Premium",
   "Discount",
   "Equilibrium / OTE"
 ];
-
-/**
- * News Day / Bank Holiday: sabit iki durumlu alan. Liste her zaman tam 2 öğedir:
- * [0] = "Var" (true), [1] = "Yok" (false, varsayılan). Tanımlamalar'dan yalnızca etiketleri yeniden adlandırılır;
- * işlemde etiket değil boolean saklanır, böylece yeniden adlandırma geçmiş kayıtları bozmaz.
- */
-export const DEFAULT_ASIA_RANGE_FVGS = ["Var", "Yok"];
 
 /** İşlem formundaki hazır risk yüzdeleri (Tanımlamalar > Risk %). Formda tek satıra sığsın diye en fazla 5. */
 export const DEFAULT_RISK_PRESETS = ["0.5", "0.75", "1"];
@@ -97,55 +76,13 @@ export const FORM_LABEL_KEYS = [
   "rr", "chartLink", "asiaRange", "sweepTime",
 ] as const;
 
-export const DEFAULT_NEWS_DAYS = ["Var", "Yok"];
-
-export const normalizeNewsDays = (list?: unknown): string[] => {
-  const arr = Array.isArray(list) ? list : [];
-  const yes = typeof arr[0] === "string" && arr[0].trim() ? titleCase(arr[0]) : DEFAULT_NEWS_DAYS[0];
-  let no = typeof arr[1] === "string" && arr[1].trim() ? titleCase(arr[1]) : DEFAULT_NEWS_DAYS[1];
-  if (no.toLowerCase() === yes.toLowerCase()) no = yes === DEFAULT_NEWS_DAYS[1] ? DEFAULT_NEWS_DAYS[0] : DEFAULT_NEWS_DAYS[1];
-  return [yes, no];
-};
-
-export const NEWS_DAYS_EVENT = "tj_news_days_updated";
-
-/** Analiz ekranları için güncel Var / Yok etiketleri (localStorage'dan okunur). */
-// Analizler bu etiketi işlem başına defalarca ister: ham değer değişmedikçe ayrıştırma tekrarlanmaz
-let newsLabelCache: { raw: string | null; value: { yes: string; no: string } } | null = null;
-let newsStorageMissing = false;
-export function getNewsDayLabels(): { yes: string; no: string } {
-  let raw: string | null = null;
-  if (!newsStorageMissing) {
-    try {
-      raw = localStorage.getItem("trading_news_days_list");
-    } catch (e) {
-      // localStorage yok (sunucu / test ortamı): her çağrıda yeniden denenmez
-      newsStorageMissing = typeof localStorage === "undefined";
-    }
-  }
-  if (newsLabelCache && newsLabelCache.raw === raw) return newsLabelCache.value;
-  let value = { yes: DEFAULT_NEWS_DAYS[0], no: DEFAULT_NEWS_DAYS[1] };
-  if (raw) {
-    try {
-      const [yes, no] = normalizeNewsDays(JSON.parse(raw));
-      value = { yes, no };
-    } catch (e) {}
-  }
-  newsLabelCache = { raw, value };
-  return value;
-}
-
 export const DEFAULT_DEFINITION_TITLES: DefinitionTitles = {
   platforms: "Hesap",
   assets: "Parite",
   sessions: "Session",
   planFidelities: "Setup Kalitesi",
-  entryModels: "Entry Model",
   trendTypes: "İşlem Tipi",
-  tpTargets: "Target",
   premiumDiscounts: "Confirmations",
-  newsDays: "News Day/Bank Holiday",
-  asiaRangeFvgs: "Asia Range FVG (1H)",
   riskPresets: "Risk",
   basicInfoCard: "Temel Bilgiler",
   financialCard: "Sonuç",
@@ -352,8 +289,6 @@ export const sanitizeDefinitionTitles = (raw: Partial<DefinitionTitles> = {}): D
 
   // R tabanlı model: platform listesi yerine hesap; dolar sonucu yok
   if (!result.platforms || /platform/i.test(result.platforms)) result.platforms = "Hesap";
-  // TP Target → Target: alan artık çıkış hedefini (işlemden nerede çıkılacağını) anlatır
-  if (!result.tpTargets || /^tp[\s_-]*target$/i.test(result.tpTargets.trim())) result.tpTargets = "Target";
   // Premium / Discount → Confirmations (özel başlık verildiyse korunur)
   if (!result.premiumDiscounts || /^premium\s*\/?\s*discount$/i.test(result.premiumDiscounts.trim())) result.premiumDiscounts = "Confirmations";
   if (!result.financialCard || /finansal/i.test(result.financialCard)) result.financialCard = "Sonuç";
@@ -363,16 +298,11 @@ export const sanitizeDefinitionTitles = (raw: Partial<DefinitionTitles> = {}): D
     result.sessions = "Session";
   }
 
-  if (!result.entryModels || /giriş model/i.test(result.entryModels)) {
-    result.entryModels = "Entry Model";
-  }
-
-  // Asia Range FVG 1H grafikte okunur: eski varsayılan başlık "Asia Range FVG (1H)" olur (özel başlık korunur)
-  if (!result.asiaRangeFvgs || /^asia range fvg$/i.test(result.asiaRangeFvgs.trim())) result.asiaRangeFvgs = DEFAULT_DEFINITION_TITLES.asiaRangeFvgs as string;
-
-  if (!result.newsDays) {
-    result.newsDays = DEFAULT_DEFINITION_TITLES.newsDays;
-  }
+  // Formdan kaldırılan alanların başlıkları (Entry Model, Target, News Day, Asia Range FVG) eski kayıtlardan düşer
+  delete (result as any).entryModels;
+  delete (result as any).tpTargets;
+  delete (result as any).newsDays;
+  delete (result as any).asiaRangeFvgs;
 
   return result;
 };

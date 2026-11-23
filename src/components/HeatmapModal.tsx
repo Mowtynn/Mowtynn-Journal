@@ -62,11 +62,11 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
     if (hasUnspecified || sessions.length === 0) sessions.push(UNSPECIFIED_SESSION);
 
     // Initialize matrix
-    const matrix: { [day: string]: { [session: string]: { r: number, count: number, winCount: number, conceptCounts: Record<string, number>, planFidelityCounts: Record<string, number> } } } = {};
+    const matrix: { [day: string]: { [session: string]: { r: number, count: number, winCount: number, planFidelityCounts: Record<string, number> } } } = {};
     days.forEach(d => {
       matrix[d] = {};
       sessions.forEach(s => {
-        matrix[d][s] = { r: 0, count: 0, winCount: 0, conceptCounts: {}, planFidelityCounts: {} };
+        matrix[d][s] = { r: 0, count: 0, winCount: 0, planFidelityCounts: {} };
       });
     });
 
@@ -83,11 +83,6 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
           if (t.status === 'WIN') matrix[dayName][s].winCount += 1;
           matrix[dayName][s].r += (t.rr || 0);
           
-          const strat = t.entryModels?.[0]?.trim();
-          if (strat) {
-            matrix[dayName][s].conceptCounts[strat] = (matrix[dayName][s].conceptCounts[strat] || 0) + (t.status === 'WIN' ? 1 : 0);
-          }
-
           if (t.planFidelity && t.planFidelity.trim()) {
             const pf = t.planFidelity.trim();
             matrix[dayName][s].planFidelityCounts[pf] = (matrix[dayName][s].planFidelityCounts[pf] || 0) + 1;
