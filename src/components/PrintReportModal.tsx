@@ -1,5 +1,5 @@
 import { MODAL_BACKDROP, MODAL_PANEL } from '../lib/motion';
-import { smartUpper } from '../constants/constants';
+import { smartUpper, getTradeAccountName } from '../constants/constants';
 import React, { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -350,14 +350,13 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                         <th className="py-2.5 px-2 text-center font-bold font-sans">YÖN</th>
                         <th className="py-2.5 px-2 text-center font-bold font-sans">SONUÇ</th>
                         <th className="py-2.5 px-2 text-center font-bold font-sans">R</th>
-                        <th className="py-2.5 px-3 text-right font-bold font-sans">RİSK</th>
                         <th className="py-2.5 px-3 text-right font-bold font-sans">HESAP</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-zinc-800/80">
                       {activeTrades.length === 0 ? (
                         <tr>
-                          <td colSpan={7} className="py-8 text-center text-zinc-500 font-medium">
+                          <td colSpan={6} className="py-8 text-center text-zinc-500 font-medium">
                             Seçili tarih aralığında kaydedilmiş herhangi bir işlem bulunamadı.
                           </td>
                         </tr>
@@ -418,20 +417,11 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                                 })()}
                               </td>
 
-                              {/* Risk */}
-                              <td className="py-2.5 px-3 text-right font-sans font-bold whitespace-nowrap text-zinc-300">
-                                {typeof trade.riskPct === 'number' ? `%${trade.riskPct.toLocaleString('en-US', { maximumFractionDigits: 2 })}` : '—'}
-                              </td>
-
                               {/* Platform */}
                               <td className="py-2.5 px-3 text-right text-zinc-400 font-medium uppercase font-sans tracking-wider">
-                                {trade.platform ? (
-                                  <span className="whitespace-nowrap inline-flex items-center justify-center px-2 py-0.5 rounded-md bg-zinc-800/80 border border-zinc-700/60 text-zinc-300 text-label font-bold uppercase font-sans">
-                                    {trade.platform}
-                                  </span>
-                                ) : (
-                                  <span className="text-zinc-500 text-label font-bold">HESAPSIZ</span>
-                                )}
+                                <span className="whitespace-nowrap inline-flex items-center justify-center px-2 py-0.5 rounded-md bg-zinc-800/80 border border-zinc-700/60 text-zinc-300 text-label font-bold uppercase font-sans">
+                                  {getTradeAccountName(trade)}
+                                </span>
                               </td>
                             </tr>
                           );

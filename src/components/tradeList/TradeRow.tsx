@@ -3,7 +3,7 @@ import { TradeMobileCard } from "./TradeMobileCard";
 import React, { useMemo } from 'react';
 import { smartUpper } from '../../constants/constants';
 import { Trade } from '../../types';
-import { getTradeAccountCategory, getTradeAccountName, ACCOUNT_CATEGORY_BADGE } from '../../constants/constants';
+import { getTradeAccountKind, getTradeAccountName, ACCOUNT_KIND_BADGE } from '../../constants/constants';
 import { Edit3, Trash2 } from 'lucide-react';
 import { nyWallDate } from '../../lib/tradingTime';
 
@@ -23,11 +23,9 @@ export const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
   onEdit: (trade: Trade) => void;
   setTradeToDelete: (trade: Trade) => void;
 }) {
-  const category = getTradeAccountCategory(trade);
-  const categoryBadgeClass = `${ACCOUNT_CATEGORY_BADGE[category]} ${category === 'FUNDED' ? 'group-hover:border-emerald-500/60' : category === 'CHALLENGE' ? 'group-hover:border-blue-500/60' : 'group-hover:border-amber-500/60'}`;
+  const category = getTradeAccountKind(trade);
+  const categoryBadgeClass = `${ACCOUNT_KIND_BADGE[category]} ${category === 'PROP' ? 'group-hover:border-blue-500/60' : 'group-hover:border-amber-500/60'}`;
 
-  // Risk sütunu: hesaplı işlemde işlem başı risk yüzdesi, hesapsızda boş
-  const riskText = typeof trade.riskPct === 'number' ? `%${trade.riskPct.toLocaleString('en-US', { maximumFractionDigits: 2 })}` : '—';
   const accountLabel = getTradeAccountName(trade);
 
   const formattedDateOnly = useMemo(
@@ -75,12 +73,7 @@ export const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
             <TrendBadge trend={trade.trend} />
           </div>
         </td>
-        <td className={`${CELL} px-3 w-[9%] min-w-[70px] text-zinc-300 font-bold`}>
-          <div>
-            <span className="text-xs font-bold tracking-tight">{riskText}</span>
-          </div>
-        </td>
-        <td className={`${CELL} w-[18%] min-w-[75px]`}>
+        <td className={`${CELL} w-[27%] min-w-[75px]`}>
           <div>
             {accountLabel ? (
               <span className={`inline-block min-w-[54px] max-w-full h-[20px] leading-[18px] px-2 text-center text-label font-bold rounded-full uppercase whitespace-nowrap truncate border transition-colors ${categoryBadgeClass}`}>

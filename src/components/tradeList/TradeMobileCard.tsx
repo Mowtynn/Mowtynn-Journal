@@ -3,13 +3,13 @@ import { Edit3, Trash2 } from 'lucide-react';
 import { Trade } from '../../types';
 import { formatR } from '../../lib/format';
 import { nyWallDate } from '../../lib/tradingTime';
-import { getTradeAccountCategory, getTradeAccountName, ACCOUNT_CATEGORY_BADGE, smartUpper } from '../../constants/constants';
+import { getTradeAccountKind, getTradeAccountName, ACCOUNT_KIND_BADGE, smartUpper } from '../../constants/constants';
 
 const dateFmt = new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' });
 
 /**
  * Telefonda işlem satırı: tablo sütunları yerine tek bakışta okunan kart.
- * Solda parite + yön, altında tarih · session · işlem tipi ve hesap; sağda büyük R (renk yalnızca sonuçta) ve risk.
+ * Solda parite + yön, altında tarih · session · işlem tipi ve hesap; sağda büyük R (renk yalnızca sonuçta).
  * İşlem listesi ve İşlem Geçmişi penceresi aynı kartı kullanır; düzenle / sil yalnızca verilirse görünür.
  */
 export const TradeMobileCard = React.memo(function TradeMobileCard({
@@ -28,7 +28,6 @@ export const TradeMobileCard = React.memo(function TradeMobileCard({
   const date = Number.isFinite(trade.createdAt) ? dateFmt.format(nyWallDate(trade.createdAt)) : '—';
   const meta = [date, trade.session, trade.trend].filter(Boolean).join(' · ');
   const account = getTradeAccountName(trade);
-  const risk = typeof trade.riskPct === 'number' && Number.isFinite(trade.riskPct) ? `%${trade.riskPct.toLocaleString('en-US', { maximumFractionDigits: 2 })} risk` : null;
   const long = trade.type === 'LONG';
 
   return (
@@ -63,7 +62,7 @@ export const TradeMobileCard = React.memo(function TradeMobileCard({
         <div className="mt-1 text-label leading-snug text-zinc-500 whitespace-normal">{meta}</div>
         {account && (
           <span
-            className={`mt-1.5 inline-block max-w-full truncate align-top h-[18px] leading-[16px] px-2 rounded-full text-label font-bold uppercase border ${ACCOUNT_CATEGORY_BADGE[getTradeAccountCategory(trade)]}`}
+            className={`mt-1.5 inline-block max-w-full truncate align-top h-[18px] leading-[16px] px-2 rounded-full text-label font-bold uppercase border ${ACCOUNT_KIND_BADGE[getTradeAccountKind(trade)]}`}
           >
             {account}
           </span>
@@ -72,7 +71,6 @@ export const TradeMobileCard = React.memo(function TradeMobileCard({
 
       <div className="shrink-0 text-right">
         <div className={`text-lg font-extrabold leading-none tabular-nums ${rTone}`}>{rr === null ? '—' : rr === 0 ? 'BE' : formatR(rr)}</div>
-        {risk && <div className="mt-1 text-label text-zinc-500 tabular-nums">{risk}</div>}
       </div>
 
       {(onEdit || onDelete) && (

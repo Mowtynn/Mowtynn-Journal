@@ -19,7 +19,6 @@ import { SlidersHorizontal,
   Target,
   TrendingUp,
   BookOpen,
-  Percent,
   Scale,
   PenLine,
 } from 'lucide-react';
@@ -155,12 +154,10 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
   // Ek alanların seçenekleri: Tanımlamalar + işlemlerde görülen değerler
   const extraOptions = React.useMemo(() => {
     const pd = new Set(premiumDiscounts);
-    const risk = new Set<number>();
     let incomplete = 0;
     if (ready) {
       trades.forEach((t) => {
         tradeConfirmations(t).forEach((x) => pd.add(x));
-        if (typeof t.riskPct === 'number' && t.riskPct > 0) risk.add(Math.round(t.riskPct * 1000) / 1000);
         if (t.quickEntry === true) incomplete++;
       });
     }
@@ -168,11 +165,9 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
       // "Swept" formdan kaldırıldı: yalnızca eski kayıtlarda varsa seçenek olarak görünür
       asiaRanges: [...ASIA_RANGE_FORM_TYPES, ...(ready && trades.some((t) => t.asiaRange === 'Swept') ? ['Swept'] : [])] as string[],
       premiumDiscounts: Array.from(pd),
-      riskPcts: Array.from(risk).sort((a, b) => a - b),
       incomplete,
     };
   }, [ready, trades, premiumDiscounts]);
-  const riskLabel = (n: number) => `%${n.toLocaleString('en-US', { maximumFractionDigits: 3 })}`;
 
   // Keep track of which accordion categories are expanded
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
@@ -202,7 +197,6 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
       asiaRangeType: true,
       ...Object.fromEntries(FILTER_DIMENSIONS.map((d) => [`dim:${d}`, true])),
       pd: true,
-      riskPct: true,
       quickEntry: true,
     });
   };
@@ -482,25 +476,6 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                   selectedValues={globalExtra.premiumDiscounts}
                   onChange={(vals) => patchExtra({ premiumDiscounts: vals })}
                 />
-              </FilterAccordionRow>
-
-              {/* 16. RİSK % */}
-              <FilterAccordionRow title="İşlem Başı Risk"
-                icon={<Percent size={14} className="text-blue-400" />}
-                summaryText={globalExtra.riskPcts.length > 0 ? globalExtra.riskPcts.map(riskLabel).join(', ') : 'Tümü'}
-                badgeCount={globalExtra.riskPcts.length}
-                isOpen={!!openSections.riskPct}
-                onToggle={() => toggleSection('riskPct')}
-              >
-                {extraOptions.riskPcts.length > 0 ? (
-                  <PillMultiSelect
-                    options={extraOptions.riskPcts.map(riskLabel)}
-                    selectedValues={globalExtra.riskPcts.map(riskLabel)}
-                    onChange={(vals) => patchExtra({ riskPcts: extraOptions.riskPcts.filter((n) => vals.includes(riskLabel(n))) })}
-                  />
-                ) : (
-                  <p className="text-label text-zinc-500 p-1">Risk % girilmiş işlem yok. Prop hesabına bağlı işlemlerde risk % formda kaydedilir.</p>
-                )}
               </FilterAccordionRow>
 
               {/* 17. HIZLI KAYIT */}

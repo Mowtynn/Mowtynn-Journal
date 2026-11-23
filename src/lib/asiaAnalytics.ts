@@ -1,6 +1,6 @@
 import { byEntryTime, tradeConfirmations } from './tradeModel';
 import { Trade } from '../types';
-import { getTradeAccountCategory, getTradeStageLabel } from '../constants/constants';
+import { getTradeAccountKind } from '../constants/constants';
 import { calculateProfitFactor, toRR } from './statMath';
 import { EDGE_PROOF_MIN } from './sampleSize';
 import {
@@ -19,14 +19,13 @@ export const DATASET_LABELS: Record<DatasetKey, string> = {
   ALL: 'Tüm Veri',
   BACKTEST: 'Backtest',
   LIVETEST: 'Hesapsız / Demo',
-  REAL: 'Funded & Challenge',
+  REAL: 'Prop',
 };
 
 export function getTradeDataset(t: Trade): Exclude<DatasetKey, 'ALL'> {
   const platform = (t.platform || '').toLowerCase();
   if (platform.includes('backtest')) return 'BACKTEST';
-  const cat = getTradeAccountCategory(t);
-  if (cat === 'DEMO') return 'LIVETEST';
+  if (getTradeAccountKind(t) === 'DEMO') return 'LIVETEST';
   return 'REAL';
 }
 
@@ -225,8 +224,6 @@ function groupTrades(trades: Trade[], keyFn: (t: Trade) => string | string[] | n
     .sort((a, b) => b.stats.expectancy - a.stats.expectancy);
 }
 
-const hasNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
-
 /* ------------------------------------------------------------------ */
 /* Data completeness                                                   */
 /* ------------------------------------------------------------------ */
@@ -255,11 +252,6 @@ export function sweepBucketOrder(key: string): number {
   const m = key.match(/^(\d{2}):(\d{2})/);
   if (!m) return 9999;
   return (Number(m[1]) * 60 + Number(m[2]) - 18 * 60 + 1440) % 1440;
-}
-
-/** Hesap Aşaması: Phase 1 / Phase 2 / Funded; hesapsız işlemler bu boyutta yer almaz */
-export function stageBucket(t: Pick<Trade, 'accountId' | 'accountStage'>): string | null {
-  return getTradeStageLabel(t) || null;
 }
 
 /**
@@ -315,7 +307,7 @@ export function prevTradeBucket(t: Pick<Trade, 'id'>): string | null {
 
 /**
  * Veri eksiği panosu: formdaki her girdinin doluluk oranı (form sırasıyla) ve o girdinin açtığı analiz.
- * Yalnızca belirli işlemlerde sorulan alanlar kendi paydasıyla ölçülür (Risk % yalnızca hesaplı işlemlerde).
+ * Yalnızca belirli işlemlerde sorulan alanlar kendi paydasıyla ölçülür (asked).
  */
 export function computeCoverage(trades: Trade[]): CoverageRow[] {
   const defs: Array<{ field: string; label: string; unlocks: string; ok: (t: Trade) => boolean; asked?: (t: Trade) => boolean }> = [
@@ -325,7 +317,6 @@ export function computeCoverage(trades: Trade[]): CoverageRow[] {
     { field: 'sweepTime', label: 'POI Sweep Time', unlocks: 'POI Sweep saati (30 dk), POI Sweep saati × parite tablosu', ok: (t) => !!t.sweepTime },
     { field: 'session', label: 'Session (otomatik)', unlocks: 'Session ve Session × Yön kıyası; POI Sweep saatinden belirlenir', ok: (t) => !!t.session },
     { field: 'premiumDiscount', label: 'Confirmations', unlocks: 'Confirmations × Yön kıyası', ok: (t) => tradeConfirmations(t).length > 0 },
-    { field: 'riskPct', label: 'Risk %', unlocks: 'Risk seviyesine göre edge, aşırı risk uyarısı (hesaplı işlemlerde)', ok: (t) => hasNum(t.riskPct) && t.riskPct > 0, asked: (t) => !!t.accountId },
   ];
   return defs.map((d) => {
     const pool = d.asked ? trades.filter(d.asked) : trades;

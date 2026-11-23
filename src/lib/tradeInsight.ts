@@ -1,5 +1,5 @@
 import { Trade } from '../types';
-import { getTradeAccountCategory } from '../constants/constants';
+import { getTradeAccountKind } from '../constants/constants';
 import { edgeFromR, EdgeStats } from './asiaAnalytics';
 import { dimensionValue, verdictFor, DEFAULT_SETUP_DIMENSIONS, SETUP_DIMENSIONS, SETUP_MIN_SAMPLE, UNSPECIFIED, type SetupVerdict } from './setupScorecard';
 
@@ -28,10 +28,10 @@ export function computePricePath(t: Trade): PricePath {
   return { realizedR };
 }
 
-/** Karşılaştırma havuzu: hesapsız (demo) işlem yalnızca hesapsızlarla, prop işlemi yalnızca prop işlemleriyle (Challenge + Funded) */
+/** Karşılaştırma havuzu: hesapsız (demo) işlem yalnızca hesapsızlarla, prop işlemi yalnızca prop işlemleriyle */
 function insightPool(trade: Trade, allTrades: Trade[]): Trade[] {
-  const isDemo = getTradeAccountCategory(trade) === 'DEMO';
-  return allTrades.filter((t) => (getTradeAccountCategory(t) === 'DEMO') === isDemo);
+  const kind = getTradeAccountKind(trade);
+  return allTrades.filter((t) => getTradeAccountKind(t) === kind);
 }
 
 export function computeTradeInsight(trade: Trade, everyTrade: Trade[]): TradeInsight {

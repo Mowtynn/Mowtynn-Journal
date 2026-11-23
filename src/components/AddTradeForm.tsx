@@ -1,22 +1,20 @@
 import { PANE } from '../lib/motion';
-import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "motion/react";
-import { Trade, DefinitionTitles, PropAccount } from "../types";
-import { defaultRiskAmount } from "../lib/propAccounts";
-import { formatMoney, formatR } from "../lib/format";
+import { Trade, DefinitionTitles, AccountCategory } from "../types";
+import { formatR } from "../lib/format";
 import {
   DEFAULT_PLAN_FIDELITIES,
   DEFAULT_TREND_TYPES,
   DEFAULT_DEFINITION_TITLES,
   DEFAULT_PREMIUM_DISCOUNTS,
-  DEFAULT_RISK_PRESETS,
-  parseRiskPreset,
+  getTradeAccountKind,
 } from "../constants/constants";
 import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
 import { missingRequired } from "../lib/requiredFields";
 import { Plus, X, Zap, Copy } from "lucide-react";
-import { NO_ACCOUNT, Num, AccountOption, buildInitial, useTitles, statusOfR } from './tradeForm/shared';
+import { Num, buildInitial, useTitles, statusOfR } from './tradeForm/shared';
 import { roundR, tradeConfirmations } from '../lib/tradeModel';
 import { autoSessionForNyTime } from '../lib/sessions';
 import { nyInputToTs, newTradeDateInput } from '../lib/tradingTime';
@@ -39,15 +37,11 @@ interface AddTradeFormProps {
   planFidelities?: string[];
   trendTypes?: string[];
   premiumDiscounts?: string[];
-  /** Hazır risk yüzdeleri (Tanımlamalar > Risk) */
-  riskPresets?: string[];
   definitionTitles?: DefinitionTitles;
   /** En son kaydedilen işlem: "Son kurulumu kopyala" için */
   lastTrade?: Trade | null;
   /** Pencere kapatma isteği (Esc / X / arka plan) önce forma sorulur; true dönerse form isteği karşıladı demektir */
   registerCloseGuard?: (guard: (() => boolean) | null) => void;
-  /** Prop hesapları: formda aktif hesaplar + "Hesapsız" seçenekleri olarak listelenir */
-  propAccounts?: PropAccount[];
   /** Hızlı kayıt: yalnızca temel bilgiler + sonuç; ayrıntılar sonra düzenle ile tamamlanır */
   quickMode?: boolean;
   onQuickModeChange?: (v: boolean) => void;
@@ -56,11 +50,10 @@ interface AddTradeFormProps {
    * Kapalıyken: kaydırma kilidi, odak ve kapatma koruması devre dışı.
    */
   active?: boolean;
-  /** Yeni işlemde önceden seçili hesap: üst çubukta tek hesap ya da Hesapsız seçiliyse o */
-  defaultAccountChoice?: string | null;
+  /** Yeni işlemde önceden seçili hesap türü: üst çubukta Hesapsız seçiliyse o, değilse son işleminki */
+  defaultAccountKind?: AccountCategory | null;
 }
 
-/** Hesapsız (demo/backtest) seçimi */
 const AddTradeForm = React.memo(function AddTradeForm({
   onSave,
   editingTrade,
@@ -70,15 +63,13 @@ const AddTradeForm = React.memo(function AddTradeForm({
   planFidelities = DEFAULT_PLAN_FIDELITIES,
   trendTypes = DEFAULT_TREND_TYPES,
   premiumDiscounts = DEFAULT_PREMIUM_DISCOUNTS,
-  riskPresets = DEFAULT_RISK_PRESETS,
   definitionTitles = DEFAULT_DEFINITION_TITLES,
   lastTrade = null,
   registerCloseGuard,
-  propAccounts = [],
   quickMode = false,
   onQuickModeChange,
   active = true,
-  defaultAccountChoice = null,
+  defaultAccountKind = null,
 }: AddTradeFormProps) {
   useBodyScrollLock(active);
   // Hızlı mod yalnızca yeni işlemde; düzenlerken her zaman tam form açılır (eksikler orada tamamlanır)
@@ -86,33 +77,17 @@ const AddTradeForm = React.memo(function AddTradeForm({
   const titles = useTitles(definitionTitles);
 
   // İlk değerler bir kez, doğrudan işlemden. Form her açılışta yeniden bağlanır (App'te key).
-  const riskPresetValues = useMemo(
-    () => riskPresets.map(parseRiskPreset).filter((n): n is number => n !== null),
-    [riskPresets],
-  );
-  // Hesabın tanımlı risk yüzdesi formun risk seçimine çevrilir: hazır yüzdelerden biriyse çip, değilse elle giriş
-  const riskFromAccount = (accountId: string | null): { riskChoice: number | "CUSTOM" | null; customRiskPct: Num } | null => {
-    if (!accountId || accountId === NO_ACCOUNT) return null;
-    const pct = propAccounts.find((a) => a.id === accountId)?.riskPct;
-    if (typeof pct !== "number" || !Number.isFinite(pct) || pct <= 0) return null;
-    return riskPresetValues.includes(pct) ? { riskChoice: pct, customRiskPct: "" } : { riskChoice: "CUSTOM", customRiskPct: pct };
-  };
+  // Yeni işlem: son işlemin paritesi; hesap türü üst çubuktan ya da son işlemden
   const [init] = useState(() => {
-    const base = buildInitial(editingTrade, riskPresetValues);
+    const base = buildInitial(editingTrade);
     if (editingTrade) return base;
-    // Yeni işlem: son işlemin paritesi ve hesabı (üst çubukta tek hesap seçiliyse o), risk o hesabın risk %'si
-    const accountChoice = defaultAccountChoice ?? base.accountChoice;
-    return { ...base, asset: lastTrade?.asset || base.asset, accountChoice, ...(riskFromAccount(accountChoice) || {}) };
+    return { ...base, asset: lastTrade?.asset || base.asset, accountKind: defaultAccountKind ?? (lastTrade ? getTradeAccountKind(lastTrade) : null) };
   });
   const [asset, setAsset] = useState(init.asset);
   const [type, setType] = useState<"LONG" | "SHORT">(init.type);
-  // Hesap seçimi: aktif prop hesabı id'si ya da NO_ACCOUNT (demo/backtest). Varsayılan yok; seçilmeden kayıt yapılmaz.
-  const [accountChoice, setAccountChoice] = useState<string | null>(init.accountChoice);
+  // Hesap türü: Prop ya da Hesapsız (demo / backtest). Seçilmeden kayıt yapılmaz.
+  const [accountKind, setAccountKind] = useState<AccountCategory | null>(init.accountKind);
   const [accountError, setAccountError] = useState(false);
-  // Risk: hazır yüzde çipleri ya da elle yüzde (CUSTOM). Varsayılan yok; hesaplı işlemde seçilmeden kayıt yapılmaz.
-  const [riskChoice, setRiskChoice] = useState<number | "CUSTOM" | null>(init.riskChoice);
-  const [customRiskPct, setCustomRiskPct] = useState<Num>(init.customRiskPct);
-  const [riskError, setRiskError] = useState(false);
 
   const [selectedTrend, setSelectedTrend] = useState(init.trend);
   const [planFidelity, setPlanFidelity] = useState<string | null>(init.planFidelity);
@@ -137,32 +112,6 @@ const AddTradeForm = React.memo(function AddTradeForm({
   const assetInputRef = useRef<HTMLInputElement>(null);
 
 
-  // Seçilebilir hesaplar: aktif prop hesapları + düzenlenen işlemin kendi hesabı (arşivde/silinmiş olsa bile)
-  const accountOptions = useMemo<AccountOption[]>(() => {
-    const list: AccountOption[] = propAccounts
-      .filter((a) => a.status === "ACTIVE")
-      .map((a) => ({ id: a.id, name: a.name, label: a.chainName || a.name, stage: a.stage, size: a.size, status: a.status }));
-    const ownId = editingTrade?.accountId;
-    if (ownId && !list.some((o) => o.id === ownId)) {
-      const own = propAccounts.find((a) => a.id === ownId);
-      list.push(
-        own
-          ? { id: own.id, name: own.name, label: own.chainName || own.name, stage: own.stage, size: own.size, status: own.status }
-          : { id: ownId, name: editingTrade?.platform || "Silinmiş hesap", label: editingTrade?.platform || "Silinmiş hesap", stage: typeof editingTrade?.accountStage === "number" ? editingTrade.accountStage : 1 },
-      );
-    }
-    return list;
-  }, [propAccounts, editingTrade]);
-
-  const selectedAccount = accountChoice && accountChoice !== NO_ACCOUNT ? accountOptions.find((o) => o.id === accountChoice) : undefined;
-  const effectiveRiskPct =
-    riskChoice === "CUSTOM" ? (typeof customRiskPct === "number" && customRiskPct > 0 ? customRiskPct : null) : riskChoice;
-  // Risk hesabın BAŞLANGIÇ bakiyesi üzerinden: $ = bakiye × % / 100 (salt okunur gösterim + hesap bakiyesi için)
-  const riskDollar =
-    selectedAccount && typeof selectedAccount.size === "number" && effectiveRiskPct
-      ? defaultRiskAmount({ size: selectedAccount.size, riskPct: effectiveRiskPct })
-      : null;
-
   // Alt çubuk özeti: varlık yazılınca ya da R girilince görünür
   const summary = useMemo(() => {
     const r = rrValue === "" || !Number.isFinite(Number(rrValue)) ? null : roundR(Number(rrValue));
@@ -172,9 +121,8 @@ const AddTradeForm = React.memo(function AddTradeForm({
       asset: a,
       dir: a ? type : null,
       r,
-      money: r !== null && riskDollar ? formatMoney(r * riskDollar, true) : null,
     };
-  }, [asset, type, rrValue, riskDollar]);
+  }, [asset, type, rrValue]);
 
   // Çift tıklama / Enter tekrarı aynı işlemi iki kez kaydetmesin
   const submitLockRef = useRef(false);
@@ -191,21 +139,10 @@ const AddTradeForm = React.memo(function AddTradeForm({
       toast.error("Bir parite seç ya da yaz.");
       return;
     }
-    if (!accountChoice || (accountChoice !== NO_ACCOUNT && !selectedAccount)) {
+    if (!accountKind) {
       setAccountError(true);
       document.getElementById("account-field")?.scrollIntoView({ behavior: "smooth", block: "center" });
-      toast.error("Hesap seç (prop hesabı ya da Hesapsız).");
-      return;
-    }
-    if (selectedAccount && !effectiveRiskPct) {
-      setRiskError(true);
-      document.getElementById("risk-field")?.scrollIntoView({ behavior: "smooth", block: "center" });
-      toast.error("Bu işlemin riskini seç (%).");
-      return;
-    }
-    if (selectedAccount && effectiveRiskPct && effectiveRiskPct > 10) {
-      setRiskError(true);
-      toast.error("Risk % gerçekçi değil (en fazla %10).");
+      toast.error("Hesap türünü seç: Prop ya da Hesapsız.");
       return;
     }
     const matchedAsset = assets.find(
@@ -256,8 +193,9 @@ const AddTradeForm = React.memo(function AddTradeForm({
       sweepTime: sweepTime || undefined,
       notes: safeNotes || undefined,
       screenshot: screenshot || undefined,
-      // Hesap anlık görüntüsü: filtreler hesap aramadan çalışsın (aşama, tip, ad)
-      ...accountSnapshot(),
+      // Hesap türü: Prop ya da Hesapsız. Eski hesap takibi alanları (hesap adı, aşama, risk) düzenlemede korunur.
+      prop: accountKind === "PROP" ? true : undefined,
+      accountCategory: accountKind === "DEMO" ? "DEMO" : undefined,
       // Hızlı kayıt işareti; tam formla kaydedilince kalkar. Hızlı kayıtta girilmeyen alanlar düzenlemede korunur.
       quickEntry: isQuick ? true : undefined,
     };
@@ -277,26 +215,9 @@ const AddTradeForm = React.memo(function AddTradeForm({
     onSave(record as any);
   };
 
-  function accountSnapshot(): Pick<Trade, "platform" | "accountId" | "accountStage" | "accountCategory" | "riskPct" | "riskAmount"> {
-    if (!selectedAccount) {
-      return { platform: undefined, accountId: undefined, accountStage: undefined, accountCategory: "DEMO", riskPct: undefined, riskAmount: undefined };
-    }
-    // Düzenlemede aynı hesap kaldıysa işlemin alındığı aşama korunur (hesap sonradan bir üst aşamaya geçmiş olabilir)
-    const keepStage = editingTrade?.accountId === selectedAccount.id && typeof editingTrade.accountStage === "number";
-    const stage = keepStage ? (editingTrade!.accountStage as number) : selectedAccount.stage;
-    return {
-      platform: selectedAccount.name,
-      accountId: selectedAccount.id,
-      accountStage: stage,
-      accountCategory: stage === 0 ? "FUNDED" : "CHALLENGE",
-      riskPct: effectiveRiskPct ?? undefined,
-      riskAmount: riskDollar ?? (keepStage ? editingTrade?.riskAmount : undefined),
-    };
-  }
-
   // Kaydedilmemiş değişiklik takibi: ilk çizimdeki durum temel alınır (ek çizim yok)
   const snapshot = JSON.stringify([
-    asset, type, accountChoice, riskChoice, customRiskPct, tradeDate,
+    asset, type, accountKind, tradeDate,
     rrValue, notes, screenshot, selectedTrend, planFidelity,
     selectedConfirmations, asiaRange, sweepTime,
   ]);
@@ -337,18 +258,6 @@ const AddTradeForm = React.memo(function AddTradeForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active]);
 
-  // Hesap seçilince risk o hesabın tanımlı risk %'sine gelir (elle değiştirilebilir)
-  const chooseAccount = useCallback((id: string | null) => {
-    setAccountChoice(id);
-    const r = riskFromAccount(id);
-    if (r) {
-      setRiskChoice(r.riskChoice);
-      setCustomRiskPct(r.customRiskPct);
-      setRiskError(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [propAccounts, riskPresetValues]);
-
   // Form işlemler yüklenmeden hazırlandıysa: dokunulmamış yeni formda parite son işlemden gelir
   useEffect(() => {
     if (editingTrade || !lastTrade?.asset || guardStateRef.current.isDirty || asset) return;
@@ -373,12 +282,11 @@ const AddTradeForm = React.memo(function AddTradeForm({
     if (!t) return;
     if (t.asset) setAsset(t.asset);
     if (t.type) setType(t.type);
-    // Hesap yalnızca hâlâ aktifse kopyalanır; risk hesabın tanımlı risk %'sinden gelir
-    if (t.accountId && accountOptions.some((o) => o.id === t.accountId)) chooseAccount(t.accountId);
-    else if (!t.accountId && t.accountCategory === "DEMO") chooseAccount(NO_ACCOUNT);
+    setAccountKind(getTradeAccountKind(t));
+    setAccountError(false);
     setSelectedTrend(t.trend || "");
     setSelectedConfirmations(tradeConfirmations(t));
-    toast.success("Son işlemin kurulumu uygulandı. Riski ve sonucu gir.");
+    toast.success("Son işlemin kurulumu uygulandı. Sonucu gir.");
   };
 
   return (
@@ -460,20 +368,10 @@ const AddTradeForm = React.memo(function AddTradeForm({
               setIsAssetDropdownOpen={setIsAssetDropdownOpen}
               type={type}
               setType={setType}
-              accountOptions={accountOptions}
-              accountChoice={accountChoice}
-              setAccountChoice={chooseAccount}
+              accountKind={accountKind}
+              setAccountKind={setAccountKind}
               accountError={accountError}
               setAccountError={setAccountError}
-              selectedAccount={selectedAccount}
-              riskPresets={riskPresetValues}
-              riskChoice={riskChoice}
-              setRiskChoice={setRiskChoice}
-              customRiskPct={customRiskPct}
-              setCustomRiskPct={setCustomRiskPct}
-              riskError={riskError}
-              setRiskError={setRiskError}
-              riskDollar={riskDollar}
               tradeDate={tradeDate}
               setTradeDate={setTradeDate}
             />
@@ -481,7 +379,6 @@ const AddTradeForm = React.memo(function AddTradeForm({
               titles={titles}
               rrValue={rrValue}
               setRrValue={setRrValue}
-              riskDollar={riskDollar}
             />
           </div>
 
@@ -531,7 +428,6 @@ const AddTradeForm = React.memo(function AddTradeForm({
                       <>
                         {summary.asset && <span className="text-zinc-700">·</span>}
                         <span className={`font-bold ${summary.r > 0 ? "text-emerald-400" : summary.r < 0 ? "text-rose-400" : "text-blue-300"}`}>{formatR(summary.r)}</span>
-                        {summary.money && <span className="text-zinc-500">{summary.money}</span>}
                       </>
                     )}
                   </span>

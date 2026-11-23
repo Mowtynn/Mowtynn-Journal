@@ -1,13 +1,10 @@
 import { Trade } from '../types';
 
-const hasNum = (v: unknown) => typeof v === 'number' && Number.isFinite(v);
-
 /** Analizlerin (Asia Edge, Asia Range, İşlem Tipi) dayandığı alanlar. Boş kalanlar örneklemi sessizce küçültür. */
 export function missingFields(t: Trade): string[] {
   const out: string[] = [];
-  // Hesap seçimi zorunlu: prop hesabı (accountId) ya da açıkça "Hesapsız" (DEMO)
-  if (!t.accountId && t.accountCategory !== 'DEMO') out.push('Hesap');
-  if (t.accountId && !hasNum(t.riskPct)) out.push('Risk %');
+  // Hesap türü zorunlu: Prop ya da açıkça "Hesapsız" (DEMO); eski kayıtlarda Challenge / Funded ya da hesap bağı
+  if (t.prop !== true && !t.accountId && !t.accountCategory) out.push('Hesap');
   if (!t.asiaRange) out.push('Asia Range');
   if (!t.trend) out.push('İşlem Tipi');
   return out;

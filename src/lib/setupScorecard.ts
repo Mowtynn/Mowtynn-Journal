@@ -1,6 +1,6 @@
 import { Trade } from '../types';
 import { byEntryTime, tradeConfirmations } from './tradeModel';
-import { edgeFromR, EdgeStats, sweepHourBucket, stageBucket, tradeOfDayBucket, indexTradeOrder, prevTradeBucket } from './asiaAnalytics';
+import { edgeFromR, EdgeStats, sweepHourBucket, tradeOfDayBucket, indexTradeOrder, prevTradeBucket } from './asiaAnalytics';
 import { getTradeNyWeekday, WEEKDAY_NAMES_TR } from './tradingTime';
 import { EDGE_PROOF_MIN, MIN_SAMPLE } from './sampleSize';
 import { driftFromR, type EdgeDrift } from './edgeDrift';
@@ -16,7 +16,6 @@ export type SetupDimension =
   | 'planFidelity'
   | 'tradeOfDay'
   | 'prevTrade'
-  | 'accountStage'
   | 'session'
   | 'premiumDiscount'
   | 'trend'
@@ -30,7 +29,6 @@ export const SETUP_DIMENSIONS: { id: SetupDimension; label: string }[] = [
   { id: 'planFidelity', label: 'Setup Kalitesi' },
   { id: 'tradeOfDay', label: 'Günün İşlemi' },
   { id: 'prevTrade', label: 'Gün İçi Önceki İşlem' },
-  { id: 'accountStage', label: 'Hesap Aşaması' },
   { id: 'session', label: 'Session' },
   { id: 'premiumDiscount', label: 'Confirmations' },
   { id: 'trend', label: 'İşlem Tipi' },
@@ -78,8 +76,6 @@ export function dimensionValue(t: Trade, d: SetupDimension): string {
       return tradeOfDayBucket(t) ?? UNSPECIFIED;
     case 'prevTrade':
       return prevTradeBucket(t) ?? UNSPECIFIED;
-    case 'accountStage':
-      return stageBucket(t) ?? UNSPECIFIED;
     case 'weekday': {
       const d = getTradeNyWeekday(t);
       return Number.isInteger(d) ? WEEKDAY_NAMES_TR[d] : UNSPECIFIED;

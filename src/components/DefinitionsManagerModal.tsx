@@ -22,7 +22,6 @@ import {
   Crosshair,
   TrendingUp,
   Layers,
-  Percent,
   Type,
 } from 'lucide-react';
 import { Trade, DefinitionTitles } from '../types';
@@ -34,9 +33,6 @@ import {
   DEFAULT_PLAN_FIDELITIES,
   DEFAULT_TREND_TYPES,
   DEFAULT_PREMIUM_DISCOUNTS,
-  DEFAULT_RISK_PRESETS,
-  MAX_RISK_PRESETS,
-  parseRiskPreset,
   FORM_LABEL_KEYS,
   DEFAULT_DEFINITION_TITLES,
   caseInsensitiveMatch,
@@ -56,20 +52,18 @@ interface DefinitionsManagerModalProps {
   planFidelities: string[];
   trendTypes?: string[];
   premiumDiscounts?: string[];
-  riskPresets?: string[];
   definitionTitles?: DefinitionTitles;
   persistSessions: (list: string[]) => void;
   persistAssets: (list: string[]) => void;
   persistPlanFidelities: (list: string[]) => void;
   persistTrendTypes?: (list: string[]) => void;
   persistPremiumDiscounts?: (list: string[]) => void;
-  persistRiskPresets?: (list: string[]) => void;
   /** Bir öğe yeniden adlandırılınca işlemlerdeki değeri de günceller; güncellenen işlem sayısını döndürür. */
   onRenameDefinition?: (category: string, from: string, to: string) => number;
   persistDefinitionTitles?: (updated: DefinitionTitles) => void;
 }
 
-type TabType = 'assets' | 'sessions' | 'planFidelities' | 'trendTypes' | 'premiumDiscounts' | 'riskPresets' | 'formLabels' | 'requiredFields';
+type TabType = 'assets' | 'sessions' | 'planFidelities' | 'trendTypes' | 'premiumDiscounts' | 'formLabels' | 'requiredFields';
 
 /** Sekme kimliği -> DefinitionTitles anahtarı (Form Başlıkları sekmesinin kendi başlığı yok) */
 const titleKeyFor = (tab: TabType): keyof DefinitionTitles =>
@@ -77,7 +71,7 @@ const titleKeyFor = (tab: TabType): keyof DefinitionTitles =>
 
 const FORM_LABEL_HINTS: Record<string, string> = {
   basicInfoCard: 'Kart başlığı: Temel Bilgiler',
-  financialCard: 'Kart başlığı: Sonuç & Risk',
+  financialCard: 'Kart başlığı: Sonuç',
   notesCard: 'Kart başlığı: Analiz & Notlar',
   direction: 'LONG / SHORT seçimi',
   tradeDate: 'Tarih seçici',
@@ -200,14 +194,12 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
   planFidelities,
   trendTypes = DEFAULT_TREND_TYPES,
   premiumDiscounts = DEFAULT_PREMIUM_DISCOUNTS,
-  riskPresets = DEFAULT_RISK_PRESETS,
   definitionTitles = DEFAULT_DEFINITION_TITLES,
   persistSessions,
   persistAssets,
   persistPlanFidelities,
   persistTrendTypes = () => {},
   persistPremiumDiscounts = () => {},
-  persistRiskPresets = (_list: string[]) => {},
   onRenameDefinition,
   persistDefinitionTitles,
 }) => {
@@ -236,16 +228,12 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
       tradeConfirmations(t).forEach((c) => {
         counts[`premiumDiscounts:${c}`] = (counts[`premiumDiscounts:${c}`] || 0) + 1;
       });
-      const rp = parseRiskPreset(t.riskPct);
-      if (rp !== null) counts[`riskPresets:${rp}`] = (counts[`riskPresets:${rp}`] || 0) + 1;
     });
     return counts;
   }, [trades, ready]);
 
   const tabs: { id: TabType; label: string; icon: React.ComponentType<{ size?: number; className?: string }>; list: string[]; persist: (list: string[]) => void; defaultList: string[]; fixed?: boolean; special?: boolean }[] = [
     { id: 'assets', label: definitionTitles.assets || DEFAULT_DEFINITION_TITLES.assets, icon: LineChart, list: assets, persist: persistAssets, defaultList: DEFAULT_ASSETS },
-    // İşlem formundaki hazır risk yüzdeleri (en fazla 5; formda tek satıra sığar)
-    { id: 'riskPresets', label: definitionTitles.riskPresets || DEFAULT_DEFINITION_TITLES.riskPresets || "Risk", icon: Percent, list: riskPresets, persist: persistRiskPresets, defaultList: DEFAULT_RISK_PRESETS },
     { id: 'trendTypes', label: definitionTitles.trendTypes || DEFAULT_DEFINITION_TITLES.trendTypes || "İşlem Tipi", icon: TrendingUp, list: trendTypes, persist: persistTrendTypes, defaultList: DEFAULT_TREND_TYPES },
     { id: 'sessions', label: definitionTitles.sessions || DEFAULT_DEFINITION_TITLES.sessions, icon: Sun, list: sessions, persist: persistSessions, defaultList: DEFAULT_SESSIONS },
     { id: 'planFidelities', label: definitionTitles.planFidelities || DEFAULT_DEFINITION_TITLES.planFidelities, icon: Crosshair, list: planFidelities, persist: persistPlanFidelities, defaultList: DEFAULT_PLAN_FIDELITIES },
@@ -285,33 +273,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
     return activeList.filter(item => caseInsensitiveMatch(item, searchQuery));
   }, [activeList, searchQuery]);
 
-  /** Risk sekmesinde girilen değeri doğrular: 0–10 arası sayı, en fazla 5 değer; geçerliyse biçimlenmiş metni döndürür */
-  const checkRiskPreset = (raw: string, exceptIndex: number | null): string | null => {
-    const n = parseRiskPreset(raw);
-    if (n === null) {
-      toast.error('Risk yüzdesi 0 ile 10 arasında bir sayı olmalı (ör. 0.5).');
-      return null;
-    }
-    if (activeList.some((i, idx) => idx !== exceptIndex && parseRiskPreset(i) === n)) {
-      toast.error(`%${n} zaten listede mevcut!`);
-      return null;
-    }
-    if (exceptIndex === null && activeList.length >= MAX_RISK_PRESETS) {
-      toast.error(`En fazla ${MAX_RISK_PRESETS} risk yüzdesi eklenebilir; önce birini silin.`);
-      return null;
-    }
-    return String(n);
-  };
-
   const handleAddItem = () => {
-    if (activeTab === 'riskPresets') {
-      const v = checkRiskPreset(newItemText, null);
-      if (!v) return;
-      currentPersist([...activeList, v]);
-      setNewItemText('');
-      toast.success(`Yeni risk yüzdesi eklendi: %${v}`);
-      return;
-    }
     const val = newItemText.trim();
     if (!val || isFixedTab) return;
     if (activeList.some(i => caseInsensitiveEquals(i, val))) {
@@ -330,18 +292,6 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
     const val = editingText.trim();
     const previous = activeList[originalIndex];
     if (!val || val === previous) {
-      setEditingIndex(null);
-      setEditingText('');
-      return;
-    }
-    if (activeTab === 'riskPresets') {
-      // Hazır yüzde değişir; geçmiş işlemlerin kayıtlı riski olduğu gibi kalır
-      const v = checkRiskPreset(val, originalIndex);
-      if (!v) return;
-      const updated = [...activeList];
-      updated[originalIndex] = v;
-      currentPersist(updated);
-      toast.success('Risk yüzdesi güncellendi.');
       setEditingIndex(null);
       setEditingText('');
       return;
@@ -420,7 +370,6 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
       planFidelities,
       trendTypes,
       premiumDiscounts,
-      riskPresets,
       exportedAt: new Date().toISOString(),
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -461,10 +410,6 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
         apply(data.planFidelities, persistPlanFidelities);
         apply(data.trendTypes, persistTrendTypes);
         apply(data.premiumDiscounts, persistPremiumDiscounts);
-        if (Array.isArray(data.riskPresets)) {
-          persistRiskPresets(data.riskPresets.map((x: unknown) => String(x)));
-          applied++;
-        }
         if (applied === 0) {
           toast.error('Dosyada içe aktarılabilecek tanımlama bulunamadı.');
         } else {
@@ -697,8 +642,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
                   <div className="flex items-center gap-1.5 flex-1 sm:flex-none">
                     <input
                       type="text"
-                      placeholder={activeTab === 'riskPresets' ? 'Yüzde ekle (ör. 0.5)' : `Yeni ${currentTabObj.label} Ekle...`}
-                      inputMode={activeTab === 'riskPresets' ? 'decimal' : undefined}
+                      placeholder={`Yeni ${currentTabObj.label} Ekle...`}
                       value={newItemText}
                       onChange={e => setNewItemText(e.target.value)}
                       onKeyDown={e => { if (e.key === 'Enter') handleAddItem(); }}

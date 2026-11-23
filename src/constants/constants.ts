@@ -1,39 +1,31 @@
-import { DefinitionTitles, PlatformCategory } from "../types";
+import { DefinitionTitles, AccountCategory, PlatformCategory } from "../types";
 
-/** İşlemin hesap tipi: kayıt anındaki hesaba göre Challenge / Funded; hesabı olmayan işlem DEMO (hesapsız) sayılır */
-export function getTradeAccountCategory(trade: { accountCategory?: PlatformCategory; accountId?: string; accountStage?: number }): PlatformCategory {
-  if (trade.accountCategory === 'FUNDED' || trade.accountCategory === 'CHALLENGE' || trade.accountCategory === 'DEMO') {
-    return trade.accountCategory;
-  }
-  if (trade.accountId) return trade.accountStage === 0 ? 'FUNDED' : 'CHALLENGE';
+/**
+ * İşlemin hesap türü: Prop ya da Hesapsız. Yeni kayıtlarda `prop: true` / `accountCategory: 'DEMO'`;
+ * eski kayıtlarda Challenge / Funded (ya da bir prop hesabına bağlı) olanlar Prop sayılır.
+ */
+export function getTradeAccountKind(trade: { prop?: boolean; accountCategory?: PlatformCategory; accountId?: string }): AccountCategory {
+  if (trade.accountCategory === 'DEMO') return 'DEMO';
+  if (trade.prop === true || trade.accountCategory === 'FUNDED' || trade.accountCategory === 'CHALLENGE' || trade.accountId) return 'PROP';
   return 'DEMO';
 }
 
-/** Hesap tipi etiketleri (üst filtre, işlem listesi) */
-export const ACCOUNT_CATEGORY_LABELS: Record<PlatformCategory, string> = {
-  CHALLENGE: 'Challenge',
-  FUNDED: 'Funded',
+/** Hesap türü etiketleri (üst seçici, işlem listesi) */
+export const ACCOUNT_KIND_LABELS: Record<AccountCategory, string> = {
+  PROP: 'Prop',
   DEMO: 'Hesapsız',
 };
 
-/** Hesap türü rozet renkleri — her yerde aynı: Challenge mavi, Funded yeşil, Hesapsız amber */
-export const ACCOUNT_CATEGORY_BADGE: Record<PlatformCategory, string> = {
-  CHALLENGE: 'bg-blue-500/10 text-blue-300 border-blue-500/30',
-  FUNDED: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30',
+/** İşlemin hesap etiketi: "Prop" ya da "Hesapsız" */
+export function getTradeAccountName(trade: { prop?: boolean; accountCategory?: PlatformCategory; accountId?: string }): string {
+  return ACCOUNT_KIND_LABELS[getTradeAccountKind(trade)];
+}
+
+/** Hesap türü rozet renkleri — her yerde aynı: Prop mavi, Hesapsız amber */
+export const ACCOUNT_KIND_BADGE: Record<AccountCategory, string> = {
+  PROP: 'bg-blue-500/10 text-blue-300 border-blue-500/30',
   DEMO: 'bg-amber-500/10 text-amber-300 border-amber-500/30',
 };
-
-/** İşlemin hesap adı: platform adı; yoksa hesapsızda "Hesapsız", prop işleminde hesap türü */
-export function getTradeAccountName(trade: { platform?: string; accountCategory?: PlatformCategory; accountId?: string; accountStage?: number }): string {
-  if (trade.platform) return trade.platform;
-  return ACCOUNT_CATEGORY_LABELS[getTradeAccountCategory(trade)];
-}
-
-/** İşlemin aşama etiketi: "Phase 1", "Funded"; hesapsız işlemde boş */
-export function getTradeStageLabel(trade: { accountId?: string; accountStage?: number }): string | null {
-  if (!trade.accountId || typeof trade.accountStage !== 'number') return null;
-  return trade.accountStage === 0 ? 'Funded' : `Phase ${trade.accountStage}`;
-}
 export const DEFAULT_SESSIONS = ["London", "NY AM"];
 export const DEFAULT_ASSETS = ["EURUSD", "GBPUSD", "XAUUSD", "NQ100", "BTCUSDT"];
 export const DEFAULT_PLAN_FIDELITIES = ["A+", "A", "B-C"];
@@ -46,29 +38,6 @@ export const DEFAULT_PREMIUM_DISCOUNTS = [
   "Discount",
   "Equilibrium / OTE"
 ];
-
-/** İşlem formundaki hazır risk yüzdeleri (Tanımlamalar > Risk %). Formda tek satıra sığsın diye en fazla 5. */
-export const DEFAULT_RISK_PRESETS = ["0.5", "0.75", "1"];
-export const MAX_RISK_PRESETS = 5;
-
-/** "0,5" / "%1" / 0.75 → 0.5 / 1 / 0.75; geçersiz ya da (0, 10] dışı → null */
-export const parseRiskPreset = (v: unknown): number | null => {
-  const n = typeof v === "number" ? v : typeof v === "string" ? Number(v.trim().replace(",", ".").replace("%", "")) : NaN;
-  if (!Number.isFinite(n) || n <= 0 || n > 10) return null;
-  return Math.round(n * 100) / 100;
-};
-
-/** Liste değilse varsayılan; değilse geçerli, tekrarsız, en fazla 5 yüzde (sıra korunur) */
-export const normalizeRiskPresets = (list: unknown): string[] => {
-  if (!Array.isArray(list)) return DEFAULT_RISK_PRESETS;
-  const out: number[] = [];
-  for (const x of list) {
-    const n = parseRiskPreset(x);
-    if (n !== null && !out.includes(n)) out.push(n);
-    if (out.length >= MAX_RISK_PRESETS) break;
-  }
-  return out.map(String);
-};
 
 /** Listesi olmayan form alanlarının başlıkları: Tanımlamalar > Form Başlıkları'ndan değiştirilir. */
 export const FORM_LABEL_KEYS = [
@@ -83,7 +52,6 @@ export const DEFAULT_DEFINITION_TITLES: DefinitionTitles = {
   planFidelities: "Setup Kalitesi",
   trendTypes: "İşlem Tipi",
   premiumDiscounts: "Confirmations",
-  riskPresets: "Risk",
   basicInfoCard: "Temel Bilgiler",
   financialCard: "Sonuç",
   notesCard: "Analiz & Notlar",
@@ -303,6 +271,7 @@ export const sanitizeDefinitionTitles = (raw: Partial<DefinitionTitles> = {}): D
   delete (result as any).tpTargets;
   delete (result as any).newsDays;
   delete (result as any).asiaRangeFvgs;
+  delete (result as any).riskPresets;
 
   return result;
 };

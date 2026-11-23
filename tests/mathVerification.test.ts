@@ -161,19 +161,3 @@ test('strateji laboratuvarı (Psikoloji) seri ve kayıp sonrası değerleri sın
   assert.ok(s.streakStats.maxLossStreak <= s.totalTrades && s.streakStats.postLossWinRate >= 0 && s.streakStats.postLossWinRate <= 100);
 });
 
-test('prop simülasyonu: uç durumlarda olasılıklar doğru yönde', async () => {
-  const { computeAccountRInsights } = await import('../src/lib/propInsights');
-  const acc = { id: 'p', chainId: 'p', chainName: 'T', name: 'T · Phase 1', size: 100000, drawdownMode: 'STATIC', stage: 1, phaseRules: [{ targetPct: 10, maxDdPct: 10 }], fundedMaxDdPct: 10, riskPct: 1, status: 'ACTIVE', createdAt: 0 } as any;
-  const mk = (rr: number, i: number) => ({ id: `p${i}`, asset: 'EURUSD', type: 'LONG', status: rr > 0 ? 'WIN' : 'LOSS', rr, createdAt: Date.UTC(2026, 0, 1) + i * 86400000, notes: '', screenshot: null, accountId: 'p', accountStage: 1, riskAmount: 1000 }) as Trade;
-  const good = computeAccountRInsights(acc, Array.from({ length: 30 }, (_, i) => mk(i % 4 === 0 ? -1 : 2, i)).slice(0, 4), { runs: 500 });
-  // 4 işlem: +... hesabın kendi örneklemi az → tüm prop geçmişi (aynı 4 işlem) < 20: olasılık gösterilmez
-  assert.equal(good.simulation, undefined);
-  // 21 işlem, net +7R (hedef 10R'ye ulaşılmadı), işlem başına +0.33R: geçme olasılığı yüksek olmalı
-  const winners = computeAccountRInsights(acc, Array.from({ length: 21 }, (_, i) => mk(i % 3 === 0 ? -1 : 1, i)), { runs: 800 });
-  assert.equal(winners.targetRemainingR, 3);
-  assert.ok(winners.simulation && winners.simulation.kind === 'PASS' && winners.simulation.probability > 80, String(winners.simulation?.probability));
-  const losers = computeAccountRInsights(acc, Array.from({ length: 6 }, (_, i) => mk(i % 3 === 0 ? 1 : -1, i)).concat(Array.from({ length: 6 }, (_, i) => mk(-1, i + 6))), { runs: 800 });
-  assert.ok(losers.simulation === undefined || losers.simulation.probability < 10, String(losers.simulation?.probability));
-  // DD'ye kalan R: (10.000$ − kayıp) / 1R
-  close(losers.ddRemainingR, (10000 + losers.netR * 1000) / 1000, 1e-6, 'DD R');
-});

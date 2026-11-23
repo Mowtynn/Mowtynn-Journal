@@ -4,7 +4,6 @@ import {
   TrendingUp,
   TrendingDown,
   ShieldCheck,
-  Percent,
   ChevronRight,
   Info,
   Shuffle,
@@ -224,34 +223,6 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
           </span>
         </p>
       )}
-
-      {/* Risk % etkisi */}
-      <div className="grid grid-cols-1 gap-4 pt-3 border-t border-zinc-800/70">
-        <div className="flex flex-col gap-2 min-w-0">
-          <span className={`${sectionTitle} text-blue-300`}>
-            <Percent size={12} /> Risk %'sine göre
-          </span>
-          <p className="text-label text-zinc-500 -mt-1">Her risk seviyesinde işlem başı R (parantezde işlem sayısı). R zaten riske göre ölçülür; fark, yüksek riskte kararların bozulup bozulmadığını gösterir.</p>
-          {s.riskSlices.length ? (
-            <div className="flex flex-wrap gap-1.5">
-              {s.riskSlices.map((r) => (
-                <button
-                  key={r.riskPct}
-                  type="button"
-                  onClick={() => onShowTrades(`Risk %${fmt(r.riskPct, 3)}`, trades.filter((t) => typeof t.riskPct === 'number' && Math.round(t.riskPct * 1000) / 1000 === r.riskPct))}
-                  className={`px-2.5 py-1.5 rounded-lg border border-zinc-800 bg-zinc-950/40 hover:border-zinc-600 text-label tabular-nums transition-ui cursor-pointer ${r.edge.n < SETUP_MIN_SAMPLE ? 'opacity-50' : ''}`}
-                >
-                  <span className="text-zinc-400 font-semibold">%{fmt(r.riskPct, 3)}</span>{' '}
-                  <span className={`font-bold ${tone(r.edge.expectancy)}`}>{sR(r.edge.expectancy)}</span>{' '}
-                  <span className="text-zinc-600">({r.edge.n})</span>
-                </button>
-              ))}
-            </div>
-          ) : (
-            <p className="text-label text-zinc-500">Risk % girilmiş işlem yok (prop hesabına bağlı işlemlerde formdan seçilir).</p>
-          )}
-        </div>
-      </div>
 
       {/* Kurallar, tesadüf testi ve kombinasyonlar: geniş ekranda ikişerli (sayfa yarı uzunlukta) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4 items-start">

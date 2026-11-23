@@ -9,18 +9,15 @@ const complete = {
 };
 
 test('tam kayıtta eksik yok', () => {
-  assert.deepEqual(missingFields(trade({ status: 'WIN', rr: 2, accountId: 'a', riskPct: 0.5, ...complete })), []);
+  assert.deepEqual(missingFields(trade({ status: 'WIN', rr: 2, prop: true, ...complete })), []);
+  assert.deepEqual(missingFields(trade({ status: 'WIN', rr: 2, accountId: 'a', ...complete })), []);
   assert.deepEqual(missingFields(trade({ status: 'WIN', rr: 2, accountCategory: 'DEMO', ...complete })), []);
 });
 
-test('hesap seçimi zorunlu: ne prop hesabı ne Hesapsız seçilmişse "Hesap" eksik', () => {
+test('hesap türü zorunlu: ne Prop ne Hesapsız seçilmişse "Hesap" eksik; risk artık sorulmaz', () => {
   assert.ok(missingFields(trade({ status: 'WIN', rr: 2, ...complete })).includes('Hesap'));
-  assert.ok(missingFields(trade({ status: 'WIN', rr: 2, accountCategory: 'FUNDED', ...complete })).includes('Hesap'));
-});
-
-test('prop hesabındaki işlemde risk yüzdesi zorunlu; hesapsızda aranmaz', () => {
-  assert.ok(missingFields(trade({ status: 'WIN', rr: 2, accountId: 'a', ...complete })).includes('Risk %'));
-  assert.ok(!missingFields(trade({ status: 'WIN', rr: 2, accountCategory: 'DEMO', ...complete })).includes('Risk %'));
+  assert.ok(!missingFields(trade({ status: 'WIN', rr: 2, accountCategory: 'FUNDED', ...complete })).includes('Hesap'));
+  assert.ok(!missingFields(trade({ status: 'WIN', rr: 2, prop: true, ...complete })).includes('Risk %'));
 });
 
 test('analiz alanları eksikse listelenir', () => {

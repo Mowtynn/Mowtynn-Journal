@@ -9,12 +9,10 @@ import { computeEdgeSummary, validateOutOfSample, edgeReportRows } from '../src/
 import { buildSetupScorecard, SETUP_DIMENSIONS, DEFAULT_SETUP_DIMENSIONS } from '../src/lib/setupScorecard';
 import { simulateRule, ruleOptions } from '../src/lib/ruleSimulator';
 import { computeEdgeDrift } from '../src/lib/edgeDrift';
-import { computeAccountMetrics } from '../src/lib/propAccounts';
-import { computeAccountRInsights } from '../src/lib/propInsights';
 import { computeWeekReview, weekStartOf } from '../src/lib/weeklyReview';
 import { computeTradeInsight } from '../src/lib/tradeInsight';
 import { nyDateKey } from '../src/lib/tradingTime';
-import { account, NOW, DAY } from './fixtures';
+import { NOW, DAY } from './fixtures';
 import type { Trade } from '../src/types';
 
 let seed = Number(process.env.FUZZ_SEED) || 12345;
@@ -135,10 +133,6 @@ for (const weird of [false, true]) {
       assertFinite(computeEdgeDrift(trades), 'drift');
       assertFinite(computeCoverage(trades), 'coverage');
       assertFinite(analyzeAsia(trades, { dataset: 'ALL', pair: 'ALL', minSample: 5 }), 'asia', /profitFactor|pf/i);
-      const acc = account();
-      const am = computeAccountMetrics(acc, trades);
-      assertFinite(am, 'prop', /profitFactor|pf|Infinity/i);
-      assertFinite(computeAccountRInsights(acc, trades, { runs: 200 }), 'propR');
       assertFinite(computeWeekReview(trades, weekStartOf(nyDateKey(NOW))), 'week');
       if (trades.length) assertFinite(computeTradeInsight(trades[0], trades), 'insight');
     });

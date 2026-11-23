@@ -22,7 +22,6 @@ test('sızıntı ve güç: yeterli örneklemli tekil alan değerleri', () => {
   // olumlu bulguya yüksek eşik: kanıtlanmamış 8 işlemli pozitif alan "daha çok yap"a girmez
   const few = computeEdgeSummary(list.filter((x) => x.session !== 'London' || x.createdAt > NOW - 200 * DAY));
   assert.ok(!few.strengths.some((x) => x.value === 'London'));
-  assert.deepEqual(s.riskSlices.map((r) => [r.riskPct, r.edge.n]), [[0.5, 10], [1, 8]]);
 });
 
 test('boş liste güvenli', () => {

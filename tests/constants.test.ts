@@ -1,19 +1,16 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { getTradeAccountCategory, getTradeStageLabel, smartUpper, sanitizeDefinitionTitles } from '../src/constants/constants';
+import { getTradeAccountKind, getTradeAccountName, smartUpper, sanitizeDefinitionTitles } from '../src/constants/constants';
 
-test('hesap tipi: kayıtlı tip öncelikli; yoksa hesap + aşamadan; hiçbiri yoksa Hesapsız', () => {
-  assert.equal(getTradeAccountCategory({ accountCategory: 'FUNDED', accountId: 'a', accountStage: 1 }), 'FUNDED');
-  assert.equal(getTradeAccountCategory({ accountId: 'a', accountStage: 0 }), 'FUNDED');
-  assert.equal(getTradeAccountCategory({ accountId: 'a', accountStage: 2 }), 'CHALLENGE');
-  assert.equal(getTradeAccountCategory({}), 'DEMO');
-});
-
-test('aşama etiketi: Phase N / Funded; hesapsızda yok', () => {
-  assert.equal(getTradeStageLabel({ accountId: 'a', accountStage: 0 }), 'Funded');
-  assert.equal(getTradeStageLabel({ accountId: 'a', accountStage: 2 }), 'Phase 2');
-  assert.equal(getTradeStageLabel({ accountStage: 1 }), null);
-  assert.equal(getTradeStageLabel({ accountId: 'a' }), null);
+test('hesap türü: Prop ya da Hesapsız; eski Challenge / Funded / hesap bağı Prop, alan yoksa Hesapsız', () => {
+  assert.equal(getTradeAccountKind({ prop: true }), 'PROP');
+  assert.equal(getTradeAccountKind({ accountCategory: 'FUNDED' }), 'PROP');
+  assert.equal(getTradeAccountKind({ accountCategory: 'CHALLENGE' }), 'PROP');
+  assert.equal(getTradeAccountKind({ accountId: 'a' }), 'PROP');
+  assert.equal(getTradeAccountKind({ accountCategory: 'DEMO', accountId: 'a' }), 'DEMO');
+  assert.equal(getTradeAccountKind({}), 'DEMO');
+  assert.equal(getTradeAccountName({ prop: true }), 'Prop');
+  assert.equal(getTradeAccountName({}), 'Hesapsız');
 });
 
 test('büyük harf: Türkçe kelimeler tr kuralıyla, İngilizce terimler standart', () => {

@@ -1,6 +1,7 @@
-/** İşlemin hesap tipi: prop hesabının aşaması (Challenge / Funded) veya hesapsız (demo / backtest) */
+/** İşlemin kayıtlı hesap tipi (eski kayıtlarda Challenge / Funded; yenilerde yalnızca DEMO = hesapsız) */
 export type PlatformCategory = 'FUNDED' | 'CHALLENGE' | 'DEMO';
-export type AccountCategory = 'ALL' | 'FUNDED' | 'CHALLENGE' | 'DEMO';
+/** Hesap türü: Prop ya da Hesapsız (demo / backtest). Üst çubuktaki kapsam seçici de bu ikisidir. */
+export type AccountCategory = 'PROP' | 'DEMO';
 
 export const ASIA_RANGE_TYPES = ['Range', 'Trend', 'Swept'] as const;
 type AsiaRangeType = (typeof ASIA_RANGE_TYPES)[number];
@@ -16,9 +17,9 @@ export interface Trade {
   notes: string;            // Analysis notes, setup descriptions
   screenshot: string | null; // Base64 data URI of compressed screenshot
   createdAt: number;        // Timestamp of entry
-  platform?: string;        // Hesabın kayıt anındaki adı (görüntüleme ve filtre için); hesapsız işlemde boş
-  accountCategory?: 'FUNDED' | 'CHALLENGE' | 'DEMO'; // Kayıt anındaki hesap tipi; DEMO = hesapsız
-  accountStage?: number;    // Kayıt anındaki aşama: 1, 2, 3 = Phase, 0 = Funded; hesapsızda boş
+  /** Prop hesabında alınan işlem (yeni kayıtlar). Hesapsızda accountCategory = 'DEMO'. Okumak için getTradeAccountKind. */
+  prop?: boolean;
+  accountCategory?: PlatformCategory; // DEMO = hesapsız; eski kayıtlarda Challenge / Funded
   session?: string;         // Session: formda girilmez, POI Sweep saatinden otomatik (London, NY AM …)
   planFidelity?: string | null; // Setup Kalitesi (Plan fidelity)
   trend?: string;           // İşlem Tipi (eski adı Trend Yapısı): Continuation / Reversal
@@ -33,9 +34,6 @@ export interface Trade {
   strategy?: string;
   asiaRange?: AsiaRangeType; // Asia Range davranışı: Range / Trend (eski kayıtlarda Swept)
   sweepTime?: string;       // POI Sweep saati, New York saatiyle "HH:mm" (Asia Range seçiminden tamamen bağımsız)
-  accountId?: string;       // Prop hesap kimliği (PropAccount.id)
-  riskPct?: number;         // İşlem başı risk (%), hesabın başlangıç bakiyesine göre
-  riskAmount?: number;      // riskPct'nin dolar karşılığı; hesap bakiyesi = R × riskAmount
   quickEntry?: boolean;     // Hızlı kayıtla girildi; ayrıntılar sonra tamamlanacak
   /**
    * Kaldırılmış girdiler: formda, filtrelerde ve analizlerde yok. Eski kayıtlarda saklı kalır (silinmez),
@@ -50,66 +48,25 @@ export interface Trade {
   management?: string[];
   afterExitTp?: boolean;
   exitAt?: number;
+  platform?: string;        // Eski prop hesap takibi: hesabın adı
+  accountId?: string;       // Eski prop hesap takibi: PropAccount.id
+  accountStage?: number;    // Eski prop hesap takibi: 1, 2, 3 = Phase, 0 = Funded
+  riskPct?: number;         // Risk (%)
+  riskAmount?: number;      // Riskin dolar karşılığı
   entryModels?: string[];   // Entry Model
   tpTargets?: string[];     // Target
   asiaRangeFvg?: string;    // Asia Range FVG (1H)
   newsDay?: boolean;        // News Day / Bank Holiday: true = Var, false = Yok
 }
 
-/**
- * Prop firm hesabı. Bir "zincir" aynı değerlendirmenin aşamalarıdır: Phase 1 → Phase 2 → … → Funded.
- * Her aşama ayrı bir hesap kaydıdır (kendi bakiyesi sıfırdan başlar) ve chainId ile bağlıdır.
- */
-type PropAccountStatus = 'ACTIVE' | 'PASSED' | 'BLOWN' | 'ARCHIVED';
-
-/** Bir aşamanın kuralı (yüzde, hesap boyutuna göre) */
-export interface PropStageRule {
-  targetPct: number;
-  maxDdPct: number;
-}
-
-/** "Gerçek bakiyeyi gir" ile oluşan fark kaydı. R istatistiğine girmez; yalnızca bakiye ve drawdown takibini düzeltir. */
-export interface PropBalanceAdjustment {
+/** Alınan payout: Prop sekmesinde kaydedilir (hesap takibi yok) */
+export interface Payout {
   id: string;
-  at: number;
-  amount: number;       // eklenen / düşülen fark ($)
-  realBalance: number;  // girilen gerçek bakiye ($)
-}
-
-export interface PropCertificate {
-  id: string;
-  kind: 'FUNDED' | 'PAYOUT';
-  date: string;         // YYYY-MM-DD
-  amount?: number;      // payout: elime geçen net tutar ($)
-  image?: string;       // Storage URL'si veya (girişsiz kullanımda) sıkıştırılmış data URL
+  date: string;     // YYYY-MM-DD
+  amount: number;   // elime geçen net tutar ($)
+  firm: string;     // prop firması (ör. FTMO)
   note?: string;
   createdAt: number;
-}
-
-export interface PropAccount {
-  id: string;
-  chainId: string;
-  chainName: string;            // zincirin adı (ör. "FTMO 100K #3")
-  name: string;                 // aşamalı tam ad; işlem formunda platform adı olarak görünür (ör. "FTMO 100K #3 · Phase 1")
-  firm?: string;
-  size: number;                 // hesap boyutu ($)
-  drawdownMode: 'STATIC' | 'TRAILING';
-  stage: number;                // 1..phaseRules.length = değerlendirme aşaması, 0 = Funded
-  phaseRules: PropStageRule[];  // zincirin aşama kuralları (aşama sayısı = uzunluk)
-  fundedMaxDdPct: number;
-  /** Günlük kayıp limiti (% hesap boyutu, gün başı bakiyeden); yoksa uygulanmaz */
-  dailyLossPct?: number;
-  riskPct: number;              // kartta R gösterimi için 1R = boyut × risk %
-  fee?: number;                 // challenge ücreti; yalnızca zincirin ilk hesabında
-  status: PropAccountStatus;
-  createdAt: number;
-  closedAt?: number;
-  /** Bu günden itibaren, hesaba bağlanmamış ama aynı ad ile kaydedilmiş işlemler de bu hesaba sayılır */
-  startDate?: number;
-  note?: string;
-  images?: string[];
-  adjustments?: PropBalanceAdjustment[];
-  certificates?: PropCertificate[];
 }
 
 export interface WeeklyAnswers {
@@ -186,7 +143,6 @@ export interface DefinitionTitles {
   planFidelities: string;
   trendTypes?: string;
   premiumDiscounts?: string;
-  riskPresets?: string;
   // Listesi olmayan form alanlarının başlıkları (Tanımlamalar > Form Başlıkları)
   basicInfoCard?: string;
   financialCard?: string;

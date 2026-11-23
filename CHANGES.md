@@ -1064,3 +1064,18 @@ Klasik tasarım korunarak, son eklenen alanlar (risk %, hesap bağı, strateji, 
   - Firestore: `firestore.rules` yalnızca `confirmationTags` için liste denetimi eklendi (`optList`, 50). Kural yayınlanmasa da yeni alan kabul edilir (işlem kuralında anahtar kısıtı yok); isteğe bağlı: `firebase deploy --only firestore:rules`. `premiumDiscount` string denetimi kaldı (eski belgeler için).
   - Testler: normalize / taşıma, filtre (çoklu + eski kayıt), kurulum karnesi değeri, dışa aktarma, kayıt birleştirme (4 yeni test).
   - Akıcılık ölçümü (800 işlem, geliştirme modunda): sekme geçişi 20–55 ms (ilk Detaylı Analiz açılışı 210 ms: parça yükleme), Detaylı Analiz alt sekmeleri ≤ 50 ms, işlem detayı açılışı ~65 ms, ok ile geçiş 25–80 ms. Tek bir bileşenin çizimi 1 ms'yi geçmiyor; ölçümde darboğaz çıkmadığı için performans amaçlı kod değişikliği yapılmadı (Edge Özeti önbelleği önceki turda eklendi).
+
+- İşlem girişi sadeleştirildi (1. tur)
+  - Kaldırıldı: Target, Asia Range FVG (1H), Entry Model, News Day / Bank Holiday — formdan, filtrelerden, Tanımlamalar sekmelerinden, analizlerden (Kurulum Karnesi, Edge taraması, kural simülatörü, veri eksiği panosu), işlem detayından ve Excel/CSV çıktısından. Eski işlemlerdeki değerler silinmez; düzenlemede korunur.
+  - Session formda seçilmez: POI Sweep saatinden otomatik (`autoSessionForNyTime`). Önce kill zone, dışındaki saatler session bloğuna düşer (NY: London 00–07, NY AM 07–12, Lunch 12–13:30, NY PM 13:30–18, Asia 18–24). Eski işlem saat değişmeden düzenlenirse kayıttaki session korunur.
+  - Yeni işlem son işlemin paritesiyle açılır.
+  - Filtre deposu v9: eski Entry Model filtresi temizlenir.
+
+- Hesap takibi kaldırıldı: Prop / Hesapsız + payout kaydı (2. tur)
+  - İşlemler yalnızca Prop ya da Hesapsız olarak ayrılır. Üst çubuktaki seçici iki parçalı düğme (PROP · HESAPSIZ); uygulama PROP ile açılır. Eski kayıtlar: Challenge / Funded ya da bir hesaba bağlı olanlar Prop, `DEMO` ya da alansız olanlar Hesapsız (`getTradeAccountKind`). Yeni Prop işlemi `prop: true`, Hesapsız `accountCategory: 'DEMO'` yazılır; eski hesap adı / aşama / risk alanları kayıtta kalır ama hiçbir yerde kullanılmaz.
+  - İşlem formunda yalnızca R kaydedilir: hesap seçici, risk % çipleri, $ karşılığı ve Tanımlamalar → Risk sekmesi kaldırıldı. Hesap türü varsayılanı: üst çubukta HESAPSIZ seçiliyse Hesapsız, değilse son işlemin türü.
+  - Risk ve hesap aşamasına bağlı analizler kaldırıldı: Risk %'sine göre kartı, Edge raporundaki Risk % satırları, Hesap Aşaması boyutu, risk filtresi, işlem listesi / geçmiş / PDF raporundaki Risk sütunu, işlem detayındaki $ etkisi. "Funded & Challenge" veri seti adı "Prop" oldu.
+  - Prop sekmesi yalnızca payout kaydı: tarih, tutar, firma, not. Özet kartları (toplam, bu yıl, en büyük, firmalar), yıllara göre liste, firmaya göre dağılım; ekleme / düzenleme / silme (iki dokunuşla). Veri: yerelde `tj_payouts`, bulutta ayar belgesinin `payouts` alanı; yedeğe girer, yedekten birleşerek yüklenir.
+  - Taşıma: eski prop hesaplarındaki payout sertifikaları (yerel ve bulut) bir kez payout listesine aktarılır (firma: hesabın firması, yoksa hesap adı). Eski `propAccounts` verisi silinmez, yalnızca okunur. Eski yedekte `payouts` yoksa içindeki prop hesaplarından aktarılır.
+  - Silinen kod: `lib/propAccounts.ts`, `lib/propInsights.ts`, `components/prop/PropRSummary.tsx`, `tradeForm/AccountPicker.tsx` ve bunların testleri. Yeni: `lib/payouts.ts` + tests/payouts.test.ts.
+  - Firestore: `firestore.rules`'a `prop` (bool) ve `payouts` (liste, 2000) denetimi eklendi. Kural yayınlanmasa da çalışır (alanlarda anahtar kısıtı yok); isteğe bağlı: `firebase deploy --only firestore:rules`.

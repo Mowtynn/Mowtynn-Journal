@@ -2,8 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { calculateComprehensiveStats, breakevenWinRate, breakevenWinRateOf } from '../src/lib/stats';
 import { computeEdgeSummary } from '../src/lib/edgeSummary';
-import { computeAccountMetrics } from '../src/lib/propAccounts';
-import { NOW, DAY, trade, account } from './fixtures';
+import { NOW, DAY, trade } from './fixtures';
 import type { Trade } from '../src/types';
 
 const t = (rr: number, p: Partial<Trade> = {}) => trade({ status: rr > 0 ? 'WIN' : rr < 0 ? 'LOSS' : 'BREAKEVEN', rr, ...p });
@@ -44,17 +43,6 @@ test('Kurallarım: "son 7 gün" ihlalleri son işleme göre değil bugüne göre
   assert.equal(avoid2!.recentViolations?.r, -1);
 });
 
-test('prop: 0 tutarlı bakiye kontrolü bakiyeyi ve drawdown takibini değiştirmez', () => {
-  const a = account({ adjustments: [{ id: 'adj1', at: NOW - DAY, amount: 0, realBalance: 10000 }] });
-  const b = account();
-  const trades = [t(-1, { accountId: 'acc1', accountStage: 1, riskAmount: 100, createdAt: NOW - 2 * DAY })];
-  const ma = computeAccountMetrics(a, trades);
-  const mb = computeAccountMetrics(b, trades);
-  assert.equal(ma.balance, mb.balance);
-  assert.equal(ma.maxLossRemaining, mb.maxLossRemaining);
-  assert.equal(ma.adjustmentsTotal, 0);
-});
-
 test('zamanı bozuk kayıt: çıkış zamanı varsa onarılır, yoksa geçersiz kalır ve analizlere girmez', async () => {
   const { normalizeTrade, isValidTrade } = await import('../src/lib/tradeModel');
   const { applyGlobalFilters } = await import('../src/lib/tradeFilters');
@@ -64,7 +52,7 @@ test('zamanı bozuk kayıt: çıkış zamanı varsa onarılır, yoksa geçersiz 
   assert.equal(isValidTrade(broken), false);
   const ok = t(1, { id: 'z', accountCategory: 'CHALLENGE' });
   const base: any = {
-    activeAccountCategory: 'ALL', activeAccount: null, globalSelectedPlanFidelity: [], globalDateLimit: 'all',
+    activeAccountCategory: 'PROP', globalSelectedPlanFidelity: [], globalDateLimit: 'all',
     globalSelectedAssets: [], globalSelectedSessions: [], globalSelectedStatuses: [],
     globalSelectedTypes: [], globalSelectedTrendTypes: [],
   };

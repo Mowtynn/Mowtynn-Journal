@@ -17,13 +17,13 @@ test('dışa aktarım: formdaki her girdi bir sütunda, değerler eksiksiz', () 
   });
   const row = prepareTradeExportRows([t])[0] as Record<string, unknown>;
   const values = Object.values(row).map(String);
-  for (const expected of ['XAUUSD', 'SHORT', 'WIN', '2.5', 'FTMO 10K · Phase 1', 'acc1', '0.5', '50',
+  for (const expected of ['XAUUSD', 'SHORT', 'WIN', '2.5', 'Prop',
     'Trend', '02:15', 'A+', 'Continuation', 'London', 'Discount',
     'satır 1\nsatır 2', 'https://www.tradingview.com/x/abc/', '19.10.2026']) {
     assert.ok(values.includes(expected), `eksik: ${expected}`);
   }
   // kaldırılan girdiler (saat, çıkış, süre, timeframe'ler, PD Array, stop / TP pip, işlem yönetimi) sütun değildir
-  for (const gone of ['Saat', 'Çıkış', 'Süre', 'Giriş Saati (saatlik)', 'Timeframe', 'Entry Timeframe', 'PD Array', 'Stop Pip', 'TP Pip', 'İşlem Yönetimi', 'Planlanan R:R', 'Kaçırılan R', 'Asia Range Pip', "Çıkış Sonrası TP'ye Ulaştı", 'İşlem Durumu', 'News Day', 'Entry Model', 'Target', 'Asia Range FVG (1H)']) {
+  for (const gone of ['Saat', 'Çıkış', 'Süre', 'Giriş Saati (saatlik)', 'Timeframe', 'Entry Timeframe', 'PD Array', 'Stop Pip', 'TP Pip', 'İşlem Yönetimi', 'Planlanan R:R', 'Kaçırılan R', 'Asia Range Pip', "Çıkış Sonrası TP'ye Ulaştı", 'İşlem Durumu', 'News Day', 'Entry Model', 'Target', 'Asia Range FVG (1H)', 'Hesap ID', 'Hesap Türü', 'Aşama', 'Risk (%)', 'Risk ($)']) {
     assert.ok(!(gone in row), `sütun kaldırılmalıydı: ${gone}`);
   }
   assert.ok(!values.includes('09:30') && !values.includes('FVG, OB') && !values.includes('1H'));

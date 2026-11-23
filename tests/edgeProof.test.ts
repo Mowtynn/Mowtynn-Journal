@@ -21,7 +21,7 @@ test('edge raporu: her girdi değeri bir satır, kurulumlar dahil', async () => 
   ]);
   const asia = rows.filter((r) => r.Girdi === 'Asia Range').map((r) => r['Değer']);
   assert.deepEqual(asia, ['Swept', 'Range']);
-  assert.ok(rows.some((r) => r.Girdi === 'Risk %' && r['İşlem'] === 2));
+  assert.ok(!rows.some((r) => r.Girdi === 'Risk %'), 'risk artık girdi değil');
   assert.ok(rows.some((r) => String(r.Girdi).startsWith('Kurulum')));
   assert.equal(rows.find((r) => r.Girdi === 'Asia Range')!['Hüküm'], 'Az Veri');
 });

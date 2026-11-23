@@ -2,8 +2,8 @@ import { SPRING, POPOVER, MODAL_BACKDROP, MODAL_PANEL } from './lib/motion';
 import { AllTradesContext } from "./lib/allTradesContext";
 import { useState, useEffect, useMemo, useCallback, useRef, Suspense, startTransition, type ReactNode, type Dispatch, type SetStateAction } from "react";
 import { createPortal, flushSync } from "react-dom";
-import { Trade, Note, JournalEntry, DefinitionTitles, AccountCategory, PropAccount } from "./types";
-import { loadPropAccounts, sanitizePropAccounts, PROP_ACCOUNTS_KEY, collectAccountImages } from "./lib/propAccounts";
+import { Trade, Note, JournalEntry, DefinitionTitles, AccountCategory, Payout } from "./types";
+import { loadPayouts, sanitizePayouts, payoutsFromLegacyAccounts, mergePayouts, PAYOUTS_KEY, LEGACY_PROP_ACCOUNTS_KEY } from "./lib/payouts";
 import { calculateComprehensiveStats } from "./lib/stats";
 import { edgeFromR } from "./lib/asiaAnalytics";
 import { applyGlobalFilters, countExtraFilters, DEFAULT_DATE_LIMIT, EMPTY_EXTRA_FILTERS } from "./lib/tradeFilters";
@@ -13,11 +13,9 @@ import {
   DEFAULT_PLAN_FIDELITIES,
   DEFAULT_TREND_TYPES,
   DEFAULT_PREMIUM_DISCOUNTS,
-  DEFAULT_RISK_PRESETS,
-  normalizeRiskPresets,
   DEFAULT_DEFINITION_TITLES,
   sanitizeDefinitionTitles,
-  getTradeAccountCategory,
+  getTradeAccountKind,
   titleCaseList,
 } from "./constants/constants";
 
@@ -76,12 +74,11 @@ import {
   waitForPendingWrites,
 } from "firebase/firestore";
 import { onAuthStateChanged, User, updateProfile } from "firebase/auth";
-import { saveImage, deleteAllUserImages, deleteImages } from "./lib/imageStore";
+import { saveImage, deleteAllUserImages } from "./lib/imageStore";
 import { reportCloudError, muteAuthErrors } from "./lib/cloudErrors";
 import { weeklyReviewDue } from "./lib/weeklyReview";
-import { NO_ACCOUNT } from "./components/tradeForm/shared";
 import { prepareTradeSave, prepareJournalSave, prepareNoteSave, upsertById, removeById, rollbackUpsert, restoreDeleted, mergeCloudSnapshot, byCreatedDesc, byUpdatedDesc, byJournalDateDesc, normalizeNote, normalizeJournal, normalizeNotes, normalizeJournals } from "./lib/recordStore";
-import { inScope, resolveScope, scopeKey, scopeLabel, scopeTrades, scopeAccountRows } from "./lib/accountScope";
+import { inScope, scopeKey, scopeLabel, scopeTrades } from "./lib/accountScope";
 import { STORAGE_KEY as SITE_TOKEN_KEY } from "./components/PasswordGate";
 
 // Sekmeler ve pencereler ayrı parçalarda: ilk açılışta yalnızca ana panel indirilir.
@@ -193,12 +190,10 @@ const SETTINGS_LIST_KEYS: [string, string][] = [
   ["planFidelities", "trading_plan_fidelities_list"],
   ["trendTypes", "trading_trend_types_list"],
   ["premiumDiscounts", "trading_premium_discounts_list"],
-  ["riskPresets", "trading_risk_presets_list"],
   ["requiredFields", "tj_required_fields"],
 ];
 /** Cihazdaki işlem/not/günlük verisinin hangi hesaba ait olduğu (hesaplar arası karışmayı önler) */
 const DATA_OWNER_KEY = "tj_data_owner";
-const LAST_TRADE_ACCOUNT_KEY = "tj_last_trade_account";
 const reviveNotes = (v: unknown): Note[] => normalizeNotes(v);
 const reviveJournals = (v: unknown): JournalEntry[] => normalizeJournals(v);
 const onlyStrings = (v: unknown[]) => v.filter((x): x is string => typeof x === "string");
@@ -248,11 +243,15 @@ const sanitizeImportedSettings = (raw: any) => {
     const v = strList(raw[k]);
     if (v) out[k] = v;
   });
-  if (Array.isArray(raw.riskPresets)) out.riskPresets = normalizeRiskPresets(raw.riskPresets);
   if (raw.definitionTitles && typeof raw.definitionTitles === "object") {
     out.definitionTitles = sanitizeDefinitionTitles(raw.definitionTitles);
   }
-  if (Array.isArray(raw.propAccounts)) out.propAccounts = sanitizePropAccounts(raw.propAccounts);
+  // Payout'lar; eski yedeklerde yalnızca prop hesapları varsa içlerindeki payout'lar taşınır
+  if (Array.isArray(raw.payouts)) out.payouts = sanitizePayouts(raw.payouts);
+  else if (Array.isArray(raw.propAccounts)) {
+    const legacy = payoutsFromLegacyAccounts(raw.propAccounts);
+    if (legacy.length) out.payouts = legacy;
+  }
   return Object.keys(out).length > 0 ? out : null;
 };
 
@@ -305,11 +304,8 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, []);
 
-  // Hesap kapsamı (üst çubuk): uygulama her açılışta TÜMÜ (tüm prop hesapları) ile başlar.
-  // Hesapsız işlemler TÜMÜ'ye dahil değildir; yalnızca HESAPSIZ bilinçli seçilince görünür. Seçim oturum içinde tutulur.
-  const [activeAccountCategory, setActiveAccountCategory] = useState<AccountCategory>("ALL");
-  // Challenge / Funded altında tek prop hesabı seçilebilir (yoksa kategorinin tamamı)
-  const [activeAccountId, setActiveAccountId] = useState<string | null>(null);
+  // Hesap kapsamı (üst çubuk): PROP ya da HESAPSIZ. Uygulama her açılışta PROP ile başlar; seçim oturum içinde tutulur.
+  const [activeAccountCategory, setActiveAccountCategory] = useState<AccountCategory>("PROP");
   useEffect(() => {
     // Eski sürümlerin kalıcı kapsam kaydı artık kullanılmıyor
     try {
@@ -318,28 +314,16 @@ export default function App() {
     } catch (e) {}
   }, []);
 
-  const handleAccountScopeChange = useCallback((category: AccountCategory, accountId: string | null = null) => {
+  const handleAccountScopeChange = useCallback((category: AccountCategory) => {
     setActiveAccountCategory(category);
-    setActiveAccountId(accountId);
   }, []);
 
   const accountCategoryCounts = useMemo(() => {
-    let funded = 0;
-    let challenge = 0;
-    let demo = 0;
+    const counts: Record<AccountCategory, number> = { PROP: 0, DEMO: 0 };
     trades.forEach((t) => {
-      const cat = getTradeAccountCategory(t);
-      if (cat === 'FUNDED') funded++;
-      else if (cat === 'CHALLENGE') challenge++;
-      else demo++;
+      counts[getTradeAccountKind(t)]++;
     });
-    return {
-      // TÜMÜ = Challenge + Funded (hesapsızlar ayrı sayılır)
-      all: funded + challenge,
-      funded,
-      challenge,
-      demo,
-    };
+    return counts;
   }, [trades]);
 
     const {
@@ -572,113 +556,42 @@ export default function App() {
     return () => window.removeEventListener(REQUIRED_FIELDS_EVENT, onChange);
   }, [user]);
 
-  // İşlem formundaki hazır risk yüzdeleri (Tanımlamalar > Risk)
-  const [riskPresets, setRiskPresets] = useState<string[]>(() => {
+  // Payout'lar (Prop sekmesi): yerelde + bulut ayar belgesinde. İlk açılışta eski prop hesaplarındaki payout'lar taşınır.
+  const [payoutInit] = useState(loadPayouts);
+  const [payouts, setPayouts] = useState<Payout[]>(payoutInit.list);
+  const persistPayouts = useCallback((updated: Payout[], syncCloud = true) => {
+    const clean = sanitizePayouts(updated);
+    setPayouts(clean);
     try {
-      const stored = localStorage.getItem("trading_risk_presets_list");
-      if (stored) return normalizeRiskPresets(JSON.parse(stored));
+      localStorage.setItem(PAYOUTS_KEY, JSON.stringify(clean));
     } catch (e) {
       console.error(e);
     }
-    return DEFAULT_RISK_PRESETS;
-  });
-
-  const persistRiskPresets = useCallback((incoming: string[], syncCloud = true) => {
-    const updated = normalizeRiskPresets(incoming);
-    setRiskPresets(updated);
-    try {
-      localStorage.setItem("trading_risk_presets_list", JSON.stringify(updated));
-      if (syncCloud && user) {
-        setDoc(doc(db, "settings", user.uid), cleanForFirestore({ riskPresets: updated, userId: user.uid }), { merge: true })
-          .catch(err => reportCloudError("ayar kaydı", err, "Tanımlamalar buluta kaydedilemedi; cihazda tutuluyor."));
-      }
-    } catch (e) {
-      console.error(e);
+    if (syncCloud && user) {
+      setDoc(doc(db, "settings", user.uid), cleanForFirestore({ payouts: clean, userId: user.uid }), { merge: true })
+        .catch((err) => reportCloudError("payout kaydı", err, "Payout'lar buluta kaydedilemedi; cihazda tutuluyor."));
     }
   }, [user]);
-
-  // Prop hesapları (Challenge / Funded): yerelde + bulut ayar belgesinde
-  const [propAccounts, setPropAccounts] = useState<PropAccount[]>(loadPropAccounts);
-  const persistPropAccounts = useCallback((updated: PropAccount[], syncCloud = true) => {
-    const clean = sanitizePropAccounts(updated);
-    setPropAccounts(clean);
+  useEffect(() => {
+    // Eski hesaplardan taşınan liste cihaza yazılır (bulut, ilk ayar senkronunda tamamlanır)
+    if (!payoutInit.migrated) return;
     try {
-      localStorage.setItem(PROP_ACCOUNTS_KEY, JSON.stringify(clean));
-    } catch (e) {
-      console.error(e);
-      toast.error("Tarayıcı hafızası doldu; prop fotoğrafları için giriş yapıp buluta kaydetmen gerekiyor.");
-    }
-    if (!syncCloud || !user) return;
-    (async () => {
-      // Girişsizken eklenen ya da yedekten gelen fotoğraflar (data URL) önce "images" koleksiyonuna kaydedilir;
-      // ayar belgesine yalnızca kısa referans (fsimg:…) yazılır (belge boyutu sınırı).
-      const pending = Array.from(new Set(collectAccountImages(clean).filter((i) => i.startsWith("data:"))));
-      let toSave = clean;
-      if (pending.length > 0) {
-        const map = new Map<string, string>();
-        for (const dataUrl of pending) map.set(dataUrl, await saveImage(user.uid, dataUrl, "prop", (e) => reportCloudError("prop fotoğrafı kaydı", e, "Bir fotoğraf buluta kaydedilemedi.")));
-        const swap = (i: string) => map.get(i) || i;
-        const replaceAll = (list: PropAccount[]) =>
-          list.map((a) => ({
-            ...a,
-            images: a.images?.map(swap),
-            certificates: a.certificates?.map((c) => (c.image ? { ...c, image: swap(c.image) } : c)),
-          }));
-        toSave = replaceAll(clean);
-        setPropAccounts((prev) => {
-          const next = replaceAll(prev);
-          try {
-            localStorage.setItem(PROP_ACCOUNTS_KEY, JSON.stringify(next));
-          } catch (e) {}
-          return next;
-        });
-      }
-      await setDoc(doc(db, "settings", user.uid), cleanForFirestore({ propAccounts: toSave, userId: user.uid }), { merge: true });
-    })().catch((err) => {
-      reportCloudError("prop hesapları kaydı", err, "Prop hesapları buluta kaydedilemedi; cihazda tutuluyor.");
-    });
-  }, [user]);
+      localStorage.setItem(PAYOUTS_KEY, JSON.stringify(payoutInit.list));
+    } catch (e) {}
+  }, [payoutInit]);
 
-  // Üst çubuktaki hesap kapsamı: silinmiş/uyumsuz hesap seçimi kategori düzeyine düşer
-  const resolvedScope = useMemo(
-    () => resolveScope({ category: activeAccountCategory, accountId: activeAccountId }, propAccounts),
-    [activeAccountCategory, activeAccountId, propAccounts],
-  );
-  const activeAccount = resolvedScope.account;
-  const activeUnlinkedOf = resolvedScope.unlinkedOf;
   // Kaydedilen işlem seçili kapsamın dışında kalıyorsa kullanıcıya nerede göreceği söylenir
-  const scopeRef = useRef({ category: activeAccountCategory, account: activeAccount, unlinkedOf: activeUnlinkedOf });
-  scopeRef.current = { category: activeAccountCategory, account: activeAccount, unlinkedOf: activeUnlinkedOf };
-  const activeScopeKey = scopeKey(activeAccountCategory, resolvedScope.scope.accountId);
-  const activeScopeName = scopeLabel(activeAccountCategory, activeAccount, !!activeUnlinkedOf);
+  const scopeRef = useRef(activeAccountCategory);
+  scopeRef.current = activeAccountCategory;
+  const activeScopeKey = scopeKey(activeAccountCategory);
+  const activeScopeName = scopeLabel(activeAccountCategory);
   // Günlük ve haftalık değerlendirme yalnızca hesap kapsamına uyar (tarih/parite filtreleri haftayı bozmasın)
   const scopedTrades = useMemo(
-    () => scopeTrades(trades, activeAccountCategory, activeAccount, activeUnlinkedOf),
-    [trades, activeAccountCategory, activeAccount, activeUnlinkedOf],
+    () => scopeTrades(trades, activeAccountCategory),
+    [trades, activeAccountCategory],
   );
   // "Son kurulumu kopyala": dizi sırasına güvenmeden en son girilen işlem
   const latestTrade = useMemo(() => trades.reduce<Trade | null>((m, t) => (!m || t.createdAt > m.createdAt ? t : m), null), [trades]);
-    const scopeAccounts = useMemo(
-    () => ({ CHALLENGE: scopeAccountRows(propAccounts, trades, 'CHALLENGE'), FUNDED: scopeAccountRows(propAccounts, trades, 'FUNDED') }),
-    [propAccounts, trades],
-  );
-  // Fotoğraf: girişliyken Firestore'daki "images" koleksiyonuna kaydedilir (ücretsiz plan; Storage gerekmez),
-  // değilse sıkıştırılmış data URL olarak yerelde kalır
-  const uploadPropImage = useCallback(
-    (dataUrl: string) =>
-      user
-        ? saveImage(user.uid, dataUrl, "prop", (e) => reportCloudError("prop fotoğrafı kaydı", e, "Fotoğraf buluta kaydedilemedi."))
-        : Promise.resolve(dataUrl),
-    [user],
-  );
-  // Hesap değişiklikleri kaydedilir; kaldırılan fotoğraflar (silinen sertifika / zincir / görsel) buluttan da silinir
-  const handlePropAccountsChange = useCallback((next: PropAccount[]) => {
-    const kept = new Set(collectAccountImages(next));
-    const removed = collectAccountImages(propAccounts).filter((img) => !kept.has(img));
-    if (removed.length) deleteImages(removed).catch((e) => console.error("Image delete failed:", e));
-    persistPropAccounts(next);
-  }, [propAccounts, persistPropAccounts]);
-
   const [definitionTitles, setDefinitionTitles] = useState<DefinitionTitles>(() => {
     try {
       const stored = localStorage.getItem("trading_definition_titles");
@@ -838,27 +751,10 @@ export default function App() {
     }
   }
   const formSlot = formSlotRef.current;
-  // Son işlem eklenen hesap: yeni işlem formu bu hesapla açılır (üst çubukta tek hesap seçili değilse)
-  const [lastTradeAccount, setLastTradeAccount] = useState<string | null>(() => {
-    try {
-      return localStorage.getItem(LAST_TRADE_ACCOUNT_KEY);
-    } catch {
-      return null;
-    }
-  });
-  // Yeni işlem formunun hesabı: üst çubukta tek bir aktif hesap (ya da Hesapsız) seçiliyse o; değilse son işlem
-  // eklenen hesap (hâlâ aktifse). Arşivlenen / silinen hesap önerilmez.
-  const lastAccountStillActive =
-    lastTradeAccount === NO_ACCOUNT || (!!lastTradeAccount && propAccounts.some((a) => a.id === lastTradeAccount && a.status === "ACTIVE"));
-  const defaultAccountChoice =
-    activeAccount && activeAccount.status === "ACTIVE"
-      ? activeAccount.id
-      : !activeAccount && activeAccountCategory === "DEMO"
-        ? NO_ACCOUNT
-        : lastAccountStillActive
-          ? lastTradeAccount
-          : null;
-  const formKey = formSlot.editing ? `edit-${formSlot.editing.id}-${formSlot.seq}` : `new-${formSlot.seq}-${defaultAccountChoice || ""}`;
+  // Yeni işlem formunun hesap türü: üst çubukta HESAPSIZ seçiliyse Hesapsız; değilse son işlemin türü (ilk işlemde Prop)
+  const defaultAccountKind: AccountCategory =
+    activeAccountCategory === "DEMO" ? "DEMO" : latestTrade ? getTradeAccountKind(latestTrade) : "PROP";
+  const formKey = formSlot.editing ? `edit-${formSlot.editing.id}-${formSlot.seq}` : `new-${formSlot.seq}-${defaultAccountKind}`;
   useEffect(() => {
     if (isFormOpen) return;
     const slot = formSlotRef.current;
@@ -907,7 +803,7 @@ export default function App() {
         } catch (e) {}
         if (owner && owner !== currentUser.uid) {
           try {
-            ["trading_journal_db", "trading_journal_notes", "trading_journal_journals", PROP_ACCOUNTS_KEY].forEach((k) => localStorage.removeItem(k));
+            ["trading_journal_db", "trading_journal_notes", "trading_journal_journals", PAYOUTS_KEY, LEGACY_PROP_ACCOUNTS_KEY].forEach((k) => localStorage.removeItem(k));
           } catch (e) {}
           tradesRef.current = [];
           notesRef.current = [];
@@ -915,7 +811,7 @@ export default function App() {
           setTrades([]);
           setNotes([]);
           setJournals([]);
-          setPropAccounts([]);
+          setPayouts([]);
         }
         try {
           localStorage.setItem(DATA_OWNER_KEY, currentUser.uid);
@@ -955,10 +851,15 @@ export default function App() {
                 const local = readStoredArray(key);
                 if (local && local.length) missing[field] = onlyStrings(local).slice(0, 500); // bulut kuralı sınırı
               });
-              if (!Array.isArray(cloudData.propAccounts)) {
-                const localAccounts = loadPropAccounts();
-                // Fotoğrafı henüz buluta kaydedilmemiş (data URL) hesaplar ilk değişiklikte görsel koleksiyonu üzerinden yazılır
-                if (localAccounts.length && localAccounts.length <= 500 && !collectAccountImages(localAccounts).some((i) => i.startsWith("data:"))) missing.propAccounts = localAccounts;
+              if (!Array.isArray(cloudData.payouts)) {
+                // Bulutta payout listesi yoksa: cihazdakiler + buluttaki eski prop hesaplarının payout'ları birleşip yazılır
+                const local = loadPayouts().list;
+                const legacy = payoutsFromLegacyAccounts(cloudData.propAccounts);
+                const merged = legacy.length ? mergePayouts(local, legacy) : local;
+                if (merged.length) {
+                  missing.payouts = merged;
+                  if (merged.length !== local.length) persistPayouts(merged, false);
+                }
               }
               if (Object.keys(missing).length) {
                 setDoc(doc(db, "settings", currentUser.uid), cleanForFirestore({ ...missing, userId: currentUser.uid }), { merge: true }).catch((e) =>
@@ -991,13 +892,12 @@ export default function App() {
               applyList(data.planFidelities, "trading_plan_fidelities_list", persistPlanFidelities);
               applyList(data.trendTypes, "trading_trend_types_list", persistTrendTypes);
               applyList(data.premiumDiscounts, "trading_premium_discounts_list", persistPremiumDiscounts);
-              applyList(data.riskPresets, "trading_risk_presets_list", persistRiskPresets);
               // Zorunlu alanlar: buluttaki ayar cihaza yazılır (olay tetiklenmez; döngü olmasın)
               if (Array.isArray(data.requiredFields)) applyRequiredFieldsFromCloud(data.requiredFields);
               if (data.definitionTitles) persistDefinitionTitles(data.definitionTitles, false);
-              if (Array.isArray(data.propAccounts)) {
+              if (Array.isArray(data.payouts)) {
                 try {
-                  if (localStorage.getItem(PROP_ACCOUNTS_KEY) !== JSON.stringify(data.propAccounts)) persistPropAccounts(data.propAccounts, false);
+                  if (localStorage.getItem(PAYOUTS_KEY) !== JSON.stringify(data.payouts)) persistPayouts(data.payouts, false);
                 } catch (e) {}
               }
               // Ad ayrı tutulur: Firebase User nesnesini kopyalamak (spread) yöntemlerini kaybettirir ve
@@ -1163,7 +1063,6 @@ export default function App() {
         ["trading_plan_fidelities_list", setPlanFidelities],
         ["trading_trend_types_list", setTrendTypes],
         ["trading_premium_discounts_list", setPremiumDiscounts],
-        ["trading_risk_presets_list", (v) => setRiskPresets(normalizeRiskPresets(v))],
       ];
       lists.forEach(([key, set]) => {
         try {
@@ -1177,7 +1076,7 @@ export default function App() {
         if (raw) setDefinitionTitles(sanitizeDefinitionTitles(JSON.parse(raw)));
       } catch (e) { /* korunur */ }
       try {
-        setPropAccounts(loadPropAccounts());
+        setPayouts(loadPayouts().list);
       } catch (e) { /* korunur */ }
     };
 
@@ -1201,12 +1100,13 @@ export default function App() {
       setTrades([]);
       setNotes([]);
       setJournals([]);
-      setPropAccounts([]);
+      setPayouts([]);
       try {
         localStorage.removeItem("trading_journal_db");
         localStorage.removeItem("trading_journal_notes");
         localStorage.removeItem("trading_journal_journals");
-        localStorage.removeItem(PROP_ACCOUNTS_KEY);
+        localStorage.removeItem(PAYOUTS_KEY);
+        localStorage.removeItem(LEGACY_PROP_ACCOUNTS_KEY);
         localStorage.removeItem(DATA_OWNER_KEY);
       } catch (e) {}
     } catch (err) {
@@ -1317,9 +1217,8 @@ export default function App() {
           .catch(err => reportCloudError("tanım listesi güncelleme", err, "Yeni tanımlar buluta kaydedilemedi; cihazda tutuluyor."));
       }
 
-      const sc = scopeRef.current;
-      if (!inScope(initialTrade, sc.category, sc.account, sc.unlinkedOf)) {
-        const where = getTradeAccountCategory(initialTrade) === "DEMO" ? "HESAPSIZ" : "ilgili hesabı";
+      if (!inScope(initialTrade, scopeRef.current)) {
+        const where = getTradeAccountKind(initialTrade) === "DEMO" ? "HESAPSIZ" : "PROP";
         toast.success(`${isNew ? "İşlem kaydedildi" : "İşlem güncellendi"}. Seçili hesap görünümünde değil; görmek için üstten ${where} seç.`, { duration: 5000 });
       } else {
         toast.success(isNew ? "İşlem başarıyla kaydedildi." : "İşlem başarıyla güncellendi.");
@@ -1351,16 +1250,6 @@ export default function App() {
   const handleSaveTradeAndClose = useCallback(async (tradeData: any) => {
     await handleSaveTrade(tradeData);
     setIsFormOpen(false);
-    const acc: string | null = tradeData?.accountId ? String(tradeData.accountId) : tradeData?.accountCategory === "DEMO" ? NO_ACCOUNT : null;
-    // Yalnızca yeni eklenen işlem belirler (eski bir işlemi düzenlemek "son hesap"ı değiştirmez)
-    if (acc && !tradeData?.id) {
-      setLastTradeAccount(acc);
-      try {
-        localStorage.setItem(LAST_TRADE_ACCOUNT_KEY, acc);
-      } catch {
-        /* depolama kapalıysa yalnızca bu oturumda hatırlanır */
-      }
-    }
   }, [handleSaveTrade]);
 
   const handleCancelEdit = useCallback(() => {
@@ -1723,8 +1612,8 @@ export default function App() {
           }
 
           if (importedSettings) {
-            // Prop hesapları (fotoğraflar görsel koleksiyonuna kaydedilerek) aşağıda persistPropAccounts ile yazılır
-            const { propAccounts: _pa, ...cloudSettings } = importedSettings;
+            // Payout'lar mevcut listeyle birleştirilerek aşağıda persistPayouts ile yazılır
+            const { payouts: _po, ...cloudSettings } = importedSettings;
             await setDoc(doc(db, "settings", user.uid), cleanForFirestore({ ...cloudSettings, userId: user.uid }), { merge: true });
           }
         }
@@ -1758,14 +1647,9 @@ export default function App() {
           if (importedSettings.planFidelities) persistPlanFidelities(importedSettings.planFidelities, sync);
           if (importedSettings.trendTypes) persistTrendTypes(importedSettings.trendTypes, sync);
           if (importedSettings.premiumDiscounts) persistPremiumDiscounts(importedSettings.premiumDiscounts, sync);
-          if (importedSettings.riskPresets) persistRiskPresets(importedSettings.riskPresets, sync);
           if (importedSettings.definitionTitles) persistDefinitionTitles(importedSettings.definitionTitles, sync);
-          if (importedSettings.propAccounts) {
-            // id'ye göre birleştir: yedekteki hesap aynı id'li yerel hesabın yerine geçer
-            const incoming: PropAccount[] = importedSettings.propAccounts;
-            const ids = new Set(incoming.map((a) => a.id));
-            persistPropAccounts([...incoming, ...propAccounts.filter((a) => !ids.has(a.id))], sync);
-          }
+          // id'ye göre birleştir: yedekteki payout aynı id'li yerel kaydın yerine geçer
+          if (importedSettings.payouts) persistPayouts(mergePayouts(payouts, importedSettings.payouts), sync);
         }
 
         toast.success(
@@ -1785,10 +1669,9 @@ export default function App() {
       persistPlanFidelities,
       persistTrendTypes,
       persistPremiumDiscounts,
-      persistRiskPresets,
       persistDefinitionTitles,
-      persistPropAccounts,
-      propAccounts,
+      persistPayouts,
+      payouts,
       setTrades,
       setNotes,
       setJournals,
@@ -1844,7 +1727,7 @@ export default function App() {
           return false;
         }
 
-        // Ayar belgesi (tanımlamalar, prop hesapları vb.)
+        // Ayar belgesi (tanımlamalar, payout'lar vb.)
         try {
           await deleteDoc(doc(db, "settings", user.uid));
         } catch (e) {
@@ -1883,16 +1766,15 @@ export default function App() {
       setTrades([]);
       setNotes([]);
       setJournals([]);
-      persistPropAccounts([], !!user);
+      persistPayouts([], !!user);
 
-      handleAccountScopeChange('ALL');
+      handleAccountScopeChange('PROP');
 
       persistSessions(DEFAULT_SESSIONS, !!user);
       persistAssets(DEFAULT_ASSETS, !!user);
       persistPlanFidelities(DEFAULT_PLAN_FIDELITIES, !!user);
       persistTrendTypes(DEFAULT_TREND_TYPES, !!user);
       persistPremiumDiscounts(DEFAULT_PREMIUM_DISCOUNTS, !!user);
-      persistRiskPresets(DEFAULT_RISK_PRESETS, !!user);
       persistDefinitionTitles(DEFAULT_DEFINITION_TITLES, !!user);
 
       setGlobalSelectedPlanFidelity([]);
@@ -1934,13 +1816,12 @@ export default function App() {
     setTrades,
     setNotes,
     setJournals,
-    persistPropAccounts,
+    persistPayouts,
     persistSessions,
     persistAssets,
     persistPlanFidelities,
     persistTrendTypes,
     persistPremiumDiscounts,
-    persistRiskPresets,
     persistDefinitionTitles,
     setGlobalSelectedPlanFidelity,
   ]);
@@ -1960,8 +1841,6 @@ export default function App() {
     () =>
       applyGlobalFilters(trades, {
         activeAccountCategory,
-        activeAccount,
-        activeUnlinkedOf,
         globalSelectedPlanFidelity,
         globalDateLimit,
         globalSelectedAssets,
@@ -1972,7 +1851,7 @@ export default function App() {
         globalExtra,
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [trades, dateWindowTick, globalExtra, activeAccountCategory, activeAccount, activeUnlinkedOf, globalSelectedPlanFidelity, globalDateLimit, globalSelectedAssets, globalSelectedSessions, globalSelectedStatuses, globalSelectedTypes, globalSelectedTrendTypes],
+    [trades, dateWindowTick, globalExtra, activeAccountCategory, globalSelectedPlanFidelity, globalDateLimit, globalSelectedAssets, globalSelectedSessions, globalSelectedStatuses, globalSelectedTypes, globalSelectedTrendTypes],
   );
 
   // Calculate comprehensive statistics (moved outside)
@@ -2017,18 +1896,16 @@ export default function App() {
     planFidelities,
     trendTypes,
     premiumDiscounts,
-    riskPresets,
     definitionTitles,
-    propAccounts,
+    payouts,
   }), [
     sessions,
     assets,
     planFidelities,
     trendTypes,
     premiumDiscounts,
-    riskPresets,
     definitionTitles,
-    propAccounts,
+    payouts,
   ]);
 
   // Ana sayfa panelleri: modal aç/kapa (isFormOpen, filtre penceresi vb.) bu bloğu yeniden çizmez.
@@ -2143,7 +2020,7 @@ export default function App() {
                   </TabPane>
                   <TabPane active={currentTab === "prop"} warm={warmLevel >= 3}>
                     <SectionErrorBoundary sectionName="Prop">
-                      <PropView accounts={propAccounts} trades={trades} onChange={handlePropAccountsChange} uploadImage={uploadPropImage} />
+                      <PropView payouts={payouts} onChange={persistPayouts} />
                     </SectionErrorBoundary>
                   </TabPane>
                   <TabPane active={currentTab === "notes"} warm={warmLevel >= 4}>
@@ -2156,7 +2033,7 @@ export default function App() {
                     </SectionErrorBoundary>
                   </TabPane>
             </div>
-  ), [ warmLevel, globalDateLimit, setGlobalDateLimit, weeklyDue, weeklyRequest, openWeeklyReview, scopedTrades, activeScopeKey, activeScopeName, calculatedStats, overallEdge, edgeDrift, currentTab, definitionTitles, filteredGlobalTrades, handleDeleteJournal, handleDeleteNote, handleDeleteTrade, handleSaveJournal, handleSaveNote, handleStartEdit, journals, notes, planFidelities, propAccounts, handlePropAccountsChange, uploadPropImage, sessions, setDetailedTrade, setEditingTrade, setIsFormOpen, trades, trendTypes ]);
+  ), [ warmLevel, globalDateLimit, setGlobalDateLimit, weeklyDue, weeklyRequest, openWeeklyReview, scopedTrades, activeScopeKey, activeScopeName, calculatedStats, overallEdge, edgeDrift, currentTab, definitionTitles, filteredGlobalTrades, handleDeleteJournal, handleDeleteNote, handleDeleteTrade, handleSaveJournal, handleSaveNote, handleStartEdit, journals, notes, planFidelities, payouts, persistPayouts, sessions, setDetailedTrade, setEditingTrade, setIsFormOpen, trades, trendTypes ]);
 
   return (
     <AllTradesContext.Provider value={trades}>
@@ -2244,14 +2121,11 @@ export default function App() {
             {/* PWA Install Button (Compact) */}
             <PWAInstallButton className="hidden sm:flex" />
 
-            {/* Account Switcher (TÜMÜ / DEMO / FUNDED) */}
+            {/* Hesap türü (PROP / HESAPSIZ) */}
             <AccountSwitcher
               activeCategory={activeAccountCategory}
-              activeAccount={activeAccount}
-              unlinkedActive={!!activeUnlinkedOf}
               onSelect={handleAccountScopeChange}
               counts={accountCategoryCounts}
-              accounts={scopeAccounts}
             />
 
             {/* Ayarlar (Settings) Dropdown Menu - Compact */}
@@ -2717,14 +2591,12 @@ export default function App() {
           planFidelities={planFidelities}
           trendTypes={trendTypes}
           premiumDiscounts={premiumDiscounts}
-          riskPresets={riskPresets}
           definitionTitles={definitionTitles}
           persistSessions={persistSessions}
           persistAssets={persistAssets}
           persistPlanFidelities={persistPlanFidelities}
           persistTrendTypes={persistTrendTypes}
           persistPremiumDiscounts={persistPremiumDiscounts}
-          persistRiskPresets={persistRiskPresets}
           onRenameDefinition={handleRenameDefinition}
           persistDefinitionTitles={persistDefinitionTitles}
         />
@@ -2760,12 +2632,10 @@ export default function App() {
                     planFidelities={planFidelities}
                     trendTypes={trendTypes}
                     premiumDiscounts={premiumDiscounts}
-                    riskPresets={riskPresets}
                     definitionTitles={definitionTitles}
                     lastTrade={latestTrade}
                     registerCloseGuard={registerFormCloseGuard}
-                    propAccounts={propAccounts}
-                    defaultAccountChoice={defaultAccountChoice}
+                    defaultAccountKind={defaultAccountKind}
                     quickMode={formQuickMode}
                     onQuickModeChange={swapFormQuickMode}
                     active={isFormOpen}

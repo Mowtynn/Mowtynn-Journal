@@ -5,10 +5,10 @@ import { motion, AnimatePresence } from "motion/react";
 import { canonicalAsset } from "../../lib/tradeModel";
 import { TurkishDatePicker } from "../TurkishDateTimePicker";
 import { Search, Layers, Check } from "lucide-react";
-import { NO_ACCOUNT, Num, SetState, AccountOption, Titles, SlideBg } from './shared';
-import { AccountPicker } from './AccountPicker';
+import type { AccountCategory } from "../../types";
+import { SetState, Titles, SlideBg } from './shared';
 
-/* ================= 1. KART: TEMEL BİLGİLER (parite, yön, hesap, risk, tarih) ================= */
+/* ================= 1. KART: TEMEL BİLGİLER (parite, yön, hesap türü, tarih) ================= */
 export const BasicInfoCard = React.memo(function BasicInfoCard({
   titles,
   assets,
@@ -21,20 +21,10 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
   setIsAssetDropdownOpen,
   type,
   setType,
-  accountOptions,
-  accountChoice,
-  setAccountChoice,
+  accountKind,
+  setAccountKind,
   accountError,
   setAccountError,
-  selectedAccount,
-  riskPresets,
-  riskChoice,
-  setRiskChoice,
-  customRiskPct,
-  setCustomRiskPct,
-  riskError,
-  setRiskError,
-  riskDollar,
   tradeDate,
   setTradeDate,
 }: {
@@ -49,26 +39,15 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
   setIsAssetDropdownOpen: SetState<boolean>;
   type: "LONG" | "SHORT";
   setType: SetState<"LONG" | "SHORT">;
-  accountOptions: AccountOption[];
-  accountChoice: string | null;
-  setAccountChoice: (id: string | null) => void;
+  accountKind: AccountCategory | null;
+  setAccountKind: SetState<AccountCategory | null>;
   accountError: boolean;
   setAccountError: SetState<boolean>;
-  selectedAccount: AccountOption | undefined;
-  riskPresets: number[];
-  riskChoice: number | "CUSTOM" | null;
-  setRiskChoice: SetState<number | "CUSTOM" | null>;
-  customRiskPct: Num;
-  setCustomRiskPct: SetState<Num>;
-  riskError: boolean;
-  setRiskError: SetState<boolean>;
-  riskDollar: number | null;
   tradeDate: string;
   setTradeDate: SetState<string>;
 }) {
   const { L, H } = titles;
   const assetDropdownRef = useRef<HTMLDivElement>(null);
-  const customRiskRef = useRef<HTMLInputElement>(null);
   const [assetActiveIndex, setAssetActiveIndex] = useState(0);
   const assetMatches = useMemo(
     () => assets.filter((x) => canonicalAsset(x).includes(canonicalAsset(asset))),
@@ -223,126 +202,54 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
         </div>
       </div>
 
-      {/* Satır 2: Hesap seçimi — tek satırlık açılır seçici (sabit yükseklik): seçili hesap adı, bakiyesi ve aşamasıyla
-          görünür; listede her hesap tam adıyla, çok hesapta arama kutusuyla seçilir. Hesapsız listenin sonunda. */}
-      <div id="account-field">
-        <AccountPicker
-          options={accountOptions}
-          value={accountChoice}
-          error={accountError}
-          label={H("platforms", "Hesap")}
-          onChange={(id) => {
-            setAccountChoice(id);
-            setAccountError(false);
-            if (id === NO_ACCOUNT) setRiskError(false);
-          }}
-        />
-      </div>
-
-      {/* Risk satırı: her zaman yerinde durur (hesap ↔ Hesapsız geçişinde pencere yeniden boyutlanmasın).
-          Prop hesabı seçili değilse çipler görünür ama seçilemez. % başlangıç bakiyesi üzerinden; $ karşılığı salt okunur */}
-      {(() => {
-        const riskDisabled = !selectedAccount;
-        const chipBase = "h-9 rounded-lg border text-label font-bold font-sans transition-ui";
-        const chipIdle = riskDisabled
-          ? "bg-zinc-950/40 border-zinc-800/70 text-zinc-600 cursor-not-allowed"
-          : "bg-zinc-950/80 border-zinc-700/70 text-zinc-300 hover:border-zinc-500 hover:text-white cursor-pointer";
-        const chipOn = "bg-blue-500/15 border-blue-500/45 text-blue-100 cursor-pointer";
-        const showCustom = !riskDisabled && riskChoice === "CUSTOM";
-        return (
-          <div id="risk-field" aria-disabled={riskDisabled || undefined}>
-            <label className={`text-label sm:text-label font-bold uppercase tracking-wide mb-2 block font-sans transition-colors ${riskDisabled ? "text-zinc-500" : "text-zinc-300"}`}>
-              {titles.T("riskPresets") || "Risk"} (başlangıç bakiyesinin %'si)
-            </label>
-            {/* Tek satır, sarmaz: [$ karşılığı] [0.50] [0.75] [1.00] [% / elle giriş] — chipler kalan genişliği paylaşır */}
-            <div
-              role="radiogroup"
-              aria-invalid={riskError || undefined}
-              className={`flex flex-nowrap items-center gap-1.5 rounded-xl transition-ui ${riskError && !riskDisabled ? "ring-1 ring-rose-500/60 ring-offset-2 ring-offset-zinc-900" : ""}`}
-            >
-              <span
-                className={`h-9 flex-[1.35] min-w-0 px-2 rounded-lg border border-dashed text-label font-bold font-sans tabular-nums flex items-center justify-center gap-1 truncate ${riskDisabled ? "border-zinc-800 bg-zinc-950/30 text-zinc-600" : riskDollar !== null ? "border-blue-500/30 bg-blue-500/5 text-blue-200" : "border-zinc-700/70 bg-zinc-900/60 text-zinc-400"}`}
-                aria-live="polite"
-              >
-                {riskDollar !== null ? `$${riskDollar.toLocaleString("en-US", { maximumFractionDigits: 2 })}` : "$ —"}
-              </span>
-              {riskPresets.map((pct) => {
-                const sel = !riskDisabled && riskChoice === pct;
-                return (
-                  <button
-                    key={pct}
-                    type="button"
-                    role="radio"
-                    aria-checked={sel}
-                    data-selected={sel}
-                    disabled={riskDisabled}
-                    onClick={() => {
-                      setRiskChoice(pct);
-                      setRiskError(false);
-                    }}
-                    className={`${chipBase} flex-1 min-w-0 px-1 tabular-nums ${sel ? chipOn : chipIdle}`}
-                  >
-                    {pct.toFixed(2)}
-                  </button>
-                );
-              })}
-              {showCustom ? (
-                /* Elle yüzde: % düğmesinin yerine geçer, ayrıca yer kaplamaz */
-                <div className="relative shrink-0 w-[4.75rem]">
-                  <input
-                    ref={customRiskRef}
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    max="10"
-                    inputMode="decimal"
-                    placeholder="0.4"
-                    aria-label="Risk %"
-                    value={customRiskPct}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      setCustomRiskPct(v !== "" && Number.isFinite(Number(v)) ? Math.abs(Number(v)) : "");
-                      setRiskError(false);
-                    }}
-                    className="h-9 w-full bg-blue-500/10 border border-blue-500/45 focus:border-blue-400 focus:ring-1 focus:ring-blue-500/30 rounded-lg pl-2 pr-5 text-xs text-blue-100 focus:outline-none placeholder-blue-300/40 font-sans font-bold tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  />
-                  <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-label font-bold text-blue-300/70">%</span>
-                </div>
-              ) : (
+      {/* Satır 2: Hesap türü (Prop / Hesapsız) & Tarih (Türkiye takvim günü; saat sorulmaz, günün içindeki sıra girildiği andan gelir) */}
+      <div className="grid grid-cols-2 gap-2">
+        <div id="account-field">
+          <label className={`text-label sm:text-label font-bold uppercase tracking-wide mb-2 block font-sans ${accountError ? "text-rose-400" : "text-zinc-300"}`}>
+            {H("platforms", "Hesap")}
+          </label>
+          <div
+            role="radiogroup"
+            aria-invalid={accountError || undefined}
+            className={`grid grid-cols-2 gap-1 h-9 bg-zinc-950/80 border ${accountError ? "border-rose-500/70 ring-1 ring-rose-500/30" : "border-zinc-700/70"} rounded-lg sm:rounded-xl p-0.5 shadow-inner`}
+          >
+            {([
+              ["PROP", "Prop", "bg-blue-500/20 border-blue-500/45", "text-blue-200"],
+              ["DEMO", "Hesapsız", "bg-amber-500/15 border-amber-500/40", "text-amber-200"],
+            ] as const).map(([id, label, bg, fg]) => {
+              const sel = accountKind === id;
+              return (
                 <button
+                  key={id}
                   type="button"
                   role="radio"
-                  aria-checked={false}
-                  data-selected={false}
-                  disabled={riskDisabled}
+                  aria-checked={sel}
+                  data-selected={sel}
                   onClick={() => {
-                    setRiskChoice("CUSTOM");
-                    setRiskError(false);
-                    window.setTimeout(() => customRiskRef.current?.focus(), 0);
+                    setAccountKind(id);
+                    setAccountError(false);
                   }}
-                  aria-label={riskDisabled ? undefined : "Yüzdeyi elle gir"}
-                  className={`${chipBase} w-9 shrink-0 ${chipIdle}`}
+                  className={`relative h-full rounded-md sm:rounded-lg text-xs font-sans font-bold uppercase transition-ui flex items-center justify-center cursor-pointer ${sel ? fg : "text-zinc-400 hover:text-zinc-200"}`}
                 >
-                  %
+                  {sel && <SlideBg id="accountKindSlide" rounded="rounded-md sm:rounded-lg" className={`${bg} shadow-xs`} />}
+                  <span className="relative z-10">{label}</span>
                 </button>
-              )}
-            </div>
+              );
+            })}
           </div>
-        );
-      })()}
-
-      {/* Satır 3: Tarih (Türkiye takvim günü; işlem bu güne kaydedilir). Saat sorulmaz: kaydın günün içindeki sırası, girildiği andan gelir. */}
-      <div className="min-w-0">
-        <label className="text-label sm:text-label font-bold text-zinc-300 uppercase tracking-wide mb-2 flex items-center gap-1.5 font-sans">
-          {smartUpper("Tarih")}
-        </label>
-        <div className="h-9 flex items-center">
-          <TurkishDatePicker
-            value={tradeDate.slice(0, 10)}
-            onChange={(val) => { if (val) setTradeDate(val + (tradeDate.slice(10) || "T12:00")); }}
-            className="w-full"
-            showPresets={false}
-          />
+        </div>
+        <div className="min-w-0">
+          <label className="text-label sm:text-label font-bold text-zinc-300 uppercase tracking-wide mb-2 flex items-center gap-1.5 font-sans">
+            {smartUpper("Tarih")}
+          </label>
+          <div className="h-9 flex items-center">
+            <TurkishDatePicker
+              value={tradeDate.slice(0, 10)}
+              onChange={(val) => { if (val) setTradeDate(val + (tradeDate.slice(10) || "T12:00")); }}
+              className="w-full"
+              showPresets={false}
+            />
+          </div>
         </div>
       </div>
     </div>

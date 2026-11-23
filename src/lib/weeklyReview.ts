@@ -13,8 +13,8 @@ import { computeEdgeSummary } from './edgeSummary';
 
 const WEEKLY_TAG = 'haftalik';
 /**
- * Kayıt kimliği: weekly-<pazartesi>[--<kapsam>]. TÜMÜ kapsamı ekisizdir (eski kayıtlarla uyumlu);
- * Challenge / Funded / Hesapsız ve tek hesap kendi değerlendirmesini ayrı tutar.
+ * Kayıt kimliği: weekly-<pazartesi>[--<kapsam>]. Prop kapsamı ekisizdir (eski "tüm prop hesapları" kayıtlarıyla uyumlu);
+ * Prop ve Hesapsız kendi değerlendirmesini ayrı tutar.
  */
 export const weeklyEntryId = (weekStart: string, scope = '') => `weekly-${weekStart}${scope ? `--${scope}` : ''}`;
 

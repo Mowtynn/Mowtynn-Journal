@@ -72,11 +72,6 @@ test('sweep saati boyutu: 30 dakikalık dönemler', () => {
   assert.equal(dimensionValue(t(1), 'sweepHour'), UNSPECIFIED);
 });
 
-test('hesap aşaması boyutu', () => {
-  assert.notEqual(dimensionValue(t(1, { accountId: 'a', accountStage: 0 }), 'accountStage'), UNSPECIFIED);
-  assert.equal(dimensionValue(t(1, { accountCategory: 'DEMO' }), 'accountStage'), UNSPECIFIED);
-});
-
 test('kaldırılan girdiler karne boyutu değildir; günün işlemi boyutu çalışır', async () => {
   const { indexTradeOrder } = await import('../src/lib/asiaAnalytics');
   const { SETUP_DIMENSIONS } = await import('../src/lib/setupScorecard');

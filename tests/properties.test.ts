@@ -9,10 +9,9 @@ import { computeEdgeSummary, validateOutOfSample } from '../src/lib/edgeSummary'
 import { buildSetupScorecard, SETUP_DIMENSIONS, DEFAULT_SETUP_DIMENSIONS } from '../src/lib/setupScorecard';
 import { simulateRule, ruleOptions } from '../src/lib/ruleSimulator';
 import { computeEdgeDrift } from '../src/lib/edgeDrift';
-import { computeAccountMetrics } from '../src/lib/propAccounts';
 import { computeWeekReview, weekStartOf, weekDays } from '../src/lib/weeklyReview';
 import { nyDateKey, getNyParts, toNyInput, nyInputToTs } from '../src/lib/tradingTime';
-import { account, NOW, DAY } from './fixtures';
+import { NOW, DAY } from './fixtures';
 import type { Trade } from '../src/types';
 
 /**
@@ -113,7 +112,6 @@ function snapshot(trades: Trade[]) {
     const opts = [...ruleOptions(trades, d.id)].sort();
     if (opts.length) sims[d.id] = simulateRule(trades, [{ dim: d.id, values: [opts[0]] } as any]);
   }
-  const acc = account({ dailyLossPct: 4, adjustments: [{ id: 'a1', at: NOW - 40 * DAY, amount: -35, realBalance: 0 }] });
   return plain({
     stats: calculateComprehensiveStats(trades, NOW),
     be: breakevenWinRateOf(trades),
@@ -128,7 +126,6 @@ function snapshot(trades: Trade[]) {
     // `trades` alanı süzülen girdinin kendisidir (analiz değil): sıra karşılaştırmasına girmez
     asia: { ...analyzeAsia(trades, { dataset: 'ALL', pair: 'ALL', minSample: 5 }), trades: undefined },
     week: computeWeekReview(trades, week),
-    prop: computeAccountMetrics(acc, trades),
     sims,
   });
 }
@@ -277,50 +274,6 @@ test('ölçek ve ekleme özellikleri: R iki katına çıkınca / BE eklenince me
   const h1 = tr.slice(0, 33);
   const h2 = tr.slice(33);
   assertClose(calculateComprehensiveStats(h1, NOW).netR + calculateComprehensiveStats(h2, NOW).netR, sa.netR, 'parçalar');
-});
-
-test('prop hesabı bağımsız yeniden oynatmayla aynı: bakiye, zirve, statik / trailing taban, günlük limit', () => {
-  for (const mode of ['STATIC', 'TRAILING'] as const) {
-    for (const n of [0, 1, 12, 90]) {
-      const tr = make(n);
-      const acc = account({
-        drawdownMode: mode,
-        dailyLossPct: 3,
-        adjustments: [
-          { id: 'x1', at: NOW - 60 * DAY, amount: -120, realBalance: 0 },
-          { id: 'x2', at: NOW - 20 * DAY, amount: 45.5, realBalance: 0 },
-        ],
-      });
-      const m = computeAccountMetrics(acc, tr);
-      const mine = tr.filter((t) => t.accountId === acc.id);
-      assert.equal(m.tradeCount, mine.length);
-      const ev = [...mine.map((t) => ({ at: t.createdAt, amt: (t.rr as number) * (t.riskAmount as number) })), ...acc.adjustments!.map((x) => ({ at: x.at, amt: x.amount }))].sort((x, y) => x.at - y.at);
-      const dd = (acc.size * acc.phaseRules[0].maxDdPct) / 100;
-      const daily = (acc.size * 3) / 100;
-      let bal = acc.size;
-      let peak = acc.size;
-      let breached = false;
-      let dayBreached = false;
-      const dayStart = new Map<string, number>();
-      for (const e of ev) {
-        const k = nyKeyIntl(e.at);
-        if (!dayStart.has(k)) dayStart.set(k, bal);
-        bal += e.amt;
-        peak = Math.max(peak, bal);
-        const floor = mode === 'TRAILING' ? Math.min(acc.size, peak - dd) : acc.size - dd;
-        if (bal <= floor) breached = true;
-        if (bal <= (dayStart.get(k) as number) - daily) dayBreached = true;
-      }
-      const floor = mode === 'TRAILING' ? Math.min(acc.size, peak - dd) : acc.size - dd;
-      assertClose(m.balance, bal, `${mode} bakiye`);
-      assertClose(m.peak, peak, `${mode} zirve`);
-      assertClose(m.maxLossFloor, floor, `${mode} taban`);
-      assertClose(m.maxLossRemaining, bal - floor, `${mode} kalan`);
-      assert.equal(m.maxBreached, breached, `${mode} ihlal`);
-      assert.equal(m.dailyBreached, dayBreached, `${mode} günlük ihlal`);
-      assertClose(m.netPnl, bal - acc.size, 'net');
-    }
-  }
 });
 
 test('haftalık değerlendirme bağımsız hesapla aynı: hafta Pazartesi başlar, günler NY takvimine göre', () => {

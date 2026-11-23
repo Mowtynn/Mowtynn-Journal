@@ -1,6 +1,6 @@
 import { Activity, History } from 'lucide-react';
-import { formatMoney, formatR, rnum } from '../../lib/format';
-import { ACCOUNT_CATEGORY_BADGE, ACCOUNT_CATEGORY_LABELS, getTradeAccountCategory, getTradeStageLabel } from '../../constants/constants';
+import { formatR, rnum } from '../../lib/format';
+import { ACCOUNT_KIND_BADGE, ACCOUNT_KIND_LABELS, getTradeAccountKind } from '../../constants/constants';
 import type { Trade } from '../../types';
 import type { TradeInsight } from '../../lib/tradeInsight';
 
@@ -17,16 +17,9 @@ const RESULT_WORD = (r: number) => (r > 0 ? 'Kazanç' : r < 0 ? 'Kayıp' : 'Brea
 const RESULT_BOX = (r: number) =>
   r > 0 ? 'border-emerald-500/25 bg-emerald-500/[0.06]' : r < 0 ? 'border-rose-500/25 bg-rose-500/[0.06]' : 'border-zinc-700/70 bg-zinc-900/60';
 
-/** Sonuç kartı: R büyük ve önde; yanında hesap, risk ve hesaba dolar etkisi (hesaplı işlemde) */
+/** Sonuç kartı: R büyük ve önde; yanında hesap türü (Prop / Hesapsız) */
 export function ResultPanel({ trade, realizedR }: { trade: Trade; realizedR: number }) {
-  const cat = getTradeAccountCategory(trade);
-  const stage = getTradeStageLabel(trade) || ACCOUNT_CATEGORY_LABELS[cat];
-  // Ad zaten aşamayla bitiyorsa ("Fundednext 50K · Funded") aşama yalnızca rozette yazılır
-  const rawName = trade.platform || '';
-  const suffix = ` · ${stage}`;
-  const accountName = rawName.toLocaleLowerCase('tr').endsWith(suffix.toLocaleLowerCase('tr')) ? rawName.slice(0, -suffix.length) : rawName;
-  const hasRisk = typeof trade.riskPct === 'number' && trade.riskPct > 0;
-  const dollars = typeof trade.riskAmount === 'number' && trade.riskAmount > 0 ? realizedR * trade.riskAmount : null;
+  const kind = getTradeAccountKind(trade);
   return (
     <section className={`rounded-2xl border px-4 py-3 flex items-center justify-between gap-4 ${RESULT_BOX(realizedR)}`}>
       <div className="min-w-0">
@@ -37,19 +30,7 @@ export function ResultPanel({ trade, realizedR }: { trade: Trade; realizedR: num
           <span className={`text-label font-bold ${tone(realizedR)}`}>{RESULT_WORD(realizedR)}</span>
         </div>
       </div>
-      <div className="min-w-0 flex flex-col items-end gap-1.5 text-right">
-        <span className="flex items-center justify-end gap-1.5 min-w-0 max-w-full text-xs font-bold text-zinc-200">
-          {accountName && <span className="truncate min-w-0">{accountName}</span>}
-          <span className={`whitespace-nowrap shrink-0 text-label px-1.5 py-0.5 rounded-md font-bold uppercase border ${ACCOUNT_CATEGORY_BADGE[cat]}`}>{stage}</span>
-        </span>
-        {(hasRisk || dollars !== null) && (
-          <span className="text-label text-zinc-400 tabular-nums">
-            {hasRisk && <>%{fmt(trade.riskPct as number)} risk</>}
-            {hasRisk && dollars !== null && <span className="text-zinc-600"> · </span>}
-            {dollars !== null && <span className={`font-bold ${tone(dollars)}`}>{formatMoney(dollars, true)}</span>}
-          </span>
-        )}
-      </div>
+      <span className={`whitespace-nowrap shrink-0 text-label px-1.5 py-0.5 rounded-md font-bold uppercase border ${ACCOUNT_KIND_BADGE[kind]}`}>{ACCOUNT_KIND_LABELS[kind]}</span>
     </section>
   );
 }

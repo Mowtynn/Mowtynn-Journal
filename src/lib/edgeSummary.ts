@@ -34,11 +34,6 @@ export interface DimensionSlice {
   overlap?: { label: string; pct: number };
 }
 
-interface RiskSlice {
-  riskPct: number;
-  edge: EdgeStats;
-}
-
 /** İki giriş alanının birleşimi (ör. Asia Range: Trend + POI Sweep Saati: 02:00–02:30) */
 interface PairSlice {
   dims: [SetupDimension, SetupDimension];
@@ -77,7 +72,6 @@ export interface EdgeSummary {
   leaks: DimensionSlice[];
   /** Pozitif beklentili, yeterli örneklemli tekil alan değerleri (en güçlü önce) */
   strengths: DimensionSlice[];
-  riskSlices: RiskSlice[];
   /** Kendi alanlarından belirgin iyi / kötü ikili birleşimler (en az 2 × minSample işlem) */
   bestPairs: PairSlice[];
   worstPairs: PairSlice[];
@@ -93,7 +87,6 @@ export const SCAN_DIMENSIONS: SetupDimension[] = [
   'planFidelity',
   'tradeOfDay',
   'prevTrade',
-  'accountStage',
   'session',
   'premiumDiscount',
   'trend',
@@ -250,15 +243,6 @@ export function computeEdgeSummary(trades: Trade[], minSample = SETUP_MIN_SAMPLE
     .sort((a, b) => a.edge.netR - b.edge.netR)
     .slice(0, 3);
 
-  const byRisk = new Map<number, Trade[]>();
-  for (const t of sorted) {
-    if (typeof t.riskPct !== 'number' || !(t.riskPct > 0)) continue;
-    const k = Math.round(t.riskPct * 1000) / 1000;
-    const g = byRisk.get(k);
-    if (g) g.push(t);
-    else byRisk.set(k, [t]);
-  }
-  const riskSlices = [...byRisk.entries()].sort((a, b) => a[0] - b[0]).map(([riskPct, list]) => ({ riskPct, edge: edgeOf(list) }));
 
   return {
     total: sorted.length,
@@ -268,7 +252,6 @@ export function computeEdgeSummary(trades: Trade[], minSample = SETUP_MIN_SAMPLE
     worstSetups,
     leaks,
     strengths,
-    riskSlices,
     rules: buildRules(sorted, card.rows, slices, pairs, val, vsRestOf, now),
     bestPairs,
     worstPairs,
@@ -486,15 +469,8 @@ export function edgeReportRows(trades: Trade[], minSample = SETUP_MIN_SAMPLE): R
     [...groups.entries()]
       .map(([value, list]) => ({ value, list, exp: edgeOf(list).expectancy }))
       .sort((a, b) => b.exp - a.exp)
-      .forEach(({ value, list }) => push(d.label, value, list, d.id === 'accountStage' ? 'Bağlam' : 'Giriş'));
+      .forEach(({ value, list }) => push(d.label, value, list, 'Giriş'));
   }
-  const byRisk = new Map<number, Trade[]>();
-  for (const t of valid) {
-    if (typeof t.riskPct !== 'number' || !(t.riskPct > 0)) continue;
-    const k = Math.round(t.riskPct * 1000) / 1000;
-    (byRisk.get(k) || byRisk.set(k, []).get(k)!).push(t);
-  }
-  [...byRisk.entries()].sort((a, b) => a[0] - b[0]).forEach(([k, list]) => push('Risk %', `%${k}`, list, 'Risk'));
   // Kurallarım (ekrandaki Edge Özeti ile aynı)
   const summary = computeEdgeSummary(valid, minSample);
   summary.rules.forEach((r) => {

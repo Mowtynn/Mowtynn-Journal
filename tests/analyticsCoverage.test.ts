@@ -14,7 +14,7 @@ test('gün boyutu NY gününe göre', () => {
   assert.equal(dimensionValue(wed, 'weekday'), 'Çarşamba');
 });
 
-test('veri eksiği panosu: kalan girdiler var, kaldırılanlar yok; Risk % yalnızca hesaplı işlemlerde sorulur', () => {
+test('veri eksiği panosu: kalan girdiler var, kaldırılanlar yok', () => {
   const trades = [
     t(0, {}, 1),
     t(2, { accountId: 'a1', riskPct: 1 }, 2),
@@ -22,14 +22,12 @@ test('veri eksiği panosu: kalan girdiler var, kaldırılanlar yok; Risk % yaln�
     t(-1, {}, 4),
   ];
   const cov = Object.fromEntries(computeCoverage(trades).map((c) => [c.field, c]));
-  for (const f of ['planFidelity', 'trend', 'asiaRange', 'sweepTime', 'session', 'premiumDiscount', 'riskPct']) {
+  for (const f of ['planFidelity', 'trend', 'asiaRange', 'sweepTime', 'session', 'premiumDiscount']) {
     assert.ok(cov[f], `${f} panoda yok`);
   }
-  for (const f of ['htfTimeframe', 'confirmations', 'timeframe', 'management', 'exitAt', 'stopPips', 'tpPips', 'afterExitTp', 'asiaRangePips', 'newsDay', 'asiaRangeFvg', 'entryModels', 'tpTargets']) {
+  for (const f of ['htfTimeframe', 'confirmations', 'timeframe', 'management', 'exitAt', 'stopPips', 'tpPips', 'afterExitTp', 'asiaRangePips', 'newsDay', 'asiaRangeFvg', 'entryModels', 'tpTargets', 'riskPct']) {
     assert.ok(!cov[f], `${f} kaldırıldı ama panoda`);
   }
-  assert.equal(cov.riskPct.base, 2);
-  assert.equal(cov.riskPct.filled, 1);
-  assert.equal(cov.riskPct.pct, 50);
+  assert.equal(cov.trend.base, 4);
 });
 

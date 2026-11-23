@@ -36,22 +36,6 @@ test('güven aralığı: aynı sonuçlu birkaç işlem (5 × −1R) "kesin sız�
   assert.equal(signalStrength(twelve), 'CONFIRMED');
 });
 
-test('prop: günlük kayıp limiti aşımı ayrıca tespit edilir', async () => {
-  const { computeAccountMetrics } = await import('../src/lib/propAccounts');
-  const { account } = await import('./fixtures');
-  const a = account({ id: 'acc1', size: 10000, riskPct: 1, dailyLossPct: 5, phaseRules: [{ targetPct: 10, maxDdPct: 10 }], stage: 1 });
-  const day = (i: number, h: number) => D0 + i * DAY + h * 3600000;
-  const mk = (n: number, d: number, p: string) => Array.from({ length: n }, (_, i) => trade({ id: p + i, accountId: 'acc1', status: 'LOSS', rr: -1, riskAmount: 100, createdAt: day(d, i + 1) }));
-  // Her gün −400$: limit (−500$) hiçbir gün aşılmaz; toplam −800$ max DD'nin (−1000$) içinde
-  const spread = computeAccountMetrics(a, [...mk(4, 0, 'a'), ...mk(4, 1, 'b')]);
-  assert.equal(spread.dailyBreached, false);
-  assert.equal(spread.maxBreached, false);
-  // Tek günde −500$: günlük limit aşıldı, max DD aşılmadı
-  const oneDay = computeAccountMetrics(a, mk(5, 0, 'c'));
-  assert.equal(oneDay.dailyBreached, true);
-  assert.equal(oneDay.maxBreached, false);
-});
-
 test('güven aralığı: neredeyse aynı 5 kayıp (−0.95 dahil) da "kesin" sayılmaz', async () => {
   const { edgeFromR } = await import('../src/lib/asiaAnalytics');
   const { signalStrength } = await import('../src/lib/setupScorecard');
@@ -67,16 +51,6 @@ test('Edge Özeti: kârlı sistemde "daha çok yap" geri kalandan iyi olanlar; A
   assert.ok(!s.strengths.some((x) => x.dimension === 'asset' && x.value === 'EURUSD'), 'ortalamanın altındaki parite daha çok yap listesinde değil');
   assert.ok(s.strengths.some((x) => x.dimension === 'asset' && x.value === 'GBPUSD'));
   assert.ok(!s.rules.some((r) => r.kind === 'TAKE' && r.title === 'Parite: EURUSD'));
-});
-
-test('prop: kart ve canlı özet aynı 1R birimini kullanır (işlemlerdeki risk medyanı)', async () => {
-  const { computeAccountMetrics } = await import('../src/lib/propAccounts');
-  const { computeAccountRInsights } = await import('../src/lib/propInsights');
-  const { account } = await import('./fixtures');
-  const a = account({ id: 'acc1', size: 10000, riskPct: 1 });
-  const list = [1, 2, 3].map((i) => trade({ id: 'q' + i, accountId: 'acc1', status: 'LOSS', rr: -1, riskAmount: 50, createdAt: D0 + i * DAY }));
-  assert.equal(computeAccountMetrics(a, list).rUnit, 50);
-  assert.equal(computeAccountRInsights(a, list).riskPerTrade, 50);
 });
 
 test('Tesadüf Testi: ALMA bulgusu da ikinci yarının geri kalanıyla kıyaslanır (zararlı tabanda kendiliğinden "Tuttu" olmaz)', async () => {

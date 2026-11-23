@@ -180,6 +180,7 @@ export function normalizeTrade<T extends Partial<Trade> & Record<string, any>>(r
   }
   if (t.accountCategory !== undefined && !['FUNDED', 'CHALLENGE', 'DEMO'].includes(t.accountCategory)) delete t.accountCategory;
   if (t.quickEntry !== undefined && typeof t.quickEntry !== 'boolean') delete t.quickEntry;
+  if (t.prop !== undefined && t.prop !== true) delete t.prop;
   if (typeof t.notes !== 'string') t.notes = t.notes == null ? '' : String(t.notes);
   if (t.screenshot !== null && typeof t.screenshot !== 'string') t.screenshot = null;
   // Grafik linki yalnızca http(s) bağlantısı ya da gömülü görsel olabilir: "javascript:" gibi tıklanınca kod
@@ -221,6 +222,7 @@ export function isValidTrade(t: unknown): t is Trade {
     (x.asiaRange === undefined || x.asiaRange === null || (ASIA_RANGE_TYPES as readonly string[]).includes(x.asiaRange)) &&
     (x.management === undefined || x.management === null || (Array.isArray(x.management) && x.management.every((v: unknown) => (MANAGEMENT_TYPES as readonly unknown[]).includes(v)))) &&
     (x.afterExitTp === undefined || x.afterExitTp === null || typeof x.afterExitTp === 'boolean') &&
+    (x.prop === undefined || x.prop === null || typeof x.prop === 'boolean') &&
     (x.sweepTime === undefined || x.sweepTime === null || (typeof x.sweepTime === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(x.sweepTime)))
   );
 }

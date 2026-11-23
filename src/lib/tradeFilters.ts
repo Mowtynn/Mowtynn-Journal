@@ -1,4 +1,4 @@
-import { Trade, AccountCategory, PropAccount } from '../types';
+import { Trade, AccountCategory } from '../types';
 import { inScope } from './accountScope';
 import { normalizeSearchString } from '../constants/constants';
 import { canonicalAsset, tradeConfirmations } from './tradeModel';
@@ -29,12 +29,11 @@ export const getMinTimestamp = (limit: string, now: number = Date.now()): number
   }
 };
 
-/** Sonradan eklenen alanların filtreleri (Asia Range, Confirmations, risk %, hızlı kayıt) */
+/** Sonradan eklenen alanların filtreleri (Asia Range, Confirmations, hızlı kayıt) */
 export interface ExtraTradeFilters {
   /** Range / Trend (eski kayıtlarda Swept) */
   asiaRanges: string[];
   premiumDiscounts: string[];
-  riskPcts: number[];
   /** Yalnızca hızlı kayıtla girilip ayrıntısı tamamlanmamış işlemler */
   onlyIncomplete: boolean;
   /** Türetilmiş boyut filtreleri (POI Sweep Saati, Günün İşlemi, Gün İçi Önceki İşlem, Gün) */
@@ -44,7 +43,6 @@ export interface ExtraTradeFilters {
 export const EMPTY_EXTRA_FILTERS: ExtraTradeFilters = {
   asiaRanges: [],
   premiumDiscounts: [],
-  riskPcts: [],
   onlyIncomplete: false,
   dims: {},
 };
@@ -55,7 +53,6 @@ export function sanitizeExtraFilters(v: any): ExtraTradeFilters {
   return {
     asiaRanges: strs(v?.asiaRanges),
     premiumDiscounts: strs(v?.premiumDiscounts),
-    riskPcts: Array.isArray(v?.riskPcts) ? v.riskPcts.filter((n: any) => typeof n === 'number' && Number.isFinite(n) && n > 0) : [],
     onlyIncomplete: v?.onlyIncomplete === true,
     dims: Object.fromEntries(
       FILTER_DIMENSIONS.map((d) => [d, strs(v?.dims?.[d])]).filter(([, list]) => (list as string[]).length),
@@ -69,21 +66,14 @@ export function countExtraFilters(e: ExtraTradeFilters | undefined): number {
   return (
     (e.asiaRanges.length ? 1 : 0) +
     (e.premiumDiscounts.length ? 1 : 0) +
-    (e.riskPcts.length ? 1 : 0) +
     (e.onlyIncomplete ? 1 : 0) +
     Object.values(e.dims || {}).filter((l) => l && l.length).length
   );
 }
 
-/** Risk yüzdelerini kıyaslamak için (0.5 ile 0.50 aynı) */
-const riskKey = (n: number) => Math.round(n * 1000) / 1000;
-
 export interface GlobalTradeFilters {
+  /** Üst seçici: Prop ya da Hesapsız */
   activeAccountCategory: AccountCategory;
-  /** Üst seçicide tek prop hesabı seçiliyse o hesap (kategori filtresinin yerine geçer) */
-  activeAccount?: PropAccount | null;
-  /** "Bağlı hesabı yok" seçiliyse tüm prop hesapları (bunlardan hiçbirine ait olmayanlar kalır) */
-  activeUnlinkedOf?: PropAccount[] | null;
   globalSelectedPlanFidelity: string[];
   globalDateLimit: string;
   globalSelectedAssets: string[];
@@ -107,8 +97,6 @@ const isAnalyzable = (t: Trade): boolean =>
 export function applyGlobalFilters(trades: Trade[], filters: GlobalTradeFilters, now: number = Date.now()): Trade[] {
   const {
     activeAccountCategory,
-    activeAccount = null,
-    activeUnlinkedOf = null,
     globalSelectedPlanFidelity,
     globalDateLimit,
     globalSelectedAssets,
@@ -127,7 +115,7 @@ export function applyGlobalFilters(trades: Trade[], filters: GlobalTradeFilters,
     const hasStatuses = globalSelectedStatuses.length > 0;
     const hasTypes = globalSelectedTypes.length > 0;
     const hasTrendTypes = globalSelectedTrendTypes.length > 0;
-    // Kapsam her zaman uygulanır: TÜMÜ de hesapsız işlemleri dışarıda bırakır
+    // Kapsam her zaman uygulanır: Prop ve Hesapsız işlemler birbirine karışmaz
     const hasCategory = true;
     const hasMinTime = minTime > 0;
     const hasExtra = countExtraFilters(extra) > 0;
@@ -158,7 +146,6 @@ export function applyGlobalFilters(trades: Trade[], filters: GlobalTradeFilters,
     const trendSet = hasTrendTypes ? new Set(globalSelectedTrendTypes.map(normalizeSearchString)) : null;
     const asiaRangeSet = extra.asiaRanges.length ? new Set(extra.asiaRanges.map(normalizeSearchString)) : null;
     const pdSet = extra.premiumDiscounts.length ? new Set(extra.premiumDiscounts.map(normalizeSearchString)) : null;
-    const riskSet = extra.riskPcts.length ? new Set(extra.riskPcts.map(riskKey)) : null;
     const dimSets = Object.entries(extra.dims || {})
       .filter(([, l]) => l && l.length)
       .map(([d, l]) => [d as FilterDimension, new Set(l as string[])] as const);
@@ -168,7 +155,7 @@ export function applyGlobalFilters(trades: Trade[], filters: GlobalTradeFilters,
       if (hasMinTime && (!t.createdAt || t.createdAt < minTime)) {
         return false;
       }
-      if (hasCategory && !inScope(t, activeAccountCategory, activeAccount, activeUnlinkedOf)) {
+      if (hasCategory && !inScope(t, activeAccountCategory)) {
         return false;
       }
       // 2. Simple enum string checks
@@ -195,7 +182,6 @@ export function applyGlobalFilters(trades: Trade[], filters: GlobalTradeFilters,
       if (extra.onlyIncomplete && t.quickEntry !== true) return false;
       if (asiaRangeSet && (!t.asiaRange || !asiaRangeSet.has(normalizeSearchString(t.asiaRange)))) return false;
       if (pdSet && !tradeConfirmations(t).some((x) => pdSet.has(normalizeSearchString(x)))) return false;
-      if (riskSet && (typeof t.riskPct !== 'number' || !riskSet.has(riskKey(t.riskPct)))) return false;
       for (const [d, set] of dimSets) {
         if (!set.has(dimensionValue(t, d))) return false;
       }

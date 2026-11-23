@@ -251,7 +251,7 @@ const TradeList = React.memo(function TradeList({
           caseInsensitiveMatch(trade.notes, deferredFilter.search) ||
           caseInsensitiveMatch(trade.asiaRange, deferredFilter.search) ||
           caseInsensitiveMatch(trade.session, deferredFilter.search) ||
-          caseInsensitiveMatch(trade.platform, deferredFilter.search) ||
+          caseInsensitiveMatch(getTradeAccountName(trade), deferredFilter.search) ||
           caseInsensitiveMatch(trade.planFidelity, deferredFilter.search) ||
           caseInsensitiveMatch(trade.trend, deferredFilter.search) ||
           tradeConfirmations(trade).some((c) => caseInsensitiveMatch(c, deferredFilter.search));
@@ -279,9 +279,9 @@ const TradeList = React.memo(function TradeList({
           case 'rrDes':
             return (b.rr || 0) - (a.rr || 0);
           case 'platformAsc':
-            return TR_COLLATOR.compare(a.platform || '', b.platform || '');
+            return TR_COLLATOR.compare(getTradeAccountName(a), getTradeAccountName(b));
           case 'platformDes':
-            return TR_COLLATOR.compare(b.platform || '', a.platform || '');
+            return TR_COLLATOR.compare(getTradeAccountName(b), getTradeAccountName(a));
           default:
             return b.createdAt - a.createdAt;
         }
@@ -785,10 +785,9 @@ const TradeList = React.memo(function TradeList({
                     </div>
                   </th>
                   <th className="py-2 px-2 text-center font-sans select-none min-w-[110px] w-[15%] text-zinc-400">{definitionTitles.trendTypes || "İşlem Tipi"}</th>
-                  <th className="py-2 px-3 text-center font-sans select-none min-w-[70px] text-zinc-400 w-[9%]">Risk</th>
                   {true && (
                     <th 
-                      className={`py-2 px-2 text-center font-sans select-none w-[18%] min-w-[75px] cursor-pointer group/th transition-colors hover:text-zinc-200 ${
+                      className={`py-2 px-2 text-center font-sans select-none w-[27%] min-w-[75px] cursor-pointer group/th transition-colors hover:text-zinc-200 ${
                         filter.sortBy === 'platformAsc' || filter.sortBy === 'platformDes' ? 'text-blue-400 font-bold' : 'text-zinc-400'
                       }`}
                       onClick={() => handleFilterChange({...filter, sortBy: filter.sortBy === 'platformDes' ? 'platformAsc' : 'platformDes'})}
@@ -813,7 +812,7 @@ const TradeList = React.memo(function TradeList({
                 ))}
                 {paginatedTrades.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="py-12 text-center text-xs font-bold font-sans text-zinc-500 bg-zinc-950/60 border border-zinc-800/80 rounded-xl">
+                    <td colSpan={7} className="py-12 text-center text-xs font-bold font-sans text-zinc-500 bg-zinc-950/60 border border-zinc-800/80 rounded-xl">
                       <div className="flex flex-col items-center gap-2">
                         <Search size={32} className="opacity-20" />
                         <p className="uppercase tracking-wider">Sonuç bulunamadı</p>

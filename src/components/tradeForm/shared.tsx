@@ -1,19 +1,16 @@
 import { SPRING } from '../../lib/motion';
 import React, { useMemo } from "react";
 import { motion } from "motion/react";
-import { Trade, DefinitionTitles, PropAccount } from "../../types";
-import { DEFAULT_DEFINITION_TITLES, cleanDefinitionTitleString, smartUpper } from "../../constants/constants";
+import { Trade, DefinitionTitles, AccountCategory } from "../../types";
+import { DEFAULT_DEFINITION_TITLES, cleanDefinitionTitleString, smartUpper, getTradeAccountKind } from "../../constants/constants";
 import { toNyInput, newTradeDateInput } from '../../lib/tradingTime';
 import { tradeConfirmations } from '../../lib/tradeModel';
 
 /** İşlem formu: bölümlerin ortak sabitleri, türleri ve yardımcıları */
-export const NO_ACCOUNT = "__none__";
 
 export type Num = number | "";
 export type SetState<T> = React.Dispatch<React.SetStateAction<T>>;
 type TitleFn = (key: keyof DefinitionTitles) => string;
-/** name: işleme yazılan tam ad ("FTMO 100K · Phase 1"); label: çipte görünen zincir adı (aşama ayrıca rozetle gösterilir) */
-export type AccountOption = { id: string; name: string; label: string; stage: number; size?: number; status?: PropAccount["status"] };
 
 /** Seçili değer Tanımlamalar'dan silinmiş olsa bile (düzenleme modunda) chip olarak görünsün */
 export const withSelected = (list: string[], selected: string[]) => {
@@ -31,16 +28,11 @@ export { statusOfR } from '../../lib/tradeModel';
  * Formun ilk değerleri doğrudan işlemden (ya da boş) kurulur. Eskiden form önce boş çizilip
  * ardından bir efekt ~30 alanı tek tek doldurup/sıfırlıyordu: açılışta fazladan bir tam çizim.
  */
-/** riskPresets: Tanımlamalar'daki hazır risk yüzdeleri; işlemin riski bunlardan biri değilse elle giriş (CUSTOM) açılır */
-export function buildInitial(t: Trade | null, riskPresets: number[]) {
-  const rp = t?.riskPct;
-  const hasRisk = typeof rp === "number" && rp > 0;
+export function buildInitial(t: Trade | null) {
   return {
     asset: t?.asset || "",
     type: (t?.type || "LONG") as "LONG" | "SHORT",
-    accountChoice: (t ? (t.accountId ? t.accountId : t.accountCategory === "DEMO" ? NO_ACCOUNT : null) : null) as string | null,
-    riskChoice: (hasRisk ? (riskPresets.includes(rp as number) ? rp : "CUSTOM") : null) as number | "CUSTOM" | null,
-    customRiskPct: (hasRisk && !riskPresets.includes(rp as number) ? rp : "") as Num,
+    accountKind: (t ? getTradeAccountKind(t) : null) as AccountCategory | null,
     trend: t?.trend || "",
     planFidelity: t?.planFidelity || null,
     confirmations: t ? tradeConfirmations(t) : [],

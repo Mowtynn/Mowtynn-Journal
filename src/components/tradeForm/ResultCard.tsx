@@ -1,7 +1,6 @@
 import React from "react";
 import { Activity } from "lucide-react";
 import { Num, SetState, Titles, statusOfR } from './shared';
-import { formatMoney } from '../../lib/format';
 import { roundR } from '../../lib/tradeModel';
 
 /** Tek dokunuşla en sık sonuçlar; farklı bir değer alana yazılır */
@@ -33,13 +32,10 @@ export const ResultCard = React.memo(function ResultCard({
   titles,
   rrValue,
   setRrValue,
-  riskDollar,
 }: {
   titles: Titles;
   rrValue: Num;
   setRrValue: SetState<Num>;
-  /** Seçili hesap ve riskin dolar karşılığı (1R); hesapsız işlemde yok */
-  riskDollar?: number | null;
 }) {
   const { L } = titles;
   // Alan yalnızca büyüklüğü tutar (2.5); işaret yanındaki Kazanç / Kayıp anahtarından gelir. Yazarken "-" ya da "+"
@@ -61,7 +57,7 @@ export const ResultCard = React.memo(function ResultCard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rrValue]);
 
-  // Kaydedilecek değer tek ondalık (2.08 → 2.1); durum ve dolar etkisi de onunla gösterilir
+  // Kaydedilecek değer tek ondalık (2.08 → 2.1); durum da onunla gösterilir
   const rounded = rrValue === "" ? null : roundR(Number(rrValue));
   const status = rounded === null ? null : statusOfR(rounded);
   const tone = RESULT_TONE[status ?? "EMPTY"];
@@ -143,11 +139,9 @@ export const ResultCard = React.memo(function ResultCard({
             />
             <span className="ml-1 text-2xl font-bold leading-none opacity-60 select-none" aria-hidden>R</span>
           </div>
-          {/* Sağ köşe: yuvarlanacaksa kaydedilecek değer, hesaplıysa dolar etkisi (yer kaplamaz, satır eklemez) */}
-          {rounded !== null && (rounded !== Number(rrValue) || riskDollar) ? (
-            <span className="shrink-0 text-label font-semibold tabular-nums text-zinc-500">
-              {rounded !== Number(rrValue) ? `→ ${rounded}R` : formatMoney(rounded * (riskDollar || 0), true)}
-            </span>
+          {/* Sağ köşe: yuvarlanacaksa kaydedilecek değer (yer kaplamaz, satır eklemez) */}
+          {rounded !== null && rounded !== Number(rrValue) ? (
+            <span className="shrink-0 text-label font-semibold tabular-nums text-zinc-500">→ {rounded}R</span>
           ) : null}
         </div>
 

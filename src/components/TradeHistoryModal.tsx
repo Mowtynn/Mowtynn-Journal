@@ -1,7 +1,7 @@
 import { RBadge, TrendBadge } from "./tradeList/TradeBadges";
 import { MODAL_BACKDROP, MODAL_PANEL, POPOVER } from '../lib/motion';
 import { formatR } from '../lib/format';
-import { getTradeAccountCategory, getTradeAccountName, ACCOUNT_CATEGORY_BADGE } from '../constants/constants';
+import { getTradeAccountKind, getTradeAccountName, ACCOUNT_KIND_BADGE } from '../constants/constants';
 import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
@@ -381,20 +381,16 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                       <th className="py-2 px-2 text-center font-sans select-none w-[10%] min-w-[65px]">R</th>
                       <th className="py-2 px-2 text-center font-sans select-none w-[13%] min-w-[75px]">Session</th>
                       <th className="py-2 px-2 text-center font-sans select-none w-[15%] min-w-[110px]">İşlem Tipi</th>
-                      <th className="py-2 px-3 text-center font-sans select-none w-[13%] min-w-[80px]">
-                        <div className="flex items-center justify-center w-full">Risk</div>
-                      </th>
-                      <th className="py-2 px-2 text-center font-sans select-none w-[22%] min-w-[80px]">Hesap</th>
+                      <th className="py-2 px-2 text-center font-sans select-none w-[35%] min-w-[80px]">Hesap</th>
                     </tr>
                   </thead>
                   <tbody className="block sm:table-row-group">
                     {sortedTrades.slice(0, visibleCount).map((t, idx) => {
-                      const riskText = typeof t.riskPct === "number" ? `%${t.riskPct.toLocaleString("en-US", { maximumFractionDigits: 2 })}` : "—";
                       const key = t.id ? `${t.id}-${idx}` : `trade-${idx}`;
                       return (
                         <React.Fragment key={key}>
                           <tr className="block sm:hidden">
-                            <td className="block pb-2" colSpan={7}>
+                            <td className="block pb-2" colSpan={6}>
                               <TradeMobileCard trade={t} onOpen={setSelectedTrade} />
                             </td>
                           </tr>
@@ -430,14 +426,9 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                                 <TrendBadge trend={t.trend} />
                               </div>
                             </td>
-                            <td className="sm:bg-zinc-900 group-hover:bg-blue-950/10 border-y border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 py-1 px-2 align-middle px-3 w-[13%] min-w-[80px] text-zinc-300 font-bold">
+                            <td className="sm:bg-zinc-900 group-hover:bg-blue-950/10 border-y border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 py-1 px-2 align-middle rounded-r-xl border-r w-[35%] min-w-[80px]">
                               <div>
-                                <span className="text-xs font-bold tracking-tight">{riskText}</span>
-                              </div>
-                            </td>
-                            <td className="sm:bg-zinc-900 group-hover:bg-blue-950/10 border-y border-zinc-800/80 group-hover:border-blue-500/40 transition-colors duration-200 py-1 px-2 align-middle rounded-r-xl border-r w-[22%] min-w-[80px]">
-                              <div>
-                                <span className={`inline-block min-w-[54px] max-w-full h-[20px] leading-[18px] px-2.5 text-center text-label font-bold border rounded-full uppercase tracking-wider transition-colors whitespace-nowrap truncate ${ACCOUNT_CATEGORY_BADGE[getTradeAccountCategory(t)]}`}>
+                                <span className={`inline-block min-w-[54px] max-w-full h-[20px] leading-[18px] px-2.5 text-center text-label font-bold border rounded-full uppercase tracking-wider transition-colors whitespace-nowrap truncate ${ACCOUNT_KIND_BADGE[getTradeAccountKind(t)]}`}>
                                   {getTradeAccountName(t)}
                                 </span>
                               </div>
@@ -448,7 +439,7 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                     })}
                     {sortedTrades.length > visibleCount && (
                       <tr className="block sm:table-row">
-                        <td colSpan={7} className="block sm:table-cell pt-2 text-center">
+                        <td colSpan={6} className="block sm:table-cell pt-2 text-center">
                           <button
                             type="button"
                             onClick={() => setVisibleCount((c) => c + PAGE)}
@@ -461,7 +452,7 @@ export const TradeHistoryModal: React.FC<TradeHistoryModalProps> = React.memo(({
                     )}
                     {sortedTrades.length === 0 && (
                       <tr>
-                        <td colSpan={7} className="py-8 text-center text-zinc-500 font-medium">
+                        <td colSpan={6} className="py-8 text-center text-zinc-500 font-medium">
                           Bu periyot için herhangi bir işlem bulunamadı.
                         </td>
                       </tr>

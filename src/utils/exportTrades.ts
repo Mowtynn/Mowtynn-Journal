@@ -1,7 +1,7 @@
 import { Trade, JournalEntry, Note } from '../types';
 import { byEntryTime, tradeConfirmations } from '../lib/tradeModel';
 import { getNyParts, getSweepSide, WEEKDAY_NAMES_TR, nyWallDate } from '../lib/tradingTime';
-import { getTradeAccountCategory, getTradeStageLabel, ACCOUNT_CATEGORY_LABELS } from '../constants/constants';
+import { getTradeAccountName } from '../constants/constants';
 import { DATASET_LABELS, getTradeDataset, sweepHourBucket, tradeOfDayBucket } from '../lib/asiaAnalytics';
 import { edgeReportRows } from '../lib/edgeSummary';
 import { breakevenWinRateOf } from '../lib/stats';
@@ -150,7 +150,6 @@ const EXCEL_CELL_MAX = 32000;
 export const fitCell = (v: string) => (v.length > EXCEL_CELL_MAX ? `${v.slice(0, EXCEL_CELL_MAX)}… (kısaltıldı)` : v);
 
 const listText = (v?: string[] | null) => (Array.isArray(v) && v.length > 0 ? v.join(', ') : '-');
-const numOr = (v: unknown): number | '-' => (typeof v === 'number' && Number.isFinite(v) ? v : '-');
 
 /**
  * İşlem satırları: formda girilen her alan eksiksiz bir sütundur (boş alan "-").
@@ -159,7 +158,7 @@ const numOr = (v: unknown): number | '-' => (typeof v === 'number' && Number.isF
 export const prepareTradeExportRows = (trades: Trade[], titles: Record<string, string> = {}) => {
   // Kullanıcının verdiği başlık başka bir sütunla aynıysa (ör. iki alana da "Timeframe" denmiş) sütun EZİLMEZ:
   // ikinci sütun "(Alan adı)" ekiyle ayrışır. Sabit sütun adları da (Gün, Aşama…) korunur.
-  const FIXED = new Set(['Sıra', 'İşlem ID', 'Gün', 'Hesap ID', 'Hesap Türü', 'Aşama', 'Risk (%)', 'Risk ($)', 'Süpürülen Asia Tarafı', 'Veri Seti', 'Hızlı Kayıt', 'POI Sweep Saati (30 dk)', 'Günün İşlemi']);
+  const FIXED = new Set(['Sıra', 'İşlem ID', 'Gün', 'Süpürülen Asia Tarafı', 'Veri Seti', 'Hızlı Kayıt', 'POI Sweep Saati (30 dk)', 'Günün İşlemi']);
   const usedLabels = new Map<string, string>();
   const T = (key: string, fallback: string) => {
     const want = (titles[key] && String(titles[key]).trim()) || fallback;
@@ -186,12 +185,7 @@ export const prepareTradeExportRows = (trades: Trade[], titles: Record<string, s
       // Durum formda seçilmez; R'nin işaretinden gelir (kayıtta tutulur)
       'Durum': t.status || '-',
       [T('rr', 'Sonuç R')]: Number(t.rr) || 0,
-      [T('platforms', 'Hesap')]: t.platform || 'Hesapsız',
-      'Hesap ID': t.accountId || '-',
-      'Hesap Türü': ACCOUNT_CATEGORY_LABELS[getTradeAccountCategory(t)],
-      'Aşama': getTradeStageLabel(t) || '-',
-      'Risk (%)': numOr(t.riskPct),
-      'Risk ($)': numOr(t.riskAmount),
+      [T('platforms', 'Hesap')]: getTradeAccountName(t),
       // Kurulum: formdaki sırayla
       [T('planFidelities', 'Setup Kalitesi')]: t.planFidelity || '-',
       [T('trendTypes', 'İşlem Tipi')]: t.trend || '-',

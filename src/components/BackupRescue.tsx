@@ -5,12 +5,11 @@ import { Download, Upload, Database, AlertTriangle, Cloud, X, CheckCircle2, Penc
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
 import { PANE } from '../lib/motion';
-import { Trade, Note, DefinitionTitles, PropAccount } from '../types';
+import { Trade, Note, DefinitionTitles, Payout } from '../types';
 import { missingFields, logicProblem } from '../lib/integrity';
 import { tradeConfirmations } from '../lib/tradeModel';
 import { localDateKey } from '../utils/math';
-import { mapAccountImages } from '../lib/propAccounts';
-import { ACCOUNT_CATEGORY_LABELS, getTradeAccountCategory } from '../constants/constants';
+import { ACCOUNT_KIND_LABELS, getTradeAccountKind } from '../constants/constants';
 import { isImageRef, loadImage } from '../lib/imageStore';
 import { nyWallDate, nyNow } from '../lib/tradingTime';
 
@@ -57,7 +56,7 @@ interface BackupRescueProps {
     trendTypes?: string[];
     premiumDiscounts?: string[];
     definitionTitles?: DefinitionTitles;
-    propAccounts?: PropAccount[];
+    payouts?: Payout[];
   };
   onImportTrades: (
     importedTrades: Trade[],
@@ -109,19 +108,8 @@ const BackupRescue = React.memo(function BackupRescue({
   const handleExport = async () => {
     const toastId = toast.loading('Yedek hazırlanıyor…');
     try {
-      // Prop fotoğrafları yedeğe gömülür (referans → data URL); böylece yedek tek başına eksiksizdir
-      let exportSettings = settings;
+      const exportSettings = settings;
       let missingImages = 0;
-      if (settings?.propAccounts?.length) {
-        const propAccounts = await mapAccountImages(settings.propAccounts, async (img) => {
-          if (!isImageRef(img)) return img;
-          const data = await loadImage(img);
-          if (data) return data;
-          missingImages++;
-          return img;
-        });
-        exportSettings = { ...settings, propAccounts };
-      }
       // Kayıtlı görseller (Firestore) yedeğe gömülür; TradingView vb. dış bağlantılar olduğu gibi kalır
       const embed = new Map<string, string>();
       const storedShots = Array.from(new Set(trades.map((t) => t.screenshot).filter((u): u is string => isImageRef(u))));
@@ -155,7 +143,7 @@ const BackupRescue = React.memo(function BackupRescue({
 
       if (missingImages > 0) {
         toast.error(
-          `${missingImages} görsel (prop / işlem) bulunamadı ya da okunamadı; yedeğe yalnızca referansı yazıldı. Bağlantını kontrol edip tekrar dene.`,
+          `${missingImages} işlem görseli bulunamadı ya da okunamadı; yedeğe yalnızca referansı yazıldı. Bağlantını kontrol edip tekrar dene.`,
           { id: toastId, duration: 9000 },
         );
       } else {
@@ -254,6 +242,7 @@ const BackupRescue = React.memo(function BackupRescue({
             createdAt: created && created > 0 ? created : (Number.isFinite(fromDate) ? fromDate : Date.now()),
             platform: typeof item.platform === 'string' ? item.platform : undefined,
             accountCategory: item.accountCategory === 'FUNDED' || item.accountCategory === 'CHALLENGE' || item.accountCategory === 'DEMO' ? item.accountCategory : undefined,
+            prop: item.prop === true ? true : undefined,
             timeframe: typeof item.timeframe === 'string' ? item.timeframe : undefined,
             htfTimeframe: typeof item.htfTimeframe === 'string' ? item.htfTimeframe : undefined,
             session: typeof item.session === 'string' ? item.session : undefined,
@@ -538,7 +527,7 @@ function IntegrityPanel({ trades, onEditTrade }: { trades: Trade[]; onEditTrade?
                     <div className="flex items-center gap-2 min-w-0 sm:w-48 shrink-0">
                       <span className="text-xs font-bold text-zinc-200 truncate">{t.asset || 'Bilinmiyor'}</span>
                       <span className="text-label text-zinc-500 tabular-nums">{nyWallDate(t.createdAt).toLocaleDateString('tr-TR')}</span>
-                      <span className="text-label font-bold uppercase text-zinc-500 truncate">{t.platform || ACCOUNT_CATEGORY_LABELS[getTradeAccountCategory(t)]}</span>
+                      <span className="text-label font-bold uppercase text-zinc-500 truncate">{ACCOUNT_KIND_LABELS[getTradeAccountKind(t)]}</span>
                       {t.quickEntry && <span className="whitespace-nowrap px-1.5 py-0.5 rounded-md text-label font-bold uppercase border border-amber-500/30 bg-amber-500/10 text-amber-300">{smartUpper("Hızlı")}</span>}
                     </div>
                     <div className="flex-1 min-w-0 flex flex-wrap gap-1">
