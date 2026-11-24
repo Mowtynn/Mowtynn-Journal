@@ -582,17 +582,31 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                           <SpecRow icon={Layers} label={T(definitionTitles.poiTimeframes, "POI TIMEFRAME")} empty={!currentTrade.poiTimeframe}>
                             <SpecValue>{currentTrade.poiTimeframe}</SpecValue>
                           </SpecRow>
-                          <SpecRow icon={Scale} label={T(definitionTitles.premiumDiscounts, "CONFIRMATIONS")} empty={conf.length === 0} top={conf.length > 2}>
-                            {/* Düz, virgülle ayrılmış metin: satırlar yalnızca confirmation'lar arasında bölünür */}
-                            <span lang="en" className="block text-right text-sm font-bold uppercase tracking-wide font-sans text-zinc-100 leading-6">
-                              {conf.map((c, i) => (
-                                <React.Fragment key={c}>
-                                  {i > 0 && " "}
-                                  {/* Her confirmation bölünmeden kalır; virgül öncekiyle birlikte satırda durur */}
-                                  <span className="whitespace-nowrap">{smartUpper(c)}{i < conf.length - 1 ? "," : ""}</span>
-                                </React.Fragment>
-                              ))}
-                            </span>
+                          {/* Birden fazla confirmation: başlık üstte (yanında sayı), liste altta kartın tam genişliğinde ve biraz daha küçük
+                              yazıyla; böylece bir satıra 2-3 confirmation sığar. Tek confirmation diğer satırlar gibi sağda durur. */}
+                          <SpecRow
+                            icon={Scale}
+                            label={T(definitionTitles.premiumDiscounts, "CONFIRMATIONS")}
+                            empty={conf.length === 0}
+                            stacked={conf.length > 1}
+                            aside={conf.length > 1 ? <span className="text-label font-bold tabular-nums text-zinc-500">{conf.length}</span> : undefined}
+                          >
+                            {conf.length > 1 ? (
+                              <span lang="en" className="block pl-[22px] text-[13px] font-semibold uppercase tracking-wide font-sans text-zinc-100 leading-6">
+                                {conf.map((c, i) => (
+                                  <React.Fragment key={c}>
+                                    {i > 0 && " "}
+                                    {/* Her confirmation bölünmeden kalır; satır yalnızca aralarından bölünür */}
+                                    <span className="whitespace-nowrap">
+                                      {smartUpper(c)}
+                                      {i < conf.length - 1 && <span className="text-zinc-600">,</span>}
+                                    </span>
+                                  </React.Fragment>
+                                ))}
+                              </span>
+                            ) : (
+                              <SpecValue>{conf[0]}</SpecValue>
+                            )}
                           </SpecRow>
                         </dl>
                       </section>
@@ -857,14 +871,32 @@ function SpecRow({
   label,
   empty,
   top = false,
+  stacked = false,
+  aside,
   children,
 }: {
   icon: LucideIcon;
   label: string;
   empty: boolean;
   top?: boolean;
+  /** Uzun değer: başlık üstte, değer altta tam genişlikte */
+  stacked?: boolean;
+  /** Başlık satırının sağında küçük bilgi (ör. adet) */
+  aside?: React.ReactNode;
   children: React.ReactNode;
 }) {
+  if (stacked && !empty) {
+    return (
+      <div className="py-2.5 border-b border-zinc-800/50 last:border-b-0">
+        <dt className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider font-sans text-zinc-400 mb-1.5">
+          <Icon size={14} className="text-blue-400/80" />
+          {label}
+          {aside && <span className="ml-auto">{aside}</span>}
+        </dt>
+        <dd className="min-w-0">{children}</dd>
+      </div>
+    );
+  }
   return (
     <div className={`flex ${top ? "items-start" : "items-center"} justify-between gap-4 py-2.5 border-b border-zinc-800/50 last:border-b-0 min-h-[48px]`}>
       <dt className={`flex items-center gap-2 shrink-0 text-xs font-bold uppercase tracking-wider font-sans ${top ? "pt-0.5" : ""} ${empty ? "text-zinc-600" : "text-zinc-400"}`}>
