@@ -22,8 +22,8 @@ const segBtn = (on: boolean, onText = "text-blue-300") =>
 const SEG_ON = "bg-blue-500/20 border-blue-500/40 shadow-xs";
 
 /* ================= 2. SÜTUN: KURULUM AKIŞI =================
- * Girdiler kurulumun zaman sırasıyla bir akış rayında dizilir: 1. Asia Range → 2. POI (sweep saati · timeframe) →
- * 3. Confirmations → 4. Değerlendirme (işlem tipi · setup kalitesi). Session formda yok: POI Sweep saatinden arka planda
+ * Girdiler bir akış rayında dizilir: 1. Asia Range → 2. İşlem Tipi · Setup Kalitesi → 3. POI (sweep saati · timeframe) →
+ * 4. Confirmations. Session formda yok: POI Sweep saatinden arka planda
  * çıkarılır ve saatin yanında yalnızca bilgi olarak gösterilir.
  */
 export const SetupChips = React.memo(function SetupChips({
@@ -104,8 +104,49 @@ export const SetupChips = React.memo(function SetupChips({
           </div>
         </FlowStep>
 
-        {/* 2. POI: SWEEP TIME (NY) · POI TIMEFRAME — session saatten otomatik çıkar, etiketin yanında görünür */}
+        {/* 2. DEĞERLENDİRME: İŞLEM TİPİ · SETUP KALİTESİ (kalite seçimi kademesinin rengini alır: A+ yeşil · A mavi · B-C kırmızı) */}
         <FlowStep n={2} done={steps[1]}>
+          <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-x-4 gap-y-3.5">
+            <div className="min-w-0">
+              <label lang="en" className={LABEL}>
+                <TrendingUp size={13} className="text-blue-400" />
+                {H("trendTypes", "İŞLEM TİPİ")}
+              </label>
+              <div className={`${SEGMENT} h-9`}>
+                {trendOptions.map((tr) => {
+                  const on = selectedTrend === tr;
+                  return (
+                    <button lang="en" key={tr} type="button" data-selected={on} aria-label={tr} onClick={() => setSelectedTrend(on ? "" : tr)} className={`${segBtn(on)} text-label tracking-normal`}>
+                      {on && <SlideBg id="trendSlide" className={SEG_ON} />}
+                      <span className="relative z-10 truncate">{tr}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="min-w-0">
+              <label lang="en" className={LABEL}>
+                <ShieldCheck size={13} className="text-blue-400" />
+                {H("planFidelities", "SETUP KALİTESİ")}
+              </label>
+              <div className={`${SEGMENT} h-9`}>
+                {planFidelities.map((item) => {
+                  const on = planFidelity === item;
+                  return (
+                    <button lang="en" key={item} type="button" data-selected={on} onClick={() => setPlanFidelity(on ? null : item)} className={segBtn(on, quality.text)}>
+                      {on && <SlideBg id="planFidelitySlide" className={quality.on} />}
+                      <span className="relative z-10 truncate">{item}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </FlowStep>
+
+        {/* 3. POI: SWEEP TIME (NY) · POI TIMEFRAME — session saatten otomatik çıkar, etiketin yanında görünür */}
+        <FlowStep n={3} done={steps[2]}>
           <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-x-4 gap-y-3.5">
             <div className="min-w-0">
               <span lang="en" className={LABEL}>
@@ -143,8 +184,8 @@ export const SetupChips = React.memo(function SetupChips({
           </div>
         </FlowStep>
 
-        {/* 3. CONFIRMATIONS (çoklu) */}
-        <FlowStep n={3} done={steps[2]}>
+        {/* 4. CONFIRMATIONS (çoklu) */}
+        <FlowStep n={4} done={steps[3]} last>
           <span lang="en" className={LABEL}>
             <Scale size={13} className="text-blue-400 shrink-0" />
             {H("premiumDiscounts", "CONFIRMATIONS")}
@@ -171,47 +212,6 @@ export const SetupChips = React.memo(function SetupChips({
                 </button>
               );
             })}
-          </div>
-        </FlowStep>
-
-        {/* 4. DEĞERLENDİRME: İŞLEM TİPİ · SETUP KALİTESİ (kalite seçimi kademesinin rengini alır: A+ yeşil · A mavi · B-C kırmızı) */}
-        <FlowStep n={4} done={steps[3]} last>
-          <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-x-4 gap-y-3.5">
-            <div className="min-w-0">
-              <label lang="en" className={LABEL}>
-                <TrendingUp size={13} className="text-blue-400" />
-                {H("trendTypes", "İŞLEM TİPİ")}
-              </label>
-              <div className={`${SEGMENT} h-9`}>
-                {trendOptions.map((tr) => {
-                  const on = selectedTrend === tr;
-                  return (
-                    <button lang="en" key={tr} type="button" data-selected={on} aria-label={tr} onClick={() => setSelectedTrend(on ? "" : tr)} className={`${segBtn(on)} text-label tracking-normal`}>
-                      {on && <SlideBg id="trendSlide" className={SEG_ON} />}
-                      <span className="relative z-10 truncate">{tr}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="min-w-0">
-              <label lang="en" className={LABEL}>
-                <ShieldCheck size={13} className="text-blue-400" />
-                {H("planFidelities", "SETUP KALİTESİ")}
-              </label>
-              <div className={`${SEGMENT} h-9`}>
-                {planFidelities.map((item) => {
-                  const on = planFidelity === item;
-                  return (
-                    <button lang="en" key={item} type="button" data-selected={on} onClick={() => setPlanFidelity(on ? null : item)} className={segBtn(on, quality.text)}>
-                      {on && <SlideBg id="planFidelitySlide" className={quality.on} />}
-                      <span className="relative z-10 truncate">{item}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
           </div>
         </FlowStep>
       </div>

@@ -6,7 +6,7 @@ import { setupQualityTier } from "../../lib/setupQuality";
  * Kurulum akışı — işlem ekleme formu ile işlem detayının ortak dili.
  *
  * Kurulum girdileri bir kurulumun gerçek zaman sırasıyla, dikey bir ray üzerinde adım adım dizilir:
- *   1. Asia Range  →  2. POI (sweep saati · session · timeframe)  →  3. Confirmations  →  4. Değerlendirme (işlem tipi · setup kalitesi)
+ *   1. Asia Range  →  2. İşlem Tipi · Setup Kalitesi  →  3. POI (sweep saati · session · timeframe)  →  4. Confirmations
  * Adım tamamlanınca düğümü mavi bir onay işaretine döner ve ray bir sonraki adıma doğru ışır: formda neyin eksik kaldığı,
  * detayda kurulumun nasıl geliştiği tek bakışta okunur.
  */
@@ -91,8 +91,8 @@ export function flowSteps(v: {
 }): boolean[] {
   return [
     !!v.asiaRange,
+    !!v.trend && !!v.planFidelity,
     !!v.sweepTime && !!v.poiTimeframe,
     v.confirmations.length > 0,
-    !!v.trend && !!v.planFidelity,
   ];
 }

@@ -556,6 +556,16 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                           </FlowStep>
                           <FlowStep n={2} done={steps[1]} dense>
                             <FlowFields>
+                              <FlowField label={T(definitionTitles.trendTypes, "İŞLEM TİPİ")}>
+                                <ValueChip value={currentTrade.trend} />
+                              </FlowField>
+                              <FlowField label={T(definitionTitles.planFidelities, "SETUP KALİTESİ")}>
+                                <ValueChip value={currentTrade.planFidelity} cls={quality.chip} />
+                              </FlowField>
+                            </FlowFields>
+                          </FlowStep>
+                          <FlowStep n={3} done={steps[2]} dense>
+                            <FlowFields>
                               <FlowField label={T(definitionTitles.sweepTime, "POI SWEEP TIME")}>
                                 {currentTrade.sweepTime ? (
                                   <span className="flex items-baseline gap-1 text-base font-bold tabular-nums text-zinc-100 leading-7">
@@ -571,7 +581,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                               </FlowField>
                             </FlowFields>
                           </FlowStep>
-                          <FlowStep n={3} done={steps[2]} dense>
+                          <FlowStep n={4} done={steps[3]} dense last>
                             <FlowField label={T(definitionTitles.premiumDiscounts, "CONFIRMATIONS")}>
                               {conf.length > 0 ? (
                                 <span className="flex flex-wrap gap-1.5">
@@ -579,16 +589,6 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                                 </span>
                               ) : <ValueChip />}
                             </FlowField>
-                          </FlowStep>
-                          <FlowStep n={4} done={steps[3]} dense last>
-                            <FlowFields>
-                              <FlowField label={T(definitionTitles.trendTypes, "İŞLEM TİPİ")}>
-                                <ValueChip value={currentTrade.trend} />
-                              </FlowField>
-                              <FlowField label={T(definitionTitles.planFidelities, "SETUP KALİTESİ")}>
-                                <ValueChip value={currentTrade.planFidelity} cls={quality.chip} />
-                              </FlowField>
-                            </FlowFields>
                           </FlowStep>
                         </div>
                       </section>

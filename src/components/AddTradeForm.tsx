@@ -120,20 +120,19 @@ const AddTradeForm = React.memo(function AddTradeForm({
 
 
   // Alt çubuk özeti: işlemin tek satırlık "fişi" — parite · yön · hesap · R, ardından kurulum akışının izi
-  // (Asia Range › sweep saati + session · POI TF › confirmations › işlem tipi · kalite). Varlık yazılınca ya da R girilince görünür.
+  // (Asia Range › işlem tipi › kalite › sweep saati + session · POI TF › confirmations). Varlık yazılınca ya da R girilince görünür.
   const summary = useMemo(() => {
     const r = rrValue === "" || !Number.isFinite(Number(rrValue)) ? null : roundR(Number(rrValue));
     const a = asset.trim();
     if (!a && r === null) return null;
     const trail: { text: string; cls?: string }[] = [];
+    // Kurulum akışıyla aynı sıra: Asia Range › İşlem Tipi › Setup Kalitesi › POI › Confirmations
     if (asiaRange) trail.push({ text: asiaRange });
+    if (selectedTrend) trail.push({ text: selectedTrend });
+    if (planFidelity) trail.push({ text: planFidelity, cls: `font-bold ${qualityTone(planFidelity).text}` });
     const poi = [sweepTime && `${sweepTime}${session ? ` ${session}` : ""}`, poiTimeframe].filter(Boolean).join(" · ");
     if (poi) trail.push({ text: poi });
     if (selectedConfirmations.length) trail.push({ text: selectedConfirmations.length === 1 ? selectedConfirmations[0] : `${selectedConfirmations.length} confirmation` });
-    if (selectedTrend || planFidelity) {
-      if (selectedTrend) trail.push({ text: selectedTrend });
-      if (planFidelity) trail.push({ text: planFidelity, cls: `font-bold ${qualityTone(planFidelity).text}` });
-    }
     return {
       asset: a,
       dir: a ? type : null,
