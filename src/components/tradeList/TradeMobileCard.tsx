@@ -3,13 +3,15 @@ import { Edit3, Trash2 } from 'lucide-react';
 import { Trade } from '../../types';
 import { formatR } from '../../lib/format';
 import { nyWallDate } from '../../lib/tradingTime';
-import { getTradeAccountKind, getTradeAccountName, ACCOUNT_KIND_BADGE, smartUpper } from '../../constants/constants';
+import { smartUpper } from '../../constants/constants';
+import { qualityTone } from '../setupFlow/SetupFlow';
 
 const dateFmt = new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' });
 
 /**
  * Telefonda işlem satırı: tablo sütunları yerine tek bakışta okunan kart.
- * Solda parite + yön, altında tarih · session · işlem tipi ve hesap; sağda büyük R (renk yalnızca sonuçta).
+ * Solda parite + yön, altında tarih · POI saati + session · işlem tipi, en altta Setup Kalitesi ve POI timeframe;
+ * sağda büyük R (renk yalnızca sonuçta). Hesap gösterilmez: Prop / Hesapsız üstteki seçiciyle zaten ayrılır.
  * İşlem listesi ve İşlem Geçmişi penceresi aynı kartı kullanır; düzenle / sil yalnızca verilirse görünür.
  */
 export const TradeMobileCard = React.memo(function TradeMobileCard({
@@ -26,8 +28,8 @@ export const TradeMobileCard = React.memo(function TradeMobileCard({
   const rr = typeof trade.rr === 'number' && Number.isFinite(trade.rr) ? trade.rr : null;
   const rTone = rr === null ? 'text-zinc-500' : rr > 0 ? 'text-emerald-400' : rr < 0 ? 'text-rose-400' : 'text-blue-300';
   const date = Number.isFinite(trade.createdAt) ? dateFmt.format(nyWallDate(trade.createdAt)) : '—';
-  const meta = [date, trade.session, trade.trend].filter(Boolean).join(' · ');
-  const account = getTradeAccountName(trade);
+  const poi = [trade.sweepTime, trade.session].filter(Boolean).join(' ');
+  const meta = [date, poi, trade.trend].filter(Boolean).join(' · ');
   const long = trade.type === 'LONG';
 
   return (
@@ -60,12 +62,19 @@ export const TradeMobileCard = React.memo(function TradeMobileCard({
           )}
         </div>
         <div className="mt-1 text-label leading-snug text-zinc-500 whitespace-normal">{meta}</div>
-        {account && (
-          <span
-            className={`mt-1.5 inline-block max-w-full truncate align-top h-[18px] leading-[16px] px-2 rounded-full text-label font-bold uppercase border ${ACCOUNT_KIND_BADGE[getTradeAccountKind(trade)]}`}
-          >
-            {account}
-          </span>
+        {(trade.planFidelity || trade.poiTimeframe) && (
+          <div className="mt-1.5 flex items-center gap-1.5">
+            {trade.planFidelity && (
+              <span lang="en" className={`inline-flex items-center h-[18px] px-2 rounded-full text-label font-bold border ${qualityTone(trade.planFidelity).chip}`}>
+                {trade.planFidelity}
+              </span>
+            )}
+            {trade.poiTimeframe && (
+              <span lang="en" className="inline-flex items-center h-[18px] px-2 rounded-full text-label font-bold border border-zinc-700/70 bg-zinc-800/70 text-zinc-300">
+                {trade.poiTimeframe}
+              </span>
+            )}
+          </div>
         )}
       </div>
 

@@ -1101,3 +1101,7 @@ Klasik tasarım korunarak, son eklenen alanlar (risk %, hesap bağı, strateji, 
     - Zorunlu alanlar formda `*` ile işaretli (Tanımlamalar > Zorunlu Alanlar; değişince anında). Kaydetme denendiğinde boş kalan zorunlu alanların başlığı ve adım düğümü kırmızı olur; uyarı mesajı da kalır.
     - Seçenek çoksa (5+ timeframe, 4+ kalite, 3+ işlem tipi) o adımın alanları alt alta tam genişlikte dizilir; yazılar kesilmez.
     - İşlem detayı: R cetvelinde uçtaki etiketler üst üste binmez (+8R +9R gibi); başlıkta parite ve yön hiç alt satıra kaymaz (PNG çıktısında da); grafik başlığı "Grafik"; not satır aralığı sıkılaştı.
+  - Konfor turu:
+    - Form: otomatik session artık saat seçicinin altında küçük bir bilgi satırı ("Session London"); POI Sweep Time başlığı ve seçici daralmaz.
+    - İşlem detayı: Kurulum, simge · başlık solda, değer sağda bir özet tablosu (Asia Range, İşlem Tipi, Setup Kalitesi, POI Sweep + session, POI Timeframe, Confirmations); eksik değer soluk tire. Pencere geniş ekranlarda en çok 1360px, grafiksiz işlemde 1080px.
+    - İşlem listesi: Hesap sütunu kalktı (Prop / Hesapsız üstteki seçiciyle ayrılıyor); yerine sıralanabilir "Kalite" (kademe renkli) ve "POI" (sweep saati · session · timeframe). Telefondaki işlem kartı da aynı bilgileri gösterir.

@@ -1,9 +1,8 @@
-import { RBadge, TrendBadge } from "./TradeBadges";
+import { RBadge, TrendBadge, QualityBadge, PoiCell } from "./TradeBadges";
 import { TradeMobileCard } from "./TradeMobileCard";
 import React, { useMemo } from 'react';
 import { smartUpper } from '../../constants/constants';
 import { Trade } from '../../types';
-import { getTradeAccountKind, getTradeAccountName, ACCOUNT_KIND_BADGE } from '../../constants/constants';
 import { Edit3, Trash2 } from 'lucide-react';
 import { nyWallDate } from '../../lib/tradingTime';
 
@@ -23,11 +22,6 @@ export const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
   onEdit: (trade: Trade) => void;
   setTradeToDelete: (trade: Trade) => void;
 }) {
-  const category = getTradeAccountKind(trade);
-  const categoryBadgeClass = `${ACCOUNT_KIND_BADGE[category]} ${category === 'PROP' ? 'group-hover:border-blue-500/60' : 'group-hover:border-amber-500/60'}`;
-
-  const accountLabel = getTradeAccountName(trade);
-
   const formattedDateOnly = useMemo(
     () => (Number.isFinite(trade.createdAt) ? tradeRowDateFormatter.format(nyWallDate(trade.createdAt)) : '—'),
     [trade.createdAt],
@@ -43,18 +37,18 @@ export const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
       </tr>
       {/* Masaüstü: tablo satırı */}
       <tr onClick={() => onViewDetails(trade)} className="group select-none relative hidden sm:table-row bg-zinc-900 align-middle cursor-pointer hover:bg-zinc-800/50 transition-colors duration-100">
-        <td className={`${CELL} px-3 text-zinc-400 rounded-l-xl border-l w-[16%] min-w-[130px] group-hover:text-zinc-100`}>
+        <td className={`${CELL} px-3 text-zinc-400 rounded-l-xl border-l w-[13%] min-w-[110px] group-hover:text-zinc-100`}>
           <div>
             <span className="text-label text-zinc-400 font-medium">{formattedDateOnly}</span>
           </div>
         </td>
-        <td className={`${CELL} px-3 w-[12%] min-w-[90px]`}>
+        <td className={`${CELL} px-3 w-[11%] min-w-[90px]`}>
           <div className="flex flex-col items-center gap-0.5">
             <span className="text-white font-bold text-label uppercase">{trade.asset}</span>
             {trade.quickEntry === true && <span className="px-1 py-px rounded text-label font-bold uppercase border border-amber-500/30 bg-amber-500/10 text-amber-300 leading-none">{smartUpper("Hızlı")}</span>}
           </div>
         </td>
-        <td className={`${CELL} w-[10%] min-w-[65px]`}>
+        <td className={`${CELL} w-[9%] min-w-[65px]`}>
           <div>
             {trade.type === 'LONG' ? (
               <span className="whitespace-nowrap inline-flex items-center justify-center h-[20px] px-2 text-label font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:border-emerald-500/50 rounded-full uppercase tracking-wider w-[54px]">LONG</span>
@@ -63,7 +57,7 @@ export const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
             )}
           </div>
         </td>
-        <td className={`${CELL} w-[10%] min-w-[65px]`}>
+        <td className={`${CELL} w-[9%] min-w-[65px]`}>
           <div>
             <RBadge rr={trade.rr} />
           </div>
@@ -73,18 +67,17 @@ export const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
             <TrendBadge trend={trade.trend} />
           </div>
         </td>
-        <td className={`${CELL} w-[27%] min-w-[75px]`}>
+        <td className={`${CELL} w-[9%] min-w-[60px]`}>
           <div>
-            {accountLabel ? (
-              <span className={`inline-block min-w-[54px] max-w-full h-[20px] leading-[18px] px-2 text-center text-label font-bold rounded-full uppercase whitespace-nowrap truncate border transition-colors ${categoryBadgeClass}`}>
-                {accountLabel}
-              </span>
-            ) : (
-              <span className="text-zinc-600">—</span>
-            )}
+            <QualityBadge value={trade.planFidelity} />
           </div>
         </td>
-        <td className={`${CELL} px-1.5 rounded-r-xl border-r w-[10%] min-w-[80px]`}>
+        <td className={`${CELL} w-[25%] min-w-[150px]`}>
+          <div>
+            <PoiCell sweepTime={trade.sweepTime} session={trade.session} timeframe={trade.poiTimeframe} />
+          </div>
+        </td>
+        <td className={`${CELL} px-1.5 rounded-r-xl border-r w-[9%] min-w-[80px]`}>
           <div className="gap-1" onClick={(e) => e.stopPropagation()}>
             <button
               aria-label="Düzenle"

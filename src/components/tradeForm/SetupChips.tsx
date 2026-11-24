@@ -178,16 +178,15 @@ export const SetupChips = React.memo(function SetupChips({
                 <Timer size={13} className="text-blue-400 shrink-0" />
                 <span className="truncate">{L("sweepTime")}</span>
                 {star("sweepTime")}
-                {sessionHint && (
-                  <span
-                    title="Session: POI Sweep saatinden otomatik"
-                    className="ml-auto shrink-0 px-1.5 py-px rounded-md border border-zinc-700/70 bg-zinc-800/70 text-zinc-300 normal-case tracking-normal font-semibold"
-                  >
-                    {sessionHint}
-                  </span>
-                )}
               </span>
               <SweepTimePicker value={sweepTime} onChange={setSweepTime} />
+              {/* Session saatten otomatik çıkar: seçicinin altında bilgi satırı (başlığı ve seçiciyi daraltmaz) */}
+              {sweepTime && sessionHint && (
+                <div lang="en" title="Session: POI Sweep saatinden otomatik" className="mt-1.5 flex items-center gap-1.5 text-label text-zinc-500 font-sans">
+                  <span aria-hidden className="w-1.5 h-1.5 rounded-full bg-blue-400/80" />
+                  Session <span className="font-bold text-blue-200">{sessionHint}</span>
+                </div>
+              )}
             </div>
 
             <div className="min-w-0">

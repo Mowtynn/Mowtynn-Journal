@@ -1,4 +1,5 @@
 import { formatR } from "../../lib/format";
+import { qualityTone } from "../setupFlow/SetupFlow";
 import { Repeat2, TrendingUp } from "lucide-react";
 
 const PILL = "inline-flex items-center justify-center h-[20px] px-1.5 py-0 text-center text-label font-bold rounded-full uppercase font-sans tabular-nums border transition-colors";
@@ -29,6 +30,27 @@ export function TrendBadge({ trend }: { trend?: string }) {
     <span className={`${PILL} gap-1 px-2 whitespace-nowrap tracking-wide text-blue-300 bg-blue-500/10 border-blue-500/25 group-hover:border-blue-500/50`}>
       {reversal ? <Repeat2 size={12} strokeWidth={2.25} aria-hidden className="shrink-0" /> : <TrendingUp size={12} strokeWidth={2.25} aria-hidden className="shrink-0" />}
       <span>{t}</span>
+    </span>
+  );
+}
+
+/** Setup Kalitesi: kademesinin rengiyle (A+ yeşil · A mavi · B-C kırmızı), formdaki ve detaydaki renklerle aynı */
+export function QualityBadge({ value }: { value?: string | null }) {
+  const v = (value || "").trim();
+  if (!v) return <span className="text-zinc-600">—</span>;
+  return <span lang="en" className={`${PILL} px-2 min-w-[36px] tracking-wide ${qualityTone(v).chip}`}>{v}</span>;
+}
+
+/** POI: sweep saati (NY) · session · POI timeframe — tek satırda; girilmemiş parçalar atlanır */
+export function PoiCell({ sweepTime, session, timeframe }: { sweepTime?: string; session?: string; timeframe?: string }) {
+  if (!sweepTime && !session && !timeframe) return <span className="text-zinc-600">—</span>;
+  return (
+    <span lang="en" className="inline-flex items-center justify-center gap-1.5 max-w-full min-w-0 font-sans">
+      {sweepTime && <span className="text-zinc-200 font-bold tabular-nums">{sweepTime}</span>}
+      {session && <span className="text-zinc-400 font-semibold truncate">{session}</span>}
+      {timeframe && (
+        <span className={`${PILL} px-1.5 min-w-[30px] text-zinc-300 bg-zinc-800/70 border-zinc-700/70 group-hover:border-zinc-500`}>{timeframe}</span>
+      )}
     </span>
   );
 }

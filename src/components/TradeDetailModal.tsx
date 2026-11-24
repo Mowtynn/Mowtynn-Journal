@@ -15,13 +15,15 @@ import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
 import { isChartShareLink, resolveChartImage } from "../lib/chartLink";
 import {
   X, Edit3, Trash2, Calendar, Clock, Maximize2,
+  Compass, TrendingUp, ShieldCheck, Timer, Layers, Scale,
   ExternalLink, Image as ImageIcon, FileText,
   Activity, Monitor, AlertCircle,
   Download, Loader2, Crosshair, PenLine,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { FlowStep, FlowProgress, flowSteps, qualityTone } from "./setupFlow/SetupFlow";
+import type { LucideIcon } from "lucide-react";
+import { FlowProgress, flowSteps, qualityTone } from "./setupFlow/SetupFlow";
 import { nyWallDate, nyDateKey } from "../lib/tradingTime";
 import { ResultPanel, SetupHistoryPanel } from "./tradeDetail/TradeInsightPanels";
 import { computeTradeInsight } from "../lib/tradeInsight";
@@ -191,15 +193,17 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
     // Kullanılabilir alan: pencereyi taşıyan katmanın iç boyutu (kaydırma çubuğu, iç boşluk ve üst çubuk düşülmüş)
     const overlay = contentRef.current?.parentElement;
     const navH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-h')) || 0;
-    let maxW = Math.min(viewport.w - 32, 1800);
+    // Geniş ekranlarda pencere aşırı büyümesin: en çok 1360px genişlik (göz rahat tarar, grafik yine büyük)
+    const MAX_W = 1360;
+    let maxW = Math.min(viewport.w - 32, MAX_W);
     let maxH = viewport.h - navH - 32;
     if (overlay) {
       const os = getComputedStyle(overlay);
-      maxW = Math.min(1800, overlay.clientWidth - parseFloat(os.paddingLeft) - parseFloat(os.paddingRight));
+      maxW = Math.min(MAX_W, overlay.clientWidth - parseFloat(os.paddingLeft) - parseFloat(os.paddingRight));
       maxH = Math.min(maxH, overlay.clientHeight - parseFloat(os.paddingTop) - parseFloat(os.paddingBottom));
     }
     const headerH = header.offsetHeight;
-    const leftW = Math.round(Math.min(500, Math.max(430, viewport.w * 0.33)));
+    const leftW = Math.round(Math.min(480, Math.max(430, viewport.w * 0.32)));
     // Sol sütunun doğal yüksekliği (notlar en küçük yüksekliğiyle)
     const kids = Array.from(left.children) as HTMLElement[];
     const cs = getComputedStyle(left);
@@ -391,7 +395,8 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                 willChange: "transform, opacity", 
                 // Dışa aktarırken pencere ekran yüksekliğiyle sınırlanmaz (.modal-layer > * kuralı): uzun notlar PNG'de kesilmesin
                 ...(isExporting ? { margin: 0, padding: 0, boxShadow: 'none', borderRadius: 0, border: 'none', transform: 'none', maxHeight: 'none' } : {}),
-                ...(fit && !isExporting ? { height: fit.h, ...(fit.w ? { width: fit.w, maxWidth: 'none' } : {}) } : {}),
+                // Grafiksiz işlemde pencere dar (sağda yalnızca boş grafik alanı var); grafikli işlemde genişlik grafiğe göre
+                ...(fit && !isExporting ? { height: fit.h, ...(fit.w ? { width: fit.w, maxWidth: 'none' } : { maxWidth: 1080 }) } : {}),
               }}
               onClick={(e) => e.stopPropagation()}
               // İşlem ekleme penceresiyle aynı boyut: aynı genişlik basamakları ve ekranın %96'sına kadar yükseklik
@@ -534,7 +539,8 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                   {/* Sonuç kartı: R, durum, hesap, risk ve hesaba dolar etkisi */}
                   <ResultPanel trade={currentTrade} realizedR={typeof currentTrade.rr === "number" && Number.isFinite(currentTrade.rr) ? currentTrade.rr : 0} />
 
-                  {/* KURULUM AKIŞI: formdaki akışın okunur hali — kurulum zaman sırasıyla, adım adım */}
+                  {/* KURULUM: okunaklı bir özet tablosu — her satır bir girdi (simge · başlık solda, değer sağda), formdaki sırayla.
+                      Eksik değer soluk tire; başlıkta kaç girdinin dolu olduğu. */}
                   {(() => {
                     const T = (v: string | undefined, fb: string) => smartUpper(cleanDefinitionTitleString(v) || fb);
                     const conf = tradeConfirmations(currentTrade);
@@ -547,51 +553,43 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                           <span className={CARD_TITLE}>{T(definitionTitles.setupCard, "KURULUM")}</span>
                           <FlowProgress steps={steps} />
                         </div>
-                        <div className="flex flex-col pl-0.5">
-                          <FlowStep n={1} done={steps[0]} dense>
-                            <FlowFields>
-                              <FlowField label={T(definitionTitles.asiaRange, "ASIA RANGE")}>
-                                <ValueChip value={currentTrade.asiaRange} />
-                              </FlowField>
-                            </FlowFields>
-                          </FlowStep>
-                          <FlowStep n={2} done={steps[1]} dense>
-                            <FlowFields>
-                              <FlowField label={T(definitionTitles.trendTypes, "İŞLEM TİPİ")}>
-                                <ValueChip value={currentTrade.trend} />
-                              </FlowField>
-                              <FlowField label={T(definitionTitles.planFidelities, "SETUP KALİTESİ")}>
-                                <ValueChip value={currentTrade.planFidelity} cls={quality.chip} />
-                              </FlowField>
-                            </FlowFields>
-                          </FlowStep>
-                          <FlowStep n={3} done={steps[2]} dense>
-                            <FlowFields>
-                              <FlowField label={T(definitionTitles.sweepTime, "POI SWEEP TIME")}>
-                                {currentTrade.sweepTime ? (
-                                  <span className="flex items-baseline gap-1 text-base font-bold tabular-nums text-zinc-100 leading-7">
-                                    {currentTrade.sweepTime}<span className="text-label font-semibold text-zinc-500">NY</span>
-                                  </span>
-                                ) : <ValueChip />}
-                              </FlowField>
-                              <FlowField label={T(definitionTitles.sessions, "SESSION")}>
-                                <ValueChip value={currentTrade.session} />
-                              </FlowField>
-                              <FlowField label={T(definitionTitles.poiTimeframes, "POI TIMEFRAME")}>
-                                <ValueChip value={currentTrade.poiTimeframe} />
-                              </FlowField>
-                            </FlowFields>
-                          </FlowStep>
-                          <FlowStep n={4} done={steps[3]} dense last>
-                            <FlowField label={T(definitionTitles.premiumDiscounts, "CONFIRMATIONS")}>
-                              {conf.length > 0 ? (
-                                <span className="flex flex-wrap gap-1.5">
-                                  {conf.map((c) => <ValueChip key={c} value={c} cls="border-blue-500/25 bg-blue-500/10 text-blue-200" />)}
+                        <dl className="flex flex-col -my-1">
+                          <SpecRow icon={Compass} label={T(definitionTitles.asiaRange, "ASIA RANGE")} empty={!currentTrade.asiaRange}>
+                            <SpecValue>{currentTrade.asiaRange}</SpecValue>
+                          </SpecRow>
+                          <SpecRow icon={TrendingUp} label={T(definitionTitles.trendTypes, "İŞLEM TİPİ")} empty={!currentTrade.trend}>
+                            <SpecValue>{currentTrade.trend}</SpecValue>
+                          </SpecRow>
+                          <SpecRow icon={ShieldCheck} label={T(definitionTitles.planFidelities, "SETUP KALİTESİ")} empty={!currentTrade.planFidelity}>
+                            <span className={`inline-flex items-center h-7 px-2.5 rounded-lg border text-sm font-bold ${quality.chip}`}>{currentTrade.planFidelity}</span>
+                          </SpecRow>
+                          <SpecRow icon={Timer} label={T(definitionTitles.sweepTime, "POI SWEEP TIME")} empty={!currentTrade.sweepTime && !currentTrade.session}>
+                            <span className="flex items-center justify-end gap-2 flex-wrap">
+                              {currentTrade.sweepTime && (
+                                <span className="text-base font-bold tabular-nums text-zinc-100">
+                                  {currentTrade.sweepTime}<span className="ml-1 text-label font-semibold text-zinc-500">NY</span>
                                 </span>
-                              ) : <ValueChip />}
-                            </FlowField>
-                          </FlowStep>
-                        </div>
+                              )}
+                              {currentTrade.session && (
+                                <span lang="en" className="inline-flex items-center h-6 px-2 rounded-md border border-blue-500/25 bg-blue-500/10 text-blue-200 text-xs font-semibold">
+                                  {currentTrade.session}
+                                </span>
+                              )}
+                            </span>
+                          </SpecRow>
+                          <SpecRow icon={Layers} label={T(definitionTitles.poiTimeframes, "POI TIMEFRAME")} empty={!currentTrade.poiTimeframe}>
+                            <SpecValue>{currentTrade.poiTimeframe}</SpecValue>
+                          </SpecRow>
+                          <SpecRow icon={Scale} label={T(definitionTitles.premiumDiscounts, "CONFIRMATIONS")} empty={conf.length === 0} top={conf.length > 1}>
+                            <span className="flex flex-wrap justify-end gap-1.5">
+                              {conf.map((c) => (
+                                <span key={c} lang="en" className="inline-flex items-center h-7 px-2.5 rounded-lg border border-blue-500/25 bg-blue-500/10 text-blue-200 text-xs font-bold uppercase tracking-wide whitespace-nowrap">
+                                  {smartUpper(c)}
+                                </span>
+                              ))}
+                            </span>
+                          </SpecRow>
+                        </dl>
                       </section>
                     );
                   })()}
@@ -843,28 +841,35 @@ const DETAIL_CARD = "rounded-2xl border border-zinc-800/80 bg-zinc-900/45 p-4 fl
 const CARD_HEAD = "flex items-center gap-2 pb-2.5 border-b border-zinc-800/60";
 const CARD_TITLE = "text-xs font-bold text-zinc-200 uppercase tracking-wider font-sans";
 
-/* Kurulum akışı (detay): her adım bir ya da birkaç alan; alan = küçük başlık + değer çipi */
-function FlowFields({ children }: { children: React.ReactNode }) {
-  return <div className="flex flex-wrap gap-x-5 gap-y-2">{children}</div>;
-}
-
-function FlowField({ label, children }: { label: string; children: React.ReactNode }) {
+/* Kurulum tablosu satırı: solda simge + başlık, sağda değer; değer yoksa soluk tire. Çok satırlı değerde başlık üstte hizalanır. */
+function SpecRow({
+  icon: Icon,
+  label,
+  empty,
+  top = false,
+  children,
+}: {
+  icon: LucideIcon;
+  label: string;
+  empty: boolean;
+  top?: boolean;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="min-w-0">
-      <div className="text-label font-bold uppercase tracking-wider font-sans text-zinc-400 leading-none mb-2">{label}</div>
-      {children}
+    <div className={`flex ${top ? "items-start" : "items-center"} justify-between gap-4 py-2.5 border-b border-zinc-800/50 last:border-b-0 min-h-[48px]`}>
+      <dt className={`flex items-center gap-2 shrink-0 text-xs font-bold uppercase tracking-wider font-sans ${top ? "pt-1.5" : ""} ${empty ? "text-zinc-600" : "text-zinc-400"}`}>
+        <Icon size={14} className={empty ? "text-zinc-700" : "text-blue-400/80"} />
+        {label}
+      </dt>
+      <dd className="min-w-0 flex justify-end text-right">
+        {empty ? <span className="text-sm font-bold text-zinc-700">—</span> : children}
+      </dd>
     </div>
   );
 }
 
-/** Değer çipi; değer yoksa soluk bir tire (adımın eksik kaldığı görünür) */
-function ValueChip({ value, cls }: { value?: string | null; cls?: string }) {
-  if (!value) return <span className="inline-flex items-center h-7 text-sm font-bold text-zinc-700">—</span>;
-  return (
-    <span lang="en" className={`inline-flex items-center h-7 px-2.5 rounded-lg border text-xs font-bold uppercase tracking-wide font-sans whitespace-nowrap ${cls || "border-zinc-700/70 bg-zinc-900/70 text-zinc-200"}`}>
-      {smartUpper(value)}
-    </span>
-  );
+function SpecValue({ children }: { children: React.ReactNode }) {
+  return <span lang="en" className="text-sm font-bold uppercase tracking-wide font-sans text-zinc-100 truncate">{children}</span>;
 }
 
 export default TradeDetailModal;

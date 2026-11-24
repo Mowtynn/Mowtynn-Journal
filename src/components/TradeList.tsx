@@ -1,5 +1,8 @@
 import { MODAL_BACKDROP, MODAL_PANEL, POPOVER } from '../lib/motion';
 import { smartUpper, getTradeAccountName } from '../constants/constants';
+import { setupQualityTier } from '../lib/setupQuality';
+
+const qualityRank = (v?: string | null) => { const t = setupQualityTier(v); return t === 'high' ? 3 : t === 'mid' ? 2 : t === 'low' ? 1 : 0; };
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -282,6 +285,11 @@ const TradeList = React.memo(function TradeList({
             return TR_COLLATOR.compare(getTradeAccountName(a), getTradeAccountName(b));
           case 'platformDes':
             return TR_COLLATOR.compare(getTradeAccountName(b), getTradeAccountName(a));
+          // Setup Kalitesi: kademe sırası (A+ > A > B-C), boşlar en sonda; aynı kademede yeni işlem önce
+          case 'qualityAsc':
+            return qualityRank(a.planFidelity) - qualityRank(b.planFidelity) || b.createdAt - a.createdAt;
+          case 'qualityDes':
+            return qualityRank(b.planFidelity) - qualityRank(a.planFidelity) || b.createdAt - a.createdAt;
           default:
             return b.createdAt - a.createdAt;
         }
@@ -747,7 +755,7 @@ const TradeList = React.memo(function TradeList({
                   <th 
                     className={`py-2 px-3 font-sans select-none min-w-[130px] cursor-pointer group/th transition-colors hover:text-zinc-200 text-center ${
                       filter.sortBy === 'dateAsc' || filter.sortBy === 'dateDes' ? 'text-blue-400 font-bold' : 'text-zinc-400'
-                    } ${'w-[16%]'}`}
+                    } ${'w-[13%]'}`}
                     onClick={() => handleFilterChange({...filter, sortBy: filter.sortBy === 'dateDes' ? 'dateAsc' : 'dateDes'})}
                   >
                     <div className="flex items-center justify-center gap-1.5">
@@ -757,7 +765,7 @@ const TradeList = React.memo(function TradeList({
                   <th 
                     className={`py-2 px-3 font-sans select-none min-w-[90px] cursor-pointer group/th transition-colors hover:text-zinc-200 text-center ${
                       filter.sortBy === 'assetAsc' || filter.sortBy === 'assetDes' ? 'text-blue-400 font-bold' : 'text-zinc-400'
-                    } ${'w-[12%]'}`}
+                    } ${'w-[11%]'}`}
                     onClick={() => handleFilterChange({...filter, sortBy: filter.sortBy === 'assetAsc' ? 'assetDes' : 'assetAsc'})}
                   >
                     <div className="flex items-center justify-center gap-1.5">
@@ -767,7 +775,7 @@ const TradeList = React.memo(function TradeList({
                   <th 
                     className={`py-2 px-2 text-center font-sans select-none min-w-[65px] cursor-pointer group/th transition-colors hover:text-zinc-200 ${
                       filter.sortBy === 'typeAsc' || filter.sortBy === 'typeDes' ? 'text-blue-400 font-bold' : 'text-zinc-400'
-                    } ${'w-[10%]'}`}
+                    } ${'w-[9%]'}`}
                     onClick={() => handleFilterChange({...filter, sortBy: filter.sortBy === 'typeAsc' ? 'typeDes' : 'typeAsc'})}
                   >
                     <div className="flex items-center justify-center gap-1.5">
@@ -777,7 +785,7 @@ const TradeList = React.memo(function TradeList({
                   <th 
                     className={`py-2 px-2 text-center font-sans select-none min-w-[65px] cursor-pointer group/th transition-colors hover:text-zinc-200 ${
                       filter.sortBy === 'rrAsc' || filter.sortBy === 'rrDes' ? 'text-blue-400 font-bold' : 'text-zinc-400'
-                    } ${'w-[10%]'}`}
+                    } ${'w-[9%]'}`}
                     onClick={() => handleFilterChange({...filter, sortBy: filter.sortBy === 'rrDes' ? 'rrAsc' : 'rrDes'})}
                   >
                     <div className="flex items-center justify-center gap-1.5">
@@ -785,19 +793,19 @@ const TradeList = React.memo(function TradeList({
                     </div>
                   </th>
                   <th className="py-2 px-2 text-center font-sans select-none min-w-[110px] w-[15%] text-zinc-400">{definitionTitles.trendTypes || "İşlem Tipi"}</th>
-                  {true && (
-                    <th 
-                      className={`py-2 px-2 text-center font-sans select-none w-[27%] min-w-[75px] cursor-pointer group/th transition-colors hover:text-zinc-200 ${
-                        filter.sortBy === 'platformAsc' || filter.sortBy === 'platformDes' ? 'text-blue-400 font-bold' : 'text-zinc-400'
-                      }`}
-                      onClick={() => handleFilterChange({...filter, sortBy: filter.sortBy === 'platformDes' ? 'platformAsc' : 'platformDes'})}
-                    >
-                      <div className="flex items-center justify-center gap-1.5">
-                        <HeaderLabel sortState={filter.sortBy === 'platformAsc' ? 'asc' : filter.sortBy === 'platformDes' ? 'des' : null}>{definitionTitles.platforms || "Hesap"}</HeaderLabel>
+                  {/* Hesap sütunu yok: Prop / Hesapsız üstteki seçiciyle zaten ayrılıyor. Yerine kurulumun en çok bakılan iki girdisi */}
+                  <th
+                    className={`py-2 px-2 text-center font-sans select-none w-[9%] min-w-[60px] cursor-pointer group/th transition-colors hover:text-zinc-200 ${
+                      filter.sortBy === 'qualityAsc' || filter.sortBy === 'qualityDes' ? 'text-blue-400 font-bold' : 'text-zinc-400'
+                    }`}
+                    onClick={() => handleFilterChange({ ...filter, sortBy: filter.sortBy === 'qualityDes' ? 'qualityAsc' : 'qualityDes' })}
+                  >
+                    <div className="flex items-center justify-center gap-1.5">
+                      <HeaderLabel sortState={filter.sortBy === 'qualityAsc' ? 'asc' : filter.sortBy === 'qualityDes' ? 'des' : null}>Kalite</HeaderLabel>
                     </div>
-                    </th>
-                  )}
-                  <th className="py-2 px-1.5 text-center font-sans select-none w-[10%] min-w-[80px]">İşlem</th>
+                  </th>
+                  <th className="py-2 px-2 text-center font-sans select-none w-[25%] min-w-[150px] text-zinc-400">POI</th>
+                  <th className="py-2 px-1.5 text-center font-sans select-none w-[9%] min-w-[80px]">İşlem</th>
                 </tr>
               </thead>
               <tbody key={effectivePage} className="trade-tbody-fade block sm:table-row-group">
@@ -812,7 +820,7 @@ const TradeList = React.memo(function TradeList({
                 ))}
                 {paginatedTrades.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-xs font-bold font-sans text-zinc-500 bg-zinc-950/60 border border-zinc-800/80 rounded-xl">
+                    <td colSpan={8} className="py-12 text-center text-xs font-bold font-sans text-zinc-500 bg-zinc-950/60 border border-zinc-800/80 rounded-xl">
                       <div className="flex flex-col items-center gap-2">
                         <Search size={32} className="opacity-20" />
                         <p className="uppercase tracking-wider">Sonuç bulunamadı</p>
