@@ -4,13 +4,12 @@ import { Trade } from '../../types';
 import { formatR } from '../../lib/format';
 import { nyWallDate } from '../../lib/tradingTime';
 import { smartUpper } from '../../constants/constants';
-import { qualityTone } from '../setupFlow/SetupFlow';
 
 const dateFmt = new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' });
 
 /**
  * Telefonda işlem satırı: tablo sütunları yerine tek bakışta okunan kart.
- * Solda parite + yön, altında tarih · POI saati + session · işlem tipi, en altta Setup Kalitesi ve POI timeframe;
+ * Solda parite + yön, altında tarih · POI saati + session · işlem tipi, en altta POI timeframe;
  * sağda büyük R (renk yalnızca sonuçta). Hesap gösterilmez: Prop / Hesapsız üstteki seçiciyle zaten ayrılır.
  * İşlem listesi ve İşlem Geçmişi penceresi aynı kartı kullanır; düzenle / sil yalnızca verilirse görünür.
  */
@@ -62,18 +61,10 @@ export const TradeMobileCard = React.memo(function TradeMobileCard({
           )}
         </div>
         <div className="mt-1 text-label leading-snug text-zinc-500 whitespace-normal">{meta}</div>
-        {(trade.planFidelity || trade.poiTimeframe) && (
-          <div className="mt-1.5 flex items-center gap-1.5">
-            {trade.planFidelity && (
-              <span lang="en" className={`inline-flex items-center h-[18px] px-2 rounded-full text-label font-bold border ${qualityTone(trade.planFidelity).chip}`}>
-                {trade.planFidelity}
-              </span>
-            )}
-            {trade.poiTimeframe && (
-              <span lang="en" className="inline-flex items-center h-[18px] px-2 rounded-full text-label font-bold border border-zinc-700/70 bg-zinc-800/70 text-zinc-300">
-                {trade.poiTimeframe}
-              </span>
-            )}
+        {trade.poiTimeframe && (
+          <div className="mt-1 text-label font-sans">
+            <span className="text-zinc-500">POI TF </span>
+            <span lang="en" className="font-bold uppercase tracking-wide text-blue-300">{trade.poiTimeframe}</span>
           </div>
         )}
       </div>

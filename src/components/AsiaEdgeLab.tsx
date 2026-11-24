@@ -1,14 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import { smartUpper } from '../constants/constants';
-import { FilterChip, FILTER_LABEL, FILTER_SELECT } from './filters/FilterControls';
+import { FILTER_LABEL, FILTER_SELECT } from './filters/FilterControls';
 import { Trade } from '../types';
 import { MIN_SAMPLE } from '../lib/sampleSize';
 import { formatDateKey, formatR, rsigned } from '../lib/format';
 import {
   analyzeAsia,
   AsiaLabResult,
-  DatasetKey,
-  DATASET_LABELS,
   listPairs,
 } from '../lib/asiaAnalytics';
 
@@ -58,14 +56,13 @@ const Sparkline: React.FC<{ points: AsiaLabResult['rolling'] }> = ({ points }) =
 };
 
 export const AsiaEdgeLab = React.memo(function AsiaEdgeLab({ trades }: AsiaEdgeLabProps) {
-  const [dataset, setDataset] = useState<DatasetKey>('ALL');
   const [pair, setPair] = useState<string>('ALL');
   // Varsayılan eşik proje genelindeki tek örneklem eşiğiyle aynı (lib/sampleSize)
   const [minSample, setMinSample] = useState<number>(MIN_SAMPLE);
 
   const pairs = useMemo(() => listPairs(trades), [trades]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const r = useMemo(() => analyzeAsia(trades, { dataset, pair, minSample }), [trades, dataset, pair, minSample]);
+  const r = useMemo(() => analyzeAsia(trades, { pair, minSample }), [trades, pair, minSample]);
 
   const sparseHourPair = r.hourPair.hours.length > 0 && r.hourPair.pairs.length > 0;
 
@@ -73,13 +70,6 @@ export const AsiaEdgeLab = React.memo(function AsiaEdgeLab({ trades }: AsiaEdgeL
     <div className="space-y-4">
       {/* Controls */}
       <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-3 flex flex-wrap items-center gap-3">
-        <div className="flex flex-wrap gap-1.5">
-          {(Object.keys(DATASET_LABELS) as DatasetKey[]).map((k) => (
-            <FilterChip key={k} check={false} tone={k === 'ALL' ? 'neutral' : 'brand'} active={dataset === k} onClick={() => setDataset(k)}>
-              {DATASET_LABELS[k]}
-            </FilterChip>
-          ))}
-        </div>
         <select
           value={pair}
           onChange={(e) => setPair(e.target.value)}

@@ -1,8 +1,13 @@
 import { MODAL_BACKDROP, MODAL_PANEL, POPOVER } from '../lib/motion';
 import { smartUpper, getTradeAccountName } from '../constants/constants';
-import { setupQualityTier } from '../lib/setupQuality';
+import { timeframeOrder } from '../lib/setupScorecard';
 
-const qualityRank = (v?: string | null) => { const t = setupQualityTier(v); return t === 'high' ? 3 : t === 'mid' ? 2 : t === 'low' ? 1 : 0; };
+/** POI sıralaması: sweep saati (NY "HH:mm") ve POI timeframe sırası; girilmemiş değer her iki yönde de en sonda */
+const MISSING = Number.MAX_SAFE_INTEGER;
+const sweepRank = (v?: string) => (v && /^\d{2}:\d{2}$/.test(v) ? Number(v.slice(0, 2)) * 60 + Number(v.slice(3)) : MISSING);
+const tfRank = (v?: string) => (v && v.trim() ? timeframeOrder(v) : MISSING);
+const byRank = (ra: number, rb: number, asc: boolean) =>
+  ra === rb ? 0 : ra === MISSING ? 1 : rb === MISSING ? -1 : asc ? ra - rb : rb - ra;
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -255,7 +260,8 @@ const TradeList = React.memo(function TradeList({
           caseInsensitiveMatch(trade.asiaRange, deferredFilter.search) ||
           caseInsensitiveMatch(trade.session, deferredFilter.search) ||
           caseInsensitiveMatch(getTradeAccountName(trade), deferredFilter.search) ||
-          caseInsensitiveMatch(trade.planFidelity, deferredFilter.search) ||
+          caseInsensitiveMatch(trade.poiTimeframe, deferredFilter.search) ||
+          caseInsensitiveMatch(trade.sweepTime, deferredFilter.search) ||
           caseInsensitiveMatch(trade.trend, deferredFilter.search) ||
           tradeConfirmations(trade).some((c) => caseInsensitiveMatch(c, deferredFilter.search));
         
@@ -285,11 +291,13 @@ const TradeList = React.memo(function TradeList({
             return TR_COLLATOR.compare(getTradeAccountName(a), getTradeAccountName(b));
           case 'platformDes':
             return TR_COLLATOR.compare(getTradeAccountName(b), getTradeAccountName(a));
-          // Setup Kalitesi: kademe sırası (A+ > A > B-C), boşlar en sonda; aynı kademede yeni işlem önce
-          case 'qualityAsc':
-            return qualityRank(a.planFidelity) - qualityRank(b.planFidelity) || b.createdAt - a.createdAt;
-          case 'qualityDes':
-            return qualityRank(b.planFidelity) - qualityRank(a.planFidelity) || b.createdAt - a.createdAt;
+          // POI: sweep saati; POI TF: zaman dilimi sırası (15M < 1H < 4H < Daily). Boşlar en sonda, eşitlikte yeni işlem önce
+          case 'poiAsc':
+          case 'poiDes':
+            return byRank(sweepRank(a.sweepTime), sweepRank(b.sweepTime), filter.sortBy === 'poiAsc') || b.createdAt - a.createdAt;
+          case 'tfAsc':
+          case 'tfDes':
+            return byRank(tfRank(a.poiTimeframe), tfRank(b.poiTimeframe), filter.sortBy === 'tfAsc') || b.createdAt - a.createdAt;
           default:
             return b.createdAt - a.createdAt;
         }
@@ -793,18 +801,27 @@ const TradeList = React.memo(function TradeList({
                     </div>
                   </th>
                   <th className="py-2 px-2 text-center font-sans select-none min-w-[110px] w-[15%] text-zinc-400">{definitionTitles.trendTypes || "İşlem Tipi"}</th>
-                  {/* Hesap sütunu yok: Prop / Hesapsız üstteki seçiciyle zaten ayrılıyor. Yerine kurulumun en çok bakılan iki girdisi */}
+                  {/* Hesap sütunu yok: Prop / Hesapsız üstteki seçiciyle zaten ayrılıyor. Yerine POI: sweep saati · session ve POI timeframe */}
                   <th
-                    className={`py-2 px-2 text-center font-sans select-none w-[9%] min-w-[60px] cursor-pointer group/th transition-colors hover:text-zinc-200 ${
-                      filter.sortBy === 'qualityAsc' || filter.sortBy === 'qualityDes' ? 'text-blue-400 font-bold' : 'text-zinc-400'
+                    className={`py-2 px-2 text-center font-sans select-none w-[20%] min-w-[130px] cursor-pointer group/th transition-colors hover:text-zinc-200 ${
+                      filter.sortBy === 'poiAsc' || filter.sortBy === 'poiDes' ? 'text-blue-400 font-bold' : 'text-zinc-400'
                     }`}
-                    onClick={() => handleFilterChange({ ...filter, sortBy: filter.sortBy === 'qualityDes' ? 'qualityAsc' : 'qualityDes' })}
+                    onClick={() => handleFilterChange({ ...filter, sortBy: filter.sortBy === 'poiAsc' ? 'poiDes' : 'poiAsc' })}
                   >
                     <div className="flex items-center justify-center gap-1.5">
-                      <HeaderLabel sortState={filter.sortBy === 'qualityAsc' ? 'asc' : filter.sortBy === 'qualityDes' ? 'des' : null}>Kalite</HeaderLabel>
+                      <HeaderLabel sortState={filter.sortBy === 'poiAsc' ? 'asc' : filter.sortBy === 'poiDes' ? 'des' : null}>POI</HeaderLabel>
                     </div>
                   </th>
-                  <th className="py-2 px-2 text-center font-sans select-none w-[25%] min-w-[150px] text-zinc-400">POI</th>
+                  <th
+                    className={`py-2 px-2 text-center font-sans select-none w-[14%] min-w-[90px] cursor-pointer group/th transition-colors hover:text-zinc-200 ${
+                      filter.sortBy === 'tfAsc' || filter.sortBy === 'tfDes' ? 'text-blue-400 font-bold' : 'text-zinc-400'
+                    }`}
+                    onClick={() => handleFilterChange({ ...filter, sortBy: filter.sortBy === 'tfAsc' ? 'tfDes' : 'tfAsc' })}
+                  >
+                    <div className="flex items-center justify-center gap-1.5">
+                      <HeaderLabel sortState={filter.sortBy === 'tfAsc' ? 'asc' : filter.sortBy === 'tfDes' ? 'des' : null}>POI TF</HeaderLabel>
+                    </div>
+                  </th>
                   <th className="py-2 px-1.5 text-center font-sans select-none w-[9%] min-w-[80px]">İşlem</th>
                 </tr>
               </thead>

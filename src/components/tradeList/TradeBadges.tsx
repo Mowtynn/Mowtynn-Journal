@@ -1,6 +1,4 @@
-import React from "react";
 import { formatR } from "../../lib/format";
-import { qualityTone } from "../setupFlow/SetupFlow";
 import { Repeat2, TrendingUp } from "lucide-react";
 
 const PILL = "inline-flex items-center justify-center h-[20px] px-1.5 py-0 text-center text-label font-bold rounded-full uppercase font-sans tabular-nums border transition-colors";
@@ -35,29 +33,21 @@ export function TrendBadge({ trend }: { trend?: string }) {
   );
 }
 
-/** Setup Kalitesi: kademesinin rengiyle (A+ yeşil · A mavi · B-C kırmızı), formdaki ve detaydaki renklerle aynı */
-export function QualityBadge({ value }: { value?: string | null }) {
-  const v = (value || "").trim();
-  if (!v) return <span className="text-zinc-600">—</span>;
-  return <span lang="en" className={`${PILL} px-2 min-w-[36px] tracking-wide ${qualityTone(v).chip}`}>{v}</span>;
-}
-
-/** POI: sweep saati (NY) · session · POI timeframe — düz metin, aralarında ince nokta; girilmemiş parçalar atlanır */
-export function PoiCell({ sweepTime, session, timeframe }: { sweepTime?: string; session?: string; timeframe?: string }) {
-  const parts = [
-    sweepTime && <span key="t" className="text-zinc-100 font-bold tabular-nums">{sweepTime}</span>,
-    session && <span key="s" className="text-zinc-400 font-semibold truncate">{session}</span>,
-    timeframe && <span key="f" className="text-blue-300 font-bold tracking-wide">{timeframe}</span>,
-  ].filter(Boolean) as React.ReactElement[];
-  if (parts.length === 0) return <span className="text-zinc-600">—</span>;
+/** POI: sweep saati (NY) · session — düz metin, aralarında ince nokta; girilmemiş parçalar atlanır */
+export function PoiCell({ sweepTime, session }: { sweepTime?: string; session?: string }) {
+  if (!sweepTime && !session) return <span className="text-zinc-600">—</span>;
   return (
     <span lang="en" className="inline-flex items-baseline justify-center gap-2 max-w-full min-w-0 font-sans text-xs">
-      {parts.map((p, i) => (
-        <React.Fragment key={p.key}>
-          {i > 0 && <span aria-hidden className="text-zinc-700">·</span>}
-          {p}
-        </React.Fragment>
-      ))}
+      {sweepTime && <span className="text-zinc-100 font-bold tabular-nums">{sweepTime}</span>}
+      {sweepTime && session && <span aria-hidden className="text-zinc-700">·</span>}
+      {session && <span className="text-zinc-400 font-semibold truncate">{session}</span>}
     </span>
   );
+}
+
+/** POI Timeframe: düz, mavi metin (yuvarlak rozet yok) */
+export function TimeframeCell({ value }: { value?: string }) {
+  const v = (value || "").trim();
+  if (!v) return <span className="text-zinc-600">—</span>;
+  return <span lang="en" className="font-sans text-xs font-bold tracking-wide uppercase text-blue-300">{v}</span>;
 }

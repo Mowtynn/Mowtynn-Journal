@@ -5,7 +5,6 @@ import { NOW, DAY, trade } from './fixtures';
 
 const none: GlobalTradeFilters = {
   activeAccountCategory: 'PROP',
-  globalSelectedPlanFidelity: [],
   globalDateLimit: 'all',
   globalSelectedAssets: [],
   globalSelectedSessions: [],

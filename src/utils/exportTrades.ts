@@ -2,7 +2,7 @@ import { Trade, JournalEntry, Note } from '../types';
 import { byEntryTime, tradeConfirmations } from '../lib/tradeModel';
 import { getNyParts, getSweepSide, WEEKDAY_NAMES_TR, nyWallDate } from '../lib/tradingTime';
 import { getTradeAccountName } from '../constants/constants';
-import { DATASET_LABELS, getTradeDataset, sweepHourBucket, tradeOfDayBucket } from '../lib/asiaAnalytics';
+import { sweepHourBucket, tradeOfDayBucket } from '../lib/asiaAnalytics';
 import { edgeReportRows } from '../lib/edgeSummary';
 import { breakevenWinRateOf } from '../lib/stats';
 import { saveBlob } from '../lib/download';
@@ -158,7 +158,7 @@ const listText = (v?: string[] | null) => (Array.isArray(v) && v.length > 0 ? v.
 export const prepareTradeExportRows = (trades: Trade[], titles: Record<string, string> = {}) => {
   // Kullanıcının verdiği başlık başka bir sütunla aynıysa (ör. iki alana da "Timeframe" denmiş) sütun EZİLMEZ:
   // ikinci sütun "(Alan adı)" ekiyle ayrışır. Sabit sütun adları da (Gün, Aşama…) korunur.
-  const FIXED = new Set(['Sıra', 'İşlem ID', 'Gün', 'Süpürülen Asia Tarafı', 'Veri Seti', 'Hızlı Kayıt', 'POI Sweep Saati (30 dk)', 'Günün İşlemi']);
+  const FIXED = new Set(['Sıra', 'İşlem ID', 'Gün', 'Süpürülen Asia Tarafı', 'Hızlı Kayıt', 'POI Sweep Saati (30 dk)', 'Günün İşlemi']);
   const usedLabels = new Map<string, string>();
   const T = (key: string, fallback: string) => {
     const want = (titles[key] && String(titles[key]).trim()) || fallback;
@@ -187,12 +187,11 @@ export const prepareTradeExportRows = (trades: Trade[], titles: Record<string, s
       [T('rr', 'Sonuç R')]: Number(t.rr) || 0,
       [T('platforms', 'Hesap')]: getTradeAccountName(t),
       // Kurulum: formdaki sırayla
-      [T('planFidelities', 'Setup Kalitesi')]: t.planFidelity || '-',
-      [T('trendTypes', 'İşlem Tipi')]: t.trend || '-',
       [T('asiaRange', 'Asia Range')]: t.asiaRange || '-',
+      [T('trendTypes', 'İşlem Tipi')]: t.trend || '-',
       [T('sweepTime', 'POI Sweep Time')]: t.sweepTime || '-',
-      [T('poiTimeframes', 'POI Timeframe')]: t.poiTimeframe || '-',
       [T('sessions', 'Session')]: t.session || '-',
+      [T('poiTimeframes', 'POI Timeframe')]: t.poiTimeframe || '-',
       [T('premiumDiscounts', 'Confirmations')]: listText(tradeConfirmations(t)),
       // Analizlerde kullanılan türetilmiş değerler (Excel'de ayrıca süzülüp pivotlanabilsin)
       'POI Sweep Saati (30 dk)': sweepHourBucket(t.sweepTime) || '-',
@@ -202,7 +201,6 @@ export const prepareTradeExportRows = (trades: Trade[], titles: Record<string, s
         const side = getSweepSide(t);
         return side === 'HIGH' ? 'High' : side === 'LOW' ? 'Low' : '-';
       })(),
-      'Veri Seti': DATASET_LABELS[getTradeDataset(t)],
       'Hızlı Kayıt': t.quickEntry ? 'Evet (eksik alan olabilir)' : 'Hayır',
       [T('notesCard', 'Analiz & Notlar')]: t.notes ? t.notes : '-',
       // Kayıtlı / gömülü görsel hücreye sığmaz; bağlantı ise aynen yazılır

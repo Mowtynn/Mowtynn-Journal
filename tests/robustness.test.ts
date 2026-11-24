@@ -77,7 +77,7 @@ for (const size of [0, 1, 2, 7, 60, 400]) {
     for (const d of SETUP_DIMENSIONS) finiteDeep(buildSetupScorecard(trades, [d.id], { includeUnspecified: true }), `card.${d.id}`);
     finiteDeep(computeEdgeDrift(trades), 'drift');
     finiteDeep(simulateRule(trades, []), 'rule');
-    finiteDeep(analyzeAsia(trades, { dataset: 'ALL', pair: 'ALL', minSample: 3 }), 'asia');
+    finiteDeep(analyzeAsia(trades, { pair: 'ALL', minSample: 3 }), 'asia');
     finiteDeep(computeEdge(trades), 'edge');
     finiteDeep(calculateStrategyAnalytics(trades), 'strategy');
     finiteDeep(computeWeekReview(trades, currentWeekStart(NOW)), 'week');

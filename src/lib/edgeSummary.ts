@@ -18,7 +18,7 @@ import {
 
 /**
  * Edge özeti: Derin Analiz'in en üstünde tek bakışta "neyi daha çok, neyi hiç yapmamalıyım".
- * Kurulum karnesi + tek boyutlu sızıntı/güç taraması + risk % ve News Day etkisi.
+ * Kurulum karnesi + tek boyutlu sızıntı/güç taraması (yalnızca formda girilen alanlar).
  */
 
 export interface DimensionSlice {
@@ -85,7 +85,6 @@ export const SCAN_DIMENSIONS: SetupDimension[] = [
   'asiaRange',
   'sweepHour',
   'poiTimeframe',
-  'planFidelity',
   'tradeOfDay',
   'prevTrade',
   'session',
@@ -289,7 +288,7 @@ function buildRules(
     fast.set(r, quick || match);
   };
   // AL kuralı: kanıtlı kârlı VE geri kalandan %95 güvenle daha iyi (kârlı sistemde çoğunluğu oluşturan grup, ör.
-  // "News Day: Yok", ortalamaya çok yakın olduğu için kural olmaz). Geri kalan yoksa (tek grup) kural da yok.
+  // "Session: London", ortalamaya çok yakın olduğu için kural olmaz). Geri kalan yoksa (tek grup) kural da yok.
   const SIG = 1.96;
   setupRows.forEach((r) => {
     const match = (t: Trade) => DEFAULT_SETUP_DIMENSIONS.every((d, i) => dimensionValue(t, d) === r.labels[i]);
@@ -508,7 +507,7 @@ export function edgeReportRows(trades: Trade[], minSample = SETUP_MIN_SAMPLE): R
   // Kurulumlar (varsayılan boyutların birleşimi)
   buildSetupScorecard(valid, DEFAULT_SETUP_DIMENSIONS, { minSample }).rows.forEach((r) => {
     const list = valid.filter((t) => DEFAULT_SETUP_DIMENSIONS.map((d) => val(t, d)).join(' | ') === r.key);
-    push('Kurulum (Asia Range · Trend · Entry Model)', r.labels.join(' · '), list, 'Kurulum');
+    push('Kurulum (Asia Range · İşlem Tipi)', r.labels.join(' · '), list, 'Kurulum');
   });
   return rows;
 }

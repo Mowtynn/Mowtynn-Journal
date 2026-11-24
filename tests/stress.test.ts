@@ -42,7 +42,7 @@ test('20.000 işlem: tüm analizler makul sürede biter', () => {
   calculateStrategyAnalytics(trades);
   buildSetupScorecard(trades, DEFAULT_SETUP_DIMENSIONS);
   computeCoverage(trades);
-  analyzeAsia(trades, { dataset: 'ALL', pair: 'ALL', minSample: 5 });
+  analyzeAsia(trades, { pair: 'ALL', minSample: 5 });
   const tCore = performance.now() - t0;
   const t1 = performance.now();
   computeEdgeSummary(trades, undefined, NOW);

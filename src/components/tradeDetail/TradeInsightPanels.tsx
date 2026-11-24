@@ -89,7 +89,7 @@ const VERDICT: Record<string, { label: string; cls: string }> = {
 };
 
 /**
- * Aynı kurulumun (Asia Range · İşlem Tipi · Entry Model) bu işlem hariç geçmişi.
+ * Aynı kurulumun (Asia Range · İşlem Tipi) bu işlem hariç geçmişi.
  * Grafiğin altındaki alana sığan tek kart: solda kurulum adı ve işlem başı R, sağda hüküm.
  * fixedHeight: kart bulunduğu sabit yükseklikli alanı doldurur ve içerik tek satırda kalır (uzun metin kesilir), böylece yüksekliği içeriğe göre değişmez.
  */

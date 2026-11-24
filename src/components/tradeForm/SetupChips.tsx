@@ -1,9 +1,9 @@
 import React from "react";
-import { ShieldCheck, TrendingUp, Compass, MoveHorizontal, Waves, Timer, Crosshair, Layers, Scale, ChevronDown } from "lucide-react";
+import { TrendingUp, Compass, MoveHorizontal, Waves, Timer, Crosshair, Layers, Scale, Globe, RotateCcw } from "lucide-react";
 import { ASIA_RANGE_TYPES, ASIA_RANGE_FORM_TYPES } from "../../types";
 import { SweepTimePicker } from "./SweepTimePicker";
 import { CHIP_BASE, SetState, withSelected, Titles, SlideBg } from './shared';
-import { FlowStep, FlowProgress, flowSteps, qualityTone } from '../setupFlow/SetupFlow';
+import { FlowStep, FlowProgress, flowSteps } from '../setupFlow/SetupFlow';
 
 /* Asia Range seçeneklerinin görünümü */
 const ASIA_RANGE_META: Record<(typeof ASIA_RANGE_TYPES)[number], { icon: typeof Compass }> = {
@@ -22,15 +22,11 @@ const segBtn = (on: boolean, onText = "text-blue-300") =>
 const SEG_ON = "bg-blue-500/20 border-blue-500/40 shadow-xs";
 
 /* ================= 2. SÜTUN: KURULUM AKIŞI =================
- * Girdiler bir akış rayında dizilir: 1. Asia Range → 2. İşlem Tipi · Setup Kalitesi → 3. POI (sweep saati · timeframe) →
- * 4. Confirmations. Session formda yok: POI Sweep saatinden arka planda
- * çıkarılır ve saatin yanında yalnızca bilgi olarak gösterilir.
+ * Girdiler bir akış rayında dizilir: 1. Asia Range → 2. İşlem Tipi → 3. POI (sweep saati · session · timeframe) →
+ * 4. Confirmations. Session her zaman görünür: POI Sweep saatinden otomatik seçilir, tıklanarak değiştirilebilir.
  */
 export const SetupChips = React.memo(function SetupChips({
   titles,
-  planFidelities,
-  planFidelity,
-  setPlanFidelity,
   trendTypes,
   selectedTrend,
   setSelectedTrend,
@@ -38,7 +34,7 @@ export const SetupChips = React.memo(function SetupChips({
   setAsiaRange,
   sweepTime,
   setSweepTime,
-  sessionHint,
+  session = "",
   sessionAuto = "",
   sessions = [],
   onSessionChange,
@@ -53,9 +49,6 @@ export const SetupChips = React.memo(function SetupChips({
   className = "",
 }: {
   titles: Titles;
-  planFidelities: string[];
-  planFidelity: string | null;
-  setPlanFidelity: SetState<string | null>;
   trendTypes: string[];
   selectedTrend: string;
   setSelectedTrend: SetState<string>;
@@ -64,12 +57,12 @@ export const SetupChips = React.memo(function SetupChips({
   sweepTime: string;
   setSweepTime: SetState<string>;
   /** Geçerli session (otomatik ya da kullanıcının seçtiği) */
-  sessionHint?: string;
+  session?: string;
   /** POI Sweep saatinden otomatik çıkan session */
   sessionAuto?: string;
   /** Seçilebilir session listesi */
   sessions?: string[];
-  /** Session değiştirildiğinde (otomatik değer seçilirse otomatiğe döner) */
+  /** Session seçildiğinde; boş değer ya da otomatik olanın seçilmesi otomatiğe döndürür */
   onSessionChange?: (v: string) => void;
   poiTimeframes: string[];
   poiTimeframe: string;
@@ -86,14 +79,15 @@ export const SetupChips = React.memo(function SetupChips({
   const { L, H } = titles;
   const tfOptions = withSelected(poiTimeframes, poiTimeframe ? [poiTimeframe] : []);
   const trendOptions = trendTypes.length > 0 ? trendTypes : ["Continuation", "Reversal"];
-  const steps = flowSteps({ asiaRange, sweepTime, poiTimeframe, confirmations: selectedConfirmations, trend: selectedTrend, planFidelity });
-  const quality = qualityTone(planFidelity);
+  const steps = flowSteps({ asiaRange, sweepTime, poiTimeframe, confirmations: selectedConfirmations, trend: selectedTrend });
+  // Session seçenekleri: tanımlı liste + (eski kayıtta listede olmayan) mevcut değer
+  const sessionOptions = withSelected(sessions, session ? [session] : []);
+  const sessionManual = !!session && session !== sessionAuto;
   // Zorunlu alan işareti ve (kaydetme denendikten sonra) eksik vurgusu
   const isReq = (id: string) => required.includes(id);
   const miss = {
     asiaRange: flagMissing && isReq("asiaRange") && !asiaRange,
     trend: flagMissing && isReq("trend") && !selectedTrend,
-    planFidelity: flagMissing && isReq("planFidelity") && !planFidelity,
     sweepTime: flagMissing && isReq("sweepTime") && !sweepTime,
     poiTimeframe: flagMissing && isReq("poiTimeframe") && !poiTimeframe,
     premiumDiscount: flagMissing && isReq("premiumDiscount") && selectedConfirmations.length === 0,
@@ -101,9 +95,8 @@ export const SetupChips = React.memo(function SetupChips({
   const lbl = (err: boolean) => (err ? LABEL.replace("text-zinc-300", "text-rose-300") : LABEL);
   const star = (id: string) =>
     isReq(id) ? <span aria-label="zorunlu" title="Zorunlu alan" className="-ml-0.5 text-rose-400/80">*</span> : null;
-  // Seçenek çoksa (ör. 6 timeframe, 4 kalite) yan yana sığmaz: o adımın alanları alt alta tam genişlikte dizilir
-  const stackDecision = trendOptions.length > 2 || planFidelities.length > 3;
-  const stackPoi = tfOptions.length > 4;
+  // Session seçeneği çoksa (4+) saat seçicinin yanına sığmaz: alt alta tam genişlikte dizilir
+  const stackPoi = sessionOptions.length > 3;
 
   return (
     <div className={`tf-card ${className} bg-zinc-900/50 border border-zinc-800/80 rounded-2xl p-4 flex flex-col gap-4 shadow-sm`}>
@@ -136,87 +129,92 @@ export const SetupChips = React.memo(function SetupChips({
           </div>
         </FlowStep>
 
-        {/* 2. DEĞERLENDİRME: İŞLEM TİPİ · SETUP KALİTESİ (kalite seçimi kademesinin rengini alır: A+ yeşil · A mavi · B-C kırmızı) */}
-        <FlowStep n={2} done={steps[1]} error={miss.trend || miss.planFidelity}>
-          <div className={`grid grid-cols-1 ${stackDecision ? "" : "sm:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]"} gap-x-4 gap-y-3.5`}>
-            <div className="min-w-0">
-              <label lang="en" className={lbl(miss.trend)}>
-                <TrendingUp size={13} className="text-blue-400" />
-                {H("trendTypes", "İŞLEM TİPİ")}
-                {star("trend")}
-              </label>
-              <div className={`${SEGMENT} h-9`}>
-                {trendOptions.map((tr) => {
-                  const on = selectedTrend === tr;
-                  return (
-                    <button lang="en" key={tr} type="button" data-selected={on} aria-label={tr} onClick={() => setSelectedTrend(on ? "" : tr)} className={`${segBtn(on)} text-label tracking-normal`}>
-                      {on && <SlideBg id="trendSlide" className={SEG_ON} />}
-                      <span className="relative z-10 truncate">{tr}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="min-w-0">
-              <label lang="en" className={lbl(miss.planFidelity)}>
-                <ShieldCheck size={13} className="text-blue-400" />
-                {H("planFidelities", "SETUP KALİTESİ")}
-                {star("planFidelity")}
-              </label>
-              <div className={`${SEGMENT} h-9`}>
-                {planFidelities.map((item) => {
-                  const on = planFidelity === item;
-                  return (
-                    <button lang="en" key={item} type="button" data-selected={on} onClick={() => setPlanFidelity(on ? null : item)} className={segBtn(on, quality.text)}>
-                      {on && <SlideBg id="planFidelitySlide" className={quality.on} />}
-                      <span className="relative z-10 truncate">{item}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+        {/* 2. İŞLEM TİPİ: Continuation · Reversal */}
+        <FlowStep n={2} done={steps[1]} error={miss.trend}>
+          <label lang="en" className={lbl(miss.trend)}>
+            <TrendingUp size={13} className="text-blue-400" />
+            {H("trendTypes", "İŞLEM TİPİ")}
+            {star("trend")}
+          </label>
+          <div role="radiogroup" className={`${SEGMENT} h-10`}>
+            {trendOptions.map((tr) => {
+              const on = selectedTrend === tr;
+              return (
+                <button lang="en" key={tr} type="button" role="radio" aria-checked={on} data-selected={on} aria-label={tr} onClick={() => setSelectedTrend(on ? "" : tr)} className={segBtn(on)}>
+                  {on && <SlideBg id="trendSlide" className={SEG_ON} />}
+                  <span className="relative z-10 truncate">{tr}</span>
+                </button>
+              );
+            })}
           </div>
         </FlowStep>
 
-        {/* 3. POI: SWEEP TIME (NY) · POI TIMEFRAME — session saatten otomatik çıkar, etiketin yanında görünür */}
+        {/* 3. POI: SWEEP TIME (NY) · SESSION, altında POI TIMEFRAME.
+            Session her zaman görünür: sweep saatinden otomatik seçilir (küçük "OTO" işareti), tıklanarak değiştirilebilir. */}
         <FlowStep n={3} done={steps[2]} error={miss.sweepTime || miss.poiTimeframe}>
-          <div className={`grid grid-cols-1 ${stackPoi ? "" : "sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]"} gap-x-4 gap-y-3.5`}>
-            <div className="min-w-0">
-              <span lang="en" className={lbl(miss.sweepTime)}>
-                <Timer size={13} className="text-blue-400 shrink-0" />
-                <span className="truncate">{L("sweepTime")}</span>
-                {star("sweepTime")}
-              </span>
-              <SweepTimePicker value={sweepTime} onChange={setSweepTime} />
-              {/* Session saatten otomatik gelir; tıklanıp başka bir session seçilebilir (seçicinin altında, başlığı ve seçiciyi daraltmaz) */}
-              {sweepTime && (sessionHint || sessions.length > 0) && (() => {
-                const opts = Array.from(new Set([...sessions, ...(sessionHint ? [sessionHint] : [])]));
-                const manual = !!sessionHint && sessionHint !== sessionAuto;
-                return (
-                  <div lang="en" className="mt-2 flex items-center gap-2 text-label font-sans">
-                    <span className="text-zinc-500 font-semibold uppercase tracking-wider">Session</span>
-                    <label className="relative inline-flex items-center min-w-0">
-                      <select
-                        value={sessionHint || ""}
-                        onChange={(e) => onSessionChange?.(e.target.value)}
-                        disabled={!onSessionChange}
-                        aria-label="Session"
-                        title={manual ? "Elle seçildi · otomatik için saate göre olanı seçin" : "POI Sweep saatinden otomatik · değiştirmek için tıklayın"}
-                        style={{ colorScheme: "dark" }}
-                        className={`appearance-none cursor-pointer h-7 pl-2.5 pr-7 rounded-lg border text-xs font-bold transition-colors outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 ${manual ? "border-amber-500/40 bg-amber-500/10 text-amber-200 hover:bg-amber-500/15" : "border-blue-500/30 bg-blue-500/10 text-blue-200 hover:bg-blue-500/15"}`}
-                      >
-                        {!sessionHint && <option value="">Seç</option>}
-                        {opts.map((o) => (
-                          <option key={o} value={o}>{o}{o === sessionAuto ? " (otomatik)" : ""}</option>
-                        ))}
-                      </select>
-                      <ChevronDown size={13} aria-hidden className={`pointer-events-none absolute right-2 ${manual ? "text-amber-300" : "text-blue-300"}`} />
-                    </label>
-                    {manual && <span className="text-amber-300/70 truncate">elle seçildi</span>}
+          <div className="flex flex-col gap-3.5">
+            <div className={`grid grid-cols-1 ${stackPoi ? "" : "sm:grid-cols-2"} gap-x-4 gap-y-3.5`}>
+              <div className="min-w-0">
+                <span lang="en" className={lbl(miss.sweepTime)}>
+                  <Timer size={13} className="text-blue-400 shrink-0" />
+                  <span className="truncate">{L("sweepTime")}</span>
+                  {star("sweepTime")}
+                </span>
+                <SweepTimePicker value={sweepTime} onChange={setSweepTime} />
+              </div>
+
+              <div className="min-w-0">
+                <span lang="en" className={LABEL}>
+                  <Globe size={13} className="text-blue-400 shrink-0" />
+                  <span className="truncate">{H("sessions", "SESSION")}</span>
+                  {sessionManual ? (
+                    <button
+                      type="button"
+                      onClick={() => onSessionChange?.("")}
+                      title={sessionAuto ? `Otomatiğe dön (${sessionAuto})` : "Seçimi kaldır"}
+                      className="ml-auto inline-flex items-center gap-1 normal-case tracking-normal font-semibold text-amber-300/90 hover:text-amber-200 cursor-pointer"
+                    >
+                      <RotateCcw size={11} />
+                      {sessionAuto ? "Otomatiğe dön" : "Kaldır"}
+                    </button>
+                  ) : (
+                    <span className="ml-auto normal-case tracking-normal font-semibold text-zinc-500 truncate">
+                      {sessionAuto ? "Sweep saatinden" : "Saatten otomatik"}
+                    </span>
+                  )}
+                </span>
+                {sessionOptions.length === 0 ? (
+                  <div className="h-10 flex items-center px-3 rounded-xl border border-dashed border-zinc-800 text-label text-zinc-500">
+                    Tanımlamalar'dan session ekle
                   </div>
-                );
-              })()}
+                ) : (
+                <div role="radiogroup" aria-label="Session" className={`${SEGMENT} h-10`}>
+                  {sessionOptions.map((opt) => {
+                    const on = session === opt;
+                    const auto = opt === sessionAuto;
+                    return (
+                      <button
+                        lang="en"
+                        key={opt}
+                        type="button"
+                        role="radio"
+                        aria-checked={on}
+                        data-selected={on}
+                        title={auto ? "POI Sweep saatine göre otomatik" : undefined}
+                        onClick={() => onSessionChange?.(on && sessionManual ? "" : opt)}
+                        className={segBtn(on, sessionManual ? "text-amber-200" : "text-blue-300")}
+                      >
+                        {on && <SlideBg id="sessionSlide" className={sessionManual ? "bg-amber-500/15 border-amber-500/40 shadow-xs" : SEG_ON} />}
+                        <span className="relative z-10 truncate">{opt}</span>
+                        {auto && (
+                          <span aria-hidden className={`relative z-10 ml-1 shrink-0 text-[9px] font-bold tracking-wider ${on ? "text-blue-300/80" : "text-zinc-500"}`}>OTO</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                )}
+              </div>
             </div>
 
             <div className="min-w-0">
@@ -225,7 +223,7 @@ export const SetupChips = React.memo(function SetupChips({
                 {H("poiTimeframes", "POI TIMEFRAME")}
                 {star("poiTimeframe")}
               </span>
-              <div role="radiogroup" className={`${SEGMENT} h-9`}>
+              <div role="radiogroup" className={`${SEGMENT} h-10`}>
                 {tfOptions.map((tf) => {
                   const on = poiTimeframe === tf;
                   return (

@@ -19,7 +19,6 @@ import {
   Download,
   Upload,
   AlertCircle,
-  Crosshair,
   TrendingUp,
   Layers,
   Type,
@@ -31,7 +30,6 @@ import { tradeConfirmations } from '../lib/tradeModel';
 import {
   DEFAULT_SESSIONS,
   DEFAULT_ASSETS,
-  DEFAULT_PLAN_FIDELITIES,
   DEFAULT_TREND_TYPES,
   DEFAULT_PREMIUM_DISCOUNTS,
   DEFAULT_POI_TIMEFRAMES,
@@ -51,14 +49,12 @@ interface DefinitionsManagerModalProps {
   trades?: Trade[];
   sessions: string[];
   assets: string[];
-  planFidelities: string[];
   trendTypes?: string[];
   premiumDiscounts?: string[];
   poiTimeframes?: string[];
   definitionTitles?: DefinitionTitles;
   persistSessions: (list: string[]) => void;
   persistAssets: (list: string[]) => void;
-  persistPlanFidelities: (list: string[]) => void;
   persistTrendTypes?: (list: string[]) => void;
   persistPremiumDiscounts?: (list: string[]) => void;
   persistPoiTimeframes?: (list: string[]) => void;
@@ -67,7 +63,7 @@ interface DefinitionsManagerModalProps {
   persistDefinitionTitles?: (updated: DefinitionTitles) => void;
 }
 
-type TabType = 'assets' | 'sessions' | 'planFidelities' | 'trendTypes' | 'premiumDiscounts' | 'poiTimeframes' | 'formLabels' | 'requiredFields';
+type TabType = 'assets' | 'sessions' | 'trendTypes' | 'premiumDiscounts' | 'poiTimeframes' | 'formLabels' | 'requiredFields';
 
 /** Sekme kimliği -> DefinitionTitles anahtarı (Form Başlıkları sekmesinin kendi başlığı yok) */
 const titleKeyFor = (tab: TabType): keyof DefinitionTitles =>
@@ -96,7 +92,7 @@ const RequiredFieldsPanel: React.FC = () => {
   return (
     <div className="flex flex-col gap-3 min-h-0">
       <p className="text-label text-zinc-400 leading-snug">
-        Seçili alanlar boşken tam kayıt yapılamaz; Hızlı Kayıt muaftır, ayrıntıları sonra "Tamamla" ile girersin. Parite, yön, sonuç, hesap ve News Day her zaman zorunludur. Girişliyken ayar buluta da kaydedilir.
+        Seçili alanlar boşken tam kayıt yapılamaz; Hızlı Kayıt muaftır, ayrıntıları sonra "Tamamla" ile girersin. Parite, yön, sonuç ve hesap her zaman zorunludur. Girişliyken ayar buluta da kaydedilir.
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 overflow-y-auto custom-scrollbar">
         {REQUIRABLE_FIELDS.map((f) => {
@@ -196,14 +192,12 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
   trades = [],
   sessions,
   assets,
-  planFidelities,
   trendTypes = DEFAULT_TREND_TYPES,
   premiumDiscounts = DEFAULT_PREMIUM_DISCOUNTS,
   poiTimeframes = DEFAULT_POI_TIMEFRAMES,
   definitionTitles = DEFAULT_DEFINITION_TITLES,
   persistSessions,
   persistAssets,
-  persistPlanFidelities,
   persistTrendTypes = () => {},
   persistPremiumDiscounts = () => {},
   persistPoiTimeframes = () => {},
@@ -230,7 +224,6 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
     trades.forEach(t => {
       if (t.asset) counts[`assets:${t.asset}`] = (counts[`assets:${t.asset}`] || 0) + 1;
       if (t.session) counts[`sessions:${t.session}`] = (counts[`sessions:${t.session}`] || 0) + 1;
-      if (t.planFidelity) counts[`planFidelities:${t.planFidelity}`] = (counts[`planFidelities:${t.planFidelity}`] || 0) + 1;
       if (t.trend) counts[`trendTypes:${t.trend}`] = (counts[`trendTypes:${t.trend}`] || 0) + 1;
       if (t.poiTimeframe) counts[`poiTimeframes:${t.poiTimeframe}`] = (counts[`poiTimeframes:${t.poiTimeframe}`] || 0) + 1;
       tradeConfirmations(t).forEach((c) => {
@@ -244,7 +237,6 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
     { id: 'assets', label: definitionTitles.assets || DEFAULT_DEFINITION_TITLES.assets, icon: LineChart, list: assets, persist: persistAssets, defaultList: DEFAULT_ASSETS },
     { id: 'trendTypes', label: definitionTitles.trendTypes || DEFAULT_DEFINITION_TITLES.trendTypes || "İşlem Tipi", icon: TrendingUp, list: trendTypes, persist: persistTrendTypes, defaultList: DEFAULT_TREND_TYPES },
     { id: 'sessions', label: definitionTitles.sessions || DEFAULT_DEFINITION_TITLES.sessions, icon: Sun, list: sessions, persist: persistSessions, defaultList: DEFAULT_SESSIONS },
-    { id: 'planFidelities', label: definitionTitles.planFidelities || DEFAULT_DEFINITION_TITLES.planFidelities, icon: Crosshair, list: planFidelities, persist: persistPlanFidelities, defaultList: DEFAULT_PLAN_FIDELITIES },
     { id: 'premiumDiscounts', label: definitionTitles.premiumDiscounts || DEFAULT_DEFINITION_TITLES.premiumDiscounts || "Confirmations", icon: Layers, list: premiumDiscounts, persist: persistPremiumDiscounts, defaultList: DEFAULT_PREMIUM_DISCOUNTS },
     { id: 'poiTimeframes', label: definitionTitles.poiTimeframes || DEFAULT_DEFINITION_TITLES.poiTimeframes || "POI Timeframe", icon: Timer, list: poiTimeframes, persist: persistPoiTimeframes, defaultList: DEFAULT_POI_TIMEFRAMES },
     // Listesi olmayan form alanlarının (Yön, Stop, R:R, Notlar...) başlıkları
@@ -376,7 +368,6 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
       definitionTitles: definitionTitles || DEFAULT_DEFINITION_TITLES,
       sessions,
       assets,
-      planFidelities,
       trendTypes,
       premiumDiscounts,
       poiTimeframes,
@@ -417,7 +408,6 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
         }
         apply(data.sessions, persistSessions);
         apply(data.assets, persistAssets);
-        apply(data.planFidelities, persistPlanFidelities);
         apply(data.trendTypes, persistTrendTypes);
         apply(data.premiumDiscounts, persistPremiumDiscounts);
         apply(data.poiTimeframes, persistPoiTimeframes);

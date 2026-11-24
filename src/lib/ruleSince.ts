@@ -2,7 +2,7 @@
  * Edge Özeti kurallarının ilk görülme zamanları (localStorage: tj_rule_since) için bakım.
  */
 // Kaldırılan girdilere ait kural kayıtları (artık hiçbir kural bu adlarla oluşmaz) depodan temizlenir
-const REMOVED_RULE_DIMS = /(?:\||\+ )(?:Entry TF|Timeframe|HTF|PD Array|Sweep→Giriş|İşlem Yönetimi|Yönetim|Asia Range Büyüklüğü|Asia Range Pip|BE sonrası|TP sonrası|Durum)\b/;
+const REMOVED_RULE_DIMS = /(?:\||\+ )(?:Entry TF|Timeframe|HTF|PD Array|Sweep→Giriş|İşlem Yönetimi|Yönetim|Asia Range Büyüklüğü|Asia Range Pip|BE sonrası|TP sonrası|Durum|Setup Kalitesi)\b/;
 export function migrateRuleSince(raw: unknown): Record<string, number> {
   const out: Record<string, number> = {};
   if (!raw || typeof raw !== 'object') return out;

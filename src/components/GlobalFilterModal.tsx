@@ -16,14 +16,12 @@ import { SlidersHorizontal,
   Eye,
   EyeOff,
   X,
-  Target,
   TrendingUp,
   BookOpen,
   Scale,
   PenLine,
 } from 'lucide-react';
 import {
-  DEFAULT_PLAN_FIDELITIES,
   DEFAULT_TREND_TYPES,
   DEFAULT_DEFINITION_TITLES,
 } from '../constants/constants';
@@ -36,7 +34,6 @@ import { tradeConfirmations } from '../lib/tradeModel';
 
 /** Gün filtresi seçenekleri Pazartesi'den başlar */
 const WEEKDAY_ORDER = [...WEEKDAY_NAMES_TR.slice(1), WEEKDAY_NAMES_TR[0]];
-import { setupQualityTier } from '../lib/setupQuality';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { PillMultiSelect, StatusMultiSelect, TypeMultiSelect, FilterAccordionRow, FilterChip, FilterChipRow } from './filters/FilterControls';
 
@@ -47,12 +44,9 @@ interface GlobalFilterModalProps {
   // Options
   sessions: string[];
   assets: string[];
-  planFidelities?: string[];
   trendTypes?: string[];
   definitionTitles?: DefinitionTitles;
   // Selected
-  globalSelectedPlanFidelity: string[];
-  setGlobalSelectedPlanFidelity: (v: string[]) => void;
   globalSelectedAssets: string[];
   setGlobalSelectedAssets: (v: string[]) => void;
   globalSelectedSessions: string[];
@@ -78,10 +72,8 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
   trades = [],
   sessions,
   assets,
-  planFidelities = DEFAULT_PLAN_FIDELITIES,
   trendTypes = DEFAULT_TREND_TYPES,
   definitionTitles = DEFAULT_DEFINITION_TITLES,
-  globalSelectedPlanFidelity, setGlobalSelectedPlanFidelity,
   globalSelectedAssets, setGlobalSelectedAssets,
   globalSelectedSessions, setGlobalSelectedSessions,
   globalSelectedStatuses, setGlobalSelectedStatuses,
@@ -112,13 +104,6 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
     trades.forEach(t => { if (t.session) set.add(t.session); });
     return Array.from(set);
   }, [ready, sessions, trades]);
-
-  const dynamicPlanFidelities = React.useMemo(() => {
-    if (!ready) return planFidelities || [];
-    const set = new Set(planFidelities || []);
-    trades.forEach(t => { if (t.planFidelity) set.add(t.planFidelity); });
-    return Array.from(set);
-  }, [ready, planFidelities, trades]);
 
   const dynamicTrendTypes = React.useMemo(() => {
     if (!ready) return trendTypes || [];
@@ -183,7 +168,6 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
   const expandAll = () => {
     setOpenSections({
       trend: true,
-      planFidelity: true,
       confirmation: true,
       platform: true,
       stage: true,
@@ -207,7 +191,6 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
   };
 
   const handleReset = () => {
-    setGlobalSelectedPlanFidelity([]);
     setGlobalSelectedAssets([]);
     setGlobalSelectedSessions([]);
     setGlobalSelectedStatuses([]);
@@ -232,7 +215,6 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
   }, [isOpen, onClose]);
 
   const activeFilterCount = 
-    globalSelectedPlanFidelity.length +
     globalSelectedAssets.length + 
     globalSelectedSessions.length + 
     globalSelectedStatuses.length + 
@@ -373,45 +355,6 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                   selectedValues={globalSelectedSessions}
                   onChange={setGlobalSelectedSessions}
                 />
-              </FilterAccordionRow>
-
-              {/* 7. SETUP KALİTESİ */}
-              <FilterAccordionRow title={definitionTitles.planFidelities || "SETUP KALİTESİ"} 
-                icon={<Target size={14} className="text-blue-400" />}
-                summaryText={globalSelectedPlanFidelity.length > 0 ? globalSelectedPlanFidelity.join(', ') : 'Tümü'}
-                badgeCount={globalSelectedPlanFidelity.length}
-                isOpen={!!openSections.planFidelity}
-                onToggle={() => toggleSection('planFidelity')}
-              >
-                <div className="w-full flex items-center bg-zinc-950/50 p-1.5 rounded-xl border border-zinc-800/80 mt-1 gap-1.5 overflow-hidden">
-                  {dynamicPlanFidelities.map((item) => {
-                    const isSelected = globalSelectedPlanFidelity.includes(item);
-                    const tier = setupQualityTier(item);
-                    const activeClasses = tier === 'high' ? 'toggle-item-win font-bold'
-                      : tier === 'low' ? 'toggle-item-loss font-bold'
-                      : 'bg-blue-500/20 border-blue-500/40 text-blue-300 font-bold';
-
-                    return (
-                      <button
-                        lang="en"
-                        key={item}
-                        type="button"
-                        onClick={() => {
-                          if (isSelected) {
-                            setGlobalSelectedPlanFidelity(globalSelectedPlanFidelity.filter(x => x !== item));
-                          } else {
-                            setGlobalSelectedPlanFidelity([...globalSelectedPlanFidelity, item]);
-                          }
-                        }}
-                        className={`flex-1 min-w-0 text-label py-1.5 font-bold uppercase transition-colors duration-200 rounded-lg border text-center truncate cursor-pointer ${
-                          isSelected ? activeClasses : 'border-transparent toggle-item-inactive'
-                        }`}
-                      >
-                        {item}
-                      </button>
-                    );
-                  })}
-                </div>
               </FilterAccordionRow>
 
               {/* 9. İŞLEM TİPİ */}

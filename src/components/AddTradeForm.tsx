@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from "motion/react";
 import { Trade, DefinitionTitles, AccountCategory } from "../types";
 import { formatR } from "../lib/format";
 import {
-  DEFAULT_PLAN_FIDELITIES,
   DEFAULT_TREND_TYPES,
   DEFAULT_DEFINITION_TITLES,
   DEFAULT_PREMIUM_DISCOUNTS,
@@ -23,7 +22,6 @@ import { BasicInfoCard } from './tradeForm/BasicInfoCard';
 import { ResultCard } from './tradeForm/ResultCard';
 import { SetupChips } from './tradeForm/SetupChips';
 import { NotesCard, ChartLinkCard } from './tradeForm/NotesCard';
-import { qualityTone } from './setupFlow/SetupFlow';
 
 interface AddTradeFormProps {
   onSave: (
@@ -36,7 +34,6 @@ interface AddTradeFormProps {
   onCancelEdit: () => void;
   sessions: string[];
   assets: string[];
-  planFidelities?: string[];
   trendTypes?: string[];
   premiumDiscounts?: string[];
   /** POI Timeframe seçenekleri (Tanımlamalar) */
@@ -64,7 +61,6 @@ const AddTradeForm = React.memo(function AddTradeForm({
   onCancelEdit,
   sessions,
   assets,
-  planFidelities = DEFAULT_PLAN_FIDELITIES,
   trendTypes = DEFAULT_TREND_TYPES,
   premiumDiscounts = DEFAULT_PREMIUM_DISCOUNTS,
   poiTimeframes = DEFAULT_POI_TIMEFRAMES,
@@ -95,7 +91,6 @@ const AddTradeForm = React.memo(function AddTradeForm({
   const [accountError, setAccountError] = useState(false);
 
   const [selectedTrend, setSelectedTrend] = useState(init.trend);
-  const [planFidelity, setPlanFidelity] = useState<string | null>(init.planFidelity);
   const [selectedConfirmations, setSelectedConfirmations] = useState<string[]>(init.confirmations);
   const [asiaRange, setAsiaRange] = useState(init.asiaRange);
   const [sweepTime, setSweepTime] = useState(init.sweepTime);
@@ -106,7 +101,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
   const [sessionPick, setSessionPick] = useState<{ t: string; v: string } | null>(() =>
     editingTrade?.session ? { t: editingTrade.sweepTime || "", v: editingTrade.session } : null,
   );
-  const session = sweepTime && sessionPick && sessionPick.t === sweepTime ? sessionPick.v : autoSession;
+  const session = sessionPick && sessionPick.t === sweepTime ? sessionPick.v : autoSession;
   const pickSession = (v: string) => setSessionPick(v && v !== autoSession ? { t: sweepTime, v } : null);
 
   const [rrValue, setRrValue] = useState<Num>(init.rrValue);
@@ -135,17 +130,16 @@ const AddTradeForm = React.memo(function AddTradeForm({
 
 
   // Alt çubuk özeti: işlemin tek satırlık "fişi" — parite · yön · hesap · R, ardından kurulum akışının izi
-  // (Asia Range › işlem tipi › kalite › sweep saati + session · POI TF › confirmations). Varlık yazılınca ya da R girilince görünür.
+  // (Asia Range › işlem tipi › sweep saati + session · POI TF › confirmations). Varlık yazılınca ya da R girilince görünür.
   const summary = useMemo(() => {
     const r = rrValue === "" || !Number.isFinite(Number(rrValue)) ? null : roundR(Number(rrValue));
     const a = asset.trim();
     if (!a && r === null) return null;
     const trail: { text: string; cls?: string }[] = [];
-    // Kurulum akışıyla aynı sıra: Asia Range › İşlem Tipi › Setup Kalitesi › POI › Confirmations
+    // Kurulum akışıyla aynı sıra: Asia Range › İşlem Tipi › POI › Confirmations
     if (asiaRange) trail.push({ text: asiaRange });
     if (selectedTrend) trail.push({ text: selectedTrend });
-    if (planFidelity) trail.push({ text: planFidelity, cls: `font-bold ${qualityTone(planFidelity).text}` });
-    const poi = [sweepTime && `${sweepTime}${session ? ` ${session}` : ""}`, poiTimeframe].filter(Boolean).join(" · ");
+    const poi = [[sweepTime, session].filter(Boolean).join(" "), poiTimeframe].filter(Boolean).join(" · ");
     if (poi) trail.push({ text: poi });
     if (selectedConfirmations.length) trail.push({ text: selectedConfirmations.length === 1 ? selectedConfirmations[0] : `${selectedConfirmations.length} confirmation` });
     return {
@@ -155,7 +149,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
       r,
       trail,
     };
-  }, [asset, type, accountKind, rrValue, asiaRange, sweepTime, session, poiTimeframe, selectedConfirmations, selectedTrend, planFidelity]);
+  }, [asset, type, accountKind, rrValue, asiaRange, sweepTime, session, poiTimeframe, selectedConfirmations, selectedTrend]);
 
   // Çift tıklama / Enter tekrarı aynı işlemi iki kez kaydetmesin
   const submitLockRef = useRef(false);
@@ -212,11 +206,11 @@ const AddTradeForm = React.memo(function AddTradeForm({
       rr: numericRR,
       session: session || undefined,
       trend: selectedTrend || undefined,
-      planFidelity: planFidelity || undefined,
       confirmationTags: selectedConfirmations.length > 0 ? selectedConfirmations : undefined,
       // Eski tek değerli alan bilinçli boşaltılır: düzenlemede birleştirme eski değeri geri getirmesin
       premiumDiscount: undefined,
-      // Formdan kaldırılan alanlar (strateji, Entry Model, Target, News Day, Asia Range FVG): düzenlemede eski değer korunur
+      // Formdan kaldırılan alanlar (strateji, Entry Model, Target, News Day, Asia Range FVG, Setup Kalitesi): düzenlemede eski değer korunur
+      planFidelity: editingTrade?.planFidelity || undefined,
       strategy: editingTrade?.strategy || undefined,
       entryModels: editingTrade?.entryModels?.length ? editingTrade.entryModels : undefined,
       tpTargets: editingTrade?.tpTargets?.length ? editingTrade.tpTargets : undefined,
@@ -253,8 +247,8 @@ const AddTradeForm = React.memo(function AddTradeForm({
   // Kaydedilmemiş değişiklik takibi: ilk çizimdeki durum temel alınır (ek çizim yok)
   const snapshot = JSON.stringify([
     asset, type, accountKind, tradeDate,
-    rrValue, notes, screenshot, selectedTrend, planFidelity,
-    selectedConfirmations, asiaRange, sweepTime, poiTimeframe,
+    rrValue, notes, screenshot, selectedTrend,
+    selectedConfirmations, asiaRange, sweepTime, session, poiTimeframe,
   ]);
   const baselineRef = useRef(snapshot);
   // Hazır bekleyen form açılınca tarih "şimdi"ye çekilir; bu değişiklik kirli sayılmasın diye taban yenilenir
@@ -431,9 +425,6 @@ const AddTradeForm = React.memo(function AddTradeForm({
               <SetupChips
                 className="order-3 shrink-0"
                 titles={titles}
-                planFidelities={planFidelities}
-                planFidelity={planFidelity}
-                setPlanFidelity={setPlanFidelity}
                 trendTypes={trendTypes}
                 selectedTrend={selectedTrend}
                 setSelectedTrend={setSelectedTrend}
@@ -441,7 +432,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                 setAsiaRange={setAsiaRange}
                 sweepTime={sweepTime}
                 setSweepTime={setSweepTime}
-                sessionHint={session}
+                session={session}
                 sessionAuto={autoSession}
                 sessions={sessions}
                 onSessionChange={pickSession}

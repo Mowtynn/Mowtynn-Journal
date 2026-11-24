@@ -15,7 +15,7 @@ import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
 import { isChartShareLink, resolveChartImage } from "../lib/chartLink";
 import {
   X, Edit3, Trash2, Calendar, Clock, Maximize2,
-  Compass, TrendingUp, ShieldCheck, Timer, Layers, Scale, ArrowUpRight, ArrowDownRight,
+  Compass, TrendingUp, Globe, Timer, Layers, Scale, ArrowUpRight, ArrowDownRight,
   ExternalLink, Image as ImageIcon, FileText,
   Activity, Monitor, AlertCircle,
   Download, Loader2, Crosshair, PenLine,
@@ -23,7 +23,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { FlowProgress, flowSteps, qualityTone } from "./setupFlow/SetupFlow";
+import { FlowProgress, flowSteps } from "./setupFlow/SetupFlow";
 import { nyWallDate, nyDateKey } from "../lib/tradingTime";
 import { ResultPanel, SetupHistoryPanel } from "./tradeDetail/TradeInsightPanels";
 import { computeTradeInsight } from "../lib/tradeInsight";
@@ -527,7 +527,6 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                       !currentTrade.sweepTime && (cleanDefinitionTitleString(definitionTitles.sweepTime) || "POI Sweep Time"),
                       !currentTrade.poiTimeframe && (cleanDefinitionTitleString(definitionTitles.poiTimeframes) || "POI Timeframe"),
                       !currentTrade.trend && (cleanDefinitionTitleString(definitionTitles.trendTypes) || "İşlem Tipi"),
-                      !currentTrade.planFidelity && (cleanDefinitionTitleString(definitionTitles.planFidelities) || "Setup Kalitesi"),
                       tradeConfirmations(currentTrade).length === 0 && (cleanDefinitionTitleString(definitionTitles.premiumDiscounts) || "Confirmations"),
                     ].filter(Boolean) as string[];
                     return (
@@ -559,7 +558,6 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                     const T = (v: string | undefined, fb: string) => smartUpper(cleanDefinitionTitleString(v) || fb);
                     const conf = tradeConfirmations(currentTrade);
                     const steps = flowSteps({ ...currentTrade, confirmations: conf });
-                    const quality = qualityTone(currentTrade.planFidelity);
                     return (
                       <section className={DETAIL_CARD}>
                         <div className={CARD_HEAD}>
@@ -574,21 +572,13 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                           <SpecRow icon={TrendingUp} label={T(definitionTitles.trendTypes, "İŞLEM TİPİ")} empty={!currentTrade.trend}>
                             <SpecValue>{currentTrade.trend}</SpecValue>
                           </SpecRow>
-                          <SpecRow icon={ShieldCheck} label={T(definitionTitles.planFidelities, "SETUP KALİTESİ")} empty={!currentTrade.planFidelity}>
-                            <span lang="en" className={`text-base font-extrabold tracking-wide ${quality.text}`}>{currentTrade.planFidelity}</span>
-                          </SpecRow>
-                          <SpecRow icon={Timer} label={T(definitionTitles.sweepTime, "POI SWEEP TIME")} empty={!currentTrade.sweepTime && !currentTrade.session}>
-                            <span className="flex items-baseline justify-end gap-2 flex-wrap">
-                              {currentTrade.sweepTime && (
-                                <span className="text-base font-bold tabular-nums text-zinc-100">
-                                  {currentTrade.sweepTime}<span className="ml-1 text-label font-semibold text-zinc-500">NY</span>
-                                </span>
-                              )}
-                              {currentTrade.sweepTime && currentTrade.session && <span aria-hidden className="text-zinc-700">·</span>}
-                              {currentTrade.session && (
-                                <span lang="en" className="text-sm font-semibold text-blue-300">{currentTrade.session}</span>
-                              )}
+                          <SpecRow icon={Timer} label={T(definitionTitles.sweepTime, "POI SWEEP TIME")} empty={!currentTrade.sweepTime}>
+                            <span className="text-base font-bold tabular-nums text-zinc-100">
+                              {currentTrade.sweepTime}<span className="ml-1 text-label font-semibold text-zinc-500">NY</span>
                             </span>
+                          </SpecRow>
+                          <SpecRow icon={Globe} label={T(definitionTitles.sessions, "SESSION")} empty={!currentTrade.session}>
+                            <span lang="en" className="text-sm font-bold uppercase tracking-wide font-sans text-blue-300">{currentTrade.session}</span>
                           </SpecRow>
                           <SpecRow icon={Layers} label={T(definitionTitles.poiTimeframes, "POI TIMEFRAME")} empty={!currentTrade.poiTimeframe}>
                             <SpecValue>{currentTrade.poiTimeframe}</SpecValue>

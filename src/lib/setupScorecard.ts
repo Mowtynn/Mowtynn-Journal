@@ -6,7 +6,7 @@ import { EDGE_PROOF_MIN, MIN_SAMPLE } from './sampleSize';
 import { driftFromR, type EdgeDrift } from './edgeDrift';
 
 /**
- * Kurulum karnesi: işlemleri seçilen boyutların birleşimine (ör. Asia Range + seans + Entry Model)
+ * Kurulum karnesi: işlemleri seçilen boyutların birleşimine (ör. Asia Range + İşlem Tipi + Session)
  * göre "kurulum" olarak gruplar; her kurulumun R karnesini ve güven aralığına dayalı hükmünü verir.
  */
 
@@ -14,7 +14,6 @@ export type SetupDimension =
   | 'asiaRange'
   | 'sweepHour'
   | 'poiTimeframe'
-  | 'planFidelity'
   | 'tradeOfDay'
   | 'prevTrade'
   | 'session'
@@ -28,7 +27,6 @@ export const SETUP_DIMENSIONS: { id: SetupDimension; label: string }[] = [
   { id: 'asiaRange', label: 'Asia Range' },
   { id: 'sweepHour', label: 'POI Sweep Saati (NY, 30 dk)' },
   { id: 'poiTimeframe', label: 'POI Timeframe' },
-  { id: 'planFidelity', label: 'Setup Kalitesi' },
   { id: 'tradeOfDay', label: 'Günün İşlemi' },
   { id: 'prevTrade', label: 'Gün İçi Önceki İşlem' },
   { id: 'session', label: 'Session' },

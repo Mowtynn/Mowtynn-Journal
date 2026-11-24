@@ -21,7 +21,6 @@ export interface Trade {
   prop?: boolean;
   accountCategory?: PlatformCategory; // DEMO = hesapsız; eski kayıtlarda Challenge / Funded
   session?: string;         // Session: formda girilmez, POI Sweep saatinden otomatik (London, NY AM …)
-  planFidelity?: string | null; // Setup Kalitesi (Plan fidelity)
   trend?: string;           // İşlem Tipi (eski adı Trend Yapısı): Continuation / Reversal
   /** Confirmations (çoklu seçim): ör. 1H POI, 4H POI, Discount. Tek kaynak bu dizi; `tradeConfirmations()` ile okunur. */
   confirmationTags?: string[];
@@ -58,6 +57,7 @@ export interface Trade {
   tpTargets?: string[];     // Target
   asiaRangeFvg?: string;    // Asia Range FVG (1H)
   newsDay?: boolean;        // News Day / Bank Holiday: true = Var, false = Yok
+  planFidelity?: string | null; // Setup Kalitesi (A+ / A / B-C): kaldırıldı
 }
 
 /** Alınan payout: Prop sekmesinde kaydedilir (hesap takibi yok) */
@@ -123,7 +123,7 @@ export interface TradeStats {
 /** İşlem listesinin kendi süzgeçleri: arama, sıralama, tarih aralığı (diğerleri üstteki Filtreleme Menüsü'nde) */
 export interface TradeFilter {
   search: string;
-  sortBy: 'dateDes' | 'dateAsc' | 'assetAsc' | 'assetDes' | 'typeAsc' | 'typeDes' | 'rrAsc' | 'rrDes' | 'platformAsc' | 'platformDes' | 'qualityAsc' | 'qualityDes';
+  sortBy: 'dateDes' | 'dateAsc' | 'assetAsc' | 'assetDes' | 'typeAsc' | 'typeDes' | 'rrAsc' | 'rrDes' | 'platformAsc' | 'platformDes' | 'poiAsc' | 'poiDes' | 'tfAsc' | 'tfDes';
   startDate?: string;
   endDate?: string;
 }
@@ -141,7 +141,6 @@ export interface DefinitionTitles {
   platforms: string;
   assets: string;
   sessions: string;
-  planFidelities: string;
   trendTypes?: string;
   premiumDiscounts?: string;
   poiTimeframes?: string;

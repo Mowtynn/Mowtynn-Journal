@@ -28,7 +28,6 @@ export const ACCOUNT_KIND_BADGE: Record<AccountCategory, string> = {
 };
 export const DEFAULT_SESSIONS = ["London", "NY AM"];
 export const DEFAULT_ASSETS = ["EURUSD", "GBPUSD", "XAUUSD", "NQ100", "BTCUSDT"];
-export const DEFAULT_PLAN_FIDELITIES = ["A+", "A", "B-C"];
 export const DEFAULT_TREND_TYPES = [
   "Continuation",
   "Reversal"
@@ -51,7 +50,6 @@ export const DEFAULT_DEFINITION_TITLES: DefinitionTitles = {
   platforms: "Hesap",
   assets: "Parite",
   sessions: "Session",
-  planFidelities: "Setup Kalitesi",
   trendTypes: "İşlem Tipi",
   premiumDiscounts: "Confirmations",
   poiTimeframes: "POI Timeframe",
@@ -276,6 +274,8 @@ export const sanitizeDefinitionTitles = (raw: Partial<DefinitionTitles> = {}): D
   delete (result as any).newsDays;
   delete (result as any).asiaRangeFvgs;
   delete (result as any).riskPresets;
+  // Setup Kalitesi kaldırıldı
+  delete (result as any).planFidelities;
 
   return result;
 };

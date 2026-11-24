@@ -1112,3 +1112,12 @@ Klasik tasarım korunarak, son eklenen alanlar (risk %, hesap bağı, strateji, 
     - Form: session POI Sweep saatinden otomatik gelir ama tıklanıp başka bir session seçilebilir (açılır menü; elle seçilince sarı ve "elle" yazar). Saat değişince yeniden otomatiğe döner.
     - İşlem detayı: grafik kutusu görselin kendi oranını alır (üst/alt boşluk yok); sol sütun grafikten uzunsa boşluk yerine grafik büyür. Sol sütun 400-450px, satırlar ve not alanı sıkılaştı; sol tarafta kaydırma gerekmez.
     - Confirmations (detay) tek satırda: sığmayanlar "…" ile kısalır, tamamı üzerine gelince görünür; başlığın yanında adet. PNG çıktısında tam liste.
+- Setup Kalitesi kaldırıldı, analizler son girdilerle hizalandı:
+  - Setup Kalitesi (A+ / A / B-C) formdan, işlem detayından, işlem listesinden, telefon kartından, filtrelerden, Tanımlamalar'dan (liste ve zorunlu alan), Kurulum Karnesi / Edge Özeti boyutlarından, veri eksiği panosundan, ısı haritasından ve Excel/CSV dışa aktarımından kalktı. Eski kayıtlardaki değer silinmez, yalnızca hiçbir yerde kullanılmaz (diğer kaldırılmış girdiler gibi). Saklı filtre / kural kayıtları kendiliğinden temizlenir.
+  - Kurulum akışı: 1. Asia Range → 2. İşlem Tipi → 3. POI (Sweep Time · Session, altında POI Timeframe) → 4. Confirmations.
+  - Form: Session her zaman görünen bir seçim çubuğu (projedeki diğer seçicilerle aynı görünüm). POI Sweep saatinden otomatik seçilir ("OTO" işareti); başka bir session'a tıklanınca elle seçim sarı görünür, "Otomatiğe dön" ile geri alınır. Saat değişince otomatiğe döner; saat girilmeden de seçilebilir.
+  - İşlem listesi: Kalite sütunu yerine ayrı "POI TF" sütunu; "POI" sütunu sweep saati · session. İkisi de sıralanabilir (saat / zaman dilimi sırası, boşlar sonda). Arama POI saati ve timeframe'de de arar.
+  - İşlem detayı: Kurulum tablosunda POI Sweep Time ve Session ayrı satırlar (formdaki sırayla).
+  - Detaylı Analiz: Setup Kalitesi kartı yerine POI Timeframe kartı (15M › 1H › 4H › Daily; WR · R/işlem · adet).
+  - Asia Edge Lab: girdisi olmayan "Backtest / Veri Seti" seçimi ve dışa aktarımdaki "Veri Seti" sütunu kaldırıldı (Prop / Hesapsız ayrımı üstteki seçiciyle). Günün işlemi sayacı hesap türü içinde.
+  - Eski metinler düzeltildi: kurulum tanımı "Asia Range · İşlem Tipi" (Entry Model yok), zorunlu alan açıklamasında News Day yok, boş strateji ekranında yalnızca güncel girdiler.

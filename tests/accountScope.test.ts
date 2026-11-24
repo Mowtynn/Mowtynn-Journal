@@ -28,7 +28,6 @@ test('kapsam: Prop ve Hesapsız birbirine karışmaz; eski Challenge / Funded ka
 test('üst filtre: hesap türü diğer filtrelerle birlikte uygulanır', () => {
   const base: GlobalTradeFilters = {
     activeAccountCategory: 'PROP',
-    globalSelectedPlanFidelity: [],
     globalDateLimit: 'ALL',
     globalSelectedAssets: [],
     globalSelectedSessions: [],

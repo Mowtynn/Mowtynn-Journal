@@ -132,7 +132,7 @@ for (const weird of [false, true]) {
       assertFinite(sa, 'sa');
       assertFinite(computeEdgeDrift(trades), 'drift');
       assertFinite(computeCoverage(trades), 'coverage');
-      assertFinite(analyzeAsia(trades, { dataset: 'ALL', pair: 'ALL', minSample: 5 }), 'asia', /profitFactor|pf/i);
+      assertFinite(analyzeAsia(trades, { pair: 'ALL', minSample: 5 }), 'asia', /profitFactor|pf/i);
       assertFinite(computeWeekReview(trades, weekStartOf(nyDateKey(NOW))), 'week');
       if (trades.length) assertFinite(computeTradeInsight(trades[0], trades), 'insight');
     });

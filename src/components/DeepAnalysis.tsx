@@ -10,7 +10,7 @@ const TR_MONTH = new Intl.DateTimeFormat("tr-TR", { month: "long", year: "numeri
 import { motion, AnimatePresence } from "motion/react";
 import { computeDeepMetrics } from "../lib/deepMetrics";
 import { Trade, DefinitionTitles } from "../types";
-import { DEFAULT_DEFINITION_TITLES, DEFAULT_PLAN_FIDELITIES } from "../constants/constants";
+import { DEFAULT_DEFINITION_TITLES, DEFAULT_POI_TIMEFRAMES } from "../constants/constants";
 import {
   LineChart,
   Target,
@@ -40,7 +40,7 @@ import { CalendarView } from "./CalendarView";
 import { TradeHistoryModal } from "./TradeHistoryModal";
 import { MemoizedEquityChart, type EquityChartPoint } from './deepAnalysis/EquityChart';
 import { nyWallDate } from '../lib/tradingTime';
-import { setupQualityTier } from '../lib/setupQuality';
+import { timeframeOrder } from '../lib/setupScorecard';
 import { MIN_SAMPLE } from '../lib/sampleSize';
 import { smartUpper } from '../constants/constants';
 import { formatR } from '../lib/format';
@@ -69,7 +69,7 @@ interface DeepAnalysisProps {
   onEdit?: (trade: Trade) => void;
   onDelete?: (id: string) => void;
   definitionTitles?: DefinitionTitles;
-  planFidelities?: string[];
+  poiTimeframes?: string[];
   trendTypes?: string[];
 }
 
@@ -78,7 +78,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
   trades,
   onEdit,
   definitionTitles = DEFAULT_DEFINITION_TITLES,
-  planFidelities = [],
+  poiTimeframes = [],
 }: DeepAnalysisProps) {
 
   // Alt görünüm: sayfa tek uzun akış yerine amaca göre bölünür; seçim hatırlanır
@@ -142,8 +142,8 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
   }, [trades]);
 
   const metrics = useMemo(
-    () => ({ ...computeDeepMetrics(closedTrades), planFidelityStats: buildPlanFidelityStats(closedTrades, planFidelities) }),
-    [closedTrades, planFidelities],
+    () => ({ ...computeDeepMetrics(closedTrades), tfStats: buildTimeframeStats(closedTrades, poiTimeframes) }),
+    [closedTrades, poiTimeframes],
   );
 
   const chartEquityCurve = useMemo((): EquityChartPoint[] => {
@@ -385,7 +385,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
         </div>
       </div>
 
-      {/* 3. Dağılımlar: sonuç · yön · setup kalitesi · gün performansı (masaüstünde tek satır: sayfa kaydırmasız sığar) */}
+      {/* 3. Dağılımlar: sonuç · yön · POI timeframe · gün performansı (masaüstünde tek satır: sayfa kaydırmasız sığar) */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-0 w-full [&>*]:border-zinc-800/80 [&>*+*]:border-t md:[&>*:nth-child(2)]:border-t-0 md:[&>*:nth-child(even)]:border-l xl:[&>*]:border-t-0 xl:[&>*+*]:border-l">
         {/* İŞLEM SONUÇ DAĞILIMI */}
         <motion.div 
@@ -492,23 +492,23 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
             </div>
           </div>
         </motion.div>
-        {/* SETUP KALİTESİ İSTATİSTİKLERİ */}
+        {/* POI TIMEFRAME İSTATİSTİKLERİ (küçükten büyüğe: 15M › 1H › 4H › Daily) */}
         <motion.div variants={itemVariants} className="bg-transparent p-3.5 sm:p-4 flex flex-col relative min-w-0">
           <div className="flex items-center justify-between mb-2">
             <p className="text-label font-bold uppercase text-zinc-400 tracking-wider font-sans flex items-center gap-1.5">
               <span className="p-1 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-400">
                 <Crosshair size={10} />
               </span>
-              {definitionTitles.planFidelities || "Setup Kalitesi"}
+              {definitionTitles.poiTimeframes || "POI Timeframe"}
             </p>
-            {metrics.planFidelityStats.totalWithFidelity > 0 && (
+            {metrics.tfStats.totalWith > 0 && (
               <span className="text-label font-sans text-zinc-500">WR · R/işlem · adet</span>
             )}
           </div>
           
           {/* Satır görünümü: işlem sayısı ne olursa olsun etiket, kazanma oranı ve sayı okunur kalır */}
           <div className="flex flex-col flex-1 justify-around gap-2 font-sans w-full">
-            {metrics.planFidelityStats.options.map((opt) => {
+            {metrics.tfStats.options.map((opt) => {
               const hasTrades = opt.count > 0;
               return (
                 <button
@@ -518,10 +518,10 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
                   className={`w-full grid grid-cols-[minmax(2.5rem,auto)_1fr_auto_auto_auto] items-center gap-2 rounded-lg px-1.5 py-1 hover:bg-zinc-800/50 transition-colors cursor-pointer text-left ${hasTrades && opt.count < MIN_SAMPLE ? 'opacity-60' : ''}`}
                   onClick={() => {
                     handleMetricClick(
-                      `planFidelity_${opt.name}`,
+                      `poiTimeframe_${opt.name}`,
                       hasTrades ? `%${opt.winRate.toFixed(1)} WR (${opt.count} İşlem)` : "Kayıt Yok",
                       {
-                        title: `${opt.name} (${definitionTitles.planFidelities || "Setup Kalitesi"})`,
+                        title: `${opt.name} (${definitionTitles.poiTimeframes || "POI Timeframe"})`,
                         description: `"${opt.name}" olarak girilmiş işlemlerin kazanma oranı ve kümülatif getiri detayları.`,
                         type: opt.theme.type,
                         icon: Crosshair,
@@ -532,7 +532,7 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
                           `Kümülatif Getiri: ${formatR(opt.totalR)}`,
                           hasTrades 
                             ? `İşlem Başı Ortalama: ${formatR(opt.totalR / opt.count)}`
-                            : 'Henüz bu Setup Kalitesinde kapatılmış işlem bulunmamaktadır.'
+                            : 'Henüz bu POI Timeframe ile girilmiş işlem yok.'
                         ]
                       }
                     );
@@ -646,29 +646,27 @@ const DeepAnalysisInner = React.memo(function DeepAnalysisInner({
 });
 
 
-// Renk kademesi tek kaynaktan (lib/setupQuality · setupQualityTier)
-type OptionTheme = { border: string; bg: string; text: string; bar: string; badge: string; type: 'positive' | 'negative' | 'neutral' };
-const optionTheme = (name: string): OptionTheme => {
-  const tier = setupQualityTier(name);
-  if (tier === 'high') return { border: "border-emerald-500/25 hover:border-emerald-500/50", bg: "bg-zinc-950/60 hover:bg-emerald-950/20", text: "text-emerald-400", bar: "bg-emerald-500", badge: "text-emerald-400/80", type: 'positive' };
-  if (tier === 'low') return { border: "border-rose-500/25 hover:border-rose-500/50", bg: "bg-zinc-950/60 hover:bg-rose-950/20", text: "text-rose-400", bar: "bg-rose-500", badge: "text-rose-400/80", type: 'negative' };
-  if (tier === 'mid') return { border: "border-blue-500/25 hover:border-blue-500/50", bg: "bg-zinc-950/60 hover:bg-blue-950/20", text: "text-blue-300", bar: "bg-blue-500", badge: "text-blue-300/80", type: 'neutral' };
-  return { border: "border-blue-500/25 hover:border-blue-500/50", bg: "bg-zinc-950/60 hover:bg-blue-950/20", text: "text-blue-400", bar: "bg-blue-500", badge: "text-blue-400/80", type: 'neutral' };
+// Satır rengi sonuca göre: işlem başı R artıda yeşil, ekside kırmızı, kayıt yoksa / başabaşta mavi
+type OptionTheme = { text: string; bar: string; type: 'positive' | 'negative' | 'neutral' };
+const optionTheme = (count: number, totalR: number): OptionTheme => {
+  if (count > 0 && totalR > 0) return { text: "text-emerald-400", bar: "bg-emerald-500", type: 'positive' };
+  if (count > 0 && totalR < 0) return { text: "text-rose-400", bar: "bg-rose-500", type: 'negative' };
+  return { text: "text-blue-300", bar: "bg-blue-500", type: 'neutral' };
 };
 
 /**
- * Setup Kalitesi kartları: tanımlı seçenekler + işlemlerde geçen diğer değerler.
- * Büyük/küçük harf farkı aynı seçenek sayılır ("a+" ile "A+" tek satırda toplanır).
+ * POI Timeframe satırları: tanımlı zaman dilimleri + işlemlerde geçen diğer değerler, küçükten büyüğe.
+ * Büyük/küçük harf farkı aynı seçenek sayılır ("1h" ile "1H" tek satırda toplanır).
  */
-function buildPlanFidelityStats(trades: Trade[], planFidelities: string[]) {
+function buildTimeframeStats(trades: Trade[], poiTimeframes: string[]) {
   const map = new Map<string, { label: string; count: number; wins: number; losses: number; be: number; totalR: number }>();
-  let totalWithFidelity = 0;
+  let totalWith = 0;
   trades.forEach((t) => {
-    const pf = (t.planFidelity || "").trim();
-    if (!pf) return;
-    totalWithFidelity++;
-    const key = pf.toLocaleLowerCase("tr");
-    const row = map.get(key) || { label: pf, count: 0, wins: 0, losses: 0, be: 0, totalR: 0 };
+    const tf = (t.poiTimeframe || "").trim();
+    if (!tf) return;
+    totalWith++;
+    const key = tf.toLocaleLowerCase("tr");
+    const row = map.get(key) || { label: tf, count: 0, wins: 0, losses: 0, be: 0, totalR: 0 };
     row.count++;
     if (t.status === "WIN") row.wins++;
     else if (t.status === "LOSS") row.losses++;
@@ -687,25 +685,27 @@ function buildPlanFidelityStats(trades: Trade[], planFidelities: string[]) {
       names.push(v);
     }
   };
-  (planFidelities.length > 0 ? planFidelities : DEFAULT_PLAN_FIDELITIES).forEach(push);
+  (poiTimeframes.length > 0 ? poiTimeframes : DEFAULT_POI_TIMEFRAMES).forEach(push);
   map.forEach((row) => push(row.label));
+  names.sort((a, b) => timeframeOrder(a) - timeframeOrder(b));
 
   const options = names.map((name) => {
     const d = map.get(name.toLocaleLowerCase("tr"));
     const count = d?.count || 0;
+    const totalR = d?.totalR || 0;
     return {
       name,
       count,
       wins: d?.wins || 0,
       losses: d?.losses || 0,
       be: d?.be || 0,
-      totalR: d?.totalR || 0,
+      totalR,
       winRate: count > 0 ? ((d?.wins || 0) / count) * 100 : 0,
-      ratio: totalWithFidelity > 0 ? (count / totalWithFidelity) * 100 : 0,
-      theme: optionTheme(name),
+      ratio: totalWith > 0 ? (count / totalWith) * 100 : 0,
+      theme: optionTheme(count, totalR),
     };
   });
-  return { totalWithFidelity, options };
+  return { totalWith, options };
 }
 
 export const DeepAnalysis = React.memo((props: DeepAnalysisProps) => {

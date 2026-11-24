@@ -10,7 +10,6 @@ import { applyGlobalFilters, countExtraFilters, DEFAULT_DATE_LIMIT, EMPTY_EXTRA_
 import {
   DEFAULT_SESSIONS,
   DEFAULT_ASSETS,
-  DEFAULT_PLAN_FIDELITIES,
   DEFAULT_TREND_TYPES,
   DEFAULT_POI_TIMEFRAMES,
   DEFAULT_PREMIUM_DISCOUNTS,
@@ -188,7 +187,6 @@ const readStoredArray = (key: string): unknown[] | null => {
 const SETTINGS_LIST_KEYS: [string, string][] = [
   ["sessions", "trading_sessions_list"],
   ["assets", "trading_assets_list"],
-  ["planFidelities", "trading_plan_fidelities_list"],
   ["trendTypes", "trading_trend_types_list"],
   ["poiTimeframes", "trading_poi_timeframes_list"],
   ["premiumDiscounts", "trading_premium_discounts_list"],
@@ -239,7 +237,7 @@ const sanitizeImportedSettings = (raw: any) => {
   const out: Record<string, any> = {};
   const listKeys = [
     "sessions", "assets",
-    "planFidelities", "trendTypes", "premiumDiscounts", "poiTimeframes",
+    "trendTypes", "premiumDiscounts", "poiTimeframes",
   ];
   listKeys.forEach((k) => {
     const v = strList(raw[k]);
@@ -329,8 +327,6 @@ export default function App() {
   }, [trades]);
 
     const {
-    globalSelectedPlanFidelity,
-    setGlobalSelectedPlanFidelity,
     globalSelectedAssets,
     setGlobalSelectedAssets,
     globalSelectedSessions,
@@ -468,34 +464,6 @@ export default function App() {
       if (JSON.stringify(clean) !== raw) persistAssets(clean, !!user);
     } catch (e) { /* bozuk kayıt: varsayılan liste kullanılır */ }
   }, [persistAssets, user]);
-
-  const [planFidelities, setPlanFidelities] = useState<string[]>(() => {
-    try {
-      const stored = localStorage.getItem("trading_plan_fidelities_list");
-      if (stored) {
-        const v = JSON.parse(stored);
-        if (Array.isArray(v)) return titleCaseList(v);
-      }
-    } catch (e) {
-      console.error(e);
-    }
-    return DEFAULT_PLAN_FIDELITIES;
-  });
-
-  const persistPlanFidelities = useCallback((incoming: string[], syncCloud = true) => {
-    // Her kelimenin ilk harfi büyük (Asia Range, Entry Model); harf farkıyla tekrar edenler tek kalır
-    const updated = titleCaseList(incoming);
-    setPlanFidelities(updated);
-    try {
-      localStorage.setItem("trading_plan_fidelities_list", JSON.stringify(updated));
-      if (syncCloud && user) {
-        setDoc(doc(db, "settings", user.uid), cleanForFirestore({ planFidelities: updated, userId: user.uid }), { merge: true })
-          .catch(err => reportCloudError("ayar kaydı", err, "Tanımlamalar buluta kaydedilemedi; cihazda tutuluyor."));
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  }, [user]);
 
   const [trendTypes, setTrendTypes] = useState<string[]>(() => {
     try {
@@ -916,7 +884,6 @@ export default function App() {
                   );
                 }
               });
-              applyList(data.planFidelities, "trading_plan_fidelities_list", persistPlanFidelities);
               applyList(data.trendTypes, "trading_trend_types_list", persistTrendTypes);
               applyList(data.poiTimeframes, "trading_poi_timeframes_list", persistPoiTimeframes);
               applyList(data.premiumDiscounts, "trading_premium_discounts_list", persistPremiumDiscounts);
@@ -1088,7 +1055,6 @@ export default function App() {
       // Diğer sekmede değişen tanım listeleri, başlıklar ve Prop hesapları da eşitlenir
       // (aksi halde bu sekme eski listeyle üzerine yazabilir). Her anahtar ayrı korunur.
       const lists: [string, (v: string[]) => void][] = [
-        ["trading_plan_fidelities_list", setPlanFidelities],
         ["trading_trend_types_list", setTrendTypes],
         ["trading_poi_timeframes_list", setPoiTimeframes],
         ["trading_premium_discounts_list", setPremiumDiscounts],
@@ -1230,11 +1196,6 @@ export default function App() {
         persistSessions(newSessions, false);
         settingsUpdates = { ...settingsUpdates, sessions: titleCaseList(newSessions) };
       }
-      if (tradeData.planFidelity && !planFidelities.includes(tradeData.planFidelity)) {
-        const newFidelities = [...planFidelities, tradeData.planFidelity];
-        persistPlanFidelities(newFidelities, false);
-        settingsUpdates = { ...settingsUpdates, planFidelities: titleCaseList(newFidelities) };
-      }
       if (tradeData.trend && !trendTypes.includes(tradeData.trend)) {
         const newTrends = [...trendTypes, tradeData.trend];
         persistTrendTypes(newTrends, false);
@@ -1265,12 +1226,10 @@ export default function App() {
       trades,
       assets,
       sessions,
-      planFidelities,
       trendTypes,
       poiTimeframes,
       persistAssets,
       persistSessions,
-      persistPlanFidelities,
       persistTrendTypes,
       persistPoiTimeframes,
     ],
@@ -1431,7 +1390,6 @@ export default function App() {
         switch (category) {
           case "assets": return same(t.asset) ? { asset: to } : null;
           case "sessions": return same(t.session) ? { session: to } : null;
-          case "planFidelities": return same(t.planFidelity) ? { planFidelity: to } : null;
           case "trendTypes": return same(t.trend) ? { trend: to } : null;
           case "poiTimeframes": return same(t.poiTimeframe) ? { poiTimeframe: to } : null;
           case "premiumDiscounts": return hasInArr(tradeConfirmations(t)) ? { confirmationTags: mapArr(tradeConfirmations(t)), premiumDiscount: undefined } : null;
@@ -1681,7 +1639,6 @@ export default function App() {
           const sync = !!user;
           if (importedSettings.sessions) persistSessions(importedSettings.sessions, sync);
           if (importedSettings.assets) persistAssets(importedSettings.assets, sync);
-          if (importedSettings.planFidelities) persistPlanFidelities(importedSettings.planFidelities, sync);
           if (importedSettings.trendTypes) persistTrendTypes(importedSettings.trendTypes, sync);
           if (importedSettings.poiTimeframes) persistPoiTimeframes(importedSettings.poiTimeframes, sync);
           if (importedSettings.premiumDiscounts) persistPremiumDiscounts(importedSettings.premiumDiscounts, sync);
@@ -1704,7 +1661,6 @@ export default function App() {
       user,
       persistSessions,
       persistAssets,
-      persistPlanFidelities,
       persistTrendTypes,
       persistPoiTimeframes,
       persistPremiumDiscounts,
@@ -1811,13 +1767,11 @@ export default function App() {
 
       persistSessions(DEFAULT_SESSIONS, !!user);
       persistAssets(DEFAULT_ASSETS, !!user);
-      persistPlanFidelities(DEFAULT_PLAN_FIDELITIES, !!user);
       persistTrendTypes(DEFAULT_TREND_TYPES, !!user);
       persistPoiTimeframes(DEFAULT_POI_TIMEFRAMES, !!user);
       persistPremiumDiscounts(DEFAULT_PREMIUM_DISCOUNTS, !!user);
       persistDefinitionTitles(DEFAULT_DEFINITION_TITLES, !!user);
 
-      setGlobalSelectedPlanFidelity([]);
       setGlobalSelectedAssets([]);
       setGlobalSelectedSessions([]);
       setGlobalSelectedStatuses([]);
@@ -1859,12 +1813,10 @@ export default function App() {
     persistPayouts,
     persistSessions,
     persistAssets,
-    persistPlanFidelities,
     persistTrendTypes,
     persistPoiTimeframes,
     persistPremiumDiscounts,
     persistDefinitionTitles,
-    setGlobalSelectedPlanFidelity,
   ]);
 
   // "Günün kaçıncı işlemi" ve Asia Range büyüklüğü hesaplardan bağımsız, tüm işlemler üzerinden bir kez indekslenir.
@@ -1882,7 +1834,6 @@ export default function App() {
     () =>
       applyGlobalFilters(trades, {
         activeAccountCategory,
-        globalSelectedPlanFidelity,
         globalDateLimit,
         globalSelectedAssets,
         globalSelectedSessions,
@@ -1892,7 +1843,7 @@ export default function App() {
         globalExtra,
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [trades, dateWindowTick, globalExtra, activeAccountCategory, globalSelectedPlanFidelity, globalDateLimit, globalSelectedAssets, globalSelectedSessions, globalSelectedStatuses, globalSelectedTypes, globalSelectedTrendTypes],
+    [trades, dateWindowTick, globalExtra, activeAccountCategory, globalDateLimit, globalSelectedAssets, globalSelectedSessions, globalSelectedStatuses, globalSelectedTypes, globalSelectedTrendTypes],
   );
 
   // Calculate comprehensive statistics (moved outside)
@@ -1911,7 +1862,6 @@ export default function App() {
 
   const activeFilterCount = useMemo(
     () =>
-      globalSelectedPlanFidelity.length +
       globalSelectedAssets.length +
       globalSelectedSessions.length +
       globalSelectedStatuses.length +
@@ -1921,7 +1871,6 @@ export default function App() {
       countExtraFilters(globalExtra),
     [
       globalExtra,
-      globalSelectedPlanFidelity,
       globalSelectedAssets,
       globalSelectedSessions,
       globalSelectedStatuses,
@@ -1934,7 +1883,6 @@ export default function App() {
   const backupSettings = useMemo(() => ({
     sessions,
     assets,
-    planFidelities,
     trendTypes,
     premiumDiscounts,
     poiTimeframes,
@@ -1943,7 +1891,6 @@ export default function App() {
   }), [
     sessions,
     assets,
-    planFidelities,
     trendTypes,
     premiumDiscounts,
     poiTimeframes,
@@ -2043,7 +1990,7 @@ export default function App() {
                         onEdit={handleStartEdit}
                         onDelete={handleDeleteTrade}
                         definitionTitles={definitionTitles}
-                        planFidelities={planFidelities}
+                        poiTimeframes={poiTimeframes}
                         trendTypes={trendTypes}
                       />
                     </SectionErrorBoundary>
@@ -2076,7 +2023,7 @@ export default function App() {
                     </SectionErrorBoundary>
                   </TabPane>
             </div>
-  ), [ warmLevel, globalDateLimit, setGlobalDateLimit, weeklyDue, weeklyRequest, openWeeklyReview, scopedTrades, activeScopeKey, activeScopeName, calculatedStats, overallEdge, edgeDrift, currentTab, definitionTitles, filteredGlobalTrades, handleDeleteJournal, handleDeleteNote, handleDeleteTrade, handleSaveJournal, handleSaveNote, handleStartEdit, journals, notes, planFidelities, payouts, persistPayouts, sessions, setDetailedTrade, setEditingTrade, setIsFormOpen, trades, trendTypes ]);
+  ), [ warmLevel, globalDateLimit, setGlobalDateLimit, weeklyDue, weeklyRequest, openWeeklyReview, scopedTrades, activeScopeKey, activeScopeName, calculatedStats, overallEdge, edgeDrift, currentTab, definitionTitles, filteredGlobalTrades, handleDeleteJournal, handleDeleteNote, handleDeleteTrade, handleSaveJournal, handleSaveNote, handleStartEdit, journals, notes, payouts, persistPayouts, poiTimeframes, sessions, setDetailedTrade, setEditingTrade, setIsFormOpen, trades, trendTypes ]);
 
   return (
     <AllTradesContext.Provider value={trades}>
@@ -2551,11 +2498,8 @@ export default function App() {
               onClose={closeGlobalFilter}
               sessions={sessions}
               assets={assets}
-              planFidelities={planFidelities}
               trendTypes={trendTypes}
               definitionTitles={definitionTitles}
-              globalSelectedPlanFidelity={globalSelectedPlanFidelity}
-              setGlobalSelectedPlanFidelity={setGlobalSelectedPlanFidelity}
               globalSelectedAssets={globalSelectedAssets}
               setGlobalSelectedAssets={setGlobalSelectedAssets}
               globalSelectedSessions={globalSelectedSessions}
@@ -2631,14 +2575,12 @@ export default function App() {
           trades={trades}
           sessions={sessions}
           assets={assets}
-          planFidelities={planFidelities}
           trendTypes={trendTypes}
           premiumDiscounts={premiumDiscounts}
           poiTimeframes={poiTimeframes}
           definitionTitles={definitionTitles}
           persistSessions={persistSessions}
           persistAssets={persistAssets}
-          persistPlanFidelities={persistPlanFidelities}
           persistTrendTypes={persistTrendTypes}
           persistPremiumDiscounts={persistPremiumDiscounts}
           persistPoiTimeframes={persistPoiTimeframes}
@@ -2674,7 +2616,6 @@ export default function App() {
                     onCancelEdit={handleCancelEdit}
                     sessions={sessions}
                     assets={assets}
-                    planFidelities={planFidelities}
                     trendTypes={trendTypes}
                     premiumDiscounts={premiumDiscounts}
                     poiTimeframes={poiTimeframes}

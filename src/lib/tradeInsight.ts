@@ -38,7 +38,7 @@ export function computeTradeInsight(trade: Trade, everyTrade: Trade[]): TradeIns
   const path = computePricePath(trade);
   const allTrades = insightPool(trade, everyTrade);
 
-  // Kurulum: Asia Range · Trend · Entry Model (kurulum karnesiyle aynı tanım)
+  // Kurulum: Asia Range · İşlem Tipi (kurulum karnesiyle aynı tanım)
   const values = DEFAULT_SETUP_DIMENSIONS.map((d) => dimensionValue(trade, d));
   let setup: SetupHistory | null = null;
   if (!values.every((v) => v === UNSPECIFIED)) {

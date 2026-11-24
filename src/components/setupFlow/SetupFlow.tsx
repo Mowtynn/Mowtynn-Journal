@@ -1,12 +1,11 @@
 import type { ReactNode } from "react";
 import { Check } from "lucide-react";
-import { setupQualityTier } from "../../lib/setupQuality";
 
 /**
  * Kurulum akışı — işlem ekleme formu ile işlem detayının ortak dili.
  *
  * Kurulum girdileri bir kurulumun gerçek zaman sırasıyla, dikey bir ray üzerinde adım adım dizilir:
- *   1. Asia Range  →  2. İşlem Tipi · Setup Kalitesi  →  3. POI (sweep saati · session · timeframe)  →  4. Confirmations
+ *   1. Asia Range  →  2. İşlem Tipi  →  3. POI (sweep saati · session · timeframe)  →  4. Confirmations
  * Adım tamamlanınca düğümü mavi bir onay işaretine döner ve ray bir sonraki adıma doğru ışır: formda neyin eksik kaldığı,
  * detayda kurulumun nasıl geliştiği tek bakışta okunur.
  */
@@ -77,14 +76,6 @@ export function FlowProgress({ steps }: { steps: boolean[] }) {
   );
 }
 
-/** Setup Kalitesi kademesinin renkleri (A+ yeşil · A mavi · B-C kırmızı) — form, detay ve liste aynı renkleri kullanır */
-export function qualityTone(planFidelity?: string | null) {
-  const tier = setupQualityTier(planFidelity);
-  if (tier === "high") return { on: "bg-emerald-500/15 border-emerald-500/45", text: "text-emerald-300", chip: "border-emerald-500/35 bg-emerald-500/10 text-emerald-300" };
-  if (tier === "low") return { on: "bg-rose-500/15 border-rose-500/45", text: "text-rose-300", chip: "border-rose-500/35 bg-rose-500/10 text-rose-300" };
-  return { on: "bg-blue-500/20 border-blue-500/40", text: "text-blue-300", chip: "border-blue-500/30 bg-blue-500/10 text-blue-200" };
-}
-
 /** Kurulumun dört adımının tamamlanma durumu (form ve detay aynı kuralı kullanır) */
 export function flowSteps(v: {
   asiaRange?: string | null;
@@ -92,11 +83,10 @@ export function flowSteps(v: {
   poiTimeframe?: string | null;
   confirmations: string[];
   trend?: string | null;
-  planFidelity?: string | null;
 }): boolean[] {
   return [
     !!v.asiaRange,
-    !!v.trend && !!v.planFidelity,
+    !!v.trend,
     !!v.sweepTime && !!v.poiTimeframe,
     v.confirmations.length > 0,
   ];

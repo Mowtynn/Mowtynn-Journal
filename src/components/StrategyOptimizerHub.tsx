@@ -82,7 +82,7 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
         <Compass className="w-10 h-10 text-zinc-600 mx-auto mb-3" />
         <h4 className="text-sm font-bold text-zinc-200 font-sans">Strateji Geliştirme İçin Yeterli Veri Yok</h4>
         <p className="text-xs text-zinc-500 mt-1 max-w-md mx-auto font-sans">
-          İşlem eklerken girdiğin Parite, Asia Range, POI Sweep Time, Target, Confirmations ve Entry Model burada otomatik strateji önerilerine ve edge matrislerine dönüştürülür.
+          İşlem eklerken girdiğin Parite, Yön, Asia Range, İşlem Tipi, POI Sweep Time, Session, POI Timeframe ve Confirmations burada edge özetine, kurulum karnesine ve Asia Edge Lab tablolarına dönüştürülür.
         </p>
       </div>
     

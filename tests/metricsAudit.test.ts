@@ -52,7 +52,7 @@ test('zamanı bozuk kayıt: çıkış zamanı varsa onarılır, yoksa geçersiz 
   assert.equal(isValidTrade(broken), false);
   const ok = t(1, { id: 'z', accountCategory: 'CHALLENGE' });
   const base: any = {
-    activeAccountCategory: 'PROP', globalSelectedPlanFidelity: [], globalDateLimit: 'all',
+    activeAccountCategory: 'PROP', globalDateLimit: 'all',
     globalSelectedAssets: [], globalSelectedSessions: [], globalSelectedStatuses: [],
     globalSelectedTypes: [], globalSelectedTrendTypes: [],
   };

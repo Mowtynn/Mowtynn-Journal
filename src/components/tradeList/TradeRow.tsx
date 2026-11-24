@@ -1,4 +1,4 @@
-import { RBadge, TrendBadge, QualityBadge, PoiCell } from "./TradeBadges";
+import { RBadge, TrendBadge, PoiCell, TimeframeCell } from "./TradeBadges";
 import { TradeMobileCard } from "./TradeMobileCard";
 import React, { useMemo } from 'react';
 import { smartUpper } from '../../constants/constants';
@@ -67,14 +67,14 @@ export const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
             <TrendBadge trend={trade.trend} />
           </div>
         </td>
-        <td className={`${CELL} w-[9%] min-w-[60px]`}>
+        <td className={`${CELL} w-[20%] min-w-[130px]`}>
           <div>
-            <QualityBadge value={trade.planFidelity} />
+            <PoiCell sweepTime={trade.sweepTime} session={trade.session} />
           </div>
         </td>
-        <td className={`${CELL} w-[25%] min-w-[150px]`}>
+        <td className={`${CELL} w-[14%] min-w-[90px]`}>
           <div>
-            <PoiCell sweepTime={trade.sweepTime} session={trade.session} timeframe={trade.poiTimeframe} />
+            <TimeframeCell value={trade.poiTimeframe} />
           </div>
         </td>
         <td className={`${CELL} px-1.5 rounded-r-xl border-r w-[9%] min-w-[80px]`}>

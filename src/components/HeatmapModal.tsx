@@ -62,11 +62,11 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
     if (hasUnspecified || sessions.length === 0) sessions.push(UNSPECIFIED_SESSION);
 
     // Initialize matrix
-    const matrix: { [day: string]: { [session: string]: { r: number, count: number, winCount: number, planFidelityCounts: Record<string, number> } } } = {};
+    const matrix: { [day: string]: { [session: string]: { r: number, count: number, winCount: number } } } = {};
     days.forEach(d => {
       matrix[d] = {};
       sessions.forEach(s => {
-        matrix[d][s] = { r: 0, count: 0, winCount: 0, planFidelityCounts: {} };
+        matrix[d][s] = { r: 0, count: 0, winCount: 0 };
       });
     });
 
@@ -82,11 +82,6 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
           matrix[dayName][s].count += 1;
           if (t.status === 'WIN') matrix[dayName][s].winCount += 1;
           matrix[dayName][s].r += (t.rr || 0);
-          
-          if (t.planFidelity && t.planFidelity.trim()) {
-            const pf = t.planFidelity.trim();
-            matrix[dayName][s].planFidelityCounts[pf] = (matrix[dayName][s].planFidelityCounts[pf] || 0) + 1;
-          }
         }
       }
     });
@@ -264,11 +259,6 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({ isOpen, onClose, tra
                                   <div>İşlem: <span className="text-white font-bold">{cell?.count || 0}</span></div>
                                   <div>Net R: <span className={`font-bold tabular-nums ${(cell?.r || 0) > 1e-9 ? 'text-emerald-400' : (cell?.r || 0) < -1e-9 ? 'text-rose-400' : 'text-zinc-300'}`}>{formatR(cell?.r || 0)}</span></div>
                                   <div>Kazanma Oranı: <span className="text-zinc-100 font-bold">%{winRatePercent}</span></div>
-                                  {cell?.planFidelityCounts && Object.keys(cell.planFidelityCounts).length > 0 && (
-                                    <div className="pt-0.5 text-label text-blue-300 border-t border-zinc-800/80 mt-1 uppercase font-bold">
-                                      Setup: <span className="font-bold">{Object.entries(cell.planFidelityCounts).sort((a, b) => b[1] - a[1])[0][0]}</span>
-                                    </div>
-                                  )}
                                 </div>
                               </div>
 

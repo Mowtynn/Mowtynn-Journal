@@ -13,22 +13,6 @@ import {
 /* Dataset selection                                                   */
 /* ------------------------------------------------------------------ */
 
-export type DatasetKey = 'ALL' | 'BACKTEST' | 'LIVETEST' | 'REAL';
-
-export const DATASET_LABELS: Record<DatasetKey, string> = {
-  ALL: 'Tüm Veri',
-  BACKTEST: 'Backtest',
-  LIVETEST: 'Hesapsız / Demo',
-  REAL: 'Prop',
-};
-
-export function getTradeDataset(t: Trade): Exclude<DatasetKey, 'ALL'> {
-  const platform = (t.platform || '').toLowerCase();
-  if (platform.includes('backtest')) return 'BACKTEST';
-  if (getTradeAccountKind(t) === 'DEMO') return 'LIVETEST';
-  return 'REAL';
-}
-
 /* ------------------------------------------------------------------ */
 /* Statistics helpers                                                  */
 /* ------------------------------------------------------------------ */
@@ -275,8 +259,8 @@ function buildOrder(trades: Trade[]): void {
   const byDay = new Map<string, Trade[]>();
   for (const t of trades) {
     if (!Number.isFinite(t.createdAt)) continue; // zamanı bozuk kayıt sıraya / gün sayacına girmez
-    // Gün içi sıra veri seti içinde: backtest / hesapsız işlemler prop işlemlerinin "günün kaçıncı işlemi" sayacına karışmaz
-    const k = `${nyDateKey(t.createdAt)}|${getTradeDataset(t)}`;
+    // Gün içi sıra hesap türü içinde: hesapsız işlemler prop işlemlerinin "günün kaçıncı işlemi" sayacına karışmaz
+    const k = `${nyDateKey(t.createdAt)}|${getTradeAccountKind(t)}`;
     (byDay.get(k) || byDay.set(k, []).get(k)!).push(t);
   }
   prevResult.clear();
@@ -311,12 +295,11 @@ export function prevTradeBucket(t: Pick<Trade, 'id'>): string | null {
  */
 export function computeCoverage(trades: Trade[]): CoverageRow[] {
   const defs: Array<{ field: string; label: string; unlocks: string; ok: (t: Trade) => boolean; asked?: (t: Trade) => boolean }> = [
-    { field: 'planFidelity', label: 'Setup Kalitesi', unlocks: 'A+ / A / B-C kıyası, düşük kalitenin maliyeti', ok: (t) => !!t.planFidelity },
-    { field: 'trend', label: 'İşlem Tipi', unlocks: 'Continuation / Reversal kıyası, reversal maliyeti', ok: (t) => !!t.trend },
     { field: 'asiaRange', label: 'Asia Range', unlocks: 'Range / Trend kıyası', ok: (t) => !!t.asiaRange },
+    { field: 'trend', label: 'İşlem Tipi', unlocks: 'Continuation / Reversal kıyası, reversal maliyeti', ok: (t) => !!t.trend },
     { field: 'sweepTime', label: 'POI Sweep Time', unlocks: 'POI Sweep saati (30 dk), POI Sweep saati × parite tablosu', ok: (t) => !!t.sweepTime },
+    { field: 'session', label: 'Session', unlocks: 'Session ve Session × Yön kıyası; POI Sweep saatinden otomatik gelir, formda değiştirilebilir', ok: (t) => !!t.session },
     { field: 'poiTimeframe', label: 'POI Timeframe', unlocks: 'POI zaman dilimine göre edge, Kurulum Karnesi boyutu', ok: (t) => !!t.poiTimeframe },
-    { field: 'session', label: 'Session (otomatik)', unlocks: 'Session ve Session × Yön kıyası; POI Sweep saatinden belirlenir', ok: (t) => !!t.session },
     { field: 'premiumDiscount', label: 'Confirmations', unlocks: 'Confirmations × Yön kıyası', ok: (t) => tradeConfirmations(t).length > 0 },
   ];
   return defs.map((d) => {
@@ -345,7 +328,6 @@ export interface AsiaLabResult {
 }
 
 interface AsiaLabOptions {
-  dataset: DatasetKey;
   pair: string; // 'ALL' or normalized pair
   minSample: number;
 }
@@ -363,7 +345,6 @@ export function listPairs(trades: Trade[]): string[] {
 
 export function analyzeAsia(allTrades: Trade[], opts: AsiaLabOptions): AsiaLabResult {
   const trades = allTrades.filter((t) => {
-    if (opts.dataset !== 'ALL' && getTradeDataset(t) !== opts.dataset) return false;
     if (opts.pair !== 'ALL' && normalizePair(t.asset) !== opts.pair) return false;
     return true;
   });

@@ -34,7 +34,6 @@ export function buildInitial(t: Trade | null) {
     type: (t?.type || "LONG") as "LONG" | "SHORT",
     accountKind: (t ? getTradeAccountKind(t) : null) as AccountCategory | null,
     trend: t?.trend || "",
-    planFidelity: t?.planFidelity || null,
     confirmations: t ? tradeConfirmations(t) : [],
     asiaRange: (t?.asiaRange || "") as string,
     sweepTime: t?.sweepTime || "",

@@ -74,7 +74,6 @@ export function countExtraFilters(e: ExtraTradeFilters | undefined): number {
 export interface GlobalTradeFilters {
   /** Üst seçici: Prop ya da Hesapsız */
   activeAccountCategory: AccountCategory;
-  globalSelectedPlanFidelity: string[];
   globalDateLimit: string;
   globalSelectedAssets: string[];
   globalSelectedSessions: string[];
@@ -97,7 +96,6 @@ const isAnalyzable = (t: Trade): boolean =>
 export function applyGlobalFilters(trades: Trade[], filters: GlobalTradeFilters, now: number = Date.now()): Trade[] {
   const {
     activeAccountCategory,
-    globalSelectedPlanFidelity,
     globalDateLimit,
     globalSelectedAssets,
     globalSelectedSessions,
@@ -109,7 +107,6 @@ export function applyGlobalFilters(trades: Trade[], filters: GlobalTradeFilters,
     const extra = globalExtra || EMPTY_EXTRA_FILTERS;
     const minTime = getMinTimestamp(globalDateLimit, now);
 
-    const hasPlanFidelity = globalSelectedPlanFidelity.length > 0;
     const hasAssets = globalSelectedAssets.length > 0;
     const hasSessions = globalSelectedSessions.length > 0;
     const hasStatuses = globalSelectedStatuses.length > 0;
@@ -121,7 +118,6 @@ export function applyGlobalFilters(trades: Trade[], filters: GlobalTradeFilters,
     const hasExtra = countExtraFilters(extra) > 0;
 
     const hasAnyFilter =
-      hasPlanFidelity ||
       hasAssets ||
       hasSessions ||
       hasStatuses ||
@@ -138,7 +134,6 @@ export function applyGlobalFilters(trades: Trade[], filters: GlobalTradeFilters,
       return timed;
     }
 
-    const planFidelitySet = hasPlanFidelity ? new Set(globalSelectedPlanFidelity.map(normalizeSearchString)) : null;
     const assetSet = hasAssets ? new Set(globalSelectedAssets.map(canonicalAsset)) : null;
     const sessionSet = hasSessions ? new Set(globalSelectedSessions.map(normalizeSearchString)) : null;
     const statusSet = hasStatuses ? new Set(globalSelectedStatuses.map(normalizeSearchString)) : null;
@@ -170,9 +165,6 @@ export function applyGlobalFilters(trades: Trade[], filters: GlobalTradeFilters,
         return false;
       }
       if (sessionSet && (!t.session || !sessionSet.has(normalizeSearchString(t.session)))) {
-        return false;
-      }
-      if (planFidelitySet && (!t.planFidelity || !planFidelitySet.has(normalizeSearchString(t.planFidelity)))) {
         return false;
       }
       if (trendSet && (!t.trend || !trendSet.has(normalizeSearchString(t.trend)))) {

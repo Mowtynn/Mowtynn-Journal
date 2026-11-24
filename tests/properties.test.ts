@@ -124,7 +124,7 @@ function snapshot(trades: Trade[]) {
     oos: validateOutOfSample(trades),
     coverage: computeCoverage(trades),
     // `trades` alanı süzülen girdinin kendisidir (analiz değil): sıra karşılaştırmasına girmez
-    asia: { ...analyzeAsia(trades, { dataset: 'ALL', pair: 'ALL', minSample: 5 }), trades: undefined },
+    asia: { ...analyzeAsia(trades, { pair: 'ALL', minSample: 5 }), trades: undefined },
     week: computeWeekReview(trades, week),
     sims,
   });

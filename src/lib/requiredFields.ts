@@ -4,13 +4,12 @@ import { tradeConfirmations } from './tradeModel';
 /**
  * Zorunlu alan ayarı: tam kayıtta (Hızlı Kayıt hariç) boş bırakılamayacak alanlar.
  * Parite, yön, sonuç / R ve hesap her zaman zorunludur; burada analizleri besleyen ek alanlar seçilir.
- * Session seçilmez: POI Sweep saatinden otomatik belirlenir.
+ * Session zorunlu değildir: POI Sweep saatinden otomatik gelir (formda değiştirilebilir).
  */
 export const REQUIRABLE_FIELDS = [
   { id: 'asiaRange', label: 'Asia Range', missing: (t: Partial<Trade>) => !t.asiaRange },
   { id: 'sweepTime', label: 'POI Sweep Time', missing: (t: Partial<Trade>) => !t.sweepTime },
   { id: 'poiTimeframe', label: 'POI Timeframe', missing: (t: Partial<Trade>) => !t.poiTimeframe },
-  { id: 'planFidelity', label: 'Setup Kalitesi', missing: (t: Partial<Trade>) => !t.planFidelity },
   { id: 'trend', label: 'İşlem Tipi', missing: (t: Partial<Trade>) => !t.trend },
   { id: 'premiumDiscount', label: 'Confirmations', missing: (t: Partial<Trade>) => tradeConfirmations(t).length === 0 },
 ] as const;
@@ -18,7 +17,7 @@ export const REQUIRABLE_FIELDS = [
 export type RequirableField = (typeof REQUIRABLE_FIELDS)[number]['id'];
 
 export const DEFAULT_REQUIRED_FIELDS: RequirableField[] = [
-  'asiaRange', 'sweepTime', 'planFidelity',
+  'asiaRange', 'sweepTime',
 ];
 
 const KEY = 'tj_required_fields';

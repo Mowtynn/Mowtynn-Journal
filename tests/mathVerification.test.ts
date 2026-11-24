@@ -120,7 +120,7 @@ for (const n of [7, 60, 250]) {
     close(sim.curve[sim.curve.length - 1].all, net, 1e-6, 'eğri sonu');
 
     // POI Sweep saati × parite ısı tablosu hücreleri sweep saati girilmiş işlemleri bölüştürür
-    const lab = analyzeAsia(trades, { dataset: 'ALL', pair: 'ALL', minSample: 3 });
+    const lab = analyzeAsia(trades, { pair: 'ALL', minSample: 3 });
     const cellN = Object.values(lab.hourPair.cells).reduce((s, c) => s + c.n, 0);
     assert.equal(cellN, trades.filter((t) => /^\d{2}:\d{2}$/.test(t.sweepTime || '')).length, 'ısı tablosu (sweep saati girilmiş işlemler)');
 
