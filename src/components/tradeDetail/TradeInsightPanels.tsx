@@ -46,7 +46,7 @@ function RRuler({ r }: { r: number }) {
         {ticks.map((v) => (
           <span
             key={v}
-            className={`absolute top-0 text-label leading-none tabular-nums ${v === 0 ? 'text-zinc-400' : 'text-zinc-600'} ${v === lo ? '' : v === hi ? '-translate-x-full' : '-translate-x-1/2'}`}
+            className={`absolute top-0 text-label leading-none tabular-nums ${v === 0 ? 'text-zinc-300' : 'text-zinc-500'} ${v === lo ? '' : v === hi ? '-translate-x-full' : '-translate-x-1/2'}`}
             style={{ left: `${pos(v)}%` }}
           >
             {v === 0 ? '0' : `${v > 0 ? '+' : '−'}${Math.abs(v)}R`}

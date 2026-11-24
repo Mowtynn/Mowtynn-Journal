@@ -14,7 +14,7 @@ import { DEFAULT_DEFINITION_TITLES, cleanDefinitionTitleString, smartUpper, getT
 import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
 import { isChartShareLink, resolveChartImage } from "../lib/chartLink";
 import {
-  X, Edit3, Trash2, Calendar,
+  X, Edit3, Trash2, Calendar, Clock, Maximize2,
   ExternalLink, Image as ImageIcon, FileText,
   Activity, Monitor, AlertCircle,
   Download, Loader2, Crosshair, PenLine,
@@ -62,6 +62,8 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
   onNavigate,
 }: TradeDetailModalProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  // Grafiği uygulamanın içinde tam ekran büyütme (Esc / tıklama ile kapanır)
+  const [zoomOpen, setZoomOpen] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [isImageLoading, setIsImageLoading] = useState(true);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -173,7 +175,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
       ro.disconnect();
     };
   }, [currentTrade?.id, isExporting]);
-  const [fit, setFit] = useState<{ w?: number; h: number; leftW?: number; cw?: number; ch?: number } | null>(null);
+  const [fit, setFit] = useState<{ w?: number; h: number; leftW?: number; cw?: number; ch?: number; chBox?: number } | null>(null);
   // Görsel yüklenirken de grafik alanı ayrılır; oran sabit olduğu için görsel gelince pencere yeniden boyutlanmaz. Yalnızca hata olursa grafik yok sayılır
   const shotKey = currentTrade?.screenshot || '';
   const hasChart = !!(shotKey && !imageError);
@@ -207,7 +209,10 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
       const m = (parseFloat(ks.marginTop) || 0) + (parseFloat(ks.marginBottom) || 0);
       // Notlar: başlık + en küçük kutu (bölüm esnediği için kendi yüksekliği ölçülmez)
       const notesHead = k.dataset.notes ? (k.firstElementChild as HTMLElement | null)?.offsetHeight || 0 : 0;
-      leftNeed += m + (k.dataset.notes ? notesHead + 8 + notesBoxMinH(viewport.h) : k.offsetHeight);
+      const notesChrome = k.dataset.notes
+        ? (parseFloat(ks.paddingTop) || 0) + (parseFloat(ks.paddingBottom) || 0) + (parseFloat(ks.rowGap) || 0) + 2
+        : 0;
+      leftNeed += m + (k.dataset.notes ? notesHead + notesChrome + notesBoxMinH(viewport.h) : k.offsetHeight);
     });
     const BORDER = 2;
     if (hasChart) {
@@ -229,7 +234,10 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
       ch = Math.floor(ch);
       const rightH = ch + BORDER + headingH + setupH + padY;
       const h = Math.min(maxH, headerH + Math.max(leftNeed, rightH) + BORDER);
-      setFit({ w: leftW + cw + BORDER + padX + BORDER, h, leftW, cw, ch });
+      // Sol sütun grafikten uzunsa grafik kutusu kalan yüksekliği doldurur (grafikle kurulum geçmişi arasında boşluk kalmaz;
+      // görsel orantısı korunarak ortalanır)
+      const chBox = ch + Math.max(0, h - headerH - BORDER - rightH);
+      setFit({ w: leftW + cw + BORDER + padX + BORDER, h, leftW, cw, ch, chBox });
     } else {
       setFit({ h: Math.min(maxH, Math.max(headerH + leftNeed + BORDER, 480)) });
     }
@@ -277,11 +285,17 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
     if (trade) {
       setImageError(false);
       setShowDeleteConfirm(false);
+    } else {
+      setZoomOpen(false);
     }
   }, [trade]);
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
+      if (zoomOpen) {
+        if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setZoomOpen(false); }
+        return;
+      }
       if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !showDeleteConfirm && !e.altKey && !e.ctrlKey && !e.metaKey) {
         const el = e.target as HTMLElement | null;
         if (el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))) return;
@@ -301,7 +315,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
       window.addEventListener('keydown', handleEsc);
     }
     return () => window.removeEventListener('keydown', handleEsc);
-  }, [onClose, showDeleteConfirm, trade, goPrev, goNext]);
+  }, [onClose, showDeleteConfirm, trade, goPrev, goNext, zoomOpen]);
 
   const bodyRef = React.useRef<HTMLDivElement>(null);
   const headInfoRef = React.useRef<HTMLDivElement>(null);
@@ -409,6 +423,14 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                   <div className="flex items-center gap-2 text-zinc-400 text-xs xl:text-sm font-sans min-w-0">
                     <Calendar size={14} className="text-zinc-500 shrink-0"/>
                     <span className="truncate whitespace-nowrap">{formatDate(currentTrade.createdAt)}</span>
+                    {(currentTrade.sweepTime || currentTrade.session) && (
+                      <span className="flex items-center gap-1.5 whitespace-nowrap text-zinc-500">
+                        <span className="text-zinc-700">·</span>
+                        <Clock size={13} className="shrink-0" />
+                        {currentTrade.sweepTime && <span className="tabular-nums text-zinc-300">{currentTrade.sweepTime}<span className="ml-0.5 text-label text-zinc-500">NY</span></span>}
+                        {currentTrade.session && <span lang="en" className="text-zinc-400">{currentTrade.session}</span>}
+                      </span>
+                    )}
                   </div>
                 </div>
                 
@@ -476,7 +498,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
               <div ref={bodyRef} onTouchStart={onSwipeStart} onTouchEnd={onSwipeEnd} className={`flex flex-col lg:flex-row flex-1 min-h-0 ${isExporting ? 'overflow-hidden' : 'overflow-y-auto lg:overflow-hidden custom-scrollbar'}`}>
                 
                 {/* Left Sidebar - Meta & Context (approx 35%) */}
-                <div ref={leftColRef} style={fit?.leftW ? { width: fit.leftW } : undefined} className={`w-full lg:w-[40%] bg-zinc-950/30 border-r border-zinc-800/60 p-5 space-y-4 lg:[@media(max-height:820px)]:space-y-3 shrink-0 flex flex-col ${isExporting ? 'overflow-visible' : 'lg:overflow-y-auto custom-scrollbar'}`}>
+                <div ref={leftColRef} style={fit?.leftW ? { width: fit.leftW } : undefined} className={`w-full lg:w-[40%] bg-zinc-950/40 border-r border-zinc-800/60 p-5 space-y-3.5 lg:[@media(max-height:820px)]:space-y-3 shrink-0 flex flex-col ${isExporting ? 'overflow-visible' : 'lg:overflow-y-auto custom-scrollbar'}`}>
                   
                   {/* Hızlı kayıt: ayrıntılar eksik */}
                   {currentTrade.quickEntry === true && !isExporting && (() => {
@@ -518,11 +540,12 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                     const steps = flowSteps({ ...currentTrade, confirmations: conf });
                     const quality = qualityTone(currentTrade.planFidelity);
                     return (
-                      <section>
-                        <h4 className="heading-2 mb-3 flex items-center">
-                          <Crosshair size={12}/> {T(definitionTitles.setupCard, "KURULUM")}
+                      <section className={DETAIL_CARD}>
+                        <div className={CARD_HEAD}>
+                          <Crosshair size={14} className="text-blue-400 shrink-0" />
+                          <span className={CARD_TITLE}>{T(definitionTitles.setupCard, "KURULUM")}</span>
                           <FlowProgress steps={steps} />
-                        </h4>
+                        </div>
                         <div className="flex flex-col pl-0.5">
                           <FlowStep n={1} done={steps[0]} dense>
                             <FlowFields>
@@ -535,7 +558,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                             <FlowFields>
                               <FlowField label={T(definitionTitles.sweepTime, "POI SWEEP TIME")}>
                                 {currentTrade.sweepTime ? (
-                                  <span className="flex items-baseline gap-1 text-sm font-bold tabular-nums text-zinc-100 leading-6">
+                                  <span className="flex items-baseline gap-1 text-base font-bold tabular-nums text-zinc-100 leading-7">
                                     {currentTrade.sweepTime}<span className="text-label font-semibold text-zinc-500">NY</span>
                                   </span>
                                 ) : <ValueChip />}
@@ -573,20 +596,26 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                   })()}
 
 
-                  {/* Notlar: en az 2-3 cümlelik alan; sol sütunda yer kalırsa onu doldurur, daha uzun not kendi içinde kayar */}
-                  <section data-notes="1" className={`flex flex-col ${isExporting ? '' : 'lg:flex-1 lg:min-h-0'}`}>
-                    <h4 className="heading-2 mb-2 shrink-0">
-                      <FileText size={12}/> GİRİŞ VE ANALİZ NOTLARI
-                    </h4>
-                    <div style={isExporting ? undefined : { minHeight: notesBoxMinH(viewport.h) }} className={`bg-zinc-900/40 border border-zinc-800/60 rounded-xl px-4 py-3 overflow-x-hidden ${isExporting ? '' : 'max-h-[200px] lg:max-h-none lg:flex-1 lg:min-h-0 overflow-y-auto custom-scrollbar'}`}>
+                  {/* Notlar: kart; en az 2-3 cümlelik alan, sol sütunda yer kalırsa onu doldurur, daha uzun not kendi içinde kayar */}
+                  <section data-notes="1" className={`${DETAIL_CARD} ${isExporting ? '' : 'lg:flex-1 lg:min-h-0'}`}>
+                    <div className={`${CARD_HEAD} shrink-0`}>
+                      <FileText size={14} className="text-zinc-400 shrink-0" />
+                      <span className={CARD_TITLE}>{smartUpper(cleanDefinitionTitleString(definitionTitles.notesCard) || "Analiz & Notlar")}</span>
+                    </div>
+                    <div style={isExporting ? undefined : { minHeight: notesBoxMinH(viewport.h) }} className={`overflow-x-hidden ${isExporting ? '' : 'max-h-[220px] lg:max-h-none lg:flex-1 lg:min-h-0 overflow-y-auto custom-scrollbar'}`}>
                       {currentTrade.notes ? (
-                        <p className="text-zinc-200 text-sm leading-relaxed whitespace-pre-wrap break-words font-sans">
+                        <p className="text-zinc-200 text-sm leading-7 whitespace-pre-wrap break-words font-sans">
                           {currentTrade.notes}
                         </p>
                       ) : (
-                        <div className="h-full min-h-[40px] flex items-center justify-center py-2 text-zinc-600 text-xs italic">
-                          Bu işlem için herhangi bir not girilmemiş.
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() => { onEdit(currentTrade); onClose(); }}
+                          className="w-full h-full min-h-[64px] flex flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-700 transition-colors cursor-pointer"
+                        >
+                          <PenLine size={14} />
+                          <span className="text-xs">Not yok · eklemek için dokun</span>
+                        </button>
                       )}
                     </div>
                   </section>
@@ -608,7 +637,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                       )}
                     </div>
                     
-                    <div style={fit?.cw && fit.ch ? { width: fit.cw + 2, height: fit.ch + 2, flex: 'none', minHeight: 0, padding: 0 } : phoneChart ? { minHeight: 0, maxHeight: 'none', padding: 0, aspectRatio: String(CHART_ASPECT) } : undefined} className={`bg-zinc-900/40 border border-zinc-800/60 rounded-xl overflow-hidden relative group w-full flex items-center justify-center p-2 ${
+                    <div style={fit?.cw && fit.ch ? { width: fit.cw + 2, height: (fit.chBox ?? fit.ch) + 2, flex: 'none', minHeight: 0, padding: 0 } : phoneChart ? { minHeight: 0, maxHeight: 'none', padding: 0, aspectRatio: String(CHART_ASPECT) } : undefined} className={`bg-zinc-900/40 border border-zinc-800/60 rounded-xl overflow-hidden relative group w-full flex items-center justify-center p-2 ${
                       isExporting 
                         ? 'h-auto max-h-none' 
                         : currentTrade.screenshot 
@@ -642,8 +671,9 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                             key={noCors ? 'plain' : 'cors'}
                             src={resolvedImageUrl} 
                             alt="Trading chart" 
+                            onClick={() => { if (!isExporting && !isImageLoading) setZoomOpen(true); }}
                             style={fit?.cw ? { padding: 0 } : phoneChart ? { position: 'absolute', inset: 0, width: '100%', height: '100%', maxHeight: 'none', borderRadius: 0 } : undefined}
-                            className={`object-contain rounded-lg transition-opacity duration-200 ${isExporting ? 'w-auto h-auto max-w-full' : 'w-auto h-auto max-w-full max-h-[min(420px,43vh)] lg:absolute lg:inset-0 lg:m-auto lg:w-full lg:h-full lg:max-h-none lg:p-2'} ${isImageLoading ? 'opacity-0' : 'opacity-100'}`}
+                            className={`object-contain rounded-lg transition-opacity duration-200 ${isExporting ? '' : 'cursor-zoom-in'} ${isExporting ? 'w-auto h-auto max-w-full' : 'w-auto h-auto max-w-full max-h-[min(420px,43vh)] lg:absolute lg:inset-0 lg:m-auto lg:w-full lg:h-full lg:max-h-none lg:p-2'} ${isImageLoading ? 'opacity-0' : 'opacity-100'}`}
                             crossOrigin={noCors ? undefined : "anonymous"}
                             referrerPolicy="no-referrer"
                             onLoad={() => {
@@ -657,6 +687,16 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                             }}
                           />
                         ) : null}
+                        {resolvedImageUrl && !imageError && !isImageLoading && !isExporting && (
+                          <button
+                            type="button"
+                            aria-label="Grafiği büyüt"
+                            onClick={() => setZoomOpen(true)}
+                            className="no-export absolute top-2.5 right-2.5 z-10 flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-zinc-700/70 bg-zinc-950/80 backdrop-blur-sm text-label font-bold uppercase text-zinc-300 hover:text-white hover:border-zinc-500 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity cursor-pointer"
+                          >
+                            <Maximize2 size={12} /> Büyüt
+                          </button>
+                        )}
                       </>
                     ) : (
                       <div className="flex flex-col items-center justify-center p-6 text-center text-zinc-600">
@@ -706,6 +746,37 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                   </button>
               </div>
             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Grafik büyütme: tam ekran, görsel oranı korunur; dışarı tıklama / Esc / ✕ kapatır */}
+      <AnimatePresence>
+        {zoomOpen && resolvedImageUrl && trade && (
+          <motion.div
+            key="trade-chart-zoom"
+            {...MODAL_BACKDROP}
+            onClick={() => setZoomOpen(false)}
+            className="fixed inset-0 z-[4600] flex items-center justify-center p-3 sm:p-6 bg-black/90 backdrop-blur-sm cursor-zoom-out"
+          >
+            <img
+              src={resolvedImageUrl}
+              alt="Grafik (büyük)"
+              referrerPolicy="no-referrer"
+              crossOrigin={noCors ? undefined : "anonymous"}
+              className="max-w-full max-h-full object-contain rounded-xl shadow-2xl"
+            />
+            <button
+              type="button"
+              aria-label="Kapat"
+              onClick={(e) => { e.stopPropagation(); setZoomOpen(false); }}
+              className="btn-icon absolute top-4 right-4"
+            >
+              <X size={16} />
+            </button>
+            <span className="absolute bottom-4 left-1/2 -translate-x-1/2 text-label text-zinc-400 bg-zinc-950/70 border border-zinc-800 rounded-lg px-2.5 py-1 select-none">
+              {currentTrade.asset} · {formatDate(currentTrade.createdAt)} · kapatmak için Esc
+            </span>
           </motion.div>
         )}
       </AnimatePresence>
@@ -766,6 +837,11 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
   );
 });
 
+/** Sol sütun kartları: işlem ekleme formundaki kartlarla aynı dil (başlık · çizgi · içerik) */
+const DETAIL_CARD = "rounded-2xl border border-zinc-800/80 bg-zinc-900/45 p-4 flex flex-col gap-3 shadow-sm";
+const CARD_HEAD = "flex items-center gap-2 pb-2.5 border-b border-zinc-800/60";
+const CARD_TITLE = "text-xs font-bold text-zinc-200 uppercase tracking-wider font-sans";
+
 /* Kurulum akışı (detay): her adım bir ya da birkaç alan; alan = küçük başlık + değer çipi */
 function FlowFields({ children }: { children: React.ReactNode }) {
   return <div className="flex flex-wrap gap-x-5 gap-y-2">{children}</div>;
@@ -774,7 +850,7 @@ function FlowFields({ children }: { children: React.ReactNode }) {
 function FlowField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="min-w-0">
-      <div className="text-label font-bold uppercase tracking-wider font-sans text-zinc-500 leading-none mb-1.5">{label}</div>
+      <div className="text-label font-bold uppercase tracking-wider font-sans text-zinc-400 leading-none mb-2">{label}</div>
       {children}
     </div>
   );
@@ -782,9 +858,9 @@ function FlowField({ label, children }: { label: string; children: React.ReactNo
 
 /** Değer çipi; değer yoksa soluk bir tire (adımın eksik kaldığı görünür) */
 function ValueChip({ value, cls }: { value?: string | null; cls?: string }) {
-  if (!value) return <span className="inline-flex items-center h-6 text-sm font-bold text-zinc-700">—</span>;
+  if (!value) return <span className="inline-flex items-center h-7 text-sm font-bold text-zinc-700">—</span>;
   return (
-    <span lang="en" className={`inline-flex items-center h-6 px-2 rounded-md border text-xs font-bold uppercase tracking-wide font-sans whitespace-nowrap ${cls || "border-zinc-700/70 bg-zinc-900/70 text-zinc-200"}`}>
+    <span lang="en" className={`inline-flex items-center h-7 px-2.5 rounded-lg border text-xs font-bold uppercase tracking-wide font-sans whitespace-nowrap ${cls || "border-zinc-700/70 bg-zinc-900/70 text-zinc-200"}`}>
       {smartUpper(value)}
     </span>
   );
