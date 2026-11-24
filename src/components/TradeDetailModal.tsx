@@ -15,7 +15,7 @@ import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
 import { isChartShareLink, resolveChartImage } from "../lib/chartLink";
 import {
   X, Edit3, Trash2, Calendar, Clock, Maximize2,
-  Compass, TrendingUp, ShieldCheck, Timer, Layers, Scale,
+  Compass, TrendingUp, ShieldCheck, Timer, Layers, Scale, ArrowUpRight, ArrowDownRight,
   ExternalLink, Image as ImageIcon, FileText,
   Activity, Monitor, AlertCircle,
   Download, Loader2, Crosshair, PenLine,
@@ -419,7 +419,8 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                       {currentTrade.asset}
                     </h2>
                     <div className="flex gap-2 shrink-0">
-                      <span className={`badge-base ${currentTrade.type === 'LONG' ? 'badge-win' : 'badge-loss'}`}>
+                      <span className={`flex items-center gap-1 text-sm font-bold tracking-wider font-sans ${currentTrade.type === 'LONG' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        {currentTrade.type === 'LONG' ? <ArrowUpRight size={16} strokeWidth={2.5} /> : <ArrowDownRight size={16} strokeWidth={2.5} />}
                         {currentTrade.type}
                       </span>
                       {/* Durum rozeti yok: sonuç kartı R ile birlikte Kazanç / Kayıp / Breakeven gösteriyor */}
@@ -561,31 +562,31 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                             <SpecValue>{currentTrade.trend}</SpecValue>
                           </SpecRow>
                           <SpecRow icon={ShieldCheck} label={T(definitionTitles.planFidelities, "SETUP KALİTESİ")} empty={!currentTrade.planFidelity}>
-                            <span className={`inline-flex items-center h-7 px-2.5 rounded-lg border text-sm font-bold ${quality.chip}`}>{currentTrade.planFidelity}</span>
+                            <span lang="en" className={`text-base font-extrabold tracking-wide ${quality.text}`}>{currentTrade.planFidelity}</span>
                           </SpecRow>
                           <SpecRow icon={Timer} label={T(definitionTitles.sweepTime, "POI SWEEP TIME")} empty={!currentTrade.sweepTime && !currentTrade.session}>
-                            <span className="flex items-center justify-end gap-2 flex-wrap">
+                            <span className="flex items-baseline justify-end gap-2 flex-wrap">
                               {currentTrade.sweepTime && (
                                 <span className="text-base font-bold tabular-nums text-zinc-100">
                                   {currentTrade.sweepTime}<span className="ml-1 text-label font-semibold text-zinc-500">NY</span>
                                 </span>
                               )}
+                              {currentTrade.sweepTime && currentTrade.session && <span aria-hidden className="text-zinc-700">·</span>}
                               {currentTrade.session && (
-                                <span lang="en" className="inline-flex items-center h-6 px-2 rounded-md border border-blue-500/25 bg-blue-500/10 text-blue-200 text-xs font-semibold">
-                                  {currentTrade.session}
-                                </span>
+                                <span lang="en" className="text-sm font-semibold text-blue-300">{currentTrade.session}</span>
                               )}
                             </span>
                           </SpecRow>
                           <SpecRow icon={Layers} label={T(definitionTitles.poiTimeframes, "POI TIMEFRAME")} empty={!currentTrade.poiTimeframe}>
                             <SpecValue>{currentTrade.poiTimeframe}</SpecValue>
                           </SpecRow>
-                          <SpecRow icon={Scale} label={T(definitionTitles.premiumDiscounts, "CONFIRMATIONS")} empty={conf.length === 0} top={conf.length > 1}>
-                            <span className="flex flex-wrap justify-end gap-1.5">
-                              {conf.map((c) => (
-                                <span key={c} lang="en" className="inline-flex items-center h-7 px-2.5 rounded-lg border border-blue-500/25 bg-blue-500/10 text-blue-200 text-xs font-bold uppercase tracking-wide whitespace-nowrap">
-                                  {smartUpper(c)}
-                                </span>
+                          <SpecRow icon={Scale} label={T(definitionTitles.premiumDiscounts, "CONFIRMATIONS")} empty={conf.length === 0} top={conf.length > 2}>
+                            <span lang="en" className="flex flex-wrap justify-end items-baseline gap-x-2 gap-y-1 text-sm font-bold uppercase tracking-wide font-sans text-zinc-100">
+                              {conf.map((c, i) => (
+                                <React.Fragment key={c}>
+                                  {i > 0 && <span aria-hidden className="text-zinc-700 font-normal">·</span>}
+                                  <span className="whitespace-nowrap">{smartUpper(c)}</span>
+                                </React.Fragment>
                               ))}
                             </span>
                           </SpecRow>
@@ -857,7 +858,7 @@ function SpecRow({
 }) {
   return (
     <div className={`flex ${top ? "items-start" : "items-center"} justify-between gap-4 py-2.5 border-b border-zinc-800/50 last:border-b-0 min-h-[48px]`}>
-      <dt className={`flex items-center gap-2 shrink-0 text-xs font-bold uppercase tracking-wider font-sans ${top ? "pt-1.5" : ""} ${empty ? "text-zinc-600" : "text-zinc-400"}`}>
+      <dt className={`flex items-center gap-2 shrink-0 text-xs font-bold uppercase tracking-wider font-sans ${top ? "pt-0.5" : ""} ${empty ? "text-zinc-600" : "text-zinc-400"}`}>
         <Icon size={14} className={empty ? "text-zinc-700" : "text-blue-400/80"} />
         {label}
       </dt>

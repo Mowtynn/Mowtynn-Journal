@@ -1,6 +1,6 @@
 import { Activity, History } from 'lucide-react';
 import { formatR, rnum } from '../../lib/format';
-import { ACCOUNT_KIND_BADGE, ACCOUNT_KIND_LABELS, getTradeAccountKind } from '../../constants/constants';
+import { ACCOUNT_KIND_LABELS, getTradeAccountKind } from '../../constants/constants';
 import type { Trade } from '../../types';
 import type { TradeInsight } from '../../lib/tradeInsight';
 
@@ -72,7 +72,7 @@ export function ResultPanel({ trade, realizedR }: { trade: Trade; realizedR: num
             <span className={`text-label font-bold ${tone(realizedR)}`}>{RESULT_WORD(realizedR)}</span>
           </div>
         </div>
-        <span className={`whitespace-nowrap shrink-0 text-label px-1.5 py-0.5 rounded-md font-bold uppercase border ${ACCOUNT_KIND_BADGE[kind]}`}>{ACCOUNT_KIND_LABELS[kind]}</span>
+        <span className={`whitespace-nowrap shrink-0 text-xs font-bold uppercase tracking-wider ${kind === 'PROP' ? 'text-blue-300' : 'text-amber-300'}`}>{ACCOUNT_KIND_LABELS[kind]}</span>
       </div>
       <RRuler r={realizedR} />
     </section>

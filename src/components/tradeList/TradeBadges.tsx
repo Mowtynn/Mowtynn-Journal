@@ -1,3 +1,4 @@
+import React from "react";
 import { formatR } from "../../lib/format";
 import { qualityTone } from "../setupFlow/SetupFlow";
 import { Repeat2, TrendingUp } from "lucide-react";
@@ -41,16 +42,22 @@ export function QualityBadge({ value }: { value?: string | null }) {
   return <span lang="en" className={`${PILL} px-2 min-w-[36px] tracking-wide ${qualityTone(v).chip}`}>{v}</span>;
 }
 
-/** POI: sweep saati (NY) · session · POI timeframe — tek satırda; girilmemiş parçalar atlanır */
+/** POI: sweep saati (NY) · session · POI timeframe — düz metin, aralarında ince nokta; girilmemiş parçalar atlanır */
 export function PoiCell({ sweepTime, session, timeframe }: { sweepTime?: string; session?: string; timeframe?: string }) {
-  if (!sweepTime && !session && !timeframe) return <span className="text-zinc-600">—</span>;
+  const parts = [
+    sweepTime && <span key="t" className="text-zinc-100 font-bold tabular-nums">{sweepTime}</span>,
+    session && <span key="s" className="text-zinc-400 font-semibold truncate">{session}</span>,
+    timeframe && <span key="f" className="text-blue-300 font-bold tracking-wide">{timeframe}</span>,
+  ].filter(Boolean) as React.ReactElement[];
+  if (parts.length === 0) return <span className="text-zinc-600">—</span>;
   return (
-    <span lang="en" className="inline-flex items-center justify-center gap-1.5 max-w-full min-w-0 font-sans">
-      {sweepTime && <span className="text-zinc-200 font-bold tabular-nums">{sweepTime}</span>}
-      {session && <span className="text-zinc-400 font-semibold truncate">{session}</span>}
-      {timeframe && (
-        <span className={`${PILL} px-1.5 min-w-[30px] text-zinc-300 bg-zinc-800/70 border-zinc-700/70 group-hover:border-zinc-500`}>{timeframe}</span>
-      )}
+    <span lang="en" className="inline-flex items-baseline justify-center gap-2 max-w-full min-w-0 font-sans text-xs">
+      {parts.map((p, i) => (
+        <React.Fragment key={p.key}>
+          {i > 0 && <span aria-hidden className="text-zinc-700">·</span>}
+          {p}
+        </React.Fragment>
+      ))}
     </span>
   );
 }
