@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { canonicalAsset } from "../../lib/tradeModel";
 import { TurkishDatePicker } from "../TurkishDateTimePicker";
-import { Search, Layers, Check } from "lucide-react";
+import { Search, Layers, Check, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import type { AccountCategory } from "../../types";
 import { SetState, Titles, SlideBg } from './shared';
 
@@ -185,7 +185,7 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
               }`}
             >
               {type === "LONG" && <SlideBg id="tradeTypeSlide" rounded="rounded-md sm:rounded-lg" className="bg-win-bg border-win-border shadow-xs" />}
-              <span className="relative z-10">LONG</span>
+              <span className="relative z-10 flex items-center gap-1"><ArrowUpRight size={13} strokeWidth={2.5} />LONG</span>
             </button>
             <button lang="en"
               type="button"
@@ -196,7 +196,7 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
               }`}
             >
               {type === "SHORT" && <SlideBg id="tradeTypeSlide" rounded="rounded-md sm:rounded-lg" className="bg-loss-bg border-loss-border shadow-xs" />}
-              <span className="relative z-10">SHORT</span>
+              <span className="relative z-10 flex items-center gap-1"><ArrowDownRight size={13} strokeWidth={2.5} />SHORT</span>
             </button>
           </div>
         </div>

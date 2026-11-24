@@ -17,20 +17,62 @@ const RESULT_WORD = (r: number) => (r > 0 ? 'Kazanç' : r < 0 ? 'Kayıp' : 'Brea
 const RESULT_BOX = (r: number) =>
   r > 0 ? 'border-emerald-500/25 bg-emerald-500/[0.06]' : r < 0 ? 'border-rose-500/25 bg-rose-500/[0.06]' : 'border-zinc-700/70 bg-zinc-900/60';
 
-/** Sonuç kartı: R büyük ve önde; yanında hesap türü (Prop / Hesapsız) */
+/**
+ * R cetveli: sonucun hedef ölçeğindeki yeri. Ölçek en az −1R … +3R'dir (tipik stop ve hedefler), daha büyük sonuçta genişler.
+ * Sıfırdan sonuca kadar dolgu, sonuçta bir işaret; tam sayılarda ince çentikler.
+ */
+function RRuler({ r }: { r: number }) {
+  const lo = Math.min(-1, Math.floor(r));
+  const hi = Math.max(3, Math.ceil(r));
+  const span = hi - lo;
+  const pos = (v: number) => ((v - lo) / span) * 100;
+  const z = pos(0);
+  const p = pos(r);
+  const step = span <= 8 ? 1 : Math.ceil(span / 6);
+  const ticks: number[] = [];
+  for (let v = lo; v <= hi; v++) if (v === 0 || v === lo || v === hi || v % step === 0) ticks.push(v);
+  const fill = r > 0 ? 'bg-emerald-400/80' : r < 0 ? 'bg-rose-400/80' : 'bg-blue-300/80';
+  const dot = r > 0 ? 'bg-emerald-300 shadow-[0_0_10px_rgba(52,211,153,0.6)]' : r < 0 ? 'bg-rose-300 shadow-[0_0_10px_rgba(251,113,133,0.6)]' : 'bg-blue-200 shadow-[0_0_10px_rgba(147,197,253,0.6)]';
+  return (
+    <div className="mt-3.5" aria-hidden>
+      <div className="relative h-1.5 rounded-full bg-zinc-800/90">
+        {ticks.map((v) => (
+          <span key={v} className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-px ${v === 0 ? 'h-3 bg-zinc-500' : 'h-2 bg-zinc-700'}`} style={{ left: `${pos(v)}%` }} />
+        ))}
+        <span className={`absolute inset-y-0 rounded-full ${fill}`} style={{ left: `${Math.min(z, p)}%`, width: `${Math.abs(p - z)}%` }} />
+        <span className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-3 rounded-full border-2 border-zinc-950 ${dot}`} style={{ left: `${p}%` }} />
+      </div>
+      <div className="relative h-3 mt-1.5">
+        {ticks.map((v) => (
+          <span
+            key={v}
+            className={`absolute top-0 text-label leading-none tabular-nums ${v === 0 ? 'text-zinc-400' : 'text-zinc-600'} ${v === lo ? '' : v === hi ? '-translate-x-full' : '-translate-x-1/2'}`}
+            style={{ left: `${pos(v)}%` }}
+          >
+            {v === 0 ? '0' : `${v > 0 ? '+' : '−'}${Math.abs(v)}R`}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Sonuç kartı: R büyük ve önde, yanında hesap türü (Prop / Hesapsız); altında R cetveli */
 export function ResultPanel({ trade, realizedR }: { trade: Trade; realizedR: number }) {
   const kind = getTradeAccountKind(trade);
   return (
-    <section className={`rounded-2xl border px-4 py-3 flex items-center justify-between gap-4 ${RESULT_BOX(realizedR)}`}>
-      <div className="min-w-0">
-        <span className="heading-3 flex items-center gap-1.5"><Activity size={12} /> Sonuç</span>
-        {/* R ve sonuç sözcüğü aynı satırda: kart kısa kalır, notlara yer açılır */}
-        <div className="mt-1.5 flex items-baseline gap-2">
-          <span className={`text-2xl font-bold tabular-nums leading-none ${tone(realizedR)}`}>{formatR(realizedR)}</span>
-          <span className={`text-label font-bold ${tone(realizedR)}`}>{RESULT_WORD(realizedR)}</span>
+    <section className={`rounded-2xl border px-4 pt-3 pb-3 ${RESULT_BOX(realizedR)}`}>
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <span className="heading-3 flex items-center gap-1.5"><Activity size={12} /> Sonuç</span>
+          <div className="mt-1.5 flex items-baseline gap-2">
+            <span className={`text-2xl font-bold tabular-nums leading-none ${tone(realizedR)}`}>{formatR(realizedR)}</span>
+            <span className={`text-label font-bold ${tone(realizedR)}`}>{RESULT_WORD(realizedR)}</span>
+          </div>
         </div>
+        <span className={`whitespace-nowrap shrink-0 text-label px-1.5 py-0.5 rounded-md font-bold uppercase border ${ACCOUNT_KIND_BADGE[kind]}`}>{ACCOUNT_KIND_LABELS[kind]}</span>
       </div>
-      <span className={`whitespace-nowrap shrink-0 text-label px-1.5 py-0.5 rounded-md font-bold uppercase border ${ACCOUNT_KIND_BADGE[kind]}`}>{ACCOUNT_KIND_LABELS[kind]}</span>
+      <RRuler r={realizedR} />
     </section>
   );
 }

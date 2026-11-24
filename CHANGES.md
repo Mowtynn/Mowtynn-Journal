@@ -1086,3 +1086,9 @@ Klasik tasarım korunarak, son eklenen alanlar (risk %, hesap bağı, strateji, 
   - POI Timeframe her yerde: filtre (Filtreleme Menüsü, zaman dilimi sırasıyla), Kurulum Karnesi / kural simülatörü boyutu, Edge taraması, veri eksiği panosu, işlem detayı (Kurulum bölümü, hızlı kayıt eksikleri), Excel/CSV sütunu, Zorunlu Alanlar seçeneği, yedekten geri yükleme, Firestore kuralı (`poiTimeframe` metin, `poiTimeframes` liste).
   - Kurulum kartı: diğer kartlar gibi başlıklı ("Kurulum", Form Başlıkları'ndan değiştirilebilir); tüm alan başlıkları ve düğme grupları tek ölçüde. Sıra: Setup Kalitesi · İşlem Tipi → Asia Range → POI Sweep Time · POI Timeframe → Confirmations.
   - Testler: POI Timeframe boyutu ve zaman dilimi sırası, kayıt normalizasyonu.
+
+- İşlem ekleme ve işlem detayı: Kurulum akışı (4. tur)
+  - Kurulum girdileri kurulumun zaman sırasıyla, numaralı düğümleri olan dikey bir rayda dizilir: 1. Asia Range → 2. POI (Sweep Time · POI Timeframe) → 3. Confirmations → 4. Değerlendirme (İşlem Tipi · Setup Kalitesi). Adım dolunca düğüm onay işaretine döner, ray bir sonraki adıma doğru ışır; kart başlığında ilerleme (4 çizgi + "3/4", tamamı dolunca yeşil). Ortak bileşen: `components/setupFlow/SetupFlow.tsx` (form ve detay aynı kuralı kullanır).
+  - Form: POI Sweep Time başlığının yanında saatten otomatik çıkan session bilgi olarak görünür (seçilmez). Setup Kalitesi seçimi kademesinin rengini alır (A+ yeşil · A mavi · B-C kırmızı). Confirmations'ta birden fazla seçimde sayı. LONG / SHORT düğmelerinde yön okları.
+  - Form alt çubuğu işlemin tek satırlık fişi: parite · yön · hesap türü · R, ardından kurulumun izi (Range › 03:15 London · 1H › Discount › Reversal › A+).
+  - İşlem detayı: Kurulum / Giriş ızgaraları yerine aynı akış, okunur halde (değerler çip; eksik adım soluk tire ve boş düğüm). Session burada görünür. Sonuç kartında R cetveli: en az −1R … +3R ölçeğinde sıfırdan sonuca dolgu ve işaret (daha büyük sonuçta ölçek genişler).

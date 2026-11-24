@@ -13,18 +13,15 @@ import { Trade, DefinitionTitles } from "../types";
 import { DEFAULT_DEFINITION_TITLES, cleanDefinitionTitleString, smartUpper, getTradeAccountName } from "../constants/constants";
 import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
 import { isChartShareLink, resolveChartImage } from "../lib/chartLink";
-import { 
-
-
-  X, Edit3, Trash2, Calendar, Clock, Target, 
-  ExternalLink, Image as ImageIcon, FileText, 
-  Activity, Layers, Monitor, ShieldCheck, AlertCircle,
-  Download, Loader2, Zap, TrendingUp,
-  Scale, PenLine,
+import {
+  X, Edit3, Trash2, Calendar,
+  ExternalLink, Image as ImageIcon, FileText,
+  Activity, Monitor, AlertCircle,
+  Download, Loader2, Crosshair, PenLine,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { setupQualityTier } from "../lib/setupQuality";
+import { FlowStep, FlowProgress, flowSteps, qualityTone } from "./setupFlow/SetupFlow";
 import { nyWallDate, nyDateKey } from "../lib/tradingTime";
 import { ResultPanel, SetupHistoryPanel } from "./tradeDetail/TradeInsightPanels";
 import { computeTradeInsight } from "../lib/tradeInsight";
@@ -514,75 +511,64 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                   {/* Sonuç kartı: R, durum, hesap, risk ve hesaba dolar etkisi */}
                   <ResultPanel trade={currentTrade} realizedR={typeof currentTrade.rr === "number" && Number.isFinite(currentTrade.rr) ? currentTrade.rr : 0} />
 
-                  {/* Execution Context */}
+                  {/* KURULUM AKIŞI: formdaki akışın okunur hali — kurulum zaman sırasıyla, adım adım */}
                   {(() => {
-                    // Setup Kalitesi sırası renge yansır: A+ yeşil · A mavi · B-C kırmızı (formdaki, filtredeki ve listedeki renklerle aynı)
-                    const tier = setupQualityTier(currentTrade.planFidelity);
-                    const planColor = tier === 'high' ? "text-emerald-400 font-bold" : tier === 'mid' ? "text-blue-300 font-bold" : tier === 'low' ? "text-rose-400 font-bold" : undefined;
-                    // Trend bir kurulum tipidir, hata değil: değer yargısı içeren renk verilmez
-                    const trendColor = undefined;
-
+                    const T = (v: string | undefined, fb: string) => smartUpper(cleanDefinitionTitleString(v) || fb);
+                    const conf = tradeConfirmations(currentTrade);
+                    const steps = flowSteps({ ...currentTrade, confirmations: conf });
+                    const quality = qualityTone(currentTrade.planFidelity);
                     return (
-                      <>
-                      {/* KURULUM: girişten önce piyasanın durumu (Asia Range, sweep, seans, işlem tipi) */}
                       <section>
-                        <h4 className="heading-2 mb-2">
-                          <Layers size={12}/> KURULUM
+                        <h4 className="heading-2 mb-3 flex items-center">
+                          <Crosshair size={12}/> {T(definitionTitles.setupCard, "KURULUM")}
+                          <FlowProgress steps={steps} />
                         </h4>
-                        <div className={CONTEXT_GRID}>
-                          <ContextRow
-                            label={smartUpper(cleanDefinitionTitleString(definitionTitles.asiaRange) || "ASIA RANGE")}
-                            value={currentTrade.asiaRange}
-                            icon={<Target size={14} className="text-blue-400"/>}
-                          />
-                          <ContextRow
-                            label={smartUpper(cleanDefinitionTitleString(definitionTitles.sweepTime) || "POI SWEEP TIME")}
-                            value={currentTrade.sweepTime || undefined}
-                            icon={<Clock size={14} className="text-blue-400"/>}
-                          />
-                          <ContextRow
-                            label={smartUpper(cleanDefinitionTitleString(definitionTitles.poiTimeframes) || "POI TIMEFRAME")}
-                            value={currentTrade.poiTimeframe || undefined}
-                            icon={<Layers size={14} className="text-blue-400"/>}
-                          />
-                          {/* 3. SESSION */}
-                          <ContextRow 
-                            label={smartUpper(cleanDefinitionTitleString(definitionTitles.sessions) || "SESSION")} 
-                            value={currentTrade.session} 
-                            icon={<Clock size={14} className="text-blue-400"/>} 
-                          />
-                          {/* 8. İŞLEM TİPİ */}
-                          <ContextRow 
-                            label={smartUpper(cleanDefinitionTitleString(definitionTitles.trendTypes) || "İŞLEM TİPİ")} 
-                            value={currentTrade.trend} 
-                            icon={<TrendingUp size={14} className="text-blue-400"/>} 
-                            valueColor={trendColor}
-                          />
+                        <div className="flex flex-col pl-0.5">
+                          <FlowStep n={1} done={steps[0]} dense>
+                            <FlowFields>
+                              <FlowField label={T(definitionTitles.asiaRange, "ASIA RANGE")}>
+                                <ValueChip value={currentTrade.asiaRange} />
+                              </FlowField>
+                            </FlowFields>
+                          </FlowStep>
+                          <FlowStep n={2} done={steps[1]} dense>
+                            <FlowFields>
+                              <FlowField label={T(definitionTitles.sweepTime, "POI SWEEP TIME")}>
+                                {currentTrade.sweepTime ? (
+                                  <span className="flex items-baseline gap-1 text-sm font-bold tabular-nums text-zinc-100 leading-6">
+                                    {currentTrade.sweepTime}<span className="text-label font-semibold text-zinc-500">NY</span>
+                                  </span>
+                                ) : <ValueChip />}
+                              </FlowField>
+                              <FlowField label={T(definitionTitles.sessions, "SESSION")}>
+                                <ValueChip value={currentTrade.session} />
+                              </FlowField>
+                              <FlowField label={T(definitionTitles.poiTimeframes, "POI TIMEFRAME")}>
+                                <ValueChip value={currentTrade.poiTimeframe} />
+                              </FlowField>
+                            </FlowFields>
+                          </FlowStep>
+                          <FlowStep n={3} done={steps[2]} dense>
+                            <FlowField label={T(definitionTitles.premiumDiscounts, "CONFIRMATIONS")}>
+                              {conf.length > 0 ? (
+                                <span className="flex flex-wrap gap-1.5">
+                                  {conf.map((c) => <ValueChip key={c} value={c} cls="border-blue-500/25 bg-blue-500/10 text-blue-200" />)}
+                                </span>
+                              ) : <ValueChip />}
+                            </FlowField>
+                          </FlowStep>
+                          <FlowStep n={4} done={steps[3]} dense last>
+                            <FlowFields>
+                              <FlowField label={T(definitionTitles.trendTypes, "İŞLEM TİPİ")}>
+                                <ValueChip value={currentTrade.trend} />
+                              </FlowField>
+                              <FlowField label={T(definitionTitles.planFidelities, "SETUP KALİTESİ")}>
+                                <ValueChip value={currentTrade.planFidelity} cls={quality.chip} />
+                              </FlowField>
+                            </FlowFields>
+                          </FlowStep>
                         </div>
                       </section>
-
-                      {/* GİRİŞ: tetik ve yönetim kararları */}
-                      <section>
-                        <h4 className="heading-2 mb-2">
-                          <Zap size={12}/> GİRİŞ
-                        </h4>
-                        <div className={CONTEXT_GRID}>
-                          {/* CONFIRMATIONS (çoklu) */}
-                          <ContextRow
-                            label={smartUpper(cleanDefinitionTitleString(definitionTitles.premiumDiscounts) || "CONFIRMATIONS")}
-                            value={(() => { const c = tradeConfirmations(currentTrade); return c.length > 0 ? c.map((e) => smartUpper(e)).join(", ") : undefined; })()}
-                            icon={<Scale size={14} className="text-blue-400"/>}
-                          />
-                          {/* 9. SETUP KALİTESİ */}
-                          <ContextRow 
-                            label={smartUpper(cleanDefinitionTitleString(definitionTitles.planFidelities) || "SETUP KALİTESİ")} 
-                            value={currentTrade.planFidelity} 
-                            icon={<ShieldCheck size={14} className="text-blue-400"/>} 
-                            valueColor={planColor}
-                          />
-                        </div>
-                      </section>
-                      </>
                     );
                   })()}
 
@@ -780,36 +766,27 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
   );
 });
 
-// Helper component for Context rows
-/** İşlem detayı · bağlam ızgarası (Kurulum ve Giriş grupları aynı döşemeyi kullanır) */
-const CONTEXT_GRID = "grid grid-cols-2 gap-px bg-zinc-800/60 border border-zinc-800/60 rounded-xl overflow-hidden";
+/* Kurulum akışı (detay): her adım bir ya da birkaç alan; alan = küçük başlık + değer çipi */
+function FlowFields({ children }: { children: React.ReactNode }) {
+  return <div className="flex flex-wrap gap-x-5 gap-y-2">{children}</div>;
+}
 
-function ContextRow({ 
-  label, 
-  value, 
-  icon, 
-  valueColor,
-  wide,
-}: { 
-  label: string; 
-  value: React.ReactNode; 
-  icon: React.ReactNode; 
-  valueColor?: string;
-  wide?: boolean;
-}) {
-  const displayValue = value !== undefined && value !== null ? value : '—';
-  const text = typeof displayValue === 'string' ? smartUpper(displayValue) : displayValue;
-  // Başlık ve değer kesilmez, gerekirse alt satıra kayar (dar ekranda "News Day/Bank Holiday", çoklu Target)
+function FlowField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className={`flex flex-col gap-1 px-3.5 py-2.5 lg:[@media(max-height:820px)]:py-2 lg:[@media(max-height:820px)]:gap-0.5 bg-zinc-950/70 min-w-0 ${wide ? 'col-span-2' : ''}`}>
-      <div className="flex items-center gap-1.5 text-zinc-500 min-w-0 [&>svg]:w-3 [&>svg]:h-3 [&>svg]:shrink-0">
-        {icon}
-        <span className="text-label font-bold uppercase tracking-wider font-sans leading-tight break-words min-w-0">{smartUpper(label)}</span>
-      </div>
-      <div className={`text-xs font-bold font-sans uppercase leading-snug break-words ${valueColor || 'text-zinc-300'}`}>
-        {text}
-      </div>
+    <div className="min-w-0">
+      <div className="text-label font-bold uppercase tracking-wider font-sans text-zinc-500 leading-none mb-1.5">{label}</div>
+      {children}
     </div>
+  );
+}
+
+/** Değer çipi; değer yoksa soluk bir tire (adımın eksik kaldığı görünür) */
+function ValueChip({ value, cls }: { value?: string | null; cls?: string }) {
+  if (!value) return <span className="inline-flex items-center h-6 text-sm font-bold text-zinc-700">—</span>;
+  return (
+    <span lang="en" className={`inline-flex items-center h-6 px-2 rounded-md border text-xs font-bold uppercase tracking-wide font-sans whitespace-nowrap ${cls || "border-zinc-700/70 bg-zinc-900/70 text-zinc-200"}`}>
+      {smartUpper(value)}
+    </span>
   );
 }
 

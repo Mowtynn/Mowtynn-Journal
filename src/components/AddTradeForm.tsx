@@ -23,6 +23,7 @@ import { BasicInfoCard } from './tradeForm/BasicInfoCard';
 import { ResultCard } from './tradeForm/ResultCard';
 import { SetupChips } from './tradeForm/SetupChips';
 import { NotesCard, ChartLinkCard } from './tradeForm/NotesCard';
+import { qualityTone } from './setupFlow/SetupFlow';
 
 interface AddTradeFormProps {
   onSave: (
@@ -118,17 +119,29 @@ const AddTradeForm = React.memo(function AddTradeForm({
   const assetInputRef = useRef<HTMLInputElement>(null);
 
 
-  // Alt çubuk özeti: varlık yazılınca ya da R girilince görünür
+  // Alt çubuk özeti: işlemin tek satırlık "fişi" — parite · yön · hesap · R, ardından kurulum akışının izi
+  // (Asia Range › sweep saati + session · POI TF › confirmations › işlem tipi · kalite). Varlık yazılınca ya da R girilince görünür.
   const summary = useMemo(() => {
     const r = rrValue === "" || !Number.isFinite(Number(rrValue)) ? null : roundR(Number(rrValue));
     const a = asset.trim();
     if (!a && r === null) return null;
+    const trail: { text: string; cls?: string }[] = [];
+    if (asiaRange) trail.push({ text: asiaRange });
+    const poi = [sweepTime && `${sweepTime}${session ? ` ${session}` : ""}`, poiTimeframe].filter(Boolean).join(" · ");
+    if (poi) trail.push({ text: poi });
+    if (selectedConfirmations.length) trail.push({ text: selectedConfirmations.length === 1 ? selectedConfirmations[0] : `${selectedConfirmations.length} confirmation` });
+    if (selectedTrend || planFidelity) {
+      if (selectedTrend) trail.push({ text: selectedTrend });
+      if (planFidelity) trail.push({ text: planFidelity, cls: `font-bold ${qualityTone(planFidelity).text}` });
+    }
     return {
       asset: a,
       dir: a ? type : null,
+      account: accountKind,
       r,
+      trail,
     };
-  }, [asset, type, rrValue]);
+  }, [asset, type, accountKind, rrValue, asiaRange, sweepTime, session, poiTimeframe, selectedConfirmations, selectedTrend, planFidelity]);
 
   // Çift tıklama / Enter tekrarı aynı işlemi iki kez kaydetmesin
   const submitLockRef = useRef(false);
@@ -405,6 +418,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
                   setAsiaRange={setAsiaRange}
                   sweepTime={sweepTime}
                   setSweepTime={setSweepTime}
+                  sessionHint={session}
                   poiTimeframes={poiTimeframes}
                   poiTimeframe={poiTimeframe}
                   setPoiTimeframe={setPoiTimeframe}
@@ -432,13 +446,25 @@ const AddTradeForm = React.memo(function AddTradeForm({
                 {/* Kaydetmeden önce tek bakışta ne kaydedileceği; boşken kısayol ipucu */}
                 {summary ? (
                   <span className="hidden md:flex items-center gap-2 min-w-0 text-label font-sans text-zinc-400 select-none tabular-nums" aria-live="polite">
-                    {summary.asset && <span className="font-bold text-zinc-200 truncate">{summary.asset}</span>}
+                    {summary.asset && <span className="font-bold text-zinc-100 truncate">{summary.asset}</span>}
                     {summary.dir && <span className={summary.dir === "LONG" ? "text-emerald-400 font-bold" : "text-rose-400 font-bold"}>{summary.dir === "LONG" ? "Long" : "Short"}</span>}
+                    {summary.account && (
+                      <span className={`px-1.5 py-px rounded-md border font-bold uppercase ${summary.account === "PROP" ? "border-blue-500/30 text-blue-300" : "border-amber-500/30 text-amber-300"}`}>
+                        {summary.account === "PROP" ? "Prop" : "Hesapsız"}
+                      </span>
+                    )}
                     {summary.r !== null && (
-                      <>
-                        {summary.asset && <span className="text-zinc-700">·</span>}
-                        <span className={`font-bold ${summary.r > 0 ? "text-emerald-400" : summary.r < 0 ? "text-rose-400" : "text-blue-300"}`}>{formatR(summary.r)}</span>
-                      </>
+                      <span className={`font-bold ${summary.r > 0 ? "text-emerald-400" : summary.r < 0 ? "text-rose-400" : "text-blue-300"}`}>{formatR(summary.r)}</span>
+                    )}
+                    {summary.trail.length > 0 && (
+                      <span className="flex items-center gap-1.5 min-w-0 pl-2 ml-0.5 border-l border-zinc-800 truncate" lang="en">
+                        {summary.trail.map((p, i) => (
+                          <React.Fragment key={i}>
+                            {i > 0 && <span className="text-zinc-700">›</span>}
+                            <span className={`whitespace-nowrap ${p.cls || "text-zinc-400"}`}>{p.text}</span>
+                          </React.Fragment>
+                        ))}
+                      </span>
                     )}
                   </span>
                 ) : (
