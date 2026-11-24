@@ -1108,3 +1108,7 @@ Klasik tasarım korunarak, son eklenen alanlar (risk %, hesap bağı, strateji, 
     - Yuvarlak rozetler yerine düz, okunaklı metin: işlem listesinde POI "02:05 · London · 15M" (saat beyaz, session gri, timeframe mavi); işlem detayında Setup Kalitesi kademe renginde yazı, session saatin yanında mavi yazı, Confirmations noktayla ayrılmış liste, başlıkta yön oklu yazı, sonuç kartında hesap türü düz yazı.
     - Düzeltmeler: uzun notlu işlemde not metni kartın dışına taşıyordu (kart artık en az başlık + not alanı kadar, metin kart içinde kayar); çok sayıda confirmation virgülle ayrılmış düz metin, satır sonunda ayraç asılı kalmaz.
     - Confirmations (detay): birden fazlaysa başlık üstte (yanında adet), liste altta kartın tam genişliğinde ve 13px yazıyla; bir satıra 2-3 confirmation sığar.
+  - Kaydırmasız detay turu:
+    - Form: session POI Sweep saatinden otomatik gelir ama tıklanıp başka bir session seçilebilir (açılır menü; elle seçilince sarı ve "elle" yazar). Saat değişince yeniden otomatiğe döner.
+    - İşlem detayı: grafik kutusu görselin kendi oranını alır (üst/alt boşluk yok); sol sütun grafikten uzunsa boşluk yerine grafik büyür. Sol sütun 400-450px, satırlar ve not alanı sıkılaştı; sol tarafta kaydırma gerekmez.
+    - Confirmations (detay) tek satırda: sığmayanlar "…" ile kısalır, tamamı üzerine gelince görünür; başlığın yanında adet. PNG çıktısında tam liste.

@@ -42,7 +42,7 @@ interface TradeDetailModalProps {
 }
 
 /** Notlar kutusunun en küçük yüksekliği: 2-3 cümle (kısa ekranda biraz daha az); pencere ölçümünde bu değer sayılır */
-const notesBoxMinH = (vh: number) => (vh < 820 ? 96 : 112);
+const notesBoxMinH = (vh: number) => (vh < 820 ? 56 : 72);
 /** Notlar kartının metin dışındaki yüksekliği: başlık satırı + aradaki boşluk + iç boşluk + çerçeve */
 const NOTES_CARD_CHROME = 82;
 
@@ -53,6 +53,9 @@ const NOTES_CARD_CHROME = 82;
  * kenarlarda yalnızca ince, eşit bir boşluk kalır. Görsel kutuya orantısı bozulmadan (object-contain) sığdırılır, kırpılmaz.
  */
 const CHART_ASPECT = 1.85;
+/** Görselin gerçek oranı (en/boy) — grafik kutusu görsele tam oturur, üst/alt boşluk kalmaz. Aynı görsel yeniden açılınca pencere zıplamasın diye saklanır. */
+const ASPECT_CACHE = new Map<string, number>();
+const clampAspect = (a: number) => Math.min(2.6, Math.max(1.2, a));
 /** Grafiğin altındaki "Kurulum geçmişi" kartının sabit yüksekliği: kartın içeriği işleme göre değişse de pencere / grafik boyutu değişmez */
 const SETUP_SLOT_H = 72;
 
@@ -107,10 +110,12 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
   const goPrev = React.useCallback(() => { if (prevTrade && onNavigate) { navDirRef.current = -1; onNavigate(prevTrade); } }, [prevTrade, onNavigate]);
   const goNext = React.useCallback(() => { if (nextTrade && onNavigate) { navDirRef.current = 1; onNavigate(nextTrade); } }, [nextTrade, onNavigate]);
 
+  const [imgAspect, setImgAspect] = useState<number | null>(null);
   React.useEffect(() => {
     setImageError(false);
     setNoCors(false);
     const screenshot = trade?.screenshot || (!trade ? displayedTrade?.screenshot : undefined);
+    setImgAspect(screenshot ? ASPECT_CACHE.get(screenshot) ?? null : null);
     if (!screenshot) {
       setResolvedImageUrl(null);
       setIsImageLoading(false);
@@ -205,7 +210,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
       maxH = Math.min(maxH, overlay.clientHeight - parseFloat(os.paddingTop) - parseFloat(os.paddingBottom));
     }
     const headerH = header.offsetHeight;
-    const leftW = Math.round(Math.min(480, Math.max(430, viewport.w * 0.32)));
+    const leftW = Math.round(Math.min(450, Math.max(400, viewport.w * 0.3)));
     // Sol sütunun doğal yüksekliği (notlar en küçük yüksekliğiyle)
     const kids = Array.from(left.children) as HTMLElement[];
     const cs = getComputedStyle(left);
@@ -222,7 +227,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
     });
     const BORDER = 2;
     if (hasChart) {
-      const a = CHART_ASPECT;
+      const a = imgAspect ?? CHART_ASPECT;
       // Grafiğin altındaki kurulum geçmişi alanı (kart olsun olmasın aynı yer ayrılır) ve aradaki boşluk
       const setupH = SETUP_SLOT_H + 16;
       const padX = 40;
@@ -236,6 +241,12 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
         setFit({ h: Math.min(maxH, headerH + leftNeed + BORDER) });
         return;
       }
+      // Sol sütun grafikten uzunsa boşluk bırakmak yerine grafik (oranı korunarak) büyütülür
+      const fixedR = BORDER + headingH + setupH + padY;
+      if (leftNeed > ch + fixedR) {
+        cw = Math.min(chartWMax, Math.min(chartHMax, leftNeed - fixedR) * a);
+        ch = cw / a;
+      }
       cw = Math.floor(cw);
       ch = Math.floor(ch);
       const rightH = ch + BORDER + headingH + setupH + padY;
@@ -248,7 +259,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
       setFit({ h: Math.min(maxH, Math.max(headerH + leftNeed + BORDER, 480)) });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentTrade?.id, hasChart, viewport.w, viewport.h, isExporting, measureTick]);
+  }, [currentTrade?.id, hasChart, viewport.w, viewport.h, isExporting, measureTick, imgAspect]);
 
   const handleDownload = async () => {
     if (!contentRef.current) return;
@@ -507,7 +518,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
               <div ref={bodyRef} onTouchStart={onSwipeStart} onTouchEnd={onSwipeEnd} className={`flex flex-col lg:flex-row flex-1 min-h-0 ${isExporting ? 'overflow-hidden' : 'overflow-y-auto lg:overflow-hidden custom-scrollbar'}`}>
                 
                 {/* Left Sidebar - Meta & Context (approx 35%) */}
-                <div ref={leftColRef} style={fit?.leftW ? { width: fit.leftW } : undefined} className={`w-full lg:w-[40%] bg-zinc-950/40 border-r border-zinc-800/60 p-5 space-y-3.5 lg:[@media(max-height:820px)]:space-y-3 shrink-0 flex flex-col ${isExporting ? 'overflow-visible' : 'lg:overflow-y-auto custom-scrollbar'}`}>
+                <div ref={leftColRef} style={fit?.leftW ? { width: fit.leftW } : undefined} className={`w-full lg:w-[40%] bg-zinc-950/40 border-r border-zinc-800/60 p-4 space-y-3 lg:[@media(max-height:820px)]:space-y-2.5 shrink-0 flex flex-col ${isExporting ? 'overflow-visible' : 'lg:overflow-y-auto custom-scrollbar'}`}>
                   
                   {/* Hızlı kayıt: ayrıntılar eksik */}
                   {currentTrade.quickEntry === true && !isExporting && (() => {
@@ -582,31 +593,16 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                           <SpecRow icon={Layers} label={T(definitionTitles.poiTimeframes, "POI TIMEFRAME")} empty={!currentTrade.poiTimeframe}>
                             <SpecValue>{currentTrade.poiTimeframe}</SpecValue>
                           </SpecRow>
-                          {/* Birden fazla confirmation: başlık üstte (yanında sayı), liste altta kartın tam genişliğinde ve biraz daha küçük
-                              yazıyla; böylece bir satıra 2-3 confirmation sığar. Tek confirmation diğer satırlar gibi sağda durur. */}
+                          {/* Confirmations tek satırda: sığmayanlar "…" ile kısalır, tamamı üzerine gelince görünür; başlıkta adet */}
                           <SpecRow
                             icon={Scale}
                             label={T(definitionTitles.premiumDiscounts, "CONFIRMATIONS")}
                             empty={conf.length === 0}
-                            stacked={conf.length > 1}
                             aside={conf.length > 1 ? <span className="text-label font-bold tabular-nums text-zinc-500">{conf.length}</span> : undefined}
                           >
-                            {conf.length > 1 ? (
-                              <span lang="en" className="block pl-[22px] text-[13px] font-semibold uppercase tracking-wide font-sans text-zinc-100 leading-6">
-                                {conf.map((c, i) => (
-                                  <React.Fragment key={c}>
-                                    {i > 0 && " "}
-                                    {/* Her confirmation bölünmeden kalır; satır yalnızca aralarından bölünür */}
-                                    <span className="whitespace-nowrap">
-                                      {smartUpper(c)}
-                                      {i < conf.length - 1 && <span className="text-zinc-600">,</span>}
-                                    </span>
-                                  </React.Fragment>
-                                ))}
-                              </span>
-                            ) : (
-                              <SpecValue>{conf[0]}</SpecValue>
-                            )}
+                            <span lang="en" title={conf.join(", ")} className={`block min-w-0 text-right font-bold uppercase tracking-wide font-sans text-zinc-100 ${isExporting ? 'whitespace-normal' : 'truncate'} ${conf.length > 2 ? 'text-xs' : 'text-[13px]'}`}>
+                              {conf.map(smartUpper).join(", ")}
+                            </span>
                           </SpecRow>
                         </dl>
                       </section>
@@ -634,7 +630,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                         <button
                           type="button"
                           onClick={() => { onEdit(currentTrade); onClose(); }}
-                          className="w-full h-full min-h-[64px] flex flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-700 transition-colors cursor-pointer"
+                          className="w-full h-full min-h-[48px] flex flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-700 transition-colors cursor-pointer"
                         >
                           <PenLine size={14} />
                           <span className="text-xs">Not yok · eklemek için dokun</span>
@@ -660,7 +656,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                       )}
                     </div>
                     
-                    <div style={fit?.cw && fit.ch ? { width: fit.cw + 2, height: (fit.chBox ?? fit.ch) + 2, flex: 'none', minHeight: 0, padding: 0 } : phoneChart ? { minHeight: 0, maxHeight: 'none', padding: 0, aspectRatio: String(CHART_ASPECT) } : undefined} className={`bg-zinc-900/40 border border-zinc-800/60 rounded-xl overflow-hidden relative group w-full flex items-center justify-center p-2 ${
+                    <div style={fit?.cw && fit.ch ? { width: fit.cw + 2, height: (fit.chBox ?? fit.ch) + 2, flex: 'none', minHeight: 0, padding: 0 } : phoneChart ? { minHeight: 0, maxHeight: 'none', padding: 0, aspectRatio: String(imgAspect ?? CHART_ASPECT) } : undefined} className={`bg-zinc-900/40 border border-zinc-800/60 rounded-xl overflow-hidden relative group w-full flex items-center justify-center p-2 ${
                       isExporting 
                         ? 'h-auto max-h-none' 
                         : currentTrade.screenshot 
@@ -699,9 +695,15 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                             className={`object-contain rounded-lg transition-opacity duration-200 ${isExporting ? '' : 'cursor-zoom-in'} ${isExporting ? 'w-auto h-auto max-w-full' : 'w-auto h-auto max-w-full max-h-[min(420px,43vh)] lg:absolute lg:inset-0 lg:m-auto lg:w-full lg:h-full lg:max-h-none lg:p-2'} ${isImageLoading ? 'opacity-0' : 'opacity-100'}`}
                             crossOrigin={noCors ? undefined : "anonymous"}
                             referrerPolicy="no-referrer"
-                            onLoad={() => {
+                            onLoad={(e) => {
                               setIsImageLoading(false);
                               setImageError(false);
+                              const im = e.currentTarget;
+                              if (im.naturalWidth > 0 && im.naturalHeight > 0) {
+                                const a = clampAspect(im.naturalWidth / im.naturalHeight);
+                                if (currentTrade?.screenshot) ASPECT_CACHE.set(currentTrade.screenshot, a);
+                                setImgAspect((prev) => (prev && Math.abs(prev - a) < 0.01 ? prev : a));
+                              }
                             }}
                             onError={() => {
                               if (!noCors) { setNoCors(true); return; }
@@ -898,12 +900,13 @@ function SpecRow({
     );
   }
   return (
-    <div className={`flex ${top ? "items-start" : "items-center"} justify-between gap-4 py-2.5 border-b border-zinc-800/50 last:border-b-0 min-h-[48px]`}>
+    <div className={`flex ${top ? "items-start" : "items-center"} justify-between gap-4 py-1.5 border-b border-zinc-800/50 last:border-b-0 min-h-[40px]`}>
       <dt className={`flex items-center gap-2 shrink-0 text-xs font-bold uppercase tracking-wider font-sans ${top ? "pt-0.5" : ""} ${empty ? "text-zinc-600" : "text-zinc-400"}`}>
         <Icon size={14} className={empty ? "text-zinc-700" : "text-blue-400/80"} />
         {label}
+        {aside && !empty && aside}
       </dt>
-      <dd className="min-w-0 flex justify-end text-right">
+      <dd className="min-w-0 flex-1 flex justify-end text-right">
         {empty ? <span className="text-sm font-bold text-zinc-700">—</span> : children}
       </dd>
     </div>

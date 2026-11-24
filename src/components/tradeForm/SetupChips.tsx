@@ -1,5 +1,5 @@
 import React from "react";
-import { ShieldCheck, TrendingUp, Compass, MoveHorizontal, Waves, Timer, Crosshair, Layers, Scale } from "lucide-react";
+import { ShieldCheck, TrendingUp, Compass, MoveHorizontal, Waves, Timer, Crosshair, Layers, Scale, ChevronDown } from "lucide-react";
 import { ASIA_RANGE_TYPES, ASIA_RANGE_FORM_TYPES } from "../../types";
 import { SweepTimePicker } from "./SweepTimePicker";
 import { CHIP_BASE, SetState, withSelected, Titles, SlideBg } from './shared';
@@ -39,6 +39,9 @@ export const SetupChips = React.memo(function SetupChips({
   sweepTime,
   setSweepTime,
   sessionHint,
+  sessionAuto = "",
+  sessions = [],
+  onSessionChange,
   poiTimeframes,
   poiTimeframe,
   setPoiTimeframe,
@@ -60,8 +63,14 @@ export const SetupChips = React.memo(function SetupChips({
   setAsiaRange: SetState<string>;
   sweepTime: string;
   setSweepTime: SetState<string>;
-  /** POI Sweep saatinden otomatik çıkarılan session (yalnızca bilgi) */
+  /** Geçerli session (otomatik ya da kullanıcının seçtiği) */
   sessionHint?: string;
+  /** POI Sweep saatinden otomatik çıkan session */
+  sessionAuto?: string;
+  /** Seçilebilir session listesi */
+  sessions?: string[];
+  /** Session değiştirildiğinde (otomatik değer seçilirse otomatiğe döner) */
+  onSessionChange?: (v: string) => void;
   poiTimeframes: string[];
   poiTimeframe: string;
   setPoiTimeframe: SetState<string>;
@@ -180,13 +189,34 @@ export const SetupChips = React.memo(function SetupChips({
                 {star("sweepTime")}
               </span>
               <SweepTimePicker value={sweepTime} onChange={setSweepTime} />
-              {/* Session saatten otomatik çıkar: seçicinin altında bilgi satırı (başlığı ve seçiciyi daraltmaz) */}
-              {sweepTime && sessionHint && (
-                <div lang="en" title="Session: POI Sweep saatinden otomatik" className="mt-1.5 flex items-center gap-1.5 text-label text-zinc-500 font-sans">
-                  <span aria-hidden className="w-1.5 h-1.5 rounded-full bg-blue-400/80" />
-                  Session <span className="font-bold text-blue-200">{sessionHint}</span>
-                </div>
-              )}
+              {/* Session saatten otomatik gelir; tıklanıp başka bir session seçilebilir (seçicinin altında, başlığı ve seçiciyi daraltmaz) */}
+              {sweepTime && (sessionHint || sessions.length > 0) && (() => {
+                const opts = Array.from(new Set([...sessions, ...(sessionHint ? [sessionHint] : [])]));
+                const manual = !!sessionHint && sessionHint !== sessionAuto;
+                return (
+                  <div lang="en" className="mt-2 flex items-center gap-2 text-label font-sans">
+                    <span className="text-zinc-500 font-semibold uppercase tracking-wider">Session</span>
+                    <label className="relative inline-flex items-center min-w-0">
+                      <select
+                        value={sessionHint || ""}
+                        onChange={(e) => onSessionChange?.(e.target.value)}
+                        disabled={!onSessionChange}
+                        aria-label="Session"
+                        title={manual ? "Elle seçildi · otomatik için saate göre olanı seçin" : "POI Sweep saatinden otomatik · değiştirmek için tıklayın"}
+                        style={{ colorScheme: "dark" }}
+                        className={`appearance-none cursor-pointer h-7 pl-2.5 pr-7 rounded-lg border text-xs font-bold transition-colors outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 ${manual ? "border-amber-500/40 bg-amber-500/10 text-amber-200 hover:bg-amber-500/15" : "border-blue-500/30 bg-blue-500/10 text-blue-200 hover:bg-blue-500/15"}`}
+                      >
+                        {!sessionHint && <option value="">Seç</option>}
+                        {opts.map((o) => (
+                          <option key={o} value={o}>{o}{o === sessionAuto ? " (otomatik)" : ""}</option>
+                        ))}
+                      </select>
+                      <ChevronDown size={13} aria-hidden className={`pointer-events-none absolute right-2 ${manual ? "text-amber-300" : "text-blue-300"}`} />
+                    </label>
+                    {manual && <span className="text-amber-300/70 truncate">elle seçildi</span>}
+                  </div>
+                );
+              })()}
             </div>
 
             <div className="min-w-0">

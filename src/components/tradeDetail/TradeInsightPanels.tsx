@@ -36,7 +36,7 @@ function RRuler({ r }: { r: number }) {
   const fill = r > 0 ? 'bg-emerald-400/80' : r < 0 ? 'bg-rose-400/80' : 'bg-blue-300/80';
   const dot = r > 0 ? 'bg-emerald-300 shadow-[0_0_10px_rgba(52,211,153,0.6)]' : r < 0 ? 'bg-rose-300 shadow-[0_0_10px_rgba(251,113,133,0.6)]' : 'bg-blue-200 shadow-[0_0_10px_rgba(147,197,253,0.6)]';
   return (
-    <div className="mt-3.5" aria-hidden>
+    <div className="mt-2.5" aria-hidden>
       <div className="relative h-1.5 rounded-full bg-zinc-800/90">
         {ticks.map((v) => (
           <span key={v} className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-px ${v === 0 ? 'h-3 bg-zinc-500' : 'h-2 bg-zinc-700'}`} style={{ left: `${pos(v)}%` }} />

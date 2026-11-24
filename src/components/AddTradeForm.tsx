@@ -100,12 +100,14 @@ const AddTradeForm = React.memo(function AddTradeForm({
   const [asiaRange, setAsiaRange] = useState(init.asiaRange);
   const [sweepTime, setSweepTime] = useState(init.sweepTime);
   const [poiTimeframe, setPoiTimeframe] = useState(init.poiTimeframe);
-  // Session formda görünmez: POI Sweep saatinden arka planda çıkarılıp kaydedilir (analizler için).
-  // Eski bir işlem düzenlenirken saat değişmediyse kayıttaki session korunur.
-  const session =
-    editingTrade?.session && sweepTime === (editingTrade.sweepTime || "")
-      ? editingTrade.session
-      : (sweepTime && autoSessionForNyTime(sweepTime, sessions)) || "";
+  // Session POI Sweep saatinden otomatik gelir; kullanıcı tıklayıp başka bir session seçebilir.
+  // Seçim o saate bağlıdır: saat değişince yeniden otomatiğe döner. Düzenlemede kayıttaki session, saat aynı kaldıkça korunur.
+  const autoSession = (sweepTime && autoSessionForNyTime(sweepTime, sessions)) || "";
+  const [sessionPick, setSessionPick] = useState<{ t: string; v: string } | null>(() =>
+    editingTrade?.session ? { t: editingTrade.sweepTime || "", v: editingTrade.session } : null,
+  );
+  const session = sweepTime && sessionPick && sessionPick.t === sweepTime ? sessionPick.v : autoSession;
+  const pickSession = (v: string) => setSessionPick(v && v !== autoSession ? { t: sweepTime, v } : null);
 
   const [rrValue, setRrValue] = useState<Num>(init.rrValue);
 
@@ -440,6 +442,9 @@ const AddTradeForm = React.memo(function AddTradeForm({
                 sweepTime={sweepTime}
                 setSweepTime={setSweepTime}
                 sessionHint={session}
+                sessionAuto={autoSession}
+                sessions={sessions}
+                onSessionChange={pickSession}
                 poiTimeframes={poiTimeframes}
                 poiTimeframe={poiTimeframe}
                 setPoiTimeframe={setPoiTimeframe}
