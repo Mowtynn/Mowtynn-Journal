@@ -17,10 +17,13 @@ export function FlowStep({
   done,
   last = false,
   dense = false,
+  error = false,
   children,
 }: {
   n: number;
   done: boolean;
+  /** Zorunlu bir alan boş kaldı (kaydetme denendikten sonra): düğüm kırmızı */
+  error?: boolean;
   last?: boolean;
   /** Detay görünümü: adımlar arası boşluk daha dar */
   dense?: boolean;
@@ -33,7 +36,9 @@ export function FlowStep({
           className={`-mt-[3px] w-[22px] h-[22px] shrink-0 rounded-full border flex items-center justify-center text-label font-bold tabular-nums leading-none transition-ui duration-300 ${
             done
               ? "bg-blue-500/20 border-blue-500/60 text-blue-200 shadow-[0_0_12px_rgba(59,130,246,0.28)]"
-              : "bg-zinc-950 border-zinc-700 text-zinc-500"
+              : error
+                ? "bg-rose-500/10 border-rose-500/60 text-rose-300 shadow-[0_0_12px_rgba(244,63,94,0.22)]"
+                : "bg-zinc-950 border-zinc-700 text-zinc-500"
           }`}
         >
           {done ? <Check size={11} strokeWidth={3} /> : n}

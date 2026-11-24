@@ -31,6 +31,8 @@ function RRuler({ r }: { r: number }) {
   const step = span <= 8 ? 1 : Math.ceil(span / 6);
   const ticks: number[] = [];
   for (let v = lo; v <= hi; v++) if (v === 0 || v === lo || v === hi || v % step === 0) ticks.push(v);
+  // Etiketler: uçlar ve sıfır her zaman; aradakiler uçlara çok yakınsa yazılmaz (ör. "+8R +9R" üst üste binmesin)
+  const labels = ticks.filter((v) => v === lo || v === hi || v === 0 || (hi - v >= step * 0.75 && v - lo >= step * 0.75 && Math.abs(v) >= step * 0.75));
   const fill = r > 0 ? 'bg-emerald-400/80' : r < 0 ? 'bg-rose-400/80' : 'bg-blue-300/80';
   const dot = r > 0 ? 'bg-emerald-300 shadow-[0_0_10px_rgba(52,211,153,0.6)]' : r < 0 ? 'bg-rose-300 shadow-[0_0_10px_rgba(251,113,133,0.6)]' : 'bg-blue-200 shadow-[0_0_10px_rgba(147,197,253,0.6)]';
   return (
@@ -43,7 +45,7 @@ function RRuler({ r }: { r: number }) {
         <span className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-3 rounded-full border-2 border-zinc-950 ${dot}`} style={{ left: `${p}%` }} />
       </div>
       <div className="relative h-3 mt-1.5">
-        {ticks.map((v) => (
+        {labels.map((v) => (
           <span
             key={v}
             className={`absolute top-0 text-label leading-none tabular-nums ${v === 0 ? 'text-zinc-300' : 'text-zinc-500'} ${v === lo ? '' : v === hi ? '-translate-x-full' : '-translate-x-1/2'}`}

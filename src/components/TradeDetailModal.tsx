@@ -389,7 +389,8 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
               {...MODAL_PANEL}
               style={{ 
                 willChange: "transform, opacity", 
-                ...(isExporting ? { margin: 0, padding: 0, boxShadow: 'none', borderRadius: 0, border: 'none', transform: 'none' } : {}),
+                // Dışa aktarırken pencere ekran yüksekliğiyle sınırlanmaz (.modal-layer > * kuralı): uzun notlar PNG'de kesilmesin
+                ...(isExporting ? { margin: 0, padding: 0, boxShadow: 'none', borderRadius: 0, border: 'none', transform: 'none', maxHeight: 'none' } : {}),
                 ...(fit && !isExporting ? { height: fit.h, ...(fit.w ? { width: fit.w, maxWidth: 'none' } : {}) } : {}),
               }}
               onClick={(e) => e.stopPropagation()}
@@ -405,14 +406,14 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
               {/* Header */}
               <div ref={headerRef} className="modal-header gap-3 relative">
                 <div ref={headInfoRef} className="flex flex-col xl:flex-row xl:items-center gap-1.5 xl:gap-5 min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 min-w-0">
+                  <div className="flex flex-wrap xl:flex-nowrap items-center gap-x-3 gap-y-1.5 min-w-0">
                     <h2 className="heading-1 flex items-center gap-3 min-w-0">
                       <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(59,130,246,0.15)]">
                         <Activity size={16} />
                       </div>
                       {currentTrade.asset}
                     </h2>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 shrink-0">
                       <span className={`badge-base ${currentTrade.type === 'LONG' ? 'badge-win' : 'badge-loss'}`}>
                         {currentTrade.type}
                       </span>
@@ -420,9 +421,9 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                     </div>
                   </div>
                   <div className="hidden xl:block w-px h-8 bg-zinc-800"></div>
-                  <div className="flex items-center gap-2 text-zinc-400 text-xs xl:text-sm font-sans min-w-0">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-zinc-400 text-xs xl:text-sm font-sans min-w-0">
                     <Calendar size={14} className="text-zinc-500 shrink-0"/>
-                    <span className="truncate whitespace-nowrap">{formatDate(currentTrade.createdAt)}</span>
+                    <span className="whitespace-nowrap">{formatDate(currentTrade.createdAt)}</span>
                     {(currentTrade.sweepTime || currentTrade.session) && (
                       <span className="flex items-center gap-1.5 whitespace-nowrap text-zinc-500">
                         <span className="text-zinc-700">·</span>
@@ -602,9 +603,9 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                       <FileText size={14} className="text-zinc-400 shrink-0" />
                       <span className={CARD_TITLE}>{smartUpper(cleanDefinitionTitleString(definitionTitles.notesCard) || "Analiz & Notlar")}</span>
                     </div>
-                    <div style={isExporting ? undefined : { minHeight: notesBoxMinH(viewport.h) }} className={`overflow-x-hidden ${isExporting ? '' : 'max-h-[220px] lg:max-h-none lg:flex-1 lg:min-h-0 overflow-y-auto custom-scrollbar'}`}>
+                    <div style={isExporting ? undefined : { minHeight: notesBoxMinH(viewport.h) }} className={isExporting ? 'overflow-visible' : 'overflow-x-hidden max-h-[220px] lg:max-h-none lg:flex-1 lg:min-h-0 overflow-y-auto custom-scrollbar'}>
                       {currentTrade.notes ? (
-                        <p className="text-zinc-200 text-sm leading-7 whitespace-pre-wrap break-words font-sans">
+                        <p className="text-zinc-200 text-sm leading-6 whitespace-pre-wrap break-words font-sans">
                           {currentTrade.notes}
                         </p>
                       ) : (
@@ -628,7 +629,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                   <section className={`flex flex-col ${isExporting ? 'flex-shrink-0' : 'flex-shrink-0 lg:flex-1 lg:min-h-0'}`}>
                     <div className="flex justify-between items-center mb-2">
                       <h4 className="heading-2">
-                        <ImageIcon size={12}/> TEKNİK ANALİZ GÖRSELİ
+                        <ImageIcon size={12}/> GRAFİK
                       </h4>
                       {currentTrade.screenshot && !imageError && (
                         <a href={/^https?:\/\//i.test(currentTrade.screenshot || "") ? currentTrade.screenshot! : undefined} target="_blank" rel="noopener noreferrer" className="text-label text-blue-400 hover:text-blue-300 flex items-center gap-1 font-sans uppercase font-bold bg-blue-500/10 px-2.5 py-1 rounded-md transition-colors">

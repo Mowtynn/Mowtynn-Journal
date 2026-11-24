@@ -1097,3 +1097,7 @@ Klasik tasarım korunarak, son eklenen alanlar (risk %, hesap bağı, strateji, 
   - Grafik büyütme: grafiğe tıklayınca (ya da üzerine gelince çıkan "Büyüt") uygulama içinde tam ekran açılır; Esc, ✕ ya da dışarı tıklama kapatır. "Tam Boyut" yeni sekme bağlantısı duruyor.
   - OpenMarket'in yeni paylaşım linki (`share.openmarket.xyz/<kimlik>`) tanınıyor: görsel sayfanın og:image etiketinden (snapshots.openmarket.xyz) bulunup sunucudan geçirilir. Önceden yalnızca eski `k6a.ai` linki tanındığı için yeni link "görsel yüklenemedi" hatası veriyordu.
   - Kurulum akışının sırası: 1. Asia Range → 2. İşlem Tipi · Setup Kalitesi → 3. POI (Sweep Time · POI Timeframe) → 4. Confirmations (form ve işlem detayı aynı sırada).
+  - Son düzen turu (uç durumlarla denendi: uzun parite adı, +8.5R, −0.5R, BE, 7 confirmation, uzun not, hızlı kayıt, Hesapsız, Swept, 6 timeframe, 4 kalite seviyesi):
+    - Zorunlu alanlar formda `*` ile işaretli (Tanımlamalar > Zorunlu Alanlar; değişince anında). Kaydetme denendiğinde boş kalan zorunlu alanların başlığı ve adım düğümü kırmızı olur; uyarı mesajı da kalır.
+    - Seçenek çoksa (5+ timeframe, 4+ kalite, 3+ işlem tipi) o adımın alanları alt alta tam genişlikte dizilir; yazılar kesilmez.
+    - İşlem detayı: R cetvelinde uçtaki etiketler üst üste binmez (+8R +9R gibi); başlıkta parite ve yön hiç alt satıra kaymaz (PNG çıktısında da); grafik başlığı "Grafik"; not satır aralığı sıkılaştı.

@@ -45,6 +45,8 @@ export const SetupChips = React.memo(function SetupChips({
   premiumDiscounts,
   selectedConfirmations,
   setSelectedConfirmations,
+  required = [],
+  flagMissing = false,
   className = "",
 }: {
   titles: Titles;
@@ -66,6 +68,10 @@ export const SetupChips = React.memo(function SetupChips({
   premiumDiscounts: string[];
   selectedConfirmations: string[];
   setSelectedConfirmations: SetState<string[]>;
+  /** Zorunlu alanlar (Tanımlamalar > Zorunlu Alanlar): başlıkta * ile işaretlenir */
+  required?: readonly string[];
+  /** Kaydetme denendi ve zorunlu alan eksik: boş zorunlu alanlar kırmızı görünür */
+  flagMissing?: boolean;
   className?: string;
 }) {
   const { L, H } = titles;
@@ -73,6 +79,22 @@ export const SetupChips = React.memo(function SetupChips({
   const trendOptions = trendTypes.length > 0 ? trendTypes : ["Continuation", "Reversal"];
   const steps = flowSteps({ asiaRange, sweepTime, poiTimeframe, confirmations: selectedConfirmations, trend: selectedTrend, planFidelity });
   const quality = qualityTone(planFidelity);
+  // Zorunlu alan işareti ve (kaydetme denendikten sonra) eksik vurgusu
+  const isReq = (id: string) => required.includes(id);
+  const miss = {
+    asiaRange: flagMissing && isReq("asiaRange") && !asiaRange,
+    trend: flagMissing && isReq("trend") && !selectedTrend,
+    planFidelity: flagMissing && isReq("planFidelity") && !planFidelity,
+    sweepTime: flagMissing && isReq("sweepTime") && !sweepTime,
+    poiTimeframe: flagMissing && isReq("poiTimeframe") && !poiTimeframe,
+    premiumDiscount: flagMissing && isReq("premiumDiscount") && selectedConfirmations.length === 0,
+  };
+  const lbl = (err: boolean) => (err ? LABEL.replace("text-zinc-300", "text-rose-300") : LABEL);
+  const star = (id: string) =>
+    isReq(id) ? <span aria-label="zorunlu" title="Zorunlu alan" className="-ml-0.5 text-rose-400/80">*</span> : null;
+  // Seçenek çoksa (ör. 6 timeframe, 4 kalite) yan yana sığmaz: o adımın alanları alt alta tam genişlikte dizilir
+  const stackDecision = trendOptions.length > 2 || planFidelities.length > 3;
+  const stackPoi = tfOptions.length > 4;
 
   return (
     <div className={`tf-card ${className} bg-zinc-900/50 border border-zinc-800/80 rounded-2xl p-4 flex flex-col gap-4 shadow-sm`}>
@@ -84,10 +106,11 @@ export const SetupChips = React.memo(function SetupChips({
 
       <div className="flex flex-col">
         {/* 1. ASIA RANGE: Range · Trend ("Swept" yalnızca o değeri taşıyan eski bir kayıt düzenlenirken görünür) */}
-        <FlowStep n={1} done={steps[0]}>
-          <label lang="en" className={LABEL}>
+        <FlowStep n={1} done={steps[0]} error={miss.asiaRange}>
+          <label lang="en" className={lbl(miss.asiaRange)}>
             <Compass size={13} className="text-blue-400" />
             {L("asiaRange")}
+            {star("asiaRange")}
           </label>
           <div role="radiogroup" className={`${SEGMENT} h-10`}>
             {(asiaRange === "Swept" ? ASIA_RANGE_TYPES : ASIA_RANGE_FORM_TYPES).map((opt) => {
@@ -105,12 +128,13 @@ export const SetupChips = React.memo(function SetupChips({
         </FlowStep>
 
         {/* 2. DEĞERLENDİRME: İŞLEM TİPİ · SETUP KALİTESİ (kalite seçimi kademesinin rengini alır: A+ yeşil · A mavi · B-C kırmızı) */}
-        <FlowStep n={2} done={steps[1]}>
-          <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-x-4 gap-y-3.5">
+        <FlowStep n={2} done={steps[1]} error={miss.trend || miss.planFidelity}>
+          <div className={`grid grid-cols-1 ${stackDecision ? "" : "sm:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]"} gap-x-4 gap-y-3.5`}>
             <div className="min-w-0">
-              <label lang="en" className={LABEL}>
+              <label lang="en" className={lbl(miss.trend)}>
                 <TrendingUp size={13} className="text-blue-400" />
                 {H("trendTypes", "İŞLEM TİPİ")}
+                {star("trend")}
               </label>
               <div className={`${SEGMENT} h-9`}>
                 {trendOptions.map((tr) => {
@@ -126,9 +150,10 @@ export const SetupChips = React.memo(function SetupChips({
             </div>
 
             <div className="min-w-0">
-              <label lang="en" className={LABEL}>
+              <label lang="en" className={lbl(miss.planFidelity)}>
                 <ShieldCheck size={13} className="text-blue-400" />
                 {H("planFidelities", "SETUP KALİTESİ")}
+                {star("planFidelity")}
               </label>
               <div className={`${SEGMENT} h-9`}>
                 {planFidelities.map((item) => {
@@ -146,12 +171,13 @@ export const SetupChips = React.memo(function SetupChips({
         </FlowStep>
 
         {/* 3. POI: SWEEP TIME (NY) · POI TIMEFRAME — session saatten otomatik çıkar, etiketin yanında görünür */}
-        <FlowStep n={3} done={steps[2]}>
-          <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-x-4 gap-y-3.5">
+        <FlowStep n={3} done={steps[2]} error={miss.sweepTime || miss.poiTimeframe}>
+          <div className={`grid grid-cols-1 ${stackPoi ? "" : "sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]"} gap-x-4 gap-y-3.5`}>
             <div className="min-w-0">
-              <span lang="en" className={LABEL}>
+              <span lang="en" className={lbl(miss.sweepTime)}>
                 <Timer size={13} className="text-blue-400 shrink-0" />
                 <span className="truncate">{L("sweepTime")}</span>
+                {star("sweepTime")}
                 {sessionHint && (
                   <span
                     title="Session: POI Sweep saatinden otomatik"
@@ -165,9 +191,10 @@ export const SetupChips = React.memo(function SetupChips({
             </div>
 
             <div className="min-w-0">
-              <span lang="en" className={LABEL}>
+              <span lang="en" className={lbl(miss.poiTimeframe)}>
                 <Layers size={13} className="text-blue-400 shrink-0" />
                 {H("poiTimeframes", "POI TIMEFRAME")}
+                {star("poiTimeframe")}
               </span>
               <div role="radiogroup" className={`${SEGMENT} h-9`}>
                 {tfOptions.map((tf) => {
@@ -185,10 +212,11 @@ export const SetupChips = React.memo(function SetupChips({
         </FlowStep>
 
         {/* 4. CONFIRMATIONS (çoklu) */}
-        <FlowStep n={4} done={steps[3]} last>
-          <span lang="en" className={LABEL}>
+        <FlowStep n={4} done={steps[3]} error={miss.premiumDiscount} last>
+          <span lang="en" className={lbl(miss.premiumDiscount)}>
             <Scale size={13} className="text-blue-400 shrink-0" />
             {H("premiumDiscounts", "CONFIRMATIONS")}
+            {star("premiumDiscount")}
             {selectedConfirmations.length > 1 && (
               <span className="ml-auto text-zinc-500 normal-case tracking-normal font-semibold tabular-nums">{selectedConfirmations.length} seçili</span>
             )}

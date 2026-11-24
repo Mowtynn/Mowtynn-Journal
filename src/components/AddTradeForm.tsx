@@ -13,7 +13,7 @@ import {
   getTradeAccountKind,
 } from "../constants/constants";
 import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
-import { missingRequired } from "../lib/requiredFields";
+import { missingRequired, loadRequiredFields, REQUIRED_FIELDS_EVENT } from "../lib/requiredFields";
 import { Plus, X, Zap, Copy } from "lucide-react";
 import { Num, buildInitial, useTitles, statusOfR } from './tradeForm/shared';
 import { roundR, tradeConfirmations } from '../lib/tradeModel';
@@ -112,6 +112,19 @@ const AddTradeForm = React.memo(function AddTradeForm({
   const [notes, setNotes] = useState(init.notes);
   const [screenshot, setScreenshot] = useState<string | null>(init.screenshot);
   const [tradeDate, setTradeDate] = useState(init.tradeDate);
+
+  // Zorunlu alanlar (Tanımlamalar'dan; değişince güncellenir) ve kaydetme denendikten sonra eksiklerin vurgusu
+  const [requiredFields, setRequiredFields] = useState(loadRequiredFields);
+  useEffect(() => {
+    const sync = () => setRequiredFields(loadRequiredFields());
+    window.addEventListener(REQUIRED_FIELDS_EVENT, sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener(REQUIRED_FIELDS_EVENT, sync);
+      window.removeEventListener("storage", sync);
+    };
+  }, []);
+  const [flagMissing, setFlagMissing] = useState(false);
 
   const [isAssetDropdownOpen, setIsAssetDropdownOpen] = useState(false);
   const [pairError, setPairError] = useState(false);
@@ -220,8 +233,9 @@ const AddTradeForm = React.memo(function AddTradeForm({
     };
     // Zorunlu alanlar (Tanımlamalar > Zorunlu Alanlar): tam kayıtta boş bırakılamaz; Hızlı Kayıt muaf
     if (!isQuick) {
-      const missing = missingRequired(record);
+      const missing = missingRequired(record, requiredFields);
       if (missing.length) {
+        setFlagMissing(true);
         toast.error(`Zorunlu alanlar eksik: ${missing.join(", ")}. Ayrıntıları sonra girmek için Hızlı Kayıt kullan.`, { duration: 6000 });
         return;
       }
@@ -432,6 +446,8 @@ const AddTradeForm = React.memo(function AddTradeForm({
                 premiumDiscounts={premiumDiscounts}
                 selectedConfirmations={selectedConfirmations}
                 setSelectedConfirmations={setSelectedConfirmations}
+                required={requiredFields}
+                flagMissing={flagMissing}
               />
               <NotesCard className="order-5" titles={titles} notes={notes} setNotes={setNotes} />
             </div>
