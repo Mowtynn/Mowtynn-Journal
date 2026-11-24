@@ -373,11 +373,16 @@ const AddTradeForm = React.memo(function AddTradeForm({
 
 
       <form ref={formRef} onSubmit={handleSubmit} noValidate className="flex flex-col flex-1 min-h-0">
-        <div className={`tf-body p-4 sm:p-5 flex flex-col ${isQuick ? "md:grid md:grid-cols-2 md:items-stretch" : "lg:grid lg:grid-cols-2 xl:grid-cols-[minmax(0,11fr)_minmax(0,14fr)_minmax(0,8fr)]"} gap-4 overflow-y-auto overscroll-contain flex-1 min-h-0`}>
+        {/* Gövde: iki eşit sütun, aynı hizada biter.
+            Sol: işlemin kimliği ve sonucu (Temel Bilgiler · Sonuç · Grafik Linki) — Sağ: Kurulum akışı · Notlar.
+            Telefonda tek sütun ve okuma sırası: Temel → Sonuç → Kurulum → Grafik → Notlar (sütun sarmalayıcıları "contents" olur,
+            kartlar order ile dizilir). Hızlı kayıtta yalnızca Temel ve Sonuç, yan yana. */}
+        <div className={`tf-body p-4 sm:p-5 flex flex-col ${isQuick ? "md:grid md:grid-cols-2 md:items-stretch" : "lg:grid lg:grid-cols-2 lg:items-stretch"} gap-4 overflow-y-auto overscroll-contain flex-1 min-h-0`}>
 
-          {/* 1. SÜTUN: TEMEL BİLGİLER + SONUÇ — işlemin özü tek yerde. Hızlı kayıtta sarmalayıcı "contents" olur: Temel ve Sonuç yan yana iki sütun */}
-          <div className={isQuick ? "contents" : "flex flex-col gap-4 min-w-0"}>
+          {/* SOL SÜTUN */}
+          <div className={isQuick ? "contents" : "contents lg:flex lg:flex-col lg:gap-4 lg:min-w-0"}>
             <BasicInfoCard
+              className="order-1"
               titles={titles}
               assets={assets}
               asset={asset}
@@ -397,43 +402,39 @@ const AddTradeForm = React.memo(function AddTradeForm({
               setTradeDate={setTradeDate}
             />
             <ResultCard
+              className="order-2"
               titles={titles}
               rrValue={rrValue}
               setRrValue={setRrValue}
             />
+            {!isQuick && <ChartLinkCard className="order-4" titles={titles} screenshot={screenshot} setScreenshot={setScreenshot} />}
           </div>
 
-          {/* 2. SÜTUN: KURULUM ÇİPLERİ — 3. SÜTUN: NOTLAR (hızlı kayıtta yok) */}
+          {/* SAĞ SÜTUN: KURULUM AKIŞI + NOTLAR (hızlı kayıtta yok) */}
           {!isQuick && (
-            <div className="flex flex-col min-w-0">
+            <div className="contents lg:flex lg:flex-col lg:gap-4 lg:min-w-0">
               <SetupChips
-                  titles={titles}
-                  planFidelities={planFidelities}
-                  planFidelity={planFidelity}
-                  setPlanFidelity={setPlanFidelity}
-                  trendTypes={trendTypes}
-                  selectedTrend={selectedTrend}
-                  setSelectedTrend={setSelectedTrend}
-                  asiaRange={asiaRange}
-                  setAsiaRange={setAsiaRange}
-                  sweepTime={sweepTime}
-                  setSweepTime={setSweepTime}
-                  sessionHint={session}
-                  poiTimeframes={poiTimeframes}
-                  poiTimeframe={poiTimeframe}
-                  setPoiTimeframe={setPoiTimeframe}
-                  premiumDiscounts={premiumDiscounts}
-                  selectedConfirmations={selectedConfirmations}
-                  setSelectedConfirmations={setSelectedConfirmations}
-                />
-            </div>
-          )}
-          {!isQuick && (
-            <div className="flex flex-col gap-4 min-w-0 lg:col-span-2 lg:grid lg:grid-cols-2 xl:col-span-1 xl:flex">
-              {/* 3. SÜTUN: GRAFİK + NOTLAR — sonradan dönülecek kayıtlar. Geniş ekranda (xl) üç sütun yan yana;
-                  1024–1279px'de bu ikili alta, yan yana iner (alanlar sıkışmaz) */}
-              <ChartLinkCard titles={titles} screenshot={screenshot} setScreenshot={setScreenshot} />
-              <NotesCard titles={titles} notes={notes} setNotes={setNotes} />
+                className="order-3 shrink-0"
+                titles={titles}
+                planFidelities={planFidelities}
+                planFidelity={planFidelity}
+                setPlanFidelity={setPlanFidelity}
+                trendTypes={trendTypes}
+                selectedTrend={selectedTrend}
+                setSelectedTrend={setSelectedTrend}
+                asiaRange={asiaRange}
+                setAsiaRange={setAsiaRange}
+                sweepTime={sweepTime}
+                setSweepTime={setSweepTime}
+                sessionHint={session}
+                poiTimeframes={poiTimeframes}
+                poiTimeframe={poiTimeframe}
+                setPoiTimeframe={setPoiTimeframe}
+                premiumDiscounts={premiumDiscounts}
+                selectedConfirmations={selectedConfirmations}
+                setSelectedConfirmations={setSelectedConfirmations}
+              />
+              <NotesCard className="order-5" titles={titles} notes={notes} setNotes={setNotes} />
             </div>
           )}
 

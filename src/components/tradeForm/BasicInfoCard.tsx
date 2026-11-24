@@ -27,6 +27,7 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
   setAccountError,
   tradeDate,
   setTradeDate,
+  className = "",
 }: {
   titles: Titles;
   assets: string[];
@@ -45,6 +46,7 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
   setAccountError: SetState<boolean>;
   tradeDate: string;
   setTradeDate: SetState<string>;
+  className?: string;
 }) {
   const { L, H } = titles;
   const assetDropdownRef = useRef<HTMLDivElement>(null);
@@ -71,7 +73,7 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
   };
 
   return (
-    <div className="tf-card bg-zinc-900/50 border border-zinc-800/80 rounded-2xl p-4 flex flex-col gap-3.5 shadow-sm">
+    <div className={`tf-card ${className} bg-zinc-900/50 border border-zinc-800/80 rounded-2xl p-4 flex flex-col gap-3.5 shadow-sm`}>
       <div className="flex items-center gap-2 pb-2.5 border-b border-zinc-800/60">
         <Layers size={14} className="text-blue-400" />
         <span className="text-xs font-bold text-zinc-200 uppercase tracking-wider font-sans">{L("basicInfoCard")}</span>

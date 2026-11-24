@@ -2663,7 +2663,7 @@ export default function App() {
               <div
                 ref={formPanelRef}
                 onClick={(e) => e.stopPropagation()}
-                className={`form-modal-panel w-full ${formQuickMode && !formSlot.editing ? "max-w-4xl" : "max-w-6xl xl:max-w-7xl 2xl:max-w-[1440px]"} h-auto max-h-[96vh] overflow-hidden bg-[#0a0a0c] border border-zinc-800/80 rounded-2xl relative shadow-2xl flex flex-col cursor-default my-auto`}
+                className={`form-modal-panel w-full ${formQuickMode && !formSlot.editing ? "max-w-4xl" : "max-w-5xl"} h-auto max-h-[96vh] overflow-hidden bg-[#0a0a0c] border border-zinc-800/80 rounded-2xl relative shadow-2xl flex flex-col cursor-default my-auto`}
               >
                 <SectionErrorBoundary sectionName="İşlem Formu">
                 <Suspense fallback={<div className="p-4"><PaneLoader minHeight={360} label="Form hazırlanıyor" /></div>}>

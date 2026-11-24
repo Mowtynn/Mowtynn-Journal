@@ -45,6 +45,7 @@ export const SetupChips = React.memo(function SetupChips({
   premiumDiscounts,
   selectedConfirmations,
   setSelectedConfirmations,
+  className = "",
 }: {
   titles: Titles;
   planFidelities: string[];
@@ -65,6 +66,7 @@ export const SetupChips = React.memo(function SetupChips({
   premiumDiscounts: string[];
   selectedConfirmations: string[];
   setSelectedConfirmations: SetState<string[]>;
+  className?: string;
 }) {
   const { L, H } = titles;
   const tfOptions = withSelected(poiTimeframes, poiTimeframe ? [poiTimeframe] : []);
@@ -73,7 +75,7 @@ export const SetupChips = React.memo(function SetupChips({
   const quality = qualityTone(planFidelity);
 
   return (
-    <div className="tf-card bg-zinc-900/50 border border-zinc-800/80 rounded-2xl p-4 flex flex-col gap-4 shadow-sm h-full">
+    <div className={`tf-card ${className} bg-zinc-900/50 border border-zinc-800/80 rounded-2xl p-4 flex flex-col gap-4 shadow-sm`}>
       <div className="flex items-center gap-2 pb-2.5 border-b border-zinc-800/60">
         <Crosshair size={14} className="text-blue-400" />
         <span className="text-xs font-bold text-zinc-200 uppercase tracking-wider font-sans">{L("setupCard")}</span>
@@ -104,7 +106,7 @@ export const SetupChips = React.memo(function SetupChips({
 
         {/* 2. POI: SWEEP TIME (NY) · POI TIMEFRAME — session saatten otomatik çıkar, etiketin yanında görünür */}
         <FlowStep n={2} done={steps[1]}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3.5">
+          <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-x-4 gap-y-3.5">
             <div className="min-w-0">
               <span lang="en" className={LABEL}>
                 <Timer size={13} className="text-blue-400 shrink-0" />
@@ -174,7 +176,7 @@ export const SetupChips = React.memo(function SetupChips({
 
         {/* 4. DEĞERLENDİRME: İŞLEM TİPİ · SETUP KALİTESİ (kalite seçimi kademesinin rengini alır: A+ yeşil · A mavi · B-C kırmızı) */}
         <FlowStep n={4} done={steps[3]} last>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3.5">
+          <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-x-4 gap-y-3.5">
             <div className="min-w-0">
               <label lang="en" className={LABEL}>
                 <TrendingUp size={13} className="text-blue-400" />

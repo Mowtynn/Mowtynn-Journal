@@ -5,25 +5,27 @@ import { isHttpLink, normalizeChartLink, resolveChartImage } from '../../lib/cha
 import { isImageRef } from '../../lib/imageStore';
 
 /*
- * Analiz notları ve grafik bağlantısı iki ayrı kart: form sütunları dengeli dağılır, kaydırma gerekmez.
- * - NotesCard: notlar metni (1. sütunda, kalan yüksekliği doldurur)
- * - ChartLinkCard: grafik linki + önizleme (3. sütunda Sonuç'un altında, kalan yüksekliği doldurur)
+ * Analiz notları ve grafik bağlantısı iki ayrı kart: iki eşit sütun aynı hizada biter.
+ * - ChartLinkCard: grafik linki + önizleme (sol sütunda Sonuç'un altında, kalan yüksekliği doldurur)
+ * - NotesCard: notlar metni (sağ sütunda Kurulum'un altında, kalan yüksekliği doldurur)
  */
 
-const cardCls = "tf-card bg-zinc-900/50 border border-zinc-800/80 rounded-2xl p-4 flex flex-col gap-3 shadow-sm flex-1 min-h-0";
+const cardCls = "tf-card bg-zinc-900/50 border border-zinc-800/80 rounded-2xl p-4 flex flex-col gap-3 shadow-sm lg:flex-1 lg:min-h-0";
 
 export const NotesCard = React.memo(function NotesCard({
   titles,
   notes,
   setNotes,
+  className = "",
 }: {
   titles: Titles;
   notes: string;
   setNotes: SetState<string>;
+  className?: string;
 }) {
   const { L } = titles;
   return (
-    <div className={cardCls}>
+    <div className={`${cardCls} ${className}`}>
       <div className="flex items-center gap-2 shrink-0 pb-2.5 border-b border-zinc-800/60">
         <FileText size={14} className="text-zinc-400" />
         <span className="text-xs font-bold text-zinc-200 uppercase tracking-wider font-sans">{L("notesCard")}</span>
@@ -42,10 +44,12 @@ export const ChartLinkCard = React.memo(function ChartLinkCard({
   titles,
   screenshot,
   setScreenshot,
+  className = "",
 }: {
   titles: Titles;
   screenshot: string | null;
   setScreenshot: SetState<string | null>;
+  className?: string;
 }) {
   const { L } = titles;
   const link = (screenshot || "").trim();
@@ -76,7 +80,7 @@ export const ChartLinkCard = React.memo(function ChartLinkCard({
   };
 
   return (
-    <div className={cardCls}>
+    <div className={`${cardCls} ${className}`}>
       <div className="flex items-center justify-between shrink-0 pb-2.5 border-b border-zinc-800/60">
         <div className="flex items-center gap-2">
           <ImageIcon size={14} className="text-zinc-400" />
