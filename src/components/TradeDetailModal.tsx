@@ -43,6 +43,8 @@ interface TradeDetailModalProps {
 
 /** Notlar kutusunun en küçük yüksekliği: 2-3 cümle (kısa ekranda biraz daha az); pencere ölçümünde bu değer sayılır */
 const notesBoxMinH = (vh: number) => (vh < 820 ? 96 : 112);
+/** Notlar kartının metin dışındaki yüksekliği: başlık satırı + aradaki boşluk + iç boşluk + çerçeve */
+const NOTES_CARD_CHROME = 82;
 
 /**
  * Grafik kutusunun sabit oranı. Pencere ve grafik kutusu görselin kendi oranına / çözünürlüğüne göre değil yalnızca ekran
@@ -581,11 +583,13 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                             <SpecValue>{currentTrade.poiTimeframe}</SpecValue>
                           </SpecRow>
                           <SpecRow icon={Scale} label={T(definitionTitles.premiumDiscounts, "CONFIRMATIONS")} empty={conf.length === 0} top={conf.length > 2}>
-                            <span lang="en" className="flex flex-wrap justify-end items-baseline gap-x-2 gap-y-1 text-sm font-bold uppercase tracking-wide font-sans text-zinc-100">
+                            {/* Düz, virgülle ayrılmış metin: satırlar yalnızca confirmation'lar arasında bölünür */}
+                            <span lang="en" className="block text-right text-sm font-bold uppercase tracking-wide font-sans text-zinc-100 leading-6">
                               {conf.map((c, i) => (
                                 <React.Fragment key={c}>
-                                  {i > 0 && <span aria-hidden className="text-zinc-700 font-normal">·</span>}
-                                  <span className="whitespace-nowrap">{smartUpper(c)}</span>
+                                  {i > 0 && " "}
+                                  {/* Her confirmation bölünmeden kalır; virgül öncekiyle birlikte satırda durur */}
+                                  <span className="whitespace-nowrap">{smartUpper(c)}{i < conf.length - 1 ? "," : ""}</span>
                                 </React.Fragment>
                               ))}
                             </span>
@@ -597,12 +601,17 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
 
 
                   {/* Notlar: kart; en az 2-3 cümlelik alan, sol sütunda yer kalırsa onu doldurur, daha uzun not kendi içinde kayar */}
-                  <section data-notes="1" className={`${DETAIL_CARD} ${isExporting ? '' : 'lg:flex-1 lg:min-h-0'}`}>
+                  {/* Kart en az başlık + en küçük not alanı kadar yer kaplar (sütun dolarsa sol sütun kayar; metin kartın dışına taşmaz) */}
+                  <section
+                    data-notes="1"
+                    style={isExporting ? undefined : { minHeight: notesBoxMinH(viewport.h) + NOTES_CARD_CHROME }}
+                    className={`${DETAIL_CARD} ${isExporting ? '' : 'lg:flex-1 lg:min-h-0 overflow-hidden'}`}
+                  >
                     <div className={`${CARD_HEAD} shrink-0`}>
                       <FileText size={14} className="text-zinc-400 shrink-0" />
                       <span className={CARD_TITLE}>{smartUpper(cleanDefinitionTitleString(definitionTitles.notesCard) || "Analiz & Notlar")}</span>
                     </div>
-                    <div style={isExporting ? undefined : { minHeight: notesBoxMinH(viewport.h) }} className={isExporting ? 'overflow-visible' : 'overflow-x-hidden max-h-[220px] lg:max-h-none lg:flex-1 lg:min-h-0 overflow-y-auto custom-scrollbar'}>
+                    <div className={isExporting ? 'overflow-visible' : 'overflow-x-hidden max-h-[220px] lg:max-h-none flex-1 min-h-0 overflow-y-auto custom-scrollbar'}>
                       {currentTrade.notes ? (
                         <p className="text-zinc-200 text-sm leading-6 whitespace-pre-wrap break-words font-sans">
                           {currentTrade.notes}
