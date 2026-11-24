@@ -486,6 +486,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                     const missing = [
                       !currentTrade.asiaRange && (cleanDefinitionTitleString(definitionTitles.asiaRange) || "Asia Range"),
                       !currentTrade.sweepTime && (cleanDefinitionTitleString(definitionTitles.sweepTime) || "POI Sweep Time"),
+                      !currentTrade.poiTimeframe && (cleanDefinitionTitleString(definitionTitles.poiTimeframes) || "POI Timeframe"),
                       !currentTrade.trend && (cleanDefinitionTitleString(definitionTitles.trendTypes) || "İşlem Tipi"),
                       !currentTrade.planFidelity && (cleanDefinitionTitleString(definitionTitles.planFidelities) || "Setup Kalitesi"),
                       tradeConfirmations(currentTrade).length === 0 && (cleanDefinitionTitleString(definitionTitles.premiumDiscounts) || "Confirmations"),
@@ -538,6 +539,11 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                             label={smartUpper(cleanDefinitionTitleString(definitionTitles.sweepTime) || "POI SWEEP TIME")}
                             value={currentTrade.sweepTime || undefined}
                             icon={<Clock size={14} className="text-blue-400"/>}
+                          />
+                          <ContextRow
+                            label={smartUpper(cleanDefinitionTitleString(definitionTitles.poiTimeframes) || "POI TIMEFRAME")}
+                            value={currentTrade.poiTimeframe || undefined}
+                            icon={<Layers size={14} className="text-blue-400"/>}
                           />
                           {/* 3. SESSION */}
                           <ContextRow 

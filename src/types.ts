@@ -34,6 +34,7 @@ export interface Trade {
   strategy?: string;
   asiaRange?: AsiaRangeType; // Asia Range davranışı: Range / Trend (eski kayıtlarda Swept)
   sweepTime?: string;       // POI Sweep saati, New York saatiyle "HH:mm" (Asia Range seçiminden tamamen bağımsız)
+  poiTimeframe?: string;    // Sweep edilen POI'nin zaman dilimi (15M, 1H, 4H, Daily …; Tanımlamalar'dan yönetilir)
   quickEntry?: boolean;     // Hızlı kayıtla girildi; ayrıntılar sonra tamamlanacak
   /**
    * Kaldırılmış girdiler: formda, filtrelerde ve analizlerde yok. Eski kayıtlarda saklı kalır (silinmez),
@@ -143,9 +144,11 @@ export interface DefinitionTitles {
   planFidelities: string;
   trendTypes?: string;
   premiumDiscounts?: string;
+  poiTimeframes?: string;
   // Listesi olmayan form alanlarının başlıkları (Tanımlamalar > Form Başlıkları)
   basicInfoCard?: string;
   financialCard?: string;
+  setupCard?: string;
   direction?: string;
   tradeDate?: string;
   rr?: string;

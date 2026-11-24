@@ -9,6 +9,7 @@ import { tradeConfirmations } from './tradeModel';
 export const REQUIRABLE_FIELDS = [
   { id: 'asiaRange', label: 'Asia Range', missing: (t: Partial<Trade>) => !t.asiaRange },
   { id: 'sweepTime', label: 'POI Sweep Time', missing: (t: Partial<Trade>) => !t.sweepTime },
+  { id: 'poiTimeframe', label: 'POI Timeframe', missing: (t: Partial<Trade>) => !t.poiTimeframe },
   { id: 'planFidelity', label: 'Setup Kalitesi', missing: (t: Partial<Trade>) => !t.planFidelity },
   { id: 'trend', label: 'İşlem Tipi', missing: (t: Partial<Trade>) => !t.trend },
   { id: 'premiumDiscount', label: 'Confirmations', missing: (t: Partial<Trade>) => tradeConfirmations(t).length === 0 },

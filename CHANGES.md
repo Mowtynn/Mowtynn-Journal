@@ -1079,3 +1079,10 @@ Klasik tasarım korunarak, son eklenen alanlar (risk %, hesap bağı, strateji, 
   - Taşıma: eski prop hesaplarındaki payout sertifikaları (yerel ve bulut) bir kez payout listesine aktarılır (firma: hesabın firması, yoksa hesap adı). Eski `propAccounts` verisi silinmez, yalnızca okunur. Eski yedekte `payouts` yoksa içindeki prop hesaplarından aktarılır.
   - Silinen kod: `lib/propAccounts.ts`, `lib/propInsights.ts`, `components/prop/PropRSummary.tsx`, `tradeForm/AccountPicker.tsx` ve bunların testleri. Yeni: `lib/payouts.ts` + tests/payouts.test.ts.
   - Firestore: `firestore.rules`'a `prop` (bool) ve `payouts` (liste, 2000) denetimi eklendi. Kural yayınlanmasa da çalışır (alanlarda anahtar kısıtı yok); isteğe bağlı: `firebase deploy --only firestore:rules`.
+
+- İşlem formu: Session kaldırıldı, POI Timeframe eklendi, Kurulum kartı yenilendi (3. tur)
+  - Session formda görünmez; POI Sweep saatinden arka planda çıkarılıp kaydedilmeye devam eder (Session analizleri ve filtresi çalışır).
+  - Yeni girdi: POI Timeframe (`poiTimeframe`, tek seçim), POI Sweep Time'ın sağında. Seçenekler Tanımlamalar > POI Timeframe'den (varsayılan: 15M · 1H · 4H · Daily); yeniden adlandırma işlemlere yansır, formda yazılan yeni değer listeye eklenir. "Son kurulumu kopyala" bunu da kopyalar.
+  - POI Timeframe her yerde: filtre (Filtreleme Menüsü, zaman dilimi sırasıyla), Kurulum Karnesi / kural simülatörü boyutu, Edge taraması, veri eksiği panosu, işlem detayı (Kurulum bölümü, hızlı kayıt eksikleri), Excel/CSV sütunu, Zorunlu Alanlar seçeneği, yedekten geri yükleme, Firestore kuralı (`poiTimeframe` metin, `poiTimeframes` liste).
+  - Kurulum kartı: diğer kartlar gibi başlıklı ("Kurulum", Form Başlıkları'ndan değiştirilebilir); tüm alan başlıkları ve düğme grupları tek ölçüde. Sıra: Setup Kalitesi · İşlem Tipi → Asia Range → POI Sweep Time · POI Timeframe → Confirmations.
+  - Testler: POI Timeframe boyutu ve zaman dilimi sırası, kayıt normalizasyonu.

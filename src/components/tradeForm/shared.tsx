@@ -38,6 +38,7 @@ export function buildInitial(t: Trade | null) {
     confirmations: t ? tradeConfirmations(t) : [],
     asiaRange: (t?.asiaRange || "") as string,
     sweepTime: t?.sweepTime || "",
+    poiTimeframe: t?.poiTimeframe || "",
     rrValue: numOr(t?.rr),
     notes: t?.notes || "",
     screenshot: t?.screenshot || null,

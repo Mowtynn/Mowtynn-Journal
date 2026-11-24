@@ -5,7 +5,7 @@ import { canonicalAsset, tradeConfirmations } from './tradeModel';
 import { dimensionValue, type SetupDimension } from './setupScorecard';
 
 /** Global filtrede türetilmiş / yeni girdiler: değer, kurulum karnesindeki boyut değeriyle aynı (tek tanım) */
-export const FILTER_DIMENSIONS = ['sweepHour', 'tradeOfDay', 'prevTrade', 'weekday'] as const;
+export const FILTER_DIMENSIONS = ['sweepHour', 'poiTimeframe', 'tradeOfDay', 'prevTrade', 'weekday'] as const;
 export type FilterDimension = (typeof FILTER_DIMENSIONS)[number] & SetupDimension;
 
 /** Varsayılan tarih aralığı: tüm zamanlar (sayılar üst menüdeki hesap sayılarıyla tutarlı kalsın) */

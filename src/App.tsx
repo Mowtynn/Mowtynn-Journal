@@ -12,6 +12,7 @@ import {
   DEFAULT_ASSETS,
   DEFAULT_PLAN_FIDELITIES,
   DEFAULT_TREND_TYPES,
+  DEFAULT_POI_TIMEFRAMES,
   DEFAULT_PREMIUM_DISCOUNTS,
   DEFAULT_DEFINITION_TITLES,
   sanitizeDefinitionTitles,
@@ -189,6 +190,7 @@ const SETTINGS_LIST_KEYS: [string, string][] = [
   ["assets", "trading_assets_list"],
   ["planFidelities", "trading_plan_fidelities_list"],
   ["trendTypes", "trading_trend_types_list"],
+  ["poiTimeframes", "trading_poi_timeframes_list"],
   ["premiumDiscounts", "trading_premium_discounts_list"],
   ["requiredFields", "tj_required_fields"],
 ];
@@ -237,7 +239,7 @@ const sanitizeImportedSettings = (raw: any) => {
   const out: Record<string, any> = {};
   const listKeys = [
     "sessions", "assets",
-    "planFidelities", "trendTypes", "premiumDiscounts",
+    "planFidelities", "trendTypes", "premiumDiscounts", "poiTimeframes",
   ];
   listKeys.forEach((k) => {
     const v = strList(raw[k]);
@@ -513,6 +515,31 @@ export default function App() {
       localStorage.setItem("trading_trend_types_list", JSON.stringify(updated));
       if (syncCloud && user) {
         setDoc(doc(db, "settings", user.uid), cleanForFirestore({ trendTypes: updated, userId: user.uid }), { merge: true })
+          .catch(err => reportCloudError("ayar kaydı", err, "Tanımlamalar buluta kaydedilemedi; cihazda tutuluyor."));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, [user]);
+
+  // POI Timeframe listesi (Tanımlamalar): sweep edilen POI'nin zaman dilimi
+  const [poiTimeframes, setPoiTimeframes] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem("trading_poi_timeframes_list");
+      if (stored) { const v = JSON.parse(stored); if (Array.isArray(v)) return titleCaseList(v); }
+    } catch (e) {
+      console.error(e);
+    }
+    return DEFAULT_POI_TIMEFRAMES;
+  });
+
+  const persistPoiTimeframes = useCallback((incoming: string[], syncCloud = true) => {
+    const updated = titleCaseList(incoming);
+    setPoiTimeframes(updated);
+    try {
+      localStorage.setItem("trading_poi_timeframes_list", JSON.stringify(updated));
+      if (syncCloud && user) {
+        setDoc(doc(db, "settings", user.uid), cleanForFirestore({ poiTimeframes: updated, userId: user.uid }), { merge: true })
           .catch(err => reportCloudError("ayar kaydı", err, "Tanımlamalar buluta kaydedilemedi; cihazda tutuluyor."));
       }
     } catch (e) {
@@ -891,6 +918,7 @@ export default function App() {
               });
               applyList(data.planFidelities, "trading_plan_fidelities_list", persistPlanFidelities);
               applyList(data.trendTypes, "trading_trend_types_list", persistTrendTypes);
+              applyList(data.poiTimeframes, "trading_poi_timeframes_list", persistPoiTimeframes);
               applyList(data.premiumDiscounts, "trading_premium_discounts_list", persistPremiumDiscounts);
               // Zorunlu alanlar: buluttaki ayar cihaza yazılır (olay tetiklenmez; döngü olmasın)
               if (Array.isArray(data.requiredFields)) applyRequiredFieldsFromCloud(data.requiredFields);
@@ -1062,6 +1090,7 @@ export default function App() {
       const lists: [string, (v: string[]) => void][] = [
         ["trading_plan_fidelities_list", setPlanFidelities],
         ["trading_trend_types_list", setTrendTypes],
+        ["trading_poi_timeframes_list", setPoiTimeframes],
         ["trading_premium_discounts_list", setPremiumDiscounts],
       ];
       lists.forEach(([key, set]) => {
@@ -1211,6 +1240,11 @@ export default function App() {
         persistTrendTypes(newTrends, false);
         settingsUpdates = { ...settingsUpdates, trendTypes: titleCaseList(newTrends) };
       }
+      if (tradeData.poiTimeframe && !poiTimeframes.includes(tradeData.poiTimeframe)) {
+        const newTfs = [...poiTimeframes, tradeData.poiTimeframe];
+        persistPoiTimeframes(newTfs, false);
+        settingsUpdates = { ...settingsUpdates, poiTimeframes: titleCaseList(newTfs) };
+      }
 
       if (user && settingsUpdates) {
         setDoc(doc(db, "settings", user.uid), cleanForFirestore({ ...settingsUpdates, userId: user.uid }), { merge: true })
@@ -1233,10 +1267,12 @@ export default function App() {
       sessions,
       planFidelities,
       trendTypes,
+      poiTimeframes,
       persistAssets,
       persistSessions,
       persistPlanFidelities,
       persistTrendTypes,
+      persistPoiTimeframes,
     ],
   );
 
@@ -1397,6 +1433,7 @@ export default function App() {
           case "sessions": return same(t.session) ? { session: to } : null;
           case "planFidelities": return same(t.planFidelity) ? { planFidelity: to } : null;
           case "trendTypes": return same(t.trend) ? { trend: to } : null;
+          case "poiTimeframes": return same(t.poiTimeframe) ? { poiTimeframe: to } : null;
           case "premiumDiscounts": return hasInArr(tradeConfirmations(t)) ? { confirmationTags: mapArr(tradeConfirmations(t)), premiumDiscount: undefined } : null;
           default: return null;
         }
@@ -1646,6 +1683,7 @@ export default function App() {
           if (importedSettings.assets) persistAssets(importedSettings.assets, sync);
           if (importedSettings.planFidelities) persistPlanFidelities(importedSettings.planFidelities, sync);
           if (importedSettings.trendTypes) persistTrendTypes(importedSettings.trendTypes, sync);
+          if (importedSettings.poiTimeframes) persistPoiTimeframes(importedSettings.poiTimeframes, sync);
           if (importedSettings.premiumDiscounts) persistPremiumDiscounts(importedSettings.premiumDiscounts, sync);
           if (importedSettings.definitionTitles) persistDefinitionTitles(importedSettings.definitionTitles, sync);
           // id'ye göre birleştir: yedekteki payout aynı id'li yerel kaydın yerine geçer
@@ -1668,6 +1706,7 @@ export default function App() {
       persistAssets,
       persistPlanFidelities,
       persistTrendTypes,
+      persistPoiTimeframes,
       persistPremiumDiscounts,
       persistDefinitionTitles,
       persistPayouts,
@@ -1774,6 +1813,7 @@ export default function App() {
       persistAssets(DEFAULT_ASSETS, !!user);
       persistPlanFidelities(DEFAULT_PLAN_FIDELITIES, !!user);
       persistTrendTypes(DEFAULT_TREND_TYPES, !!user);
+      persistPoiTimeframes(DEFAULT_POI_TIMEFRAMES, !!user);
       persistPremiumDiscounts(DEFAULT_PREMIUM_DISCOUNTS, !!user);
       persistDefinitionTitles(DEFAULT_DEFINITION_TITLES, !!user);
 
@@ -1821,6 +1861,7 @@ export default function App() {
     persistAssets,
     persistPlanFidelities,
     persistTrendTypes,
+    persistPoiTimeframes,
     persistPremiumDiscounts,
     persistDefinitionTitles,
     setGlobalSelectedPlanFidelity,
@@ -1896,6 +1937,7 @@ export default function App() {
     planFidelities,
     trendTypes,
     premiumDiscounts,
+    poiTimeframes,
     definitionTitles,
     payouts,
   }), [
@@ -1904,6 +1946,7 @@ export default function App() {
     planFidelities,
     trendTypes,
     premiumDiscounts,
+    poiTimeframes,
     definitionTitles,
     payouts,
   ]);
@@ -2591,12 +2634,14 @@ export default function App() {
           planFidelities={planFidelities}
           trendTypes={trendTypes}
           premiumDiscounts={premiumDiscounts}
+          poiTimeframes={poiTimeframes}
           definitionTitles={definitionTitles}
           persistSessions={persistSessions}
           persistAssets={persistAssets}
           persistPlanFidelities={persistPlanFidelities}
           persistTrendTypes={persistTrendTypes}
           persistPremiumDiscounts={persistPremiumDiscounts}
+          persistPoiTimeframes={persistPoiTimeframes}
           onRenameDefinition={handleRenameDefinition}
           persistDefinitionTitles={persistDefinitionTitles}
         />
@@ -2632,6 +2677,7 @@ export default function App() {
                     planFidelities={planFidelities}
                     trendTypes={trendTypes}
                     premiumDiscounts={premiumDiscounts}
+                    poiTimeframes={poiTimeframes}
                     definitionTitles={definitionTitles}
                     lastTrade={latestTrade}
                     registerCloseGuard={registerFormCloseGuard}

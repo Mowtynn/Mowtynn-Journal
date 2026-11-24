@@ -23,6 +23,7 @@ import {
   TrendingUp,
   Layers,
   Type,
+  Timer,
 } from 'lucide-react';
 import { Trade, DefinitionTitles } from '../types';
 import { REQUIRABLE_FIELDS, DEFAULT_REQUIRED_FIELDS, loadRequiredFields, saveRequiredFields, type RequirableField } from '../lib/requiredFields';
@@ -33,6 +34,7 @@ import {
   DEFAULT_PLAN_FIDELITIES,
   DEFAULT_TREND_TYPES,
   DEFAULT_PREMIUM_DISCOUNTS,
+  DEFAULT_POI_TIMEFRAMES,
   FORM_LABEL_KEYS,
   DEFAULT_DEFINITION_TITLES,
   caseInsensitiveMatch,
@@ -52,18 +54,20 @@ interface DefinitionsManagerModalProps {
   planFidelities: string[];
   trendTypes?: string[];
   premiumDiscounts?: string[];
+  poiTimeframes?: string[];
   definitionTitles?: DefinitionTitles;
   persistSessions: (list: string[]) => void;
   persistAssets: (list: string[]) => void;
   persistPlanFidelities: (list: string[]) => void;
   persistTrendTypes?: (list: string[]) => void;
   persistPremiumDiscounts?: (list: string[]) => void;
+  persistPoiTimeframes?: (list: string[]) => void;
   /** Bir öğe yeniden adlandırılınca işlemlerdeki değeri de günceller; güncellenen işlem sayısını döndürür. */
   onRenameDefinition?: (category: string, from: string, to: string) => number;
   persistDefinitionTitles?: (updated: DefinitionTitles) => void;
 }
 
-type TabType = 'assets' | 'sessions' | 'planFidelities' | 'trendTypes' | 'premiumDiscounts' | 'formLabels' | 'requiredFields';
+type TabType = 'assets' | 'sessions' | 'planFidelities' | 'trendTypes' | 'premiumDiscounts' | 'poiTimeframes' | 'formLabels' | 'requiredFields';
 
 /** Sekme kimliği -> DefinitionTitles anahtarı (Form Başlıkları sekmesinin kendi başlığı yok) */
 const titleKeyFor = (tab: TabType): keyof DefinitionTitles =>
@@ -72,6 +76,7 @@ const titleKeyFor = (tab: TabType): keyof DefinitionTitles =>
 const FORM_LABEL_HINTS: Record<string, string> = {
   basicInfoCard: 'Kart başlığı: Temel Bilgiler',
   financialCard: 'Kart başlığı: Sonuç',
+  setupCard: 'Kart başlığı: Kurulum',
   notesCard: 'Kart başlığı: Analiz & Notlar',
   direction: 'LONG / SHORT seçimi',
   tradeDate: 'Tarih seçici',
@@ -194,12 +199,14 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
   planFidelities,
   trendTypes = DEFAULT_TREND_TYPES,
   premiumDiscounts = DEFAULT_PREMIUM_DISCOUNTS,
+  poiTimeframes = DEFAULT_POI_TIMEFRAMES,
   definitionTitles = DEFAULT_DEFINITION_TITLES,
   persistSessions,
   persistAssets,
   persistPlanFidelities,
   persistTrendTypes = () => {},
   persistPremiumDiscounts = () => {},
+  persistPoiTimeframes = () => {},
   onRenameDefinition,
   persistDefinitionTitles,
 }) => {
@@ -225,6 +232,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
       if (t.session) counts[`sessions:${t.session}`] = (counts[`sessions:${t.session}`] || 0) + 1;
       if (t.planFidelity) counts[`planFidelities:${t.planFidelity}`] = (counts[`planFidelities:${t.planFidelity}`] || 0) + 1;
       if (t.trend) counts[`trendTypes:${t.trend}`] = (counts[`trendTypes:${t.trend}`] || 0) + 1;
+      if (t.poiTimeframe) counts[`poiTimeframes:${t.poiTimeframe}`] = (counts[`poiTimeframes:${t.poiTimeframe}`] || 0) + 1;
       tradeConfirmations(t).forEach((c) => {
         counts[`premiumDiscounts:${c}`] = (counts[`premiumDiscounts:${c}`] || 0) + 1;
       });
@@ -238,6 +246,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
     { id: 'sessions', label: definitionTitles.sessions || DEFAULT_DEFINITION_TITLES.sessions, icon: Sun, list: sessions, persist: persistSessions, defaultList: DEFAULT_SESSIONS },
     { id: 'planFidelities', label: definitionTitles.planFidelities || DEFAULT_DEFINITION_TITLES.planFidelities, icon: Crosshair, list: planFidelities, persist: persistPlanFidelities, defaultList: DEFAULT_PLAN_FIDELITIES },
     { id: 'premiumDiscounts', label: definitionTitles.premiumDiscounts || DEFAULT_DEFINITION_TITLES.premiumDiscounts || "Confirmations", icon: Layers, list: premiumDiscounts, persist: persistPremiumDiscounts, defaultList: DEFAULT_PREMIUM_DISCOUNTS },
+    { id: 'poiTimeframes', label: definitionTitles.poiTimeframes || DEFAULT_DEFINITION_TITLES.poiTimeframes || "POI Timeframe", icon: Timer, list: poiTimeframes, persist: persistPoiTimeframes, defaultList: DEFAULT_POI_TIMEFRAMES },
     // Listesi olmayan form alanlarının (Yön, Stop, R:R, Notlar...) başlıkları
     { id: 'formLabels', label: 'Form Başlıkları', icon: Type, list: [...FORM_LABEL_KEYS], persist: () => {}, defaultList: [], special: true },
     { id: 'requiredFields', label: 'Zorunlu Alanlar', icon: Type, list: [], persist: () => {}, defaultList: [], special: true },
@@ -370,6 +379,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
       planFidelities,
       trendTypes,
       premiumDiscounts,
+      poiTimeframes,
       exportedAt: new Date().toISOString(),
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -410,6 +420,7 @@ export const DefinitionsManagerModal: React.FC<DefinitionsManagerModalProps> = (
         apply(data.planFidelities, persistPlanFidelities);
         apply(data.trendTypes, persistTrendTypes);
         apply(data.premiumDiscounts, persistPremiumDiscounts);
+        apply(data.poiTimeframes, persistPoiTimeframes);
         if (applied === 0) {
           toast.error('Dosyada içe aktarılabilecek tanımlama bulunamadı.');
         } else {

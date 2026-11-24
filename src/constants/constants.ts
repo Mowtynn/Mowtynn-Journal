@@ -38,10 +38,12 @@ export const DEFAULT_PREMIUM_DISCOUNTS = [
   "Discount",
   "Equilibrium / OTE"
 ];
+/** POI Timeframe: sweep edilen POI'nin zaman dilimi (Tanımlamalar'dan değiştirilir) */
+export const DEFAULT_POI_TIMEFRAMES = ["15M", "1H", "4H", "Daily"];
 
 /** Listesi olmayan form alanlarının başlıkları: Tanımlamalar > Form Başlıkları'ndan değiştirilir. */
 export const FORM_LABEL_KEYS = [
-  "basicInfoCard", "financialCard", "notesCard", "direction", "tradeDate",
+  "basicInfoCard", "financialCard", "setupCard", "notesCard", "direction", "tradeDate",
   "rr", "chartLink", "asiaRange", "sweepTime",
 ] as const;
 
@@ -52,8 +54,10 @@ export const DEFAULT_DEFINITION_TITLES: DefinitionTitles = {
   planFidelities: "Setup Kalitesi",
   trendTypes: "İşlem Tipi",
   premiumDiscounts: "Confirmations",
+  poiTimeframes: "POI Timeframe",
   basicInfoCard: "Temel Bilgiler",
   financialCard: "Sonuç",
+  setupCard: "Kurulum",
   notesCard: "Analiz & Notlar",
   direction: "Yön",
   tradeDate: "Tarih",

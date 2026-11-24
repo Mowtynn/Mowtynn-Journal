@@ -84,6 +84,7 @@ export interface EdgeSummary {
 export const SCAN_DIMENSIONS: SetupDimension[] = [
   'asiaRange',
   'sweepHour',
+  'poiTimeframe',
   'planFidelity',
   'tradeOfDay',
   'prevTrade',

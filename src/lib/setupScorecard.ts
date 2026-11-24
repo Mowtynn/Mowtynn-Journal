@@ -13,6 +13,7 @@ import { driftFromR, type EdgeDrift } from './edgeDrift';
 export type SetupDimension =
   | 'asiaRange'
   | 'sweepHour'
+  | 'poiTimeframe'
   | 'planFidelity'
   | 'tradeOfDay'
   | 'prevTrade'
@@ -26,6 +27,7 @@ export type SetupDimension =
 export const SETUP_DIMENSIONS: { id: SetupDimension; label: string }[] = [
   { id: 'asiaRange', label: 'Asia Range' },
   { id: 'sweepHour', label: 'POI Sweep Saati (NY, 30 dk)' },
+  { id: 'poiTimeframe', label: 'POI Timeframe' },
   { id: 'planFidelity', label: 'Setup Kalitesi' },
   { id: 'tradeOfDay', label: 'Günün İşlemi' },
   { id: 'prevTrade', label: 'Gün İçi Önceki İşlem' },
@@ -65,6 +67,25 @@ const joinList = (xs?: string[]) => {
   const v = (xs || []).map((x) => x.trim()).filter(Boolean);
   return v.length ? [...new Set(v)].sort((a, b) => a.localeCompare(b, 'tr')).join(' + ') : UNSPECIFIED;
 };
+
+/**
+ * Zaman dilimi değerlerinin küçükten büyüğe sırası (15M < 1H < 4H < Daily < Weekly); tanınmayan değerler sona.
+ * Filtre ve tablolarda POI Timeframe seçenekleri bu sırayla dizilir.
+ */
+export function timeframeOrder(v: string): number {
+  const s = v.trim().toLowerCase();
+  const m = /^(\d+)\s*(m|min|dk|h|s|saat|d|g|w|mo|ay)?$/.exec(s);
+  if (m) {
+    const n = Number(m[1]);
+    const unit = m[2] || 'm';
+    const mult = unit === 'h' || unit === 's' || unit === 'saat' ? 60 : unit === 'd' || unit === 'g' ? 1440 : unit === 'w' ? 10080 : unit === 'mo' || unit === 'ay' ? 43200 : 1;
+    return n * mult;
+  }
+  if (/^(d|daily|günlük|1d)$/.test(s)) return 1440;
+  if (/^(w|weekly|haftalık)$/.test(s)) return 10080;
+  if (/^(m|monthly|aylık)$/.test(s)) return 43200;
+  return Number.MAX_SAFE_INTEGER;
+}
 
 export function dimensionValue(t: Trade, d: SetupDimension): string {
   switch (d) {

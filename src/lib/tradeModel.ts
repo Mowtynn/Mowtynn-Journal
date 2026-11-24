@@ -197,7 +197,7 @@ export function normalizeTrade<T extends Partial<Trade> & Record<string, any>>(r
 
 /** Metin alanları için üst sınır (kuraldaki 200 ile aynı) */
 const TEXT_MAX = 200;
-const OPTIONAL_TEXT_KEYS = ['timeframe', 'htfTimeframe', 'session', 'planFidelity', 'trend', 'premiumDiscount', 'strategy', 'asiaRangeFvg', 'platform'] as const;
+const OPTIONAL_TEXT_KEYS = ['timeframe', 'htfTimeframe', 'poiTimeframe', 'session', 'planFidelity', 'trend', 'premiumDiscount', 'strategy', 'asiaRangeFvg', 'platform'] as const;
 const OPTIONAL_NUMBER_KEYS = ['stopPips', 'tpPips', 'asiaRangePips', 'riskPct', 'riskAmount', 'accountStage'] as const;
 
 /**

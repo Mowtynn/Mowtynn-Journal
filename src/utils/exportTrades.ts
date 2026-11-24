@@ -191,6 +191,7 @@ export const prepareTradeExportRows = (trades: Trade[], titles: Record<string, s
       [T('trendTypes', 'İşlem Tipi')]: t.trend || '-',
       [T('asiaRange', 'Asia Range')]: t.asiaRange || '-',
       [T('sweepTime', 'POI Sweep Time')]: t.sweepTime || '-',
+      [T('poiTimeframes', 'POI Timeframe')]: t.poiTimeframe || '-',
       [T('sessions', 'Session')]: t.session || '-',
       [T('premiumDiscounts', 'Confirmations')]: listText(tradeConfirmations(t)),
       // Analizlerde kullanılan türetilmiş değerler (Excel'de ayrıca süzülüp pivotlanabilsin)

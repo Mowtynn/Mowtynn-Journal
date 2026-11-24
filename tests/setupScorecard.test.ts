@@ -94,3 +94,11 @@ test('günün işlemi: uygulama genelinde tüm hesaplar birlikte sayılır', asy
   indexTradeOrder([b]); // hesap filtresiyle daraltılmış liste sırayı değiştirmez
   assert.equal(dimensionValue(b, 'tradeOfDay'), '2. İşlem');
 });
+
+test('POI Timeframe: boyut değeri ve zaman dilimi sırası', async () => {
+  const { timeframeOrder } = await import('../src/lib/setupScorecard');
+  assert.equal(dimensionValue(t(1, { poiTimeframe: '4H' }), 'poiTimeframe'), '4H');
+  assert.equal(dimensionValue(t(1), 'poiTimeframe'), UNSPECIFIED);
+  const sorted = ['Daily', '4H', 'Weekly', '15M', '1H', 'Özel'].sort((a, b) => timeframeOrder(a) - timeframeOrder(b));
+  assert.deepEqual(sorted, ['15M', '1H', '4H', 'Daily', 'Weekly', 'Özel']);
+});

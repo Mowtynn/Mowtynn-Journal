@@ -29,7 +29,7 @@ import {
 } from '../constants/constants';
 import { ASIA_RANGE_FORM_TYPES, DefinitionTitles } from '../types';
 import { DEFAULT_DATE_LIMIT, EMPTY_EXTRA_FILTERS, countExtraFilters, FILTER_DIMENSIONS, type ExtraTradeFilters, type FilterDimension } from '../lib/tradeFilters';
-import { dimensionValue, SETUP_DIMENSIONS, UNSPECIFIED } from '../lib/setupScorecard';
+import { dimensionValue, SETUP_DIMENSIONS, UNSPECIFIED, timeframeOrder } from '../lib/setupScorecard';
 import { PREV_TRADE_BUCKETS, sweepBucketOrder } from '../lib/asiaAnalytics';
 import { WEEKDAY_NAMES_TR } from '../lib/tradingTime';
 import { tradeConfirmations } from '../lib/tradeModel';
@@ -141,6 +141,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
       }
       const vals = [...set];
       if (d === 'sweepHour') vals.sort((a, b) => sweepBucketOrder(a) - sweepBucketOrder(b));
+      else if (d === 'poiTimeframe') vals.sort((a, b) => timeframeOrder(a) - timeframeOrder(b) || a.localeCompare(b, 'tr'));
       else if (d === 'prevTrade') vals.sort(orderBy(PREV_TRADE_BUCKETS));
       else if (d === 'weekday') vals.sort(orderBy(WEEKDAY_ORDER));
       else vals.sort((a, b) => a.localeCompare(b, 'tr'));
@@ -443,7 +444,7 @@ export const GlobalFilterModal: React.FC<GlobalFilterModalProps> = React.memo(({
                 />
               </FilterAccordionRow>
 
-              {/* Türetilmiş girdiler: POI Sweep Saati, Günün İşlemi, Gün İçi Önceki İşlem, Gün */}
+              {/* Türetilmiş girdiler: POI Sweep Saati, POI Timeframe, Günün İşlemi, Gün İçi Önceki İşlem, Gün */}
               {FILTER_DIMENSIONS.map((d) => {
                 const sel = globalExtra.dims?.[d] || [];
                 return (

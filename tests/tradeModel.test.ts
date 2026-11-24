@@ -114,3 +114,11 @@ test('tradeConfirmations: iki biçimi de okur', () => {
   assert.deepEqual(tradeConfirmations({}), []);
   assert.deepEqual(tradeConfirmations({ confirmationTags: [], premiumDiscount: 'Premium' }), [], 'boş yeni liste: eski değer geri gelmez');
 });
+
+test('POI Timeframe: metin alanı olarak korunur, bozuk değer atılır, buluta yazılabilir', () => {
+  const ok = normalizeTrade({ id: '1', asset: 'EURUSD', type: 'LONG', status: 'WIN', rr: 1, createdAt: 1, poiTimeframe: '4H' } as any);
+  assert.equal(ok.poiTimeframe, '4H');
+  assert.ok(isValidTrade(ok));
+  const bad = normalizeTrade({ id: '2', asset: 'EURUSD', type: 'LONG', status: 'WIN', rr: 1, createdAt: 1, poiTimeframe: 42 } as any);
+  assert.equal(bad.poiTimeframe, undefined);
+});

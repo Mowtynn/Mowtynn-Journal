@@ -9,6 +9,7 @@ import {
   DEFAULT_TREND_TYPES,
   DEFAULT_DEFINITION_TITLES,
   DEFAULT_PREMIUM_DISCOUNTS,
+  DEFAULT_POI_TIMEFRAMES,
   getTradeAccountKind,
 } from "../constants/constants";
 import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
@@ -37,6 +38,8 @@ interface AddTradeFormProps {
   planFidelities?: string[];
   trendTypes?: string[];
   premiumDiscounts?: string[];
+  /** POI Timeframe seçenekleri (Tanımlamalar) */
+  poiTimeframes?: string[];
   definitionTitles?: DefinitionTitles;
   /** En son kaydedilen işlem: "Son kurulumu kopyala" için */
   lastTrade?: Trade | null;
@@ -63,6 +66,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
   planFidelities = DEFAULT_PLAN_FIDELITIES,
   trendTypes = DEFAULT_TREND_TYPES,
   premiumDiscounts = DEFAULT_PREMIUM_DISCOUNTS,
+  poiTimeframes = DEFAULT_POI_TIMEFRAMES,
   definitionTitles = DEFAULT_DEFINITION_TITLES,
   lastTrade = null,
   registerCloseGuard,
@@ -94,7 +98,9 @@ const AddTradeForm = React.memo(function AddTradeForm({
   const [selectedConfirmations, setSelectedConfirmations] = useState<string[]>(init.confirmations);
   const [asiaRange, setAsiaRange] = useState(init.asiaRange);
   const [sweepTime, setSweepTime] = useState(init.sweepTime);
-  // Session girilmez: POI Sweep saatinden gelir. Eski bir işlem düzenlenirken saat değişmediyse kayıttaki session korunur.
+  const [poiTimeframe, setPoiTimeframe] = useState(init.poiTimeframe);
+  // Session formda görünmez: POI Sweep saatinden arka planda çıkarılıp kaydedilir (analizler için).
+  // Eski bir işlem düzenlenirken saat değişmediyse kayıttaki session korunur.
   const session =
     editingTrade?.session && sweepTime === (editingTrade.sweepTime || "")
       ? editingTrade.session
@@ -191,6 +197,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
       asiaRangeFvg: editingTrade?.asiaRangeFvg || undefined,
       asiaRange: (asiaRange || undefined) as Trade["asiaRange"],
       sweepTime: sweepTime || undefined,
+      poiTimeframe: poiTimeframe || undefined,
       notes: safeNotes || undefined,
       screenshot: screenshot || undefined,
       // Hesap türü: Prop ya da Hesapsız. Eski hesap takibi alanları (hesap adı, aşama, risk) düzenlemede korunur.
@@ -219,7 +226,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
   const snapshot = JSON.stringify([
     asset, type, accountKind, tradeDate,
     rrValue, notes, screenshot, selectedTrend, planFidelity,
-    selectedConfirmations, asiaRange, sweepTime,
+    selectedConfirmations, asiaRange, sweepTime, poiTimeframe,
   ]);
   const baselineRef = useRef(snapshot);
   // Hazır bekleyen form açılınca tarih "şimdi"ye çekilir; bu değişiklik kirli sayılmasın diye taban yenilenir
@@ -285,6 +292,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
     setAccountKind(getTradeAccountKind(t));
     setAccountError(false);
     setSelectedTrend(t.trend || "");
+    setPoiTimeframe(t.poiTimeframe || "");
     setSelectedConfirmations(tradeConfirmations(t));
     toast.success("Son işlemin kurulumu uygulandı. Sonucu gir.");
   };
@@ -397,7 +405,9 @@ const AddTradeForm = React.memo(function AddTradeForm({
                   setAsiaRange={setAsiaRange}
                   sweepTime={sweepTime}
                   setSweepTime={setSweepTime}
-                  session={session}
+                  poiTimeframes={poiTimeframes}
+                  poiTimeframe={poiTimeframe}
+                  setPoiTimeframe={setPoiTimeframe}
                   premiumDiscounts={premiumDiscounts}
                   selectedConfirmations={selectedConfirmations}
                   setSelectedConfirmations={setSelectedConfirmations}

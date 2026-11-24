@@ -315,6 +315,7 @@ export function computeCoverage(trades: Trade[]): CoverageRow[] {
     { field: 'trend', label: 'İşlem Tipi', unlocks: 'Continuation / Reversal kıyası, reversal maliyeti', ok: (t) => !!t.trend },
     { field: 'asiaRange', label: 'Asia Range', unlocks: 'Range / Trend kıyası', ok: (t) => !!t.asiaRange },
     { field: 'sweepTime', label: 'POI Sweep Time', unlocks: 'POI Sweep saati (30 dk), POI Sweep saati × parite tablosu', ok: (t) => !!t.sweepTime },
+    { field: 'poiTimeframe', label: 'POI Timeframe', unlocks: 'POI zaman dilimine göre edge, Kurulum Karnesi boyutu', ok: (t) => !!t.poiTimeframe },
     { field: 'session', label: 'Session (otomatik)', unlocks: 'Session ve Session × Yön kıyası; POI Sweep saatinden belirlenir', ok: (t) => !!t.session },
     { field: 'premiumDiscount', label: 'Confirmations', unlocks: 'Confirmations × Yön kıyası', ok: (t) => tradeConfirmations(t).length > 0 },
   ];
