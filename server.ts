@@ -81,13 +81,15 @@ const safeFetch = async (raw: string, init: RequestInit, maxRedirects = 3): Prom
   throw new Error("Çok fazla yönlendirme");
 };
 
-// Sayfa olarak paylaşılan grafik linkleri: TradingView (tradingview.com/x/…) ve OpenMarket (k6a.ai/<kimlik>)
+// Sayfa olarak paylaşılan grafik linkleri: TradingView (tradingview.com/x/…) ve OpenMarket (share.openmarket.xyz/<kimlik>, eski k6a.ai/<kimlik>)
 const isChartShareUrl = (raw: string): boolean => {
   try {
     const u = new URL(raw);
     const host = u.hostname.toLowerCase();
     if (host === "tradingview.com" || host.endsWith(".tradingview.com")) return u.pathname.startsWith("/x/");
     if (host === "k6a.ai" || host === "www.k6a.ai") return u.pathname.length > 1;
+    // OpenMarket'in yeni paylaşım linki (görsel snapshots.openmarket.xyz'den, og:image ile bulunur)
+    if (host === "share.openmarket.xyz") return u.pathname.length > 1;
     return false;
   } catch {
     return false;

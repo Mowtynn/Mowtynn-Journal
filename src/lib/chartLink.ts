@@ -3,7 +3,7 @@ import { authFetch } from './api';
 
 /**
  * Grafik linki yardımcıları — işlem formu önizlemesi ve işlem detayı aynı çözümlemeyi kullanır.
- * TradingView (tradingview.com/x/…) ve OpenMarket (k6a.ai/…) paylaşım linkleri birer sayfadır; görsel adresi sunucudaki
+ * TradingView (tradingview.com/x/…) ve OpenMarket (share.openmarket.xyz/… ya da eski k6a.ai/…) paylaşım linkleri birer sayfadır; görsel adresi sunucudaki
  * /api/resolve-tv ile (sayfanın og:image etiketinden) bulunur.
  */
 
@@ -17,7 +17,9 @@ export function normalizeChartLink(raw: string): string {
 }
 
 const isTradingViewShare = (url: string) => /tradingview\.com\/x\//i.test(url);
-const isOpenMarketShare = (url: string) => /^https?:\/\/(www\.)?k6a\.ai\/[^\s/?#]+/i.test(url);
+// OpenMarket: eski kısa link k6a.ai/<kimlik>, yeni paylaşım linki share.openmarket.xyz/<kimlik>
+const isOpenMarketShare = (url: string) =>
+  /^https?:\/\/(www\.)?k6a\.ai\/[^\s/?#]+/i.test(url) || /^https?:\/\/share\.openmarket\.xyz\/[^\s/?#]+/i.test(url);
 
 /** Sayfa olarak paylaşılan, görseli sunucuda çözülen grafik linki mi (TradingView / OpenMarket) */
 export const isChartShareLink = (url: string) => isTradingViewShare(url) || isOpenMarketShare(url);
