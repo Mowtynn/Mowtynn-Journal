@@ -67,14 +67,14 @@ export const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
             <TrendBadge trend={trade.trend} />
           </div>
         </td>
-        <td className={`${CELL} w-[20%] min-w-[130px]`}>
-          <div>
-            <PoiCell sweepTime={trade.sweepTime} session={trade.session} />
-          </div>
-        </td>
         <td className={`${CELL} w-[14%] min-w-[90px]`}>
           <div>
             <TimeframeCell value={trade.poiTimeframe} />
+          </div>
+        </td>
+        <td className={`${CELL} w-[20%] min-w-[130px]`}>
+          <div>
+            <PoiCell sweepTime={trade.sweepTime} session={trade.session} />
           </div>
         </td>
         <td className={`${CELL} px-1.5 rounded-r-xl border-r w-[9%] min-w-[80px]`}>

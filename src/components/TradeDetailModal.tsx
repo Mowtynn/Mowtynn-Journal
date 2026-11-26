@@ -200,10 +200,10 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
     // Kullanılabilir alan: pencereyi taşıyan katmanın iç boyutu (kaydırma çubuğu, iç boşluk ve üst çubuk düşülmüş)
     const overlay = contentRef.current?.parentElement;
     const navH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-h')) || 0;
-    // Geniş ekranlarda pencere aşırı büyümesin: en çok 1360px genişlik (göz rahat tarar, grafik yine büyük)
-    const MAX_W = 1360;
-    let maxW = Math.min(viewport.w - 32, MAX_W);
-    let maxH = viewport.h - navH - 32;
+    // Pencere ekranı rahatça doldurur; çok geniş ekranlarda en çok 1760px
+    const MAX_W = 1760;
+    let maxW = Math.min(viewport.w - 24, MAX_W);
+    let maxH = viewport.h - navH - 24;
     if (overlay) {
       const os = getComputedStyle(overlay);
       maxW = Math.min(MAX_W, overlay.clientWidth - parseFloat(os.paddingLeft) - parseFloat(os.paddingRight));
@@ -251,9 +251,9 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
       ch = Math.floor(ch);
       const rightH = ch + BORDER + headingH + setupH + padY;
       const h = Math.min(maxH, headerH + Math.max(leftNeed, rightH) + BORDER);
-      // Sol sütun grafikten uzunsa grafik kutusu kalan yüksekliği doldurur (grafikle kurulum geçmişi arasında boşluk kalmaz;
-      // görsel orantısı korunarak ortalanır)
-      const chBox = ch + Math.max(0, h - headerH - BORDER - rightH);
+      // Grafik kutusu her zaman görselin kendi boyutunda: etrafında boşluk kalmaz. Sol sütun daha uzunsa (genişlik sınırına
+      // dayanıldığında) artan yer kurulum geçmişinin altında, sütunun en sonunda kalır.
+      const chBox = ch;
       setFit({ w: leftW + cw + BORDER + padX + BORDER, h, leftW, cw, ch, chBox });
     } else {
       setFit({ h: Math.min(maxH, Math.max(headerH + leftNeed + BORDER, 480)) });
@@ -398,7 +398,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
             key="trade-detail-backdrop"
             {...MODAL_BACKDROP}
             onClick={onClose}
-             className="modal-overlay modal-layer modal-dim !p-2 sm:!p-4"
+             className="modal-overlay modal-layer modal-dim !p-2 sm:!p-4 lg:!p-3"
           >
             <motion.div 
               key="trade-detail-content"
@@ -634,7 +634,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                 <div style={fit?.leftW ? { width: 'auto', flex: '1 1 0%' } : undefined} className={`w-full lg:w-[60%] min-w-0 bg-[#0a0a0c] flex flex-col p-5 space-y-4 lg:min-h-0 ${isExporting ? 'overflow-visible' : 'lg:overflow-y-auto custom-scrollbar'}`}>
                   
                   {/* Technical Chart — masaüstünde sağ sütunun tüm yüksekliğini kaplar */}
-                  <section className={`flex flex-col ${isExporting ? 'flex-shrink-0' : 'flex-shrink-0 lg:flex-1 lg:min-h-0'}`}>
+                  <section className={`flex flex-col ${isExporting || fit?.cw ? 'flex-none' : 'flex-shrink-0 lg:flex-1 lg:min-h-0'}`}>
                     <div className="flex justify-between items-center mb-2">
                       <h4 className="heading-2">
                         <ImageIcon size={12}/> GRAFİK

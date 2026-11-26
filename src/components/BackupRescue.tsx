@@ -11,7 +11,7 @@ import { tradeConfirmations } from '../lib/tradeModel';
 import { localDateKey } from '../utils/math';
 import { ACCOUNT_KIND_LABELS, getTradeAccountKind } from '../constants/constants';
 import { isImageRef, loadImage } from '../lib/imageStore';
-import { nyWallDate, nyNow } from '../lib/tradingTime';
+import { nyWallDate, trNow } from '../lib/tradingTime';
 
 function getLocalStorageUsage() {
 
@@ -136,7 +136,7 @@ const BackupRescue = React.memo(function BackupRescue({
 
       const jsonStr = JSON.stringify(payload, null, 2);
       const blob = new Blob([jsonStr], { type: 'application/json' });
-      const now = nyNow();
+      const now = trNow();
       const dateStr = localDateKey(now);
       const timeStr = now.toTimeString().slice(0, 5).replace(':', '-');
       const fileName = `trading_journal_backup_${dateStr}_${timeStr}_[${trades.length}_trades]_[${notes.length}_notes]_[${journals.length}_journals].json`;

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { nyNow } from '../lib/tradingTime';
+import { trNow } from '../lib/tradingTime';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { JournalEntry } from '../types';
 import { TURKISH_MONTHS, TURKISH_DAYS_SHORT } from './TurkishDateTimePicker';
@@ -12,10 +12,10 @@ interface JournalCalendarProps {
 
 export function JournalCalendar({ entries, selectedDate, onSelectDate }: JournalCalendarProps) {
   const parsedDate = useMemo(() => {
-    if (!selectedDate) return nyNow();
+    if (!selectedDate) return trNow();
     const [year, month, day] = selectedDate.split('-').map(Number);
     const d = new Date(year, (month || 1) - 1, day || 1);
-    return isNaN(d.getTime()) ? nyNow() : d;
+    return isNaN(d.getTime()) ? trNow() : d;
   }, [selectedDate]);
 
   const [viewYear, setViewYear] = useState(parsedDate.getFullYear());
@@ -48,7 +48,7 @@ export function JournalCalendar({ entries, selectedDate, onSelectDate }: Journal
   };
 
   const handleSetToday = () => {
-    const now = nyNow();
+    const now = trNow();
     const formatted = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
     onSelectDate(formatted);
     setViewYear(now.getFullYear());
@@ -56,7 +56,7 @@ export function JournalCalendar({ entries, selectedDate, onSelectDate }: Journal
   };
 
   const handleSetYesterday = () => {
-    const yesterday = nyNow();
+    const yesterday = trNow();
     yesterday.setDate(yesterday.getDate() - 1);
     const formatted = `${yesterday.getFullYear()}-${pad(yesterday.getMonth() + 1)}-${pad(yesterday.getDate())}`;
     onSelectDate(formatted);
@@ -118,7 +118,7 @@ export function JournalCalendar({ entries, selectedDate, onSelectDate }: Journal
   }, [viewYear, viewMonth]);
 
   const isToday = (date: Date) => {
-    const now = nyNow();
+    const now = trNow();
     return (
       date.getDate() === now.getDate() &&
       date.getMonth() === now.getMonth() &&

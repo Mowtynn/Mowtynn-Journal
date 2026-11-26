@@ -34,7 +34,7 @@ import { localDateKey } from '../utils/math';
 import { TR_COLLATOR, MemoizedTradeRow } from './tradeList/TradeRow';
 import { HeaderLabel, CustomSelect } from './tradeList/controls';
 import { FILTER_LABEL } from './filters/FilterControls';
-import { nyWallDate, nyInputToTs, nyDateKey } from '../lib/tradingTime';
+import { trNow, nyInputToTs, nyDateKey } from '../lib/tradingTime';
 import { tradeConfirmations } from '../lib/tradeModel';
 
 /** "Son N işlem": geçersiz / negatif / aşırı değer güvenli aralığa çekilir (boş → 7) */
@@ -122,7 +122,7 @@ const TradeList = React.memo(function TradeList({
   };
 
   const getWeeklyTrades = useCallback(() => {
-    const nowNy = nyWallDate(Date.now());
+    const nowNy = trNow(); // hangi hafta / ay: Türkiye bugünü; sınırlar işlem günleriyle (NY günü) aynı
     const day = nowNy.getDay();
     const monday = new Date(nowNy.getFullYear(), nowNy.getMonth(), nowNy.getDate() - (day === 0 ? 6 : day - 1));
     const start = nyStartTs(monday);
@@ -132,7 +132,7 @@ const TradeList = React.memo(function TradeList({
   }, [trades]);
 
   const getMonthlyTrades = useCallback(() => {
-    const nowNy = nyWallDate(Date.now());
+    const nowNy = trNow(); // hangi hafta / ay: Türkiye bugünü; sınırlar işlem günleriyle (NY günü) aynı
     const start = nyStartTs(new Date(nowNy.getFullYear(), nowNy.getMonth(), 1));
     const end = nyStartTs(new Date(nowNy.getFullYear(), nowNy.getMonth() + 1, 1));
     return trades.filter(t => t.createdAt >= start && t.createdAt < end).sort(byEntryTimeDesc);
@@ -801,17 +801,7 @@ const TradeList = React.memo(function TradeList({
                     </div>
                   </th>
                   <th className="py-2 px-2 text-center font-sans select-none min-w-[110px] w-[15%] text-zinc-400">{definitionTitles.trendTypes || "İşlem Tipi"}</th>
-                  {/* Hesap sütunu yok: Prop / Hesapsız üstteki seçiciyle zaten ayrılıyor. Yerine POI: sweep saati · session ve POI timeframe */}
-                  <th
-                    className={`py-2 px-2 text-center font-sans select-none w-[20%] min-w-[130px] cursor-pointer group/th transition-colors hover:text-zinc-200 ${
-                      filter.sortBy === 'poiAsc' || filter.sortBy === 'poiDes' ? 'text-blue-400 font-bold' : 'text-zinc-400'
-                    }`}
-                    onClick={() => handleFilterChange({ ...filter, sortBy: filter.sortBy === 'poiAsc' ? 'poiDes' : 'poiAsc' })}
-                  >
-                    <div className="flex items-center justify-center gap-1.5">
-                      <HeaderLabel sortState={filter.sortBy === 'poiAsc' ? 'asc' : filter.sortBy === 'poiDes' ? 'des' : null}>POI</HeaderLabel>
-                    </div>
-                  </th>
+                  {/* Hesap sütunu yok: Prop / Hesapsız üstteki seçiciyle zaten ayrılıyor. Yerine POI TF (timeframe) ve POI (sweep saati · session) */}
                   <th
                     className={`py-2 px-2 text-center font-sans select-none w-[14%] min-w-[90px] cursor-pointer group/th transition-colors hover:text-zinc-200 ${
                       filter.sortBy === 'tfAsc' || filter.sortBy === 'tfDes' ? 'text-blue-400 font-bold' : 'text-zinc-400'
@@ -820,6 +810,16 @@ const TradeList = React.memo(function TradeList({
                   >
                     <div className="flex items-center justify-center gap-1.5">
                       <HeaderLabel sortState={filter.sortBy === 'tfAsc' ? 'asc' : filter.sortBy === 'tfDes' ? 'des' : null}>POI TF</HeaderLabel>
+                    </div>
+                  </th>
+                  <th
+                    className={`py-2 px-2 text-center font-sans select-none w-[20%] min-w-[130px] cursor-pointer group/th transition-colors hover:text-zinc-200 ${
+                      filter.sortBy === 'poiAsc' || filter.sortBy === 'poiDes' ? 'text-blue-400 font-bold' : 'text-zinc-400'
+                    }`}
+                    onClick={() => handleFilterChange({ ...filter, sortBy: filter.sortBy === 'poiAsc' ? 'poiDes' : 'poiAsc' })}
+                  >
+                    <div className="flex items-center justify-center gap-1.5">
+                      <HeaderLabel sortState={filter.sortBy === 'poiAsc' ? 'asc' : filter.sortBy === 'poiDes' ? 'des' : null}>POI</HeaderLabel>
                     </div>
                   </th>
                   <th className="py-2 px-1.5 text-center font-sans select-none w-[9%] min-w-[80px]">İşlem</th>

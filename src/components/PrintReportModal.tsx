@@ -7,7 +7,7 @@ import { Download, RefreshCw, X, FileText, Loader2, Printer } from 'lucide-react
 import toast from 'react-hot-toast';
 import { Trade } from '../types';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
-import { nyWallDate, nyNow } from '../lib/tradingTime';
+import { nyWallDate, trNow } from '../lib/tradingTime';
 import { breakevenWinRateOf } from '../lib/stats';
 import { formatR } from '../lib/format';
 import { fileSlug } from '../utils/exportTrades';
@@ -281,7 +281,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                         <span className="text-zinc-500">İşlem Tarihleri:</span> <span className="text-zinc-300 font-semibold">{activeDateRangeText}{span && activeDateRangeText !== span ? ` · ${span}` : ''}</span>
                       </p>
                       <p className="text-label text-zinc-400 font-medium">
-                        <span className="text-zinc-500">Oluşturulma Tarihi:</span> <span className="text-zinc-300 font-semibold">{nyNow().toLocaleDateString('tr-TR')}</span>
+                        <span className="text-zinc-500">Oluşturulma Tarihi:</span> <span className="text-zinc-300 font-semibold">{trNow().toLocaleDateString('tr-TR')}</span>
                       </p>
                     </div>
                   </div>
@@ -435,10 +435,10 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
               {/* Quality Guarantee/Report Footer Info */}
               <div className="border-t border-white/10 pt-3 mt-6 flex flex-col sm:flex-row justify-between items-center text-label text-zinc-500 font-medium">
                 <div>
-                  © {nyNow().getFullYear()} Trading Journal by Mowtynn. Bu rapor otomatik oluşturulmuştur.
+                  © {trNow().getFullYear()} Trading Journal by Mowtynn. Bu rapor otomatik oluşturulmuştur.
                 </div>
                 <div className="mt-1 sm:mt-0 italic">
-                  {totalTrades} işlem · Oluşturulma: {nyNow().toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  {totalTrades} işlem · Oluşturulma: {trNow().toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                 </div>
               </div>
               

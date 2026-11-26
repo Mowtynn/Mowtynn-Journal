@@ -1,5 +1,5 @@
 import React from "react";
-import { TrendingUp, Compass, MoveHorizontal, Waves, Timer, Crosshair, Layers, Scale, Globe, RotateCcw } from "lucide-react";
+import { TrendingUp, Compass, MoveHorizontal, Waves, Timer, Crosshair, Layers, Scale, Globe } from "lucide-react";
 import { ASIA_RANGE_TYPES, ASIA_RANGE_FORM_TYPES } from "../../types";
 import { SweepTimePicker } from "./SweepTimePicker";
 import { CHIP_BASE, SetState, withSelected, Titles, SlideBg } from './shared';
@@ -35,7 +35,6 @@ export const SetupChips = React.memo(function SetupChips({
   sweepTime,
   setSweepTime,
   session = "",
-  sessionAuto = "",
   sessions = [],
   onSessionChange,
   poiTimeframes,
@@ -58,11 +57,9 @@ export const SetupChips = React.memo(function SetupChips({
   setSweepTime: SetState<string>;
   /** Geçerli session (otomatik ya da kullanıcının seçtiği) */
   session?: string;
-  /** POI Sweep saatinden otomatik çıkan session */
-  sessionAuto?: string;
   /** Seçilebilir session listesi */
   sessions?: string[];
-  /** Session seçildiğinde; boş değer ya da otomatik olanın seçilmesi otomatiğe döndürür */
+  /** Session seçildiğinde (boş değer seçimi kaldırır) */
   onSessionChange?: (v: string) => void;
   poiTimeframes: string[];
   poiTimeframe: string;
@@ -82,7 +79,6 @@ export const SetupChips = React.memo(function SetupChips({
   const steps = flowSteps({ asiaRange, sweepTime, poiTimeframe, confirmations: selectedConfirmations, trend: selectedTrend });
   // Session seçenekleri: tanımlı liste + (eski kayıtta listede olmayan) mevcut değer
   const sessionOptions = withSelected(sessions, session ? [session] : []);
-  const sessionManual = !!session && session !== sessionAuto;
   // Zorunlu alan işareti ve (kaydetme denendikten sonra) eksik vurgusu
   const isReq = (id: string) => required.includes(id);
   const miss = {
@@ -150,7 +146,7 @@ export const SetupChips = React.memo(function SetupChips({
         </FlowStep>
 
         {/* 3. POI: SWEEP TIME (NY) · SESSION, altında POI TIMEFRAME.
-            Session her zaman görünür: sweep saatinden otomatik seçilir (küçük "OTO" işareti), tıklanarak değiştirilebilir. */}
+            Session her zaman görünür: sweep saati seçilince ona uyan session sessizce seçilir; tıklanarak değiştirilebilir. */}
         <FlowStep n={3} done={steps[2]} error={miss.sweepTime || miss.poiTimeframe}>
           <div className="flex flex-col gap-3.5">
             <div className={`grid grid-cols-1 ${stackPoi ? "" : "sm:grid-cols-2"} gap-x-4 gap-y-3.5`}>
@@ -167,21 +163,6 @@ export const SetupChips = React.memo(function SetupChips({
                 <span lang="en" className={LABEL}>
                   <Globe size={13} className="text-blue-400 shrink-0" />
                   <span className="truncate">{H("sessions", "SESSION")}</span>
-                  {sessionManual ? (
-                    <button
-                      type="button"
-                      onClick={() => onSessionChange?.("")}
-                      title={sessionAuto ? `Otomatiğe dön (${sessionAuto})` : "Seçimi kaldır"}
-                      className="ml-auto inline-flex items-center gap-1 normal-case tracking-normal font-semibold text-amber-300/90 hover:text-amber-200 cursor-pointer"
-                    >
-                      <RotateCcw size={11} />
-                      {sessionAuto ? "Otomatiğe dön" : "Kaldır"}
-                    </button>
-                  ) : (
-                    <span className="ml-auto normal-case tracking-normal font-semibold text-zinc-500 truncate">
-                      {sessionAuto ? "Sweep saatinden" : "Saatten otomatik"}
-                    </span>
-                  )}
                 </span>
                 {sessionOptions.length === 0 ? (
                   <div className="h-10 flex items-center px-3 rounded-xl border border-dashed border-zinc-800 text-label text-zinc-500">
@@ -191,7 +172,6 @@ export const SetupChips = React.memo(function SetupChips({
                 <div role="radiogroup" aria-label="Session" className={`${SEGMENT} h-10`}>
                   {sessionOptions.map((opt) => {
                     const on = session === opt;
-                    const auto = opt === sessionAuto;
                     return (
                       <button
                         lang="en"
@@ -200,15 +180,11 @@ export const SetupChips = React.memo(function SetupChips({
                         role="radio"
                         aria-checked={on}
                         data-selected={on}
-                        title={auto ? "POI Sweep saatine göre otomatik" : undefined}
-                        onClick={() => onSessionChange?.(on && sessionManual ? "" : opt)}
-                        className={segBtn(on, sessionManual ? "text-amber-200" : "text-blue-300")}
+                        onClick={() => onSessionChange?.(on ? "" : opt)}
+                        className={segBtn(on)}
                       >
-                        {on && <SlideBg id="sessionSlide" className={sessionManual ? "bg-amber-500/15 border-amber-500/40 shadow-xs" : SEG_ON} />}
+                        {on && <SlideBg id="sessionSlide" className={SEG_ON} />}
                         <span className="relative z-10 truncate">{opt}</span>
-                        {auto && (
-                          <span aria-hidden className={`relative z-10 ml-1 shrink-0 text-[9px] font-bold tracking-wider ${on ? "text-blue-300/80" : "text-zinc-500"}`}>OTO</span>
-                        )}
                       </button>
                     );
                   })}

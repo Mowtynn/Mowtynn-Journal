@@ -4,7 +4,7 @@ import { smartUpper } from '../constants/constants';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Download, Loader2 } from 'lucide-react';
 import { Trade } from '../types';
 import { TradeHistoryModal } from './TradeHistoryModal';
-import { nyWallDate, nyNow } from '../lib/tradingTime';
+import { nyWallDate, trNow } from '../lib/tradingTime';
 import { formatR, rsigned } from '../lib/format';
 import { saveBlob, dataUrlToBlob, waitForPaint, withExportSafeText } from '../lib/download';
 import { fileSlug } from '../utils/exportTrades';
@@ -41,7 +41,7 @@ const formatDisplayDate = (dateStr: string | null) => {
 };
 
 export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], onEdit?: (trade: Trade) => void }) => {
-  const [currentDate, setCurrentDate] = useState(nyNow());
+  const [currentDate, setCurrentDate] = useState(trNow());
   const [selectedDateStr, setSelectedDateStr] = useState<string | null>(null);
 
   const year = currentDate.getFullYear();
@@ -49,7 +49,7 @@ export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], o
 
   const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
   const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
-  const goToToday = () => setCurrentDate(nyNow());
+  const goToToday = () => setCurrentDate(trNow());
 
   // Takvimi görsel (PNG) olarak indir: başlık, aylık özet ve gün ızgarası; indirme düğmesi görsele girmez
   const captureRef = useRef<HTMLDivElement>(null);
@@ -161,7 +161,7 @@ export const CalendarView = React.memo(({ trades, onEdit }: { trades: Trade[], o
     for (let day = 1; day <= daysInMonth; day++) {
       const dateStr = formatDateLocal(new Date(year, month, day));
       const stat = dailyStats[dateStr];
-      const isToday = formatDateLocal(nyNow()) === dateStr;
+      const isToday = formatDateLocal(trNow()) === dateStr;
       
       let cardStyle = "bg-zinc-900 border-zinc-900 hover:border-zinc-800 hover:bg-zinc-800";
       let primaryColor = "text-zinc-400";

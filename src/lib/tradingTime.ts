@@ -154,34 +154,57 @@ export function toNyInput(ts: number): string {
   return `${p.date}T${pad(p.hour)}:${pad(p.minute)}`;
 }
 
-const IST_DATE_FMT = (() => {
+/* ==========================================================================
+   TÜRKİYE TAKVİMİ: tarih seçimi ve "bugün" Türkiye (Europe/Istanbul) gününe göredir.
+   POI Sweep Time ve Session ise New York saatine göredir (bkz. sessions.ts).
+   ========================================================================== */
+const IST_FMT = (() => {
   try {
-    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Istanbul', year: 'numeric', month: '2-digit', day: '2-digit' });
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Europe/Istanbul', year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+    });
   } catch {
     return null;
   }
 })();
 
-/** Türkiye (Europe/Istanbul) takvim günü "YYYY-MM-DD"; dönüşüm olmazsa yerel gün */
-export function istanbulDateKey(ts: number): string {
-  if (IST_DATE_FMT) {
-    const parts = IST_DATE_FMT.formatToParts(new Date(ts));
+/** Türkiye duvar saati parçaları; dönüşüm olmazsa tarayıcının yerel saati */
+function istanbulParts(ts: number): { date: string; hour: number; minute: number } {
+  if (IST_FMT) {
+    const parts = IST_FMT.formatToParts(new Date(ts));
     const get = (t: string) => parts.find((p) => p.type === t)?.value;
-    const y = get('year'), m = get('month'), d = get('day');
-    if (y && m && d) return `${y}-${m}-${d}`;
+    const y = get('year'), m = get('month'), d = get('day'), h = get('hour'), mi = get('minute');
+    if (y && m && d && h && mi) return { date: `${y}-${m}-${d}`, hour: Number(h) % 24, minute: Number(mi) };
   }
   const d = new Date(ts);
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  return { date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`, hour: d.getHours(), minute: d.getMinutes() };
 }
 
+/** Türkiye (Europe/Istanbul) takvim günü "YYYY-MM-DD"; dönüşüm olmazsa yerel gün */
+export function istanbulDateKey(ts: number): string {
+  return istanbulParts(ts).date;
+}
+
+/** Yerel alanları Türkiye duvar saatine eşit bir Date (getDate/getDay/getHours Türkiye değerlerini verir) */
+export function istanbulWallDate(ts: number): Date {
+  const p = istanbulParts(ts);
+  const [y, m, d] = p.date.split('-').map(Number);
+  return new Date(y, m - 1, d, p.hour, p.minute);
+}
+
+/** Şu an, Türkiye duvar saatiyle. Tarih seçicilerde, takvimlerde ve "bugün / bu hafta / bu ay"da kullanılır. */
+export const trNow = (): Date => istanbulWallDate(Date.now());
+
 /**
- * Yeni işlem formunun başlangıç değeri: GÜN Türkiye takvimine göre (gece yarısından sonra yeni gün görünür),
- * günün içindeki an NY saatinden (kayıt sırası girildiği andan gelir). Kayıt seçilen günü NY işlem günü sayar:
- * nyInputToTs bu değeri o NY gününün içinde bir ana çevirir, yani haftanın günü / gün analizleri seçilen güne düşer.
+ * Yeni işlem formunun başlangıç değeri: gün VE saat Türkiye'ye göre ("YYYY-MM-DDTHH:mm").
+ * Kayıt, seçilen günü işlem günü sayar: nyInputToTs bu değeri aynı tarihli NY gününün içinde bir ana çevirir, böylece
+ * listede, takvimde ve gün analizlerinde işlem seçilen tarihte görünür. Saat yalnızca aynı günün işlemlerini
+ * giriliş sırasıyla dizmek için kullanılır (Türkiye saati gün içinde hep ileri gittiğinden sıra bozulmaz) ve gösterilmez.
  */
 export function newTradeDateInput(ts: number): string {
-  const ny = toNyInput(ts);
-  return `${istanbulDateKey(ts)}${ny.slice(10)}`;
+  const p = istanbulParts(ts);
+  return `${p.date}T${pad(p.hour)}:${pad(p.minute)}`;
 }
 
 /**
@@ -230,7 +253,7 @@ export function nyWallDate(ts: number): Date {
   return new Date(y, m - 1, d, p.hour, p.minute);
 }
 
-/** Şu an, NY duvar saatiyle (yerel alanlarda okunur). Projede "bugün / şimdi" her yerde budur. */
+/** Şu an, NY duvar saatiyle (yerel alanlarda okunur). "Bugün" için trNow kullanılır. */
 export const nyNow = (): Date => nyWallDate(Date.now());
 
 /** NY takvim günü "YYYY-MM-DD" */

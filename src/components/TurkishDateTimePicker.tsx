@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { POPOVER, POPOVER_UP } from '../lib/motion';
 import { Calendar as CalendarIcon, Clock, ChevronLeft, ChevronRight, ChevronDown, Check } from 'lucide-react';
-import { nyNow } from '../lib/tradingTime';
+import { trNow } from '../lib/tradingTime';
 
 interface TurkishDateTimePickerProps {
   value: string; // "YYYY-MM-DDTHH:mm" format
@@ -20,7 +20,7 @@ export const TURKISH_DAYS_SHORT = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'P
 
 export const TurkishDateTimePicker = React.memo(function TurkishDateTimePicker({ value, onChange, className = '' }: TurkishDateTimePickerProps) {
   // Şu anın duvar saati (yerel ya da NY) — yerel alanları o saate eşit bir Date
-  const nowWall = React.useCallback(() => nyNow(), []);
+  const nowWall = React.useCallback(() => trNow(), []);
   const [isOpen, setIsOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<'none' | 'hour' | 'minute'>('none');
   const containerRef = useRef<HTMLDivElement>(null);
@@ -32,14 +32,14 @@ export const TurkishDateTimePicker = React.memo(function TurkishDateTimePicker({
   // Parse current value
   const parsedDate = React.useMemo(() => {
     if (!value) {
-      return nyNow();
+      return trNow();
     }
     const [datePart, timePart] = value.split('T');
-    if (!datePart) return nyNow();
+    if (!datePart) return trNow();
     const [year, month, day] = datePart.split('-').map(Number);
     const [hour, minute] = (timePart || '12:00').split(':').map(Number);
     const d = new Date(year, (month || 1) - 1, day || 1, hour || 0, minute || 0);
-    return isNaN(d.getTime()) ? nyNow() : d;
+    return isNaN(d.getTime()) ? trNow() : d;
   }, [value]);
 
   const [viewYear, setViewYear] = useState(parsedDate.getFullYear());
@@ -297,7 +297,7 @@ export const TurkishDateTimePicker = React.memo(function TurkishDateTimePicker({
   }, [viewYear, viewMonth]);
 
   const isToday = (date: Date) => {
-    const now = nyNow();
+    const now = trNow();
     return (
       date.getDate() === now.getDate() &&
       date.getMonth() === now.getMonth() &&
@@ -638,11 +638,11 @@ export const TurkishDatePicker = React.memo(function TurkishDatePicker({
   // Parse current value
   const parsedDate = React.useMemo(() => {
     if (!value) {
-      return nyNow();
+      return trNow();
     }
     const [year, month, day] = value.split('-').map(Number);
     const d = new Date(year, (month || 1) - 1, day || 1);
-    return isNaN(d.getTime()) ? nyNow() : d;
+    return isNaN(d.getTime()) ? trNow() : d;
   }, [value]);
 
   const [viewYear, setViewYear] = useState(parsedDate.getFullYear());
@@ -781,7 +781,7 @@ export const TurkishDatePicker = React.memo(function TurkishDatePicker({
   };
 
   const handleSetToday = () => {
-    const now = nyNow();
+    const now = trNow();
     const formatted = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
     onChange(formatted);
     setViewYear(now.getFullYear());
@@ -790,7 +790,7 @@ export const TurkishDatePicker = React.memo(function TurkishDatePicker({
   };
 
   const handleSetYesterday = () => {
-    const yesterday = nyNow();
+    const yesterday = trNow();
     yesterday.setDate(yesterday.getDate() - 1);
     const formatted = `${yesterday.getFullYear()}-${pad(yesterday.getMonth() + 1)}-${pad(yesterday.getDate())}`;
     onChange(formatted);
@@ -842,7 +842,7 @@ export const TurkishDatePicker = React.memo(function TurkishDatePicker({
   }, [viewYear, viewMonth]);
 
   const isToday = (date: Date) => {
-    const now = nyNow();
+    const now = trNow();
     return (
       date.getDate() === now.getDate() &&
       date.getMonth() === now.getMonth() &&

@@ -113,6 +113,8 @@ export const SweepTimePicker = React.memo(function SweepTimePicker({
         >
           <span className={`tabular-nums tracking-wide truncate ${cur ? "text-blue-200" : "text-zinc-500"}`}>
             {cur ? value : "Saat Seç"}
+            {/* POI Sweep Time her zaman New York saatidir (tarih Türkiye gününe göre seçilir) */}
+            <span className={`ml-1.5 text-[10px] font-bold tracking-wider ${cur ? "text-blue-400/70" : "text-zinc-600"}`}>NY</span>
           </span>
           <span className="flex items-center gap-1.5 shrink-0">
             <Clock size={13} className={cur ? "text-blue-400" : "text-zinc-500"} />
@@ -164,7 +166,7 @@ export const SweepTimePicker = React.memo(function SweepTimePicker({
                 </div>
 
                 <div>
-                  <div className="text-label font-bold text-zinc-500 tracking-wide mb-1.5">SAAT</div>
+                  <div className="text-label font-bold text-zinc-500 tracking-wide mb-1.5">SAAT · NEW YORK</div>
                   <div className="grid grid-cols-6 gap-1">
                     {HOURS.map((h) => (
                       <button key={h} type="button" data-selected={draft.h === h} onClick={() => pickHour(h)} className={cell(draft.h === h)}>

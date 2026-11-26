@@ -102,7 +102,8 @@ const AddTradeForm = React.memo(function AddTradeForm({
     editingTrade?.session ? { t: editingTrade.sweepTime || "", v: editingTrade.session } : null,
   );
   const session = sessionPick && sessionPick.t === sweepTime ? sessionPick.v : autoSession;
-  const pickSession = (v: string) => setSessionPick(v && v !== autoSession ? { t: sweepTime, v } : null);
+  // Otomatik olan seçilirse otomatiğe döner; başka bir session ya da boş (seçimi kaldırma) o saate bağlı elle seçim olur
+  const pickSession = (v: string) => setSessionPick(v === autoSession ? null : { t: sweepTime, v });
 
   const [rrValue, setRrValue] = useState<Num>(init.rrValue);
 
@@ -192,8 +193,9 @@ const AddTradeForm = React.memo(function AddTradeForm({
       return;
     }
 
-    // Seçilen gün işlemin günüdür (yeni işlemde Türkiye takvim gününden başlar); günün içindeki an kayıt anının NY saatinden
-    // gelir: kayıt seçilen NY gününe düşer ve aynı günün işlemleri giriliş sırasıyla dizilir
+    // Seçilen gün (Türkiye takvimi) işlemin günüdür; saat kısmı Türkiye saatinden gelir ve yalnızca aynı günün işlemlerini
+    // giriliş sırasıyla dizer. Kayıt aynı tarihli NY gününe düşer, böylece her yerde seçilen tarihte görünür.
+    // POI Sweep Time ayrı bir alandır ve New York saatidir.
     const parsedTime = tradeDate ? nyInputToTs(tradeDate) : null;
     const safeCreatedAt = parsedTime !== null && parsedTime > 0 ? parsedTime : Date.now();
 
@@ -433,7 +435,6 @@ const AddTradeForm = React.memo(function AddTradeForm({
                 sweepTime={sweepTime}
                 setSweepTime={setSweepTime}
                 session={session}
-                sessionAuto={autoSession}
                 sessions={sessions}
                 onSessionChange={pickSession}
                 poiTimeframes={poiTimeframes}

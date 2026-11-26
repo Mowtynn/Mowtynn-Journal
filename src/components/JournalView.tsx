@@ -36,7 +36,7 @@ import { caseInsensitiveMatch } from '../constants/constants';
 import { exportJournalsToExcel, exportJournalsToCSV } from '../utils/exportTrades';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { localDateKey } from '../utils/math';
-import { nyWallDate, nyNow } from '../lib/tradingTime';
+import { nyWallDate, trNow } from '../lib/tradingTime';
 import { formatR } from '../lib/format';
 import { WeeklyReview } from './journal/WeeklyReview';
 import { currentWeekStart, isWeeklyEntry, weeklyEntryScope } from '../lib/weeklyReview';
@@ -94,7 +94,7 @@ const JournalView = memo(function JournalView({ entries: allEntries, trades = []
     [allEntries, weeklyScope],
   );
   const getLocalDateString = () => {
-    const d = nyNow();
+    const d = trNow();
     return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-');
   };
 
@@ -274,7 +274,7 @@ const JournalView = memo(function JournalView({ entries: allEntries, trades = []
   // Modern feature: Last 7 days mood trend heatmap -> Current Week Mon-Sun
   const last7DaysMoods = useMemo(() => {
     const moods: { date: string; mood: JournalEntry['mood'] | null; shortDay: string; dayNumber: number }[] = [];
-    const today = nyNow();
+    const today = trNow();
     today.setHours(0, 0, 0, 0);
     
     // Apply week offset

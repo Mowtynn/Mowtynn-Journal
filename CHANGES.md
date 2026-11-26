@@ -1121,3 +1121,9 @@ Klasik tasarım korunarak, son eklenen alanlar (risk %, hesap bağı, strateji, 
   - Detaylı Analiz: Setup Kalitesi kartı yerine POI Timeframe kartı (15M › 1H › 4H › Daily; WR · R/işlem · adet).
   - Asia Edge Lab: girdisi olmayan "Backtest / Veri Seti" seçimi ve dışa aktarımdaki "Veri Seti" sütunu kaldırıldı (Prop / Hesapsız ayrımı üstteki seçiciyle). Günün işlemi sayacı hesap türü içinde.
   - Eski metinler düzeltildi: kurulum tanımı "Asia Range · İşlem Tipi" (Entry Model yok), zorunlu alan açıklamasında News Day yok, boş strateji ekranında yalnızca güncel girdiler.
+- Liste sırası, büyük detay penceresi, sessiz otomatik session, Türkiye tarihi:
+  - İşlem listesinde sütun sırası: ... İşlem Tipi · POI TF · POI · İşlem.
+  - İşlem detayı penceresi büyüdü (en çok 1760px, kenar boşlukları azaldı). Grafik kutusu her zaman görselin kendi boyutunda; pencere grafikten uzunsa artan yer kurulum geçmişinin altında kalır, grafiğin etrafında boşluk olmaz.
+  - Session: POI Sweep Time seçilince uyan session sessizce seçilir; "OTO" işareti, "Sweep saatinden" yazısı ve elle seçim rengi kalktı. Session tıklanarak değiştirilir, seçili olana yeniden tıklamak seçimi kaldırır (diğer seçicilerle aynı).
+  - Tarih Türkiye'ye göre: tarih seçicilerdeki "Bugün / Dün" ve bugün işareti, takvimlerin bugünü, günlük ve "bu hafta / bu ay" dışa aktarımı Türkiye gününü kullanır. Yeni işlemin saat kısmı da Türkiye saatinden gelir (yalnızca aynı günün işlemlerini sıralar, gösterilmez); gece girilen işlem ertesi sabah girilenden önce sıralanır.
+  - POI Sweep Time New York saatidir: seçicide değerin yanında "NY", saat ızgarasında "SAAT · NEW YORK" yazar. Session da NY saatine göre bulunur.

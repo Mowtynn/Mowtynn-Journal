@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { Wallet, Plus, Trash2, Pencil, Check, CalendarDays, Building2, TrendingUp } from 'lucide-react';
 import type { Payout } from '../types';
-import { nyNow } from '../lib/tradingTime';
+import { trNow } from '../lib/tradingTime';
 import { formatMoney } from '../lib/format';
 import { newPayoutId, summarizePayouts, sortPayouts } from '../lib/payouts';
 import { titleCase } from '../constants/constants';
@@ -18,7 +18,7 @@ interface PropViewProps {
 
 const money = (v: number) => formatMoney(v);
 const todayInput = () => {
-  const d = nyNow();
+  const d = trNow();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
 const fmtDate = (ymd: string) => {
@@ -146,7 +146,7 @@ export function PropView({ payouts, onChange }: PropViewProps) {
   const sorted = useMemo(() => sortPayouts(payouts), [payouts]);
   const summary = useMemo(() => summarizePayouts(payouts), [payouts]);
   const firms = useMemo(() => summary.byFirm.map((g) => g.key), [summary]);
-  const thisYear = String(nyNow().getFullYear());
+  const thisYear = String(trNow().getFullYear());
   const yearTotal = summary.byYear.find((g) => g.key === thisYear);
   const byYear = useMemo(() => {
     const m = new Map<string, Payout[]>();
