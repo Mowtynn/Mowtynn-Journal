@@ -14,7 +14,7 @@ import {
 import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
 import { missingRequired, loadRequiredFields, REQUIRED_FIELDS_EVENT } from "../lib/requiredFields";
 import { Plus, X, Zap, Copy } from "lucide-react";
-import { Num, buildInitial, useTitles, statusOfR } from './tradeForm/shared';
+import { Num, Direction, buildInitial, useTitles, statusOfR } from './tradeForm/shared';
 import { roundR, tradeConfirmations } from '../lib/tradeModel';
 import { autoSessionForNyTime } from '../lib/sessions';
 import { nyInputToTs, newTradeDateInput } from '../lib/tradingTime';
@@ -85,7 +85,8 @@ const AddTradeForm = React.memo(function AddTradeForm({
     return { ...base, asset: lastTrade?.asset || base.asset, accountKind: defaultAccountKind ?? (lastTrade ? getTradeAccountKind(lastTrade) : null) };
   });
   const [asset, setAsset] = useState(init.asset);
-  const [type, setType] = useState<"LONG" | "SHORT">(init.type);
+  const [type, setType] = useState<Direction>(init.type);
+  const [dirError, setDirError] = useState(false);
   // Hesap türü: Prop ya da Hesapsız (demo / backtest). Seçilmeden kayıt yapılmaz.
   const [accountKind, setAccountKind] = useState<AccountCategory | null>(init.accountKind);
   const [accountError, setAccountError] = useState(false);
@@ -145,7 +146,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
     if (selectedConfirmations.length) trail.push({ text: selectedConfirmations.length === 1 ? selectedConfirmations[0] : `${selectedConfirmations.length} confirmation` });
     return {
       asset: a,
-      dir: a ? type : null,
+      dir: a && type ? type : null,
       account: accountKind,
       r,
       trail,
@@ -165,6 +166,12 @@ const AddTradeForm = React.memo(function AddTradeForm({
       setPairError(true);
       assetInputRef.current?.focus();
       toast.error("Bir parite seç ya da yaz.");
+      return;
+    }
+    if (!type) {
+      setDirError(true);
+      document.getElementById("direction-field")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      toast.error("Yönü seç: Long ya da Short.");
       return;
     }
     if (!accountKind) {
@@ -312,7 +319,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
     const t = lastTrade;
     if (!t) return;
     if (t.asset) setAsset(t.asset);
-    if (t.type) setType(t.type);
+    if (t.type) { setType(t.type); setDirError(false); }
     setAccountKind(getTradeAccountKind(t));
     setAccountError(false);
     setSelectedTrend(t.trend || "");
@@ -409,6 +416,8 @@ const AddTradeForm = React.memo(function AddTradeForm({
               setAccountKind={setAccountKind}
               accountError={accountError}
               setAccountError={setAccountError}
+              dirError={dirError}
+              setDirError={setDirError}
               tradeDate={tradeDate}
               setTradeDate={setTradeDate}
             />

@@ -9,6 +9,7 @@ import { tradeConfirmations } from '../../lib/tradeModel';
 /** İşlem formu: bölümlerin ortak sabitleri, türleri ve yardımcıları */
 
 export type Num = number | "";
+export type Direction = "LONG" | "SHORT" | "";
 export type SetState<T> = React.Dispatch<React.SetStateAction<T>>;
 type TitleFn = (key: keyof DefinitionTitles) => string;
 
@@ -31,7 +32,8 @@ export { statusOfR } from '../../lib/tradeModel';
 export function buildInitial(t: Trade | null) {
   return {
     asset: t?.asset || "",
-    type: (t?.type || "LONG") as "LONG" | "SHORT",
+    // Yön yeni işlemde boş başlar (unutulup LONG kalmasın); kayıt için seçmek zorunlu
+    type: (t?.type === "LONG" || t?.type === "SHORT" ? t.type : "") as Direction,
     accountKind: (t ? getTradeAccountKind(t) : null) as AccountCategory | null,
     trend: t?.trend || "",
     confirmations: t ? tradeConfirmations(t) : [],

@@ -6,7 +6,7 @@ import { canonicalAsset } from "../../lib/tradeModel";
 import { TurkishDatePicker } from "../TurkishDateTimePicker";
 import { Search, Layers, Check, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import type { AccountCategory } from "../../types";
-import { SetState, Titles, SlideBg } from './shared';
+import { SetState, Titles, SlideBg, Direction } from './shared';
 
 /* ================= 1. KART: TEMEL BİLGİLER (parite, yön, hesap türü, tarih) ================= */
 export const BasicInfoCard = React.memo(function BasicInfoCard({
@@ -25,6 +25,8 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
   setAccountKind,
   accountError,
   setAccountError,
+  dirError,
+  setDirError,
   tradeDate,
   setTradeDate,
   className = "",
@@ -38,8 +40,10 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
   assetInputRef: React.RefObject<HTMLInputElement | null>;
   isAssetDropdownOpen: boolean;
   setIsAssetDropdownOpen: SetState<boolean>;
-  type: "LONG" | "SHORT";
-  setType: SetState<"LONG" | "SHORT">;
+  type: Direction;
+  setType: SetState<Direction>;
+  dirError: boolean;
+  setDirError: SetState<boolean>;
   accountKind: AccountCategory | null;
   setAccountKind: SetState<AccountCategory | null>;
   accountError: boolean;
@@ -174,14 +178,22 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
           </AnimatePresence>
         </div>
 
-        {/* YÖN (LONG/SHORT) */}
-        <div>
-          <label className="text-label sm:text-label font-bold text-zinc-300 uppercase tracking-wide mb-2 block font-sans">{L("direction")}</label>
-          <div className="grid grid-cols-2 gap-1 h-9 sm:h-9 bg-zinc-950/80 border border-zinc-700/70 rounded-lg sm:rounded-xl p-0.5 shadow-inner">
+        {/* YÖN (LONG/SHORT): yeni işlemde boş başlar, kayıt için seçmek zorunlu */}
+        <div id="direction-field">
+          <label className={`text-label sm:text-label font-bold uppercase tracking-wide mb-2 flex items-center gap-1 font-sans ${dirError ? "text-rose-400" : "text-zinc-300"}`}>
+            {L("direction")}
+            <span aria-hidden className="text-rose-400">*</span>
+          </label>
+          <div
+            role="radiogroup"
+            aria-required="true"
+            aria-invalid={dirError || undefined}
+            className={`grid grid-cols-2 gap-1 h-9 sm:h-9 bg-zinc-950/80 border ${dirError ? "border-rose-500/70 ring-1 ring-rose-500/30" : "border-zinc-700/70"} rounded-lg sm:rounded-xl p-0.5 shadow-inner`}
+          >
             <button lang="en"
               type="button"
               data-selected={type === "LONG"}
-              onClick={() => setType("LONG")}
+              onClick={() => { setType("LONG"); setDirError(false); }}
               className={`relative h-full rounded-md sm:rounded-lg text-xs font-sans font-bold uppercase transition-ui flex items-center justify-center cursor-pointer ${
                 type === "LONG" ? "text-win font-bold" : "text-zinc-400 hover:text-zinc-200 font-bold"
               }`}
@@ -192,7 +204,7 @@ export const BasicInfoCard = React.memo(function BasicInfoCard({
             <button lang="en"
               type="button"
               data-selected={type === "SHORT"}
-              onClick={() => setType("SHORT")}
+              onClick={() => { setType("SHORT"); setDirError(false); }}
               className={`relative h-full rounded-md sm:rounded-lg text-xs font-sans font-bold uppercase transition-ui flex items-center justify-center cursor-pointer ${
                 type === "SHORT" ? "text-loss font-bold" : "text-zinc-400 hover:text-zinc-200 font-bold"
               }`}
