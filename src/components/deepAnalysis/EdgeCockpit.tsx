@@ -219,7 +219,7 @@ export const EdgeSummaryCard = React.memo(function EdgeSummaryCard({ trades, onS
         <p className="text-label text-zinc-500 -mt-1 flex items-start gap-1.5">
           <Info size={11} className="shrink-0 mt-px" />
           <span>
-            Altındaki “%80'i …” notu, bulgunun büyük ölçüde başka bir alanla örtüştüğünü gösterir: ikisi aynı etki olabilir, Kurulum Karnesi'nde birlikte seçip ayır. Bu özet {s.testedSlices} farklı alan değerini karşılaştırıyor; bu kadar karşılaştırmada bazı sonuçlar yalnızca şans eseri iyi ya da kötü görünür. <b className="text-zinc-400">Erken</b> rozetli bulgular henüz istatistiksel olarak kesin değil (az işlem ya da güven aralığı sıfırı kapsıyor). Kural yapmadan önce yeni işlemlerle doğrula. Olumlu bulgu {EDGE_PROOF_MIN} işlemden sonra “Kanıtlı” olabilir; sızıntı uyarısı aralık tamamen negatife geçince “Kesin” olur.
+            Altındaki “%80'i …” notu, bulgunun büyük ölçüde başka bir alanla örtüştüğünü gösterir: ikisi aynı etki olabilir, Kurulum Karnesi'nde birlikte seçip ayır. Bu özet {s.testedSlices} farklı alan değerini karşılaştırıyor; bu kadar karşılaştırmada bazı sonuçlar yalnızca şans eseri iyi ya da kötü görünür. <b className="text-zinc-400">Erken</b> rozetli bulgular henüz istatistiksel olarak kesin değil (az işlem ya da güven aralığı sıfırı kapsıyor). Kural yapmadan önce yeni işlemlerle doğrula. Olumlu bulgu {EDGE_PROOF_MIN} işlemden sonra “Kanıtlı” olabilir; sızıntı uyarısı aralık tamamen negatife geçince “Kesin” olur. Aynı gün açılan işlemler birlikte kazanıp kaybediyorsa güven aralıkları gün bazında genişletilir (aynı günün işlemleri tek karar gibi sayılır).
           </span>
         </p>
       )}

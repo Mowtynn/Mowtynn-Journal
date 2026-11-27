@@ -8,6 +8,7 @@ import { ruleOptions, simulateRule, HALF_MIN, type RuleCondition, type HalfStatu
 import { EDGE_PROOF_MIN } from '../../lib/sampleSize';
 import type { EdgeStats } from '../../lib/asiaAnalytics';
 import { fixed, formatR, trPossessive, rnum } from '../../lib/format';
+import { DailyRulesCard } from './DailyRulesCard';
 
 const STORAGE_KEY = 'tj_rule_sim';
 const MAX_CONDS = 6;
@@ -225,6 +226,8 @@ export const RuleSimulatorTab = React.memo(function RuleSimulatorTab({ trades }:
           Vazgeçilen işlemlerin R'ı negatifse kural seni o kayıptan korurdu.
         </p>
       </div>
+
+      <DailyRulesCard trades={trades} />
     </div>
   );
 });

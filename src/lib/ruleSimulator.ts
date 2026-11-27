@@ -1,6 +1,6 @@
 import type { Trade } from '../types';
 import { byEntryTime, tradeConfirmations } from './tradeModel';
-import { edgeFromR, indexTradeOrder, type EdgeStats } from './asiaAnalytics';
+import { edgeOfTrades, indexTradeOrder, type EdgeStats } from './asiaAnalytics';
 import { dimensionValue, UNSPECIFIED, type SetupDimension } from './setupScorecard';
 
 /**
@@ -61,7 +61,7 @@ export type HalfStatus = 'CONSISTENT' | 'MIXED' | 'THIN';
 export const HALF_MIN = 5;
 
 const rOf = (t: Trade) => (typeof t.rr === 'number' && Number.isFinite(t.rr) ? t.rr : 0);
-const edgeOf = (list: Trade[]) => edgeFromR(list.map(rOf), list.map((t) => t.status));
+const edgeOf = (list: Trade[]) => edgeOfTrades(list);
 
 export function halfStatus(first: EdgeStats, second: EdgeStats, sign: number): HalfStatus {
   if (first.n < HALF_MIN || second.n < HALF_MIN) return 'THIN';

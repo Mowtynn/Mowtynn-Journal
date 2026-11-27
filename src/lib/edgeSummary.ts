@@ -1,6 +1,6 @@
 import { Trade } from '../types';
 import { byEntryTime } from './tradeModel';
-import { edgeFromR, EdgeStats, indexTradeOrder, SWEEP_FINE_MIN } from './asiaAnalytics';
+import { edgeOfTrades, EdgeStats, indexTradeOrder, SWEEP_FINE_MIN } from './asiaAnalytics';
 import { tradeConfirmations } from './tradeModel';
 import { computeEdgeDrift, DRIFT_RECENT } from './edgeDrift';
 import { halfStatus, HALF_MIN, type HalfStatus } from './ruleSimulator';
@@ -16,6 +16,7 @@ import {
   SETUP_DIMENSIONS,
   SETUP_MIN_SAMPLE,
   UNSPECIFIED,
+  ORDER_DIMS,
   type SetupDimension,
   type SetupRow,
 } from './setupScorecard';
@@ -93,6 +94,8 @@ export const SCAN_DIMENSIONS: SetupDimension[] = [
   'poiTimeframe',
   'tradeOfDay',
   'prevTrade',
+  'streakBefore',
+  'ddState',
   'session',
   'premiumDiscount',
   'confCount',
@@ -141,7 +144,13 @@ export function scanDimensionsFor(trades: Trade[], minSample = SETUP_MIN_SAMPLE)
 
 /** Aynı bilgiyi taşıyan alanlar ikili birleşimde eşleştirilmez (ör. iki confirmation boyutu, iki saat boyutu) */
 const FAMILY = (d: SetupDimension): string =>
-  isConfDimension(d) || d === 'premiumDiscount' || d === 'confCount' ? 'conf' : d === 'sweepHour' || d === 'sweepHour1h' || d === 'session' ? 'time' : d;
+  isConfDimension(d) || d === 'premiumDiscount' || d === 'confCount'
+    ? 'conf'
+    : d === 'sweepHour' || d === 'sweepHour1h' || d === 'session'
+      ? 'time'
+      : ORDER_DIMS.has(d)
+        ? 'seq' // günün kaçıncı işlemi, önceki işlem, seri ve hesap durumu birbirini büyük ölçüde içerir
+        : d;
 
 type ValueOf = (t: Trade, d: SetupDimension) => string;
 
@@ -160,7 +169,7 @@ function valueTable(trades: Trade[], dims: SetupDimension[]): ValueOf {
 }
 
 const rOf = (t: Trade) => (typeof t.rr === 'number' && Number.isFinite(t.rr) ? t.rr : 0);
-const edgeOf = (list: Trade[]) => edgeFromR(list.map(rOf), list.map((t) => t.status));
+const edgeOf = (list: Trade[]) => edgeOfTrades(list);
 const labelOf = (d: SetupDimension) => dimensionLabel(d);
 
 /** `now`: "son 7 gün" ihlalleri bugüne göre sayılır (son işleme göre değil: uzun aradan sonra eski ihlaller "son 7 gün" görünmesin) */

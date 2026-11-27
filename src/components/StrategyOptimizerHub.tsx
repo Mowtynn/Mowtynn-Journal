@@ -16,6 +16,7 @@ import { SetupScorecardTab } from './strategy/SetupScorecardTab';
 import { EdgeSummaryCard } from './deepAnalysis/EdgeCockpit';
 import { TradeHistoryModal } from './TradeHistoryModal';
 import { RuleSimulatorTab } from './strategy/RuleSimulatorTab';
+import { StateCard, SameDayCard } from './strategy/PsychologyExtras';
 import { SectionErrorBoundary } from './SectionErrorBoundary';
 import { fixed, formatR } from '../lib/format';
 
@@ -40,7 +41,7 @@ const SUBTABS: Array<{ id: LabTab; label: string; desc: string; icon: React.Comp
   { id: 'setup_scorecard', label: 'Kurulum Karnesi', desc: 'Kurulumları karşılaştır', icon: ClipboardList },
   { id: 'asia_lab', label: 'Asia Edge Lab', desc: "Asia Range'e özgü analiz", icon: Compass },
   { id: 'rule_sim', label: 'Kural Simülatörü', desc: 'Bir kuralı geçmişte dene', icon: FlaskConical },
-  { id: 'psychology', label: 'Psikoloji & Tilt', desc: 'Seri ve kayıp sonrası', icon: Brain },
+  { id: 'psychology', label: 'Psikoloji & Tilt', desc: 'Seri, düşüş ve gün davranışı', icon: Brain },
 ];
 
 const TAB_KEY = 'tj.lab.tab';
@@ -233,6 +234,8 @@ export const StrategyOptimizerHub = React.memo(function StrategyOptimizerHub({
               </div>
             </div>
           </div>
+          <StateCard trades={trades} onShowTrades={showTrades} />
+          <SameDayCard trades={trades} />
         </div>
       )}
 

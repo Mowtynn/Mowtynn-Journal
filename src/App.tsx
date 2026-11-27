@@ -5,7 +5,7 @@ import { createPortal, flushSync } from "react-dom";
 import { Trade, Note, JournalEntry, DefinitionTitles, AccountCategory, Payout } from "./types";
 import { loadPayouts, sanitizePayouts, payoutsFromLegacyAccounts, mergePayouts, PAYOUTS_KEY, LEGACY_PROP_ACCOUNTS_KEY } from "./lib/payouts";
 import { calculateComprehensiveStats } from "./lib/stats";
-import { edgeFromR } from "./lib/asiaAnalytics";
+import { edgeOfTrades } from "./lib/asiaAnalytics";
 import { applyGlobalFilters, countExtraFilters, DEFAULT_DATE_LIMIT, EMPTY_EXTRA_FILTERS } from "./lib/tradeFilters";
 import {
   DEFAULT_SESSIONS,
@@ -1878,7 +1878,7 @@ export default function App() {
   // Ana panel: beklentinin güven aralığı ve Edge Durumu
   const edgeDrift = useMemo(() => computeEdgeDrift(filteredGlobalTrades), [filteredGlobalTrades]);
   const overallEdge = useMemo(
-    () => edgeFromR(filteredGlobalTrades.map((t) => (typeof t.rr === "number" && Number.isFinite(t.rr) ? t.rr : 0)), filteredGlobalTrades.map((t) => t.status)),
+    () => edgeOfTrades(filteredGlobalTrades),
     [filteredGlobalTrades],
   );
 

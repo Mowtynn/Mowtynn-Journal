@@ -1,6 +1,6 @@
 import { Trade } from '../types';
 import { byEntryTime, tradeConfirmations } from './tradeModel';
-import { edgeFromR, EdgeStats, sweepHourBucket, sweepHour1hBucket, tradeOfDayBucket, indexTradeOrder, prevTradeBucket } from './asiaAnalytics';
+import { edgeFromR, EdgeStats, sweepHourBucket, sweepHour1hBucket, tradeOfDayBucket, indexTradeOrder, prevTradeBucket, streakBeforeBucket, ddStateBucket, dayClusterKey } from './asiaAnalytics';
 import { getTradeNyWeekday, getSweepSide, WEEKDAY_NAMES_TR } from './tradingTime';
 import { EDGE_PROOF_MIN, MIN_SAMPLE } from './sampleSize';
 import { driftFromR, type EdgeDrift } from './edgeDrift';
@@ -21,6 +21,8 @@ export type SetupDimension =
   | 'poiTimeframe'
   | 'tradeOfDay'
   | 'prevTrade'
+  | 'streakBefore'
+  | 'ddState'
   | 'session'
   | 'premiumDiscount'
   | 'confCount'
@@ -38,6 +40,8 @@ export const SETUP_DIMENSIONS: { id: SetupDimension; label: string }[] = [
   { id: 'poiTimeframe', label: 'POI Timeframe' },
   { id: 'tradeOfDay', label: 'Günün İşlemi' },
   { id: 'prevTrade', label: 'Gün İçi Önceki İşlem' },
+  { id: 'streakBefore', label: 'Önceki Sonuç Serisi' },
+  { id: 'ddState', label: 'Hesap Durumu (Zirveye Göre)' },
   { id: 'session', label: 'Session' },
   { id: 'premiumDiscount', label: 'Confirmations' },
   { id: 'confCount', label: 'Confirmation Sayısı' },
@@ -125,6 +129,10 @@ export function dimensionValue(t: Trade, d: SetupDimension): string {
       return tradeOfDayBucket(t) ?? UNSPECIFIED;
     case 'prevTrade':
       return prevTradeBucket(t) ?? UNSPECIFIED;
+    case 'streakBefore':
+      return streakBeforeBucket(t) ?? UNSPECIFIED;
+    case 'ddState':
+      return ddStateBucket(t) ?? UNSPECIFIED;
     case 'weekday': {
       const d = getTradeNyWeekday(t);
       return Number.isInteger(d) ? WEEKDAY_NAMES_TR[d] : UNSPECIFIED;
@@ -176,16 +184,19 @@ interface ScorecardResult {
   unspecifiedCount: number;  // hiçbir boyutu girilmemiş işlem sayısı
 }
 
+/** Değeri işlemlerin sırasından türetilen boyutlar (indexTradeOrder gerekir) */
+export const ORDER_DIMS = new Set<SetupDimension>(['tradeOfDay', 'prevTrade', 'streakBefore', 'ddState']);
+
 export function buildSetupScorecard(trades: Trade[], dims: SetupDimension[], options: ScorecardOptions = {}): ScorecardResult {
   const minSample = options.minSample ?? SETUP_MIN_SAMPLE;
   const useDims = dims.length ? dims : DEFAULT_SETUP_DIMENSIONS;
-  const groups = new Map<string, { labels: string[]; rs: number[]; st: Trade['status'][]; lastAt: number }>();
+  const groups = new Map<string, { labels: string[]; rs: number[]; st: Trade['status'][]; days: string[]; lastAt: number }>();
   let unspecifiedCount = 0;
   let total = 0;
 
   // R sırası için kronolojik
   const sorted = [...trades].sort(byEntryTime);
-  if (useDims.some((d) => d === 'tradeOfDay' || d === 'prevTrade')) indexTradeOrder(sorted);
+  if (useDims.some((d) => ORDER_DIMS.has(d))) indexTradeOrder(sorted);
   for (const t of sorted) {
     if (typeof t.rr !== 'number' || !Number.isFinite(t.rr)) continue;
     const labels = useDims.map((d) => dimensionValue(t, d));
@@ -196,15 +207,16 @@ export function buildSetupScorecard(trades: Trade[], dims: SetupDimension[], opt
     }
     total++;
     const key = labels.join(' | ');
-    const g = groups.get(key) || { labels, rs: [], st: [], lastAt: 0 };
+    const g = groups.get(key) || { labels, rs: [], st: [], days: [], lastAt: 0 };
     g.rs.push(t.rr);
     g.st.push(t.status);
+    g.days.push(dayClusterKey(t));
     g.lastAt = Math.max(g.lastAt, t.createdAt);
     groups.set(key, g);
   }
 
   const rows: SetupRow[] = [...groups.entries()].map(([key, g]) => {
-    const edge = edgeFromR(g.rs, g.st);
+    const edge = edgeFromR(g.rs, g.st, g.days);
     const score = (edge.expectancy * edge.n) / (edge.n + minSample);
     return { key, labels: g.labels, edge, verdict: verdictFor(edge, minSample), score, lastAt: g.lastAt, drift: driftFromR(g.rs, g.st, 10, 20) };
   });

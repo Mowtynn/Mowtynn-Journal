@@ -222,8 +222,11 @@ test('edge istatistiği: ortalama, örnek sapma, t-aralığı ve Wilson aralığ
   for (const [df, v] of [[40, 2.021], [60, 2.0], [120, 1.98], [1000, 1.962]] as const) assert.ok(Math.abs(tCrit95(df) - v) < 0.001, `t(${df}) = ${tCrit95(df)}`);
   for (const n of [2, 5, 29, 30, 31, 90]) {
     const tr = make(n);
-    const e = computeEdge(tr);
     const rs = tr.map((t) => t.rr as number);
+    // Tanım: bağımsız işlemler (gün kümesi düzeltmesi aralığı yalnızca genişletir, ayrıca aşağıda)
+    const e = edgeFromR(rs, tr.map((t) => t.status));
+    const c = computeEdge(tr);
+    assert.ok(Math.abs(c.expectancy - e.expectancy) < 1e-5 && c.expLo <= e.expLo + 1e-5 && c.expHi >= e.expHi - 1e-5, `gün düzeltmesi daraltmaz n=${n}`);
     const mean = sum(rs) / n;
     const sd = Math.sqrt(sum(rs.map((r) => (r - mean) ** 2)) / (n - 1));
     assert.ok(Math.abs(e.expectancy - mean) < 0.0006);

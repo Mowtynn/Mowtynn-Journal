@@ -66,6 +66,10 @@ export interface EdgeStats {
   avgLoss: number;
   maxDrawdownR: number;
   tradesNeeded: number | null; // extra trades for the CI lower bound to clear 0 at the current mean/sd
+  /** Bağımsız karar sayısı (farklı NY günü × hesap türü); yalnızca gün kümesi verildiyse */
+  days?: number;
+  /** Aynı gün işlemlerin birbirine bağlılığı yüzünden güven aralığının genişleme katsayısı (≥ 1; yalnızca > 1 ise) */
+  dayInflation?: number;
 }
 
 const EMPTY_EDGE: EdgeStats = {
@@ -88,7 +92,19 @@ const EMPTY_EDGE: EdgeStats = {
   tradesNeeded: null,
 };
 
-export function edgeFromR(rs: number[], statuses?: Array<Trade['status']>): EdgeStats {
+/**
+ * Gün kümesi düzeltmesinin devreye girdiği en az farklı gün sayısı. Kümeli varyans az kümede güvenilmez
+ * (birkaç günlük veri aralığı rastgele daraltıp genişletir); bu sayının altında işlemler bağımsız sayılır.
+ */
+export const CLUSTER_MIN_DAYS = 10;
+
+/**
+ * `clusters` (isteğe bağlı): her işlemin gün anahtarı (dayClusterKey). Aynı gün aynı fikirle açılan işlemler
+ * (ör. EURUSD ve DXY) birlikte kazanır / kaybeder; bağımsız sayılırsa örneklem olduğundan büyük görünür ve güven
+ * aralığı fazla dar çıkar. Verilirse beklentinin standart hatası gün kümelerine göre (CR1) hesaplanır ve bağımsız
+ * hesaptan küçükse bağımsız hesap kullanılır (düzeltme aralığı yalnızca genişletir). Her gün tek işlemse sonuç aynıdır.
+ */
+export function edgeFromR(rs: number[], statuses?: Array<Trade['status']>, clusters?: string[]): EdgeStats {
   const n = rs.length;
   if (n === 0) return { ...EMPTY_EDGE };
 
@@ -110,8 +126,27 @@ export function edgeFromR(rs: number[], statuses?: Array<Trade['status']>): Edge
   // ve güven aralığı tek noktaya çöker: birkaç ardışık kayıp "kesin sızıntı" sayılırdı. Aralık için sapma en az 1R
   // alınır (stop'a sadık bir R sisteminde gerçekçi alt sınır); 30+ işlemde gerçek sapma kullanılır. Gösterilen sd değişmez.
   const sdCi = n > 1 && n < EDGE_PROOF_MIN ? Math.max(sd, 1) : sd;
-  const se = n > 1 ? sdCi / Math.sqrt(n) : 0;
-  const tc = tCrit95(n - 1);
+  let se = n > 1 ? sdCi / Math.sqrt(n) : 0;
+  let df = n - 1;
+  let days: number | undefined;
+  let dayInflation: number | undefined;
+  if (clusters && clusters.length === n && n > 1) {
+    const sums = new Map<string, number>();
+    rs.forEach((r, i) => sums.set(clusters[i], (sums.get(clusters[i]) || 0) + (r - mean)));
+    const G = sums.size;
+    days = G;
+    if (G >= CLUSTER_MIN_DAYS && G < n) {
+      let ss = 0;
+      sums.forEach((v) => (ss += v * v));
+      const seCl = Math.sqrt((ss / (n * n)) * (G / (G - 1)));
+      if (seCl > se) {
+        dayInflation = se > 0 ? seCl / se : undefined;
+        se = seCl;
+        df = G - 1;
+      }
+    }
+  }
+  const tc = tCrit95(df);
   const expLo = n > 1 && Number.isFinite(tc) ? mean - tc * se : mean;
   const expHi = n > 1 && Number.isFinite(tc) ? mean + tc * se : mean;
 
@@ -150,6 +185,8 @@ export function edgeFromR(rs: number[], statuses?: Array<Trade['status']>): Edge
         tradesNeeded = Math.max(1, k - n);
       }
     }
+    // Aynı gün bağımlılığı: her işlem bir bağımsız işlemden daha az bilgi taşır (etkin örneklem n / katsayı²)
+    if (tradesNeeded && dayInflation && !(n > 1 && expLo > 0)) tradesNeeded = Math.max(1, Math.ceil((tradesNeeded + n) * dayInflation * dayInflation) - n);
   }
 
   return {
@@ -170,17 +207,32 @@ export function edgeFromR(rs: number[], statuses?: Array<Trade['status']>): Edge
     avgLoss: losers.length ? round(losers.reduce((s, r) => s + r, 0) / losers.length, KEEP) : 0,
     maxDrawdownR: round(maxDD, KEEP),
     tradesNeeded,
+    ...(days !== undefined ? { days } : {}),
+    ...(dayInflation && dayInflation > 1 ? { dayInflation: round(dayInflation, KEEP) } : {}),
   };
+}
+
+/** Bağımsız karar birimi: NY takvim günü × hesap türü (aynı gün Prop ve Hesapsız işlemleri ayrı kararlar) */
+const dayKeyCache = new WeakMap<Trade, string>();
+export function dayClusterKey(t: Trade): string {
+  let k = dayKeyCache.get(t);
+  if (k === undefined) {
+    k = Number.isFinite(t.createdAt) ? `${nyDateKey(t.createdAt)}|${getTradeAccountKind(t)}` : `id:${t.id}`;
+    dayKeyCache.set(t, k);
+  }
+  return k;
+}
+
+const rValue = (t: Trade) => (typeof t.rr === 'number' && Number.isFinite(t.rr) ? t.rr : 0);
+/** İşlem listesinin edge'i, gün kümesi düzeltmesiyle (liste sırası korunur; drawdown için kronolojik ver) */
+export function edgeOfTrades(list: Trade[]): EdgeStats {
+  return edgeFromR(list.map(rValue), list.map((t) => t.status), list.map(dayClusterKey));
 }
 
 const chronological = (trades: Trade[]): Trade[] => [...trades].sort(byEntryTime);
 
 export function computeEdge(trades: Trade[]): EdgeStats {
-  const sorted = chronological(trades);
-  return edgeFromR(
-    sorted.map((t) => (typeof t.rr === 'number' && Number.isFinite(t.rr) ? t.rr : 0)),
-    sorted.map((t) => t.status),
-  );
+  return edgeOfTrades(chronological(trades));
 }
 
 /* ------------------------------------------------------------------ */
@@ -276,6 +328,35 @@ function buildOrder(trades: Trade[]): void {
     (byDay.get(k) || byDay.set(k, []).get(k)!).push(t);
   }
   prevResult.clear();
+  streakBefore.clear();
+  ddBefore.clear();
+  // Hesap durumu: hesap türü içinde kronolojik (gün fark etmeksizin) seri ve zirveden uzaklık, işlemden ÖNCE
+  const byKind = new Map<string, Trade[]>();
+  for (const t of trades) {
+    if (!Number.isFinite(t.createdAt)) continue;
+    const k = getTradeAccountKind(t);
+    (byKind.get(k) || byKind.set(k, []).get(k)!).push(t);
+  }
+  byKind.forEach((list) => {
+    let losses = 0; // ardışık kayıp (BE seriyi bozmaz)
+    let last: 'WIN' | 'LOSS' | null = null;
+    let equity = 0;
+    let peak = 0;
+    for (const t of [...list].sort(byEntryTime)) {
+      if (last) streakBefore.set(t.id, last === 'WIN' ? STREAK_BUCKETS[0] : losses >= 2 ? STREAK_BUCKETS[2] : STREAK_BUCKETS[1]);
+      const dd = peak - equity;
+      ddBefore.set(t.id, dd < 1e-9 ? DD_BUCKETS[0] : dd < DD_DEEP_R ? DD_BUCKETS[1] : DD_BUCKETS[2]);
+      if (t.status === 'WIN') {
+        losses = 0;
+        last = 'WIN';
+      } else if (t.status === 'LOSS') {
+        losses++;
+        last = 'LOSS';
+      }
+      equity += typeof t.rr === 'number' && Number.isFinite(t.rr) ? t.rr : 0;
+      if (equity > peak) peak = equity;
+    }
+  });
   byDay.forEach((list) =>
     list
       .sort(byEntryTime)
@@ -299,6 +380,24 @@ export const PREV_TRADE_BUCKETS = ['Günün İlk İşlemi', 'Önceki Kazandı', 
 const prevResult = new Map<string, (typeof PREV_TRADE_BUCKETS)[number]>();
 export function prevTradeBucket(t: Pick<Trade, 'id'>): string | null {
   return prevResult.get(t.id) ?? null;
+}
+
+/**
+ * Önceki sonuç serisi (hesap türü içinde, gün fark etmeksizin; BE seriyi bozmaz): kayıp serisinden sonra edge düşüyor mu?
+ * İlk işlem (öncesinde kazanç / kayıp yok) boş kalır.
+ */
+export const STREAK_BUCKETS = ['Kazanç sonrası', '1 kayıp sonrası', '2+ kayıp serisi sonrası'] as const;
+const streakBefore = new Map<string, (typeof STREAK_BUCKETS)[number]>();
+export function streakBeforeBucket(t: Pick<Trade, 'id'>): string | null {
+  return streakBefore.get(t.id) ?? null;
+}
+
+/** Hesap durumu: işlemden önce kümülatif R zirvesinden uzaklık (hesap türü içinde). Düşüşteyken edge değişiyor mu? */
+export const DD_DEEP_R = 2;
+export const DD_BUCKETS = ['Zirvede', `Düşüşte (${DD_DEEP_R}R altı)`, `Derin düşüşte (${DD_DEEP_R}R+)`] as const;
+const ddBefore = new Map<string, (typeof DD_BUCKETS)[number]>();
+export function ddStateBucket(t: Pick<Trade, 'id'>): string | null {
+  return ddBefore.get(t.id) ?? null;
 }
 
 /**
