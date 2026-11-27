@@ -60,10 +60,11 @@ function RRuler({ r }: { r: number }) {
 }
 
 /** Sonuç kartı: R büyük ve önde, yanında hesap türü (Prop / Hesapsız); altında R cetveli */
-export function ResultPanel({ trade, realizedR }: { trade: Trade; realizedR: number }) {
+/** dense: sol sütun sıkışınca iç boşluk daralır (1), en sıkta R cetveli gizlenir (2) */
+export function ResultPanel({ trade, realizedR, dense = 0 }: { trade: Trade; realizedR: number; dense?: number }) {
   const kind = getTradeAccountKind(trade);
   return (
-    <section className={`rounded-2xl border px-4 pt-3 pb-3 ${RESULT_BOX(realizedR)}`}>
+    <section className={`rounded-2xl border px-4 ${dense ? 'py-2' : 'pt-3 pb-3'} ${RESULT_BOX(realizedR)}`}>
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <span className="heading-3 flex items-center gap-1.5"><Activity size={12} /> Sonuç</span>
@@ -74,7 +75,7 @@ export function ResultPanel({ trade, realizedR }: { trade: Trade; realizedR: num
         </div>
         <span className={`whitespace-nowrap shrink-0 text-xs font-bold uppercase tracking-wider ${kind === 'PROP' ? 'text-blue-300' : 'text-amber-300'}`}>{ACCOUNT_KIND_LABELS[kind]}</span>
       </div>
-      <RRuler r={realizedR} />
+      {dense < 2 && <RRuler r={realizedR} />}
     </section>
   );
 }

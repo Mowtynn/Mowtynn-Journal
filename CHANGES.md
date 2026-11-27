@@ -1126,5 +1126,7 @@ Klasik tasarım korunarak, son eklenen alanlar (risk %, hesap bağı, strateji, 
   - İşlem detayı penceresi büyüdü (en çok 1760px, kenar boşlukları azaldı). Grafik kutusu her zaman görselin kendi boyutunda; pencere grafikten uzunsa artan yer kurulum geçmişinin altında kalır, grafiğin etrafında boşluk olmaz.
   - Session: POI Sweep Time seçilince uyan session sessizce seçilir; "OTO" işareti, "Sweep saatinden" yazısı ve elle seçim rengi kalktı. Session tıklanarak değiştirilir, seçili olana yeniden tıklamak seçimi kaldırır (diğer seçicilerle aynı).
   - Tarih Türkiye'ye göre: tarih seçicilerdeki "Bugün / Dün" ve bugün işareti, takvimlerin bugünü, günlük ve "bu hafta / bu ay" dışa aktarımı Türkiye gününü kullanır. Yeni işlemin saat kısmı da Türkiye saatinden gelir (yalnızca aynı günün işlemlerini sıralar, gösterilmez); gece girilen işlem ertesi sabah girilenden önce sıralanır.
-  - POI Sweep Time New York saatidir: seçicide değerin yanında "NY", saat ızgarasında "SAAT · NEW YORK" yazar. Session da NY saatine göre bulunur.
+  - POI Sweep Time New York saatidir (Session da NY saatine göre bulunur).
 - Yön (Long / Short) yeni işlemde boş açılır ve seçmek zorunlu: seçilmeden kaydedilirse alan kırmızıyla işaretlenir ve "Yönü seç" uyarısı çıkar (Hızlı Kayıt dahil). Düzenlemede kayıtlı yön gelir; "Son Kurulumu Kopyala" yönü de kopyalar.
+- İşlem detayı sol sütunu hiçbir ekranda kaymaz: sığmazsa kademeli sıklaşır (satırlar, kart boşlukları, not alanı daralır; en sıkta R cetveli ve hızlı kayıt eksik listesi gizlenir). Uzun not kendi kutusunda kayar. Ölçüm hatası (not kartı ~8px eksik sayılıyordu) düzeltildi.
+- POI Sweep Time'daki "NY" göstergeleri kaldırıldı (form seçicisi, detay başlığı ve kurulum satırı).

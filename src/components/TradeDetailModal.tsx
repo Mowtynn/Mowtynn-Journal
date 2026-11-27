@@ -41,10 +41,15 @@ interface TradeDetailModalProps {
   onNavigate?: (trade: Trade) => void;
 }
 
-/** Notlar kutusunun en küçük yüksekliği: 2-3 cümle (kısa ekranda biraz daha az); pencere ölçümünde bu değer sayılır */
-const notesBoxMinH = (vh: number) => (vh < 820 ? 56 : 72);
+/**
+ * Notlar kutusunun en küçük yüksekliği: 2-3 cümle (kısa ekranda biraz daha az); pencere ölçümünde bu değer sayılır.
+ * Sıkı yerleşimde (dense) daha az: sol sütun hiçbir ekranda kaymasın, uzun not kendi kutusunda kayar.
+ */
+const notesBoxMinH = (vh: number, dense = 0) => (dense >= 3 ? 0 : dense === 2 ? 24 : dense === 1 ? 40 : vh < 820 ? 56 : 72);
+/** Sol sütun sıkılığı: 0 normal · 1 sık satırlar · 2 daha sık (cetvel ve eksik listesi gizli) · 3 en sık (çok kısa ekran). Pencere sığmazsa kademeli artar. */
+const DenseCtx = React.createContext(0);
 /** Notlar kartının metin dışındaki yüksekliği: başlık satırı + aradaki boşluk + iç boşluk + çerçeve */
-const NOTES_CARD_CHROME = 82;
+const notesCardChrome = (dense = 0) => (dense ? 66 : 82);
 
 /**
  * Grafik kutusunun sabit oranı. Pencere ve grafik kutusu görselin kendi oranına / çözünürlüğüne göre değil yalnızca ekran
@@ -185,6 +190,8 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
     };
   }, [currentTrade?.id, isExporting]);
   const [fit, setFit] = useState<{ w?: number; h: number; leftW?: number; cw?: number; ch?: number; chBox?: number } | null>(null);
+  const [dense, setDense] = useState(0);
+  const denseKeyRef = useRef('');
   // Görsel yüklenirken de grafik alanı ayrılır; oran sabit olduğu için görsel gelince pencere yeniden boyutlanmaz. Yalnızca hata olursa grafik yok sayılır
   const shotKey = currentTrade?.screenshot || '';
   const hasChart = !!(shotKey && !imageError);
@@ -195,7 +202,17 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
     const header = headerRef.current;
     if (!currentTrade || isExporting || !left || !header || viewport.w < 1024) {
       setFit(null);
+      if (dense) setDense(0);
       return;
+    }
+    // Yeni işlem / ekran boyutu: önce normal yerleşimle ölç
+    const denseKey = `${currentTrade.id}|${viewport.w}|${viewport.h}|${hasChart}`;
+    if (denseKeyRef.current !== denseKey) {
+      denseKeyRef.current = denseKey;
+      if (dense) {
+        setDense(0);
+        return;
+      }
     }
     // Kullanılabilir alan: pencereyi taşıyan katmanın iç boyutu (kaydırma çubuğu, iç boşluk ve üst çubuk düşülmüş)
     const overlay = contentRef.current?.parentElement;
@@ -219,12 +236,15 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
       const ks = getComputedStyle(k);
       const m = (parseFloat(ks.marginTop) || 0) + (parseFloat(ks.marginBottom) || 0);
       // Notlar: başlık + en küçük kutu (bölüm esnediği için kendi yüksekliği ölçülmez)
-      const notesHead = k.dataset.notes ? (k.firstElementChild as HTMLElement | null)?.offsetHeight || 0 : 0;
-      const notesChrome = k.dataset.notes
-        ? (parseFloat(ks.paddingTop) || 0) + (parseFloat(ks.paddingBottom) || 0) + (parseFloat(ks.rowGap) || 0) + 2
-        : 0;
-      leftNeed += m + (k.dataset.notes ? notesHead + notesChrome + notesBoxMinH(viewport.h) : k.offsetHeight);
+      // Notlar kartı stilindeki en küçük yüksekliğin aynısı sayılır (ölçüm ile yerleşim birebir)
+      leftNeed += m + (k.dataset.notes ? notesBoxMinH(viewport.h, dense) + notesCardChrome(dense) : k.offsetHeight);
     });
+    // Sol sütun pencereye sığmıyorsa bir kademe sıklaştır ve yeniden ölç (en çok 3 kademe)
+    const BORDER0 = 2;
+    if (dense < 3 && headerH + leftNeed + BORDER0 > maxH + 0.5) {
+      setDense(dense + 1);
+      return;
+    }
     const BORDER = 2;
     if (hasChart) {
       const a = imgAspect ?? CHART_ASPECT;
@@ -259,7 +279,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
       setFit({ h: Math.min(maxH, Math.max(headerH + leftNeed + BORDER, 480)) });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentTrade?.id, hasChart, viewport.w, viewport.h, isExporting, measureTick, imgAspect]);
+  }, [currentTrade?.id, hasChart, viewport.w, viewport.h, isExporting, measureTick, imgAspect, dense]);
 
   const handleDownload = async () => {
     if (!contentRef.current) return;
@@ -447,7 +467,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                       <span className="flex items-center gap-1.5 whitespace-nowrap text-zinc-500">
                         <span className="text-zinc-700">·</span>
                         <Clock size={13} className="shrink-0" />
-                        {currentTrade.sweepTime && <span className="tabular-nums text-zinc-300">{currentTrade.sweepTime}<span className="ml-0.5 text-label text-zinc-500">NY</span></span>}
+                        {currentTrade.sweepTime && <span className="tabular-nums text-zinc-300">{currentTrade.sweepTime}</span>}
                         {currentTrade.session && <span lang="en" className="text-zinc-400">{currentTrade.session}</span>}
                       </span>
                     )}
@@ -518,7 +538,8 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
               <div ref={bodyRef} onTouchStart={onSwipeStart} onTouchEnd={onSwipeEnd} className={`flex flex-col lg:flex-row flex-1 min-h-0 ${isExporting ? 'overflow-hidden' : 'overflow-y-auto lg:overflow-hidden custom-scrollbar'}`}>
                 
                 {/* Left Sidebar - Meta & Context (approx 35%) */}
-                <div ref={leftColRef} style={fit?.leftW ? { width: fit.leftW } : undefined} className={`w-full lg:w-[40%] bg-zinc-950/40 border-r border-zinc-800/60 p-4 space-y-3 lg:[@media(max-height:820px)]:space-y-2.5 shrink-0 flex flex-col ${isExporting ? 'overflow-visible' : 'lg:overflow-y-auto custom-scrollbar'}`}>
+                <div ref={leftColRef} style={fit?.leftW ? { width: fit.leftW } : undefined} className={`w-full lg:w-[40%] bg-zinc-950/40 border-r border-zinc-800/60 ${dense >= 3 ? 'p-2.5 space-y-1.5' : dense ? 'p-3 space-y-2' : 'p-4 space-y-3 lg:[@media(max-height:820px)]:space-y-2.5'} shrink-0 flex flex-col ${isExporting ? 'overflow-visible' : 'lg:overflow-y-auto custom-scrollbar'}`}>
+                  <DenseCtx.Provider value={isExporting ? 0 : dense}>
                   
                   {/* Hızlı kayıt: ayrıntılar eksik */}
                   {currentTrade.quickEntry === true && !isExporting && (() => {
@@ -530,11 +551,11 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                       tradeConfirmations(currentTrade).length === 0 && (cleanDefinitionTitleString(definitionTitles.premiumDiscounts) || "Confirmations"),
                     ].filter(Boolean) as string[];
                     return (
-                      <div className="flex items-start gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3">
+                      <div className={`flex items-start gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 ${dense ? 'px-3 py-2' : 'p-3'}`}>
                         <PenLine size={14} className="text-amber-300 shrink-0 mt-0.5" />
                         <div className="flex-1 min-w-0">
                           <p className="text-label font-bold text-amber-200">Hızlı kayıt · ayrıntılar tamamlanmadı</p>
-                          {missing.length > 0 && (
+                          {missing.length > 0 && dense < 2 && (
                             <p className="text-label text-amber-200/70 mt-0.5">Eksik: {missing.join(", ")}</p>
                           )}
                         </div>
@@ -550,7 +571,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                   })()}
 
                   {/* Sonuç kartı: R, durum, hesap, risk ve hesaba dolar etkisi */}
-                  <ResultPanel trade={currentTrade} realizedR={typeof currentTrade.rr === "number" && Number.isFinite(currentTrade.rr) ? currentTrade.rr : 0} />
+                  <ResultPanel dense={isExporting ? 0 : dense} trade={currentTrade} realizedR={typeof currentTrade.rr === "number" && Number.isFinite(currentTrade.rr) ? currentTrade.rr : 0} />
 
                   {/* KURULUM: okunaklı bir özet tablosu — her satır bir girdi (simge · başlık solda, değer sağda), formdaki sırayla.
                       Eksik değer soluk tire; başlıkta kaç girdinin dolu olduğu. */}
@@ -559,8 +580,8 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                     const conf = tradeConfirmations(currentTrade);
                     const steps = flowSteps({ ...currentTrade, confirmations: conf });
                     return (
-                      <section className={DETAIL_CARD}>
-                        <div className={CARD_HEAD}>
+                      <section className={cardCls(dense)}>
+                        <div className={headCls(dense)}>
                           <Crosshair size={14} className="text-blue-400 shrink-0" />
                           <span className={CARD_TITLE}>{T(definitionTitles.setupCard, "KURULUM")}</span>
                           <FlowProgress steps={steps} />
@@ -574,7 +595,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                           </SpecRow>
                           <SpecRow icon={Timer} label={T(definitionTitles.sweepTime, "POI SWEEP TIME")} empty={!currentTrade.sweepTime}>
                             <span className="text-base font-bold tabular-nums text-zinc-100">
-                              {currentTrade.sweepTime}<span className="ml-1 text-label font-semibold text-zinc-500">NY</span>
+                              {currentTrade.sweepTime}
                             </span>
                           </SpecRow>
                           <SpecRow icon={Globe} label={T(definitionTitles.sessions, "SESSION")} empty={!currentTrade.session}>
@@ -604,10 +625,10 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                   {/* Kart en az başlık + en küçük not alanı kadar yer kaplar (sütun dolarsa sol sütun kayar; metin kartın dışına taşmaz) */}
                   <section
                     data-notes="1"
-                    style={isExporting ? undefined : { minHeight: notesBoxMinH(viewport.h) + NOTES_CARD_CHROME }}
-                    className={`${DETAIL_CARD} ${isExporting ? '' : 'lg:flex-1 lg:min-h-0 overflow-hidden'}`}
+                    style={isExporting ? undefined : { minHeight: notesBoxMinH(viewport.h, dense) + notesCardChrome(dense) }}
+                    className={`${cardCls(isExporting ? 0 : dense)} ${isExporting ? '' : 'lg:flex-1 lg:min-h-0 overflow-hidden'}`}
                   >
-                    <div className={`${CARD_HEAD} shrink-0`}>
+                    <div className={`${headCls(isExporting ? 0 : dense)} shrink-0`}>
                       <FileText size={14} className="text-zinc-400 shrink-0" />
                       <span className={CARD_TITLE}>{smartUpper(cleanDefinitionTitleString(definitionTitles.notesCard) || "Analiz & Notlar")}</span>
                     </div>
@@ -620,7 +641,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                         <button
                           type="button"
                           onClick={() => { onEdit(currentTrade); onClose(); }}
-                          className="w-full h-full min-h-[48px] flex flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-700 transition-colors cursor-pointer"
+                          className={`w-full h-full ${dense >= 2 ? 'min-h-[22px] flex-row' : 'min-h-[40px] flex-col'} flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-700 transition-colors cursor-pointer`}
                         >
                           <PenLine size={14} />
                           <span className="text-xs">Not yok · eklemek için dokun</span>
@@ -628,6 +649,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                       )}
                     </div>
                   </section>
+                  </DenseCtx.Provider>
                 </div>
 
                 {/* Sağ panel: teknik analiz görseli (masaüstünde tüm yükseklik) */}
@@ -855,6 +877,9 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
 /** Sol sütun kartları: işlem ekleme formundaki kartlarla aynı dil (başlık · çizgi · içerik) */
 const DETAIL_CARD = "rounded-2xl border border-zinc-800/80 bg-zinc-900/45 p-4 flex flex-col gap-3 shadow-sm";
 const CARD_HEAD = "flex items-center gap-2 pb-2.5 border-b border-zinc-800/60";
+/** Sıkı yerleşimde kart iç boşluğu ve başlık alt boşluğu daralır */
+const cardCls = (dense: number) => (dense ? "rounded-2xl border border-zinc-800/80 bg-zinc-900/45 px-3.5 py-3 flex flex-col gap-2 shadow-sm" : DETAIL_CARD);
+const headCls = (dense: number) => (dense ? "flex items-center gap-2 pb-2 border-b border-zinc-800/60" : CARD_HEAD);
 const CARD_TITLE = "text-xs font-bold text-zinc-200 uppercase tracking-wider font-sans";
 
 /* Kurulum tablosu satırı: solda simge + başlık, sağda değer; değer yoksa soluk tire. Çok satırlı değerde başlık üstte hizalanır. */
@@ -877,6 +902,7 @@ function SpecRow({
   aside?: React.ReactNode;
   children: React.ReactNode;
 }) {
+  const dense = React.useContext(DenseCtx);
   if (stacked && !empty) {
     return (
       <div className="py-2.5 border-b border-zinc-800/50 last:border-b-0">
@@ -890,7 +916,7 @@ function SpecRow({
     );
   }
   return (
-    <div className={`flex ${top ? "items-start" : "items-center"} justify-between gap-4 py-1.5 border-b border-zinc-800/50 last:border-b-0 min-h-[40px]`}>
+    <div className={`flex ${top ? "items-start" : "items-center"} justify-between gap-4 border-b border-zinc-800/50 last:border-b-0 ${dense >= 3 ? "py-0.5 min-h-[28px]" : dense === 2 ? "py-0.5 min-h-[31px]" : dense ? "py-1 min-h-[34px]" : "py-1.5 min-h-[40px]"}`}>
       <dt className={`flex items-center gap-2 shrink-0 text-xs font-bold uppercase tracking-wider font-sans ${top ? "pt-0.5" : ""} ${empty ? "text-zinc-600" : "text-zinc-400"}`}>
         <Icon size={14} className={empty ? "text-zinc-700" : "text-blue-400/80"} />
         {label}
