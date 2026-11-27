@@ -5,6 +5,7 @@ import { smartUpper } from '../../constants/constants';
 import { Trade } from '../../types';
 import { Edit3, Trash2 } from 'lucide-react';
 import { nyWallDate } from '../../lib/tradingTime';
+import { prefetchChart } from '../../lib/chartLink';
 
 const tradeRowDateFormatter = new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' });
 export const TR_COLLATOR = new Intl.Collator('tr', { sensitivity: 'base' });
@@ -36,7 +37,7 @@ export const MemoizedTradeRow = React.memo(function MemoizedTradeRow({
         </td>
       </tr>
       {/* Masaüstü: tablo satırı */}
-      <tr onClick={() => onViewDetails(trade)} className="group select-none relative hidden sm:table-row bg-zinc-900 align-middle cursor-pointer hover:bg-zinc-800/50 transition-colors duration-100">
+      <tr onClick={() => onViewDetails(trade)} onPointerEnter={() => prefetchChart(trade.screenshot)} className="group select-none relative hidden sm:table-row bg-zinc-900 align-middle cursor-pointer hover:bg-zinc-800/50 transition-colors duration-100">
         <td className={`${CELL} px-3 text-zinc-400 rounded-l-xl border-l w-[13%] min-w-[110px] group-hover:text-zinc-100`}>
           <div>
             <span className="text-label text-zinc-400 font-medium">{formattedDateOnly}</span>

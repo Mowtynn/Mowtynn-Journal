@@ -3,6 +3,7 @@ import { Edit3, Trash2 } from 'lucide-react';
 import { Trade } from '../../types';
 import { formatR } from '../../lib/format';
 import { nyWallDate } from '../../lib/tradingTime';
+import { prefetchChart } from '../../lib/chartLink';
 import { smartUpper } from '../../constants/constants';
 
 const dateFmt = new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -36,6 +37,7 @@ export const TradeMobileCard = React.memo(function TradeMobileCard({
       role="button"
       tabIndex={0}
       onClick={() => onOpen(trade)}
+      onPointerDown={() => prefetchChart(trade.screenshot)}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();

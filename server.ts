@@ -258,6 +258,33 @@ async function startServer() {
     }
   });
 
+  // Grafik paylaşım linkleri değişmez (aynı link hep aynı görsel): çözülen görsel adresi ve proxy'lenen görsel bellekte tutulur,
+  // böylece aynı grafik ikinci kez açılınca dış siteye gidilmez. Boyut sınırlı (eski kayıtlar atılır).
+  const RESOLVE_TTL_MS = 7 * 24 * 3600 * 1000;
+  const resolveCache = new Map<string, { image: string; at: number }>();
+  const resolveInflight = new Map<string, Promise<string | null>>();
+  const resolveShareImage = (pageUrl: string): Promise<string | null> => {
+    const hit = resolveCache.get(pageUrl);
+    if (hit && Date.now() - hit.at < RESOLVE_TTL_MS) return Promise.resolve(hit.image);
+    let p = resolveInflight.get(pageUrl);
+    if (!p) {
+      p = (async () => {
+        const htmlRes = await safeFetch(pageUrl, {
+          headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', 'Accept': 'text/html,application/xhtml+xml' }
+        });
+        if (!htmlRes.ok) return null;
+        const image = extractMetaImage(await htmlRes.text());
+        // Yalnızca https görsel adresi döner (sayfadan gelen değer doğrulanmadan istemciye verilmez)
+        if (!image || !/^https:\/\/[^\s"'<>]+$/i.test(image)) return null;
+        resolveCache.set(pageUrl, { image, at: Date.now() });
+        if (resolveCache.size > 2000) resolveCache.delete(resolveCache.keys().next().value as string);
+        return image;
+      })().finally(() => resolveInflight.delete(pageUrl));
+      resolveInflight.set(pageUrl, p);
+    }
+    return p;
+  };
+
   // Helper route to resolve chart share links (TradingView, OpenMarket) to direct image URLs
   app.get("/api/resolve-tv", requireSiteAuth, async (req, res) => {
     const urlParam = typeof req.query.url === 'string' ? req.query.url : '';
@@ -265,17 +292,11 @@ async function startServer() {
       if (!urlParam || !isChartShareUrl(urlParam)) {
         return res.json({ url: urlParam });
       }
-      
-      const htmlRes = await safeFetch(urlParam, {
-        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', 'Accept': 'text/html,application/xhtml+xml' }
-      });
-      if (htmlRes.ok) {
-        const htmlText = await htmlRes.text();
-        const image = extractMetaImage(htmlText);
-        // Yalnızca https görsel adresi döner (sayfadan gelen değer doğrulanmadan istemciye verilmez)
-        if (image && /^https:\/\/[^\s"'<>]+$/i.test(image)) {
-          return res.json({ url: image });
-        }
+      const image = await resolveShareImage(urlParam);
+      if (image) {
+        // Tarayıcı da bir hafta saklar (aynı link aynı görsel)
+        res.setHeader("Cache-Control", "private, max-age=604800");
+        return res.json({ url: image });
       }
       res.json({ url: urlParam });
     } catch {
@@ -287,24 +308,44 @@ async function startServer() {
   // tarayıcı onu okuyabilir ve işlem detayındaki "PNG indir" çıktısında grafik boş kalmaz.
   // Yalnızca paylaşım linki izin listesindeki sitelerden olabilir; görsel adresi sayfadan çıkarılır, yalnızca resim türleri geçer.
   const CHART_IMAGE_MAX_BYTES = 12 * 1024 * 1024;
+  // Proxy'lenen görseller için bellek önbelleği (toplam en çok ~64 MB; en eski önce atılır)
+  const IMAGE_CACHE_MAX_BYTES = 64 * 1024 * 1024;
+  const imageCache = new Map<string, { buf: Buffer; type: string }>();
+  let imageCacheBytes = 0;
+  const cacheImage = (key: string, buf: Buffer, type: string) => {
+    if (buf.length > IMAGE_CACHE_MAX_BYTES / 4 || imageCache.has(key)) return;
+    imageCache.set(key, { buf, type });
+    imageCacheBytes += buf.length;
+    while (imageCacheBytes > IMAGE_CACHE_MAX_BYTES && imageCache.size) {
+      const k = imageCache.keys().next().value as string;
+      imageCacheBytes -= imageCache.get(k)!.buf.length;
+      imageCache.delete(k);
+    }
+  };
   app.get("/api/chart-image", requireSiteAuth, async (req, res) => {
     const urlParam = typeof req.query.url === 'string' ? req.query.url : '';
     try {
       if (!urlParam || !isChartShareUrl(urlParam)) return res.status(400).json({ error: "Desteklenmeyen link" });
-      const pageRes = await safeFetch(urlParam, {
-        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', 'Accept': 'text/html,application/xhtml+xml' }
-      });
-      if (!pageRes.ok) return res.status(502).json({ error: "Sayfa açılamadı" });
-      const image = extractMetaImage(await pageRes.text());
-      if (!image || !/^https:\/\/[^\s"'<>]+$/i.test(image)) return res.status(404).json({ error: "Görsel bulunamadı" });
+      const cached = imageCache.get(urlParam);
+      if (cached) {
+        // En son kullanılan sona alınır
+        imageCache.delete(urlParam);
+        imageCache.set(urlParam, cached);
+        res.setHeader("Content-Type", cached.type);
+        res.setHeader("Cache-Control", "private, max-age=604800");
+        return res.send(cached.buf);
+      }
+      const image = await resolveShareImage(urlParam);
+      if (!image) return res.status(404).json({ error: "Görsel bulunamadı" });
       const imgRes = await safeFetch(image, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' } });
       const type = (imgRes.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
       if (!imgRes.ok || !/^image\/(png|jpeg|jpg|webp|gif)$/.test(type)) return res.status(502).json({ error: "Görsel alınamadı" });
       if (Number(imgRes.headers.get("content-length") || 0) > CHART_IMAGE_MAX_BYTES) return res.status(413).json({ error: "Görsel çok büyük" });
       const buf = Buffer.from(await imgRes.arrayBuffer());
       if (buf.length > CHART_IMAGE_MAX_BYTES) return res.status(413).json({ error: "Görsel çok büyük" });
+      cacheImage(urlParam, buf, type);
       res.setHeader("Content-Type", type);
-      res.setHeader("Cache-Control", "private, max-age=86400");
+      res.setHeader("Cache-Control", "private, max-age=604800");
       res.send(buf);
     } catch {
       res.status(502).json({ error: "Görsel alınamadı" });

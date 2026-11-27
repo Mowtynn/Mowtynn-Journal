@@ -1132,3 +1132,9 @@ Klasik tasarım korunarak, son eklenen alanlar (risk %, hesap bağı, strateji, 
 - POI Sweep Time'daki "NY" göstergeleri kaldırıldı (form seçicisi, detay başlığı ve kurulum satırı).
 - Prop / Hesapsız geçişi animasyonlu: üst çubuktaki seçicide seçili zemin diğer seçicilerdeki gibi yayla kayar, rengi maviden (Prop) sarıya (Hesapsız) yumuşakça döner. Açık sekmenin içeriği yeni veriyle sekme geçişindeki aynı hareketle gelir (içerik yeniden kurulmaz, kaydırma korunur; "hareketi azalt" ayarında kapalı).
 - Uçtan uca kontrol: iki hesap türünde tüm sekmeler ve alt sekmeler (Ana Panel, Detaylı Analiz: Genel Bakış / Takvim / Performans Dağılımı / Strateji Lab'ın 5 sekmesi, Notlar, Günlük, Prop) masaüstü ve telefonda açıldı; hata, NaN/undefined, kaldırılmış alan adı ya da yatay taşma yok.
+- İşlem detayı · Sonuç: R artık sabit −1R…+3R ölçeği yerine hesabın ortalama R beklentisiyle kıyaslanır. Kartta "Ortalama beklenti +0.96R /işlem" ve farkı ("+1.04R üstünde" / "−0.5R altında"); cetvelde ortalama mavi çizgi ve "ORT" etiketiyle, ölçek sıfırı, sonucu ve ortalamayı kapsar. Ortalama aynı hesap türündeki (Prop / Hesapsız) diğer işlemlerden, bu işlem hariç hesaplanır; 3 işlemden azsa kıyas gösterilmez. PNG çıktısında da var.
+- Grafikler daha hızlı:
+  - Çözülen TradingView görsel adresleri tarayıcıda saklanır: aynı grafik (sayfa yenilense de) sunucuya sorulmadan açılır.
+  - Sunucu çözülen adresleri ve OpenMarket görsellerini bellekte tutar (aynı anda gelen aynı istek tek kez çözülür); tarayıcı yanıtları bir hafta önbellekte tutar.
+  - CORS başlığı göndermeyen görsel sunucusu hatırlanır: görsel iki kez indirilmez.
+  - Ön yükleme: listede satırın üzerine gelince / dokununca, detayda önceki ve sonraki işlemin grafiği arka planda indirilir; sayfadaki ilk iki işlemin grafiği tarayıcı boşta kalınca hazırlanır. Detaydaki görsel yüksek öncelikle yüklenir.

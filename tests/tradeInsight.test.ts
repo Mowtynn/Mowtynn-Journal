@@ -33,3 +33,18 @@ test('işlem içgörüsü: hesapsız işlemler prop işleminin kurulum geçmişi
   const ins = computeTradeInsight(prop, [prop, ...demos]);
   assert.equal(ins.setup?.others.n ?? 0, 0);
 });
+
+test('ortalama R beklentisi: bu işlem hariç, aynı hesap türünde; az işlemde yok', async () => {
+  const { computeExpectancy } = await import('../src/lib/tradeInsight');
+  const me = t(2, { id: 'me', prop: true });
+  const others = [t(1, { id: 'a', prop: true }), t(-1, { id: 'b', prop: true }), t(3, { id: 'c', prop: true }), t(0, { id: 'd', prop: true })];
+  const ins = computeTradeInsight(me, [me, ...others]);
+  assert.deepEqual(ins.expectancy, { avgR: 0.75, n: 4 });
+  // İki işlem yetmez
+  assert.equal(computeTradeInsight(me, [me, others[0], others[1]]).expectancy, null);
+  // Hesapsız işlemler prop beklentisine karışmaz
+  const demos = [1, 2, 3].map((i) => t(-1, { id: 'x' + i, accountCategory: 'DEMO' } as any));
+  assert.deepEqual(computeTradeInsight(me, [me, ...others, ...demos]).expectancy, { avgR: 0.75, n: 4 });
+  // Bozuk R sayılmaz
+  assert.deepEqual(computeExpectancy(me, [...others, { ...others[0], id: 'nan', rr: NaN } as any]), { avgR: 0.75, n: 4 });
+});

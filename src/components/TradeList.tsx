@@ -35,6 +35,7 @@ import { TR_COLLATOR, MemoizedTradeRow } from './tradeList/TradeRow';
 import { HeaderLabel, CustomSelect } from './tradeList/controls';
 import { FILTER_LABEL } from './filters/FilterControls';
 import { trNow, nyInputToTs, nyDateKey } from '../lib/tradingTime';
+import { prefetchChart } from '../lib/chartLink';
 import { tradeConfirmations } from '../lib/tradeModel';
 
 /** "Son N işlem": geçersiz / negatif / aşırı değer güvenli aralığa çekilir (boş → 7) */
@@ -321,6 +322,21 @@ const TradeList = React.memo(function TradeList({
     const start = (effectivePage - 1) * itemsPerPage;
     return filteredTrades.slice(start, start + itemsPerPage);
   }, [filteredTrades, effectivePage]);
+
+  // Sayfadaki ilk iki işlemin grafiği tarayıcı boşta kalınca hazırlanır (en sık açılanlar en yeni işlemler)
+  const warmKey = paginatedTrades.slice(0, 2).map((t) => t.screenshot || '').join('|');
+  useEffect(() => {
+    if (!warmKey.replace(/\|/g, '')) return;
+    const links = warmKey.split('|');
+    const w = window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number; cancelIdleCallback?: (id: number) => void };
+    const run = () => links.forEach((l) => prefetchChart(l));
+    if (w.requestIdleCallback) {
+      const id = w.requestIdleCallback(run, { timeout: 4000 });
+      return () => w.cancelIdleCallback?.(id);
+    }
+    const t = window.setTimeout(run, 1500);
+    return () => window.clearTimeout(t);
+  }, [warmKey]);
 
   const handleFilterChange = useCallback((newFilter: TradeFilter) => {
     setFilter(newFilter);

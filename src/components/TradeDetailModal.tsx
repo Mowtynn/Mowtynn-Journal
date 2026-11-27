@@ -12,7 +12,7 @@ import toast from "react-hot-toast";
 import { Trade, DefinitionTitles } from "../types";
 import { DEFAULT_DEFINITION_TITLES, cleanDefinitionTitleString, smartUpper, getTradeAccountName } from "../constants/constants";
 import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
-import { isChartShareLink, resolveChartImage } from "../lib/chartLink";
+import { isChartShareLink, resolveChartImage, chartCrossOrigin, markChartNoCors, prefetchChart } from "../lib/chartLink";
 import {
   X, Edit3, Trash2, Calendar, Clock, Maximize2,
   Compass, TrendingUp, Globe, Timer, Layers, Scale, ArrowUpRight, ArrowDownRight,
@@ -112,6 +112,15 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
   const nextTrade = canNav && navIndex < navList!.length - 1 ? navList![navIndex + 1] : null;
   // İşlemler arası geçiş yönü: içerik geldiği yönden hafifçe kayarak belirir (← önceki, → sonraki)
   const navDirRef = React.useRef(0);
+  // Önceki / sonraki işlemin grafiği arka planda hazırlanır: oklarla geçişte görsel beklemeden gelir
+  React.useEffect(() => {
+    if (!trade) return;
+    const t = window.setTimeout(() => {
+      prefetchChart(nextTrade?.screenshot);
+      prefetchChart(prevTrade?.screenshot);
+    }, 150);
+    return () => window.clearTimeout(t);
+  }, [trade, prevTrade?.screenshot, nextTrade?.screenshot]);
   const goPrev = React.useCallback(() => { if (prevTrade && onNavigate) { navDirRef.current = -1; onNavigate(prevTrade); } }, [prevTrade, onNavigate]);
   const goNext = React.useCallback(() => { if (nextTrade && onNavigate) { navDirRef.current = 1; onNavigate(nextTrade); } }, [nextTrade, onNavigate]);
 
@@ -138,6 +147,8 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
         setImageError(true);
         return;
       }
+      // CORS'suz olduğu bilinen sunucuda görsel ilk denemede düz istekle alınır (iki kez indirilmez)
+      setNoCors(!chartCrossOrigin(url));
       setResolvedImageUrl(url);
     });
     return () => {
@@ -571,7 +582,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                   })()}
 
                   {/* Sonuç kartı: R, durum, hesap, risk ve hesaba dolar etkisi */}
-                  <ResultPanel dense={isExporting ? 0 : dense} trade={currentTrade} realizedR={typeof currentTrade.rr === "number" && Number.isFinite(currentTrade.rr) ? currentTrade.rr : 0} />
+                  <ResultPanel dense={isExporting ? 0 : dense} expectancy={insight?.expectancy ?? null} trade={currentTrade} realizedR={typeof currentTrade.rr === "number" && Number.isFinite(currentTrade.rr) ? currentTrade.rr : 0} />
 
                   {/* KURULUM: okunaklı bir özet tablosu — her satır bir girdi (simge · başlık solda, değer sağda), formdaki sırayla.
                       Eksik değer soluk tire; başlıkta kaç girdinin dolu olduğu. */}
@@ -699,6 +710,8 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                           </div>
                         ) : resolvedImageUrl ? (
                           <img decoding="async" 
+                            fetchPriority="high"
+                            loading="eager"
                             key={noCors ? 'plain' : 'cors'}
                             src={resolvedImageUrl} 
                             alt="Trading chart" 
@@ -718,7 +731,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                               }
                             }}
                             onError={() => {
-                              if (!noCors) { setNoCors(true); return; }
+                              if (!noCors) { if (resolvedImageUrl) markChartNoCors(resolvedImageUrl); setNoCors(true); return; }
                               setImageError(true);
                               setIsImageLoading(false);
                             }}
