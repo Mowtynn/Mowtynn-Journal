@@ -1,6 +1,7 @@
 import { Trade } from '../types';
 import { byEntryTime } from './tradeModel';
-import { edgeFromR, EdgeStats, indexTradeOrder } from './asiaAnalytics';
+import { edgeFromR, EdgeStats, indexTradeOrder, SWEEP_FINE_MIN } from './asiaAnalytics';
+import { tradeConfirmations } from './tradeModel';
 import { computeEdgeDrift, DRIFT_RECENT } from './edgeDrift';
 import { halfStatus, HALF_MIN, type HalfStatus } from './ruleSimulator';
 import {
@@ -8,6 +9,9 @@ import {
   signalStrength,
   verdictFor,
   dimensionValue,
+  dimensionLabel,
+  confDimension,
+  isConfDimension,
   DEFAULT_SETUP_DIMENSIONS,
   SETUP_DIMENSIONS,
   SETUP_MIN_SAMPLE,
@@ -80,20 +84,64 @@ export interface EdgeSummary {
   testedSlices: number;
 }
 
-/** Sızıntı / güç taramasında bakılan tekil alanlar (yalnızca işleme girmeden önce bilinenler) */
+/** Sızıntı / güç taramasında ve kural simülatöründe bakılan sabit alanlar (yalnızca işleme girmeden önce bilinenler) */
 export const SCAN_DIMENSIONS: SetupDimension[] = [
   'asiaRange',
+  'sweptSide',
   'sweepHour',
+  'sweepHour1h',
   'poiTimeframe',
   'tradeOfDay',
   'prevTrade',
   'session',
   'premiumDiscount',
+  'confCount',
   'trend',
   'weekday',
   'type',
   'asset',
 ];
+
+/** En çok bu kadar tek confirmation boyutu taranır (en sık kullanılanlar) */
+const CONF_DIM_MAX = 10;
+
+/**
+ * Bu işlemler için taranacak alanlar:
+ * - POI Sweep saati: az veride 1 saatlik, yeterli veride (SWEEP_FINE_MIN) 30 dakikalık dilimler (ikisi birden taranmaz).
+ * - Her confirmation ayrı ayrı "Var / Yok" olarak (birlikte seçilen kombinasyon örneklemi dağıtıyordu); yalnızca
+ *   hem varken hem yokken en az minSample işlemi olan etiketler. Kombinasyonun kendisi ve confirmation sayısı da taranır.
+ */
+export function scanDimensionsFor(trades: Trade[], minSample = SETUP_MIN_SAMPLE): SetupDimension[] {
+  const sweepN = trades.filter((t) => /^\d{2}:\d{2}$/.test(t.sweepTime || '')).length;
+  const base = SCAN_DIMENSIONS.filter((d) => d !== (sweepN >= SWEEP_FINE_MIN ? 'sweepHour1h' : 'sweepHour'));
+  const counts = new Map<string, { label: string; n: number }>();
+  let withConf = 0;
+  for (const t of trades) {
+    const tags = tradeConfirmations(t);
+    if (!tags.length) continue;
+    withConf++;
+    const seen = new Set<string>();
+    for (const raw of tags) {
+      const label = raw.trim();
+      const k = label.toLocaleLowerCase('tr');
+      if (!label || seen.has(k)) continue;
+      seen.add(k);
+      const c = counts.get(k);
+      if (c) c.n++;
+      else counts.set(k, { label, n: 1 });
+    }
+  }
+  const conf = [...counts.values()]
+    .filter((c) => c.n >= minSample && withConf - c.n >= minSample)
+    .sort((a, b) => b.n - a.n || a.label.localeCompare(b.label, 'tr'))
+    .slice(0, CONF_DIM_MAX)
+    .map((c) => confDimension(c.label));
+  return [...base, ...conf];
+}
+
+/** Aynı bilgiyi taşıyan alanlar ikili birleşimde eşleştirilmez (ör. iki confirmation boyutu, iki saat boyutu) */
+const FAMILY = (d: SetupDimension): string =>
+  isConfDimension(d) || d === 'premiumDiscount' || d === 'confCount' ? 'conf' : d === 'sweepHour' || d === 'sweepHour1h' || d === 'session' ? 'time' : d;
 
 type ValueOf = (t: Trade, d: SetupDimension) => string;
 
@@ -113,14 +161,15 @@ function valueTable(trades: Trade[], dims: SetupDimension[]): ValueOf {
 
 const rOf = (t: Trade) => (typeof t.rr === 'number' && Number.isFinite(t.rr) ? t.rr : 0);
 const edgeOf = (list: Trade[]) => edgeFromR(list.map(rOf), list.map((t) => t.status));
-const labelOf = (d: SetupDimension) => SETUP_DIMENSIONS.find((x) => x.id === d)?.label || d;
+const labelOf = (d: SetupDimension) => dimensionLabel(d);
 
 /** `now`: "son 7 gün" ihlalleri bugüne göre sayılır (son işleme göre değil: uzun aradan sonra eski ihlaller "son 7 gün" görünmesin) */
 export function computeEdgeSummary(trades: Trade[], minSample = SETUP_MIN_SAMPLE, now: number = Date.now()): EdgeSummary {
   const valid = trades.filter((t) => typeof t.rr === 'number' && Number.isFinite(t.rr));
   const sorted = [...valid].sort(byEntryTime);
   indexTradeOrder(sorted);
-  const val = valueTable(sorted, SCAN_DIMENSIONS);
+  const dims = scanDimensionsFor(sorted, minSample);
+  const val = valueTable(sorted, dims);
 
   const card = buildSetupScorecard(sorted, DEFAULT_SETUP_DIMENSIONS, { minSample });
   const judged = card.rows.filter((r) => r.verdict !== 'LOW_SAMPLE');
@@ -183,7 +232,7 @@ export function computeEdgeSummary(trades: Trade[], minSample = SETUP_MIN_SAMPLE
   }
   return slices;
   };
-  const slices = scan(SCAN_DIMENSIONS);
+  const slices = scan(dims);
   const leaks = slices
     .filter((s) => s.edge.expectancy < 0)
     // kesinleşmiş sızıntılar önce, sonra en çok R kaybettiren
@@ -215,7 +264,7 @@ export function computeEdgeSummary(trades: Trade[], minSample = SETUP_MIN_SAMPLE
   const overlapOf = (x: DimensionSlice): DimensionSlice['overlap'] => {
     const list = sorted.filter((t) => val(t, x.dimension) === x.value);
     let best: DimensionSlice['overlap'];
-    for (const d of SCAN_DIMENSIONS) {
+    for (const d of dims) {
       if (d === x.dimension) continue;
       const counts = new Map<string, number>();
       for (const t of list) {
@@ -233,7 +282,7 @@ export function computeEdgeSummary(trades: Trade[], minSample = SETUP_MIN_SAMPLE
   };
   [...leaks, ...strengths].forEach((x) => (x.overlap = overlapOf(x)));
 
-  const pairs = scanPairs(sorted, minSample, val, PAIR_MIN_LIFT);
+  const pairs = scanPairs(sorted, minSample, val, PAIR_MIN_LIFT, dims);
   const bestPairs = pairs
     .filter((p) => p.edge.expectancy > 0 && p.lift >= PAIR_MIN_LIFT)
     .sort((a, b) => b.edge.expLo - a.edge.expLo || b.lift - a.lift)
@@ -335,7 +384,14 @@ function buildRules(
  * (işlemleri alanlardan biriyle aynı) atlanır. lift = birleşim beklentisi − alanların tek başına beklentisi
  * (pozitifse iki alanın iyisi, negatifse kötüsüyle kıyaslanır).
  */
-export function scanPairs(trades: Trade[], minSample = SETUP_MIN_SAMPLE, val: ValueOf = dimensionValue, minLift = 0): PairSlice[] & { tested: number } {
+export function scanPairs(
+  trades: Trade[],
+  minSample = SETUP_MIN_SAMPLE,
+  val: ValueOf = dimensionValue,
+  minLift = 0,
+  dims: SetupDimension[] = scanDimensionsFor(trades, minSample),
+): PairSlice[] & { tested: number } {
+  const SCAN_DIMENSIONS = dims;
   const need = minSample * 2;
   // Alanların tek başına sonucu tek geçişte (eskiden her yeni değer için tüm işlemler yeniden süzülüyordu)
   const singles = new Map<string, { n: number; exp: number }>();
@@ -381,10 +437,15 @@ export function scanPairs(trades: Trade[], minSample = SETUP_MIN_SAMPLE, val: Va
     });
   });
   const out: PairSlice[] = [];
+  // Aynı işlemleri kapsayan birleşimler tek kez listelenir (ör. "Confirmations: Discount + Yön: Long" ile
+  // "Confirmation Sayısı: 1 confirmation + Yön: Long" aynı işlemlerse); alan sırasında önce gelen kalır.
+  const seen = new Set<string>();
+  const pos = new Map<Trade, number>(trades.map((t, ti) => [t, ti]));
   for (let i = 0; i < D; i++) {
     for (let j = i + 1; j < D; j++) {
       const a = SCAN_DIMENSIONS[i];
       const b = SCAN_DIMENSIONS[j];
+      if (FAMILY(a) === FAMILY(b)) continue;
       const ca = codes[i];
       const cb = codes[j];
       const vb = dict[j].length;
@@ -419,6 +480,9 @@ export function scanPairs(trades: Trade[], minSample = SETUP_MIN_SAMPLE, val: Va
         if (list) list.push(trades[t]);
       }
       keep.forEach((list, k) => {
+        const sig = list.map((t) => pos.get(t)).join(',');
+        if (seen.has(sig)) return;
+        seen.add(sig);
         const va = dict[i][Math.floor(k / vb)];
         const vbv = dict[j][k % vb];
         const sa = single(a, va);
@@ -457,8 +521,10 @@ export function edgeReportRows(trades: Trade[], minSample = SETUP_MIN_SAMPLE): R
       'Hüküm': VERDICT_TEXT[v] + (v !== 'LOW_SAMPLE' && signalStrength(e) === 'EARLY' ? ' (Erken Sinyal)' : ''),
     });
   };
-  const val = valueTable(valid, SETUP_DIMENSIONS.map((d) => d.id));
-  for (const d of SETUP_DIMENSIONS) {
+  const confDims = scanDimensionsFor(valid, minSample).filter(isConfDimension);
+  const reportDims: { id: SetupDimension; label: string }[] = [...SETUP_DIMENSIONS, ...confDims.map((id) => ({ id, label: dimensionLabel(id) }))];
+  const val = valueTable(valid, reportDims.map((d) => d.id));
+  for (const d of reportDims) {
     const groups = new Map<string, Trade[]>();
     for (const t of valid) {
       const v = val(t, d.id);
@@ -488,7 +554,7 @@ export function edgeReportRows(trades: Trade[], minSample = SETUP_MIN_SAMPLE): R
   }
   // İkili birleşimler: alanların tek başına sonucundan belirgin farklı olanlar
   // İyi ve kötü kombinasyonlar ayrı bölümler: önce en iyiler (beklentiye göre), sonra en kötüler (en çok R kaybettiren önce)
-  const pairs = scanPairs(valid, minSample, val, PAIR_MIN_LIFT).filter((p) => Math.abs(p.lift) >= PAIR_MIN_LIFT);
+  const pairs = scanPairs(valid, minSample, val, PAIR_MIN_LIFT, scanDimensionsFor(valid, minSample)).filter((p) => Math.abs(p.lift) >= PAIR_MIN_LIFT);
   const pushPair = (p: PairSlice, label: string) => {
     const [a, b] = p.dims;
     const [va, vb] = p.values;

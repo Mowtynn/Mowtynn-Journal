@@ -1,7 +1,7 @@
 import { Trade } from '../types';
 import { byEntryTime, tradeConfirmations } from './tradeModel';
-import { edgeFromR, EdgeStats, sweepHourBucket, tradeOfDayBucket, indexTradeOrder, prevTradeBucket } from './asiaAnalytics';
-import { getTradeNyWeekday, WEEKDAY_NAMES_TR } from './tradingTime';
+import { edgeFromR, EdgeStats, sweepHourBucket, sweepHour1hBucket, tradeOfDayBucket, indexTradeOrder, prevTradeBucket } from './asiaAnalytics';
+import { getTradeNyWeekday, getSweepSide, WEEKDAY_NAMES_TR } from './tradingTime';
 import { EDGE_PROOF_MIN, MIN_SAMPLE } from './sampleSize';
 import { driftFromR, type EdgeDrift } from './edgeDrift';
 
@@ -10,27 +10,37 @@ import { driftFromR, type EdgeDrift } from './edgeDrift';
  * göre "kurulum" olarak gruplar; her kurulumun R karnesini ve güven aralığına dayalı hükmünü verir.
  */
 
+/** Tek bir confirmation'ın varlığı (ör. "conf:SMT Divergence" → Var / Yok); Edge Özeti işlemlerdeki etiketlerden üretir */
+export type ConfDimension = `conf:${string}`;
+
 export type SetupDimension =
   | 'asiaRange'
+  | 'sweptSide'
   | 'sweepHour'
+  | 'sweepHour1h'
   | 'poiTimeframe'
   | 'tradeOfDay'
   | 'prevTrade'
   | 'session'
   | 'premiumDiscount'
+  | 'confCount'
   | 'trend'
   | 'weekday'
   | 'type'
-  | 'asset';
+  | 'asset'
+  | ConfDimension;
 
 export const SETUP_DIMENSIONS: { id: SetupDimension; label: string }[] = [
   { id: 'asiaRange', label: 'Asia Range' },
+  { id: 'sweptSide', label: 'Süpürülen Asia Tarafı' },
+  { id: 'sweepHour1h', label: 'POI Sweep Saati (NY, 1 saat)' },
   { id: 'sweepHour', label: 'POI Sweep Saati (NY, 30 dk)' },
   { id: 'poiTimeframe', label: 'POI Timeframe' },
   { id: 'tradeOfDay', label: 'Günün İşlemi' },
   { id: 'prevTrade', label: 'Gün İçi Önceki İşlem' },
   { id: 'session', label: 'Session' },
   { id: 'premiumDiscount', label: 'Confirmations' },
+  { id: 'confCount', label: 'Confirmation Sayısı' },
   { id: 'trend', label: 'İşlem Tipi' },
   { id: 'weekday', label: 'Gün' },
   { id: 'type', label: 'Yön' },
@@ -59,6 +69,14 @@ export interface SetupRow {
   lastAt: number;
   /** Son 10 işlem ↔ öncesi (en az 20 işlemli kurulumlarda) */
   drift: EdgeDrift;
+}
+
+export const confDimension = (tag: string): ConfDimension => `conf:${tag.trim()}`;
+export const isConfDimension = (d: string): d is ConfDimension => d.startsWith('conf:');
+/** Boyutun ekranda görünen adı (tek confirmation boyutları dahil) */
+export function dimensionLabel(d: SetupDimension): string {
+  if (isConfDimension(d)) return `Confirmation: ${d.slice(5)}`;
+  return SETUP_DIMENSIONS.find((x) => x.id === d)?.label || d;
 }
 
 const joinList = (xs?: string[]) => {
@@ -91,6 +109,18 @@ export function dimensionValue(t: Trade, d: SetupDimension): string {
       return joinList(tradeConfirmations(t));
     case 'sweepHour':
       return sweepHourBucket(t.sweepTime) ?? UNSPECIFIED;
+    case 'sweepHour1h':
+      return sweepHour1hBucket(t.sweepTime) ?? UNSPECIFIED;
+    case 'confCount': {
+      // Confirmation girilmemiş işlem (ör. hızlı kayıt) bilinmiyor sayılır, "0" değil
+      const n = tradeConfirmations(t).length;
+      return n === 0 ? UNSPECIFIED : n >= 3 ? '3+ confirmation' : `${n} confirmation`;
+    }
+    case 'sweptSide': {
+      // Yalnızca Reversal işlemlerde: short → Asia High, long → Asia Low (Continuation'da anlamsız)
+      const side = getSweepSide(t);
+      return side === 'HIGH' ? 'Asia High' : side === 'LOW' ? 'Asia Low' : UNSPECIFIED;
+    }
     case 'tradeOfDay':
       return tradeOfDayBucket(t) ?? UNSPECIFIED;
     case 'prevTrade':
@@ -102,7 +132,14 @@ export function dimensionValue(t: Trade, d: SetupDimension): string {
     case 'type':
       return t.type === 'SHORT' ? 'Short' : 'Long';
     default: {
-      const v = t[d];
+      if (isConfDimension(d)) {
+        // Confirmation hiç girilmemişse bilinmiyor; girilmişse bu etiket var mı
+        const tags = tradeConfirmations(t);
+        if (!tags.length) return UNSPECIFIED;
+        const want = d.slice(5).trim().toLocaleLowerCase('tr');
+        return tags.some((x) => x.trim().toLocaleLowerCase('tr') === want) ? 'Var' : 'Yok';
+      }
+      const v = (t as unknown as Record<string, unknown>)[d];
       return typeof v === 'string' && v.trim() ? v.trim() : UNSPECIFIED;
     }
   }

@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { FlaskConical, Plus, X } from 'lucide-react';
 import { Trade } from '../../types';
 import { FilterChip, FILTER_SELECT } from '../filters/FilterControls';
-import { SETUP_DIMENSIONS, verdictFor, signalStrength, type SetupDimension } from '../../lib/setupScorecard';
+import { dimensionLabel, verdictFor, signalStrength, type SetupDimension } from '../../lib/setupScorecard';
 import { SCAN_DIMENSIONS } from '../../lib/edgeSummary';
 import { ruleOptions, simulateRule, HALF_MIN, type RuleCondition, type HalfStatus } from '../../lib/ruleSimulator';
 import { EDGE_PROOF_MIN } from '../../lib/sampleSize';
@@ -12,7 +12,7 @@ import { fixed, formatR, trPossessive, rnum } from '../../lib/format';
 const STORAGE_KEY = 'tj_rule_sim';
 const MAX_CONDS = 6;
 const sR = (v: number) => formatR(v);
-const labelOf = (d: SetupDimension) => SETUP_DIMENSIONS.find((x) => x.id === d)?.label || d;
+const labelOf = (d: SetupDimension) => dimensionLabel(d);
 const toneOf = (v: number) => (v > 0 ? 'text-emerald-300' : v < 0 ? 'text-rose-300' : 'text-zinc-300');
 
 function loadConds(): RuleCondition[] {

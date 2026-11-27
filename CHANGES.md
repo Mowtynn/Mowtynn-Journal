@@ -1143,3 +1143,11 @@ Klasik tasarım korunarak, son eklenen alanlar (risk %, hesap bağı, strateji, 
 - Prop · payout silme: "Sil?" onayı düğmenin genişliğini değiştirmez (simge ile yazı yerinde yumuşakça değişir, satır kaymaz); silinen satır yüksekliği kapanarak kaybolur, yılın son payout'u silinince yıl kartı da aynı şekilde kapanır; eklenen satır açılarak gelir (önce solar, yükseklik yumuşakça kapanır). Onay zamanlayıcısı tekleştirildi.
 - Sonuç R alanı tek ondalık kabul eder: R zaten tek ondalıkla kaydediliyordu (1.75 sessizce 1.8 oluyordu); artık yazılan değer kaydedilenle aynı.
 - Uçtan uca akış testi: işlem ekleme (yön, R, Asia Range, İşlem Tipi, POI Sweep Time → otomatik session, POI TF, confirmation), detaydan düzenleme, detayda hızlı ok geçişleri, art arda Prop/Hesapsız geçişleri ve silme; kayıtlar doğru, hata yok.
+- Edge analizi tüm girdileri daha akıllı kullanır:
+  - Her confirmation ayrı ayrı "Var / Yok" olarak taranır (ör. "Confirmation: SMT Divergence = Var"): birlikte seçilen kombinasyon her yeni etiketle ayrı grup açıp örneklemi dağıtıyordu. Yalnızca hem varken hem yokken yeterli işlemi olan etiketler (en sık 10) taranır; kombinasyonun kendisi de taranmaya devam eder.
+  - Yeni boyut "Confirmation Sayısı" (1 / 2 / 3+; confirmation girilmemiş işlem bilinmiyor sayılır).
+  - Yeni boyut "Süpürülen Asia Tarafı" (yalnızca Reversal işlemlerde yönden: short → Asia High, long → Asia Low).
+  - POI Sweep saati az veride (120 işlemden az) 1 saatlik, sonrasında 30 dakikalık dilimlerle taranır; Kurulum Karnesi'nde ikisi de seçilebilir.
+  - Aynı bilgiyi taşıyan alanlar (iki confirmation boyutu, saat ile session) ikili birleşim taramasında eşleştirilmez (sahte "kombinasyon" bulguları ve gereksiz çoklu karşılaştırma azalır).
+  - Edge raporu (dışa aktarım) tek confirmation satırlarını da içerir; Kural Simülatörü'nde yeni alanlar seçilebilir.
+  - Aynı işlemleri kapsayan birleşimler (ör. "Confirmations: Discount + Yön: Long" ile "Confirmation Sayısı: 1 + Yön: Long") Kurallarım ve Kombinasyonlar'da tek kez listelenir.

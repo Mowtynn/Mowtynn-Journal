@@ -231,6 +231,18 @@ export function sweepHourBucket(v?: string): string | null {
   return `${fmt(start)}–${fmt(start + 30)}`;
 }
 
+/** POI Sweep saati (NY) 1 saatlik dönemlere: 02:15 → "02:00–03:00"; geçersizse null (az veride 30 dk dilimler çok dağılır) */
+export function sweepHour1hBucket(v?: string): string | null {
+  const m = typeof v === 'string' ? v.match(/^(\d{2}):(\d{2})$/) : null;
+  if (!m) return null;
+  const h = Number(m[1]);
+  if (!(h >= 0 && h < 24)) return null;
+  return `${String(h).padStart(2, '0')}:00–${String((h + 1) % 24).padStart(2, '0')}:00`;
+}
+
+/** Bu kadar POI Sweep saati girilmiş işlemden sonra 30 dakikalık dilimler kullanılır; öncesinde 1 saatlik (örneklem dağılmasın) */
+export const SWEEP_FINE_MIN = 120;
+
 /** Dönemleri işlem günü akışına göre sıralar: Asia akşamı (18:00 NY) → London → NY */
 export function sweepBucketOrder(key: string): number {
   const m = key.match(/^(\d{2}):(\d{2})/);
