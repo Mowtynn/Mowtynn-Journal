@@ -71,6 +71,8 @@ export const ResultCard = React.memo(function ResultCard({
     else if (v.startsWith("+")) { nextNeg = false; v = v.slice(1); }
     v = v.replace(/[^\d.]/g, "");
     if (!/^\d*\.?\d*$/.test(v)) return;
+    // R tek ondalıkla kaydedilir: fazla ondalık alınmaz (yapıştırılan 1.75 → 1.7), yazılan değer ile kaydedilen aynı kalır
+    v = v.replace(/^(\d*\.\d)\d+$/, "$1");
     setNeg(nextNeg);
     setText(v);
     const n = parseSignedR(v);

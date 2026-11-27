@@ -191,7 +191,7 @@ const AddTradeForm = React.memo(function AddTradeForm({
       toast.error("Sonuç R'yi gir (kazanç +, kayıp −, başabaş 0).");
       return;
     }
-    // Kayıt 2 ondalıkla tutulur; durum yuvarlanmış değerden gelir (0.004 → 0 → başabaş, "-0" yok)
+    // Kayıt tek ondalıkla tutulur (alan da tek ondalık kabul eder); durum yuvarlanmış değerden gelir ("-0" yok)
     const numericRR = roundR(Number(rrValue));
     const tradeStatus = statusOfR(numericRR);
 
