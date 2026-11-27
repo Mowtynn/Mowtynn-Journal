@@ -25,7 +25,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { FlowProgress, flowSteps } from "./setupFlow/SetupFlow";
 import { nyWallDate, nyDateKey } from "../lib/tradingTime";
-import { ResultPanel, SetupHistoryPanel } from "./tradeDetail/TradeInsightPanels";
+import { ResultPanel } from "./tradeDetail/TradeInsightPanels";
 import { computeTradeInsight } from "../lib/tradeInsight";
 import { tradeConfirmations } from "../lib/tradeModel";
 import { useAllTrades } from "../lib/allTradesContext";
@@ -61,8 +61,6 @@ const CHART_ASPECT = 1.85;
 /** Görselin gerçek oranı (en/boy) — grafik kutusu görsele tam oturur, üst/alt boşluk kalmaz. Aynı görsel yeniden açılınca pencere zıplamasın diye saklanır. */
 const ASPECT_CACHE = new Map<string, number>();
 const clampAspect = (a: number) => Math.min(2.6, Math.max(1.2, a));
-/** Grafiğin altındaki "Kurulum geçmişi" kartının sabit yüksekliği: kartın içeriği işleme göre değişse de pencere / grafik boyutu değişmez */
-const SETUP_SLOT_H = 72;
 
 const TradeDetailModal = React.memo(function TradeDetailModal({ 
   trade, 
@@ -96,7 +94,7 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
   }, [trade]);
 
   const currentTrade = trade || displayedTrade;
-  // Kurulum geçmişi için tüm işlemler (App'ten)
+  // Ortalama R beklentisi için tüm işlemler (App'ten)
   const allTrades = useAllTrades();
   const insight = React.useMemo(
     () => (currentTrade && allTrades ? computeTradeInsight(currentTrade, allTrades) : null),
@@ -228,13 +226,18 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
     // Kullanılabilir alan: pencereyi taşıyan katmanın iç boyutu (kaydırma çubuğu, iç boşluk ve üst çubuk düşülmüş)
     const overlay = contentRef.current?.parentElement;
     const navH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-h')) || 0;
-    // Pencere ekranı rahatça doldurur; çok geniş ekranlarda en çok 1760px
-    const MAX_W = 1760;
+    // Pencere ekranın en çok %90'ı kadar geniş (kenarlarda nefes payı), çok geniş ekranlarda en çok 1600px
+    const MAX_W = Math.min(1600, Math.round(viewport.w * 0.9));
+    // Sol sütunu doldurmak için grafik biraz daha genişleyebilir (en çok ekranın %95'i): grafiğin altında boşluk kalmasın
+    const FILL_W = Math.min(1680, Math.round(viewport.w * 0.95));
     let maxW = Math.min(viewport.w - 24, MAX_W);
+    let fillW = Math.min(viewport.w - 24, FILL_W);
     let maxH = viewport.h - navH - 24;
     if (overlay) {
       const os = getComputedStyle(overlay);
-      maxW = Math.min(MAX_W, overlay.clientWidth - parseFloat(os.paddingLeft) - parseFloat(os.paddingRight));
+      const innerW = overlay.clientWidth - parseFloat(os.paddingLeft) - parseFloat(os.paddingRight);
+      maxW = Math.min(MAX_W, innerW);
+      fillW = Math.min(FILL_W, innerW);
       maxH = Math.min(maxH, overlay.clientHeight - parseFloat(os.paddingTop) - parseFloat(os.paddingBottom));
     }
     const headerH = header.offsetHeight;
@@ -259,13 +262,11 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
     const BORDER = 2;
     if (hasChart) {
       const a = imgAspect ?? CHART_ASPECT;
-      // Grafiğin altındaki kurulum geçmişi alanı (kart olsun olmasın aynı yer ayrılır) ve aradaki boşluk
-      const setupH = SETUP_SLOT_H + 16;
       const padX = 40;
       const padY = 40;
       const headingH = 34;
       const chartWMax = maxW - leftW - padX - BORDER * 2;
-      const chartHMax = maxH - headerH - padY - headingH - setupH - BORDER * 2;
+      const chartHMax = maxH - headerH - padY - headingH - BORDER * 2;
       let cw = Math.min(chartWMax, chartHMax * a);
       let ch = cw / a;
       if (cw < 200 || ch < 120) {
@@ -273,17 +274,22 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
         return;
       }
       // Sol sütun grafikten uzunsa boşluk bırakmak yerine grafik (oranı korunarak) büyütülür
-      const fixedR = BORDER + headingH + setupH + padY;
+      const fixedR = BORDER + headingH + padY;
       if (leftNeed > ch + fixedR) {
-        cw = Math.min(chartWMax, Math.min(chartHMax, leftNeed - fixedR) * a);
+        const chartWFill = fillW - leftW - padX - BORDER * 2;
+        cw = Math.max(cw, Math.min(chartWFill, Math.min(chartHMax, leftNeed - fixedR) * a));
         ch = cw / a;
+      }
+      // Genişlik sınırına dayanıp sol sütun hâlâ grafikten uzunsa: sol sütun en çok iki kademe sıklaşır (grafiğin altında boşluk kalmasın)
+      if (dense < 2 && leftNeed > ch + fixedR + 24) {
+        setDense(dense + 1);
+        return;
       }
       cw = Math.floor(cw);
       ch = Math.floor(ch);
-      const rightH = ch + BORDER + headingH + setupH + padY;
+      const rightH = ch + BORDER + headingH + padY;
       const h = Math.min(maxH, headerH + Math.max(leftNeed, rightH) + BORDER);
-      // Grafik kutusu her zaman görselin kendi boyutunda: etrafında boşluk kalmaz. Sol sütun daha uzunsa (genişlik sınırına
-      // dayanıldığında) artan yer kurulum geçmişinin altında, sütunun en sonunda kalır.
+      // Grafik kutusu her zaman görselin kendi boyutunda: etrafında boşluk kalmaz
       const chBox = ch;
       setFit({ w: leftW + cw + BORDER + padX + BORDER, h, leftW, cw, ch, chBox });
     } else {
@@ -761,12 +767,6 @@ const TradeDetailModal = React.memo(function TradeDetailModal({
                     </div>
                   </section>
 
-                  {/* Kurulum geçmişi: grafiğin altında sabit yükseklikli alan (masaüstünde kart olmasa da yer ayrılır; pencere her işlemde aynı boyutta kalır) */}
-                  {(insight?.setup || fit?.cw) && (
-                    <div className="shrink-0" style={fit?.cw ? { height: SETUP_SLOT_H } : undefined}>
-                      {insight?.setup && <SetupHistoryPanel insight={insight} fixedHeight={!!fit?.cw} />}
-                    </div>
-                  )}
                 </div>
               </div>
               

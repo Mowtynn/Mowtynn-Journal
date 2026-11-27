@@ -1,4 +1,6 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { AnimatePresence, motion, type Transition } from 'motion/react';
+import { EASE } from '../lib/motion';
 import toast from 'react-hot-toast';
 import { Wallet, Plus, Trash2, Pencil, Check, CalendarDays, Building2, TrendingUp } from 'lucide-react';
 import type { Payout } from '../types';
@@ -17,6 +19,8 @@ interface PropViewProps {
 }
 
 const money = (v: number) => formatMoney(v);
+/** Silinen satırın kapanışı: önce solar, yükseklik yumuşak (ease-in-out) kapanır; komşular kaymadan yukarı gelir */
+const COLLAPSE: Transition = { opacity: { duration: 0.16, ease: 'easeOut' }, height: { duration: 0.28, ease: [0.4, 0, 0.2, 1] } };
 const todayInput = () => {
   const d = trNow();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -142,6 +146,9 @@ function PayoutForm({
 export function PropView({ payouts, onChange }: PropViewProps) {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  // Onay süresi: tek zamanlayıcı (art arda tıklamalarda eskisi iptal edilir, sayfadan çıkınca temizlenir)
+  const confirmTimer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(confirmTimer.current), []);
 
   const sorted = useMemo(() => sortPayouts(payouts), [payouts]);
   const summary = useMemo(() => summarizePayouts(payouts), [payouts]);
@@ -182,13 +189,14 @@ export function PropView({ payouts, onChange }: PropViewProps) {
   };
 
   const remove = (id: string) => {
+    window.clearTimeout(confirmTimer.current);
     if (confirmDelete !== id) {
       setConfirmDelete(id);
-      window.setTimeout(() => setConfirmDelete((c) => (c === id ? null : c)), 3000);
+      confirmTimer.current = window.setTimeout(() => setConfirmDelete((c) => (c === id ? null : c)), 3000);
       return;
     }
-    onChange(payouts.filter((p) => p.id !== id));
     setConfirmDelete(null);
+    onChange(payouts.filter((p) => p.id !== id));
     toast.success('Payout silindi.');
   };
 
@@ -256,19 +264,37 @@ export function PropView({ payouts, onChange }: PropViewProps) {
           </p>
         )}
 
+        {/* Satır eklenip silinirken yükseklik yumuşakça açılır / kapanır; komşu satırlar zıplamaz (yalnızca opacity + yükseklik) */}
+        <div className="flex flex-col -mb-2.5">
+        <AnimatePresence initial={false}>
         {byYear.map(([year, list]) => {
           const g = summary.byYear.find((y) => y.key === year);
           return (
-            <div key={year} className="bg-zinc-900/50 border border-zinc-800/80 rounded-2xl overflow-hidden">
+            <motion.div
+              key={year}
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto', transition: { duration: 0.24, ease: EASE } }}
+              exit={{ opacity: 0, height: 0, transition: COLLAPSE }}
+              className="overflow-hidden pb-2.5"
+            >
+            <div className="bg-zinc-900/50 border border-zinc-800/80 rounded-2xl overflow-hidden">
               <div className="flex items-center justify-between px-4 py-2.5 border-b border-zinc-800/70 bg-zinc-950/40">
                 <span className="text-xs font-bold text-zinc-200 tabular-nums">{year}</span>
                 <span className="text-label font-bold text-zinc-400 tabular-nums">
                   {g?.count || 0} payout · <span className="text-emerald-400">{money(g?.total || 0)}</span>
                 </span>
               </div>
-              <ul className="divide-y divide-zinc-800/60">
-                {list.map((p) => (
-                  <li key={p.id} className="flex items-center gap-3 px-4 py-2.5 min-w-0">
+              <ul>
+                <AnimatePresence initial={false}>
+                {list.map((p, i) => (
+                  <motion.li
+                    key={p.id}
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto', transition: { duration: 0.24, ease: EASE } }}
+                    exit={{ opacity: 0, height: 0, transition: COLLAPSE }}
+                    className={`overflow-hidden ${i > 0 ? 'border-t border-zinc-800/60' : ''}`}
+                  >
+                  <div className="flex items-center gap-3 px-4 py-2.5 min-w-0">
                     <span className="w-20 shrink-0 text-label font-bold text-zinc-400 tabular-nums">{fmtDate(p.date)}</span>
                     <span className="flex-1 min-w-0">
                       <span className="block text-xs font-bold text-zinc-100 truncate">{p.firm}</span>
@@ -279,25 +305,41 @@ export function PropView({ payouts, onChange }: PropViewProps) {
                       <button type="button" aria-label="Düzenle" onClick={() => startEdit(p)} className="btn-icon w-7 h-7">
                         <Pencil size={12} />
                       </button>
+                      {/* Silme: ilk dokunuş onay ister (3 sn). Düğme genişliği sabit; simge ile "Sil?" yerinde yumuşakça değişir, satır kaymaz */}
                       <button
                         type="button"
                         aria-label={confirmDelete === p.id ? 'Silmeyi onayla' : 'Sil'}
                         onClick={() => remove(p.id)}
-                        className={
+                        className={`relative w-11 h-7 rounded-lg border flex items-center justify-center overflow-hidden cursor-pointer transition-colors duration-200 ${
                           confirmDelete === p.id
-                            ? 'h-7 px-2 rounded-lg border border-rose-500/40 bg-rose-500/15 text-label font-bold text-rose-300 cursor-pointer'
-                            : 'btn-icon w-7 h-7 hover:text-rose-300'
-                        }
+                            ? 'border-rose-500/40 bg-rose-500/15 text-rose-300'
+                            : 'border-transparent text-zinc-500 hover:text-rose-300 hover:bg-zinc-800/80'
+                        }`}
                       >
-                        {confirmDelete === p.id ? 'Sil?' : <Trash2 size={12} />}
+                        <AnimatePresence mode="popLayout" initial={false}>
+                          <motion.span
+                            key={confirmDelete === p.id ? 'confirm' : 'icon'}
+                            initial={{ opacity: 0, y: 6 }}
+                            animate={{ opacity: 1, y: 0, transition: { duration: 0.16, ease: EASE } }}
+                            exit={{ opacity: 0, y: -6, transition: { duration: 0.12 } }}
+                            className="flex items-center justify-center text-label font-bold"
+                          >
+                            {confirmDelete === p.id ? 'Sil?' : <Trash2 size={12} />}
+                          </motion.span>
+                        </AnimatePresence>
                       </button>
                     </span>
-                  </li>
+                  </div>
+                  </motion.li>
                 ))}
+                </AnimatePresence>
               </ul>
             </div>
+            </motion.div>
           );
         })}
+        </AnimatePresence>
+        </div>
       </section>
 
       {/* Firmaya göre dağılım (birden fazla firma varsa) */}
