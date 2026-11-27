@@ -318,6 +318,28 @@ export default function App() {
     setActiveAccountCategory(category);
   }, []);
 
+  // Prop ↔ Hesapsız geçişinde açık sekmenin içeriği yeni veriyle yumuşakça gelir (sekme geçişiyle aynı hareket).
+  // İçerik yeniden kurulmaz (kaydırma / açık durumlar korunur); yalnızca opacity + transform canlandırılır.
+  const scopeAnimRef = useRef<HTMLDivElement>(null);
+  const scopeAnimFirst = useRef(true);
+  useEffect(() => {
+    if (scopeAnimFirst.current) {
+      scopeAnimFirst.current = false;
+      return;
+    }
+    const el = scopeAnimRef.current;
+    if (!el || typeof el.animate !== "function") return;
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    const anim = el.animate(
+      [
+        { opacity: 0.25, transform: "translateY(6px)" },
+        { opacity: 1, transform: "none" },
+      ],
+      { duration: 260, easing: "cubic-bezier(0.16, 1, 0.3, 1)" },
+    );
+    return () => anim.cancel();
+  }, [activeAccountCategory]);
+
   const accountCategoryCounts = useMemo(() => {
     const counts: Record<AccountCategory, number> = { PROP: 0, DEMO: 0 };
     trades.forEach((t) => {
@@ -2487,7 +2509,7 @@ export default function App() {
               <div className="h-[380px] bg-zinc-900 rounded-2xl border border-zinc-800 animate-pulse w-full"></div>
             </div>
           ) : (
-            mainPanes
+            <div ref={scopeAnimRef}>{mainPanes}</div>
           )}
           
             {globalFilterMounted && (
